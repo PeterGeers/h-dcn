@@ -1,0 +1,665 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HDCN Backend API Test Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #f4f4f4; padding: 20px; border-radius: 5px; }
+        .summary { margin: 20px 0; padding: 15px; background-color: #e8f5e8; border-radius: 5px; }
+        .table-section { margin: 30px 0; }
+        .table-header { background-color: #333; color: white; padding: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .success { background-color: #d4edda; }
+        .failure { background-color: #f8d7da; }
+        .method { font-weight: bold; }
+        .endpoint { font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>HDCN Backend API Test Results</h1>
+        <p>Comprehensive testing of all 7 DynamoDB tables and their API endpoints</p>
+        <p>Test executed: 2025-10-04 00:12:36</p>
+        <p>API Endpoint: https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod</p>
+    </div>
+
+    <div class="summary">
+        <h2>Test Summary</h2>
+        <p>Total Tests: 52</p>
+        <p>Successful: 52</p>
+        <p>Failed: 0</p>
+        <p>Success Rate: 100.0%</p>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Products Table - 5 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/insert-product/</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>id: e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>{"id": "e577f9a7-215f-45cc-acdd-9115420fb474", "message": "Product created successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/scan-product/</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 27 products</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/getproduct-byid/e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>id: e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>{"category": "clothing", "createdAt": "2025-10-03T22:11:30.792807", "description": "Official HDCN me...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/update-product/e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>id: e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>{"message": "Product e577f9a7-215f-45cc-acdd-9115420fb474 updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/delete-product/e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>id: e577f9a7-215f-45cc-acdd-9115420fb474</td>
+                <td>{"message": "Product e577f9a7-215f-45cc-acdd-9115420fb474 deleted successfully"}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Members Table - 5 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/members</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>member_id: 77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>{"member_id": "77502c76-c551-4670-bd51-3919d8a679b1", "message": "Member created successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/members</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 1265 members</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/members/77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>member_id: 77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>{"updated_at": "2025-10-03T22:11:38.918748", "city": "Amsterdam", "created_at": "2025-10-03T22:11:38...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/members/77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>member_id: 77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>{"message": "Member updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/members/77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>member_id: 77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>{"message": "Member deleted successfully"}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Payments Table - 6 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/payments</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>payment_id: a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>{"payment_id": "a8661915-9cfb-4f3a-a510-16352dab8dcd", "message": "Payment created successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/payments</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 3 payments</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/payments/a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>payment_id: a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>{"payment_type": "membership", "amount": "75.00", "payment_id": "a8661915-9cfb-4f3a-a510-16352dab8dc...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/payments/a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>payment_id: a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>{"message": "Payment updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/payments/a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>payment_id: a8661915-9cfb-4f3a-a510-16352dab8dcd</td>
+                <td>{"message": "Payment deleted successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/payments/member/77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>member_id: 77502c76-c551-4670-bd51-3919d8a679b1</td>
+                <td>[]</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Events Table - 5 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/events</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>event_id: c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td>{"event_id": "c85a4414-5ae0-4be6-95e4-b1e99c5f0f31", "message": "Event created successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/events</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 12 events</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/events/c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>event_id: c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td>{"naam": "Voorjaarsrit 2024", "locatie": "Caf\u00e9 De Biker, Volendam", "created_at": "2025-10-03T2...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/events/c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>event_id: c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td>{"message": "Event updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/events/c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td>204</td>
+                <td>PASS</td>
+                <td>event_id: c85a4414-5ae0-4be6-95e4-b1e99c5f0f31</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Memberships Table - 5 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/memberships</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>membership_type_id: a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>{"membership_type_id": "a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e", "created_at": "2025-10-03T22:12:05.08...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/memberships</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 9 memberships</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/memberships/a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>membership_type_id: a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>{"updated_at": "2025-10-03T22:12:05.089542", "created_at": "2025-10-03T22:12:05.089542", "membership...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/memberships/a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>membership_type_id: a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>{"message": "Membership updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/memberships/a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>membership_type_id: a7b88e1e-916d-41ee-abbb-d2a31f1c0c1e</td>
+                <td>{"message": "Membership deleted successfully"}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Carts Table - 4 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/carts</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>cart_id: ac79f8b4-f997-465b-a1ed-55e7bba2a820</td>
+                <td>{"cart_id": "ac79f8b4-f997-465b-a1ed-55e7bba2a820", "message": "Cart created successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/carts/ac79f8b4-f997-465b-a1ed-55e7bba2a820</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>cart_id: ac79f8b4-f997-465b-a1ed-55e7bba2a820</td>
+                <td>{"updated_at": "2025-10-03T22:12:12.214416", "customer_id": "test_customer_123", "created_at": "2025...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/carts/ac79f8b4-f997-465b-a1ed-55e7bba2a820/items</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>cart_id: ac79f8b4-f997-465b-a1ed-55e7bba2a820</td>
+                <td>{"message": "Cart updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/carts/ac79f8b4-f997-465b-a1ed-55e7bba2a820</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>cart_id: ac79f8b4-f997-465b-a1ed-55e7bba2a820</td>
+                <td>{"message": "Cart cleared successfully"}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Orders Table - 5 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/orders</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>order_id: 52fa18ca-47de-4c51-9630-8e99a4b0f9f5</td>
+                <td>{"order_id": "52fa18ca-47de-4c51-9630-8e99a4b0f9f5", "message": "Order created successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/orders</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 57 orders</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/orders/52fa18ca-47de-4c51-9630-8e99a4b0f9f5</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>order_id: 52fa18ca-47de-4c51-9630-8e99a4b0f9f5</td>
+                <td>{"customer_id": "test_customer_123", "order_id": "52fa18ca-47de-4c51-9630-8e99a4b0f9f5", "items": [{...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/orders/52fa18ca-47de-4c51-9630-8e99a4b0f9f5/status</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>order_id: 52fa18ca-47de-4c51-9630-8e99a4b0f9f5</td>
+                <td>{"message": "Order updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/orders/customer/test_customer_123</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>customer_id: test_customer_123</td>
+                <td>[{"customer_id": "test_customer_123", "order_id": "c5e1718e-14be-43a7-972f-8a4e0a2aaa2d", "items": [...</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Parameters Table - 4 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/parameters</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>id: None</td>
+                <td>{"parameter_id": "3f507b0e-04f3-4b57-9c18-e66d2c925654", "message": "Parameter created successfully"...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/parameters</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td></td>
+                <td>Retrieved 29 parameters</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/parameters/name/regio</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>name: regio</td>
+                <td>{"value": "[{\"id\": \"1\", \"value\": \"Noord-Holland\"}, {\"id\": \"2\", \"value\": \"Zuid-Holland...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/parameters/name/test_parameter</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>name: test_parameter</td>
+                <td>{"value": "test_value", "created_at": "2025-10-03T20:56:48.696978", "parameter_id": "8936fb76-be7a-4...</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Cognito Table - 13 Tests</h2>
+        </div>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Status Code</th>
+                <th>Success</th>
+                <th>Key Used</th>
+                <th>Details</th>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/cognito/pool</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>User pool info</td>
+                <td>{"Id": "eu-west-1_VtKQHhXGN", "Name": "Leden", "Policies": {"PasswordPolicy": {"MinimumLength": 8, "...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/cognito/users</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>List all users</td>
+                <td>Retrieved users</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/cognito/groups</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>List all groups</td>
+                <td>Retrieved groups</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/cognito/groups</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>groupName: testgroup_a163fdba</td>
+                <td>{"message": "Group created successfully", "group": {"GroupName": "testgroup_a163fdba", "UserPoolId":...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/cognito/users</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>username: testuser_bc5c84b5@hdcn-test.nl</td>
+                <td>{"message": "User created successfully", "username": "testuser_bc5c84b5@hdcn-test.nl", "groups": []}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/cognito/users/testuser_bc5c84b5@hdcn-test.nl/groups/testgroup_a163fdba</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>username: testuser_bc5c84b5@hdcn-test.nl, group: testgroup_a163fdba</td>
+                <td>{"message": "User added to group successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/cognito/users/testuser_bc5c84b5@hdcn-test.nl/groups</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>username: testuser_bc5c84b5@hdcn-test.nl</td>
+                <td>[{"GroupName": "testgroup_a163fdba", "UserPoolId": "eu-west-1_VtKQHhXGN", "Description": "Test group...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">GET</td>
+                <td class="endpoint">/cognito/groups/testgroup_a163fdba/users</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>groupName: testgroup_a163fdba</td>
+                <td>[{"Username": "82a5f4f4-a011-7046-2501-49e44e5eda94", "Attributes": [{"Name": "email", "Value": "tes...</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">PUT</td>
+                <td class="endpoint">/cognito/users/testuser_bc5c84b5@hdcn-test.nl</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>username: testuser_bc5c84b5@hdcn-test.nl</td>
+                <td>{"message": "User updated successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/cognito/users/testuser_bc5c84b5@hdcn-test.nl/groups/testgroup_a163fdba</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>username: testuser_bc5c84b5@hdcn-test.nl, group: testgroup_a163fdba</td>
+                <td>{"message": "User removed from group successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/cognito/users/testuser_bc5c84b5@hdcn-test.nl</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>username: testuser_bc5c84b5@hdcn-test.nl</td>
+                <td>{"message": "User deleted successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">DELETE</td>
+                <td class="endpoint">/cognito/groups/testgroup_a163fdba</td>
+                <td>200</td>
+                <td>PASS</td>
+                <td>groupName: testgroup_a163fdba</td>
+                <td>{"message": "Group deleted successfully"}</td>
+            </tr>
+
+            <tr class="success">
+                <td class="method">POST</td>
+                <td class="endpoint">/cognito/groups/import</td>
+                <td>201</td>
+                <td>PASS</td>
+                <td>Bulk import groups</td>
+                <td>{"message": "Import completed. Created 2 groups.", "created_groups": ["testBulkGroup1", "testBulkGro...</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="table-section">
+        <h2>API Endpoint Reference</h2>
+        <table>
+            <tr><th>Table</th><th>Primary Key</th><th>CRUD Operations</th></tr>
+            <tr><td>Products</td><td>id</td><td>POST /insert-product/, GET /scan-product/, GET /getproduct-byid/{id}, PUT /update-product/{id}, DELETE /delete-product/{id}</td></tr>
+            <tr><td>Members</td><td>id</td><td>POST /members, GET /members, GET /members/{id}, PUT /members/{id}, DELETE /members/{id}</td></tr>
+            <tr><td>Payments</td><td>payment_id</td><td>POST /payments, GET /payments, GET /payments/{payment_id}, PUT /payments/{payment_id}, DELETE /payments/{payment_id}, GET /payments/member/{member_id}</td></tr>
+            <tr><td>Events</td><td>event_id</td><td>POST /events, GET /events, GET /events/{event_id}, PUT /events/{event_id}, DELETE /events/{event_id}</td></tr>
+            <tr><td>Memberships</td><td>membership_type_id</td><td>POST /memberships, GET /memberships, GET /memberships/{id}, PUT /memberships/{id}, DELETE /memberships/{id}</td></tr>
+            <tr><td>Carts</td><td>cart_id</td><td>POST /carts, GET /carts/{cart_id}, PUT /carts/{cart_id}/items, DELETE /carts/{cart_id}</td></tr>
+            <tr><td>Orders</td><td>order_id</td><td>POST /orders, GET /orders, GET /orders/{order_id}, PUT /orders/{order_id}/status, GET /orders/customer/{customer_id}</td></tr>
+            <tr><td>Parameters</td><td>id</td><td>POST /parameters, GET /parameters, GET /parameters/{id}, GET /parameters/name/{name}, PUT /parameters/{id}, DELETE /parameters/{id}</td></tr>
+            <tr><td>Cognito</td><td>username/groupName</td><td>14 endpoints: User CRUD, Group CRUD, User-Group management, Group import, Pool info</td></tr>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,800 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  python-crud-api-test
+
+  Sample SAM Template for python-crud-api-test
+  # Updated to remove Cognito function temporarily
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+    Runtime: python3.11
+    Tracing: Active
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Ref Table
+        REGION_NAME: !Ref Region
+  Api:
+    TracingEnabled: True
+    Cors:
+      AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+        
+Parameters:
+  Table:
+    Type: String
+    Default: Producten
+  Region:
+    Type: String
+    Default: eu-west-1
+  MembersTable:
+    Type: String
+    Default: Members
+  PaymentsTable:
+    Type: String
+    Default: Payments
+  EventsTable:
+    Type: String
+    Default: Events
+  MembershipsTable:
+    Type: String
+    Default: Memberships
+  CartsTable:
+    Type: String
+    Default: Carts
+  OrdersTable:
+    Type: String
+    Default: Orders
+  ParametersTable:
+    Type: String
+    Default: Parameters
+  ForceUpdate:
+    Type: String
+    Default: "2024-01-16"
+
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+  # IAM Role for DynamoDB access (updated for GSI)
+  DynamoDBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembershipsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CartsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ParametersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ParametersTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CartsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembershipsTable}/index/*"
+
+  # IAM Role for Cognito Admin access
+  CognitoAdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: CognitoAdminAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:ListUsers
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminRemoveUserFromGroup
+                  - cognito-idp:AdminListGroupsForUser
+                  - cognito-idp:ListGroups
+                  - cognito-idp:CreateGroup
+                  - cognito-idp:DeleteGroup
+                  - cognito-idp:ListUsersInGroup
+                  - cognito-idp:DescribeUserPool
+                Resource: "arn:aws:cognito-idp:eu-west-1:*:userpool/eu-west-1_VtKQHhXGN"
+
+    
+  InsertProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/insert_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        InsertProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /insert-product/
+            Method: post
+            
+  DeleteProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/delete_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        DeletePost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /delete-product/{id}
+            Method: delete
+
+  GetProductByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_product_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /getproduct-byid/{id}
+            Method: get
+
+  scanProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/scan_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        ListProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /scan-product/
+            Method: get
+
+  UpdateProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdatePost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /update-product/{id}
+            Method: put
+
+  # Member Management Functions
+  CreateMemberFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_member
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreateMember:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /members
+            Method: post
+
+  GetMembersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_members
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetMembers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /members
+            Method: get
+
+  GetMemberByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_member_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetMemberById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /members/{id}
+            Method: get
+
+  UpdateMemberFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_member
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdateMember:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /members/{id}
+            Method: put
+
+  DeleteMemberFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/delete_member
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        DeleteMember:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /members/{id}
+            Method: delete
+
+  # Payment Functions
+  CreatePaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_payment
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreatePayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /payments
+            Method: post
+
+  GetPaymentsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_payments
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetPayments:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /payments
+            Method: get
+
+  GetPaymentByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_payment_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetPaymentById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /payments/{payment_id}
+            Method: get
+
+  UpdatePaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_payment
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdatePayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /payments/{payment_id}
+            Method: put
+
+  DeletePaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/delete_payment
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        DeletePayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /payments/{payment_id}
+            Method: delete
+
+  GetMemberPaymentsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_member_payments
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetMemberPayments:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /payments/member/{member_id}
+            Method: get
+
+  # Event Functions
+  CreateEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_event
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreateEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events
+            Method: post
+
+  GetEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_events
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetEvents:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events
+            Method: get
+
+  # Cognito Admin Function
+  HdcnCognitoAdminFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/hdcn_cognito_admin
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt CognitoAdminRole.Arn
+      Events:
+        CognitoRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /cognito
+            Method: ANY
+        CognitoProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /cognito/{proxy+}
+            Method: ANY
+
+  # Membership Type Functions
+  GetMembershipsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_memberships
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetMemberships:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /memberships
+            Method: get
+
+  CreateMembershipFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_membership
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreateMembership:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /memberships
+            Method: post
+
+  GetMembershipByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_membership_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetMembershipById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /memberships/{id}
+            Method: get
+
+  UpdateMembershipFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_membership
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdateMembership:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /memberships/{id}
+            Method: put
+
+  DeleteMembershipFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/delete_membership
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        DeleteMembership:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /memberships/{id}
+            Method: delete
+
+  # Cart Functions
+  CreateCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_cart
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreateCart:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /carts
+            Method: post
+
+  GetCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_cart
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetCart:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /carts/{cart_id}
+            Method: get
+
+
+
+  ClearCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/clear_cart
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        ClearCart:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /carts/{cart_id}
+            Method: delete
+
+  # Order Functions
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreateOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders
+            Method: post
+
+  GetOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders
+            Method: get
+
+  GetOrderByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_order_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetOrderById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{order_id}
+            Method: get
+
+  UpdateOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_order_status
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdateOrderStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{order_id}/status
+            Method: put
+
+  GetCustomerOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_customer_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetCustomerOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/customer/{customer_id}
+            Method: get
+
+  # Event Management Functions
+  GetEventByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_event_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetEventById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}
+            Method: get
+
+  UpdateEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_event
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdateEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}
+            Method: put
+
+  DeleteEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/delete_event
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        DeleteEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}
+            Method: delete
+
+  # Parameter Functions
+  CreateParameterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_parameter
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        CreateParameter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /parameters
+            Method: post
+
+  GetParametersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_parameters
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetParameters:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /parameters
+            Method: get
+
+  GetParameterByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_parameter_byid
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetParameterById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /parameters/{id}
+            Method: get
+
+  UpdateParameterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_parameter
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdateParameter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /parameters/{id}
+            Method: put
+
+  DeleteParameterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/delete_parameter
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        DeleteParameter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /parameters/{id}
+            Method: delete
+
+  GetParameterByNameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_parameter_byname
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        GetParameterByName:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /parameters/name/{name}
+            Method: get
+
+  UpdateCartItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_cart_items
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt DynamoDBRole.Arn
+      Events:
+        UpdateCartItems:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /carts/{cart_id}/items
+            Method: put
+
+Outputs:
+  ApiBaseUrl:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"

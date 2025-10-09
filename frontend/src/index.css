@@ -1,0 +1,75 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Mobile optimizations */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+/* Ensure minimum touch target size on mobile */
+@media (max-width: 768px) {
+  button, [role="button"], input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* Improve scrolling on mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent zoom on input focus */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  
+  /* Responsive table improvements */
+  .chakra-table {
+    font-size: 12px;
+  }
+  
+  .chakra-table__container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Sticky column shadow */
+  .chakra-table td[data-sticky="true"] {
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Authenticator custom styling */
+[data-amplify-authenticator] {
+  --amplify-colors-background-primary: #000000;
+  --amplify-colors-background-secondary: #1a1a1a;
+  --amplify-colors-brand-primary-80: #f56500;
+  --amplify-colors-brand-primary-90: #f56500;
+  --amplify-colors-brand-primary-100: #f56500;
+  --amplify-colors-font-primary: #ffffff;
+  --amplify-colors-font-secondary: #cccccc;
+}
+
+[data-amplify-authenticator] .amplify-card {
+  background-color: #1a1a1a;
+  border: 1px solid #f56500;
+}
+
+[data-amplify-authenticator] .amplify-button--primary {
+  background-color: #f56500;
+  border-color: #f56500;
+}
+
+[data-amplify-authenticator] .amplify-button--primary:hover {
+  background-color: #e55a00;
+}

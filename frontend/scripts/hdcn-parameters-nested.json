@@ -1,0 +1,80 @@
+{
+  "Regio": [
+    { "id": "1", "value": "Noord-Holland" },
+    { "id": "2", "value": "Zuid-Holland" },
+    { "id": "3", "value": "Friesland" },
+    { "id": "4", "value": "Utrecht" },
+    { "id": "5", "value": "Oost" },
+    { "id": "6", "value": "Limburg" },
+    { "id": "7", "value": "Groningen/Drente" },
+    { "id": "8", "value": "Noord-Brabant/Zeeland" },
+    { "id": "9", "value": "Duitsland" }
+  ],
+  "Lidmaatschap": [
+    { "id": "1", "value": "Gewoon lid" },
+    { "id": "2", "value": "Gezins lid" },
+    { "id": "3", "value": "Gezins donateur zonder motor" },
+    { "id": "4", "value": "Donateur zonder motor" }
+  ],
+  "Motormerk": [
+    { "id": "1", "value": "Harley-Davidson" },
+    { "id": "2", "value": "Indian" },
+    { "id": "3", "value": "Buell" },
+    { "id": "4", "value": "Eigenbouw" }
+  ],
+  "Clubblad": [
+    { "id": "1", "value": "Papier" },
+    { "id": "2", "value": "Digitaal" },
+    { "id": "3", "value": "Geen" }
+  ],
+  "WieWatWaar": [
+    { "id": "1", "value": "Eerder lid van de H-DCN" },
+    { "id": "2", "value": "Facebook" },
+    { "id": "3", "value": "Familie" },
+    { "id": "4", "value": "Harleydag" },
+    { "id": "5", "value": "Instagram" },
+    { "id": "6", "value": "Lid van de H-DCN" },
+    { "id": "7", "value": "Internet" },
+    { "id": "8", "value": "Openingsrit" },
+    { "id": "9", "value": "Vrienden" },
+    { "id": "10", "value": "Website H-DCN" },
+    { "id": "11", "value": "The Young Ones" },
+    { "id": "12", "value": "Bigtwin Bike Expo" }
+  ],
+  "Productgroepen": {
+    "Heren": {
+      "id": "1",
+      "value": "Heren",
+      "children": {
+        "T-shirts": { "id": "2", "value": "T-shirts" },
+        "Long Sleeve": { "id": "3", "value": "Long Sleeve" },
+        "Hoodies": { "id": "4", "value": "Hoodies" }
+      }
+    },
+    "Dames": {
+      "id": "5",
+      "value": "Dames",
+      "children": {
+        "T-Shirts": { "id": "6", "value": "T-Shirts" },
+        "Long Sleeve": { "id": "7", "value": "Long Sleeve" },
+        "Hoodies": { "id": "1759068950108", "value": "Hoodies" }
+      }
+    },
+    "Diversen": {
+      "id": "8",
+      "value": "Diversen",
+      "children": {
+        "Pins": { "id": "9", "value": "Pins" },
+        "Stickers": { "id": "10", "value": "Stickers" },
+        "Badges": { "id": "1759068978808", "value": "Badges" }
+      }
+    },
+    "Unisex": {
+      "id": "11",
+      "value": "Unisex",
+      "children": {
+        "Long Sleeves": { "id": "1759069000534", "value": "Long Sleeves" }
+      }
+    }
+  }
+}

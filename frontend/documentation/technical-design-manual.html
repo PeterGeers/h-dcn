@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-DCN Portal - Technical Design Manual</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #000 0%, #333 100%);
+            color: #ff8c00;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #ff8c00;
+        }
+        h1 { color: #ff8c00; margin: 0; font-size: 2.5em; }
+        h2 { color: #333; border-bottom: 3px solid #ff8c00; padding-bottom: 12px; margin-top: 0; }
+        h3 { color: #555; margin-top: 25px; }
+        h4 { color: #666; }
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin: 25px 0;
+        }
+        .tech-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #ff8c00;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border-left: 4px solid #ff8c00;
+        }
+        .file-structure {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #f39c12;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #28a745;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #ff8c00;
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .toc {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 10px 0;
+        }
+        .toc a {
+            color: #333;
+            text-decoration: none;
+            padding: 8px 15px;
+            display: block;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .toc a:hover {
+            background-color: #ff8c00;
+            color: white;
+            border-left-color: #fff;
+        }
+        .icon { font-size: 24px; margin-right: 12px; }
+        .flow-diagram {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            border: 2px dashed #ff8c00;
+        }
+        .endpoint {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            display: inline-block;
+            margin: 5px;
+            border-left: 3px solid #ff8c00;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏗️ H-DCN Portal</h1>
+        <p>Technical Design & Architecture Manual</p>
+        <p style="font-size: 0.9em; opacity: 0.8;">React SPA with AWS Cognito Integration</p>
+    </div>
+
+    <div class="section toc">
+        <h2>📋 Table of Contents</h2>
+        <ul>
+            <li><a href="#overview">1. System Overview</a></li>
+            <li><a href="#architecture">2. Architecture Design</a></li>
+            <li><a href="#tech-stack">3. Technology Stack</a></li>
+            <li><a href="#project-structure">4. Project Structure</a></li>
+            <li><a href="#authentication">5. Authentication & Authorization</a></li>
+            <li><a href="#modules">6. Module Architecture</a></li>
+            <li><a href="#api-design">7. API Design</a></li>
+            <li><a href="#deployment">8. Deployment Architecture</a></li>
+            <li><a href="#security">9. Security Implementation</a></li>
+            <li><a href="#function-permissions">10. Function-Level Permissions</a></li>
+            <li><a href="#development">11. Development Guidelines</a></li>
+        </ul>
+    </div>
+
+    <div class="section" id="overview">
+        <h2>1. System Overview</h2>
+        <p>The H-DCN Portal is a modern React Single Page Application (SPA) designed for member management, e-commerce, and administrative functions. The system leverages AWS services for authentication, storage, and backend processing.</p>
+        
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🎯</span>Primary Purpose</h4>
+                <ul>
+                    <li>Member portal and administration</li>
+                    <li>E-commerce platform (webshop)</li>
+                    <li>Event management system</li>
+                    <li>Product catalog management</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">👥</span>Target Users</h4>
+                <ul>
+                    <li><strong>Members:</strong> Access to webshop and profile</li>
+                    <li><strong>Admins:</strong> Full system management</li>
+                    <li><strong>Guests:</strong> Registration only</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info">
+            <strong>🏛️ Architecture Pattern:</strong> Single Page Application (SPA) with modular component architecture and role-based access control.
+        </div>
+    </div>
+
+    <div class="section" id="architecture">
+        <h2>2. Architecture Design</h2>
+        
+        <div class="flow-diagram">
+            <h3>System Architecture Flow</h3>
+            <p><strong>User</strong> → <strong>React SPA</strong> → <strong>AWS Cognito</strong> → <strong>API Gateway</strong> → <strong>Lambda Functions</strong> → <strong>DynamoDB/S3</strong></p>
+        </div>
+
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🖥️</span>Frontend Layer</h4>
+                <ul>
+                    <li>React 18 with functional components</li>
+                    <li>Chakra UI for styling</li>
+                    <li>React Router for navigation</li>
+                    <li>AWS Amplify UI for authentication</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🔐</span>Authentication Layer</h4>
+                <ul>
+                    <li>AWS Cognito User Pools</li>
+                    <li>JWT token-based authentication</li>
+                    <li>Group-based authorization</li>
+                    <li>MFA support ready</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">⚡</span>Backend Layer</h4>
+                <ul>
+                    <li>AWS Lambda serverless functions</li>
+                    <li>API Gateway for REST endpoints</li>
+                    <li>DynamoDB for data storage</li>
+                    <li>S3 for file storage</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🚀</span>Deployment Layer</h4>
+                <ul>
+                    <li>S3 static website hosting</li>
+                    <li>CloudFront CDN distribution</li>
+                    <li>GitHub Actions CI/CD</li>
+                    <li>Environment-based configuration</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tech-stack">
+        <h2>3. Technology Stack</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Technology</th>
+                    <th>Version</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Frontend Framework</strong></td>
+                    <td>React</td>
+                    <td>18.x</td>
+                    <td>UI component library and state management</td>
+                </tr>
+                <tr>
+                    <td><strong>UI Library</strong></td>
+                    <td>Chakra UI</td>
+                    <td>2.x</td>
+                    <td>Component styling and theming</td>
+                </tr>
+                <tr>
+                    <td><strong>Routing</strong></td>
+                    <td>React Router</td>
+                    <td>6.x</td>
+                    <td>Client-side navigation</td>
+                </tr>
+                <tr>
+                    <td><strong>Authentication</strong></td>
+                    <td>AWS Amplify</td>
+                    <td>6.x</td>
+                    <td>Cognito integration and auth UI</td>
+                </tr>
+                <tr>
+                    <td><strong>HTTP Client</strong></td>
+                    <td>Fetch API</td>
+                    <td>Native</td>
+                    <td>API communication</td>
+                </tr>
+                <tr>
+                    <td><strong>Image Processing</strong></td>
+                    <td>Canvas API</td>
+                    <td>Native</td>
+                    <td>Client-side image editing</td>
+                </tr>
+                <tr>
+                    <td><strong>Payment Processing</strong></td>
+                    <td>Stripe</td>
+                    <td>Latest</td>
+                    <td>E-commerce transactions</td>
+                </tr>
+                <tr>
+                    <td><strong>Build Tool</strong></td>
+                    <td>Create React App</td>
+                    <td>5.x</td>
+                    <td>Development and build process</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section" id="project-structure">
+        <h2>4. Project Structure</h2>
+        
+        <div class="file-structure">
+hdcn-frontEnd/
+├── public/
+│   ├── index.html
+│   └── hdcn-logo.svg
+├── src/
+│   ├── components/           # Shared components
+│   │   ├── AppCard.js
+│   │   ├── GroupAccessGuard.js
+│   │   └── ParameterSelect.js
+│   ├── modules/             # Feature modules
+│   │   ├── events/          # Event management
+│   │   │   ├── components/
+│   │   │   └── EventAdminPage.js
+│   │   ├── members/         # Member administration
+│   │   │   ├── components/
+│   │   │   ├── services/
+│   │   │   └── MemberAdminPage.js
+│   │   ├── products/        # Product management
+│   │   │   ├── components/
+│   │   │   ├── services/
+│   │   │   └── ProductManagementPage.js
+│   │   └── webshop/         # E-commerce
+│   │       ├── components/
+│   │       ├── services/
+│   │       └── WebshopPage.js
+│   ├── pages/               # Main pages
+│   │   ├── Dashboard.js
+│   │   ├── ProfileManager.js
+│   │   └── ParameterManagement.js
+│   ├── utils/               # Utility functions
+│   │   ├── api.js
+│   │   ├── apiService.js
+│   │   └── parameterService.js
+│   ├── App.js               # Main application
+│   ├── index.js             # Entry point
+│   └── theme.js             # Chakra UI theme
+├── .env                     # Environment variables
+├── package.json             # Dependencies
+└── deploy.ps1               # Deployment script
+        </div>
+
+        <div class="success">
+            <strong>🏗️ Modular Architecture:</strong> Each feature is organized as a self-contained module with its own components, services, and pages.
+        </div>
+    </div>
+
+    <div class="section" id="authentication">
+        <h2>5. Authentication & Authorization</h2>
+        
+        <h3>5.1 AWS Cognito Configuration</h3>
+        <div class="code-block">
+// src/index.js - Amplify Configuration
+Amplify.configure({
+  Auth: {
+    region: process.env.REACT_APP_AWS_REGION,
+    userPoolId: process.env.REACT_APP_USER_POOL_ID,
+    userPoolWebClientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID,
+    mandatorySignIn: true,
+    authenticationFlowType: 'USER_SRP_AUTH'
+  }
+});
+        </div>
+
+        <h3>5.2 Group-Based Access Control</h3>
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🚫</span>No Groups</h4>
+                <p><strong>Access:</strong> Registration only</p>
+                <p><strong>Components:</strong> GroupAccessGuard blocks access</p>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">👥</span>hdcnLeden</h4>
+                <p><strong>Access:</strong> Webshop, Profile</p>
+                <p><strong>Token:</strong> cognito:groups array</p>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">⚙️</span>hdcnAdmins</h4>
+                <p><strong>Access:</strong> All modules + admin functions</p>
+                <p><strong>Inheritance:</strong> Includes member permissions</p>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🌍</span>hdcnRegio_*</h4>
+                <p><strong>Access:</strong> Regional member data (read-only)</p>
+                <p><strong>Filter:</strong> custom:regio attribute matching</p>
+            </div>
+        </div>
+
+        <h3>5.3 Regional Access Control</h3>
+        <div class="code-block">
+// Regional Permission Manager with dynamic regions from parameter table
+class RegionalPermissionManager {
+  constructor(user, availableRegions = []) {
+    this.userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+    this.userRegion = user.attributes?.['custom:regio'];
+    this.isAdmin = this.userGroups.includes('hdcnAdmins');
+    this.regionalGroups = this.userGroups.filter(group => group.startsWith('hdcnRegio_'));
+    this.availableRegions = availableRegions; // From parameter table 'regio'
+  }
+
+  canViewMember(memberData) {
+    if (this.isAdmin) return true;
+    
+    if (this.regionalGroups.length > 0) {
+      const memberRegion = memberData.attributes?.['custom:regio'];
+      return this.regionalGroups.some(group => 
+        group === `hdcnRegio_${memberRegion}`
+      );
+    }
+    
+    return false;
+  }
+
+  getAccessibleRegions() {
+    if (this.isAdmin) return this.availableRegions;
+    return this.regionalGroups.map(group => group.replace('hdcnRegio_', ''));
+  }
+
+  static async createWithRegions(user) {
+    const regions = await parameterService.getParameter('regio');
+    return new RegionalPermissionManager(user, regions?.options || []);
+  }
+}
+
+// Usage in API calls
+const filterMembersByRegion = (members, user) => {
+  const permissions = new RegionalPermissionManager(user);
+  return members.filter(member => permissions.canViewMember(member));
+};
+        </div>
+
+        <h3>5.4 Access Guard Implementation</h3>
+        <div class="code-block">
+// src/components/GroupAccessGuard.js
+function GroupAccessGuard({ user, children, signOut }) {
+  const userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+  const hasGroupAccess = userGroups.length > 0;
+
+  if (!hasGroupAccess) {
+    return &lt;AccessDeniedScreen signOut={signOut} user={user} /&gt;;
+  }
+  return children;
+}
+        </div>
+    </div>
+
+    <div class="section" id="modules">
+        <h2>6. Module Architecture</h2>
+        
+        <h3>6.1 Module Structure Pattern</h3>
+        <div class="code-block">
+modules/[module-name]/
+├── components/              # UI components
+├── services/               # API and business logic
+├── utils/                  # Helper functions
+├── pages/                  # Sub-pages (if needed)
+└── [ModuleName]Page.js     # Main module entry point
+        </div>
+
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🛒</span>Webshop Module</h4>
+                <ul>
+                    <li><strong>Components:</strong> ProductCard, CartModal, CheckoutModal</li>
+                    <li><strong>Services:</strong> Stripe integration, order processing</li>
+                    <li><strong>Features:</strong> Product catalog, shopping cart, payments</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">👥</span>Members Module</h4>
+                <ul>
+                    <li><strong>Components:</strong> UserManagement, GroupManagement</li>
+                    <li><strong>Services:</strong> Cognito API integration</li>
+                    <li><strong>Features:</strong> User CRUD, group assignment, CSV import</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">📦</span>Products Module</h4>
+                <ul>
+                    <li><strong>Components:</strong> ImageEditor, ProductTable</li>
+                    <li><strong>Services:</strong> S3 upload, image processing</li>
+                    <li><strong>Features:</strong> Product management, image editing</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">📅</span>Events Module</h4>
+                <ul>
+                    <li><strong>Components:</strong> EventForm, AnalyticsDashboard</li>
+                    <li><strong>Services:</strong> Event API, financial reporting</li>
+                    <li><strong>Features:</strong> Event CRUD, participant management</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="api-design">
+        <h2>7. API Design</h2>
+        
+        <h3>7.1 API Endpoints Structure</h3>
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4>Members API</h4>
+                <div class="endpoint">GET /api/members</div>
+                <div class="endpoint">GET /api/members?region={region}</div>
+                <div class="endpoint">POST /api/members</div>
+                <div class="endpoint">PUT /api/members/{id}</div>
+                <div class="endpoint">DELETE /api/members/{id}</div>
+            </div>
+            <div class="tech-card">
+                <h4>Products API</h4>
+                <div class="endpoint">GET /api/products</div>
+                <div class="endpoint">POST /api/products</div>
+                <div class="endpoint">PUT /api/products/{id}</div>
+                <div class="endpoint">POST /api/products/upload</div>
+            </div>
+            <div class="tech-card">
+                <h4>Events API</h4>
+                <div class="endpoint">GET /api/events</div>
+                <div class="endpoint">POST /api/events</div>
+                <div class="endpoint">GET /api/events/{id}/participants</div>
+                <div class="endpoint">POST /api/events/{id}/register</div>
+            </div>
+            <div class="tech-card">
+                <h4>Orders API</h4>
+                <div class="endpoint">GET /api/orders</div>
+                <div class="endpoint">POST /api/orders</div>
+                <div class="endpoint">POST /api/orders/payment</div>
+                <div class="endpoint">GET /api/orders/{id}/status</div>
+            </div>
+        </div>
+
+        <h3>7.2 Regional API Filtering</h3>
+        <div class="code-block">
+// Backend Lambda function with dynamic regional filtering from parameter table
+exports.getMembersHandler = async (event) => {
+  const userGroups = event.requestContext.authorizer.claims['cognito:groups'];
+  const isAdmin = userGroups.includes('hdcnAdmins');
+  
+  let members = await getAllMembers();
+  
+  // Get available regions from parameter table 'regio'
+  const regioParameter = await getParameter('regio');
+  const validRegions = regioParameter?.options || [];
+  
+  // Filter by region for regional admins
+  if (!isAdmin) {
+    const regionalGroups = userGroups.filter(g => g.startsWith('hdcnRegio_'));
+    const allowedRegions = regionalGroups
+      .map(g => g.replace('hdcnRegio_', ''))
+      .filter(region => validRegions.includes(region));
+    
+    members = members.filter(member => 
+      allowedRegions.includes(member.attributes?.['custom:regio'])
+    );
+  }
+  
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ members })
+  };
+};
+        </div>
+
+        <h3>7.3 API Service Pattern</h3>
+        <div class="code-block">
+// src/utils/apiService.js
+class ApiService {
+  constructor(baseURL) {
+    this.baseURL = baseURL;
+  }
+
+  async request(endpoint, options = {}) {
+    const token = await this.getAuthToken();
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    });
+    return this.handleResponse(response);
+  }
+}
+        </div>
+    </div>
+
+    <div class="section" id="deployment">
+        <h2>8. Deployment Architecture</h2>
+        
+        <div class="flow-diagram">
+            <h3>CI/CD Pipeline</h3>
+            <p><strong>GitHub</strong> → <strong>GitHub Actions</strong> → <strong>Build</strong> → <strong>S3 Upload</strong> → <strong>CloudFront Invalidation</strong></p>
+        </div>
+
+        <h3>8.1 AWS Infrastructure</h3>
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🪣</span>S3 Static Hosting</h4>
+                <ul>
+                    <li>Static website hosting enabled</li>
+                    <li>Public read access for web assets</li>
+                    <li>Versioning enabled for rollbacks</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🌐</span>CloudFront CDN</h4>
+                <ul>
+                    <li>Global content distribution</li>
+                    <li>HTTPS enforcement</li>
+                    <li>Custom domain support</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>8.2 Environment Configuration</h3>
+        <div class="code-block">
+# .env.example
+REACT_APP_AWS_REGION=eu-west-1
+REACT_APP_USER_POOL_ID=your_user_pool_id
+REACT_APP_USER_POOL_WEB_CLIENT_ID=your_client_id
+REACT_APP_API_BASE_URL=https://api.hdcn.example.com
+REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_...
+        </div>
+
+        <h3>8.3 Deployment Script</h3>
+        <div class="code-block">
+# deploy.ps1
+npm run build
+aws s3 sync build/ s3://hdcn-portal-bucket --delete
+aws cloudfront create-invalidation --distribution-id E123456789 --paths "/*"
+        </div>
+    </div>
+
+    <div class="section" id="security">
+        <h2>9. Security Implementation</h2>
+        
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🔐</span>Authentication Security</h4>
+                <ul>
+                    <li>JWT token validation</li>
+                    <li>Automatic token refresh</li>
+                    <li>Secure token storage</li>
+                    <li>Session timeout handling</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🛡️</span>Authorization Security</h4>
+                <ul>
+                    <li>Group-based access control</li>
+                    <li>Route-level protection</li>
+                    <li>Component-level guards</li>
+                    <li>API endpoint validation</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🔒</span>Data Security</h4>
+                <ul>
+                    <li>HTTPS enforcement</li>
+                    <li>Input sanitization</li>
+                    <li>XSS protection</li>
+                    <li>CSRF prevention</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🚨</span>Error Handling</h4>
+                <ul>
+                    <li>Graceful error boundaries</li>
+                    <li>User-friendly error messages</li>
+                    <li>Logging and monitoring</li>
+                    <li>Fallback UI components</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="warning">
+            <strong>🔒 Security Best Practices:</strong>
+            <ul>
+                <li>Never store sensitive data in localStorage</li>
+                <li>Always validate user input</li>
+                <li>Use HTTPS for all communications</li>
+                <li>Implement proper error handling</li>
+                <li>Regular security audits and updates</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section" id="function-permissions">
+        <h2>10. Function-Level Permissions</h2>
+        
+        <h3>10.1 Architecture Overview</h3>
+        <p>The H-DCN Portal implements granular function-level permissions using the existing parameter table infrastructure, providing dynamic access control without code changes.</p>
+        
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">📋</span>Parameter-Based Storage</h4>
+                <ul>
+                    <li>Permissions stored in existing parameter table</li>
+                    <li>Category: 'function_permissions'</li>
+                    <li>JSON structure with read/write access lists</li>
+                    <li>Cached for performance</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🔍</span>Wildcard Support</h4>
+                <ul>
+                    <li>Regional groups: hdcnRegio_*</li>
+                    <li>Pattern matching for dynamic groups</li>
+                    <li>Flexible group assignment</li>
+                    <li>Scalable for new regions</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>10.2 Permission Structure</h3>
+        <div class="code-block">
+// Parameter table entry: function_permissions
+{
+  "members": {
+    "read": ["hdcnAdmins", "hdcnRegio_*"],
+    "write": ["hdcnAdmins"]
+  },
+  "events": {
+    "read": ["hdcnAdmins", "hdcnEvents_Read"],
+    "write": ["hdcnAdmins", "hdcnEvents_Write"]
+  },
+  "products": {
+    "read": ["hdcnAdmins", "hdcnProducts_Read"],
+    "write": ["hdcnAdmins", "hdcnProducts_Write"]
+  },
+  "webshop": {
+    "read": ["hdcnLeden", "hdcnAdmins"],
+    "write": ["hdcnLeden", "hdcnAdmins"]
+  }
+}
+        </div>
+
+        <h3>10.3 Implementation Components</h3>
+        
+        <h4>FunctionPermissionManager</h4>
+        <div class="code-block">
+// src/utils/functionPermissions.js
+export class FunctionPermissionManager {
+  constructor(user, permissionConfig = {}) {
+    this.userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+    this.permissions = permissionConfig;
+  }
+
+  hasAccess(functionName, action = 'read') {
+    const functionPerms = this.permissions[functionName];
+    if (!functionPerms) return false;
+
+    const allowedGroups = functionPerms[action] || [];
+    
+    return this.userGroups.some(userGroup => {
+      return allowedGroups.some(allowedGroup => {
+        // Handle wildcard patterns
+        if (allowedGroup.endsWith('*')) {
+          const prefix = allowedGroup.slice(0, -1);
+          return userGroup.startsWith(prefix);
+        }
+        return userGroup === allowedGroup;
+      });
+    });
+  }
+
+  static async create(user) {
+    const parameters = await getParameters();
+    const functionPermissions = parameters['function_permissions'] || [];
+    const permissionParam = functionPermissions.find(p => p.value && typeof p.value === 'object');
+    const config = permissionParam?.value || {};
+    
+    return new FunctionPermissionManager(user, config);
+  }
+}
+        </div>
+
+        <h4>FunctionGuard Component</h4>
+        <div class="code-block">
+// src/components/FunctionGuard.js
+export function FunctionGuard({ 
+  user, 
+  children, 
+  functionName, 
+  action = 'read',
+  fallback = null 
+}) {
+  const [hasAccess, setHasAccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      const permissions = await FunctionPermissionManager.create(user);
+      setHasAccess(permissions.hasAccess(functionName, action));
+      setLoading(false);
+    };
+    checkAccess();
+  }, [user, functionName, action]);
+
+  if (loading) return null;
+  return hasAccess ? children : fallback;
+}
+
+// Usage in components
+&lt;FunctionGuard user={user} functionName="members" action="read"&gt;
+  &lt;MembersList /&gt;
+&lt;/FunctionGuard&gt;
+
+&lt;FunctionGuard user={user} functionName="members" action="write"&gt;
+  &lt;AddMemberButton /&gt;
+&lt;/FunctionGuard&gt;
+        </div>
+
+        <h3>10.4 Integration with Existing Systems</h3>
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">📋</span>Parameter Service</h4>
+                <ul>
+                    <li>Uses existing parameterService.js</li>
+                    <li>Leverages S3 caching mechanism</li>
+                    <li>5-minute cache duration</li>
+                    <li>Automatic cache invalidation</li>
+                </ul>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🔐</span>Regional Access</h4>
+                <ul>
+                    <li>Integrates with RegionalPermissionManager</li>
+                    <li>Supports hdcnRegio_* wildcards</li>
+                    <li>Dynamic region loading from parameters</li>
+                    <li>Read-only access for regional admins</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>10.5 Permission Management UI</h3>
+        <div class="code-block">
+// Integration with Parameter Management module
+const FUNCTION_PERMISSIONS_TEMPLATE = {
+  name: 'function_permissions',
+  type: 'object',
+  description: 'Function-level access permissions',
+  value: {
+    members: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+    events: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+    products: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+    orders: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+    webshop: { read: ['hdcnLeden'], write: ['hdcnLeden'] }
+  }
+};
+        </div>
+
+        <div class="success">
+            <strong>🎆 Benefits:</strong>
+            <ul>
+                <li><strong>Dynamic:</strong> No code changes needed for permission updates</li>
+                <li><strong>Granular:</strong> Function and action-level control</li>
+                <li><strong>Scalable:</strong> Wildcard support for growing organizations</li>
+                <li><strong>Integrated:</strong> Uses existing parameter infrastructure</li>
+                <li><strong>Performant:</strong> Cached parameter lookups</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section" id="development">
+        <h2>11. Development Guidelines</h2>
+        
+        <h3>10.1 Code Standards</h3>
+        <div class="code-block">
+// Component Structure Example
+import React, { useState, useEffect } from 'react';
+import { Box, Button, Text } from '@chakra-ui/react';
+
+function ComponentName({ prop1, prop2 }) {
+  const [state, setState] = useState(null);
+
+  useEffect(() => {
+    // Side effects
+  }, []);
+
+  const handleAction = () => {
+    // Event handlers
+  };
+
+  return (
+    &lt;Box&gt;
+      {/* JSX content */}
+    &lt;/Box&gt;
+  );
+}
+
+export default ComponentName;
+        </div>
+
+        <h3>10.2 Development Workflow</h3>
+        <div class="architecture-grid">
+            <div class="tech-card">
+                <h4><span class="icon">🔧</span>Local Development</h4>
+                <ol>
+                    <li>Clone repository</li>
+                    <li>Install dependencies: <code>npm install</code></li>
+                    <li>Configure environment variables</li>
+                    <li>Start dev server: <code>npm start</code></li>
+                </ol>
+            </div>
+            <div class="tech-card">
+                <h4><span class="icon">🧪</span>Testing Strategy</h4>
+                <ul>
+                    <li>Unit tests for utilities</li>
+                    <li>Component testing with React Testing Library</li>
+                    <li>Integration tests for API calls</li>
+                    <li>E2E tests for critical user flows</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>10.3 Performance Optimization</h3>
+        <div class="info">
+            <strong>🚀 Optimization Techniques:</strong>
+            <ul>
+                <li><strong>Code Splitting:</strong> Lazy loading with React.lazy()</li>
+                <li><strong>Memoization:</strong> React.memo() for expensive components</li>
+                <li><strong>Bundle Analysis:</strong> Regular bundle size monitoring</li>
+                <li><strong>Image Optimization:</strong> WebP format and lazy loading</li>
+                <li><strong>Caching:</strong> Service worker for offline functionality</li>
+            </ul>
+        </div>
+
+        <h3>10.4 Monitoring & Analytics</h3>
+        <div class="code-block">
+// Error Boundary Implementation
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log error to monitoring service
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return &lt;FallbackComponent /&gt;;
+    }
+    return this.props.children;
+  }
+}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📄 Document Information</h2>
+        <table>
+            <tr>
+                <td><strong>Version:</strong></td>
+                <td>1.1</td>
+            </tr>
+            <tr>
+                <td><strong>Last Updated:</strong></td>
+                <td>3 oktober 2025</td>
+            </tr>
+            <tr>
+                <td><strong>Target Audience:</strong></td>
+                <td>Developers, Architects, DevOps Engineers</td>
+            </tr>
+            <tr>
+                <td><strong>Technology Stack:</strong></td>
+                <td>React 18, AWS Cognito, Chakra UI, AWS Lambda</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
