@@ -62,9 +62,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Remove-Item "temp-website-config.json" -ErrorAction SilentlyContinue
 
-# Set proper cache headers for index.html to prevent routing issues
-Write-Host "🔄 Setting cache headers for SPA routing..." -ForegroundColor Yellow
-aws s3 cp s3://hdcn-dashboard-frontend/index.html s3://hdcn-dashboard-frontend/index.html --metadata-directive REPLACE --cache-control "no-cache, no-store, must-revalidate"
+
 
 
 
