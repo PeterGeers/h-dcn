@@ -18,13 +18,15 @@ Write-Host "✅ Build completed successfully!" -ForegroundColor Green
 Write-Host "☁️ Uploading to S3 bucket hdcn-dashboard-frontend..." -ForegroundColor Yellow
 # Upload all files first
 aws s3 sync build/ s3://hdcn-dashboard-frontend --delete
-# Fix content-type for index.html specifically
-aws s3 cp s3://hdcn-dashboard-frontend/index.html s3://hdcn-dashboard-frontend/index.html --metadata-directive REPLACE --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ S3 upload failed!" -ForegroundColor Red
     exit 1
 }
+
+# Fix content-type for index.html after sync
+Write-Host "🔧 Fixing content-type for index.html..." -ForegroundColor Yellow
+aws s3 cp s3://hdcn-dashboard-frontend/index.html s3://hdcn-dashboard-frontend/index.html --metadata-directive REPLACE --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate"
 
 # Configure S3 for React Router (SPA) with advanced routing rules
 Write-Host "🔧 Configuring S3 for React Router with routing rules..." -ForegroundColor Yellow
