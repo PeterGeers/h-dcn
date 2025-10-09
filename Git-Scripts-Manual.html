@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-DCN Git Scripts User Manual</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #2980b9;
+            margin-top: 25px;
+        }
+        .script-box {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .command {
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .emoji {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🚀</span> H-DCN Git Scripts User Manual</h1>
+        
+        <div class="info">
+            <strong>Purpose:</strong> This manual explains the PowerShell scripts created for managing the H-DCN project repository on GitHub.
+        </div>
+
+        <h2><span class="emoji">📋</span> Available Scripts</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Purpose</th>
+                    <th>When to Use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>git-upload.ps1</code></td>
+                    <td>Upload code to GitHub repository</td>
+                    <td>After making changes to code</td>
+                </tr>
+                <tr>
+                    <td><code>setup-git.ps1</code></td>
+                    <td>Initial Git setup helper</td>
+                    <td>First time setup only</td>
+                </tr>
+                <tr>
+                    <td><code>install-gh-cli.ps1</code></td>
+                    <td>Install GitHub CLI</td>
+                    <td>If GitHub CLI not installed</td>
+                </tr>
+                <tr>
+                    <td><code>fix-build.ps1</code></td>
+                    <td>Fix build issues and create clean build</td>
+                    <td>When deployment has chunk errors</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2><span class="emoji">⚡</span> git-upload.ps1 - Main Upload Script</h2>
+        
+        <h3>What it does:</h3>
+        <ul>
+            <li>Automatically initializes Git repository if needed</li>
+            <li>Adds GitHub remote using your GitHub username</li>
+            <li>Stages all changes</li>
+            <li>Commits with custom or auto-generated message</li>
+            <li>Pushes to GitHub with conflict resolution</li>
+            <li>Shows repository URL when complete</li>
+        </ul>
+
+        <h3>How to use:</h3>
+        
+        <h4>Initial Upload (First Time):</h4>
+        <div class="script-box">.\git-upload.ps1 -Initial</div>
+        <p>Creates detailed initial commit with project features listed.</p>
+
+        <h4>Regular Updates with Custom Message:</h4>
+        <div class="script-box">.\git-upload.ps1 -Message "Fixed mobile responsiveness issues"</div>
+        <p>Use descriptive messages about what you changed.</p>
+
+        <h4>Quick Update (Auto Message):</h4>
+        <div class="script-box">.\git-upload.ps1</div>
+        <p>Automatically generates timestamp-based commit message.</p>
+
+        <h3>When to use:</h3>
+        <ul>
+            <li><strong>After coding sessions:</strong> Upload your changes</li>
+            <li><strong>Before major changes:</strong> Create backup point</li>
+            <li><strong>Daily/Weekly:</strong> Keep repository updated</li>
+            <li><strong>Before deployment:</strong> Ensure code is backed up</li>
+        </ul>
+
+        <div class="success">
+            <strong>Smart Features:</strong>
+            <ul>
+                <li>Skips upload if no changes detected</li>
+                <li>Handles merge conflicts automatically</li>
+                <li>Shows progress with colored output</li>
+                <li>Displays final repository URL</li>
+            </ul>
+        </div>
+
+        <h2><span class="emoji">🔧</span> setup-git.ps1 - Setup Helper</h2>
+        
+        <h3>What it does:</h3>
+        <ul>
+            <li>Initializes Git repository</li>
+            <li>Creates initial commit</li>
+            <li>Provides instructions for adding GitHub remote</li>
+        </ul>
+
+        <h3>When to use:</h3>
+        <ul>
+            <li><strong>First time only:</strong> When setting up Git manually</li>
+            <li><strong>Alternative to git-upload.ps1:</strong> If you prefer manual control</li>
+        </ul>
+
+        <div class="warning">
+            <strong>Note:</strong> The git-upload.ps1 script handles setup automatically, so this script is optional.
+        </div>
+
+        <h2><span class="emoji">💻</span> install-gh-cli.ps1 - GitHub CLI Installer</h2>
+        
+        <h3>What it does:</h3>
+        <ul>
+            <li>Tries multiple installation methods (winget, manual download)</li>
+            <li>Downloads and installs GitHub CLI</li>
+            <li>Provides post-installation instructions</li>
+        </ul>
+
+        <h3>When to use:</h3>
+        <ul>
+            <li><strong>Prerequisites:</strong> Before using git-upload.ps1</li>
+            <li><strong>One time only:</strong> GitHub CLI installation</li>
+        </ul>
+
+        <h3>After installation:</h3>
+        <div class="script-box">
+gh auth login
+gh repo create h-dcn --public --source=. --remote=origin --push
+        </div>
+
+        <h2><span class="emoji">🔨</span> fix-build.ps1 - Build Fixer</h2>
+        
+        <h3>What it does:</h3>
+        <ul>
+            <li>Cleans previous build and cache</li>
+            <li>Fixes npm vulnerabilities</li>
+            <li>Reinstalls dependencies</li>
+            <li>Creates fresh production build</li>
+        </ul>
+
+        <h3>When to use:</h3>
+        <ul>
+            <li><strong>Chunk loading errors:</strong> When S3 deployment fails to load</li>
+            <li><strong>Build corruption:</strong> When build seems broken</li>
+            <li><strong>Before deployment:</strong> Ensure clean build</li>
+        </ul>
+
+        <h2><span class="emoji">📝</span> Typical Workflow</h2>
+        
+        <h3>1. First Time Setup:</h3>
+        <div class="script-box">
+# Install GitHub CLI (if needed)
+.\install-gh-cli.ps1
+
+# Login to GitHub
+gh auth login
+
+# Initial upload
+.\git-upload.ps1 -Initial
+        </div>
+
+        <h3>2. Daily Development:</h3>
+        <div class="script-box">
+# Make code changes...
+
+# Upload with descriptive message
+.\git-upload.ps1 -Message "Added mobile responsive tables"
+
+# Or quick upload
+.\git-upload.ps1
+        </div>
+
+        <h3>3. Before Deployment:</h3>
+        <div class="script-box">
+# Fix any build issues
+.\fix-build.ps1
+
+# Upload the fixes
+.\git-upload.ps1 -Message "Fixed build for deployment"
+
+# Deploy to S3
+.\deploy.ps1
+        </div>
+
+        <h2><span class="emoji">⚠️</span> Prerequisites</h2>
+        
+        <ul>
+            <li><strong>PowerShell:</strong> Windows PowerShell or PowerShell Core</li>
+            <li><strong>Git:</strong> Git must be installed and in PATH</li>
+            <li><strong>GitHub CLI:</strong> Install with install-gh-cli.ps1</li>
+            <li><strong>GitHub Account:</strong> Must be logged in with <code>gh auth login</code></li>
+            <li><strong>Repository:</strong> h-dcn repository must exist on GitHub</li>
+        </ul>
+
+        <h2><span class="emoji">🚨</span> Troubleshooting</h2>
+        
+        <h3>Common Issues:</h3>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Error</th>
+                    <th>Solution</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>"gh not found"</td>
+                    <td>Run <code>.\install-gh-cli.ps1</code> and restart PowerShell</td>
+                </tr>
+                <tr>
+                    <td>"git not found"</td>
+                    <td>Install Git from <a href="https://git-scm.com">git-scm.com</a></td>
+                </tr>
+                <tr>
+                    <td>"remote repository not found"</td>
+                    <td>Create h-dcn repository on GitHub first</td>
+                </tr>
+                <tr>
+                    <td>"authentication failed"</td>
+                    <td>Run <code>gh auth login</code> to authenticate</td>
+                </tr>
+                <tr>
+                    <td>"merge conflicts"</td>
+                    <td>Script handles automatically, but check output</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2><span class="emoji">💡</span> Best Practices</h2>
+        
+        <ul>
+            <li><strong>Commit Often:</strong> Upload changes frequently to avoid losing work</li>
+            <li><strong>Descriptive Messages:</strong> Use meaningful commit messages</li>
+            <li><strong>Before Major Changes:</strong> Create backup point with upload</li>
+            <li><strong>Test Before Upload:</strong> Ensure code works before committing</li>
+            <li><strong>Clean Builds:</strong> Use fix-build.ps1 before important deployments</li>
+        </ul>
+
+        <div class="success">
+            <strong>🎉 Success Indicators:</strong>
+            <ul>
+                <li>Green "✅ Successfully uploaded to GitHub!" message</li>
+                <li>Repository URL displayed at the end</li>
+                <li>No red error messages in output</li>
+            </ul>
+        </div>
+
+        <hr style="margin: 40px 0;">
+        <p style="text-align: center; color: #7f8c8d;">
+            <strong>H-DCN Dashboard Project</strong><br>
+            Git Scripts Manual - Version 1.0
+        </p>
+    </div>
+</body>
+</html>
