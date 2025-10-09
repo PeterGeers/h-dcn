@@ -14,11 +14,14 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "✅ Build completed successfully!" -ForegroundColor Green
 
-# Deploy to S3 with proper content types
+# Deploy to S3 with proper content types and cache headers
 Write-Host "☁️ Uploading to S3 bucket hdcn-dashboard-frontend..." -ForegroundColor Yellow
+# Upload HTML files with no-cache headers
 aws s3 sync build/ s3://hdcn-dashboard-frontend --delete --exclude "*" --include "*.html" --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate"
-aws s3 sync build/ s3://hdcn-dashboard-frontend --delete --exclude "*" --include "*.css" --content-type "text/css"
-aws s3 sync build/ s3://hdcn-dashboard-frontend --delete --exclude "*" --include "*.js" --content-type "application/javascript"
+# Upload CSS and JS files with cache headers
+aws s3 sync build/ s3://hdcn-dashboard-frontend --delete --exclude "*" --include "*.css" --content-type "text/css" --cache-control "public, max-age=31536000"
+aws s3 sync build/ s3://hdcn-dashboard-frontend --delete --exclude "*" --include "*.js" --content-type "application/javascript" --cache-control "public, max-age=31536000"
+# Upload other files
 aws s3 sync build/ s3://hdcn-dashboard-frontend --delete --exclude "*.html" --exclude "*.css" --exclude "*.js"
 
 if ($LASTEXITCODE -ne 0) {
