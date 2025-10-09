@@ -23,6 +23,15 @@ if (-not $remoteExists) {
     Write-Host "Remote added: https://github.com/$username/h-dcn.git" -ForegroundColor Green
 }
 
+# Remove any .git folders in subdirectories (prevents empty folder links)
+$subGitFolders = @("backend\.git", "frontend\.git")
+foreach ($folder in $subGitFolders) {
+    if (Test-Path $folder) {
+        Write-Host "🗑️ Removing $folder (submodule cleanup)..." -ForegroundColor Yellow
+        Remove-Item -Recurse -Force $folder
+    }
+}
+
 # Add all files
 Write-Host "📦 Adding files..." -ForegroundColor Yellow
 git add .
