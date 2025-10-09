@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Th, Td,
-  Input, Badge, useToast, Text, IconButton, Select, Menu, MenuButton,
-  MenuList, MenuItem, useDisclosure
+  Input, Badge, useToast, Text, IconButton, Select, useDisclosure
+} from '@chakra-ui/react';
+import {
+  Menu, MenuButton, MenuList, MenuItem
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon, SearchIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import cognitoService from '../services/cognitoService';

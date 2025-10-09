@@ -24,6 +24,7 @@ function MemberAdminPage({ user }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const toast = useToast();
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   useEffect(() => {
     loadMembers();
@@ -298,9 +299,7 @@ function MemberAdminPage({ user }) {
               </Tr>
             </Thead>
             <Tbody>
-              {filteredMembers.map((member) => {
-                const isMobile = useBreakpointValue({ base: true, md: false });
-                return (
+              {filteredMembers.map((member) => (
                   <Tr key={member.member_id} _hover={{ bg: 'gray.700' }}>
                     <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
                       {member.lidnummer || '-'}
@@ -364,8 +363,8 @@ function MemberAdminPage({ user }) {
                       )}
                     </Td>
                   </Tr>
-                );
-              })}
+                )
+              )}
             </Tbody>
           </Table>
         </Box>
