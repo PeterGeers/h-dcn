@@ -18,10 +18,8 @@ Write-Host "✅ Build completed successfully!" -ForegroundColor Green
 Write-Host "☁️ Uploading to S3 bucket hdcn-dashboard-frontend..." -ForegroundColor Yellow
 # Upload all files first
 aws s3 sync build/ s3://hdcn-dashboard-frontend --delete
-# Fix content-types after upload
-aws s3 cp s3://hdcn-dashboard-frontend/ s3://hdcn-dashboard-frontend/ --recursive --metadata-directive REPLACE --exclude "*" --include "*.html" --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate"
-aws s3 cp s3://hdcn-dashboard-frontend/ s3://hdcn-dashboard-frontend/ --recursive --metadata-directive REPLACE --exclude "*" --include "*.css" --content-type "text/css" --cache-control "public, max-age=31536000"
-aws s3 cp s3://hdcn-dashboard-frontend/ s3://hdcn-dashboard-frontend/ --recursive --metadata-directive REPLACE --exclude "*" --include "*.js" --content-type "application/javascript" --cache-control "public, max-age=31536000"
+# Fix content-type for index.html specifically
+aws s3 cp s3://hdcn-dashboard-frontend/index.html s3://hdcn-dashboard-frontend/index.html --metadata-directive REPLACE --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ S3 upload failed!" -ForegroundColor Red
@@ -66,9 +64,7 @@ Remove-Item "temp-website-config.json" -ErrorAction SilentlyContinue
 Write-Host "🔄 Setting cache headers for SPA routing..." -ForegroundColor Yellow
 aws s3 cp s3://hdcn-dashboard-frontend/index.html s3://hdcn-dashboard-frontend/index.html --metadata-directive REPLACE --cache-control "no-cache, no-store, must-revalidate"
 
-# Verify website configuration
-Write-Host "✅ Verifying S3 website configuration..." -ForegroundColor Yellow
-aws s3api get-bucket-website --bucket hdcn-dashboard-frontend
+
 
 Write-Host "✅ Deployment completed successfully!" -ForegroundColor Green
 Write-Host "🌐 Website URL: http://hdcn-dashboard-frontend.s3-website-eu-west-1.amazonaws.com" -ForegroundColor Cyan
