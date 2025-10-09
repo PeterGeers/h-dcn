@@ -45,6 +45,10 @@ function AppCard({ app, onClick }) {
           colorScheme="orange" 
           size={{ base: 'sm', md: 'md' }}
           w={{ base: 'full', md: 'auto' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick();
+          }}
         >
           Openen
         </Button>
