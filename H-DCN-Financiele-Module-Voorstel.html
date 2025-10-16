@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-DCN Financiële Module - Projectvoorstel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #ff6b35;
+        }
+
+        .logo {
+            font-size: 2.5em;
+            color: #ff6b35;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 2.2em;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 35px;
+            border-left: 5px solid #ff6b35;
+            padding-left: 20px;
+            font-size: 1.5em;
+        }
+
+        h3 {
+            color: #2980b9;
+            margin-top: 25px;
+            font-size: 1.2em;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #ff6b35;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-card h3 {
+            margin-top: 0;
+            color: #ff6b35;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 1.5em;
+        }
+
+        .workflow {
+            background: #e8f4fd;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            border: 2px solid #3498db;
+        }
+
+        .permissions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .permissions-table th {
+            background: #ff6b35;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .permissions-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .permissions-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .tech-item {
+            background: #3498db;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .benefits {
+            background: #d5f4e6;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #27ae60;
+            margin: 25px 0;
+        }
+
+        .timeline {
+            background: #fff3cd;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #ffc107;
+            margin: 25px 0;
+        }
+
+        .mobile-preview {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .phone-mockup {
+            display: inline-block;
+            width: 200px;
+            height: 350px;
+            background: #2c3e50;
+            border-radius: 25px;
+            padding: 20px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            font-size: 0.7em;
+            overflow: hidden;
+        }
+
+        .cta {
+            text-align: center;
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .cta h2 {
+            margin: 0 0 15px 0;
+            border: none;
+            padding: 0;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .phone-mockup {
+                width: 150px;
+                height: 250px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏍️ H-DCN</div>
+            <h1>Financiële Module</h1>
+            <div class="subtitle">Factuurinboekingen & Onkostendeclaraties</div>
+        </div>
+
+        <h2>📋 Projectoverzicht</h2>
+        <p>Een complete financiële module voor H-DCN die factuurinboekingen en onkostendeclaraties digitaliseert en
+            automatiseert. De module integreert naadloos met de bestaande H-DCN Dashboard architectuur en biedt een
+            mobiel-vriendelijke interface voor alle gebruikers.</p>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3><span class="icon">📤</span> Document Upload</h3>
+                <ul>
+                    <li>Upload naar Google Drive (gratis storage)</li>
+                    <li>Automatische bestandsorganisatie</li>
+                    <li>Ondersteuning voor PDF, JPG, PNG</li>
+                    <li>Drag & drop interface</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h3><span class="icon">💰</span> Automatische Boekingen</h3>
+                <ul>
+                    <li>Totaalbedrag en BTW extractie</li>
+                    <li>Koppeling met bijlagen</li>
+                    <li>Financiële administratie attributen</li>
+                    <li>Export naar boekhoudpakket</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h3><span class="icon">🏦</span> ING Bank Integratie</h3>
+                <ul>
+                    <li>Automatische betalingsbestanden</li>
+                    <li>SEPA formaat ondersteuning</li>
+                    <li>Batch verwerking</li>
+                    <li>Betalingsstatus tracking</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h3><span class="icon">🔒</span> Toegangscontrole</h3>
+                <ul>
+                    <li>Rol-gebaseerde permissies</li>
+                    <li>Status-afhankelijke bewerkingen</li>
+                    <li>Audit trail functionaliteit</li>
+                    <li>Veilige data toegang</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>👥 Gebruikersrollen & Permissies</h2>
+        <table class="permissions-table">
+            <thead>
+                <tr>
+                    <th>Rol</th>
+                    <th>Toegang</th>
+                    <th>Acties</th>
+                    <th>Beperkingen</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>FinAdmin</strong></td>
+                    <td>Volledige toegang</td>
+                    <td>
+                        • Alles raadplegen en muteren<br>
+                        • Status veld beheren<br>
+                        • Boekings- en betalingsbestanden genereren
+                    </td>
+                    <td>Geen</td>
+                </tr>
+                <tr>
+                    <td><strong>FinOnkosten</strong></td>
+                    <td>Eigen declaraties + invoer</td>
+                    <td>
+                        • Facturen en declaraties invoeren<br>
+                        • Eigen gegevens raadplegen<br>
+                        • Muteren (indien niet definitief)
+                    </td>
+                    <td>Alleen voor niet-definitieve boekingen</td>
+                </tr>
+                <tr>
+                    <td><strong>Penningmeester</strong></td>
+                    <td>Alle financiële data</td>
+                    <td>
+                        • Alle facturen en declaraties raadplegen<br>
+                        • Rapportages genereren<br>
+                        • Goedkeuringen verwerken
+                    </td>
+                    <td>Alleen lezen en mutaties voor niet definitieve gegevens</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>🔄 Workflow Process</h2>
+        <div class="workflow">
+            <h3>Standaard Proces Flow:</h3>
+            <ol>
+                <li><strong>Invoer:</strong> Gebruiker uploadt factuur/declaratie met bijlagen</li>
+                <li><strong>Verwerking:</strong> Systeem extraheert bedragen en genereert boeking</li>
+                <li><strong>Controle:</strong> Penningmeester/FinAdmin controleert gegevens</li>
+                <li><strong>Goedkeuring:</strong> Status wordt gezet op 'Definitief'</li>
+                <li><strong>Export:</strong> Boekings- en betalingsbestanden worden gegenereerd</li>
+                <li><strong>Betaling:</strong> ING Bank bestand wordt geïmporteerd voor automatische betaling</li>
+            </ol>
+        </div>
+
+        <h2>🛠️ Technische Specificaties</h2>
+        <div class="tech-stack">
+            <span class="tech-item">React 18</span>
+            <span class="tech-item">Chakra UI</span>
+            <span class="tech-item">AWS Lambda</span>
+            <span class="tech-item">DynamoDB</span>
+            <span class="tech-item">Google Drive API</span>
+            <span class="tech-item">AWS Cognito</span>
+            <span class="tech-item">Mobile Responsive</span>
+        </div>
+
+        <h3>Integraties:</h3>
+        <ul>
+            <li><strong>Google Drive API:</strong> Bestandsopslag en -beheer</li>
+            <li><strong>ING Bank API:</strong> Betalingsbestanden (SEPA XML)</li>
+            <li><strong>AWS S3:</strong> Backup en archivering</li>
+            <li><strong>Bestaande H-DCN API:</strong> Gebruikersbeheer en authenticatie</li>
+        </ul>
+
+        <h2>📱 Mobiele Interface</h2>
+        <div class="mobile-preview">
+            <h3>Responsive Design voor Alle Apparaten</h3>
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div
+                        style="background: #ff6b35; color: white; padding: 5px; margin-bottom: 10px; border-radius: 3px; text-align: center;">
+                        H-DCN Financiën
+                    </div>
+                    <div style="margin-bottom: 8px; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                        📤 Upload Factuur
+                    </div>
+                    <div style="margin-bottom: 8px; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                        💰 Mijn Declaraties
+                    </div>
+                    <div style="margin-bottom: 8px; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                        📊 Overzicht
+                    </div>
+                    <div
+                        style="margin-bottom: 8px; padding: 5px; background: #e8f4fd; border-radius: 3px; font-size: 0.6em;">
+                        Status: In behandeling<br>
+                        Bedrag: €125,50<br>
+                        BTW: €21,00
+                    </div>
+                </div>
+            </div>
+            <p><strong>Touch-vriendelijke interface</strong> met grote knoppen en intuïtieve navigatie</p>
+        </div>
+
+        <h2>✅ Voordelen voor H-DCN</h2>
+        <div class="benefits">
+            <h3>Operationele Voordelen:</h3>
+            <ul>
+                <li><strong>Tijdsbesparing:</strong> Automatisering van handmatige processen</li>
+                <li><strong>Foutreductie:</strong> Geautomatiseerde berekeningen en validaties</li>
+                <li><strong>Transparantie:</strong> Real-time inzicht in financiële status</li>
+                <li><strong>Compliance:</strong> Gestructureerde administratie en audit trail</li>
+                <li><strong>Mobiliteit:</strong> Declaraties invoeren vanaf elke locatie</li>
+                <li><strong>Integratie:</strong> Naadloze aansluiting op bestaande systemen</li>
+            </ul>
+        </div>
+
+        <h2>📅 Implementatie Timeline</h2>
+        <div class="timeline">
+            <h3>Gefaseerde Uitrol (12 weken):</h3>
+            <ul>
+                <li><strong>Fase 1 (Weken 1-4):</strong> Basis module en Google Drive integratie</li>
+                <li><strong>Fase 2 (Weken 5-8):</strong> Boekingsgeneratie en gebruikersrollen</li>
+                <li><strong>Fase 3 (Weken 9-10):</strong> ING Bank integratie en betalingsbestanden</li>
+                <li><strong>Fase 4 (Weken 11-12):</strong> Testing, training en go-live</li>
+            </ul>
+        </div>
+
+        <h2>💡 Innovatieve Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3><span class="icon">🤖</span> Smart Recognition</h3>
+                <p>Automatische herkenning van factuurgegevens uit geüploade documenten</p>
+            </div>
+            <div class="feature-card">
+                <h3><span class="icon">📊</span> Dashboard Analytics</h3>
+                <p>Real-time overzichten van uitgaven, budgets en trends</p>
+            </div>
+            <div class="feature-card">
+                <h3><span class="icon">🔔</span> Notificaties</h3>
+                <p>Automatische meldingen voor goedkeuringen en statusupdates</p>
+            </div>
+            <div class="feature-card">
+                <h3><span class="icon">📋</span> Bulk Processing</h3>
+                <p>Verwerking van meerdere facturen tegelijkertijd</p>
+            </div>
+        </div>
+
+        <div class="cta">
+            <h2>🚀 Klaar voor de Volgende Stap?</h2>
+            <p>Deze financiële module zal de administratieve last voor H-DCN aanzienlijk verminderen en zorgen voor een
+                professionele, geautomatiseerde financiële workflow.</p>
+            <p><strong>Laten we samen de financiële processen van H-DCN naar het volgende niveau tillen!</strong></p>
+        </div>
+    </div>
+</body>
+
+</html>
