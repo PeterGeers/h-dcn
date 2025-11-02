@@ -1,32 +1,55 @@
-Factuurinboekingen en Onkostendeclaraties
-** Upload Facturen en onkosten declaraties bijlage  (f.e.  Google Drive omdat we daar veel gratis storage hebben)
-** Genereer een boeking met de relevante bedragen 
-*** Zoals Totaal en BTW
-*** Koppelingen met de ingevoerd bijlagen (Koppelingen naar de geimporteerde documenten)
-*** Voeg relevante attributen toe om de gegegvens op een correcte manier in de financiële administratie te kunnen laden 
-*** [Indien niet in de FinAdmin] Genereer betalingen die ingeladen kunnen worden bij de ING Bank voor automatische betalingen
-*** Ingvoerde gegevens kunnen geraadpleegd worden door de penningmeester en de persoon die een specifieke factuur of declaratie heeft ingevoerd
-*** Gegevens kunnen niet meer gewijzigd worden als er boekingen zijn gegenereerd voor de financiële administratie
-*** groep FinAdmin: Toegan voor alles raadplegen en muteren (Ook het status veld). Opdracht verstrekken voor aanmaken boekingsbestand en betalings bestand(Hierbij wortdt het status bestand op definitief gezet).  
-*** groep FinOnkosten Voor in invoeren en raadplegen van specifieke declaraties en facturen. Muteren kan alleen zolang de boekingen nog niet definitief zijn
-*** Gebaseerd op dezelfde Look en Feel als de andere modules met ook een telefoon vriendelijke interface
+# H-DCN Todo List
 
+📊 Backend API Consistency Analysis
+🎯 Immediate Recommendations:
+Done: Standardize Authentication - Add getAuthHeaders() to all API calls
+Done: Centralize API Configuration - Use environment variables consistently
+Implement Missing Endpoints - Complete webshop, payments, orders functionality
+Done: Standardize Error Handling - Create consistent error handling patterns
+Done: The inconsistent authentication is the root cause of the 500 errors you're experiencing. Most API calls need the Authorization header added.
+---
 
+## 💰 Factuurinboekingen en Onkostendeclaraties
 
+### Core Functionaliteit
+- **Upload Facturen** en onkosten declaraties bijlage (Google Drive voor gratis storage)
+- **Genereer boekingen** met relevante bedragen:
+  - Totaal en BTW
+  - Koppelingen met ingevoerde bijlagen
+  - Relevante attributen voor financiële administratie
+  - [Optioneel] Betalingsbestanden voor ING Bank automatische betalingen
 
+### Toegangsrechten
+- **Ingvoerders:** Kunnen eigen facturen/declaraties raadplegen
+- **Penningmeester:** Kan alle gegevens raadplegen
+- **FinAdmin groep:**
+  - Volledige toegang tot raadplegen en muteren
+  - Opdracht verstrekken voor boekings- en betalingsbestanden
+  - Status definitief zetten
+- **FinOnkosten groep:**
+  - Invoeren en raadplegen van specifieke declaraties
+  - Muteren alleen zolang boekingen niet definitief zijn
 
+### Technische Eisen
+- **Data integriteit:** Geen wijzigingen na definitieve boekingen
+- **UI/UX:** Zelfde Look & Feel als andere modules
+- **Responsive:** Telefoonvriendelijke interface
 
+---
 
+## 🔧 Technische Updates
 
+### Enhancer Update
+- Update in line with Enhancer map
+- Reference: https://chatgpt.com/s/t_68f8aff529d88191a78e07453be0fdf6
 
+### Security Improvements
+**Code review bevindingen - medium/low severity issues geadresseerd:**
 
+**Voor productie deployment:**
+- Content Security Policy (CSP) toevoegen
+- Proper input validation op backend implementeren
+- Dedicated sanitization library (DOMPurify) gebruiken
+- Reguliere security audits en dependency updates
 
-
-
-
-** The code review found many more medium and low severity issues. The most critical security vulnerabilities have been addressed. For production deployment, consider:
-Adding a Content Security Policy (CSP)
-Implementing proper input validation on the backend
-Using a dedicated sanitization library like DOMPurify
-Regular security audits and dependency updates
-The fixes maintain functionality while significantly improving security posture against XSS attacks and credential exposure.
+**Status:** Kritieke security vulnerabilities opgelost, functionaliteit behouden, XSS bescherming verbeterd

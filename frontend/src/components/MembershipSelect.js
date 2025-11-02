@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Select } from '@chakra-ui/react';
+import { getAuthHeadersForGet } from '../utils/authHeaders';
 
 function MembershipSelect({ value, onChange, name, placeholder, ...props }) {
   const [memberships, setMemberships] = useState([]);
@@ -11,7 +12,10 @@ function MembershipSelect({ value, onChange, name, placeholder, ...props }) {
 
   const loadMemberships = async () => {
     try {
-      const response = await fetch('https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/memberships');
+      const headers = await getAuthHeadersForGet();
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod'}/memberships`, {
+        headers
+      });
       if (response.ok) {
         const data = await response.json();
         setMemberships(data);
