@@ -150,7 +150,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
   const loadParameterOptions = async () => {
     try {
       const headers = await getAuthHeadersForGet();
-      const parameters = await apiCall(
+      const parameters = await apiCall<any[]>(
         fetch(API_URLS.parameters(), { headers }),
         'laden parameters'
       );
@@ -193,11 +193,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
       setNewFieldName('');
       setNewFieldValue('');
       setShowAddField(false);
-      toast({
-        title: 'Veld toegevoegd',
-        status: 'success',
-        duration: 2000,
-      });
+      handleSuccess('Veld succesvol toegevoegd');
     }
   };
 
@@ -219,13 +215,16 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
       const updatedMember: Member = {
         id: member.id,
         member_id: member.member_id,
+        name: `${formData.voornaam} ${formData.achternaam}`,
         voornaam: formData.voornaam,
         achternaam: formData.achternaam,
         email: formData.email,
         telefoon: formData.telefoon,
         lidmaatschap: formData.lidmaatschap,
+        membershipType: formData.lidmaatschap,
         status: formData.status,
         regio: formData.regio,
+        region: formData.regio,
         created_at: member.created_at,
         updated_at: member.updated_at
       };

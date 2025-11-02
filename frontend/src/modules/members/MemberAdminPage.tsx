@@ -57,7 +57,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const loadMembers = async () => {
     try {
       const headers = await getAuthHeadersForGet();
-      const data = await apiCall(
+      const data = await apiCall<Member[]>(
         fetch(API_URLS.members(), { headers }),
         'laden leden'
       );
@@ -119,7 +119,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const handleDeleteMember = async (member: Member) => {
     try {
       const headers = await getAuthHeaders();
-      await apiCall(
+      await apiCall<void>(
         fetch(API_URLS.member(member.member_id), { method: 'DELETE', headers }),
         'verwijderen lid'
       );
@@ -133,7 +133,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const handleMemberUpdate = async (updatedMember: Member) => {
     try {
       const headers = await getAuthHeaders();
-      await apiCall(
+      await apiCall<void>(
         fetch(API_URLS.member(updatedMember.member_id), {
           method: 'PUT',
           headers,

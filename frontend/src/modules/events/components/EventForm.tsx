@@ -101,7 +101,7 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
       };
       
       const headers = await getAuthHeaders();
-      await apiCall(
+      await apiCall<void>(
         fetch(url, { method, headers, body: JSON.stringify(payload) }),
         event && event.event_id ? 'bijwerken evenement' : 'aanmaken evenement'
       );

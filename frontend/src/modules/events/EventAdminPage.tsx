@@ -48,7 +48,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   const loadEvents = async () => {
     try {
       const headers = await getAuthHeadersForGet();
-      const data = await apiCall(
+      const data = await apiCall<Event[]>(
         fetch(API_URLS.events(), { headers }),
         'laden evenementen'
       );
