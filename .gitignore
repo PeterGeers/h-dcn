@@ -98,6 +98,9 @@ Thumbs.db
 .aws/
 .aws-sam/
 sam-env/
+.awsCredentials.json
+*.credentials
+*credentials*
 
 # Python (Backend)
 __pycache__/
