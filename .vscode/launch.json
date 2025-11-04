@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug React App",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "port": 3000,
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug Lambda Function",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/tests/debug_lambda.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "AWS_REGION": "eu-west-1"
+      }
+    },
+    {
+      "name": "SAM Local API",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "runtimeExecutable": "sam",
+      "runtimeArgs": ["local", "start-api", "--port", "3001"],
+      "console": "integratedTerminal"
+    }
+  ]
+}

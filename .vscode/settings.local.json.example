@@ -1,0 +1,19 @@
+{
+  // Copy this file to settings.local.json and configure your personal settings
+  // This file should NOT be committed to Git
+  
+  // AWS Personal Configuration
+  "aws.profile": "your-aws-profile",
+  "aws.region": "eu-west-1",
+  
+  // Personal Editor Preferences (override team defaults)
+  "editor.fontSize": 14,
+  "editor.fontFamily": "Consolas, 'Courier New', monospace",
+  "workbench.colorTheme": "Your Preferred Theme",
+  
+  // Personal Terminal Settings
+  "terminal.integrated.fontSize": 12,
+  
+  // Personal Git Settings
+  "git.defaultCloneDirectory": "C:\\Users\\YourName\\Projects"
+}

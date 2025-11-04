@@ -79,7 +79,8 @@ tmp/
 temp/
 
 # Editor directories and files
-.vscode/
+# .vscode/ - VSCode settings are included for team consistency
+.vscode/settings.local.json
 .idea/
 *.swp
 *.swo

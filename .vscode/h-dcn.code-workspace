@@ -1,0 +1,33 @@
+{
+  "folders": [
+    {
+      "name": "H-DCN Root",
+      "path": "."
+    },
+    {
+      "name": "Frontend",
+      "path": "./frontend"
+    },
+    {
+      "name": "Backend",
+      "path": "./backend"
+    }
+  ],
+  "settings": {
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "editor.formatOnSave": true,
+    "eslint.workingDirectories": ["frontend"],
+    "python.defaultInterpreterPath": "python",
+    "aws.region": "eu-west-1"
+  },
+  "extensions": {
+    "recommendations": [
+      "amazon.amazon-q-vscode",
+      "ms-vscode.vscode-typescript-next",
+      "esbenp.prettier-vscode",
+      "ms-vscode.eslint",
+      "ms-python.python",
+      "amazonwebservices.aws-toolkit-vscode"
+    ]
+  }
+}

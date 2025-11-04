@@ -1,0 +1,97 @@
+{
+  "React Functional Component": {
+    "prefix": "rfc",
+    "body": [
+      "import React from 'react';",
+      "",
+      "interface ${1:ComponentName}Props {",
+      "  $2",
+      "}",
+      "",
+      "const ${1:ComponentName}: React.FC<${1:ComponentName}Props> = ({ $3 }) => {",
+      "  return (",
+      "    <div>",
+      "      $4",
+      "    </div>",
+      "  );",
+      "};",
+      "",
+      "export default ${1:ComponentName};"
+    ],
+    "description": "Create a React functional component with TypeScript"
+  },
+  "Lambda Handler": {
+    "prefix": "lambda",
+    "body": [
+      "import json",
+      "import logging",
+      "from typing import Dict, Any",
+      "",
+      "logger = logging.getLogger()",
+      "logger.setLevel(logging.INFO)",
+      "",
+      "def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:",
+      "    try:",
+      "        logger.info(f\"Processing request: {json.dumps(event)}\")",
+      "        ",
+      "        # Validate input",
+      "        if not event.get('body'):",
+      "            return {",
+      "                'statusCode': 400,",
+      "                'headers': {",
+      "                    'Content-Type': 'application/json',",
+      "                    'Access-Control-Allow-Origin': '*'",
+      "                },",
+      "                'body': json.dumps({'error': 'Missing request body'})",
+      "            }",
+      "        ",
+      "        # Process request",
+      "        $1",
+      "        ",
+      "        return {",
+      "            'statusCode': 200,",
+      "            'headers': {",
+      "                'Content-Type': 'application/json',",
+      "                'Access-Control-Allow-Origin': '*'",
+      "            },",
+      "            'body': json.dumps({'message': 'Success'})",
+      "        }",
+      "        ",
+      "    except Exception as e:",
+      "        logger.error(f\"Error processing request: {str(e)}\")",
+      "        return {",
+      "            'statusCode': 500,",
+      "            'headers': {",
+      "                'Content-Type': 'application/json',",
+      "                'Access-Control-Allow-Origin': '*'",
+      "            },",
+      "            'body': json.dumps({'error': 'Internal server error'})",
+      "        }"
+    ],
+    "description": "Create a Lambda function handler with proper error handling"
+  },
+  "TypeScript Interface": {
+    "prefix": "interface",
+    "body": [
+      "interface ${1:InterfaceName} {",
+      "  ${2:property}: ${3:type};",
+      "}"
+    ],
+    "description": "Create a TypeScript interface"
+  },
+  "Chakra UI Component": {
+    "prefix": "chakra",
+    "body": [
+      "import { ${1:Box} } from '@chakra-ui/react';",
+      "",
+      "const ${2:ComponentName}: React.FC = () => {",
+      "  return (",
+      "    <${1:Box}>",
+      "      $3",
+      "    </${1:Box}>",
+      "  );",
+      "};"
+    ],
+    "description": "Create a component with Chakra UI"
+  }
+}
