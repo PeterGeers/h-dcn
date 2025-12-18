@@ -1,10 +1,46 @@
 # H-DCN Todo List
 
+- Prepare for demo
+-- different functions by user type,
+-- different user screen by member type
+-- Toegang tot platform afhankelijk van toegangscontrole
+--- Leden zien alleen eigen gegevens en clubsjop
+--- Bestuursleden met een h-dcn mail account hebben toegang afhankelijk van hun rol
+--- Regio leden alleen toegang to regio specifieke gegevens (vaak alleen leesrechten)
+--- AB lden toegang tot alle gegevens (Vaak alleen leesrechten)
+--- ledenadministratie@h-dcn.nl lees-en schrijfrechten op de ledenadministratie
+--- webmaster@h-dcn.nl lees- en schrijfrechten op het hele systeem
+--- secretaris@h-dcn.nl
+--- penningmeester@h-dcn.nl
+--- Regio secretarissen regio evenementen al dan niet met budget en actuals
+
+-- webshop and payment
+--- Productbeheer (met fotos, maten, ..)
+--- Webshop met Producten en Orders (status= Winkelwagen, Besteld, Betaald, Verzonden)
+--- Betaalsysteem Stripe of Tikkies??
+
+-- Evenementen administratie,
+--- lijst van evenementen met posters (if available)
+--- Evenementen kalender (voor op website, facebook, clubblad)
+--- Manage evenement budget en actuals voor specifieke h-dcn evenemnten
+
+-- Ledenadministratie
+--- Administratie van leden, gezinsleden, sponsors, adverteerders, etc..
+--- Leden++ kunnen zelf persoonsgegevens aanpassen
+--- Alleen leden++ hebben toeganmg tot clubsjop
+--- Nieuwe mensen kunnen zich aanmelden (invullen basis gegevens)
+---- Proces flow op basis van status (aangemeld, regio akkoord, ledenadministratie akkoord, lid++)
+--- Automatische generatie van ALV oorkondes, Brieven(e-mails) nieuwe aanmeldingen, ...
+
+
+
+
 📊 Backend API Consistency Analysis
 🎯 Immediate Recommendations:
+Implement Missing Endpoints - Complete webshop, payments, orders functionality
+
 Done: Standardize Authentication - Add getAuthHeaders() to all API calls
 Done: Centralize API Configuration - Use environment variables consistently
-Implement Missing Endpoints - Complete webshop, payments, orders functionality
 Done: Standardize Error Handling - Create consistent error handling patterns
 Done: The inconsistent authentication is the root cause of the 500 errors you're experiencing. Most API calls need the Authorization header added.
 ---

@@ -81,6 +81,9 @@ temp/
 # Editor directories and files
 # .vscode/ - VSCode settings are included for team consistency
 .vscode/settings.local.json
+
+# Kiro personal settings (keep team settings)
+.kiro/settings/personal.json
 .idea/
 *.swp
 *.swo
