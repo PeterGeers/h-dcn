@@ -1,0 +1,25 @@
+{
+  "gitguardian_setup": {
+    "description": "GitGuardian security setup for any project",
+    "files": {
+      ".gitguardian.yaml": {
+        "template": true,
+        "content": "# GitGuardian configuration\nversion: 2\n\npaths_ignore:\n  - \"node_modules/**\"\n  - \"build/**\"\n  - \"dist/**\"\n  - \".aws-sam/**\"\n  - \".venv/**\"\n  - \"**/*.log\"\n  - \".git/**\"\n\nsecret:\n  show_secrets: false\n  ignore_known_secrets: true\n\nexit_zero: false"
+      }
+    },
+    "commands": [
+      "pip install ggshield",
+      "ggshield auth login",
+      "ggshield install --mode local"
+    ]
+  },
+  "kiro_workspace": {
+    "description": "Standard Kiro IDE workspace setup",
+    "files": {
+      ".kiro/settings/mcp.json": {
+        "template": true,
+        "content": "{\n  \"mcpServers\": {\n    \"aws-docs\": {\n      \"command\": \"uvx\",\n      \"args\": [\"awslabs.aws-documentation-mcp-server@latest\"],\n      \"disabled\": false\n    },\n    \"git\": {\n      \"command\": \"uvx\",\n      \"args\": [\"mcp-server-git@latest\"],\n      \"disabled\": false\n    }\n  }\n}"
+      }
+    }
+  }
+}
