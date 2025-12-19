@@ -1,0 +1,29 @@
+# GitGuardian configuration for H-DCN Dashboard
+version: 2
+
+# Paths to exclude from scanning
+paths-ignore:
+  - "frontend/node_modules/**"
+  - "frontend/build/**"
+  - "frontend/package-lock.json"
+  - "backend/.aws-sam/**"
+  - "backend/.venv/**"
+  - "**/*.log"
+  - ".git/**"
+
+# Specific secrets to ignore (if needed)
+secret:
+  # Show all policy breaks, not just secrets
+  show-secrets: false
+  
+  # Ignore specific patterns that are false positives
+  ignore-known-secrets: true
+  
+  # Custom ignore patterns
+  ignore-paths:
+    - "frontend/public/**"
+    - "**/*.md"
+    - "**/README*"
+
+# Exit codes
+exit-zero: false  # Return non-zero exit code when secrets are found
