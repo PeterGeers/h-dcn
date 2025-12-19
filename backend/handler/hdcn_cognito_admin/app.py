@@ -1,5 +1,6 @@
 import json
 import boto3
+import os
 from datetime import datetime
 
 # Initialize Cognito client
@@ -140,7 +141,7 @@ def create_user(event, headers):
         UserPoolId=USER_POOL_ID,
         Username=data['username'],
         UserAttributes=user_attributes,
-        TemporaryPassword=data.get('tempPassword', 'WelkomHDCN2024!'),
+        TemporaryPassword=data.get('tempPassword', os.environ.get('DEFAULT_TEMP_PASSWORD', 'TempPass123!')),
         MessageAction='SUPPRESS'
     )
     
@@ -383,7 +384,7 @@ def import_users(event, headers):
                     UserPoolId=USER_POOL_ID,
                     Username=username,
                     UserAttributes=user_attributes,
-                    TemporaryPassword=user_data.get('tempPassword', 'WelkomHDCN2024!'),
+                    TemporaryPassword=user_data.get('tempPassword', os.environ.get('DEFAULT_TEMP_PASSWORD', 'TempPass123!')),
                     MessageAction='SUPPRESS'
                 )
                 

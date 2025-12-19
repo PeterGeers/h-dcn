@@ -50,6 +50,13 @@ Parameters:
   OrdersTable:
     Type: String
     Default: Orders
+  DefaultTempPassword:
+    Type: String
+    NoEcho: true
+    Description: Default temporary password for new Cognito users
+    Default: TempPass123!
+    Type: String
+    Default: Orders
   ParametersTable:
     Type: String
     Default: Parameters
@@ -428,6 +435,9 @@ Resources:
       Handler: app.lambda_handler
       Runtime: python3.11
       Role: !GetAtt CognitoAdminRole.Arn
+      Environment:
+        Variables:
+          DEFAULT_TEMP_PASSWORD: !Ref DefaultTempPassword
       Events:
         CognitoRoot:
           Type: Api
