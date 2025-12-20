@@ -2,7 +2,7 @@
 version: 2
 
 # Paths to exclude from scanning
-paths-ignore:
+paths_ignore:
   - "frontend/node_modules/**"
   - "frontend/build/**"
   - "frontend/package-lock.json"
@@ -10,20 +10,17 @@ paths-ignore:
   - "backend/.venv/**"
   - "**/*.log"
   - ".git/**"
+  - "frontend/public/**"
+  - "**/*.md"
+  - "**/README*"
 
 # Specific secrets to ignore (if needed)
 secret:
   # Show all policy breaks, not just secrets
-  show-secrets: false
+  show_secrets: false
   
   # Ignore specific patterns that are false positives
-  ignore-known-secrets: true
-  
-  # Custom ignore patterns
-  ignore-paths:
-    - "frontend/public/**"
-    - "**/*.md"
-    - "**/README*"
+  ignore_known_secrets: true
 
 # Exit codes
-exit-zero: false  # Return non-zero exit code when secrets are found
+exit_zero: false  # Return non-zero exit code when secrets are found

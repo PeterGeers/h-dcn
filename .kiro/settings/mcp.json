@@ -36,16 +36,6 @@
       },
       "disabled": true,
       "autoApprove": []
-    },
-    "project-templates": {
-      "command": "uvx",
-      "args": ["mcp-server-filesystem@latest"],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR",
-        "TEMPLATE_PATH": ".kiro/settings/project-templates.json"
-      },
-      "disabled": false,
-      "autoApprove": ["read_file"]
     }
   }
 }
