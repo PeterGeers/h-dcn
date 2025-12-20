@@ -15,7 +15,7 @@
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
       },
-      "disabled": false,
+      "disabled": true,
       "autoApprove": ["read_file", "list_directory"]
     },
     "git": {
