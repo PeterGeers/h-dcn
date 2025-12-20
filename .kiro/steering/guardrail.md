@@ -8,11 +8,12 @@ inclusion: manual
 
 ### 1. Security First
 
-- **No hardcoded credentials** - Use environment variables and AWS Parameter Store
+- **No hardcoded credentials** - Use environment variables and AWS Parameter Store (GitGuardian enforced)
 - **Least privilege access** - IAM roles with minimal required permissions
-- **Input validation** - Sanitize all user inputs to prevent XSS/injection attacks
-- **Authentication required** - All API endpoints must validate Cognito tokens
-- **HTTPS only** - No unencrypted communication
+- **Input validation** - Sanitize all member data inputs to prevent XSS/injection attacks
+- **Authentication required** - All API endpoints must validate Cognito JWT tokens
+- **HTTPS only** - No unencrypted communication (CloudFront + API Gateway)
+- **Regional data access** - hdcnRegio\_\* groups can only access their region's members
 
 ### 2. Mobile-First Design
 
@@ -57,17 +58,21 @@ inclusion: manual
 
 ### Role-Based Permissions
 
-- **No groups**: Registration only
-- **hdcnLeden**: Webshop + Profile management
-- **hdcnRegio\_\***: Regional member read access
-- **hdcnAdmins**: Full system access
+- **No groups**: Membership registration only
+- **hdcnLeden**: Webshop access + Profile management
+- **hdcnRegio_Noord**: Northern region member administration (read-only)
+- **hdcnRegio_Zuid**: Southern region member administration (read-only)
+- **hdcnRegio_Oost**: Eastern region member administration (read-only)
+- **hdcnRegio_West**: Western region member administration (read-only)
+- **hdcnAdmins**: Full system access including user management, events, products, and system configuration
 
 ### Function Permissions
 
-- **Granular control** - Use `function_permissions` parameter
-- **Read/Write separation** - Explicit permission levels
-- **Regional restrictions** - Limit access by geographic region
-- **Audit trail** - Log all permission changes
+- **Granular control** - Use `function_permissions` parameter store for dynamic access control
+- **Read/Write separation** - Explicit permission levels (read, write, delete)
+- **Regional restrictions** - Limit member data access by geographic region
+- **Audit trail** - Log all permission changes in CloudWatch
+- **Dynamic loading** - Permissions loaded from Parameter Store at runtime
 
 ## 📝 Code Quality Standards
 
@@ -82,18 +87,25 @@ inclusion: manual
 ### React Components
 
 ```typescript
-// ✅ Good: Proper TypeScript interface
-interface ProductCardProps {
-  product: Product;
-  onSelect: (product: Product) => void;
+// ✅ Good: H-DCN specific TypeScript interface
+interface MemberCardProps {
+  member: Member;
+  onSelect: (member: Member) => void;
+  showRegion?: boolean;
+  allowEdit?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
-  // Component implementation
+const MemberCard: React.FC<MemberCardProps> = ({
+  member,
+  onSelect,
+  showRegion = true,
+  allowEdit = false,
+}) => {
+  // Component implementation with proper error boundaries
 };
 
 // ❌ Bad: No types, unclear props
-const ProductCard = (props) => {
+const MemberCard = (props) => {
   // Implementation
 };
 ```
@@ -101,22 +113,35 @@ const ProductCard = (props) => {
 ### Lambda Functions
 
 ```python
-# ✅ Good: Proper error handling
+# ✅ Good: H-DCN specific error handling with security
 def lambda_handler(event, context):
     try:
-        # Validate input
-        if not event.get('body'):
-            return error_response(400, "Missing request body")
+        # Validate Cognito JWT token
+        user_groups = validate_cognito_token(event['headers']['Authorization'])
 
-        # Process request
-        result = process_request(event['body'])
+        # Check function permissions from Parameter Store
+        if not has_function_access(user_groups, 'get_members', 'read'):
+            return error_response(403, "Insufficient permissions")
+
+        # Validate input for member data
+        if not event.get('body'):
+            return error_response(400, "Missing member data")
+
+        # Process request with regional filtering
+        result = process_member_request(event['body'], user_groups)
         return success_response(result)
 
+    except CognitoTokenError as e:
+        logger.error(f"Authentication failed: {str(e)}")
+        return error_response(401, "Invalid authentication token")
+    except ValidationError as e:
+        logger.error(f"Validation failed: {str(e)}")
+        return error_response(400, "Invalid member data format")
     except Exception as e:
-        logger.error(f"Error processing request: {str(e)}")
+        logger.error(f"Unexpected error in get_members: {str(e)}")
         return error_response(500, "Internal server error")
 
-# ❌ Bad: No error handling
+# ❌ Bad: No error handling or security validation
 def lambda_handler(event, context):
     result = process_request(event['body'])
     return result
@@ -150,91 +175,103 @@ def lambda_handler(event, context):
 
 ### Before Every Deployment
 
-- [ ] No credentials in code
-- [ ] Input validation implemented
-- [ ] CORS properly configured
-- [ ] Authentication checks in place
-- [ ] Error messages don't leak sensitive data
-- [ ] Dependencies updated and scanned
-- [ ] Access logs enabled
+- [ ] No credentials in code (GitGuardian pre-commit hook validates)
+- [ ] Input validation implemented for member data forms
+- [ ] CORS properly configured for H-DCN frontend domain
+- [ ] Cognito JWT token validation in all Lambda functions
+- [ ] Error messages don't leak member personal data
+- [ ] Dependencies scanned with `npm audit` and `pip-audit`
+- [ ] CloudTrail access logs enabled for audit trail
 
 ### Regular Security Reviews
 
-- [ ] Review IAM permissions quarterly
-- [ ] Update Cognito security settings
-- [ ] Scan for vulnerable dependencies
-- [ ] Review API Gateway configurations
-- [ ] Audit user access patterns
+- [ ] Review hdcnRegio\_\* group permissions quarterly
+- [ ] Update Cognito User Pool security settings monthly
+- [ ] Scan for vulnerable dependencies with GitGuardian dashboard
+- [ ] Review API Gateway CORS and authentication configurations
+- [ ] Audit member data access patterns in CloudWatch logs
+- [ ] Validate function_permissions parameter store entries
+- [ ] Test regional access restrictions (hdcnRegio_Noord, hdcnRegio_Zuid, etc.)
 
 ## 📊 Performance Standards
 
-### Frontend Metrics
+### Frontend Metrics (H-DCN Dashboard)
 
-- **First Contentful Paint**: < 2 seconds
-- **Largest Contentful Paint**: < 4 seconds
-- **Bundle size**: < 1MB compressed
-- **API response time**: < 500ms average
+- **First Contentful Paint**: < 2 seconds (member dashboard loading)
+- **Largest Contentful Paint**: < 4 seconds (member list with photos)
+- **Bundle size**: < 1MB compressed (optimize for mobile club members)
+- **API response time**: < 500ms average (member data queries)
 
-### Backend Metrics
+### Backend Metrics (AWS Lambda)
 
-- **Lambda cold start**: < 1 second
-- **API Gateway latency**: < 200ms
-- **DynamoDB response**: < 100ms
-- **Error rate**: < 1%
+- **Lambda cold start**: < 1 second (acceptable for club management use case)
+- **API Gateway latency**: < 200ms (member data operations)
+- **DynamoDB response**: < 100ms (member/event/product queries)
+- **Error rate**: < 1% (critical for member data integrity)
 
 ## 🔧 Maintenance Guidelines
 
 ### Regular Tasks
 
-- **Weekly**: Review CloudWatch logs and metrics
-- **Monthly**: Update dependencies and security patches
-- **Quarterly**: Review and optimize AWS costs
-- **Annually**: Security audit and penetration testing
+- **Weekly**: Review CloudWatch logs for member access patterns and API errors
+- **Monthly**: Update dependencies and security patches (npm audit, pip-audit)
+- **Quarterly**: Review AWS costs and optimize DynamoDB/Lambda usage
+- **Annually**: Security audit and penetration testing for member data protection
 
 ### Documentation Updates
 
-- **Code changes**: Update inline documentation
-- **API changes**: Update API documentation
-- **Architecture changes**: Update technical design docs
-- **Process changes**: Update this guardrail document
+- **Code changes**: Update inline JSDoc comments and TypeScript interfaces
+- **API changes**: Update API documentation for member/event/product endpoints
+- **Architecture changes**: Update Kiro steering files (structure.md, tech.md)
+- **Process changes**: Update this guardrail document and team workflows
+
+### Kiro IDE Integration
+
+- **Steering files**: Use `#guardrail`, `#tech`, `#testing` for context-aware assistance
+- **MCP servers**: Leverage AWS docs and Git integration for development
+- **Project templates**: Use established patterns for new features
+- **GitGuardian**: Pre-commit hooks prevent credential leaks automatically
 
 ## 🚨 Emergency Procedures
 
 ### Production Issues
 
-1. **Immediate**: Check CloudWatch logs and metrics
-2. **Assess**: Determine impact and affected users
-3. **Communicate**: Notify stakeholders of issue
-4. **Fix**: Apply hotfix or rollback if necessary
-5. **Post-mortem**: Document root cause and prevention
+1. **Immediate**: Check CloudWatch logs for affected Lambda functions (get_members, create_member, etc.)
+2. **Assess**: Determine impact on member data access and club operations
+3. **Communicate**: Notify H-DCN stakeholders and affected regional admins
+4. **Fix**: Apply hotfix or rollback using SAM CLI deployment
+5. **Post-mortem**: Document root cause and update guardrails to prevent recurrence
 
 ### Security Incidents
 
-1. **Isolate**: Disable affected components immediately
-2. **Assess**: Determine scope of potential breach
-3. **Notify**: Contact security team and stakeholders
-4. **Investigate**: Analyze logs and access patterns
-5. **Remediate**: Fix vulnerability and strengthen security
+1. **Isolate**: Disable affected Lambda functions or Cognito User Pool immediately
+2. **Assess**: Determine scope of potential member data breach
+3. **Notify**: Contact H-DCN board and affected members per GDPR requirements
+4. **Investigate**: Analyze CloudTrail logs and member access patterns
+5. **Remediate**: Fix vulnerability, rotate credentials, and strengthen security controls
 
 ## 📋 Compliance Requirements
 
 ### Data Protection
 
-- **GDPR compliance** - Handle personal data appropriately
-- **Data retention** - Delete data according to policy
-- **User consent** - Obtain consent for data processing
-- **Data portability** - Allow users to export their data
+- **GDPR compliance** - Handle H-DCN member personal data appropriately
+- **Data retention** - Delete inactive member data according to club policy
+- **User consent** - Obtain consent for member data processing and marketing
+- **Data portability** - Allow members to export their personal data
+- **Right to be forgotten** - Implement member data deletion on request
 
 ### Audit Requirements
 
-- **Access logging** - Log all data access
-- **Change tracking** - Track all system modifications
-- **User activity** - Monitor user actions
-- **System events** - Log all system events
+- **Access logging** - Log all member data access with user identification
+- **Change tracking** - Track all modifications to member profiles and permissions
+- **User activity** - Monitor regional admin actions and member self-service
+- **System events** - Log all authentication attempts and permission changes
+- **Regional compliance** - Ensure data access respects geographic restrictions
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: October 2025
-**Review Schedule**: Quarterly
-**Owner**: H-DCN Development Team
+**Document Version**: 2.0  
+**Last Updated**: December 2025  
+**Review Schedule**: Quarterly  
+**Owner**: H-DCN Development Team  
+**Tools**: Kiro IDE, GitGuardian, AWS SAM, MCP Servers
