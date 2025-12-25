@@ -152,7 +152,7 @@ class MemberAdminLoginTest:
                 print("🔄 User requires password change. Setting new password...")
                 
                 # Set permanent password
-                new_password = 1
+
                 self.cognito_client.admin_set_user_password(
                     UserPoolId=USER_POOL_ID,
                     Username=TEST_USERNAME,
