@@ -125,8 +125,14 @@ venv.bak/
 .mypy_cache/
 
 # Project specific
-api.md
+*.md
 config.md
+
+# Test passwd keys
+test_lambda_role_assignment
+test_member_admin_login
+
+
 
 # Local scripts (optional)
 *.local.ps1

@@ -1,7 +1,20 @@
 import React from 'react';
 import { Box, VStack, Text, Button } from '@chakra-ui/react';
 
-function AppCard({ app, onClick }) {
+interface App {
+  id?: string;
+  icon: string;
+  title: string;
+  description: string;
+  path?: string;
+}
+
+interface AppCardProps {
+  app: App;
+  onClick?: () => void;
+}
+
+function AppCard({ app, onClick }: AppCardProps) {
   const handleClick = () => {
     if (onClick) {
       onClick();

@@ -85,6 +85,12 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [accessLoading, setAccessLoading] = useState<boolean>(true);
   const [userRoles, setUserRoles] = useState<string[]>([]);
+
+  // Enhanced role-based access checks for parameter management
+  const hasFullMemberAccess = userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All') || userRoles.includes('Webmaster');
+  const hasSystemUserManagementRole = userRoles.includes('System_User_Management');
+  const hasNationalChairmanRole = userRoles.includes('National_Chairman');
+  const hasNationalSecretaryRole = userRoles.includes('National_Secretary');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isCategoryOpen, onOpen: onCategoryOpen, onClose: onCategoryClose } = useDisclosure();
   const toast = useToast();
@@ -114,7 +120,9 @@ function ParameterManagement({ user }: ParameterManagementProps) {
           role === 'Webmaster' ||
           role === 'Members_CRUD_All' ||
           role === 'hdcnWebmaster' ||
-          role === 'hdcnLedenadministratie'
+          role === 'hdcnLedenadministratie' ||
+          role === 'National_Chairman' ||
+          role === 'National_Secretary'
         );
         
         console.log('🔍 ParameterManagement - Has admin role:', hasAdminRole);
@@ -184,7 +192,7 @@ function ParameterManagement({ user }: ParameterManagementProps) {
                 <br /><br />
                 <strong>Je huidige rollen:</strong> {userRoles.length > 0 ? userRoles.join(', ') : 'Geen rollen toegewezen'}
                 <br /><br />
-                <strong>Vereiste rollen:</strong> hdcnAdmins, System_User_Management, System_CRUD_All, Webmaster, Members_CRUD_All, hdcnWebmaster, of hdcnLedenadministratie
+                <strong>Vereiste rollen:</strong> hdcnAdmins, System_User_Management, System_CRUD_All, Webmaster, Members_CRUD_All, National_Chairman, National_Secretary, hdcnWebmaster, of hdcnLedenadministratie
                 <br /><br />
                 Neem contact op met een systeembeheerder als je denkt dat je toegang zou moeten hebben.
               </AlertDescription>
@@ -384,7 +392,9 @@ function ParameterManagement({ user }: ParameterManagementProps) {
           role === 'hdcnAdmins' ||
           role === 'System_CRUD_All' ||
           role === 'Webmaster' ||
-          role === 'hdcnWebmaster'
+          role === 'hdcnWebmaster' ||
+          role === 'National_Chairman' ||
+          role === 'National_Secretary'
         );
         
         if (!hasWriteRole) {
@@ -458,7 +468,9 @@ function ParameterManagement({ user }: ParameterManagementProps) {
             role === 'hdcnAdmins' ||
             role === 'System_CRUD_All' ||
             role === 'Webmaster' ||
-            role === 'hdcnWebmaster'
+            role === 'hdcnWebmaster' ||
+            role === 'National_Chairman' ||
+            role === 'National_Secretary'
           );
           
           if (!hasWriteRole) {
@@ -513,7 +525,9 @@ function ParameterManagement({ user }: ParameterManagementProps) {
           role === 'hdcnAdmins' ||
           role === 'System_CRUD_All' ||
           role === 'Webmaster' ||
-          role === 'hdcnWebmaster'
+          role === 'hdcnWebmaster' ||
+          role === 'National_Chairman' ||
+          role === 'National_Secretary'
         );
         
         if (!hasWriteRole) {
@@ -634,7 +648,9 @@ function ParameterManagement({ user }: ParameterManagementProps) {
             role === 'hdcnAdmins' ||
             role === 'System_CRUD_All' ||
             role === 'Webmaster' ||
-            role === 'hdcnWebmaster'
+            role === 'hdcnWebmaster' ||
+            role === 'National_Chairman' ||
+            role === 'National_Secretary'
           );
           
           if (!hasWriteRole) {
@@ -722,16 +738,16 @@ function ParameterManagement({ user }: ParameterManagementProps) {
         <HStack justify="space-between">
           <Heading color="orange.400">Parameter Beheer</Heading>
           <HStack spacing={4}>
-            {/* User role indicator */}
+            {/* Enhanced role indicator for different admin levels */}
             <Box 
-              bg="green.600" 
+              bg={hasFullMemberAccess ? 'green.600' : hasSystemUserManagementRole ? 'blue.600' : 'yellow.600'} 
               px={3} 
               py={1} 
               borderRadius="md"
               color="white"
               fontSize="sm"
             >
-              👤 Rollen: {userRoles.length > 0 ? userRoles.slice(0, 2).join(', ') : 'Geen'}{userRoles.length > 2 ? ` +${userRoles.length - 2}` : ''}
+              👤 {hasFullMemberAccess ? 'Volledige Admin' : hasSystemUserManagementRole ? 'Systeem Admin' : 'Beperkte Admin'}: {userRoles.length > 0 ? userRoles.slice(0, 2).join(', ') : 'Geen'}{userRoles.length > 2 ? ` +${userRoles.length - 2}` : ''}
             </Box>
             <Box 
               bg={dataSource === 'S3 via API' ? 'green.600' : dataSource === 'LocalStorage/Public' ? 'blue.600' : 'yellow.600'} 
@@ -745,6 +761,143 @@ function ParameterManagement({ user }: ParameterManagementProps) {
             </Box>
           </HStack>
         </HStack>
+
+        {/* Enhanced functionality for different admin roles */}
+        {(userRoles.includes('hdcnAdmins') || userRoles.includes('System_CRUD_All') || userRoles.includes('Webmaster')) && (
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400" mb={4}>
+            <Text color="green.400" fontWeight="bold" mb={3}>
+              ⚙️ Geavanceerd Systeembeheer (System_CRUD_All / Webmaster)
+            </Text>
+            <HStack spacing={4} wrap="wrap">
+              <Button
+                size="sm"
+                colorScheme="green"
+                onClick={() => {
+                  // Advanced system configuration
+                  console.log('⚙️ Geavanceerde systeemconfiguratie');
+                }}
+              >
+                ⚙️ Systeemconfiguratie
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={() => {
+                  // Parameter backup functionality
+                  const backupData = {
+                    timestamp: new Date().toISOString(),
+                    parameters: parameters,
+                    metadata: parameters._metadata
+                  };
+                  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `parameter-backup-${new Date().toISOString().split('T')[0]}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast({ title: 'Parameter backup aangemaakt', status: 'success' });
+                }}
+              >
+                💾 Parameter Backup
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="purple"
+                onClick={() => {
+                  // Parameter validation
+                  const validationResults = Object.keys(parameters).filter(key => key !== '_metadata').map(category => {
+                    const items = parameters[category];
+                    return {
+                      category,
+                      itemCount: Array.isArray(items) ? items.length : 0,
+                      hasMetadata: !!parameters._metadata?.[category]
+                    };
+                  });
+                  console.log('✅ Parameter validatie resultaten:', validationResults);
+                  toast({ title: 'Parameter validatie uitgevoerd (zie console)', status: 'info' });
+                }}
+              >
+                ✅ Parameter Validatie
+              </Button>
+            </HStack>
+          </Box>
+        )}
+
+        {(hasSystemUserManagementRole && !userRoles.includes('hdcnAdmins') && !userRoles.includes('System_CRUD_All')) && (
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="blue.400" mb={4}>
+            <Text color="blue.400" fontWeight="bold" mb={3}>
+              👥 Gebruikersbeheer Parameters (System_User_Management)
+            </Text>
+            <HStack spacing={4} wrap="wrap">
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={() => {
+                  // User-related parameter management
+                  const userCategories = Object.keys(parameters).filter(key => 
+                    key.toLowerCase().includes('regio') || 
+                    key.toLowerCase().includes('lidmaatschap') ||
+                    key.toLowerCase().includes('function_permissions')
+                  );
+                  console.log('👥 Gebruikersgerelateerde categorieën:', userCategories);
+                }}
+              >
+                👥 Gebruiker Parameters
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="teal"
+                onClick={() => {
+                  // Permission parameter overview
+                  const permissionParams = parameters.Function_permissions || parameters.function_permissions || [];
+                  console.log('🔐 Machtiging parameters:', permissionParams);
+                }}
+              >
+                🔐 Machtiging Overzicht
+              </Button>
+            </HStack>
+          </Box>
+        )}
+
+        {(hasNationalChairmanRole || hasNationalSecretaryRole) && !userRoles.includes('hdcnAdmins') && (
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="yellow.400" mb={4}>
+            <Text color="yellow.400" fontWeight="bold" mb={3}>
+              🏛️ Bestuur Parameter Overzicht (National Chairman/Secretary)
+            </Text>
+            <HStack spacing={4} wrap="wrap">
+              <Button
+                size="sm"
+                colorScheme="yellow"
+                onClick={() => {
+                  // Board-relevant parameter overview
+                  const boardCategories = Object.keys(parameters).filter(key => 
+                    key !== '_metadata' && 
+                    !key.toLowerCase().includes('function_permissions')
+                  );
+                  console.log('🏛️ Bestuur relevante categorieën:', boardCategories);
+                }}
+              >
+                🏛️ Bestuur Parameters
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="orange"
+                onClick={() => {
+                  // Parameter summary for board reporting
+                  const summary = Object.keys(parameters).filter(key => key !== '_metadata').map(category => ({
+                    category,
+                    itemCount: Array.isArray(parameters[category]) ? parameters[category].length : 0,
+                    lastUpdated: parameters._metadata?.[category]?.created_at
+                  }));
+                  console.log('📊 Parameter samenvatting voor bestuur:', summary);
+                }}
+              >
+                📊 Parameter Samenvatting
+              </Button>
+            </HStack>
+          </Box>
+        )}
         
         <VStack align="stretch" spacing={4}>
           <HStack>

@@ -232,8 +232,8 @@ describe('MembershipManagement Component Tests', () => {
       // Simulate the mapping done in the component
       const mappedMembership = {
         ...backendMembership,
-        name: backendMembership.membership_name || backendMembership.name,
-        status: backendMembership.membership_status || backendMembership.status
+        name: backendMembership.membership_name || (backendMembership as any).name,
+        status: backendMembership.membership_status || (backendMembership as any).status
       };
 
       expect(mappedMembership.name).toBe('Basis Lidmaatschap');
@@ -253,7 +253,7 @@ describe('MembershipManagement Component Tests', () => {
       };
 
       // Simulate the transformation done before API call
-      const payload = { ...formValues };
+      const payload: any = { ...formValues };
       
       if (payload.name) {
         payload.membership_name = payload.name;

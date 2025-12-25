@@ -418,6 +418,23 @@ Resources:
       Description: "Permission to read system logs and audit trails"
       Precedence: 55
 
+  # Additional communication and system roles for Webmaster
+  CommunicationCRUDAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Communication_CRUD_All
+      Description: "Full communication management permissions - create, read, update, delete all communication data"
+      Precedence: 42
+
+  SystemCRUDAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: System_CRUD_All
+      Description: "Full system administration permissions - complete system management access"
+      Precedence: 3
+
   # Lambda function for custom Cognito email messages
   CognitoCustomMessageFunction:
     Type: AWS::Serverless::Function
@@ -573,6 +590,7 @@ Resources:
                   - cognito-idp:ListUsers
                   - cognito-idp:AdminCreateUser
                   - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
                   - cognito-idp:AdminUpdateUserAttributes
                   - cognito-idp:AdminAddUserToGroup
                   - cognito-idp:AdminRemoveUserFromGroup
@@ -591,7 +609,6 @@ Resources:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}"
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}/*"
 
-    
   InsertProductFunction:
     Type: AWS::Serverless::Function
     Properties:

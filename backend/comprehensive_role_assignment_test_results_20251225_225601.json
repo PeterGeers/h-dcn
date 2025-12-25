@@ -1,0 +1,35 @@
+{
+  "timestamp": "20251225_225601",
+  "tests": {
+    "Infrastructure Configuration": {
+      "passed": true,
+      "timestamp": "2025-12-25T22:56:02.068742"
+    },
+    "Lambda Function Exists": {
+      "passed": true,
+      "timestamp": "2025-12-25T22:56:03.594654"
+    },
+    "Role Assignment Functionality": {
+      "passed": true,
+      "timestamp": "2025-12-25T22:56:07.520570"
+    },
+    "Existing Users Coverage": {
+      "passed": true,
+      "timestamp": "2025-12-25T22:56:19.613150"
+    },
+    "Error Handling": {
+      "passed": true,
+      "timestamp": "2025-12-25T22:56:21.099010"
+    },
+    "Permissions Validation": {
+      "passed": true,
+      "timestamp": "2025-12-25T22:56:22.375612"
+    }
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "failed_tests": 0,
+    "success_rate": 100.0
+  }
+}

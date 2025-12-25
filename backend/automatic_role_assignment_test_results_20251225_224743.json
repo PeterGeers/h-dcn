@@ -1,0 +1,11 @@
+{
+  "test_email": "test-role-assignment_20251225_224743@example.com",
+  "timestamp": "20251225_224743",
+  "user_created": true,
+  "user_confirmed": true,
+  "role_assigned": false,
+  "expected_role": "hdcnLeden",
+  "actual_groups": [],
+  "success": false,
+  "error": null
+}

@@ -17,7 +17,7 @@ import {
   TabPanel,
   Image
 } from '@chakra-ui/react';
-import { Auth } from 'aws-amplify';
+import { getCurrentUser, signIn, signOut } from 'aws-amplify/auth';
 import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
 import { CrossDeviceAuth } from './CrossDeviceAuth';
@@ -42,7 +42,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const checkAuthState = async () => {
     try {
-      const currentUser = await Auth.currentAuthenticatedUser();
+      const currentUser = await getCurrentUser();
       setUser(currentUser);
       setAuthState('authenticated');
     } catch (err) {
@@ -93,7 +93,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
               // Passkey authentication successful
               // Now authenticate with Cognito using the verified email
               try {
-                const cognitoUser = await Auth.signIn(signInData.email);
+                const cognitoUser = await signIn({ username: signInData.email });
                 setUser(cognitoUser);
                 setAuthState('authenticated');
                 return;
@@ -132,7 +132,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleSignOut = async () => {
     try {
-      await Auth.signOut();
+      await signOut();
       setUser(null);
       setAuthState('signIn');
     } catch (err) {

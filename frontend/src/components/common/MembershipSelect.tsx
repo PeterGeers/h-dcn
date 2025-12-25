@@ -1,9 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Select } from '@chakra-ui/react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
+import { Select, SelectProps } from '@chakra-ui/react';
 import { getAuthHeadersForGet } from '../../utils/authHeaders';
 
-function MembershipSelect({ value, onChange, name, placeholder, ...props }) {
-  const [memberships, setMemberships] = useState([]);
+interface Membership {
+  membership_id?: string;
+  id?: string;
+  name: string;
+  price: number;
+}
+
+interface MembershipSelectProps extends Omit<SelectProps, 'onChange'> {
+  value?: string;
+  onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
+  name?: string;
+  placeholder?: string;
+}
+
+function MembershipSelect({ 
+  value, 
+  onChange, 
+  name, 
+  placeholder, 
+  ...props 
+}: MembershipSelectProps) {
+  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +37,7 @@ function MembershipSelect({ value, onChange, name, placeholder, ...props }) {
         headers
       });
       if (response.ok) {
-        const data = await response.json();
+        const data: Membership[] = await response.json();
         setMemberships(data);
       }
     } catch (error) {
@@ -27,7 +47,7 @@ function MembershipSelect({ value, onChange, name, placeholder, ...props }) {
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     if (onChange) {
       onChange(e);
     }

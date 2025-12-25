@@ -7,8 +7,9 @@ import Header from './components/Header';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { useAuthContext } from '../../context/AuthContext';
+import { getUserRoles } from '../../utils/functionPermissions';
 
-import { Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
+import { Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, Text } from '@chakra-ui/react';
 
 interface FilterOption {
   type: 'group' | 'subgroup';
@@ -20,6 +21,38 @@ export default function ProductManagementPage() {
   const { user } = useAuthContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
+
+  // Enhanced role-based access checks for products
+  const userRoles = getUserRoles(user);
+  const hasProductsFullAccess = userRoles.some(role => 
+    role === 'hdcnAdmins' ||
+    role === 'Products_CRUD_All' ||
+    role === 'Webmaster' ||
+    role === 'Webshop_Management'
+  );
+
+  const hasProductsReadAccess = userRoles.some(role => 
+    role === 'hdcnAdmins' ||
+    role === 'Products_Read_All' ||
+    role === 'Products_CRUD_All' ||
+    role === 'Webmaster' ||
+    role === 'Webshop_Management' ||
+    role === 'hdcnLeden' ||
+    role === 'National_Chairman' ||
+    role === 'National_Secretary' ||
+    role === 'Tour_Commissioner' ||
+    role === 'Club_Magazine_Editorial'
+  );
+
+  const hasProductsFinancialAccess = userRoles.some(role => 
+    role === 'hdcnAdmins' ||
+    role === 'Products_CRUD_All' ||
+    role === 'Products_Read_Financial' ||
+    role === 'Webmaster' ||
+    role === 'Webshop_Management' ||
+    role === 'National_Treasurer' ||
+    role.includes('Regional_Treasurer_')
+  );
 
   useEffect(() => {
     scanProducts()
@@ -83,6 +116,7 @@ export default function ProductManagementPage() {
         user={user} 
         functionName="products" 
         action="read"
+        requiredRoles={['Products_Read_All', 'Products_CRUD_All', 'Webmaster', 'Webshop_Management', 'hdcnLeden']}
         fallback={
           <Alert status="warning" mt={4}>
             <AlertIcon />
@@ -90,11 +124,130 @@ export default function ProductManagementPage() {
               <AlertTitle>Geen toegang!</AlertTitle>
               <AlertDescription>
                 U heeft geen toegang tot de productbeheer module. Neem contact op met de beheerder als u denkt dat dit een fout is.
+                <br /><br />
+                <strong>Vereiste rollen:</strong> Products_Read_All, Products_CRUD_All, Webmaster, Webshop_Management, of hdcnLeden (voor catalogus)
               </AlertDescription>
             </Box>
           </Alert>
         }
       >
+        {/* Enhanced functionality for different admin roles */}
+        {hasProductsFullAccess && (
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400" mb={4}>
+            <Text color="green.400" fontWeight="bold" mb={3}>
+              🛍️ Geavanceerd Productbeheer (Products_CRUD_All / Webshop_Management)
+            </Text>
+            <HStack spacing={4} wrap="wrap">
+              <Button
+                size="sm"
+                colorScheme="green"
+                onClick={() => {
+                  // Bulk product operations
+                  const activeProducts = products.filter(p => p.price > 0);
+                  console.log(`🛍️ ${activeProducts.length} actieve producten gevonden`);
+                }}
+              >
+                📦 Bulk Product Beheer
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={() => {
+                  // Inventory management
+                  console.log('📊 Voorraad beheer functionaliteit');
+                }}
+              >
+                📊 Voorraad Beheer
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="purple"
+                onClick={() => {
+                  // Product analytics
+                  const productStats = {
+                    totaal: products.length,
+                    categorieën: [...new Set(products.map(p => p.groep))].length,
+                    gemiddeldePrijs: products.reduce((sum, p) => sum + (p.price || 0), 0) / products.length
+                  };
+                  console.log('📈 Product statistieken:', productStats);
+                }}
+              >
+                📈 Product Analytics
+              </Button>
+            </HStack>
+          </Box>
+        )}
+
+        {(hasProductsFinancialAccess && !hasProductsFullAccess) && (
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="yellow.400" mb={4}>
+            <Text color="yellow.400" fontWeight="bold" mb={3}>
+              💰 Product Financiën & Rapportage
+            </Text>
+            <HStack spacing={4} wrap="wrap">
+              <Button
+                size="sm"
+                colorScheme="yellow"
+                onClick={() => {
+                  // Financial product overview
+                  const financialOverview = products.map(p => ({
+                    naam: p.naam || p.name,
+                    prijs: p.prijs || p.price,
+                    categorie: p.groep
+                  }));
+                  console.log('💰 Financieel overzicht:', financialOverview);
+                }}
+              >
+                💰 Financieel Overzicht
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="orange"
+                onClick={() => {
+                  // Price analysis
+                  console.log('📊 Prijsanalyse functionaliteit');
+                }}
+              >
+                📊 Prijsanalyse
+              </Button>
+            </HStack>
+          </Box>
+        )}
+
+        {(hasProductsReadAccess && !hasProductsFullAccess && !hasProductsFinancialAccess) && (
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="blue.400" mb={4}>
+            <Text color="blue.400" fontWeight="bold" mb={3}>
+              👀 Product Catalogus (Alleen Lezen)
+            </Text>
+            <HStack spacing={4} wrap="wrap">
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={() => {
+                  // Product catalog view
+                  const catalogView = products.map(p => ({
+                    naam: p.naam || p.name,
+                    categorie: p.groep,
+                    beschikbaar: true
+                  }));
+                  console.log('📋 Catalogus overzicht:', catalogView);
+                }}
+              >
+                📋 Catalogus Overzicht
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="teal"
+                onClick={() => {
+                  // Product search functionality
+                  console.log('🔍 Product zoek functionaliteit');
+                }}
+              >
+                🔍 Product Zoeken
+              </Button>
+            </HStack>
+          </Box>
+        )}
+
         <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
           <Box w={{ base: 'full', lg: '300px' }}>
             <ProductFilter
@@ -117,6 +270,7 @@ export default function ProductManagementPage() {
             user={user} 
             functionName="products" 
             action="write"
+            requiredRoles={['Products_CRUD_All', 'Webmaster', 'Webshop_Management']}
             fallback={
               <ProductCard
                 key={selected.id}

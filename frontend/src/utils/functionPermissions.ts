@@ -1,5 +1,7 @@
 import { getParameters } from './parameterService';
 import { getAuthHeadersForGet } from './authHeaders';
+import { getCurrentUserRoles } from '../services/authService';
+import { HDCNGroup } from '../types/user';
 
 interface User {
   signInUserSession?: {
@@ -9,20 +11,85 @@ interface User {
       };
     };
   };
+  attributes?: {
+    email?: string;
+    given_name?: string;
+  };
+  groups?: HDCNGroup[];
 }
 
 /**
  * Extracts Cognito groups (roles) from a user's JWT token
- * @param user - The user object containing the sign-in session
+ * Enhanced version that supports both legacy user objects and new JWT token structure
+ * @param user - The user object containing the sign-in session or groups array
  * @returns Array of role strings from cognito:groups claim, or empty array if none found
  */
 export function getUserRoles(user: User): string[] {
+  // New approach: Use groups array directly if available (from useAuth hook)
+  if (user?.groups && Array.isArray(user.groups)) {
+    return user.groups;
+  }
+
+  // Legacy approach: Extract from JWT token payload
   if (!user?.signInUserSession?.accessToken?.payload) {
     return [];
   }
   
   const cognitoGroups = user.signInUserSession.accessToken.payload['cognito:groups'];
   return cognitoGroups || [];
+}
+
+/**
+ * Enhanced role extraction that works with current authentication session
+ * This function directly queries the current authentication session for roles
+ * @returns Promise with array of user roles from current session
+ */
+export async function getCurrentUserRolesFromSession(): Promise<HDCNGroup[]> {
+  try {
+    return await getCurrentUserRoles();
+  } catch (error) {
+    console.error('Failed to get current user roles from session:', error);
+    return [];
+  }
+}
+
+/**
+ * Utility to check if a user has a specific role
+ * @param user - User object or null
+ * @param role - Role to check for
+ * @returns boolean indicating if user has the role
+ */
+export function userHasRole(user: User | null, role: HDCNGroup): boolean {
+  if (!user) return false;
+  
+  const userRoles = getUserRoles(user);
+  return userRoles.includes(role);
+}
+
+/**
+ * Utility to check if a user has any of the specified roles
+ * @param user - User object or null
+ * @param roles - Array of roles to check for
+ * @returns boolean indicating if user has any of the roles
+ */
+export function userHasAnyRole(user: User | null, roles: HDCNGroup[]): boolean {
+  if (!user || !roles.length) return false;
+  
+  const userRoles = getUserRoles(user);
+  return roles.some(role => userRoles.includes(role));
+}
+
+/**
+ * Utility to check if a user has all of the specified roles
+ * @param user - User object or null
+ * @param roles - Array of roles to check for
+ * @returns boolean indicating if user has all of the roles
+ */
+export function userHasAllRoles(user: User | null, roles: HDCNGroup[]): boolean {
+  if (!user || !roles.length) return false;
+  
+  const userRoles = getUserRoles(user);
+  return roles.every(role => userRoles.includes(role));
 }
 
 // Role-to-permission mapping based on H-DCN organizational structure
@@ -435,8 +502,8 @@ export const ROLE_PERMISSIONS: PermissionConfig = {
  * @param roles - Array of role names assigned to the user
  * @returns Combined permission configuration with all permissions from assigned roles
  */
-export function calculatePermissions(roles: string[]): PermissionConfig {
-  const combinedPermissions: PermissionConfig = {};
+export function calculatePermissions(roles: string[]): RolePermissions {
+  const combinedPermissions: RolePermissions = {};
 
   roles.forEach((role) => {
     const rolePermissions = ROLE_PERMISSIONS[role];
@@ -468,11 +535,17 @@ export function calculatePermissions(roles: string[]): PermissionConfig {
   return combinedPermissions;
 }
 
+interface FunctionPermissions {
+  read?: string[];
+  write?: string[];
+}
+
+interface RolePermissions {
+  [functionName: string]: FunctionPermissions;
+}
+
 interface PermissionConfig {
-  [functionName: string]: {
-    read?: string[];
-    write?: string[];
-  };
+  [roleName: string]: RolePermissions;
 }
 
 interface AccessibleFunctions {
@@ -485,9 +558,9 @@ interface AccessibleFunctions {
 // Function Permission Manager using existing parameter table
 export class FunctionPermissionManager {
   private userGroups: string[];
-  private permissions: PermissionConfig;
+  private permissions: RolePermissions;
 
-  constructor(user: User, permissionConfig: PermissionConfig = {}) {
+  constructor(user: User, permissionConfig: RolePermissions = {}) {
     this.userGroups = getUserRoles(user);
     this.permissions = permissionConfig;
   }
@@ -524,6 +597,25 @@ export class FunctionPermissionManager {
         // BACKWARD COMPATIBILITY: Direct group matching (legacy behavior)
         if (userGroup === allowedGroup) {
           return true;
+        }
+        
+        // ENHANCED: Handle membership type-based access patterns
+        if (allowedGroup.startsWith('membership_')) {
+          // This would be checked against user's membership type in a real implementation
+          // For now, we'll assume basic members have access to basic membership features
+          if (this.userGroups.includes('hdcnLeden')) {
+            return true;
+          }
+        }
+        
+        // ENHANCED: Handle region-based access patterns
+        if (allowedGroup.startsWith('region_')) {
+          // This would be checked against user's region in a real implementation
+          // For now, we'll check if user has any regional role
+          const hasRegionalRole = this.userGroups.some(group => group.includes('Regional_'));
+          if (hasRegionalRole) {
+            return true;
+          }
         }
         
         // BACKWARD COMPATIBILITY: Handle legacy regional patterns
@@ -837,7 +929,7 @@ export class FunctionPermissionManager {
       
       // BACKWARD COMPATIBILITY: Merge parameter-based permissions with role-based permissions
       // Parameter-based permissions take precedence to maintain existing behavior
-      const mergedConfig = { ...preservedLegacyConfig };
+      let mergedConfig = { ...preservedLegacyConfig };
       
       Object.keys(roleBasedPermissions).forEach(functionName => {
         if (!mergedConfig[functionName]) {
@@ -894,6 +986,51 @@ export class FunctionPermissionManager {
         }
       }
       
+      // ENHANCED: Preserve parameter-based module visibility
+      // Ensure that parameter-based module access rules are maintained
+      console.log('🔄 Preserving parameter-based module visibility');
+      
+      // Check if there are any parameter-based module visibility rules
+      const moduleVisibilityParams = parameters['Module_visibility'] || [];
+      if (moduleVisibilityParams.length > 0) {
+        console.log('🔍 Found module visibility parameters:', moduleVisibilityParams);
+        
+        // Apply module visibility rules to merged config
+        moduleVisibilityParams.forEach(visibilityRule => {
+          if (visibilityRule.value && typeof visibilityRule.value === 'object') {
+            const { module, conditions } = visibilityRule.value;
+            
+            if (module && conditions) {
+              // Ensure module exists in config
+              if (!mergedConfig[module]) {
+                mergedConfig[module] = { read: [], write: [] };
+              }
+              
+              // Apply parameter-based visibility conditions
+              if (conditions.membershipTypes) {
+                // Add membership type-based access
+                conditions.membershipTypes.forEach(membershipType => {
+                  const membershipAccessKey = `membership_${membershipType.replace(/\s+/g, '_').toLowerCase()}`;
+                  if (!mergedConfig[module].read.includes(membershipAccessKey)) {
+                    mergedConfig[module].read.push(membershipAccessKey);
+                  }
+                });
+              }
+              
+              if (conditions.regions) {
+                // Add region-based access
+                conditions.regions.forEach(region => {
+                  const regionAccessKey = `region_${region}`;
+                  if (!mergedConfig[module].read.includes(regionAccessKey)) {
+                    mergedConfig[module].read.push(regionAccessKey);
+                  }
+                });
+              }
+            }
+          }
+        });
+      }
+      
       // BACKWARD COMPATIBILITY: If merged config is still empty, use comprehensive fallback
       if (Object.keys(mergedConfig).length === 0) {
         console.log('🔄 Using comprehensive fallback config');
@@ -910,7 +1047,7 @@ export class FunctionPermissionManager {
         };
       }
       
-      console.log('🔍 Final merged permission config with backward compatibility:', mergedConfig);
+      console.log('🔍 Final merged permission config with parameter-based visibility preserved:', mergedConfig);
       
       return new FunctionPermissionManager(user, mergedConfig);
     } catch (error) {

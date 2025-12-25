@@ -297,6 +297,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
       user={user} 
       functionName="memberships" 
       action="read"
+      requiredRoles={['Members_CRUD_All']}
       fallback={
         <Box p={6} bg="black" minH="100vh" textAlign="center">
           <VStack spacing={6}>
@@ -322,6 +323,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
               user={user} 
               functionName="memberships" 
               action="write"
+              requiredRoles={['Members_CRUD_All']}
               fallback={null}
             >
               <Button colorScheme="orange" onClick={() => openModal()}>
@@ -354,6 +356,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
                           user={user} 
                           functionName="memberships" 
                           action="write"
+                          requiredRoles={['Members_CRUD_All']}
                           fallback={
                             <Text color="gray.500" fontSize="sm">
                               Alleen lezen
@@ -372,6 +375,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
                           user={user} 
                           functionName="memberships" 
                           action="write"
+                          requiredRoles={['Members_CRUD_All']}
                           fallback={null}
                         >
                           <Button

@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-12-25T23:05:19.495313",
+  "test_user": "timing.test@hdcn-test.nl",
+  "user_pool_id": "eu-west-1_OAT3oPCIm",
+  "timing_tests": [
+    {
+      "timestamp": "2025-12-25T23:05:22.024749",
+      "test": "Single role addition",
+      "change_time_seconds": 0.49776411056518555,
+      "change_time_formatted": "0.50s",
+      "immediate": true,
+      "within_5_minutes": true,
+      "success": true,
+      "details": "Added Members_Read_All role\n   Current groups: ['hdcnLeden', 'Members_Read_All']\n   Role added successfully: True"
+    },
+    {
+      "timestamp": "2025-12-25T23:05:22.755691",
+      "test": "Single role removal",
+      "change_time_seconds": 0.4710693359375,
+      "change_time_formatted": "0.47s",
+      "immediate": true,
+      "within_5_minutes": true,
+      "success": true,
+      "details": "Removed Events_Read_All role\n   Current groups: ['hdcnLeden', 'Members_Read_All']\n   Role removed successfully: True"
+    },
+    {
+      "timestamp": "2025-12-25T23:05:24.480861",
+      "test": "Multiple role changes",
+      "change_time_seconds": 0.9062721729278564,
+      "change_time_formatted": "0.91s",
+      "immediate": true,
+      "within_5_minutes": true,
+      "success": true,
+      "details": "Added 3 roles: ['Members_Read_All', 'Events_Read_All', 'Products_Read_All']\n   Current groups: ['Products_Read_All', 'Events_Read_All', 'Members_Read_All', 'hdcnLeden']\n   All roles added: True"
+    },
+    {
+      "timestamp": "2025-12-25T23:05:27.640611",
+      "test": "Role replacement",
+      "change_time_seconds": 1.3027887344360352,
+      "change_time_formatted": "1.30s",
+      "immediate": true,
+      "within_5_minutes": true,
+      "success": true,
+      "details": "Replaced ['Members_Read_All', 'Events_Read_All'] with ['Members_CRUD_All', 'System_User_Management']\n   Current groups: ['System_User_Management', 'Members_CRUD_All']\n   Old roles removed: True\n   New roles added: True"
+    },
+    {
+      "timestamp": "2025-12-25T23:05:29.932320",
+      "test": "Rapid successive changes",
+      "change_time_seconds": 1.4440507888793945,
+      "change_time_formatted": "1.44s",
+      "immediate": true,
+      "within_5_minutes": true,
+      "success": true,
+      "details": "Performed 6 rapid changes\n   Expected final roles: ['hdcnLeden', 'Products_Read_All', 'Members_CRUD_All']\n   Current groups: ['hdcnLeden', 'Products_Read_All', 'Members_CRUD_All']\n   Final state correct: True"
+    }
+  ]
+}

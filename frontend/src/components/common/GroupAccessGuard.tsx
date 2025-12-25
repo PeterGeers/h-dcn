@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Box, VStack, Heading, Text, Button, Alert, AlertIcon } from '@chakra-ui/react';
 
-function GroupAccessGuard({ user, children, signOut }) {
+interface CognitoUser {
+  signInUserSession?: {
+    accessToken?: {
+      payload: {
+        'cognito:groups'?: string[];
+      };
+    };
+  };
+  attributes?: {
+    email?: string;
+  };
+  username?: string;
+}
+
+interface GroupAccessGuardProps {
+  user: CognitoUser;
+  children: ReactNode;
+  signOut: () => void;
+}
+
+function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
   const userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
   const hasGroupAccess = userGroups.length > 0;
 
@@ -27,8 +47,6 @@ function GroupAccessGuard({ user, children, signOut }) {
             Account: {user?.attributes?.email || user?.username}
           </Text>
           
-
-          
           <Button onClick={signOut} colorScheme="orange" size="lg">
             Uitloggen
           </Button>
@@ -37,7 +55,7 @@ function GroupAccessGuard({ user, children, signOut }) {
     );
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 export default GroupAccessGuard;

@@ -1,0 +1,212 @@
+2025-12-25 18:47:55,783 - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-12-25 18:47:55,876 - INFO - Starting user migration process...
+2025-12-25 18:47:55,876 - INFO - Retrieving users from old pool: eu-west-1_VtKQHhXGN
+2025-12-25 18:47:56,602 - INFO - Retrieved 60 users so far...
+2025-12-25 18:47:56,718 - INFO - Total users retrieved from old pool: 66
+2025-12-25 18:47:56,720 - INFO - Starting migration of 66 users...
+2025-12-25 18:47:56,720 - INFO - Migrating user 1/66
+2025-12-25 18:47:56,843 - ERROR - Error creating user clubshop.limburg@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:56,963 - INFO - Migrating user 2/66
+2025-12-25 18:47:57,079 - ERROR - Error creating user toercommissaris.utrecht@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:57,180 - INFO - Migrating user 3/66
+2025-12-25 18:47:57,297 - ERROR - Error creating user secretaris.groningen-drenthe@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:57,397 - INFO - Migrating user 4/66
+2025-12-25 18:47:57,513 - ERROR - Error creating user voorzitter.groningen-drenthe@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:57,615 - INFO - Migrating user 5/66
+2025-12-25 18:47:57,744 - ERROR - Error creating user merchandise.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:57,845 - INFO - Migrating user 6/66
+2025-12-25 18:47:57,963 - ERROR - Error creating user algemeen.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:58,064 - INFO - Migrating user 7/66
+2025-12-25 18:47:58,196 - ERROR - Error creating user penningmeester.zuid-holland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:58,298 - INFO - Migrating user 8/66
+2025-12-25 18:47:58,397 - ERROR - Error creating user tourcommissie.zuid-holland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:58,498 - INFO - Migrating user 9/66
+2025-12-25 18:47:58,602 - ERROR - Error creating user voorzitter.friesland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:58,703 - INFO - Migrating user 10/66
+2025-12-25 18:47:58,913 - ERROR - Error creating user penningmeester.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:59,015 - INFO - Progress: 10/66 users processed
+2025-12-25 18:47:59,015 - INFO - Migrating user 11/66
+2025-12-25 18:47:59,167 - ERROR - Error creating user algemeen.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:59,267 - INFO - Migrating user 12/66
+2025-12-25 18:47:59,376 - ERROR - Error creating user avs.duitsland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:59,477 - INFO - Migrating user 13/66
+2025-12-25 18:47:59,580 - ERROR - Error creating user robstolkerring@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:59,681 - INFO - Migrating user 14/66
+2025-12-25 18:47:59,812 - ERROR - Error creating user penningmeester.brabantzeeland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:47:59,914 - INFO - Migrating user 15/66
+2025-12-25 18:47:59,974 - ERROR - Error creating user web.friesland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:00,075 - INFO - Migrating user 16/66
+2025-12-25 18:48:00,182 - ERROR - Error creating user penningmeester.duitsland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:00,283 - INFO - Migrating user 17/66
+2025-12-25 18:48:00,392 - ERROR - Error creating user voorzitter.brabant-zeeland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:00,494 - INFO - Migrating user 18/66
+2025-12-25 18:48:00,596 - ERROR - Error creating user kimgeers@hotmail.com: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:00,698 - INFO - Migrating user 19/66
+2025-12-25 18:48:00,805 - ERROR - Error creating user secretaris@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:00,907 - INFO - Migrating user 20/66
+2025-12-25 18:48:01,063 - ERROR - Error creating user penningmeester.friesland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:01,164 - INFO - Progress: 20/66 users processed
+2025-12-25 18:48:01,164 - INFO - Migrating user 21/66
+2025-12-25 18:48:01,274 - ERROR - Error creating user vice-president@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:01,375 - INFO - Migrating user 22/66
+2025-12-25 18:48:01,455 - ERROR - Error creating user secretaris.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:01,556 - INFO - Migrating user 23/66
+2025-12-25 18:48:01,672 - ERROR - Error creating user toercommissie@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:01,773 - INFO - Migrating user 24/66
+2025-12-25 18:48:01,888 - ERROR - Error creating user algemeen1.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:01,990 - INFO - Migrating user 25/66
+2025-12-25 18:48:02,073 - ERROR - Error creating user toercommissaris.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:02,174 - INFO - Migrating user 26/66
+2025-12-25 18:48:02,293 - ERROR - Error creating user ledenadministratie@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:02,394 - INFO - Migrating user 27/66
+2025-12-25 18:48:02,503 - ERROR - Error creating user voorzitter.limburg@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:02,604 - INFO - Migrating user 28/66
+2025-12-25 18:48:02,712 - ERROR - Error creating user penningmeester@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:02,813 - INFO - Migrating user 29/66
+2025-12-25 18:48:02,946 - ERROR - Error creating user voorzitter.utrecht@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:03,047 - INFO - Migrating user 30/66
+2025-12-25 18:48:03,149 - ERROR - Error creating user clubsjop@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:03,250 - INFO - Progress: 30/66 users processed
+2025-12-25 18:48:03,251 - INFO - Migrating user 31/66
+2025-12-25 18:48:03,364 - ERROR - Error creating user hulpje.penningmeester@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:03,465 - INFO - Migrating user 32/66
+2025-12-25 18:48:03,575 - ERROR - Error creating user peter@jabaki.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:03,676 - INFO - Migrating user 33/66
+2025-12-25 18:48:03,863 - ERROR - Error creating user vrijwilligers.utrecht@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:03,965 - INFO - Migrating user 34/66
+2025-12-25 18:48:04,085 - ERROR - Error creating user voorzitter.duitsland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:04,187 - INFO - Migrating user 35/66
+2025-12-25 18:48:04,307 - ERROR - Error creating user algemeen.duitsland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:04,407 - INFO - Migrating user 36/66
+2025-12-25 18:48:04,532 - ERROR - Error creating user Ilovepapa@pgeers.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:04,633 - INFO - Migrating user 37/66
+2025-12-25 18:48:04,762 - ERROR - Error creating user secretaris.duitsland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:04,863 - INFO - Migrating user 38/66
+2025-12-25 18:48:04,947 - ERROR - Error creating user secretaris.zuid-holland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:05,048 - INFO - Migrating user 39/66
+2025-12-25 18:48:05,151 - ERROR - Error creating user penningmeester.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:05,252 - INFO - Migrating user 40/66
+2025-12-25 18:48:05,365 - ERROR - Error creating user penningmeester.limburg@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:05,466 - INFO - Progress: 40/66 users processed
+2025-12-25 18:48:05,466 - INFO - Migrating user 41/66
+2025-12-25 18:48:05,570 - ERROR - Error creating user algemeen.limburg@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:05,672 - INFO - Migrating user 42/66
+2025-12-25 18:48:05,889 - ERROR - Error creating user redacteur@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:05,990 - INFO - Migrating user 43/66
+2025-12-25 18:48:06,153 - ERROR - Error creating user nyp@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:06,254 - INFO - Migrating user 44/66
+2025-12-25 18:48:06,382 - ERROR - Error creating user clubblad@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:06,483 - INFO - Migrating user 45/66
+2025-12-25 18:48:06,710 - ERROR - Error creating user secretaris.friesland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:06,812 - INFO - Migrating user 46/66
+2025-12-25 18:48:06,966 - ERROR - Error creating user toercommissaris.groningen-drenthe@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:07,067 - INFO - Migrating user 47/66
+2025-12-25 18:48:07,325 - ERROR - Error creating user vrijwilligers@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:07,427 - INFO - Migrating user 48/66
+2025-12-25 18:48:07,585 - ERROR - Error creating user secretaris.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:07,686 - INFO - Migrating user 49/66
+2025-12-25 18:48:07,850 - ERROR - Error creating user penningmeester.groningen-drenthe@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:07,951 - INFO - Migrating user 50/66
+2025-12-25 18:48:08,057 - ERROR - Error creating user president@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:08,158 - INFO - Progress: 50/66 users processed
+2025-12-25 18:48:08,159 - INFO - Migrating user 51/66
+2025-12-25 18:48:08,258 - ERROR - Error creating user media.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:08,360 - INFO - Migrating user 52/66
+2025-12-25 18:48:08,471 - ERROR - Error creating user webmaster@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:08,572 - INFO - Migrating user 53/66
+2025-12-25 18:48:08,691 - ERROR - Error creating user peter.geers@live.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:08,792 - INFO - Migrating user 54/66
+2025-12-25 18:48:08,903 - ERROR - Error creating user toercommissaris.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:09,004 - INFO - Migrating user 55/66
+2025-12-25 18:48:09,113 - ERROR - Error creating user peter@pgeers.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:09,214 - INFO - Migrating user 56/66
+2025-12-25 18:48:09,323 - ERROR - Error creating user secretaris.noordbrabant-zeeland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:09,424 - INFO - Migrating user 57/66
+2025-12-25 18:48:09,543 - ERROR - Error creating user activiteiten.duitsland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:09,644 - INFO - Migrating user 58/66
+2025-12-25 18:48:09,712 - ERROR - Error creating user secretaris.limburg@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:09,813 - INFO - Migrating user 59/66
+2025-12-25 18:48:09,924 - ERROR - Error creating user webmaster.zuid-holland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:10,026 - INFO - Migrating user 60/66
+2025-12-25 18:48:10,139 - ERROR - Error creating user voorzitter.oost@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:10,240 - INFO - Progress: 60/66 users processed
+2025-12-25 18:48:10,240 - INFO - Migrating user 61/66
+2025-12-25 18:48:10,319 - ERROR - Error creating user algemeen1.limburg@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:10,421 - INFO - Migrating user 62/66
+2025-12-25 18:48:10,551 - ERROR - Error creating user voorzitter.zuid-holland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:10,652 - INFO - Migrating user 63/66
+2025-12-25 18:48:10,751 - ERROR - Error creating user voorzitter.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:10,853 - INFO - Migrating user 64/66
+2025-12-25 18:48:10,974 - ERROR - Error creating user acriviteiten.noordholland@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:11,076 - INFO - Migrating user 65/66
+2025-12-25 18:48:11,201 - ERROR - Error creating user penningmeester.utrecht@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:11,302 - INFO - Migrating user 66/66
+2025-12-25 18:48:11,418 - ERROR - Error creating user secretaris.utrecht@h-dcn.nl: Parameter validation failed:
+Invalid type for parameter TemporaryPassword, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2025-12-25 18:48:11,519 - INFO - Migration process completed!
+2025-12-25 18:48:11,524 - INFO - Migration report saved to: migration_report_20251225_184811.txt

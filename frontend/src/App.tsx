@@ -6,12 +6,20 @@ import { Suspense, lazy } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
+import { UserAccountPopup } from './components/common/UserAccountPopup';
 
 interface User {
   attributes?: {
     given_name?: string;
     family_name?: string;
     email?: string;
+  };
+  signInUserSession?: {
+    accessToken?: {
+      payload: {
+        'cognito:groups'?: string[];
+      };
+    };
   };
 }
 
@@ -80,21 +88,9 @@ function NavigationHeader({ signOut, user }: AppProps) {
         >
           Profiel
         </Button>
-        <Text 
-          fontSize={{ base: 'xs', md: 'sm' }}
-          textAlign={{ base: 'center', sm: 'left' }}
-          py={{ base: 1, sm: 0 }}
-        >
-          Welkom, {user?.attributes?.given_name || 'Gebruiker'}
-        </Text>
-        <Button 
-          onClick={signOut} 
-          colorScheme="orange" 
-          size={{ base: 'sm', md: 'sm' }}
-          w={{ base: 'full', sm: 'auto' }}
-        >
-          Uitloggen
-        </Button>
+        
+        {/* User Account Popup - Shows email address and role information */}
+        <UserAccountPopup user={user} signOut={signOut} />
       </Flex>
     </Flex>
   );

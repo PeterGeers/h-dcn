@@ -1,4 +1,4 @@
-import { Auth } from 'aws-amplify';
+import { getCurrentUser as amplifyGetCurrentUser, AuthUser } from 'aws-amplify/auth';
 
 interface CognitoUser {
   username: string;
@@ -9,7 +9,14 @@ interface CognitoUser {
 
 export const getCurrentUser = async (): Promise<CognitoUser | null> => {
   try {
-    return await Auth.currentAuthenticatedUser();
+    const authUser: AuthUser = await amplifyGetCurrentUser();
+    // Convert AuthUser to CognitoUser format for backward compatibility
+    return {
+      username: authUser.username,
+      attributes: authUser.signInDetails || {},
+      signInUserSession: null, // Not available in v6
+      userId: authUser.userId
+    } as CognitoUser;
   } catch (error) {
     return null;
   }

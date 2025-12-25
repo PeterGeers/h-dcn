@@ -11,7 +11,7 @@ import {
   AlertIcon,
   Heading
 } from '@chakra-ui/react';
-import { Auth } from 'aws-amplify';
+import { signUp } from 'aws-amplify/auth';
 
 interface PasswordlessSignUpProps {
   onSuccess?: (email: string) => void;

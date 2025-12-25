@@ -1,0 +1,65 @@
+[
+  {
+    "timestamp": "2025-12-25T19:30:48.488859",
+    "test": "Default member group exists",
+    "success": true,
+    "details": "Group 'hdcnLeden' found with description: 'Basic H-DCN member role - access to personal data and webshop', precedence: 100",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:49.080540",
+    "test": "Test user creation",
+    "success": true,
+    "details": "User created with email role.test.95e7a802@example.com, UserSub: 02a554c4-80e1-706b-57c0-f5208baa053b",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:49.229556",
+    "test": "User status after creation",
+    "success": true,
+    "details": "User status: UNCONFIRMED (expected: UNCONFIRMED)",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:49.423282",
+    "test": "Groups before confirmation",
+    "success": true,
+    "details": "User has 0 groups before confirmation: []",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:50.168330",
+    "test": "User confirmation",
+    "success": true,
+    "details": "User role.test.95e7a802@example.com confirmed successfully",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:53.303177",
+    "test": "User status after confirmation",
+    "success": true,
+    "details": "User status: CONFIRMED (expected: CONFIRMED)",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:53.525909",
+    "test": "Automatic role assignment",
+    "success": true,
+    "details": "User successfully assigned to 'hdcnLeden' group. Group description: 'Basic H-DCN member role - access to personal data and webshop'. Total groups: 1",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:53.743149",
+    "test": "PostConfirmation Lambda trigger configured",
+    "success": true,
+    "details": "PostConfirmation trigger ARN: arn:aws:lambda:eu-west-1:344561557829:function:webshop-backend-CognitoPostConfirmationFunction-FYIXsV0FkhJp",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-25T19:30:53.743149",
+    "test": "CustomMessage Lambda trigger configured",
+    "success": true,
+    "details": "CustomMessage trigger ARN: arn:aws:lambda:eu-west-1:344561557829:function:webshop-backend-CognitoCustomMessageFunction-l9WtXSKnezpI",
+    "error": null
+  }
+]

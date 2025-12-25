@@ -2,7 +2,7 @@
 
 import pytest
 import boto3
-from moto import mock_dynamodb
+from moto import mock_aws
 import os
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def aws_credentials():
 @pytest.fixture
 def dynamodb_table(aws_credentials):
     """Create a mocked DynamoDB table for testing."""
-    with mock_dynamodb():
+    with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         
         # Create Members table

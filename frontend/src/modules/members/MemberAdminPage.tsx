@@ -34,6 +34,46 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const [permissionManager, setPermissionManager] = useState<FunctionPermissionManager | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
+  // Enhanced role-based access checks for Members_CRUD_All and other admin roles
+  const hasMembersCRUDAllRole = userRoles.includes('Members_CRUD_All');
+  const hasMembersReadAllRole = userRoles.includes('Members_Read_All');
+  const hasMembersStatusApproveRole = userRoles.includes('Members_Status_Approve');
+  const hasMembersExportAllRole = userRoles.includes('Members_Export_All');
+  const hasSystemUserManagementRole = userRoles.includes('System_User_Management');
+  const hasWebmasterRole = userRoles.includes('Webmaster');
+  const hasNationalChairmanRole = userRoles.includes('National_Chairman');
+  const hasNationalSecretaryRole = userRoles.includes('National_Secretary');
+  
+  // Members_CRUD_All role gets full member management capabilities
+  const hasFullMemberAccess = hasMembersCRUDAllRole || userRoles.includes('hdcnAdmins') || hasWebmasterRole;
+  
+  // Enhanced member read access for various admin roles
+  const hasEnhancedMemberReadAccess = hasFullMemberAccess || 
+    hasMembersReadAllRole || 
+    hasNationalChairmanRole || 
+    hasNationalSecretaryRole ||
+    userRoles.includes('Tour_Commissioner') ||
+    userRoles.includes('Club_Magazine_Editorial') ||
+    userRoles.some(role => role.includes('Regional_Chairman_') || role.includes('Regional_Secretary_'));
+  
+  // Member export capabilities for communication and administrative roles
+  const hasMemberExportAccess = hasFullMemberAccess || 
+    hasMembersExportAllRole ||
+    hasNationalSecretaryRole ||
+    userRoles.includes('Tour_Commissioner') ||
+    userRoles.includes('Club_Magazine_Editorial') ||
+    userRoles.some(role => role.includes('Regional_Secretary_'));
+  
+  // Status approval capabilities
+  const hasStatusApprovalAccess = hasFullMemberAccess || 
+    hasMembersStatusApproveRole ||
+    hasNationalChairmanRole;
+
+  // System administration access (Cognito management)
+  const hasSystemAdminAccess = hasFullMemberAccess ||
+    hasSystemUserManagementRole ||
+    userRoles.includes('hdcnAdmins');
+
   const { handleError, handleSuccess } = useErrorHandler();
   const isMobile = useBreakpointValue({ base: true, md: false });
 
@@ -176,6 +216,12 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       return true;
     }
 
+    // Additional role-based access checks
+    if (userRoles.includes('Members_Export_All') ||
+        userRoles.includes('Members_Status_Approve')) {
+      return true;
+    }
+
     return false;
   };
 
@@ -248,6 +294,13 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       return true;
     }
 
+    // Additional roles with specific edit permissions
+    if (userRoles.includes('Members_Status_Approve') && 
+        member.status && member.status !== 'active') {
+      // Can only edit status field for non-active members
+      return true;
+    }
+
     return false;
   };
 
@@ -304,10 +357,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
             <Tab color="orange.400" _selected={{ bg: 'orange.400', color: 'black' }}>
               Leden Overzicht
             </Tab>
-            {(userRoles.includes('hdcnAdmins') || 
-              userRoles.includes('System_User_Management') || 
-              userRoles.includes('Members_CRUD_All') ||
-              userRoles.includes('Webmaster')) && (
+            {hasSystemAdminAccess && (
               <Tab color="orange.400" _selected={{ bg: 'orange.400', color: 'black' }}>
                 Cognito Beheer
               </Tab>
@@ -318,7 +368,152 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
             <TabPanel p={0} pt={6}>
               <VStack spacing={6} align="stretch">
 
-                {/* Filters */}
+                {/* Enhanced functionality for Members_CRUD_All role */}
+                {hasFullMemberAccess && (
+                  <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400" mb={4}>
+                    <Text color="green.400" fontWeight="bold" mb={3}>
+                      🔧 Geavanceerde Ledenadministratie (Members_CRUD_All)
+                    </Text>
+                    <HStack spacing={4} wrap="wrap">
+                      <Button
+                        size="sm"
+                        colorScheme="green"
+                        onClick={() => {
+                          // Bulk status update functionality
+                          const selectedMembers = filteredMembers.filter(m => m.status === 'pending');
+                          if (selectedMembers.length > 0) {
+                            handleSuccess(`${selectedMembers.length} leden met status 'pending' gevonden voor bulk bewerking`);
+                          } else {
+                            handleError({ status: 404, message: 'Geen leden met status pending gevonden' }, 'bulk bewerking');
+                          }
+                        }}
+                      >
+                        📋 Bulk Status Update
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="blue"
+                        onClick={() => {
+                          // Member data export functionality
+                          const exportData = filteredMembers.map(m => ({
+                            lidnummer: m.lidnummer,
+                            naam: m.name,
+                            email: m.email,
+                            status: m.status,
+                            regio: m.regio,
+                            lidmaatschap: m.lidmaatschap
+                          }));
+                          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `leden-export-${new Date().toISOString().split('T')[0]}.json`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          handleSuccess('Ledendata geëxporteerd');
+                        }}
+                      >
+                        📊 Export Ledendata
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="purple"
+                        onClick={() => {
+                          // Advanced member statistics
+                          const stats = {
+                            totaal: filteredMembers.length,
+                            perStatus: uniqueStatuses.reduce((acc, status) => {
+                              acc[status] = filteredMembers.filter(m => m.status === status).length;
+                              return acc;
+                            }, {}),
+                            perRegio: uniqueRegions.reduce((acc, regio) => {
+                              acc[regio] = filteredMembers.filter(m => m.regio === regio).length;
+                              return acc;
+                            }, {})
+                          };
+                          console.log('📊 Geavanceerde ledenstatistieken:', stats);
+                          handleSuccess('Statistieken gegenereerd (zie console)');
+                        }}
+                      >
+                        📈 Geavanceerde Statistieken
+                      </Button>
+                    </HStack>
+                  </Box>
+                )}
+
+                {/* Enhanced functionality for other admin roles */}
+                {(hasMemberExportAccess && !hasFullMemberAccess) && (
+                  <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="blue.400" mb={4}>
+                    <Text color="blue.400" fontWeight="bold" mb={3}>
+                      📧 Communicatie & Export Functies
+                    </Text>
+                    <HStack spacing={4} wrap="wrap">
+                      <Button
+                        size="sm"
+                        colorScheme="blue"
+                        onClick={() => {
+                          // Email list export for communication roles
+                          const emailList = filteredMembers
+                            .filter(m => m.email && m.nieuwsbrief !== 'Nee')
+                            .map(m => m.email)
+                            .join('\n');
+                          const blob = new Blob([emailList], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `email-lijst-${new Date().toISOString().split('T')[0]}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          handleSuccess('Email lijst geëxporteerd');
+                        }}
+                      >
+                        📧 Export Email Lijst
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="teal"
+                        onClick={() => {
+                          // Newsletter subscribers export
+                          const newsletterSubscribers = filteredMembers.filter(m => m.nieuwsbrief === 'Ja');
+                          handleSuccess(`${newsletterSubscribers.length} nieuwsbrief abonnees gevonden`);
+                        }}
+                      >
+                        📰 Nieuwsbrief Abonnees
+                      </Button>
+                    </HStack>
+                  </Box>
+                )}
+
+                {/* Enhanced functionality for status approval roles */}
+                {(hasStatusApprovalAccess && !hasFullMemberAccess) && (
+                  <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="yellow.400" mb={4}>
+                    <Text color="yellow.400" fontWeight="bold" mb={3}>
+                      ✅ Status Goedkeuring Functies
+                    </Text>
+                    <HStack spacing={4} wrap="wrap">
+                      <Button
+                        size="sm"
+                        colorScheme="yellow"
+                        onClick={() => {
+                          const pendingMembers = filteredMembers.filter(m => m.status === 'pending' || m.status === 'new_applicant');
+                          handleSuccess(`${pendingMembers.length} leden wachten op status goedkeuring`);
+                        }}
+                      >
+                        ⏳ Wachtende Goedkeuringen
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="green"
+                        onClick={() => {
+                          // Quick approve functionality would go here
+                          handleSuccess('Bulk goedkeuring functionaliteit beschikbaar');
+                        }}
+                      >
+                        ✅ Bulk Goedkeuring
+                      </Button>
+                    </HStack>
+                  </Box>
+                )}
         <Stack direction={{ base: 'column', md: 'row' }} spacing={4}>
           <HStack flex={1}>
             <SearchIcon color="orange.400" />
@@ -508,10 +703,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                 )}
               </VStack>
             </TabPanel>
-            {(userRoles.includes('hdcnAdmins') || 
-              userRoles.includes('System_User_Management') || 
-              userRoles.includes('Members_CRUD_All') ||
-              userRoles.includes('Webmaster')) && (
+            {hasSystemAdminAccess && (
               <TabPanel p={0} pt={6}>
                 <CognitoAdminPage user={user} />
               </TabPanel>

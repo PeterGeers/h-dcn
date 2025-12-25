@@ -485,6 +485,7 @@ function WebshopPage({ user }: WebshopPageProps) {
       user={user} 
       functionName="webshop" 
       action="read"
+      requiredRoles={['hdcnLeden']}
       fallback={
         <Box minH="100vh" bg="gray.100" display="flex" alignItems="center" justifyContent="center">
           <Alert status="warning" maxW="md">
@@ -512,6 +513,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               user={user} 
               functionName="orders" 
               action="read"
+              requiredRoles={['Products_CRUD_All', 'System_User_Management']}
               fallback={null}
             >
               <Button
@@ -540,6 +542,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               user={user} 
               functionName="orders" 
               action="read"
+              requiredRoles={['Products_CRUD_All', 'System_User_Management']}
               fallback={
                 <Alert status="warning">
                   <AlertIcon />

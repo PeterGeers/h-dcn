@@ -1,0 +1,16 @@
+
+=== H-DCN COGNITO USER MIGRATION REPORT ===
+Migration Date: 2025-12-25 18:49:51
+Old Pool: eu-west-1_VtKQHhXGN
+New Pool: eu-west-1_OAT3oPCIm
+
+MIGRATION STATISTICS:
+- Total Users in Old Pool: 66
+- Successful Migrations: 66
+- Failed Migrations: 0
+- Duplicate Emails: 0
+- Invalid Emails: 0
+
+SUCCESS RATE: 100.0%
+
+=== END REPORT ===

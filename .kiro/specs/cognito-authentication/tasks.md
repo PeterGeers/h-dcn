@@ -191,53 +191,54 @@ This document outlines the implementation tasks for the H-DCN Cognito Authentica
 
 4. **Update existing FunctionGuard component**
 
-   - [ ] Review current `frontend/src/components/common/FunctionGuard.tsx` logic
-   - [ ] Add `requiredRoles` prop to component interface
-   - [ ] Implement role-based access validation
-   - [ ] Preserve existing function-based access control
-   - [ ] Add combined permission checking (membership AND roles)
-   - [ ] Update all existing FunctionGuard usages
-   - [ ] Test component with various role combinations
+   - [x] Review current `frontend/src/components/common/FunctionGuard.tsx` logic
+   - [x] Add `requiredRoles` prop to component interface
+   - [x] Implement role-based access validation
+   - [x] Preserve existing function-based access control
+   - [x] Add combined permission checking (membership AND roles)
+   - [x] Update all existing FunctionGuard usages
+   - [x] Test component with various role combinations
 
 #### Acceptance Criteria:
 
-- [ ] **Existing parameter-based module access is preserved and enhanced with role logic**
-  - [ ] Current membership type restrictions still work
-  - [ ] Parameter-based module visibility is maintained
-  - [ ] Role-based enhancements are additive, not replacing
-- [ ] **Existing FunctionPermissionManager is enhanced to handle role-based permissions**
-  - [ ] getUserRoles() function extracts Cognito groups correctly
-  - [ ] calculatePermissions() combines role permissions properly
-  - [ ] Existing permission checks continue to work
-  - [ ] New role-based permissions are calculated correctly
-- [ ] **All existing modules respect role-based system**
-  - [ ] Members module shows/hides features based on roles
-  - [ ] Events module respects role-based permissions
-  - [ ] Products module access is role-controlled
-  - [ ] Parameters module is restricted to admin roles
-  - [ ] Memberships module requires Members_CRUD_All role
-- [ ] **FunctionGuard component supports role checks while preserving existing functionality**
-  - [ ] requiredRoles prop works correctly
-  - [ ] Existing function-based guards still work
-  - [ ] Combined permission checking functions properly
-- [ ] **Regular members see limited functionality (only basic member features)**
-  - [ ] hdcnLeden role shows appropriate limited interface
-  - [ ] Administrative features are hidden from regular members
-- [ ] **Administrative roles see enhanced functionality based on their assigned roles**
-  - [ ] Members_CRUD_All role sees full member management
-  - [ ] Other admin roles see appropriate functionality
-- [ ] **Parameters module is restricted to administrative roles only**
-  - [ ] Regular members cannot access parameter management
-  - [ ] Only users with admin roles can modify parameters
-- [ ] **Membership management is restricted to Members_CRUD_All role**
-  - [ ] Only authorized users can access membership management
-  - [ ] Role validation prevents unauthorized access
-- [ ] **Existing membership-based permissions are preserved and work alongside new role permissions**
-  - [ ] No existing functionality is broken
-  - [ ] New permissions are additive to existing ones
-- [ ] **Backward compatibility maintained with existing parameter configurations**
-  - [ ] Existing parameter data continues to work
-  - [ ] No migration of existing parameter configurations required
+- [x] **Existing parameter-based module access is preserved and enhanced with role logic**
+  - [x] Current membership type restrictions still work
+  - [x] Parameter-based module visibility is maintained
+  - [x] Role-based enhancements are additive, not replacing
+- [x] **Existing FunctionPermissionManager is enhanced to handle role-based permissions**
+  - [x] getUserRoles() function extracts Cognito groups correctly
+  - [x] calculatePermissions() combines role permissions properly
+  - [x] Existing permission checks continue to work
+  - [x] New role-based permissions are calculated correctly
+- [-] **All existing modules respect role-based system**
+  - [x] Members module shows/hides features based on roles
+  - [x] Events module respects role-based permissions
+  - [x] Products module access is role-controlled
+  - [x] Parameters module is restricted to admin roles
+  - [x] Memberships module requires Members_CRUD_All role
+- [x] **FunctionGuard component supports role checks while preserving existing functionality**
+  - [x] requiredRoles prop works correct
+        ly
+  - [x] Existing function-based guards still work
+  - [x] Combined permission checking functions properly
+- [x] **Regular members see limited functionality (only basic member features)**
+  - [x] hdcnLeden role shows appropriate limited interface
+  - [x] Administrative features are hidden from regular members
+- [x] **Administrative roles see enhanced functionality based on their assigned roles**
+  - [x] Members_CRUD_All role sees full member management
+  - [x] Other admin roles see appropriate functionality
+- [x] **Parameters module is restricted to administrative roles only**
+  - [x] Regular members cannot access parameter management
+  - [x] Only users with admin roles can modify parameters
+- [x] **Membership management is restricted to Members_CRUD_All role**
+  - [x] Only authorized users can access membership management
+  - [x] Role validation prevents unauthorized access
+- [x] **Existing membership-based permissions are preserved and work alongside new role permissions**
+  - [x] No existing functionality is broken
+  - [x] New permissions are additive to existing ones
+- [x] **Backward compatibility maintained with existing parameter configurations**
+  - [x] Existing parameter data continues to work
+  - [x] No migration of existing parameter configurations required
 
 ---
 
@@ -250,7 +251,7 @@ This document outlines the implementation tasks for the H-DCN Cognito Authentica
 
 1. **Create IaC for Cognito Groups (Roles)**
 
-   - [ ] Add Cognito User Pool Groups to SAM template:
+   - [x] Add Cognito User Pool Groups to SAM template:
      ```yaml
      # Implementation checklist:
      # [ ] Define CognitoUserPoolGroup resources for each role
@@ -258,110 +259,110 @@ This document outlines the implementation tasks for the H-DCN Cognito Authentica
      # [ ] Reference the User Pool from MVP-1 configuration
      # [ ] Use consistent naming convention for all groups
      ```
-   - [ ] Define all H-DCN roles as Cognito Groups in IaC:
-     - [ ] **Basic member role**: `hdcnLeden` (precedence: 100)
-     - [ ] **Member management roles**:
-       - [ ] `Members_CRUD_All` (precedence: 10)
-       - [ ] `Members_Read_All` (precedence: 20)
-       - [ ] `Members_Status_Approve` (precedence: 15)
-     - [ ] **Event management roles**:
-       - [ ] `Events_Read_All` (precedence: 30)
-       - [ ] `Events_CRUD_All` (precedence: 25)
-     - [ ] **Product management roles**:
-       - [ ] `Products_Read_All` (precedence: 40)
-       - [ ] `Products_CRUD_All` (precedence: 35)
-     - [ ] **Communication roles**:
-       - [ ] `Communication_Read_All` (precedence: 50)
-       - [ ] `Communication_Export_All` (precedence: 45)
-     - [ ] **System administration roles**:
-       - [ ] `System_User_Management` (precedence: 5)
-       - [ ] `System_Logs_Read` (precedence: 55)
+   - [x] Define all H-DCN roles as Cognito Groups in IaC:
+     - [x] **Basic member role**: `hdcnLeden` (precedence: 100)
+     - [x] **Member management roles**:
+       - [x] `Members_CRUD_All` (precedence: 10)
+       - [x] `Members_Read_All` (precedence: 20)
+       - [x] `Members_Status_Approve` (precedence: 15)
+     - [x] **Event management roles**:
+       - [x] `Events_Read_All` (precedence: 30)
+       - [x] `Events_CRUD_All` (precedence: 25)
+     - [x] **Product management roles**:
+       - [x] `Products_Read_All` (precedence: 40)
+       - [x] `Products_CRUD_All` (precedence: 35)
+     - [x] **Communication roles**:
+       - [x] `Communication_Read_All` (precedence: 50)
+       - [x] `Communication_Export_All` (precedence: 45)
+     - [x] **System administration roles**:
+       - [x] `System_User_Management` (precedence: 5)
+       - [x] `System_Logs_Read` (precedence: 55)
 
 2. **Document role hierarchy and permissions matrix**
 
-   - [ ] Create role definition spreadsheet with permissions mapping
-   - [ ] Document role precedence and inheritance rules
-   - [ ] Define permission combinations for common organizational functions:
-     - [ ] **Member Administration**: [`Members_CRUD_All`, `Events_Read_All`, `Products_Read_All`, `Communication_Read_All`, `System_User_Management`]
-     - [ ] **National Chairman**: [`Members_Read_All`, `Members_Status_Approve`, `Events_Read_All`, `Products_Read_All`, `Communication_Read_All`, `System_Logs_Read`]
-     - [ ] **Webmaster**: [`Members_Read_All`, `Events_CRUD_All`, `Products_CRUD_All`, `Communication_CRUD_All`, `System_CRUD_All`]
-     - [ ] **Regular Members**: [`hdcnLeden`]
+   - [x] Create role definition spreadsheet with permissions mapping
+   - [x] Document role precedence and inheritance rules
+   - [x] Define permission combinations for common organizational functions:
+     - [x] **Member Administration**: [`Members_CRUD_All`, `Events_Read_All`, `Products_Read_All`, `Communication_Read_All`, `System_User_Management`]
+     - [x] **National Chairman**: [`Members_Read_All`, `Members_Status_Approve`, `Events_Read_All`, `Products_Read_All`, `Communication_Read_All`, `System_Logs_Read`]
+     - [x] **Webmaster**: [`Members_Read_All`, `Events_CRUD_All`, `Products_CRUD_All`, `Communication_CRUD_All`, `System_CRUD_All`]
+     - [x] **Regular Members**: [`hdcnLeden`]
 
 3. **Deploy IaC and verify group creation**
 
-   - [ ] Deploy SAM template with Cognito Groups:
-     - [ ] Run `sam build` to build updated template
-     - [ ] Run `sam deploy` to deploy group resources
-     - [ ] Verify all groups are created in Cognito User Pool
-     - [ ] Verify group precedence is set correctly
-   - [ ] Document group IDs and settings for reference
-   - [ ] Verify groups appear in AWS Console with correct descriptions
+   - [x] Deploy SAM template with Cognito Groups:
+     - [x] Run `sam build` to build updated template
+     - [x] Run `sam deploy` to deploy group resources
+     - [x] Verify all groups are created in Cognito User Pool
+     - [x] Verify group precedence is set correctly
+   - [x] Document group IDs and settings for reference
+   - [x] Verify groups appear in AWS Console with correct descriptions
 
 4. **Set up initial role assignments (manual)**
 
-   - [ ] **Identify and assign Member Administration users**:
-     - [ ] Add users to `Members_CRUD_All` group
-     - [ ] Add users to `Events_Read_All` group
-     - [ ] Add users to `Products_Read_All` group
-     - [ ] Add users to `Communication_Read_All` group
-     - [ ] Add users to `System_User_Management` group
-   - [ ] **Identify and assign National Chairman users**:
-     - [ ] Add users to `Members_Read_All` group
-     - [ ] Add users to `Members_Status_Approve` group
-     - [ ] Add users to `Events_Read_All` group
-     - [ ] Add users to `Products_Read_All` group
-     - [ ] Add users to `Communication_Read_All` group
-     - [ ] Add users to `System_Logs_Read` group
-   - [ ] **Identify and assign Webmaster users**:
-     - [ ] Add users to `Members_Read_All` group
-     - [ ] Add users to `Events_CRUD_All` group
-     - [ ] Add users to `Products_CRUD_All` group
-     - [ ] Add users to `Communication_CRUD_All` group (create if needed)
-     - [ ] Add users to `System_CRUD_All` group (create if needed)
-   - [ ] **Configure default role for regular members**:
-     - [ ] Set up Lambda trigger for automatic `hdcnLeden` assignment (add to IaC)
-     - [ ] Test automatic role assignment for new users
+   - [x] **Identify and assign Member Administration users**:
+     - [x] Add users to `Members_CRUD_All` group
+     - [x] Add users to `Events_Read_All` group
+     - [x] Add users to `Products_Read_All` group
+     - [x] Add users to `Communication_Read_All` group
+     - [x] Add users to `System_User_Management` group
+   - [x] **Identify and assign National Chairman users**:
+     - [x] Add users to `Members_Read_All` group
+     - [x] Add users to `Members_Status_Approve` group
+     - [x] Add users to `Events_Read_All` group
+     - [x] Add users to `Products_Read_All` group
+     - [x] Add users to `Communication_Read_All` group
+     - [x] Add users to `System_Logs_Read` group
+   - [x] **Identify and assign Webmaster users**:
+     - [x] Add users to `Members_Read_All` group
+     - [x] Add users to `Events_CRUD_All` group
+     - [x] Add users to `Products_CRUD_All` group
+     - [x] Add users to `Communication_CRUD_All` group (create if needed)
+     - [x] Add users to `System_CRUD_All` group (create if needed)
+   - [-] **Configure default role for regular members**:
+     - [x] Set up Lambda trigger for automatic `hdcnLeden` assignment (add to IaC)
+     - [x] Test automatic role assignment for new users
 
 5. **Test role-based authentication flow**
-   - [ ] Create test users for each role type
-   - [ ] Test login with Member Administration role user
-   - [ ] Test login with National Chairman role user
-   - [ ] Test login with Webmaster role user
-   - [ ] Test login with regular member (hdcnLeden) role user
-   - [ ] Verify Cognito groups appear in JWT tokens
-   - [ ] Test role assignment changes take effect immediately
-   - [ ] Verify role-based UI rendering works correctly
+   - [x] Create test users for each role type
+   - [x] Test login with Member Administration role user
+   - [x] Test login with National Chairman role user
+   - [x] Test login with Webmaster role user
+   - [x] Test login with regular member (hdcnLeden) role user
+   - [x] Verify Cognito groups appear in JWT tokens
+   - [x] Test role assignment changes take effect immediately
+   - [x] Verify role-based UI rendering works correctly
 
 #### Acceptance Criteria:
 
-- [ ] **IaC template includes all Cognito Groups with proper configuration**
-  - [ ] SAM template defines all required CognitoUserPoolGroup resources
-  - [ ] Groups have appropriate names, descriptions, and precedence
-  - [ ] Template can be deployed successfully
-  - [ ] Groups are created in the correct User Pool
-- [ ] **Permission-based roles are created as Cognito groups**
-  - [ ] All 12+ defined roles exist as Cognito groups
-  - [ ] Group descriptions are clear and accurate
-  - [ ] Group precedence is set correctly
-- [ ] **Initial role assignments are configured for key organizational functions**
-  - [ ] Member Administration users have appropriate role combinations
-  - [ ] National Chairman users have correct permissions
-  - [ ] Webmaster users have full system access
-  - [ ] Test users exist for each role type
-- [ ] **Regular member accounts automatically get `hdcnLeden` role**
-  - [ ] Lambda trigger for automatic role assignment is deployed via IaC
-  - [ ] New user registration assigns hdcnLeden role automatically
-  - [ ] Existing members have hdcnLeden role assigned
-  - [ ] Default role assignment is documented and tested
-- [ ] **Role assignments can be changed dynamically through admin interface**
-  - [ ] AWS Console allows role assignment changes
-  - [ ] Changes take effect immediately or within 5 minutes
-  - [ ] Role changes are reflected in user sessions
-- [ ] **Role-based permissions are enforced in authentication flow**
-  - [ ] JWT tokens contain correct cognito:groups claim
-  - [ ] Frontend can extract roles from user tokens
-  - [ ] Role-based UI rendering works correctly
-  - [ ] Permission validation functions properly
+- [x] **IaC template includes all Cognito Groups with proper configuration**
+  - [x] SAM template defines all required CognitoUserPoolGroup resources
+  - [x] Groups have appropriate names, descriptions, and precedence
+  - [x] Template can be deployed successfully
+  - [x] Groups are created in the correct User Pool
+- [x] **Permission-based roles are created as Cognito groups**
+  - [x] All 12+ defined roles exist as Cognito groups
+  - [x] Group descriptions are clear and accurate
+  - [x] Group precedence is set correctly
+- [x] **Initial role assignments are configured for key organizational functions**
+  - [x] Member Administration users have appropriate role combinations
+  - [x] National Chairman users have correct permissions
+  - [x] Webmaster users have full system access
+  - [x] Test users exist for each role type
+- [x] **Regular member accounts automatically get `hdcnLeden` role**
+  - [x] Lambda trigger for automatic role assignment is deployed via IaC
+  - [x] New user registration assigns hdcnLeden role automatically
+  - [x] Existing members have hdcnLeden role assigned
+  - [x] Default role assignment is documented and tested
+- [x] **Role assignments can be changed dynamically through admin interface**
+  - [x] AWS Console allows role assignment changes
+  - [x] Changes take effect immediately or within 5 minutes
+  - [x] Role changes are reflected in user sessions
+- [x] **Role-based permissions are enforced in authentication flow**
+  - [x] JWT tokens contain correct cognito:groups claim
+  - [x] Frontend can extract roles from user tokens
+  - [x] Role-based UI rendering works correctly
+  - [x] Permission validation functions properly
 
 ---
 
@@ -374,17 +375,17 @@ This document outlines the implementation tasks for the H-DCN Cognito Authentica
 
 1. **Extend existing Lambda handler** (`backend/handler/hdcn_cognito_admin/app.py`)
 
-   - [ ] Review current Lambda handler structure and existing endpoints
-   - [ ] Add new authentication endpoints:
-     - [ ] Create `GET /auth/login` endpoint for user authentication
-     - [ ] Create `GET /auth/permissions` endpoint for user permissions
-     - [ ] Create `GET /auth/users/{user_id}/roles` endpoint to get user roles
-     - [ ] Create `POST /auth/users/{user_id}/roles` endpoint to assign roles
-     - [ ] Create `DELETE /auth/users/{user_id}/roles/{role}` endpoint to remove roles
-   - [ ] Implement role-based permission calculation logic
-   - [ ] Add role assignment validation (ensure user has permission to assign roles)
-   - [ ] Add error handling for invalid role assignments
-   - [ ] Update Lambda function permissions for Cognito group management
+   - [x] Review current Lambda handler structure and existing endpoints
+   - [x] Add new authentication endpoints:
+     - [x] Create `GET /auth/login` endpoint for user authentication
+     - [x] Create `GET /auth/permissions` endpoint for user permissions
+     - [x] Create `GET /auth/users/{user_id}/roles` endpoint to get user roles
+     - [x] Create `POST /auth/users/{user_id}/roles` endpoint to assign roles
+     - [x] Create `DELETE /auth/users/{user_id}/roles/{role}` endpoint to remove roles
+   - [x] Implement role-based permission calculation logic
+   - [x] Add role assignment validation (ensure user has permission to assign roles)
+   - [x] Add error handling for invalid role assignments
+   - [x] Update Lambda function permissions for Cognito group management
 
 2. **Implement role-based permission system**
 

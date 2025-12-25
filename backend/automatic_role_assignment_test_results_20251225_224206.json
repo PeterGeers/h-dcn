@@ -1,0 +1,11 @@
+{
+  "test_email": "test-role-assignment_20251225_224206@example.com",
+  "timestamp": "20251225_224206",
+  "user_created": false,
+  "user_confirmed": false,
+  "role_assigned": false,
+  "expected_role": "hdcnLeden",
+  "actual_groups": [],
+  "success": false,
+  "error": "An error occurred (ResourceNotFoundException) when calling the AdminCreateUser operation: User pool eu-west-1_VtKQHhXGN does not exist."
+}

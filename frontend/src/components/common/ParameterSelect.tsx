@@ -1,8 +1,21 @@
-import React from 'react';
-import { Select } from '@chakra-ui/react';
+import React, { ChangeEvent } from 'react';
+import { Select, SelectProps } from '@chakra-ui/react';
 import { useParameters } from '../../utils/parameterStore';
 
-function ParameterSelect({ category, placeholder, value, onChange, ...props }) {
+interface ParameterSelectProps extends Omit<SelectProps, 'onChange'> {
+  category: string;
+  placeholder?: string;
+  value?: string;
+  onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
+}
+
+function ParameterSelect({ 
+  category, 
+  placeholder, 
+  value, 
+  onChange, 
+  ...props 
+}: ParameterSelectProps) {
   const { parameters, loading } = useParameters(category);
   
   if (loading) {

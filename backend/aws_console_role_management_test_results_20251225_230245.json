@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-12-25T23:02:36.072061",
+  "test_user": "console.test@hdcn-test.nl",
+  "api_base_url": "https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod",
+  "user_pool_id": "eu-west-1_OAT3oPCIm",
+  "tests": [
+    {
+      "timestamp": "2025-12-25T23:02:39.336867",
+      "test": "Console endpoints available",
+      "success": false,
+      "details": "Available endpoints: 0/3\n   ",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:02:40.516580",
+      "test": "User role query via console",
+      "success": false,
+      "details": "Failed to query user roles\n   API response status: 500\n   Response: {\"error\": \"An error occurred (AccessDeniedException) when calling the AdminListGroupsForUser operation: User: arn:aws:sts::344561557829:assumed-role/webshop-backend-CognitoAdminRole-ZDSbUBpMYRXT/websh",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:02:41.299239",
+      "test": "Role assignment via console",
+      "success": false,
+      "details": "Failed to assign role via console\n   API response status: 500\n   Response: {\"error\": \"An error occurred (AccessDeniedException) when calling the AdminAddUserToGroup operation: User: arn:aws:sts::344561557829:assumed-role/webshop-backend-CognitoAdminRole-ZDSbUBpMYRXT/webshop-",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:02:42.121501",
+      "test": "Role removal via console",
+      "success": false,
+      "details": "Failed to remove role via console\n   API response status: 500\n   Response: {\"error\": \"An error occurred (AccessDeniedException) when calling the AdminRemoveUserFromGroup operation: User: arn:aws:sts::344561557829:assumed-role/webshop-backend-CognitoAdminRole-ZDSbUBpMYRXT/web",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:02:45.217587",
+      "test": "Bulk role operations via console",
+      "success": false,
+      "details": "Bulk role operations via console\n   User: console.test@hdcn-test.nl\n   Target groups: ['Members_Read_All', 'Events_Read_All']\n   Successful API calls: 0/2\n   All groups assigned: False\n   Final groups: []",
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-12-25T23:07:58.108486",
+  "test_user": "session.test@hdcn-test.nl",
+  "user_pool_id": "eu-west-1_OAT3oPCIm",
+  "client_id": "7p5t7sjl2s1rcu1emn85h20qeh",
+  "session_tests": [
+    {
+      "timestamp": "2025-12-25T23:08:00.659632",
+      "test": "Initial session reflects roles",
+      "success": false,
+      "details": "Authentication failed",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:08:01.037988",
+      "test": "Role changes require new session",
+      "success": false,
+      "details": "Initial authentication failed",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:08:01.369947",
+      "test": "Token refresh reflects role changes",
+      "success": false,
+      "details": "Initial authentication failed",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:08:04.073186",
+      "test": "Multiple role changes in sessions",
+      "success": false,
+      "details": "Tested 4 role sequences\n   All sequences passed: False\n   Results: [{'sequence': 1, 'target_roles': ['hdcnLeden'], 'success': False, 'reason': 'Authentication failed'}, {'sequence': 2, 'target_roles': ['hdcnLeden', 'Members_Read_All'], 'success': False, 'reason': 'Authentication failed'}, {'sequence': 3, 'target_roles': ['hdcnLeden', 'Members_Read_All', 'Events_Read_All'], 'success': False, 'reason': 'Authentication failed'}, {'sequence': 4, 'target_roles': ['Members_CRUD_All', 'System_User_Management'], 'success': False, 'reason': 'Authentication failed'}]",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:08:06.527413",
+      "test": "Concurrent user role isolation",
+      "success": false,
+      "details": "Authentication failed for one or both users",
+      "error": null
+    }
+  ]
+}

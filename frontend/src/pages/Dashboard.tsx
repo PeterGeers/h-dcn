@@ -39,66 +39,25 @@ function Dashboard({ user }: DashboardProps) {
     init();
   }, []);
   
-  // Check of gebruiker lid is (heeft groepen)
+  // Extract user roles from Cognito token
   const userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+  const isBasicMember = userGroups.includes('hdcnLeden');
+  const hasAdminRoles = userGroups.some(group => 
+    group.includes('Members_') || 
+    group.includes('Events_') || 
+    group.includes('Products_') || 
+    group.includes('System_') || 
+    group.includes('Communication_') ||
+    group.includes('National_') ||
+    group.includes('Regional_') ||
+    group.includes('Webmaster') ||
+    group.includes('hdcnAdmins')
+  );
   const isLid = userGroups.length > 0;
-  const isAdmin = userGroups.includes('hdcnAdmins');
   
-  // Voor leden: normale apps
-  const ledenApps = [
-    {
-      id: 'membership',
-      title: 'Lidmaatschap Gegevens',
-      description: 'Hier kun je je lidmaatschap gegevens wijzigen',
-      icon: '📝',
-      path: '/membership'
-    },
-    {
-      id: 'hdcnWinkel',
-      title: 'Webshop',
-      description: 'Bestellen en bestellingen bekijken',
-      icon: '🛒',
-      path: '/webshop'
-    }
-  ];
-  
-  // Voor admins: extra beheer apps
-  const adminApps = [
-    {
-      id: 'members',
-      title: 'Ledenadministratie',
-      description: 'Beheer leden en lidmaatschappen',
-      icon: '👥',
-      path: '/members'
-    },
-    {
-      id: 'events',
-      title: 'Evenementenadministratie',
-      description: 'Beheer evenementen en financiën',
-      icon: '📅',
-      path: '/events'
-    },
-    {
-      id: 'hdcnProductManagement',
-      title: 'Product Management',
-      description: 'Beheer webshop producten',
-      icon: '📦',
-      path: '/products'
-    }
-  ];
-  
-  // Voor niet-leden: alleen aanmelden
-  const nietLedenApps = [
-    {
-      id: 'membership',
-      title: 'Aanmelden als Lid',
-      description: 'Word lid van de H-DCN',
-      icon: '📝',
-      path: '/membership'
-    }
-  ];
-  
-  const accessibleApps = isLid ? [...ledenApps, ...(isAdmin ? adminApps : [])] : nietLedenApps;
+  console.log('🔍 Dashboard - User groups:', userGroups);
+  console.log('🔍 Dashboard - Is basic member:', isBasicMember);
+  console.log('🔍 Dashboard - Has admin roles:', hasAdminRoles);
 
   return (
     <Box maxW="1200px" mx="auto" px={{ base: 2, md: 0 }}>
@@ -117,26 +76,45 @@ function Dashboard({ user }: DashboardProps) {
             fontSize={{ base: 'sm', md: 'md' }}
             px={{ base: 2, md: 0 }}
           >
-            {isLid ? 'Kies een applicatie om te starten:' : 'Meld je aan om lid te worden van de H-DCN:'}
+            {isLid ? (
+              isBasicMember && !hasAdminRoles ? 
+                'Als H-DCN lid heb je toegang tot je persoonlijke gegevens en de webshop:' :
+                'Kies een applicatie om te starten:'
+            ) : 'Meld je aan om lid te worden van de H-DCN:'}
           </Text>
+          {isBasicMember && !hasAdminRoles && (
+            <Text 
+              color="gray.500"
+              fontSize={{ base: 'xs', md: 'sm' }}
+              px={{ base: 2, md: 0 }}
+              mt={2}
+            >
+              Voor toegang tot beheerfuncties neem contact op met de administratie.
+            </Text>
+          )}
         </Box>
         
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
-          {/* Membership - Always visible */}
+          {/* Membership - Always visible for authenticated users */}
           <AppCard 
             key="membership"
             app={{
               id: 'membership',
-              title: 'Lidmaatschap Gegevens',
-              description: 'Hier kun je je lidmaatschap gegevens wijzigen',
+              title: isLid ? 'Lidmaatschap Gegevens' : 'Aanmelden als Lid',
+              description: isLid ? 'Hier kun je je lidmaatschap gegevens wijzigen' : 'Word lid van de H-DCN',
               icon: '📝',
               path: '/membership'
             }}
             onClick={() => navigate('/membership')}
           />
           
-          {/* Webshop - Function guarded */}
-          <FunctionGuard user={user} functionName="webshop" action="read">
+          {/* Webshop - Only for members with hdcnLeden role or higher */}
+          <FunctionGuard 
+            user={user} 
+            functionName="webshop" 
+            action="read"
+            requiredRoles={['hdcnLeden']}
+          >
             <AppCard 
               key="webshop"
               app={{
@@ -150,8 +128,15 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
-          {/* Members Admin - Function guarded */}
-          <FunctionGuard user={user} functionName="members" action="read">
+          {/* Administrative modules - Only for users with specific admin roles */}
+          
+          {/* Members Admin - Only for users with member management roles */}
+          <FunctionGuard 
+            user={user} 
+            functionName="members" 
+            action="read"
+            requiredRoles={['Members_Read_All', 'Members_CRUD_All', 'National_Chairman', 'National_Secretary', 'Webmaster', 'Tour_Commissioner', 'Club_Magazine_Editorial']}
+          >
             <AppCard 
               key="members"
               app={{
@@ -165,8 +150,13 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
-          {/* Events Admin - Function guarded */}
-          <FunctionGuard user={user} functionName="events" action="read">
+          {/* Events Admin - Only for users with event management roles */}
+          <FunctionGuard 
+            user={user} 
+            functionName="events" 
+            action="read"
+            requiredRoles={['Events_Read_All', 'Events_CRUD_All', 'National_Chairman', 'National_Secretary', 'Webmaster', 'Tour_Commissioner', 'Club_Magazine_Editorial']}
+          >
             <AppCard 
               key="events"
               app={{
@@ -180,8 +170,13 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
-          {/* Products Admin - Function guarded */}
-          <FunctionGuard user={user} functionName="products" action="read">
+          {/* Products Admin - Only for users with product management roles */}
+          <FunctionGuard 
+            user={user} 
+            functionName="products" 
+            action="read"
+            requiredRoles={['Products_Read_All', 'Products_CRUD_All', 'National_Chairman', 'National_Secretary', 'Webmaster', 'Tour_Commissioner', 'Club_Magazine_Editorial', 'Webshop_Management']}
+          >
             <AppCard 
               key="products"
               app={{
@@ -195,8 +190,13 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
-          {/* Parameters - Function guarded */}
-          <FunctionGuard user={user} functionName="parameters" action="read">
+          {/* Parameters - Only for system administrators */}
+          <FunctionGuard 
+            user={user} 
+            functionName="parameters" 
+            action="read"
+            requiredRoles={['System_User_Management', 'System_CRUD_All', 'Webmaster']}
+          >
             <AppCard 
               key="parameters"
               app={{
@@ -210,8 +210,13 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
-          {/* Membership Management - Function guarded */}
-          <FunctionGuard user={user} functionName="memberships" action="read">
+          {/* Membership Management - Only for users with full member CRUD access */}
+          <FunctionGuard 
+            user={user} 
+            functionName="memberships" 
+            action="read"
+            requiredRoles={['Members_CRUD_All', 'Webmaster']}
+          >
             <AppCard 
               key="memberships"
               app={{

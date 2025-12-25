@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { User, HDCNGroup } from '../types/user';
+import { getCurrentUserRoles, getCurrentUserInfo, validateCognitoGroupsClaim, getCurrentAuthTokens } from '../services/authService';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -9,18 +11,72 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
-    // TODO: Implement authentication logic with AWS Cognito
-    // This is a placeholder for the authentication hook
-    setLoading(false);
+    initializeAuth();
   }, []);
 
+  const initializeAuth = async () => {
+    try {
+      setLoading(true);
+      
+      // Check if user is authenticated
+      const session = await fetchAuthSession();
+      
+      if (session.tokens?.accessToken) {
+        // Validate JWT token contains cognito:groups claim
+        const accessToken = session.tokens.accessToken.toString();
+        const hasValidClaim = validateCognitoGroupsClaim(accessToken);
+        
+        if (!hasValidClaim) {
+          console.error('JWT token missing or invalid cognito:groups claim');
+          setIsAuthenticated(false);
+          setUser(null);
+          return;
+        }
+
+        // Get user info from JWT tokens
+        const userInfo = await getCurrentUserInfo();
+        
+        if (userInfo) {
+          const userData: User = {
+            id: userInfo.sub || '',
+            username: userInfo.username || userInfo.email || '',
+            email: userInfo.email || '',
+            groups: userInfo.roles,
+            attributes: {
+              email: userInfo.email || '',
+              username: userInfo.username || ''
+            }
+          };
+          
+          setUser(userData);
+          setIsAuthenticated(true);
+          console.log('User authenticated with roles:', userInfo.roles);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Authentication initialization failed:', error);
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const login = async (username: string, password: string) => {
-    // TODO: Implement login logic
+    // TODO: Implement login logic with Cognito
     console.log('Login:', username);
+    // After successful login, reinitialize auth to get user data
+    await initializeAuth();
   };
 
   const logout = async () => {
-    // TODO: Implement logout logic
+    // TODO: Implement logout logic with Cognito
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -29,12 +85,27 @@ export function useAuth() {
     return user?.groups?.includes(role) || false;
   };
 
+  const refreshUserRoles = async (): Promise<void> => {
+    try {
+      const roles = await getCurrentUserRoles();
+      if (user) {
+        setUser({
+          ...user,
+          groups: roles
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refresh user roles:', error);
+    }
+  };
+
   return {
     user,
     loading,
     isAuthenticated,
     login,
     logout,
-    hasRole
+    hasRole,
+    refreshUserRoles
   };
 }

@@ -14,14 +14,13 @@ import './index.css';
  */
 Amplify.configure({
   Auth: {
-    region: process.env.REACT_APP_AWS_REGION || 'eu-west-1',
-    userPoolId: process.env.REACT_APP_USER_POOL_ID,
-    userPoolWebClientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID,
-    mandatorySignIn: true,
-    // Use USER_AUTH flow for passwordless authentication (passkeys + email recovery)
-    authenticationFlowType: 'USER_AUTH',
-    // Enable email-based authentication
-    usernameAttributes: ['email']
+    Cognito: {
+      userPoolId: process.env.REACT_APP_USER_POOL_ID!,
+      userPoolClientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID!,
+      loginWith: {
+        email: true
+      }
+    }
   }
 });
 

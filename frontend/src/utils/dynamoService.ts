@@ -1,4 +1,4 @@
-import { Auth } from 'aws-amplify';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 interface ParameterData {
   [key: string]: any;
@@ -18,8 +18,11 @@ export class DynamoService {
     }
     
     try {
-      const session = await Auth.currentSession();
-      const token = session.getIdToken().getJwtToken();
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
       this._authCache = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,

@@ -1,4 +1,4 @@
-import { Auth } from 'aws-amplify';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { ApiResponse } from '../types';
 
 import { API_CONFIG } from '../config/api';
@@ -11,8 +11,11 @@ interface MemberData {
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
   try {
-    const session = await Auth.currentSession();
-    const token = session.getIdToken().getJwtToken();
+    const session = await fetchAuthSession();
+    const token = session.tokens?.idToken?.toString();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,

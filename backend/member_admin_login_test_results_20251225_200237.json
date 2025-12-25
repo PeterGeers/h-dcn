@@ -1,0 +1,59 @@
+{
+  "test_summary": {
+    "total_tests": 7,
+    "passed_tests": 3,
+    "failed_tests": 4,
+    "success_rate": "42.9%"
+  },
+  "test_results": [
+    {
+      "timestamp": "2025-12-25T20:02:36.789730",
+      "test": "User existence check",
+      "success": true,
+      "details": "Status: CONFIRMED, Enabled: True",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T20:02:36.789730",
+      "test": "Role assignment verification",
+      "success": true,
+      "details": "Assigned groups: ['Events_Read_All', 'System_User_Management', 'Products_Read_All', 'Communication_Read_All', 'Members_CRUD_All']\n   Expected roles: ['Members_CRUD_All', 'Events_Read_All', 'Products_Read_All', 'Communication_Read_All', 'System_User_Management']\n",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T20:02:36.975487",
+      "test": "Password status check",
+      "success": true,
+      "details": "User already confirmed. Status: CONFIRMED",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T20:02:37.069325",
+      "test": "Authentication flow",
+      "success": false,
+      "details": "Authentication failed: InvalidParameterException",
+      "error": "An error occurred (InvalidParameterException) when calling the AdminInitiateAuth operation: Auth flow not enabled for this client"
+    },
+    {
+      "timestamp": "2025-12-25T20:02:37.070326",
+      "test": "JWT token verification",
+      "success": false,
+      "details": "No ID token available for verification",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T20:02:37.070326",
+      "test": "Role extraction simulation",
+      "success": false,
+      "details": "No ID token available for role extraction",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T20:02:37.071325",
+      "test": "Token validation",
+      "success": false,
+      "details": "No access token available for validation",
+      "error": null
+    }
+  ]
+}

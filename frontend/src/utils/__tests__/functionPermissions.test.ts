@@ -1,4 +1,6 @@
 // Test the getUserRoles function logic without importing dependencies that cause Jest issues
+export {}; // Make this a module
+
 describe('getUserRoles logic', () => {
   // Inline the function logic for testing to avoid import issues
   const getUserRoles = (user: any): string[] => {
@@ -463,14 +465,14 @@ describe('calculatePermissions logic', () => {
     expect(endTime - startTime).toBeLessThan(500);
     
     // Should still produce correct combined permissions
-    expect(result.members.read).toContain('own');
-    expect(result.members.read).toContain('all');
-    expect(result.members.read).toContain('region1');
-    expect(result.members.read).toContain('region2');
-    expect(result.members.read).toContain('basic');
+    expect((result as any).members?.read).toContain('own');
+    expect((result as any).members?.read).toContain('all');
+    expect((result as any).members?.read).toContain('region1');
+    expect((result as any).members?.read).toContain('region2');
+    expect((result as any).members?.read).toContain('basic');
     
     // Should deduplicate permissions
-    expect(new Set(result.members.read).size).toBe(result.members.read.length);
+    expect(new Set((result as any).members?.read || []).size).toBe((result as any).members?.read?.length || 0);
   });
 
   it('should preserve role hierarchy and avoid permission conflicts', () => {
@@ -479,14 +481,14 @@ describe('calculatePermissions logic', () => {
     const result = calculatePermissions(hierarchicalRoles);
     
     // Should have all permissions without conflicts
-    expect(result.members.read).toContain('own');
-    expect(result.members.read).toContain('all');
-    expect(result.members.write).toContain('own_personal');
-    expect(result.members.write).toContain('all');
+    expect((result as any).members?.read).toContain('own');
+    expect((result as any).members?.read).toContain('all');
+    expect((result as any).members?.write).toContain('own_personal');
+    expect((result as any).members?.write).toContain('all');
     
     // Should not have duplicates
-    expect(new Set(result.members.read).size).toBe(result.members.read.length);
-    expect(new Set(result.members.write).size).toBe(result.members.write.length);
+    expect(new Set((result as any).members?.read || []).size).toBe((result as any).members?.read?.length || 0);
+    expect(new Set((result as any).members?.write || []).size).toBe((result as any).members?.write?.length || 0);
   });
 
   it('should handle empty and null roles gracefully in combinations', () => {

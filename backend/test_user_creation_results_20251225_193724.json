@@ -1,0 +1,66 @@
+{
+  "timestamp": "2025-12-25T19:37:24.289155",
+  "user_pool_id": "eu-west-1_OAT3oPCIm",
+  "total_users": 4,
+  "successful_users": 4,
+  "failed_users": 0,
+  "results": [
+    {
+      "username": "test.regular@hdcn-test.nl",
+      "role_type": "Regular Member",
+      "success": true,
+      "message": "User created successfully",
+      "groups_assigned": [
+        "hdcnLeden"
+      ],
+      "groups_failed": []
+    },
+    {
+      "username": "test.memberadmin@hdcn-test.nl",
+      "role_type": "Member Administration",
+      "success": true,
+      "message": "User created successfully",
+      "groups_assigned": [
+        "Members_CRUD_All",
+        "Events_Read_All",
+        "Products_Read_All",
+        "Communication_Read_All",
+        "System_User_Management"
+      ],
+      "groups_failed": []
+    },
+    {
+      "username": "test.chairman@hdcn-test.nl",
+      "role_type": "National Chairman",
+      "success": true,
+      "message": "User created successfully",
+      "groups_assigned": [
+        "Members_Read_All",
+        "Members_Status_Approve",
+        "Events_Read_All",
+        "Products_Read_All",
+        "Communication_Read_All",
+        "System_Logs_Read"
+      ],
+      "groups_failed": []
+    },
+    {
+      "username": "test.webmaster@hdcn-test.nl",
+      "role_type": "Webmaster",
+      "success": true,
+      "message": "User created successfully",
+      "groups_assigned": [
+        "Members_Read_All",
+        "Events_CRUD_All",
+        "Products_CRUD_All",
+        "Communication_Export_All",
+        "System_User_Management"
+      ],
+      "groups_failed": []
+    }
+  ],
+  "test_credentials": {
+    "temporary_password": "TempPass123!",
+    "note": "Users need to set up passwordless authentication on first login"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-12-25T23:02:02.440598",
+  "test_user": "console.test@hdcn-test.nl",
+  "api_base_url": "https://ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com/prod",
+  "user_pool_id": "eu-west-1_OAT3oPCIm",
+  "tests": [
+    {
+      "timestamp": "2025-12-25T23:02:02.555940",
+      "test": "Console endpoints available",
+      "success": false,
+      "details": "Available endpoints: 0/3\n   ",
+      "error": null
+    },
+    {
+      "timestamp": "2025-12-25T23:02:03.791737",
+      "test": "User role query via console",
+      "success": false,
+      "details": "Failed to query user roles",
+      "error": "HTTPSConnectionPool(host='ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com', port=443): Max retries exceeded with url: /prod/cognito/users/console.test@hdcn-test.nl/groups (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x000001947667FB90>: Failed to resolve 'ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com' ([Errno 11001] getaddrinfo failed)\"))"
+    },
+    {
+      "timestamp": "2025-12-25T23:02:04.003444",
+      "test": "Role assignment via console",
+      "success": false,
+      "details": "Failed to assign role",
+      "error": "HTTPSConnectionPool(host='ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com', port=443): Max retries exceeded with url: /prod/cognito/users/console.test@hdcn-test.nl/groups/Members_Read_All (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x000001947667FC50>: Failed to resolve 'ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com' ([Errno 11001] getaddrinfo failed)\"))"
+    },
+    {
+      "timestamp": "2025-12-25T23:02:04.251421",
+      "test": "Role removal via console",
+      "success": false,
+      "details": "Failed to remove role",
+      "error": "HTTPSConnectionPool(host='ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com', port=443): Max retries exceeded with url: /prod/cognito/users/console.test@hdcn-test.nl/groups/Members_Read_All (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x00000194766D8590>: Failed to resolve 'ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com' ([Errno 11001] getaddrinfo failed)\"))"
+    },
+    {
+      "timestamp": "2025-12-25T23:02:04.717110",
+      "test": "Bulk role operations via console",
+      "success": false,
+      "details": "Failed bulk operations",
+      "error": "HTTPSConnectionPool(host='ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com', port=443): Max retries exceeded with url: /prod/cognito/users/console.test@hdcn-test.nl/groups/Members_Read_All (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x00000194766D9550>: Failed to resolve 'ixqhqhqhqh.execute-api.eu-west-1.amazonaws.com' ([Errno 11001] getaddrinfo failed)\"))"
+    }
+  ]
+}
