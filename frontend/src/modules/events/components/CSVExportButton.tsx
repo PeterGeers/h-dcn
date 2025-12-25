@@ -6,9 +6,11 @@ interface CSVExportButtonProps {
   data: any[];
   filename: string;
   columns?: string[];
+  disabled?: boolean;
+  title?: string;
 }
 
-function CSVExportButton({ data, filename, columns }: CSVExportButtonProps) {
+function CSVExportButton({ data, filename, columns, disabled = false, title }: CSVExportButtonProps) {
   const exportToCSV = () => {
     if (!data || data.length === 0) return;
 
@@ -41,6 +43,8 @@ function CSVExportButton({ data, filename, columns }: CSVExportButtonProps) {
       variant="outline"
       onClick={exportToCSV}
       size="sm"
+      isDisabled={disabled}
+      title={title}
     >
       Export CSV
     </Button>

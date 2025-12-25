@@ -1,7 +1,7 @@
 // Authentication hook for H-DCN Dashboard
 
 import { useState, useEffect } from 'react';
-import { User } from '../types/user';
+import { User, HDCNGroup } from '../types/user';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -25,7 +25,7 @@ export function useAuth() {
     setIsAuthenticated(false);
   };
 
-  const hasRole = (role: string): boolean => {
+  const hasRole = (role: HDCNGroup): boolean => {
     return user?.groups?.includes(role) || false;
   };
 

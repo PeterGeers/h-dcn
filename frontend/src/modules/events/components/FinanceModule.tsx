@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import {
   Box, VStack, HStack, Heading, Table, Thead, Tbody, Tr, Th, Td,
-  Badge, Button, Select, Text, SimpleGrid, Stat, StatLabel, StatNumber
+  Badge, Button, Select, Text, SimpleGrid, Stat, StatLabel, StatNumber,
+  Alert, AlertIcon
 } from '@chakra-ui/react';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
+import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 
 interface ProcessedEvent extends Event {
   naam: string;
@@ -26,14 +28,31 @@ interface FinanceTotals {
 interface FinanceModuleProps {
   events: Event[];
   onEventUpdate: () => void;
+  permissionManager?: FunctionPermissionManager | null;
 }
 
-function FinanceModule({ events, onEventUpdate }: FinanceModuleProps) {
+function FinanceModule({ events, onEventUpdate, permissionManager }: FinanceModuleProps) {
   const [statusFilter, setStatusFilter] = useState('all');
   
   // Debug: Log events data
   console.log('📊 FinanceModule - Events data:', events);
   console.log('📊 FinanceModule - Events count:', events.length);
+
+  const canViewFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'financial' }) || false;
+  const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || false;
+  const canExportFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'export' }) || 
+                             permissionManager?.hasAccess('communication', 'write') || false;
+
+  if (!canViewFinancials) {
+    return (
+      <VStack spacing={6} align="center">
+        <Alert status="warning" bg="orange.100" color="black">
+          <AlertIcon />
+          Je hebt geen toegang tot financiële gegevens. Neem contact op met een beheerder als je toegang nodig hebt.
+        </Alert>
+      </VStack>
+    );
+  }
 
   const eventsWithFinance: ProcessedEvent[] = events.map(event => {
     const kosten = parseFloat(String(event.cost || event.kosten || 0));
@@ -77,6 +96,11 @@ function FinanceModule({ events, onEventUpdate }: FinanceModuleProps) {
   };
 
   const updatePaymentStatus = async (eventId: string, status: string) => {
+    if (!canEditFinancials) {
+      console.warn('User does not have permission to edit financial data');
+      return;
+    }
+    
     try {
       const headers = await getAuthHeaders();
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod'}/events/${eventId}`, {
@@ -115,6 +139,8 @@ function FinanceModule({ events, onEventUpdate }: FinanceModuleProps) {
             data={filteredEvents} 
             filename="financien"
             columns={['naam', 'datum_van', 'kosten', 'inkomsten', 'winst', 'betaalstatus', 'factuurnummer']}
+            disabled={!canExportFinancials}
+            title={!canExportFinancials ? 'Geen rechten om financiële gegevens te exporteren' : ''}
           />
         </HStack>
       </HStack>
@@ -179,18 +205,22 @@ function FinanceModule({ events, onEventUpdate }: FinanceModuleProps) {
                 </Td>
                 <Td color="white">{event.factuurnummer}</Td>
                 <Td>
-                  <Select
-                    size="sm"
-                    value={event.betaalstatus}
-                    onChange={(e) => updatePaymentStatus(event.event_id, e.target.value)}
-                    bg="gray.700"
-                    color="white"
-                    borderColor="orange.400"
-                  >
-                    <option value="open">Open</option>
-                    <option value="betaald">Betaald</option>
-                    <option value="achterstallig">Achterstallig</option>
-                  </Select>
+                  {canEditFinancials ? (
+                    <Select
+                      size="sm"
+                      value={event.betaalstatus}
+                      onChange={(e) => updatePaymentStatus(event.event_id, e.target.value)}
+                      bg="gray.700"
+                      color="white"
+                      borderColor="orange.400"
+                    >
+                      <option value="open">Open</option>
+                      <option value="betaald">Betaald</option>
+                      <option value="achterstallig">Achterstallig</option>
+                    </Select>
+                  ) : (
+                    <Text color="gray.400" fontSize="sm">Alleen lezen</Text>
+                  )}
                 </Td>
               </Tr>
             ))}

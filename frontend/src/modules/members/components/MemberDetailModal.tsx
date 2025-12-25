@@ -4,15 +4,20 @@ import {
   VStack, HStack, Text, Badge, Divider, SimpleGrid, Box
 } from '@chakra-ui/react';
 import { Member } from '../../../types';
+import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 
 interface MemberDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   member: Member | null;
+  user?: any; // Add user prop for permission checking
 }
 
-function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) {
+function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalProps) {
   if (!member) return null;
+
+  const userRoles = getUserRoles(user || {});
+  const isOwnRecord = member.email === user?.attributes?.email;
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -24,6 +29,92 @@ function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) 
   };
 
   const hasValue = (value: any) => value && value !== '' && value !== 'undefined' && value !== null;
+
+  /**
+   * Check if current user can view a specific field type based on their roles AND membership type restrictions
+   */
+  const canViewFieldType = (fieldType: 'personal' | 'address' | 'membership' | 'motor' | 'financial' | 'administrative'): boolean => {
+    // Admin roles can view all fields
+    if (userRoles.includes('hdcnAdmins') || 
+        userRoles.includes('Members_CRUD_All') || 
+        userRoles.includes('Members_Read_All')) {
+      return true;
+    }
+
+    // Own record - members can view their personal, address, membership, and motor fields
+    if (isOwnRecord && userRoles.includes('hdcnLeden')) {
+      // PRESERVE EXISTING MEMBERSHIP TYPE RESTRICTIONS
+      // Motor fields are only relevant for specific membership types
+      if (fieldType === 'motor') {
+        const membershipType = member?.lidmaatschap || member?.membership_type;
+        const motorRequiredTypes = ['Gewoon lid', 'Gezins lid'];
+        return motorRequiredTypes.includes(membershipType);
+      }
+      
+      return ['personal', 'address', 'membership'].includes(fieldType);
+    }
+
+    // Financial fields - only specific roles can view
+    if (fieldType === 'financial') {
+      return userRoles.some(role => 
+        role.includes('Treasurer') || 
+        role.includes('Members_CRUD_All') ||
+        role.includes('hdcnAdmins')
+      );
+    }
+
+    // Administrative fields - only admin roles can view
+    if (fieldType === 'administrative') {
+      return userRoles.includes('hdcnAdmins') || 
+             userRoles.includes('Members_CRUD_All') ||
+             userRoles.includes('System_User_Management');
+    }
+
+    // Regional access - check if user has regional permissions for this member's region
+    if (member.regio) {
+      const memberRegion = member.regio;
+      const hasRegionalAccess = userRoles.some(role => {
+        if (role.includes('Regional_') && role.includes('Region')) {
+          const regionMatch = role.match(/Region(\d+)/);
+          if (regionMatch) {
+            const roleRegion = regionMatch[1];
+            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
+          }
+        }
+        return false;
+      });
+      
+      if (hasRegionalAccess) {
+        // Regional users can view personal, address, membership, motor fields
+        // PRESERVE EXISTING MEMBERSHIP TYPE RESTRICTIONS for motor fields
+        if (fieldType === 'motor') {
+          const membershipType = member?.lidmaatschap || member?.membership_type;
+          const motorRequiredTypes = ['Gewoon lid', 'Gezins lid'];
+          return motorRequiredTypes.includes(membershipType);
+        }
+        
+        return ['personal', 'address', 'membership'].includes(fieldType);
+      }
+    }
+
+    // National roles with member read access
+    if (userRoles.includes('National_Chairman') || 
+        userRoles.includes('National_Secretary') ||
+        userRoles.includes('Webmaster') ||
+        userRoles.includes('Tour_Commissioner') ||
+        userRoles.includes('Club_Magazine_Editorial')) {
+      // PRESERVE EXISTING MEMBERSHIP TYPE RESTRICTIONS for motor fields
+      if (fieldType === 'motor') {
+        const membershipType = member?.lidmaatschap || member?.membership_type;
+        const motorRequiredTypes = ['Gewoon lid', 'Gezins lid'];
+        return motorRequiredTypes.includes(membershipType);
+      }
+      
+      return ['personal', 'address', 'membership'].includes(fieldType);
+    }
+
+    return false;
+  };
 
   const renderField = (label: string, value: any) => {
     if (!hasValue(value)) return null;
@@ -123,7 +214,7 @@ function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) 
               </Badge>
             </HStack>
 
-            {personalFields.length > 0 && (
+            {canViewFieldType('personal') && personalFields.length > 0 && (
               <>
                 <Divider borderColor="orange.400" />
                 <Box>
@@ -146,7 +237,7 @@ function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) 
               </>
             )}
 
-            {addressFields.length > 0 && (
+            {canViewFieldType('address') && addressFields.length > 0 && (
               <>
                 <Divider borderColor="orange.400" />
                 <Box>
@@ -169,7 +260,7 @@ function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) 
               </>
             )}
 
-            {membershipFields.length > 0 && (
+            {canViewFieldType('membership') && membershipFields.length > 0 && (
               <>
                 <Divider borderColor="orange.400" />
                 <Box>
@@ -192,7 +283,7 @@ function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) 
               </>
             )}
 
-            {motorFields.length > 0 && (
+            {canViewFieldType('motor') && motorFields.length > 0 && (
               <>
                 <Divider borderColor="orange.400" />
                 <Box>
@@ -215,7 +306,22 @@ function MemberDetailModal({ isOpen, onClose, member }: MemberDetailModalProps) 
               </>
             )}
 
-            {financialFields.length > 0 && (
+            {/* Show message if motor fields are hidden due to membership type */}
+            {!canViewFieldType('motor') && (member?.lidmaatschap === 'Gezins donateur zonder motor' || member?.lidmaatschap === 'Donateur zonder motor') && (
+              <>
+                <Divider borderColor="orange.400" />
+                <Box>
+                  <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
+                    Motor Gegevens
+                  </Text>
+                  <Text color="gray.400" fontStyle="italic">
+                    Motor gegevens zijn niet van toepassing voor lidmaatschap type: {member?.lidmaatschap}
+                  </Text>
+                </Box>
+              </>
+            )}
+
+            {canViewFieldType('financial') && financialFields.length > 0 && (
               <>
                 <Divider borderColor="orange.400" />
                 <Box>

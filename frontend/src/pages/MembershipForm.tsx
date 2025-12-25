@@ -5,8 +5,8 @@ import {
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
-import ParameterSelect from '../components/ParameterSelect';
-import MembershipSelect from '../components/MembershipSelect';
+import ParameterSelect from '../components/common/ParameterSelect';
+import MembershipSelect from '../components/common/MembershipSelect';
 import { getAuthHeaders, getAuthHeadersForGet } from '../utils/authHeaders';
 import { API_URLS } from '../config/api';
 import { useErrorHandler, apiCall } from '../utils/errorHandler';

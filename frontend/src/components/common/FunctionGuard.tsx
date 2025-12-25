@@ -5,7 +5,7 @@ interface FunctionGuardProps {
   user: any; // TODO: Add proper User type
   children: ReactNode;
   functionName: string;
-  action?: 'read' | 'write' | 'delete';
+  action?: 'read' | 'write';
   fallback?: ReactNode;
 }
 

@@ -1,31 +1,102 @@
 import React, { useState } from 'react';
 import {
   Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Th, Td,
-  Input, Badge, useToast, Text, IconButton, Stack, useBreakpointValue
+  Input, Badge, useToast, Text, IconButton, Stack, useBreakpointValue,
+  Tooltip
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon, SearchIcon, CopyIcon } from '@chakra-ui/icons';
 import EventForm from './EventForm';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
+import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 
 interface EventListProps {
   events: Event[];
   onEventUpdate: () => void;
   user: any;
+  permissionManager?: FunctionPermissionManager | null;
+  canWriteEvents?: boolean;
 }
 
-function EventList({ events, onEventUpdate, user }: EventListProps) {
+function EventList({ events, onEventUpdate, user, permissionManager, canWriteEvents = false }: EventListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const toast = useToast();
 
+  const userRoles = getUserRoles(user);
+  const canExportEvents = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'export' }) || 
+                         permissionManager?.hasAccess('communication', 'write') || false;
+  
+  // Check if user can edit specific events based on regional permissions
+  const canEditEvent = (event: Event): boolean => {
+    if (!canWriteEvents) return false;
+    
+    // If user has full event write access, they can edit any event
+    if (permissionManager?.hasAccess('events', 'write')) return true;
+    
+    // Check regional permissions
+    const eventRegion = event.region || event.regio;
+    if (eventRegion) {
+      const regionNumber = getRegionNumber(eventRegion);
+      if (regionNumber) {
+        return userRoles.some(role => 
+          role.includes(`Region${regionNumber}`) && 
+          (role.includes('Chairman') || role.includes('Secretary'))
+        );
+      }
+    }
+    
+    return false;
+  };
+
+  const canDeleteEvent = (event: Event): boolean => {
+    // Only users with full event write access can delete events
+    return permissionManager?.hasAccess('events', 'write') || false;
+  };
+
+  // Helper function to extract region number from region name
+  const getRegionNumber = (regionName: string): string | null => {
+    const regionMap: { [key: string]: string } = {
+      'Noord-Holland': '1',
+      'Zuid-Holland': '2', 
+      'Friesland': '3',
+      'Utrecht': '4',
+      'Oost': '5',
+      'Limburg': '6',
+      'Groningen/Drente': '7',
+      'Noord-Brabant/Zeeland': '8',
+      'Duitsland': '9'
+    };
+    return regionMap[regionName] || null;
+  };
+
   const filteredEvents = events
-    .filter(event =>
-      (event.title || event.naam)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.location || event.locatie)?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    .filter(event => {
+      // Basic search filter
+      const matchesSearch = (event.title || event.naam)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.location || event.locatie)?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      // Apply regional filtering based on user roles
+      const eventRegion = event.region || event.regio;
+      
+      // If user has full read access, show all events
+      if (permissionManager?.hasAccess('events', 'read')) return true;
+      
+      // If user has regional access, only show events from their region(s)
+      if (eventRegion) {
+        const regionNumber = getRegionNumber(eventRegion);
+        if (regionNumber) {
+          return userRoles.some(role => role.includes(`Region${regionNumber}`));
+        }
+      }
+      
+      // If no region specified on event, show to all users with any event access
+      return permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'public' }) || false;
+    })
     .sort((a, b) => {
       const dateA = new Date(a.event_date || a.datum_van || '1900-01-01');
       const dateB = new Date(b.event_date || b.datum_van || '1900-01-01');
@@ -33,11 +104,29 @@ function EventList({ events, onEventUpdate, user }: EventListProps) {
     });
 
   const handleEdit = (event: Event) => {
+    if (!canEditEvent(event)) {
+      toast({
+        title: 'Geen toegang',
+        description: 'Je hebt geen rechten om dit evenement te bewerken.',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
     setSelectedEvent(event);
     setIsFormOpen(true);
   };
 
   const handleDuplicate = (event: Event) => {
+    if (!canWriteEvents) {
+      toast({
+        title: 'Geen toegang',
+        description: 'Je hebt geen rechten om evenementen te dupliceren.',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
     const duplicatedEvent = {
       ...event,
       title: `${getEventField(event, 'naam')} (Kopie)`,
@@ -50,6 +139,16 @@ function EventList({ events, onEventUpdate, user }: EventListProps) {
   };
 
   const handleDelete = async (event: Event) => {
+    if (!canDeleteEvent(event)) {
+      toast({
+        title: 'Geen toegang',
+        description: 'Je hebt geen rechten om dit evenement te verwijderen.',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+    
     if (!window.confirm(`Weet je zeker dat je "${getEventField(event, 'naam')}" wilt verwijderen?`)) return;
     
     try {
@@ -122,18 +221,22 @@ function EventList({ events, onEventUpdate, user }: EventListProps) {
           />
         </HStack>
         <HStack spacing={2} justify={{ base: 'center', md: 'flex-end' }}>
-          <CSVExportButton data={filteredEvents} filename="evenementen" />
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="orange"
-            size={{ base: 'sm', md: 'md' }}
-            onClick={() => {
-              setSelectedEvent(null);
-              setIsFormOpen(true);
-            }}
-          >
-            {isMobile ? 'Nieuw' : 'Nieuw Evenement'}
-          </Button>
+          {canExportEvents && (
+            <CSVExportButton data={filteredEvents} filename="evenementen" />
+          )}
+          {canWriteEvents && (
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="orange"
+              size={{ base: 'sm', md: 'md' }}
+              onClick={() => {
+                setSelectedEvent(null);
+                setIsFormOpen(true);
+              }}
+            >
+              {isMobile ? 'Nieuw' : 'Nieuw Evenement'}
+            </Button>
+          )}
         </HStack>
       </Stack>
 
@@ -194,30 +297,69 @@ function EventList({ events, onEventUpdate, user }: EventListProps) {
                   </Td>
                   <Td position="sticky" right={0} bg="gray.800">
                     <HStack spacing={1}>
-                      <IconButton
-                        icon={<EditIcon />}
-                        size="xs"
-                        colorScheme="blue"
-                        onClick={() => handleEdit(event)}
-                        title="Bewerken"
-                        aria-label="Bewerken"
-                      />
-                      <IconButton
-                        icon={<CopyIcon />}
-                        size="xs"
-                        colorScheme="green"
-                        onClick={() => handleDuplicate(event)}
-                        title="Dupliceren"
-                        aria-label="Dupliceren"
-                      />
-                      <IconButton
-                        icon={<DeleteIcon />}
-                        size="xs"
-                        colorScheme="red"
-                        onClick={() => handleDelete(event)}
-                        title="Verwijderen"
-                        aria-label="Verwijderen"
-                      />
+                      {canEditEvent(event) ? (
+                        <IconButton
+                          icon={<EditIcon />}
+                          size="xs"
+                          colorScheme="blue"
+                          onClick={() => handleEdit(event)}
+                          title="Bewerken"
+                          aria-label="Bewerken"
+                        />
+                      ) : (
+                        <Tooltip label="Geen rechten om te bewerken">
+                          <IconButton
+                            icon={<EditIcon />}
+                            size="xs"
+                            colorScheme="gray"
+                            isDisabled
+                            title="Geen rechten"
+                            aria-label="Geen rechten"
+                          />
+                        </Tooltip>
+                      )}
+                      {canWriteEvents ? (
+                        <IconButton
+                          icon={<CopyIcon />}
+                          size="xs"
+                          colorScheme="green"
+                          onClick={() => handleDuplicate(event)}
+                          title="Dupliceren"
+                          aria-label="Dupliceren"
+                        />
+                      ) : (
+                        <Tooltip label="Geen rechten om te dupliceren">
+                          <IconButton
+                            icon={<CopyIcon />}
+                            size="xs"
+                            colorScheme="gray"
+                            isDisabled
+                            title="Geen rechten"
+                            aria-label="Geen rechten"
+                          />
+                        </Tooltip>
+                      )}
+                      {canDeleteEvent(event) ? (
+                        <IconButton
+                          icon={<DeleteIcon />}
+                          size="xs"
+                          colorScheme="red"
+                          onClick={() => handleDelete(event)}
+                          title="Verwijderen"
+                          aria-label="Verwijderen"
+                        />
+                      ) : (
+                        <Tooltip label="Geen rechten om te verwijderen">
+                          <IconButton
+                            icon={<DeleteIcon />}
+                            size="xs"
+                            colorScheme="gray"
+                            isDisabled
+                            title="Geen rechten"
+                            aria-label="Geen rechten"
+                          />
+                        </Tooltip>
+                      )}
                     </HStack>
                   </Td>
                 </Tr>
@@ -241,6 +383,8 @@ function EventList({ events, onEventUpdate, user }: EventListProps) {
         }}
         event={selectedEvent}
         onSave={onEventUpdate}
+        user={user}
+        permissionManager={permissionManager}
       />
     </VStack>
   );

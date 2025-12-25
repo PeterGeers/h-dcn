@@ -7,6 +7,7 @@ import { Member } from '../../../types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
+import { getUserRoles } from '../../../utils/functionPermissions';
 
 interface ParameterOption {
   value?: string;
@@ -17,9 +18,10 @@ interface MemberEditModalProps {
   onClose: () => void;
   member: Member | null;
   onSave: (member: Member) => Promise<void>;
+  user?: any; // Add user prop for permission checking
 }
 
-function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalProps) {
+function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditModalProps) {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [regioOptions, setRegioOptions] = useState<ParameterOption[]>([]);
@@ -30,7 +32,84 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
   const [newFieldValue, setNewFieldValue] = useState('');
   const { handleError, handleSuccess } = useErrorHandler();
 
+  const userRoles = getUserRoles(user || {});
+  const isOwnRecord = member?.email === user?.attributes?.email;
+
   const hasValue = (value: any) => value && value !== '' && value !== 'undefined' && value !== null;
+
+  /**
+   * Check if current user can edit a specific field type based on their roles AND membership type restrictions
+   */
+  const canEditFieldType = (fieldType: 'personal' | 'address' | 'membership' | 'motor' | 'financial' | 'administrative' | 'status'): boolean => {
+    // Admin roles can edit all fields
+    if (userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All')) {
+      return true;
+    }
+
+    // Status field - only specific admin roles can edit
+    if (fieldType === 'status') {
+      return userRoles.includes('hdcnAdmins') || 
+             userRoles.includes('Members_CRUD_All') ||
+             userRoles.includes('Members_Status_Approve');
+    }
+
+    // Own record - members can edit their personal, address, and motor fields
+    if (isOwnRecord && userRoles.includes('hdcnLeden')) {
+      // PRESERVE EXISTING MEMBERSHIP TYPE RESTRICTIONS
+      // Motor fields are only editable for specific membership types
+      if (fieldType === 'motor') {
+        const membershipType = member?.lidmaatschap || member?.membership_type;
+        const motorRequiredTypes = ['Gewoon lid', 'Gezins lid'];
+        return motorRequiredTypes.includes(membershipType);
+      }
+      
+      return ['personal', 'address'].includes(fieldType);
+    }
+
+    // Financial fields - only specific roles can edit
+    if (fieldType === 'financial') {
+      return userRoles.some(role => 
+        role.includes('Treasurer') || 
+        role.includes('Members_CRUD_All') ||
+        role.includes('hdcnAdmins')
+      );
+    }
+
+    // Administrative fields - only admin roles can edit
+    if (fieldType === 'administrative') {
+      return userRoles.includes('hdcnAdmins') || 
+             userRoles.includes('Members_CRUD_All');
+    }
+
+    // Membership fields - admin and regional roles can edit
+    if (fieldType === 'membership') {
+      if (userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All')) {
+        return true;
+      }
+      
+      // Regional roles can edit membership fields for their region
+      if (member?.regio) {
+        const memberRegion = member.regio;
+        return userRoles.some(role => {
+          if (role.includes('Regional_Chairman_') && role.includes('Region')) {
+            const regionMatch = role.match(/Region(\d+)/);
+            if (regionMatch) {
+              const roleRegion = regionMatch[1];
+              return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
+            }
+          }
+          return false;
+        });
+      }
+    }
+
+    // Webmaster has full edit access
+    if (userRoles.includes('Webmaster')) {
+      return true;
+    }
+
+    return false;
+  };
 
   const allFields: Record<string, string> = {
     // Personal
@@ -244,18 +323,41 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
     const value = formData[fieldKey] || '';
     const isRequired = ['voornaam', 'achternaam', 'email'].includes(fieldKey);
 
+    // Determine field type for permission checking
+    let fieldType: 'personal' | 'address' | 'membership' | 'motor' | 'financial' | 'administrative' | 'status' = 'personal';
+    
+    if (['status'].includes(fieldKey)) {
+      fieldType = 'status';
+    } else if (['voornaam', 'achternaam', 'initialen', 'tussenvoegsel', 'geboortedatum', 'geslacht', 'bsn', 'nationaliteit', 'email', 'telefoon', 'mobiel', 'werktelefoon'].includes(fieldKey)) {
+      fieldType = 'personal';
+    } else if (['straat', 'huisnummer', 'postcode', 'woonplaats', 'land', 'postadres', 'postpostcode', 'postwoonplaats', 'postland'].includes(fieldKey)) {
+      fieldType = 'address';
+    } else if (['lidmaatschap', 'lidnummer', 'ingangsdatum', 'einddatum', 'opzegtermijn', 'regio', 'clubblad', 'nieuwsbrief'].includes(fieldKey)) {
+      fieldType = 'membership';
+    } else if (['motormerk', 'motortype', 'motormodel', 'motorkleur', 'bouwjaar', 'kenteken', 'cilinderinhoud', 'vermogen'].includes(fieldKey)) {
+      fieldType = 'motor';
+    } else if (['bankrekeningnummer', 'iban', 'bic', 'contributie', 'betaalwijze', 'incasso'].includes(fieldKey)) {
+      fieldType = 'financial';
+    } else {
+      fieldType = 'administrative';
+    }
+
+    // Check if user can edit this field type
+    const canEdit = canEditFieldType(fieldType);
+
     if (['status', 'lidmaatschap', 'regio'].includes(fieldKey)) {
       const options = fieldKey === 'status' ? statusOptions :
                     fieldKey === 'lidmaatschap' ? lidmaatschapOptions : regioOptions;
       return (
-        <FormControl key={fieldKey} isRequired={isRequired}>
-          <FormLabel color="orange.300">{label}{isRequired && ' *'}</FormLabel>
+        <FormControl key={fieldKey} isRequired={isRequired} isDisabled={!canEdit}>
+          <FormLabel color="orange.300">{label}{isRequired && ' *'}{!canEdit && ' (Alleen-lezen)'}</FormLabel>
           <Select
             value={value}
-            onChange={(e) => handleChange(fieldKey, e.target.value)}
+            onChange={(e) => canEdit && handleChange(fieldKey, e.target.value)}
             bg="gray.700"
             color="orange.400"
             borderColor="orange.400"
+            isDisabled={!canEdit}
           >
             <option value="">Selecteer...</option>
             {options.map((option, index) => {
@@ -282,14 +384,15 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
         toestemmingfoto: ['Ja', 'Nee']
       };
       return (
-        <FormControl key={fieldKey} isRequired={isRequired}>
-          <FormLabel color="orange.300">{label}{isRequired && ' *'}</FormLabel>
+        <FormControl key={fieldKey} isRequired={isRequired} isDisabled={!canEdit}>
+          <FormLabel color="orange.300">{label}{isRequired && ' *'}{!canEdit && ' (Alleen-lezen)'}</FormLabel>
           <Select
             value={value}
-            onChange={(e) => handleChange(fieldKey, e.target.value)}
+            onChange={(e) => canEdit && handleChange(fieldKey, e.target.value)}
             bg="gray.700"
             color="orange.400"
             borderColor="orange.400"
+            isDisabled={!canEdit}
           >
             <option value="">Selecteer...</option>
             {options[fieldKey]?.map((option) => (
@@ -305,14 +408,15 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
                      fieldKey === 'bouwjaar' ? 'number' : 'text';
 
     return (
-      <FormControl key={fieldKey} isRequired={isRequired}>
-        <FormLabel color="orange.300">{label}{isRequired && ' *'}</FormLabel>
+      <FormControl key={fieldKey} isRequired={isRequired} isDisabled={!canEdit}>
+        <FormLabel color="orange.300">{label}{isRequired && ' *'}{!canEdit && ' (Alleen-lezen)'}</FormLabel>
         <Input
           type={inputType}
           value={value}
-          onChange={(e) => handleChange(fieldKey, e.target.value)}
+          onChange={(e) => canEdit && handleChange(fieldKey, e.target.value)}
           bg="gray.700"
           borderColor="orange.400"
+          isDisabled={!canEdit}
         />
       </FormControl>
     );
@@ -332,7 +436,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
           <VStack spacing={6} align="stretch">
             
             {/* Status */}
-            {hasValue(formData.status) && (
+            {hasValue(formData.status) && canEditFieldType('status') && (
               <FormControl>
                 <FormLabel color="orange.300">Status</FormLabel>
                 {renderField('status')}
@@ -340,7 +444,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
             )}
 
             {/* Personal Info */}
-            {personalFields.length > 0 && (
+            {canEditFieldType('personal') && personalFields.length > 0 && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Persoonlijke Gegevens
@@ -352,7 +456,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
             )}
 
             {/* Address */}
-            {addressFields.length > 0 && (
+            {canEditFieldType('address') && addressFields.length > 0 && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Adresgegevens
@@ -364,7 +468,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
             )}
 
             {/* Membership */}
-            {membershipFields.length > 0 && (
+            {canEditFieldType('membership') && membershipFields.length > 0 && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Lidmaatschap
@@ -376,7 +480,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
             )}
 
             {/* Motor Info */}
-            {motorFields.length > 0 && (
+            {canEditFieldType('motor') && motorFields.length > 0 && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Motor Gegevens
@@ -387,8 +491,20 @@ function MemberEditModal({ isOpen, onClose, member, onSave }: MemberEditModalPro
               </Box>
             )}
 
+            {/* Show message if motor fields are hidden due to membership type */}
+            {!canEditFieldType('motor') && isOwnRecord && (member?.lidmaatschap === 'Gezins donateur zonder motor' || member?.lidmaatschap === 'Donateur zonder motor') && (
+              <Box>
+                <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
+                  Motor Gegevens
+                </Text>
+                <Text color="gray.400" fontStyle="italic">
+                  Motor gegevens zijn niet van toepassing voor uw lidmaatschap type: {member?.lidmaatschap}
+                </Text>
+              </Box>
+            )}
+
             {/* Financial */}
-            {financialFields.length > 0 && (
+            {canEditFieldType('financial') && financialFields.length > 0 && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Financiële Gegevens

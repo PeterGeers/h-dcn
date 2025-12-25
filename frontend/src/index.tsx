@@ -9,6 +9,7 @@ import './index.css';
 /**
  * AWS Amplify configuration for Cognito authentication
  * Uses environment variables for secure credential management
+ * Configured for standard authentication with email as username
  * @see .env.example for required environment variables
  */
 Amplify.configure({
@@ -17,7 +18,10 @@ Amplify.configure({
     userPoolId: process.env.REACT_APP_USER_POOL_ID,
     userPoolWebClientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID,
     mandatorySignIn: true,
-    authenticationFlowType: 'USER_SRP_AUTH'
+    // Use USER_AUTH flow for passwordless authentication (passkeys + email recovery)
+    authenticationFlowType: 'USER_AUTH',
+    // Enable email-based authentication
+    usernameAttributes: ['email']
   }
 });
 

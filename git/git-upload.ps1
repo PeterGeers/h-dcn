@@ -7,6 +7,13 @@ param(
 Write-Host "🚀 H-DCN Git Upload Script" -ForegroundColor Green
 Write-Host "Repository: h-dcn" -ForegroundColor Cyan
 
+# Ensure we're in the project root directory
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
+Set-Location $projectRoot
+
+Write-Host "📍 Working directory: $(Get-Location)" -ForegroundColor Cyan
+
 # Check if git is initialized
 if (-not (Test-Path ".git")) {
     Write-Host "📁 Initializing Git repository..." -ForegroundColor Yellow
@@ -55,7 +62,8 @@ Features:
 - Security fixes (XSS, hardcoded credentials)
 - Lazy loading components
 - AWS S3 deployment ready"
-} else {
+}
+else {
     git commit -m $Message
 }
 
@@ -70,7 +78,8 @@ try {
     $repoUrl = "https://github.com/$username/h-dcn"
     Write-Host "🌐 Repository URL: $repoUrl" -ForegroundColor Cyan
     
-} catch {
+}
+catch {
     Write-Host "❌ Push failed. Trying to pull first..." -ForegroundColor Red
     git pull origin main --allow-unrelated-histories
     git push -u origin main

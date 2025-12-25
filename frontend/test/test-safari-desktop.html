@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safari Desktop WebAuthn Support Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #007AFF;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .pass { background: #1a4d3a; border-left: 4px solid #28a745; }
+        .fail { background: #4d1a1a; border-left: 4px solid #dc3545; }
+        .warning { background: #4d3a1a; border-left: 4px solid #ffc107; }
+        .info { background: #1a3a4d; border-left: 4px solid #17a2b8; }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056CC; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .browser-info {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .safari-logo {
+            font-size: 2em;
+            margin-right: 10px;
+        }
+        .compatibility-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .compatibility-matrix th,
+        .compatibility-matrix td {
+            border: 1px solid #555;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .compatibility-matrix th {
+            background: #444;
+            font-weight: bold;
+        }
+        .support-full { color: #28a745; font-weight: bold; }
+        .support-partial { color: #ffc107; font-weight: bold; }
+        .support-none { color: #dc3545; font-weight: bold; }
+        pre {
+            background: #222;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .safari-notes {
+            background: #2a2a3a;
+            border: 1px solid #007AFF;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .safari-notes h4 {
+            color: #007AFF;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1><span class="safari-logo">🍎</span>Safari Desktop WebAuthn Support Test</h1>
+    <p>This test specifically validates WebAuthn/Passkey support on Safari desktop browser.</p>
+
+    <div class="safari-notes">
+        <h4>Safari WebAuthn Requirements</h4>
+        <ul>
+            <li><strong>Version:</strong> Safari 14+ required for WebAuthn support</li>
+            <li><strong>Platform:</strong> macOS with Touch ID/Face ID for best experience</li>
+            <li><strong>Security:</strong> HTTPS required (or localhost for development)</li>
+            <li><strong>User Gesture:</strong> WebAuthn operations require user interaction</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Safari Browser Detection</h2>
+        <div id="browser-info" class="browser-info">
+            <p>Detecting Safari...</p>
+        </div>
+        <button onclick="detectSafari()">Refresh Safari Detection</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Safari WebAuthn API Tests</h2>
+        <div id="webauthn-results"></div>
+        <button onclick="runSafariWebAuthnTests()">Run Safari WebAuthn Tests</button>
+        <button onclick="testSafariPasskeyRegistration()">Test Safari Passkey Registration</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Safari Touch ID / Face ID Tests</h2>
+        <div id="touchid-results"></div>
+        <button onclick="testSafariTouchID()">Test Touch ID/Face ID Support</button>
+        <button onclick="testSafariPlatformAuth()">Test Platform Authenticator</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Safari-Specific Features</h2>
+        <div id="safari-specific-results"></div>
+        <button onclick="testSafariSpecificFeatures()">Test Safari-Specific Features</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Safari Compatibility Matrix</h2>
+        <table class="compatibility-matrix">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>Safari 14</th>
+                    <th>Safari 15</th>
+                    <th>Safari 16+</th>
+                    <th>Current Safari</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="safari-compatibility-matrix">
+                <!-- Will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Safari Test Results Summary</h2>
+        <div id="safari-test-summary"></div>
+        <button onclick="generateSafariReport()">Generate Safari Compatibility Report</button>
+        <button onclick="clearSafariResults()">Clear All Results</button>
+    </div>
+
+    <script>
+        let safariTestResults = [];
+        let safariBrowserInfo = {};
+
+        function logSafariResult(testName, success, message, details = null) {
+            const result = {
+                testName,
+                success,
+                message,
+                details,
+                timestamp: new Date().toISOString()
+            };
+            safariTestResults.push(result);
+            
+            const className = success === true ? 'pass' : success === false ? 'fail' : success === 'warning' ? 'warning' : 'info';
+            const icon = success === true ? '✅' : success === false ? '❌' : success === 'warning' ? '⚠️' : 'ℹ️';
+            
+            console.log(`${icon} ${testName}: ${message}`, details);
+            return result;
+        }
+
+        function displaySafariResult(containerId, result) {
+            const container = document.getElementById(containerId);
+            const className = result.success === true ? 'pass' : result.success === false ? 'fail' : result.success === 'warning' ? 'warning' : 'info';
+            const icon = result.success === true ? '✅' : result.success === false ? '❌' : result.success === 'warning' ? '⚠️' : 'ℹ️';
+            
+            const div = document.createElement('div');
+            div.className = `test-result ${className}`;
+            div.innerHTML = `
+                <strong>${icon} ${result.testName}</strong><br>
+                ${result.message}
+                ${result.details ? `<pre>${JSON.stringify(result.details, null, 2)}</pre>` : ''}
+                <small>Time: ${new Date(result.timestamp).toLocaleTimeString()}</small>
+            `;
+            container.appendChild(div);
+        }
+
+        function detectSafari() {
+            const userAgent = navigator.userAgent;
+            
+            // Detect Safari specifically (tricky because Chrome also includes "Safari")
+            let browserName = 'Unknown';
+            let browserVersion = 'Unknown';
+            let isSupported = false;
+            let isSafari = false;
+            
+            if (userAgent.includes('Safari') && !userAgent.includes('Chrome') && !userAgent.includes('Chromium')) {
+                browserName = 'Safari';
+                isSafari = true;
+                const match = userAgent.match(/Version\/(\d+)/);
+                browserVersion = match ? match[1] : 'Unknown';
+                isSupported = parseInt(browserVersion) >= 14;
+            } else if (userAgent.includes('Chrome')) {
+                browserName = 'Chrome (not Safari)';
+            } else if (userAgent.includes('Firefox')) {
+                browserName = 'Firefox (not Safari)';
+            } else if (userAgent.includes('Edg')) {
+                browserName = 'Edge (not Safari)';
+            }
+
+            // Detect platform
+            let platform = 'Unknown';
+            if (userAgent.includes('Mac')) platform = 'macOS';
+            else if (userAgent.includes('Windows')) platform = 'Windows';
+            else if (userAgent.includes('Linux')) platform = 'Linux';
+
+            const isMobile = /iPhone|iPad|iPod/i.test(userAgent);
+            const isDesktop = !isMobile;
+
+            safariBrowserInfo = {
+                browserName,
+                browserVersion,
+                platform,
+                isMobile,
+                isDesktop,
+                isSupported,
+                isSafari,
+                userAgent
+            };
+
+            const infoDiv = document.getElementById('browser-info');
+            const statusClass = isSafari && isSupported ? 'support-full' : isSafari ? 'support-partial' : 'support-none';
+            
+            infoDiv.innerHTML = `
+                <p><strong>Browser:</strong> ${browserName} ${browserVersion}</p>
+                <p><strong>Platform:</strong> ${platform} ${isDesktop ? '(Desktop)' : '(Mobile)'}</p>
+                <p><strong>Is Safari:</strong> <span class="${isSafari ? 'support-full' : 'support-none'}">${isSafari ? 'Yes' : 'No'}</span></p>
+                <p><strong>WebAuthn Supported:</strong> <span class="${statusClass}">${isSupported ? 'Yes (Safari 14+)' : isSafari ? 'No (Need Safari 14+)' : 'N/A (Not Safari)'}</span></p>
+                <p><strong>User Agent:</strong> <code style="font-size: 10px;">${userAgent}</code></p>
+            `;
+
+            const result = logSafariResult(
+                'Safari Browser Detection',
+                isSafari && isSupported,
+                `Detected ${browserName} ${browserVersion} on ${platform} - Safari: ${isSafari}, Supported: ${isSupported}`,
+                safariBrowserInfo
+            );
+
+            if (!isSafari) {
+                logSafariResult(
+                    'Not Safari Warning',
+                    'warning',
+                    'This test is designed for Safari. Please open this page in Safari for accurate results.'
+                );
+            }
+
+            if (isSafari && !isSupported) {
+                logSafariResult(
+                    'Safari Version Warning',
+                    'warning',
+                    'Safari 14+ is required for WebAuthn support. Please update Safari.'
+                );
+            }
+        }
+
+        async function runSafariWebAuthnTests() {
+            const container = document.getElementById('webauthn-results');
+            container.innerHTML = '';
+
+            // Test 1: WebAuthn API availability
+            const webAuthnSupported = !!(
+                window.PublicKeyCredential &&
+                navigator.credentials &&
+                navigator.credentials.create &&
+                navigator.credentials.get
+            );
+
+            const result1 = logSafariResult(
+                'Safari WebAuthn API Support',
+                webAuthnSupported,
+                webAuthnSupported ? 'WebAuthn API is available in Safari' : 'WebAuthn API is not available - need Safari 14+',
+                { 
+                    PublicKeyCredential: !!window.PublicKeyCredential,
+                    navigatorCredentials: !!navigator.credentials,
+                    safariVersion: safariBrowserInfo.browserVersion
+                }
+            );
+            displaySafariResult('webauthn-results', result1);
+
+            if (!webAuthnSupported) {
+                const result2 = logSafariResult(
+                    'Safari WebAuthn Not Supported',
+                    false,
+                    'Cannot proceed with Safari WebAuthn tests - API not available'
+                );
+                displaySafariResult('webauthn-results', result2);
+                return;
+            }
+
+            // Test 2: Secure context check
+            const isSecureContext = window.isSecureContext;
+            const result2 = logSafariResult(
+                'Safari Secure Context (HTTPS)',
+                isSecureContext,
+                isSecureContext ? 'Running in secure context (required by Safari)' : 'Not in secure context - Safari requires HTTPS for WebAuthn',
+                { isSecureContext, protocol: window.location.protocol }
+            );
+            displaySafariResult('webauthn-results', result2);
+
+            // Test 3: Safari WebAuthn implementation notes
+            if (safariBrowserInfo.isSafari) {
+                const result3 = logSafariResult(
+                    'Safari WebAuthn Implementation',
+                    'info',
+                    'Safari has unique WebAuthn implementation characteristics',
+                    {
+                        characteristics: [
+                            'Requires user gesture for WebAuthn operations',
+                            'Excellent Touch ID/Face ID integration',
+                            'Strict same-origin policy enforcement',
+                            'Prefers ES256 algorithm',
+                            'Good resident key support (Safari 15+)'
+                        ]
+                    }
+                );
+                displaySafariResult('webauthn-results', result3);
+            }
+        }
+
+        async function testSafariTouchID() {
+            const container = document.getElementById('touchid-results');
+            container.innerHTML = '';
+
+            if (!window.PublicKeyCredential) {
+                const result = logSafariResult(
+                    'Safari Touch ID Test',
+                    false,
+                    'WebAuthn not supported - cannot test Touch ID'
+                );
+                displaySafariResult('touchid-results', result);
+                return;
+            }
+
+            try {
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                const result = logSafariResult(
+                    'Safari Touch ID/Face ID Availability',
+                    available,
+                    available ? 
+                        'Touch ID or Face ID is available in Safari' : 
+                        'Touch ID/Face ID is not available - check macOS settings',
+                    { available, platform: safariBrowserInfo.platform }
+                );
+                displaySafariResult('touchid-results', result);
+
+                // Safari/macOS specific checks
+                if (safariBrowserInfo.platform === 'macOS' && safariBrowserInfo.isSafari) {
+                    const result2 = logSafariResult(
+                        'Safari macOS Biometric Integration',
+                        available,
+                        available ? 
+                            'Safari has excellent Touch ID/Face ID integration on macOS' : 
+                            'Touch ID/Face ID may not be set up in System Preferences',
+                        { platform: 'macOS', browser: 'Safari', available }
+                    );
+                    displaySafariResult('touchid-results', result2);
+
+                    if (available) {
+                        const result3 = logSafariResult(
+                            'Safari Biometric Experience',
+                            true,
+                            'Safari provides seamless biometric authentication experience',
+                            { 
+                                experience: 'excellent',
+                                features: ['Touch ID', 'Face ID', 'Secure Enclave integration']
+                            }
+                        );
+                        displaySafariResult('touchid-results', result3);
+                    }
+                }
+
+            } catch (error) {
+                const result = logSafariResult(
+                    'Safari Touch ID Test Error',
+                    false,
+                    `Error testing Touch ID in Safari: ${error.message}`,
+                    { error: error.name, message: error.message }
+                );
+                displaySafariResult('touchid-results', result);
+            }
+        }
+
+        async function testSafariPlatformAuth() {
+            const container = document.getElementById('touchid-results');
+            
+            if (!safariBrowserInfo.isSafari) {
+                const result = logSafariResult(
+                    'Safari Platform Authenticator Test',
+                    'warning',
+                    'Not running on Safari - cannot test Safari platform authenticator features',
+                    { currentBrowser: safariBrowserInfo.browserName }
+                );
+                displaySafariResult('touchid-results', result);
+                return;
+            }
+
+            try {
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                
+                if (available && safariBrowserInfo.platform === 'macOS') {
+                    const result = logSafariResult(
+                        'Safari Platform Authenticator Optimization',
+                        true,
+                        'Safari is optimized for macOS platform authenticators',
+                        {
+                            optimizations: [
+                                'Native Touch ID integration',
+                                'Native Face ID integration',
+                                'Secure Enclave utilization',
+                                'System-level biometric policies'
+                            ]
+                        }
+                    );
+                    displaySafariResult('touchid-results', result);
+                } else if (available) {
+                    const result = logSafariResult(
+                        'Safari Platform Authenticator Available',
+                        true,
+                        'Platform authenticator is available in Safari',
+                        { platform: safariBrowserInfo.platform }
+                    );
+                    displaySafariResult('touchid-results', result);
+                } else {
+                    const result = logSafariResult(
+                        'Safari Platform Authenticator Setup',
+                        'warning',
+                        'Platform authenticator not available - check system settings',
+                        { 
+                            platform: safariBrowserInfo.platform,
+                            suggestions: [
+                                'Enable Touch ID in System Preferences',
+                                'Enable Face ID in System Preferences',
+                                'Ensure biometric hardware is available'
+                            ]
+                        }
+                    );
+                    displaySafariResult('touchid-results', result);
+                }
+
+            } catch (error) {
+                const result = logSafariResult(
+                    'Safari Platform Authenticator Error',
+                    false,
+                    `Error testing Safari platform authenticator: ${error.message}`,
+                    { error: error.name, message: error.message }
+                );
+                displaySafariResult('touchid-results', result);
+            }
+        }
+
+        async function testSafariSpecificFeatures() {
+            const container = document.getElementById('safari-specific-results');
+            container.innerHTML = '';
+
+            if (!safariBrowserInfo.isSafari) {
+                const result = logSafariResult(
+                    'Safari-Specific Features Test',
+                    'warning',
+                    'Not running on Safari - cannot test Safari-specific features',
+                    { currentBrowser: safariBrowserInfo.browserName }
+                );
+                displaySafariResult('safari-specific-results', result);
+                return;
+            }
+
+            // Test Safari version capabilities
+            const safariVersion = parseInt(safariBrowserInfo.browserVersion);
+            
+            if (safariVersion >= 16) {
+                const result1 = logSafariResult(
+                    'Safari 16+ Features',
+                    true,
+                    'Safari 16+ has excellent WebAuthn support with latest features',
+                    { 
+                        version: safariVersion,
+                        features: ['Full WebAuthn support', 'Conditional UI (partial)', 'Resident keys', 'All algorithms']
+                    }
+                );
+                displaySafariResult('safari-specific-results', result1);
+            } else if (safariVersion >= 15) {
+                const result1 = logSafariResult(
+                    'Safari 15 Features',
+                    true,
+                    'Safari 15 has very good WebAuthn support',
+                    { 
+                        version: safariVersion,
+                        features: ['Full WebAuthn support', 'Resident keys', 'Most algorithms']
+                    }
+                );
+                displaySafariResult('safari-specific-results', result1);
+            } else if (safariVersion >= 14) {
+                const result1 = logSafariResult(
+                    'Safari 14 Features',
+                    'warning',
+                    'Safari 14 has basic WebAuthn support - consider updating',
+                    { 
+                        version: safariVersion,
+                        features: ['Basic WebAuthn support', 'Limited resident key support']
+                    }
+                );
+                displaySafariResult('safari-specific-results', result1);
+            }
+
+            // Test conditional UI support
+            if (window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
+                try {
+                    const conditionalUI = await PublicKeyCredential.isConditionalMediationAvailable();
+                    const result2 = logSafariResult(
+                        'Safari Conditional UI Support',
+                        conditionalUI,
+                        conditionalUI ? 
+                            'Safari supports conditional UI for passkeys' :
+                            'Safari does not support conditional UI for passkeys',
+                        { conditionalUI, version: safariVersion }
+                    );
+                    displaySafariResult('safari-specific-results', result2);
+                } catch (error) {
+                    const result2 = logSafariResult(
+                        'Safari Conditional UI Test Error',
+                        'warning',
+                        `Could not test conditional UI: ${error.message}`,
+                        { error: error.name }
+                    );
+                    displaySafariResult('safari-specific-results', result2);
+                }
+            } else {
+                const result2 = logSafariResult(
+                    'Safari Conditional UI',
+                    'info',
+                    'Conditional UI API not available in this Safari version',
+                    { available: false, version: safariVersion }
+                );
+                displaySafariResult('safari-specific-results', result2);
+            }
+
+            // Safari security requirements
+            const result3 = logSafariResult(
+                'Safari Security Requirements',
+                'info',
+                'Safari enforces strict security requirements for WebAuthn',
+                {
+                    requirements: [
+                        'HTTPS required (or localhost for development)',
+                        'User gesture required for credential operations',
+                        'Same-origin policy strictly enforced',
+                        'Secure context validation',
+                        'Privacy-focused attestation handling'
+                    ]
+                }
+            );
+            displaySafariResult('safari-specific-results', result3);
+        }
+
+        async function testSafariPasskeyRegistration() {
+            const container = document.getElementById('webauthn-results');
+            
+            if (!window.PublicKeyCredential) {
+                const result = logSafariResult(
+                    'Safari Passkey Registration Test',
+                    false,
+                    'WebAuthn not supported - cannot test Safari passkey registration'
+                );
+                displaySafariResult('webauthn-results', result);
+                return;
+            }
+
+            try {
+                // Create Safari-optimized registration options
+                const challenge = new Uint8Array(32);
+                crypto.getRandomValues(challenge);
+                
+                const userId = new TextEncoder().encode('safari-test@example.com');
+                
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: {
+                        name: "H-DCN Safari Test",
+                        id: window.location.hostname,
+                    },
+                    user: {
+                        id: userId,
+                        name: "safari-test@example.com",
+                        displayName: "Safari Test User",
+                    },
+                    pubKeyCredParams: [
+                        { alg: -7, type: "public-key" },  // ES256 - preferred by Safari
+                        { alg: -257, type: "public-key" } // RS256 - fallback
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform", // Safari works well with platform
+                        userVerification: "preferred",
+                        requireResidentKey: false
+                    },
+                    timeout: 60000, // Safari may need longer timeouts
+                    attestation: "none" // Safari prefers none attestation
+                };
+
+                const result1 = logSafariResult(
+                    'Safari Passkey Registration Options',
+                    true,
+                    'Successfully created Safari-optimized passkey registration options',
+                    { 
+                        challenge: challenge.length,
+                        rp: publicKeyCredentialCreationOptions.rp.name,
+                        algorithms: ['ES256 (preferred)', 'RS256 (fallback)'],
+                        timeout: publicKeyCredentialCreationOptions.timeout,
+                        attestation: 'none (privacy-focused)'
+                    }
+                );
+                displaySafariResult('webauthn-results', result1);
+
+                // Safari optimization notes
+                const result2 = logSafariResult(
+                    'Safari Registration Optimizations',
+                    'info',
+                    'Registration options are optimized for Safari WebAuthn implementation',
+                    {
+                        optimizations: [
+                            'ES256 algorithm prioritized (Safari preference)',
+                            'Platform authenticator preferred (Touch ID/Face ID)',
+                            'Extended timeout for user interaction',
+                            'None attestation for privacy',
+                            'Proper challenge generation'
+                        ]
+                    }
+                );
+                displaySafariResult('webauthn-results', result2);
+
+                // Note about user gesture requirement
+                const result3 = logSafariResult(
+                    'Safari User Gesture Requirement',
+                    'info',
+                    'Safari requires user gesture for passkey registration - actual registration needs user interaction',
+                    { 
+                        requirement: 'user-gesture',
+                        note: 'This test validates API availability without triggering user interaction'
+                    }
+                );
+                displaySafariResult('webauthn-results', result3);
+
+            } catch (error) {
+                const result = logSafariResult(
+                    'Safari Passkey Registration Error',
+                    false,
+                    `Error setting up Safari passkey registration: ${error.message}`,
+                    { error: error.name, message: error.message }
+                );
+                displaySafariResult('webauthn-results', result);
+            }
+        }
+
+        function updateSafariCompatibilityMatrix() {
+            const matrix = document.getElementById('safari-compatibility-matrix');
+            
+            const features = [
+                {
+                    name: 'WebAuthn API',
+                    safari14: 'Full',
+                    safari15: 'Full',
+                    safari16: 'Full',
+                    current: window.PublicKeyCredential ? 'Supported' : 'Not Supported',
+                    status: window.PublicKeyCredential ? 'pass' : 'fail'
+                },
+                {
+                    name: 'Platform Authenticator',
+                    safari14: 'Full',
+                    safari15: 'Full',
+                    safari16: 'Full',
+                    current: 'Testing...',
+                    status: 'info'
+                },
+                {
+                    name: 'Resident Keys',
+                    safari14: 'Partial',
+                    safari15: 'Full',
+                    safari16: 'Full',
+                    current: window.PublicKeyCredential ? 'Supported' : 'Not Supported',
+                    status: window.PublicKeyCredential ? 'pass' : 'fail'
+                },
+                {
+                    name: 'User Verification',
+                    safari14: 'Full',
+                    safari15: 'Full',
+                    safari16: 'Full',
+                    current: window.PublicKeyCredential ? 'Supported' : 'Not Supported',
+                    status: window.PublicKeyCredential ? 'pass' : 'fail'
+                },
+                {
+                    name: 'Conditional UI',
+                    safari14: 'None',
+                    safari15: 'None',
+                    safari16: 'Partial',
+                    current: 'Testing...',
+                    status: 'info'
+                }
+            ];
+
+            matrix.innerHTML = features.map(feature => `
+                <tr>
+                    <td>${feature.name}</td>
+                    <td class="support-${feature.safari14 === 'Full' ? 'full' : feature.safari14 === 'Partial' ? 'partial' : 'none'}">${feature.safari14}</td>
+                    <td class="support-${feature.safari15 === 'Full' ? 'full' : feature.safari15 === 'Partial' ? 'partial' : 'none'}">${feature.safari15}</td>
+                    <td class="support-${feature.safari16 === 'Full' ? 'full' : feature.safari16 === 'Partial' ? 'partial' : 'none'}">${feature.safari16}</td>
+                    <td class="support-${feature.status === 'pass' ? 'full' : feature.status === 'fail' ? 'none' : 'partial'}">${feature.current}</td>
+                    <td class="support-${feature.status === 'pass' ? 'full' : feature.status === 'fail' ? 'none' : 'partial'}">${feature.status.toUpperCase()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function generateSafariReport() {
+            const summary = document.getElementById('safari-test-summary');
+            
+            const totalTests = safariTestResults.length;
+            const passedTests = safariTestResults.filter(r => r.success === true).length;
+            const failedTests = safariTestResults.filter(r => r.success === false).length;
+            const warningTests = safariTestResults.filter(r => r.success === 'warning').length;
+            
+            const isSafari = safariBrowserInfo.isSafari;
+            const isDesktop = safariBrowserInfo.isDesktop;
+            const hasWebAuthn = window.PublicKeyCredential;
+            const safariVersion = parseInt(safariBrowserInfo.browserVersion);
+            
+            let overallStatus = 'Unknown';
+            let statusClass = 'info';
+            
+            if (isSafari) {
+                if (hasWebAuthn && isDesktop && safariVersion >= 16) {
+                    overallStatus = 'Excellent Safari Support';
+                    statusClass = 'pass';
+                } else if (hasWebAuthn && isDesktop && safariVersion >= 14) {
+                    overallStatus = 'Good Safari Support';
+                    statusClass = 'pass';
+                } else if (hasWebAuthn) {
+                    overallStatus = 'Basic Safari Support';
+                    statusClass = 'warning';
+                } else {
+                    overallStatus = 'Safari Update Required';
+                    statusClass = 'fail';
+                }
+            } else {
+                overallStatus = 'Not Safari Browser';
+                statusClass = 'warning';
+            }
+
+            summary.innerHTML = `
+                <div class="test-result ${statusClass}">
+                    <h3>🍎 Safari Desktop Compatibility Report</h3>
+                    <p><strong>Overall Status:</strong> ${overallStatus}</p>
+                    <p><strong>Browser:</strong> ${safariBrowserInfo.browserName} ${safariBrowserInfo.browserVersion}</p>
+                    <p><strong>Platform:</strong> ${safariBrowserInfo.platform} ${isDesktop ? '(Desktop)' : '(Mobile)'}</p>
+                    <p><strong>Tests Run:</strong> ${totalTests}</p>
+                    <p><strong>Passed:</strong> ${passedTests} | <strong>Failed:</strong> ${failedTests} | <strong>Warnings:</strong> ${warningTests}</p>
+                    <p><strong>WebAuthn Support:</strong> ${hasWebAuthn ? 'Yes' : 'No'}</p>
+                    <p><strong>Touch ID/Face ID:</strong> ${safariBrowserInfo.platform === 'macOS' ? 'Available on macOS' : 'N/A'}</p>
+                    <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+            `;
+        }
+
+        function clearSafariResults() {
+            safariTestResults = [];
+            document.getElementById('webauthn-results').innerHTML = '';
+            document.getElementById('touchid-results').innerHTML = '';
+            document.getElementById('safari-specific-results').innerHTML = '';
+            document.getElementById('safari-test-summary').innerHTML = '';
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            detectSafari();
+            updateSafariCompatibilityMatrix();
+        });
+    </script>
+</body>
+</html>

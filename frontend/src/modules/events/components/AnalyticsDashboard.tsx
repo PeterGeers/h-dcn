@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import {
   Box, VStack, HStack, Heading, SimpleGrid, Stat, StatLabel, StatNumber,
-  Table, Thead, Tbody, Tr, Th, Td, Text, Progress
+  Table, Thead, Tbody, Tr, Th, Td, Text, Progress, Alert, AlertIcon
 } from '@chakra-ui/react';
 import CSVExportButton from './CSVExportButton';
+import { FunctionPermissionManager } from '../../../utils/functionPermissions';
 
 interface Event {
   event_id?: string;
@@ -22,6 +23,7 @@ interface Event {
 
 interface AnalyticsDashboardProps {
   events: Event[];
+  permissionManager?: FunctionPermissionManager | null;
 }
 
 interface MonthlyData {
@@ -43,7 +45,22 @@ interface LocationStat extends MonthlyData {
   avgAttendance: number;
 }
 
-function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
+function AnalyticsDashboard({ events, permissionManager }: AnalyticsDashboardProps) {
+  const canViewAnalytics = permissionManager?.hasAccess('events', 'read') || false;
+  const canViewFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'financial' }) || false;
+  const canExportAnalytics = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'export' }) || 
+                            permissionManager?.hasAccess('communication', 'write') || false;
+
+  if (!canViewAnalytics) {
+    return (
+      <VStack spacing={6} align="center">
+        <Alert status="warning" bg="orange.100" color="black">
+          <AlertIcon />
+          Je hebt geen toegang tot analytics. Neem contact op met een beheerder als je toegang nodig hebt.
+        </Alert>
+      </VStack>
+    );
+  }
   const analytics = useMemo(() => {
     if (!events || events.length === 0) {
       return {
@@ -144,11 +161,13 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
     <VStack spacing={6} align="stretch">
       <HStack justify="space-between">
         <Heading size="lg" color="orange.400">Analytics Dashboard</Heading>
-        <CSVExportButton 
-          data={analytics.monthlyStats} 
-          filename="analytics_monthly"
-          columns={[]}
-        />
+        {canExportAnalytics && (
+          <CSVExportButton 
+            data={analytics.monthlyStats} 
+            filename="analytics_monthly"
+            columns={[]}
+          />
+        )}
       </HStack>
 
       {/* Key Metrics */}
@@ -179,55 +198,61 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
         </Box>
       </SimpleGrid>
 
-      {/* Financial Overview */}
-      <SimpleGrid columns={4} spacing={4}>
-        <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400">
-          <Stat>
-            <StatLabel color="green.300">Totale Inkomsten</StatLabel>
-            <StatNumber color="green.400">{formatCurrency(analytics.totalRevenue)}</StatNumber>
-          </Stat>
-        </Box>
-        <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="red.400">
-          <Stat>
-            <StatLabel color="red.300">Totale Kosten</StatLabel>
-            <StatNumber color="red.400">{formatCurrency(analytics.totalCosts)}</StatNumber>
-          </Stat>
-        </Box>
-        <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor={analytics.totalProfit >= 0 ? "green.400" : "red.400"}>
-          <Stat>
-            <StatLabel color={analytics.totalProfit >= 0 ? "green.300" : "red.300"}>Totale Winst</StatLabel>
-            <StatNumber color={analytics.totalProfit >= 0 ? "green.400" : "red.400"}>
-              {formatCurrency(analytics.totalProfit)}
-            </StatNumber>
-          </Stat>
-        </Box>
-        <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="yellow.400">
-          <Stat>
-            <StatLabel color="yellow.300">Kosten per Deelnemer</StatLabel>
-            <StatNumber color="white">{formatCurrency(analytics.avgCostPerParticipant)}</StatNumber>
-          </Stat>
-        </Box>
-      </SimpleGrid>
+      {/* Financial Overview - Only show if user has financial access */}
+      {canViewFinancials && (
+        <SimpleGrid columns={4} spacing={4}>
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400">
+            <Stat>
+              <StatLabel color="green.300">Totale Inkomsten</StatLabel>
+              <StatNumber color="green.400">{formatCurrency(analytics.totalRevenue)}</StatNumber>
+            </Stat>
+          </Box>
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="red.400">
+            <Stat>
+              <StatLabel color="red.300">Totale Kosten</StatLabel>
+              <StatNumber color="red.400">{formatCurrency(analytics.totalCosts)}</StatNumber>
+            </Stat>
+          </Box>
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor={analytics.totalProfit >= 0 ? "green.400" : "red.400"}>
+            <Stat>
+              <StatLabel color={analytics.totalProfit >= 0 ? "green.300" : "red.300"}>Totale Winst</StatLabel>
+              <StatNumber color={analytics.totalProfit >= 0 ? "green.400" : "red.400"}>
+                {formatCurrency(analytics.totalProfit)}
+              </StatNumber>
+            </Stat>
+          </Box>
+          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="yellow.400">
+            <Stat>
+              <StatLabel color="yellow.300">Kosten per Deelnemer</StatLabel>
+              <StatNumber color="white">{formatCurrency(analytics.avgCostPerParticipant)}</StatNumber>
+            </Stat>
+          </Box>
+        </SimpleGrid>
+      )}
 
-      {/* Profit Margin */}
-      <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="orange.400">
-        <Text color="orange.300" mb={2}>Winstmarge: {profitMargin}%</Text>
-        <Progress 
-          value={Math.max(0, Math.min(100, parseFloat(profitMargin)))} 
-          colorScheme={parseFloat(profitMargin) > 0 ? "green" : "red"}
-          size="lg"
-        />
-      </Box>
+      {/* Profit Margin - Only show if user has financial access */}
+      {canViewFinancials && (
+        <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="orange.400">
+          <Text color="orange.300" mb={2}>Winstmarge: {profitMargin}%</Text>
+          <Progress 
+            value={Math.max(0, Math.min(100, parseFloat(profitMargin)))} 
+            colorScheme={parseFloat(profitMargin) > 0 ? "green" : "red"}
+            size="lg"
+          />
+        </Box>
+      )}
 
       {/* Monthly Statistics */}
       <Box>
         <HStack justify="space-between" mb={4}>
           <Heading size="md" color="orange.400">Maandelijkse Statistieken</Heading>
-          <CSVExportButton 
-            data={analytics.monthlyStats} 
-            filename="monthly_stats"
-            columns={[]}
-          />
+          {canExportAnalytics && (
+            <CSVExportButton 
+              data={analytics.monthlyStats} 
+              filename="monthly_stats"
+              columns={[]}
+            />
+          )}
         </HStack>
         <Box bg="gray.800" borderRadius="md" border="1px" borderColor="orange.400" overflow="hidden">
           <Table variant="simple">
@@ -237,9 +262,9 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
                 <Th color="orange.300">Events</Th>
                 <Th color="orange.300">Deelnemers</Th>
                 <Th color="orange.300">Gem. Opkomst</Th>
-                <Th color="orange.300">Inkomsten</Th>
-                <Th color="orange.300">Kosten</Th>
-                <Th color="orange.300">Winst</Th>
+                {canViewFinancials && <Th color="orange.300">Inkomsten</Th>}
+                {canViewFinancials && <Th color="orange.300">Kosten</Th>}
+                {canViewFinancials && <Th color="orange.300">Winst</Th>}
               </Tr>
             </Thead>
             <Tbody>
@@ -249,11 +274,13 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
                   <Td color="white">{stat.events}</Td>
                   <Td color="white">{stat.participants}</Td>
                   <Td color="white">{stat.avgAttendance}</Td>
-                  <Td color="white">{formatCurrency(stat.revenue)}</Td>
-                  <Td color="white">{formatCurrency(stat.costs)}</Td>
-                  <Td color={stat.profit >= 0 ? "green.400" : "red.400"}>
-                    {formatCurrency(stat.profit)}
-                  </Td>
+                  {canViewFinancials && <Td color="white">{formatCurrency(stat.revenue)}</Td>}
+                  {canViewFinancials && <Td color="white">{formatCurrency(stat.costs)}</Td>}
+                  {canViewFinancials && (
+                    <Td color={stat.profit >= 0 ? "green.400" : "red.400"}>
+                      {formatCurrency(stat.profit)}
+                    </Td>
+                  )}
                 </Tr>
               ))}
             </Tbody>
@@ -265,11 +292,13 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
       <Box>
         <HStack justify="space-between" mb={4}>
           <Heading size="md" color="orange.400">Locatie Prestaties</Heading>
-          <CSVExportButton 
-            data={analytics.locationStats} 
-            filename="location_stats"
-            columns={[]}
-          />
+          {canExportAnalytics && (
+            <CSVExportButton 
+              data={analytics.locationStats} 
+              filename="location_stats"
+              columns={[]}
+            />
+          )}
         </HStack>
         <Box bg="gray.800" borderRadius="md" border="1px" borderColor="orange.400" overflow="hidden">
           <Table variant="simple">
@@ -279,7 +308,7 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
                 <Th color="orange.300">Events</Th>
                 <Th color="orange.300">Deelnemers</Th>
                 <Th color="orange.300">Gem. Opkomst</Th>
-                <Th color="orange.300">Winst</Th>
+                {canViewFinancials && <Th color="orange.300">Winst</Th>}
               </Tr>
             </Thead>
             <Tbody>
@@ -289,9 +318,11 @@ function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
                   <Td color="white">{stat.events}</Td>
                   <Td color="white">{stat.participants}</Td>
                   <Td color="white">{stat.avgAttendance}</Td>
-                  <Td color={stat.profit >= 0 ? "green.400" : "red.400"}>
-                    {formatCurrency(stat.profit)}
-                  </Td>
+                  {canViewFinancials && (
+                    <Td color={stat.profit >= 0 ? "green.400" : "red.400"}>
+                      {formatCurrency(stat.profit)}
+                    </Td>
+                  )}
                 </Tr>
               ))}
             </Tbody>

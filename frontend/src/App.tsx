@@ -2,11 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Box, Flex, Heading, Button, Text, Spacer, HStack, Image } from '@chakra-ui/react';
 import { ArrowBackIcon, SettingsIcon } from '@chakra-ui/icons';
-import { Authenticator } from '@aws-amplify/ui-react';
-import '@aws-amplify/ui-react/styles.css';
 import { Suspense, lazy } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
-import GroupAccessGuard from './components/GroupAccessGuard';
+import GroupAccessGuard from './components/common/GroupAccessGuard';
+import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 
 interface User {
   attributes?: {
@@ -31,41 +30,8 @@ const ProductManagementPage = lazy(() => import('./modules/products/ProductManag
 const MemberAdminPage = lazy(() => import('./modules/members/MemberAdminPage')) as any;
 const EventAdminPage = lazy(() => import('./modules/events/EventAdminPage')) as any;
 const MembershipManagement = lazy(() => import('./pages/MembershipManagement')) as any;
-
-const signUpFields = {
-  signUp: {
-    username: {
-      label: 'E-mailadres',
-      placeholder: 'Voer je e-mailadres in',
-      isRequired: true,
-      order: 1
-    },
-    given_name: {
-      label: 'Voornaam',
-      placeholder: 'Voer je voornaam in',
-      isRequired: true,
-      order: 2
-    },
-    family_name: {
-      label: 'Achternaam', 
-      placeholder: 'Voer je achternaam in',
-      isRequired: true,
-      order: 3
-    },
-    password: {
-      label: 'Wachtwoord',
-      placeholder: 'Voer je wachtwoord in',
-      isRequired: true,
-      order: 4
-    },
-    confirm_password: {
-      label: 'Bevestig wachtwoord',
-      placeholder: 'Bevestig je wachtwoord',
-      isRequired: true,
-      order: 5
-    }
-  }
-};
+const PasskeyTest = lazy(() => import('./components/auth/PasskeyTest')) as any;
+const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCompatibilityTest')) as any;
 
 function NavigationHeader({ signOut, user }: AppProps) {
   const navigate = useNavigate();
@@ -154,6 +120,8 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/members" element={<MemberAdminPage user={user} />} />
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
+            <Route path="/test/passkey" element={<PasskeyTest />} />
+            <Route path="/test/browser-compatibility" element={<BrowserCompatibilityTest />} />
           </Routes>
         </Suspense>
       </Box>
@@ -161,31 +129,9 @@ function AppContent({ signOut, user }: AppProps) {
   );
 }
 
-const components = {
-  Header() {
-    return (
-      <Box textAlign="center" py={6}>
-        <Image 
-          src="/hdcn-logo.svg" 
-          alt="H-DCN Logo" 
-          mx="auto" 
-          mb={4}
-          maxW="200px"
-        />
-        <Heading color="orange.400" size="lg">H-DCN Portal</Heading>
-        <Text color="gray.400" mt={2}>Welkom bij het H-DCN Dashboard</Text>
-      </Box>
-    );
-  }
-};
-
 function App() {
   return (
-    <Authenticator
-      signUpAttributes={['given_name', 'family_name']}
-      formFields={signUpFields}
-      components={components}
-    >
+    <CustomAuthenticator>
       {({ signOut, user }) => (
         <GroupAccessGuard user={user} signOut={signOut}>
           <Router>
@@ -193,7 +139,7 @@ function App() {
           </Router>
         </GroupAccessGuard>
       )}
-    </Authenticator>
+    </CustomAuthenticator>
   );
 }
 

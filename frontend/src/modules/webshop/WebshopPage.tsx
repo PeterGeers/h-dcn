@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Container, useToast, Spinner, Center, Flex, Button, HStack, Stack } from '@chakra-ui/react';
+import { Box, Container, useToast, Spinner, Center, Flex, Button, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 import { ArrowBackIcon, ViewIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import ProductFilter from './components/ProductFilter';
@@ -9,6 +9,7 @@ import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
 import OrdersAdmin from './components/OrdersAdmin';
 import OrderSuccess from './components/OrderSuccess';
+import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService, cartService, memberService, orderService } from './services/api';
 
 interface User {
@@ -480,206 +481,251 @@ function WebshopPage({ user }: WebshopPageProps) {
   }
 
   return (
-    <Box minH="100vh">
-      <Flex justify="space-between" align="center" p={4} bg="black" color="orange.400">
-        <Button onClick={() => navigate('/')} variant="ghost" color="orange.300" leftIcon={<ArrowBackIcon />}>
-          Terug naar Dashboard
-        </Button>
-        <Box fontSize="xl" fontWeight="bold">H-DCN Webshop</Box>
-        <HStack>
-          <Button
-            onClick={() => setShowOrdersAdmin(!showOrdersAdmin)}
-            colorScheme="orange"
-            variant="ghost"
-            size="sm"
-          >
-            Orders
-          </Button>
-          <Button
-            onClick={() => setIsCartModalOpen(true)}
-            colorScheme="orange"
-            variant="outline"
-            leftIcon={<ViewIcon />}
-          >
-            Winkelwagen ({cartItems.length})
-          </Button>
-        </HStack>
-      </Flex>
-      
-      <Container maxW="container.xl" py={6}>
-        {showOrdersAdmin ? (
-          <OrdersAdmin />
-        ) : (
-          <Stack direction={{ base: 'column', lg: 'row' }} spacing={6}>
-            <Box w={{ base: 'full', lg: '300px' }}>
-              <ProductFilter
-                products={products}
-                selectedFilter={selectedFilter}
-                onFilterChange={setSelectedFilter}
-              />
+    <FunctionGuard 
+      user={user} 
+      functionName="webshop" 
+      action="read"
+      fallback={
+        <Box minH="100vh" bg="gray.100" display="flex" alignItems="center" justifyContent="center">
+          <Alert status="warning" maxW="md">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Geen toegang tot webshop!</AlertTitle>
+              <AlertDescription>
+                U heeft geen toegang tot de H-DCN webshop. Alleen leden kunnen de webshop gebruiken. 
+                Neem contact op met de beheerder als u denkt dat dit een fout is.
+              </AlertDescription>
             </Box>
-            
-            <Box flex={1}>
-              <ProductTable
-                products={filteredProducts}
-                onProductSelect={(product: Product) => {
-                  setSelectedProduct(product);
-                  setIsProductCardOpen(true);
-                }}
-              />
-            </Box>
-          </Stack>
-        )}
-      </Container>
-
-      {selectedProduct && (
-        <ProductCard
-          product={selectedProduct}
-          isOpen={isProductCardOpen}
-          onClose={() => setIsProductCardOpen(false)}
-          onAddToCart={handleAddToCart}
-        />
-      )}
-
-      <CartModal
-        isOpen={isCartModalOpen}
-        onClose={() => setIsCartModalOpen(false)}
-        cartItems={cartItems}
-        onRemoveItem={handleRemoveFromCart}
-        onUpdateQuantity={handleUpdateQuantity}
-        onCheckout={() => {
-          if (cartItems.length === 0) {
-            toast({
-              title: 'Winkelwagen is leeg',
-              description: 'Voeg eerst producten toe aan uw winkelwagen.',
-              status: 'warning',
-              duration: 3000,
-            });
-            return;
-          }
-          setIsCartModalOpen(false);
-          setIsCheckoutModalOpen(true);
-        }}
-        onSaveCart={handleSaveCart}
-        onClearCart={handleClearCart}
-      />
-
-      <CheckoutModal
-        isOpen={isCheckoutModalOpen}
-        onClose={() => setIsCheckoutModalOpen(false)}
-        cartItems={cartItems}
-        userEmail={user?.attributes?.email || memberInfo?.email || ''}
-        onPaymentSuccess={async (paymentData: PaymentData) => {
-          try {
-            const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
-            
-            const orderId = `ORDER_${Date.now()}`;
-            console.log('Creating order with memberInfo:', memberInfo);
-            console.log('Current member ID:', currentMemberId);
-            
-            const orderData = {
-              order_id: currentMemberId || memberInfo?.member_id,
-              customer_id: currentMemberId || memberInfo?.member_id,
-              customer_info: memberInfo || {
-                member_id: currentMemberId,
-                name: userName,
-                email: user?.attributes?.email || '',
-                phone: user?.attributes?.phone_number || ''
-              },
-              shipping_address: paymentData.shippingAddress || memberInfo || {
-                name: userName,
-                email: user?.attributes?.email || ''
-              },
-              delivery_cost: paymentData.deliveryOption ? parseFloat(paymentData.deliveryOption.cost || '0').toFixed(2) : '0.00',
-              delivery_option: paymentData.deliveryOption || null,
-              items: cartItems.map(item => ({
-                name: item.name || item.naam,
-                price: Number(item.price || 0).toFixed(2),
-                product_id: item.product_id || item.id,
-                quantity: item.quantity,
-                selectedOption: item.selectedOption || ''
-              })),
-              item_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
-              orderId: orderId,
-              payment_method_id: paymentData.paymentMethodId,
-              subtotal_amount: totalAmount.toFixed(2),
-              timestamp: new Date().toISOString(),
-              total_amount: paymentData.amount.toFixed(2)
-            };
-            
-            try {
-              await orderService.createOrder(orderData);
-              console.log('Order saved successfully:', orderId);
-              console.log('Order data with member info:', orderData);
-            } catch (error) {
-              console.error('Backend order failed:', error);
-              const localOrders = JSON.parse(localStorage.getItem('hdcn_orders') || '[]');
-              localOrders.push(orderData);
-              localStorage.setItem('hdcn_orders', JSON.stringify(localOrders));
-            }
-            
-            localStorage.setItem('latest_order', JSON.stringify(orderData));
-            
-            setCartItems([]);
-            localStorage.removeItem('hdcn_cart_items');
-            
-            if (cartId) {
-              try {
-                await cartService.clearCart(cartId);
-                localStorage.removeItem('hdcn_cart_id');
-                setCartId(null);
-                await initializeCart();
-              } catch (error) {
-                console.error('Failed to clear backend cart:', error);
-              }
-            }
-            
-            toast({
-              title: 'Betaling succesvol!',
-              description: `Bestelling ${orderId} van €${paymentData.amount.toFixed(2)} verwerkt`,
-              status: 'success',
-              duration: 5000,
-            });
-            
-            setIsCheckoutModalOpen(false);
-            setShowOrderSuccess(true);
-          } catch (error) {
-            toast({
-              title: 'Fout bij verwerken bestelling',
-              description: 'Er is een probleem opgetreden.',
-              status: 'error',
-              duration: 5000,
-            });
-          }
-        }}
-      />
-
-      {showOrderSuccess && (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          bg="blackAlpha.600"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          zIndex={1000}
-        >
-          <Box
-            bg="white"
-            borderRadius="md"
-            maxW="800px"
-            maxH="90vh"
-            overflow="auto"
-            boxShadow="xl"
-          >
-            <OrderSuccess onClose={() => setShowOrderSuccess(false)} />
-          </Box>
+          </Alert>
         </Box>
-      )}
-    </Box>
+      }
+    >
+      <Box minH="100vh">
+        <Flex justify="space-between" align="center" p={4} bg="black" color="orange.400">
+          <Button onClick={() => navigate('/')} variant="ghost" color="orange.300" leftIcon={<ArrowBackIcon />}>
+            Terug naar Dashboard
+          </Button>
+          <Box fontSize="xl" fontWeight="bold">H-DCN Webshop</Box>
+          <HStack>
+            {/* Orders admin button - only show for users with appropriate permissions */}
+            <FunctionGuard 
+              user={user} 
+              functionName="orders" 
+              action="read"
+              fallback={null}
+            >
+              <Button
+                onClick={() => setShowOrdersAdmin(!showOrdersAdmin)}
+                colorScheme="orange"
+                variant="ghost"
+                size="sm"
+              >
+                Orders
+              </Button>
+            </FunctionGuard>
+            <Button
+              onClick={() => setIsCartModalOpen(true)}
+              colorScheme="orange"
+              variant="outline"
+              leftIcon={<ViewIcon />}
+            >
+              Winkelwagen ({cartItems.length})
+            </Button>
+          </HStack>
+        </Flex>
+        
+        <Container maxW="container.xl" py={6}>
+          {showOrdersAdmin ? (
+            <FunctionGuard 
+              user={user} 
+              functionName="orders" 
+              action="read"
+              fallback={
+                <Alert status="warning">
+                  <AlertIcon />
+                  <Box>
+                    <AlertTitle>Geen toegang!</AlertTitle>
+                    <AlertDescription>
+                      U heeft geen toegang tot de bestellingenbeheer. Alleen beheerders kunnen bestellingen bekijken.
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              }
+            >
+              <OrdersAdmin />
+            </FunctionGuard>
+          ) : (
+            <Stack direction={{ base: 'column', lg: 'row' }} spacing={6}>
+              <Box w={{ base: 'full', lg: '300px' }}>
+                <ProductFilter
+                  products={products}
+                  selectedFilter={selectedFilter}
+                  onFilterChange={setSelectedFilter}
+                />
+              </Box>
+              
+              <Box flex={1}>
+                <ProductTable
+                  products={filteredProducts}
+                  onProductSelect={(product: Product) => {
+                    setSelectedProduct(product);
+                    setIsProductCardOpen(true);
+                  }}
+                />
+              </Box>
+            </Stack>
+          )}
+        </Container>
+
+        {selectedProduct && (
+          <ProductCard
+            product={selectedProduct}
+            isOpen={isProductCardOpen}
+            onClose={() => setIsProductCardOpen(false)}
+            onAddToCart={handleAddToCart}
+          />
+        )}
+
+        <CartModal
+          isOpen={isCartModalOpen}
+          onClose={() => setIsCartModalOpen(false)}
+          cartItems={cartItems}
+          onRemoveItem={handleRemoveFromCart}
+          onUpdateQuantity={handleUpdateQuantity}
+          onCheckout={() => {
+            if (cartItems.length === 0) {
+              toast({
+                title: 'Winkelwagen is leeg',
+                description: 'Voeg eerst producten toe aan uw winkelwagen.',
+                status: 'warning',
+                duration: 3000,
+              });
+              return;
+            }
+            setIsCartModalOpen(false);
+            setIsCheckoutModalOpen(true);
+          }}
+          onSaveCart={handleSaveCart}
+          onClearCart={handleClearCart}
+        />
+
+        <CheckoutModal
+          isOpen={isCheckoutModalOpen}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          cartItems={cartItems}
+          userEmail={user?.attributes?.email || memberInfo?.email || ''}
+          onPaymentSuccess={async (paymentData: PaymentData) => {
+            try {
+              const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
+              
+              const orderId = `ORDER_${Date.now()}`;
+              console.log('Creating order with memberInfo:', memberInfo);
+              console.log('Current member ID:', currentMemberId);
+              
+              const orderData = {
+                order_id: currentMemberId || memberInfo?.member_id,
+                customer_id: currentMemberId || memberInfo?.member_id,
+                customer_info: memberInfo || {
+                  member_id: currentMemberId,
+                  name: userName,
+                  email: user?.attributes?.email || '',
+                  phone: user?.attributes?.phone_number || ''
+                },
+                shipping_address: paymentData.shippingAddress || memberInfo || {
+                  name: userName,
+                  email: user?.attributes?.email || ''
+                },
+                delivery_cost: paymentData.deliveryOption ? parseFloat(paymentData.deliveryOption.cost || '0').toFixed(2) : '0.00',
+                delivery_option: paymentData.deliveryOption || null,
+                items: cartItems.map(item => ({
+                  name: item.name || item.naam,
+                  price: Number(item.price || 0).toFixed(2),
+                  product_id: item.product_id || item.id,
+                  quantity: item.quantity,
+                  selectedOption: item.selectedOption || ''
+                })),
+                item_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+                orderId: orderId,
+                payment_method_id: paymentData.paymentMethodId,
+                subtotal_amount: totalAmount.toFixed(2),
+                timestamp: new Date().toISOString(),
+                total_amount: paymentData.amount.toFixed(2)
+              };
+              
+              try {
+                await orderService.createOrder(orderData);
+                console.log('Order saved successfully:', orderId);
+                console.log('Order data with member info:', orderData);
+              } catch (error) {
+                console.error('Backend order failed:', error);
+                const localOrders = JSON.parse(localStorage.getItem('hdcn_orders') || '[]');
+                localOrders.push(orderData);
+                localStorage.setItem('hdcn_orders', JSON.stringify(localOrders));
+              }
+              
+              localStorage.setItem('latest_order', JSON.stringify(orderData));
+              
+              setCartItems([]);
+              localStorage.removeItem('hdcn_cart_items');
+              
+              if (cartId) {
+                try {
+                  await cartService.clearCart(cartId);
+                  localStorage.removeItem('hdcn_cart_id');
+                  setCartId(null);
+                  await initializeCart();
+                } catch (error) {
+                  console.error('Failed to clear backend cart:', error);
+                }
+              }
+              
+              toast({
+                title: 'Betaling succesvol!',
+                description: `Bestelling ${orderId} van €${paymentData.amount.toFixed(2)} verwerkt`,
+                status: 'success',
+                duration: 5000,
+              });
+              
+              setIsCheckoutModalOpen(false);
+              setShowOrderSuccess(true);
+            } catch (error) {
+              toast({
+                title: 'Fout bij verwerken bestelling',
+                description: 'Er is een probleem opgetreden.',
+                status: 'error',
+                duration: 5000,
+              });
+            }
+          }}
+        />
+
+        {showOrderSuccess && (
+          <Box
+            position="fixed"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            bg="blackAlpha.600"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            zIndex={1000}
+          >
+            <Box
+              bg="white"
+              borderRadius="md"
+              maxW="800px"
+              maxH="90vh"
+              overflow="auto"
+              boxShadow="xl"
+            >
+              <OrderSuccess onClose={() => setShowOrderSuccess(false)} />
+            </Box>
+          </Box>
+        )}
+      </Box>
+    </FunctionGuard>
   );
 }
 

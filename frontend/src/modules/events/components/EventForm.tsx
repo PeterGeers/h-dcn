@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
-  VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, useToast, Select
+  VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, useToast, Select,
+  Alert, AlertIcon, Text
 } from '@chakra-ui/react';
 import { useParameters } from '../../../utils/parameterService';
 import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
+import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 
 interface EventFormData {
   title: string;
@@ -26,9 +28,11 @@ interface EventFormProps {
   onClose: () => void;
   event?: Event;
   onSave: () => void;
+  user?: any;
+  permissionManager?: FunctionPermissionManager | null;
 }
 
-function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
+function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: EventFormProps) {
   const [formData, setFormData] = useState<EventFormData>({
     title: '',
     event_date: '',
@@ -44,6 +48,45 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
   const { handleError, handleSuccess } = useErrorHandler();
   const { parameters: regions, loading: regionsLoading } = useParameters('Regio');
 
+  const userRoles = getUserRoles(user || {});
+  const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || false;
+  const hasFullEventAccess = permissionManager?.hasAccess('events', 'write') || false;
+  
+  // Get user's allowed regions for regional users
+  const getAllowedRegions = (): string[] => {
+    if (hasFullEventAccess) return []; // Full access users can select any region
+    
+    const allowedRegions: string[] = [];
+    const regionMap: { [key: string]: string } = {
+      '1': 'Noord-Holland',
+      '2': 'Zuid-Holland', 
+      '3': 'Friesland',
+      '4': 'Utrecht',
+      '5': 'Oost',
+      '6': 'Limburg',
+      '7': 'Groningen/Drente',
+      '8': 'Noord-Brabant/Zeeland',
+      '9': 'Duitsland'
+    };
+    
+    userRoles.forEach(role => {
+      if (role.includes('Regional_') && role.includes('Region')) {
+        const regionMatch = role.match(/Region(\d+)/);
+        if (regionMatch) {
+          const regionNumber = regionMatch[1];
+          const regionName = regionMap[regionNumber];
+          if (regionName && !allowedRegions.includes(regionName)) {
+            allowedRegions.push(regionName);
+          }
+        }
+      }
+    });
+    
+    return allowedRegions;
+  };
+
+  const allowedRegions = getAllowedRegions();
+
   useEffect(() => {
     if (event) {
       setFormData({
@@ -58,19 +101,21 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
         notes: event.notes || event.opmerkingen || ''
       });
     } else {
+      // For new events, set default region for regional users
+      const defaultRegion = allowedRegions.length === 1 ? allowedRegions[0] : '';
       setFormData({
         title: '',
         event_date: '',
         end_date: '',
         location: '',
-        region: '',
+        region: defaultRegion,
         participants: '',
         cost: '',
         revenue: '',
         notes: ''
       });
     }
-  }, [event]);
+  }, [event, allowedRegions]);
 
   const handleChange = (field: keyof EventFormData, value: string) => {
     setFormData(prev => ({
@@ -82,6 +127,12 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
   const handleSubmit = async () => {
     if (!formData.title || !formData.event_date) {
       handleError({ status: 400, message: 'Naam en startdatum zijn verplicht' }, 'validatie');
+      return;
+    }
+
+    // Validate regional permissions
+    if (allowedRegions.length > 0 && formData.region && !allowedRegions.includes(formData.region)) {
+      handleError({ status: 403, message: 'Je hebt geen rechten om evenementen in deze regio aan te maken' }, 'validatie');
       return;
     }
 
@@ -118,6 +169,11 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
     }
   };
 
+  // Filter regions based on user permissions
+  const availableRegions = hasFullEventAccess 
+    ? regions 
+    : regions.filter(region => allowedRegions.length === 0 || allowedRegions.includes(region.value));
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
@@ -127,6 +183,14 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
+          {allowedRegions.length > 0 && (
+            <Alert status="info" mb={4}>
+              <AlertIcon />
+              <Text fontSize="sm">
+                Je kunt alleen evenementen beheren voor: {allowedRegions.join(', ')}
+              </Text>
+            </Alert>
+          )}
           <VStack spacing={4}>
             <SimpleGrid columns={2} spacing={4} w="full">
               <FormControl isRequired>
@@ -157,8 +221,9 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
                   bg="gray.700"
                   borderColor="orange.400"
                   placeholder="Selecteer regio..."
+                  isDisabled={allowedRegions.length === 1} // Disable if user can only access one region
                 >
-                  {regions.map((region) => (
+                  {availableRegions.map((region) => (
                     <option key={region.id} value={region.value} style={{backgroundColor: '#2D3748', color: 'white'}}>
                       {region.value}
                     </option>
@@ -208,6 +273,8 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
                   onChange={(e) => handleChange('cost', e.target.value)}
                   bg="gray.700"
                   borderColor="orange.400"
+                  isDisabled={!canEditFinancials}
+                  title={!canEditFinancials ? 'Geen rechten om financiële gegevens te bewerken' : ''}
                 />
               </FormControl>
 
@@ -220,6 +287,8 @@ function EventForm({ isOpen, onClose, event, onSave }: EventFormProps) {
                   onChange={(e) => handleChange('revenue', e.target.value)}
                   bg="gray.700"
                   borderColor="orange.400"
+                  isDisabled={!canEditFinancials}
+                  title={!canEditFinancials ? 'Geen rechten om financiële gegevens te bewerken' : ''}
                 />
               </FormControl>
             </SimpleGrid>

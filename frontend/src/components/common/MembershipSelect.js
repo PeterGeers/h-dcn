@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Select } from '@chakra-ui/react';
-import { getAuthHeadersForGet } from '../utils/authHeaders';
+import { getAuthHeadersForGet } from '../../utils/authHeaders';
 
 function MembershipSelect({ value, onChange, name, placeholder, ...props }) {
   const [memberships, setMemberships] = useState([]);

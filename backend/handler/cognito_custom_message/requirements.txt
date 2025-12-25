@@ -1,0 +1,2 @@
+# No additional requirements needed for this Lambda function
+# Uses only Python standard library modules

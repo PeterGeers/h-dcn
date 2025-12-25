@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive WebAuthn Browser Compatibility Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ff6b35;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .pass { background: #1a4d3a; border-left: 4px solid #28a745; }
+        .fail { background: #4d1a1a; border-left: 4px solid #dc3545; }
+        .warning { background: #4d3a1a; border-left: 4px solid #ffc107; }
+        .info { background: #1a3a4d; border-left: 4px solid #17a2b8; }
+        button {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #e55a2b; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .browser-info {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .compatibility-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .compatibility-matrix th,
+        .compatibility-matrix td {
+            border: 1px solid #555;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .compatibility-matrix th {
+            background: #444;
+            font-weight: bold;
+        }
+        .support-full { color: #28a745; font-weight: bold; }
+        .support-partial { color: #ffc107; font-weight: bold; }
+        .support-none { color: #dc3545; font-weight: bold; }
+        pre {
+            background: #222;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 Comprehensive WebAuthn Browser Compatibility Test</h1>
+    <p>Complete testing suite for WebAuthn/Passkey support across all browsers and platforms.</p>
+    <div class="test-section">
+        <h2>Browser Detection & Analysis</h2>
+        <div id="browser-detection" class="browser-info">
+            <p>Detecting browser and platform...</p>
+        </div>
+        <button onclick="runBrowserDetection()">Detect Browser</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+    </div>
+
+    <div class="test-section">
+        <h2>WebAuthn API Tests</h2>
+        <div id="webauthn-results"></div>
+        <button onclick="testWebAuthnAPI()">Test WebAuthn API</button>
+        <button onclick="testPlatformAuthenticator()">Test Platform Authenticator</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Browser-Specific Tests</h2>
+        <div id="browser-specific-results"></div>
+        <button onclick="testChromeEdge()">Test Chrome/Edge</button>
+        <button onclick="testSafari()">Test Safari</button>
+        <button onclick="testFirefox()">Test Firefox</button>
+        <button onclick="testMobile()">Test Mobile</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Comprehensive Compatibility Matrix</h2>
+        <table class="compatibility-matrix">
+            <thead>
+                <tr>
+                    <th>Browser/Platform</th>
+                    <th>WebAuthn API</th>
+                    <th>Platform Auth</th>
+                    <th>Resident Keys</th>
+                    <th>Cross-Device</th>
+                    <th>Overall Status</th>
+                </tr>
+            </thead>
+            <tbody id="compatibility-matrix">
+                <!-- Will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results Summary</h2>
+        <div id="test-summary"></div>
+        <button onclick="generateReport()">Generate Full Report</button>
+        <button onclick="exportResults()">Export Results</button>
+        <button onclick="clearAllResults()">Clear All Results</button>
+    </div>
+
+    <script src="chrome-edge-desktop-test.js"></script>
+    <script src="safari-desktop-test.js"></script>
+    <script src="mobile-browser-test.js"></script>
+    <script>
+        let allTestResults = [];
+        let browserInfo = {};
+
+        // Comprehensive browser detection
+        function runBrowserDetection() {
+            // Implementation will be added
+        }
+
+        // Run all test suites
+        async function runAllTests() {
+            // Implementation will be added
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            runBrowserDetection();
+        });
+    </script>
+</body>
+</html>

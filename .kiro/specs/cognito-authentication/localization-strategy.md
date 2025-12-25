@@ -194,6 +194,118 @@ export const NL_TEXT = {
     refresh: "Vernieuwen",
   },
 
+  // H-DCN Organizational Structure
+  roles: {
+    // Algemeen Bestuur
+    hdcnVoorzitter: "Voorzitter",
+    hdcnSecretaris: "Landelijke Secretaris",
+    hdcnViceVoorzitter: "Vice-Voorzitter",
+    hdcnPenningmeester: "Penningmeester",
+    hdcnLedenadministratie: "Ledenadministratie",
+
+    // Ondersteunende Rollen
+    hdcnWebmaster: "Webmaster",
+    hdcnToercomisaris: "Toercommissaris",
+    hdcnClubblad: "Clubblad",
+    hdcnWebshop: "Webshop",
+
+    // Regionale Rollen
+    regioVoorzitter: "Regio Voorzitter",
+    regioSecretaris: "Regio Secretaris",
+    regioPenningmeester: "Regio Penningmeester",
+    regioVrijwilliger: "Regio Vrijwilliger",
+
+    // Basis
+    hdcnLeden: "Leden",
+
+    // Role Categories
+    generalBoard: "Algemeen Bestuur",
+    supportingRoles: "Ondersteunende Rollen",
+    regionalRoles: "Regionale Rollen",
+    basicMembers: "Basis Leden",
+  },
+
+  // Regions
+  regions: {
+    regio_1: "Regio 1",
+    regio_2: "Regio 2",
+    regio_3: "Regio 3",
+    regio_4: "Regio 4",
+    regio_5: "Regio 5",
+    regio_6: "Regio 6",
+    regio_7: "Regio 7",
+    regio_8: "Regio 8",
+    regio_9: "Regio 9",
+    selectRegion: "Selecteer Regio",
+    allRegions: "Alle Regio's",
+  },
+
+  // Clubblad Mailing Lists
+  clubblad: {
+    title: "Clubblad Beheer",
+    mailingLists: "Verzendlijsten",
+    createList: "Nieuwe Lijst Maken",
+    filterOptions: "Filter Opties",
+    exportFormat: "Export Formaat",
+    emailList: "E-mail Lijst",
+    physicalAddressList: "Adressenlijst",
+    fullContactList: "Volledige Contactlijst",
+
+    filters: {
+      regions: "Regio's",
+      membershipTypes: "Lidmaatschap Types",
+      membershipStatuses: "Lidmaatschap Status",
+      paymentStatuses: "Betalingsstatus",
+      roles: "Rollen",
+      dateRange: "Datum Bereik",
+      customFilters: "Aangepaste Filters",
+      includeRoles: "Inclusief Rollen",
+      excludeRoles: "Exclusief Rollen",
+      hasEmail: "Heeft E-mailadres",
+      hasPhysicalAddress: "Heeft Fysiek Adres",
+      joinDateFrom: "Lid sinds (van)",
+      joinDateTo: "Lid sinds (tot)",
+    },
+
+    export: {
+      generating: "Lijst wordt gegenereerd...",
+      ready: "Lijst gereed voor download",
+      error: "Fout bij genereren van lijst",
+      downloadCsv: "Download CSV",
+      downloadExcel: "Download Excel",
+      totalMembers: "Totaal aantal leden",
+      filteredMembers: "Gefilterde leden",
+    },
+  },
+
+  // Events Management
+  events: {
+    title: "Evenementen",
+    myRegionEvents: "Mijn Regio Evenementen",
+    allEvents: "Alle Evenementen",
+    createEvent: "Nieuw Evenement",
+    editEvent: "Evenement Bewerken",
+    eventDetails: "Evenement Details",
+    eventDate: "Datum",
+    eventTime: "Tijd",
+    eventLocation: "Locatie",
+    eventDescription: "Beschrijving",
+    eventRegion: "Regio",
+    maxParticipants: "Maximum Deelnemers",
+    registrationDeadline: "Inschrijfdeadline",
+    eventStatus: "Status",
+    upcoming: "Aankomend",
+    ongoing: "Bezig",
+    completed: "Voltooid",
+    cancelled: "Geannuleerd",
+    registerForEvent: "Inschrijven",
+    unregisterFromEvent: "Uitschrijven",
+    registrationConfirmed: "Inschrijving bevestigd",
+    registrationCancelled: "Inschrijving geannuleerd",
+    eventFull: "Evenement vol",
+    registrationClosed: "Inschrijving gesloten",
+  },
+
   // Admin Interface
   admin: {
     title: "Beheer",
@@ -211,6 +323,28 @@ export const NL_TEXT = {
     changeStatus: "Status Wijzigen",
     statusChangeLog: "Statuswijzigingen",
     lastSync: "Laatste synchronisatie",
+
+    // Role Management
+    roleManagement: "Rollenbeheer",
+    assignRoles: "Rollen Toewijzen",
+    removeRole: "Rol Verwijderen",
+    multipleRoles: "Meerdere Rollen",
+    roleConflict: "Rol Conflict",
+    roleHierarchy: "Rol Hiërarchie",
+
+    // Permission Management
+    permissions: "Rechten",
+    memberDataAccess: "Ledengegevens Toegang",
+    eventManagement: "Evenementen Beheer",
+    webshopAccess: "Webshop Toegang",
+    clubbladAccess: "Clubblad Toegang",
+    systemAdmin: "Systeem Beheerder",
+
+    // Regional Management
+    regionalAccess: "Regionale Toegang",
+    crossRegionalAccess: "Regio-overschrijdende Toegang",
+    regionalEvents: "Regionale Evenementen",
+    regionalMembers: "Regionale Leden",
   },
 };
 ```

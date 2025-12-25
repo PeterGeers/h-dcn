@@ -12,6 +12,7 @@ import { Member } from '../../types';
 import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
+import { FunctionPermissionManager, getUserRoles } from '../../utils/functionPermissions';
 
 interface MemberAdminPageProps {
   user: any;
@@ -30,12 +31,15 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [permissionManager, setPermissionManager] = useState<FunctionPermissionManager | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   const { handleError, handleSuccess } = useErrorHandler();
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   useEffect(() => {
     loadMembers();
+    initializePermissions();
   }, []);
 
   useEffect(() => {
@@ -43,6 +47,18 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     extractUniqueStatuses();
     extractUniqueRegions();
   }, [members, searchTerm, statusFilter, regionFilter]);
+
+  const initializePermissions = async () => {
+    try {
+      const manager = await FunctionPermissionManager.create(user);
+      setPermissionManager(manager);
+      setUserRoles(getUserRoles(user));
+    } catch (error) {
+      console.error('Failed to initialize permissions:', error);
+      // Fallback: extract roles directly from user token
+      setUserRoles(getUserRoles(user));
+    }
+  };
 
   const extractUniqueStatuses = () => {
     const statuses = Array.from(new Set(members.map(member => member.status).filter(Boolean)));
@@ -74,6 +90,15 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const filterMembers = () => {
     let filtered = members;
 
+    // Apply role-based filtering first
+    if (permissionManager && userRoles.length > 0) {
+      filtered = filtered.filter(member => {
+        // Check if user has permission to view this member
+        const canViewMember = canViewMemberRecord(member);
+        return canViewMember;
+      });
+    }
+
     if (searchTerm) {
       filtered = filtered.filter(member =>
         member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,6 +120,65 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     setFilteredMembers(filtered);
   };
 
+  /**
+   * Check if current user can view a specific member record based on their roles
+   */
+  const canViewMemberRecord = (member: Member): boolean => {
+    if (!permissionManager) return true; // Fallback to allow access if permissions not loaded
+
+    // Admin roles can view all members
+    if (userRoles.includes('hdcnAdmins') || 
+        userRoles.includes('Members_CRUD_All') || 
+        userRoles.includes('Members_Read_All')) {
+      return true;
+    }
+
+    // Check if user is viewing their own record
+    const isOwnRecord = member.email === user?.attributes?.email;
+    if (isOwnRecord && userRoles.includes('hdcnLeden')) {
+      return true;
+    }
+
+    // Regional access - check if user has regional permissions for this member's region
+    if (member.regio) {
+      const memberRegion = member.regio;
+      const hasRegionalAccess = userRoles.some(role => {
+        // Check for regional roles that match the member's region
+        if (role.includes('Regional_') && role.includes('Region')) {
+          const regionMatch = role.match(/Region(\d+)/);
+          if (regionMatch) {
+            const roleRegion = regionMatch[1];
+            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
+          }
+        }
+        // Legacy regional role support
+        if (role.startsWith('hdcnRegio_')) {
+          const regionMatch = role.match(/hdcnRegio_(\d+)_/);
+          if (regionMatch) {
+            const roleRegion = regionMatch[1];
+            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
+          }
+        }
+        return false;
+      });
+      
+      if (hasRegionalAccess) {
+        return true;
+      }
+    }
+
+    // National roles with member read access
+    if (userRoles.includes('National_Chairman') || 
+        userRoles.includes('National_Secretary') ||
+        userRoles.includes('Webmaster') ||
+        userRoles.includes('Tour_Commissioner') ||
+        userRoles.includes('Club_Magazine_Editorial')) {
+      return true;
+    }
+
+    return false;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active': return 'green';
@@ -105,13 +189,66 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   };
 
   const handleViewMember = (member: Member) => {
-    setSelectedMember(member);
-    setIsDetailModalOpen(true);
+    if (canViewMemberRecord(member)) {
+      setSelectedMember(member);
+      setIsDetailModalOpen(true);
+    } else {
+      handleError({ status: 403, message: 'Geen toestemming om dit lid te bekijken' }, 'toegang geweigerd');
+    }
   };
 
   const handleEditMember = (member: Member) => {
-    setSelectedMember(member);
-    setIsEditModalOpen(true);
+    if (canEditMemberRecord(member)) {
+      setSelectedMember(member);
+      setIsEditModalOpen(true);
+    } else {
+      handleError({ status: 403, message: 'Geen toestemming om dit lid te bewerken' }, 'toegang geweigerd');
+    }
+  };
+
+  /**
+   * Check if current user can edit a specific member record based on their roles
+   */
+  const canEditMemberRecord = (member: Member): boolean => {
+    if (!permissionManager) return false; // Fallback to deny access if permissions not loaded
+
+    // Admin roles can edit all members
+    if (userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All')) {
+      return true;
+    }
+
+    // Check if user is editing their own record (basic members can edit their own data)
+    const isOwnRecord = member.email === user?.attributes?.email;
+    if (isOwnRecord && userRoles.includes('hdcnLeden')) {
+      return true;
+    }
+
+    // Regional roles with write access
+    if (member.regio) {
+      const memberRegion = member.regio;
+      const hasRegionalWriteAccess = userRoles.some(role => {
+        // Regional Chairman can edit members in their region
+        if (role.includes('Regional_Chairman_') && role.includes('Region')) {
+          const regionMatch = role.match(/Region(\d+)/);
+          if (regionMatch) {
+            const roleRegion = regionMatch[1];
+            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
+          }
+        }
+        return false;
+      });
+      
+      if (hasRegionalWriteAccess) {
+        return true;
+      }
+    }
+
+    // Webmaster has full edit access
+    if (userRoles.includes('Webmaster')) {
+      return true;
+    }
+
+    return false;
   };
 
 
@@ -167,9 +304,14 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
             <Tab color="orange.400" _selected={{ bg: 'orange.400', color: 'black' }}>
               Leden Overzicht
             </Tab>
-            <Tab color="orange.400" _selected={{ bg: 'orange.400', color: 'black' }}>
-              Cognito Beheer
-            </Tab>
+            {(userRoles.includes('hdcnAdmins') || 
+              userRoles.includes('System_User_Management') || 
+              userRoles.includes('Members_CRUD_All') ||
+              userRoles.includes('Webmaster')) && (
+              <Tab color="orange.400" _selected={{ bg: 'orange.400', color: 'black' }}>
+                Cognito Beheer
+              </Tab>
+            )}
           </TabList>
 
           <TabPanels>
@@ -306,41 +448,49 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                     <Td position="sticky" right={0} bg="gray.800">
                       {isMobile ? (
                         <HStack spacing={1}>
-                          <IconButton
-                            size="xs"
-                            colorScheme="blue"
-                            icon={<ViewIcon />}
-                            onClick={() => handleViewMember(member)}
-                            title="Bekijk"
-                            aria-label="Bekijk"
-                          />
-                          <IconButton
-                            size="xs"
-                            colorScheme="orange"
-                            icon={<EditIcon />}
-                            onClick={() => handleEditMember(member)}
-                            title="Bewerk"
-                            aria-label="Bewerk"
-                          />
+                          {canViewMemberRecord(member) && (
+                            <IconButton
+                              size="xs"
+                              colorScheme="blue"
+                              icon={<ViewIcon />}
+                              onClick={() => handleViewMember(member)}
+                              title="Bekijk"
+                              aria-label="Bekijk"
+                            />
+                          )}
+                          {canEditMemberRecord(member) && (
+                            <IconButton
+                              size="xs"
+                              colorScheme="orange"
+                              icon={<EditIcon />}
+                              onClick={() => handleEditMember(member)}
+                              title="Bewerk"
+                              aria-label="Bewerk"
+                            />
+                          )}
                         </HStack>
                       ) : (
                         <HStack spacing={2}>
-                          <Button
-                            size="sm"
-                            colorScheme="blue"
-                            leftIcon={<ViewIcon />}
-                            onClick={() => handleViewMember(member)}
-                          >
-                            Bekijk
-                          </Button>
-                          <Button
-                            size="sm"
-                            colorScheme="orange"
-                            leftIcon={<EditIcon />}
-                            onClick={() => handleEditMember(member)}
-                          >
-                            Bewerk
-                          </Button>
+                          {canViewMemberRecord(member) && (
+                            <Button
+                              size="sm"
+                              colorScheme="blue"
+                              leftIcon={<ViewIcon />}
+                              onClick={() => handleViewMember(member)}
+                            >
+                              Bekijk
+                            </Button>
+                          )}
+                          {canEditMemberRecord(member) && (
+                            <Button
+                              size="sm"
+                              colorScheme="orange"
+                              leftIcon={<EditIcon />}
+                              onClick={() => handleEditMember(member)}
+                            >
+                              Bewerk
+                            </Button>
+                          )}
                         </HStack>
                       )}
                     </Td>
@@ -358,9 +508,14 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                 )}
               </VStack>
             </TabPanel>
-            <TabPanel p={0} pt={6}>
-              <CognitoAdminPage user={user} />
-            </TabPanel>
+            {(userRoles.includes('hdcnAdmins') || 
+              userRoles.includes('System_User_Management') || 
+              userRoles.includes('Members_CRUD_All') ||
+              userRoles.includes('Webmaster')) && (
+              <TabPanel p={0} pt={6}>
+                <CognitoAdminPage user={user} />
+              </TabPanel>
+            )}
           </TabPanels>
         </Tabs>
       </VStack>
@@ -370,6 +525,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         member={selectedMember}
+        user={user}
       />
 
       <MemberEditModal
@@ -377,6 +533,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         onClose={() => setIsEditModalOpen(false)}
         member={selectedMember}
         onSave={handleMemberUpdate}
+        user={user}
       />
 
 

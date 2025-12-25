@@ -5,8 +5,10 @@ import ProductCard from './components/ProductCard';
 import ProductFilter from './components/ProductFilter';
 import Header from './components/Header';
 import { Product } from '../../types';
+import { FunctionGuard } from '../../components/common/FunctionGuard';
+import { useAuthContext } from '../../context/AuthContext';
 
-import { Button, Box, HStack, Stack } from '@chakra-ui/react';
+import { Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 
 interface FilterOption {
   type: 'group' | 'subgroup';
@@ -15,6 +17,7 @@ interface FilterOption {
 }
 
 export default function ProductManagementPage() {
+  const { user } = useAuthContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
 
@@ -74,34 +77,76 @@ export default function ProductManagementPage() {
   return (
     <>
       <Header />
-      <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
-        <Box w={{ base: 'full', lg: '300px' }}>
-          <ProductFilter
-            products={products}
-            selectedFilter={selectedFilter}
-            onFilterChange={setSelectedFilter}
-          />
-        </Box>
-        <Box flex={1}>
-          <ProductTable
-            products={filteredProducts}
-            onSelect={setSelected}
-          />
-        </Box>
-      </Stack>
-      {selected && (
-        <ProductCard
-          key={selected.id}
-          product={selected}
-          products={products}
-          filteredProducts={filteredProducts}
-          onSave={handleSave}
-          onDelete={handleDelete}
-          onNew={() => setSelected({ id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '', opties: [] })}
-          onClose={() => setSelected(null)}
-          onNavigate={setSelected}
-        />
-      )}
+      
+      {/* Check if user has read access to products */}
+      <FunctionGuard 
+        user={user} 
+        functionName="products" 
+        action="read"
+        fallback={
+          <Alert status="warning" mt={4}>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Geen toegang!</AlertTitle>
+              <AlertDescription>
+                U heeft geen toegang tot de productbeheer module. Neem contact op met de beheerder als u denkt dat dit een fout is.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        }
+      >
+        <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
+          <Box w={{ base: 'full', lg: '300px' }}>
+            <ProductFilter
+              products={products}
+              selectedFilter={selectedFilter}
+              onFilterChange={setSelectedFilter}
+            />
+          </Box>
+          <Box flex={1}>
+            <ProductTable
+              products={filteredProducts}
+              onSelect={setSelected}
+            />
+          </Box>
+        </Stack>
+        
+        {/* Product editing modal - only show if user has write access */}
+        {selected && (
+          <FunctionGuard 
+            user={user} 
+            functionName="products" 
+            action="write"
+            fallback={
+              <ProductCard
+                key={selected.id}
+                product={selected}
+                products={products}
+                filteredProducts={filteredProducts}
+                onSave={() => {}} // Disabled save function
+                onDelete={() => {}} // Disabled delete function
+                onNew={() => {}} // Disabled new function
+                onClose={() => setSelected(null)}
+                onNavigate={setSelected}
+                readOnly={true} // Add read-only mode
+              />
+            }
+          >
+            <ProductCard
+              key={selected.id}
+              product={selected}
+              products={products}
+              filteredProducts={filteredProducts}
+              onSave={handleSave}
+              onDelete={handleDelete}
+              onNew={() => setSelected({ id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '', opties: [] })}
+              onClose={() => setSelected(null)}
+              onNavigate={setSelected}
+              readOnly={false}
+            />
+          </FunctionGuard>
+        )}
+      </FunctionGuard>
     </>
   );
 }

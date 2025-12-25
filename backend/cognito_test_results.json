@@ -1,0 +1,100 @@
+[
+  {
+    "timestamp": "2025-12-23T23:12:27.305044",
+    "test": "Email-only user registration",
+    "success": true,
+    "details": "User created with email test.user.cf505ba3@example.com, UserSub: 02958474-e0c1-707d-c337-24eecf5608a5, Confirmation delivery: EMAIL to t***@e***",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:27.509245",
+    "test": "User status after registration",
+    "success": true,
+    "details": "User status: UNCONFIRMED (expected: UNCONFIRMED)",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:28.022639",
+    "test": "Resend confirmation code",
+    "success": true,
+    "details": "Code sent via EMAIL to t***@e***",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:28.595736",
+    "test": "Email verification simulation",
+    "success": true,
+    "details": "User status after confirmation: CONFIRMED (expected: CONFIRMED)",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:28.812233",
+    "test": "User Pool WebAuthn configuration",
+    "success": true,
+    "details": "MFA Config: OPTIONAL, Enabled MFAs: []",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:28.930039",
+    "test": "Auth flow initiation",
+    "success": true,
+    "details": "Challenge: SELECT_CHALLENGE, Available challenges: []",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:28.930039",
+    "test": "Passkey infrastructure readiness",
+    "success": true,
+    "details": "User Pool configured for passwordless authentication with USER_AUTH flow",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.127802",
+    "test": "Email verification setup for recovery",
+    "success": true,
+    "details": "Email marked as verified for recovery testing",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.407825",
+    "test": "Account recovery initiation",
+    "success": true,
+    "details": "Recovery code sent via EMAIL to t***@e***",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.407825",
+    "test": "Email recovery infrastructure",
+    "success": true,
+    "details": "Account recovery via email is functional",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.660111",
+    "test": "Minimal password policy for passwordless",
+    "success": true,
+    "details": "Min length: 8, Require uppercase: False, Require lowercase: False, Require numbers: False, Require symbols: False",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.757640",
+    "test": "Choice-based authentication support",
+    "success": true,
+    "details": "Explicit auth flows: ['ALLOW_REFRESH_TOKEN_AUTH', 'ALLOW_USER_AUTH', 'ALLOW_USER_SRP_AUTH']",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.757640",
+    "test": "Email-only account recovery",
+    "success": true,
+    "details": "Recovery mechanisms: [{'Priority': 1, 'Name': 'verified_email'}]",
+    "error": null
+  },
+  {
+    "timestamp": "2025-12-23T23:12:29.759640",
+    "test": "Browser compatibility documentation",
+    "success": true,
+    "details": "WebAuthn compatibility documented for major browsers and platforms",
+    "error": null
+  }
+]

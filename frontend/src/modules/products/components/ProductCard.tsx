@@ -16,6 +16,7 @@ interface ProductCardProps {
   onClose: () => void;
   filteredProducts: Product[];
   onNavigate: (product: Product) => void;
+  readOnly?: boolean; // Add read-only mode support
 }
 
 interface CategoryStructure {
@@ -53,7 +54,7 @@ const schema = Yup.object().shape({
   images: Yup.array().of(Yup.string()).nullable(),
 });
 
-export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate }: ProductCardProps) {
+export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
@@ -89,7 +90,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
             leftIcon={groupData.children ? (isOpen ? <ChevronDownIcon /> : <ChevronRight />) : undefined}
             onClick={onToggle}
             bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.200' : 'transparent'}
-            _hover={{ bg: 'orange.100' }}
+            _hover={{ bg: readOnly ? 'transparent' : 'orange.100' }}
+            isDisabled={readOnly}
           >
             {groupName}
           </Button>
@@ -106,12 +108,15 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     py={1}
                     justifyContent="flex-start"
                     onClick={() => {
-                      setSelectedCategory({ groep: groupName, subgroep: subgroup });
-                      setFieldValue('groep', groupName);
-                      setFieldValue('subgroep', subgroup);
+                      if (!readOnly) {
+                        setSelectedCategory({ groep: groupName, subgroep: subgroup });
+                        setFieldValue('groep', groupName);
+                        setFieldValue('subgroep', subgroup);
+                      }
                     }}
                     bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.300' : 'transparent'}
-                    _hover={{ bg: 'orange.200' }}
+                    _hover={{ bg: readOnly ? 'transparent' : 'orange.200' }}
+                    isDisabled={readOnly}
                   >
                     {subgroup}
                   </Button>
@@ -125,7 +130,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
     return (
       <Box p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="200px" overflowY="auto">
-        <Text fontSize="md" fontWeight="bold" mb={1} color="gray.700">Selecteer categorie:</Text>
+        <Text fontSize="md" fontWeight="bold" mb={1} color="gray.700">
+          {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer categorie:'}
+        </Text>
         <VStack align="stretch" spacing={0}>
           {Object.keys(categoryStructure).map(groupName => (
             <GroupItem key={groupName} groupName={groupName} groupData={categoryStructure[groupName]} />
@@ -215,7 +222,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
             <VStack spacing={4}>
               <HStack spacing={4}>
                 <FormControl isInvalid={!!(errors.id && touched.id)} flex={1}>
-                  <Field name="id" as={Input} placeholder="id" color="black" borderColor={errors.id && touched.id ? 'red.500' : 'gray.200'} id="product-id" />
+                  <Field name="id" as={Input} placeholder="id" color="black" borderColor={errors.id && touched.id ? 'red.500' : 'gray.200'} id="product-id" isDisabled={readOnly} />
                   <FormErrorMessage>{errors.id as string}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!(errors.prijs && touched.prijs)} flex={1}>
@@ -231,6 +238,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                           color="black" 
                           fontWeight="bold"
                           borderColor={errors.prijs && touched.prijs ? 'red.500' : 'gray.200'}
+                          isDisabled={readOnly}
                           onChange={(e) => {
                             const value = e.target.value;
                             form.setFieldValue('prijs', value);
@@ -249,7 +257,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </FormControl>
               </HStack>
               <FormControl isInvalid={!!(errors.naam && touched.naam)}>
-                <Field name="naam" as={Input} placeholder="Naam" color="black" borderColor={errors.naam && touched.naam ? 'red.500' : 'gray.200'} id="product-naam" />
+                <Field name="naam" as={Input} placeholder="Naam" color="black" borderColor={errors.naam && touched.naam ? 'red.500' : 'gray.200'} id="product-naam" isDisabled={readOnly} />
                 <FormErrorMessage>{errors.naam as string}</FormErrorMessage>
               </FormControl>
               <FormControl isInvalid={!!((errors.groep && touched.groep) || (errors.subgroep && touched.subgroep))}>
@@ -267,7 +275,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Text>
               )}
               <FormControl isInvalid={!!(errors.opties && touched.opties)}>
-                <Field name="opties" as={Input} placeholder="Opties (gescheiden door komma's)" color="black" borderColor={errors.opties && touched.opties ? 'red.500' : 'gray.200'} />
+                <Field name="opties" as={Input} placeholder="Opties (gescheiden door komma's)" color="black" borderColor={errors.opties && touched.opties ? 'red.500' : 'gray.200'} isDisabled={readOnly} />
                 <FormErrorMessage>{errors.opties as string}</FormErrorMessage>
               </FormControl>
               <FormControl>
@@ -278,6 +286,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                       isChecked={field.value}
                       onChange={(e) => form.setFieldValue('nietInWinkel', e.target.checked)}
                       colorScheme="orange"
+                      isDisabled={readOnly}
                     >
                       Staat er niet op in de winkel
                     </Checkbox>
@@ -298,6 +307,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <Button 
                   colorScheme="orange" 
                   size="sm"
+                  isDisabled={readOnly}
                   onClick={async () => {
                     const input = document.createElement('input');
                     input.type = 'file';
@@ -356,6 +366,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                         <Button 
                           size="xs" 
                           colorScheme="red" 
+                          isDisabled={readOnly}
                           onClick={() => {
                             const newImages = values.images.filter((_: string, i: number) => i !== index);
                             setFieldValue('images', newImages);
@@ -370,12 +381,19 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               )}
 
               <HStack spacing={4}>
-                <Button type="submit" colorScheme="orange">Opslaan</Button>
-                {product.id && (
+                {!readOnly && <Button type="submit" colorScheme="orange">Opslaan</Button>}
+                {!readOnly && product.id && (
                   <Button colorScheme="red" onClick={() => onDelete(product.id)}>Verwijder</Button>
                 )}
-                <Button onClick={onNew}>Nieuw</Button>
-                <Button colorScheme="gray" onClick={onClose}>Sluiten</Button>
+                {!readOnly && <Button onClick={onNew}>Nieuw</Button>}
+                <Button colorScheme="gray" onClick={onClose}>
+                  {readOnly ? 'Sluiten' : 'Sluiten'}
+                </Button>
+                {readOnly && (
+                  <Text fontSize="sm" color="gray.600" fontStyle="italic">
+                    Alleen-lezen modus - geen bewerkingsrechten
+                  </Text>
+                )}
               </HStack>
             </VStack>
           </Form>

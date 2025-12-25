@@ -55,16 +55,447 @@ Parameters:
     NoEcho: true
     Description: Default temporary password for new Cognito users
     Default: TempPass123!
-    Type: String
-    Default: Orders
   ParametersTable:
     Type: String
     Default: Parameters
   ForceUpdate:
     Type: String
     Default: "2024-01-16"
+  
+  # Email template customization parameters
+  OrganizationName:
+    Type: String
+    Default: "Harley-Davidson Club Nederland"
+    Description: "Organization name used in email templates"
+  
+  OrganizationWebsite:
+    Type: String
+    Default: "https://h-dcn.nl"
+    Description: "Organization website URL used in email templates"
+  
+  OrganizationEmail:
+    Type: String
+    Default: "webhulpje@h-dcn.nl"
+    Description: "Organization contact email used in email templates"
+  
+  OrganizationShortName:
+    Type: String
+    Default: "H-DCN"
+    Description: "Organization short name used in email templates"
+  
+  # Account recovery specific parameters
+  SupportPhoneNumber:
+    Type: String
+    Default: "+31 (0)20 123 4567"
+    Description: "Support phone number for account recovery assistance"
+  
+  RecoveryPageUrl:
+    Type: String
+    Default: "/recovery"
+    Description: "Relative URL path for the account recovery page"
+  
+  HelpPageUrl:
+    Type: String
+    Default: "/help/passwordless-recovery"
+    Description: "Relative URL path for the passwordless recovery help page"
 
 Resources:
+  # Cognito User Pool for H-DCN Authentication (Passwordless Configuration)
+  HDCNCognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: H-DCN-Authentication-Pool
+      # Configure email as username for passwordless authentication
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      # Email configuration for verification and recovery
+      EmailConfiguration:
+        EmailSendingAccount: DEVELOPER
+        # Custom reply-to for recovery emails
+        ReplyToEmailAddress: !Ref OrganizationEmail
+        # Source ARN for SES (using verified organization email)
+        SourceArn: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${OrganizationEmail}"
+      # Minimal password policy (passwords optional for passwordless flow)
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: false
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+      # MFA configuration - Optional for regular users, required for admin roles
+      MfaConfiguration: "OPTIONAL"
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+      # Enhanced email verification templates
+      EmailVerificationMessage: |
+        Welkom bij H-DCN!
+        
+        Uw verificatiecode is: {####}
+        
+        Voer deze code in om uw e-mailadres te bevestigen en toegang te krijgen tot uw H-DCN account.
+        
+        Deze code is 24 uur geldig.
+        
+        Als u dit account niet heeft aangemaakt, kunt u deze e-mail negeren.
+        
+        Met vriendelijke groet,
+        Het H-DCN Team
+        
+        ---
+        Harley-Davidson Club Nederland
+        Website: https://h-dcn.nl
+        E-mail: webhulpje@h-dcn.nl
+      EmailVerificationSubject: "H-DCN Account Verificatie - Bevestig uw e-mailadres"
+      
+      # Comprehensive verification message template for different message types
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: |
+          Welkom bij H-DCN!
+          
+          Uw verificatiecode is: {####}
+          
+          Voer deze code in om uw e-mailadres te bevestigen en toegang te krijgen tot uw H-DCN lidmaatschapsportaal.
+          
+          Na verificatie kunt u:
+          • Uw persoonlijke gegevens beheren
+          • Toegang krijgen tot de H-DCN webshop
+          • Deelnemen aan evenementen en ritten
+          • Contact maken met andere leden
+          
+          Deze code is 24 uur geldig.
+          
+          Heeft u vragen? Neem contact op via webhulpje@h-dcn.nl
+          
+          Met vriendelijke groet,
+          Het H-DCN Team
+          
+          ---
+          Harley-Davidson Club Nederland
+          Website: https://h-dcn.nl
+          E-mail: webhulpje@h-dcn.nl
+        EmailSubject: "H-DCN Account Verificatie - Welkom bij de club!"
+      
+      # Admin creation message template (for bulk user creation)
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        InviteMessageTemplate:
+          EmailMessage: |
+            Welkom bij H-DCN!
+            
+            Er is een account voor u aangemaakt in het H-DCN lidmaatschapsportaal.
+            
+            Uw gebruikersnaam: {username}
+            Tijdelijk wachtwoord: {####}
+            
+            Volg deze stappen om uw account te activeren:
+            1. Ga naar https://h-dcn.nl/login
+            2. Log in met uw e-mailadres en tijdelijk wachtwoord
+            3. Stel een nieuwe authenticatiemethode in (passkey aanbevolen)
+            4. Verifieer uw e-mailadres
+            
+            Na activatie heeft u toegang tot:
+            • Uw persoonlijke lidmaatschapsgegevens
+            • De H-DCN webshop
+            • Evenementen en ritten
+            • Contact met andere leden
+            
+            Het tijdelijke wachtwoord verloopt over 7 dagen.
+            
+            Heeft u vragen? Neem contact op via webhulpje@h-dcn.nl
+            
+            Met vriendelijke groet,
+            Het H-DCN Team
+            
+            ---
+            Harley-Davidson Club Nederland
+            Website: https://h-dcn.nl
+            E-mail: webhulpje@h-dcn.nl
+          EmailSubject: "H-DCN Account Aangemaakt - Activeer uw toegang"
+        UnusedAccountValidityDays: 7
+      
+      # Lambda triggers for custom email templates
+      LambdaConfig:
+        CustomMessage: !GetAtt CognitoCustomMessageFunction.Arn
+        PostConfirmation: !GetAtt CognitoPostConfirmationFunction.Arn
+      # Require email verification before updates
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate:
+          - email
+      # Account recovery via email (passwordless)
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      
+      # Enhanced account recovery message templates
+      UserPoolAddOns:
+        AdvancedSecurityMode: "OFF"
+      # Tags for resource management
+      UserPoolTags:
+        Application: H-DCN
+        Environment: Production
+        Purpose: PasswordlessAuthentication
+      
+      # Custom attributes for passkey registration tracking
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: given_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: family_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+
+  # Cognito User Pool Client (Passwordless Configuration)
+  HDCNCognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      ClientName: H-DCN-Web-Client
+      GenerateSecret: false
+      # Configure AuthFlows for passwordless authentication
+      ExplicitAuthFlows:
+        - ALLOW_USER_AUTH          # Choice-based auth for passwordless authentication
+        - ALLOW_REFRESH_TOKEN_AUTH  # Required for token refresh
+        - ALLOW_USER_SRP_AUTH       # SRP auth for compatibility
+      # Enable passwordless authentication options
+      AuthSessionValidity: 3  # 3 minutes for auth session
+      # Configure supported identity providers
+      SupportedIdentityProviders:
+        - COGNITO
+      # Configure appropriate read attributes for H-DCN member data
+      ReadAttributes:
+        - email
+        - email_verified
+        - given_name
+        - family_name
+        - phone_number
+        - phone_number_verified
+        - preferred_username
+      # Configure appropriate write attributes for member profile updates
+      WriteAttributes:
+        - email
+        - given_name
+        - family_name
+        - phone_number
+        - preferred_username
+      # Configure token validity periods for security and user experience
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      AccessTokenValidity: 1      # 1 hour for access tokens
+      IdTokenValidity: 1          # 1 hour for ID tokens  
+      RefreshTokenValidity: 30    # 30 days for refresh tokens
+      PreventUserExistenceErrors: ENABLED
+      # Enable callback URLs for authentication flows
+      CallbackURLs:
+        - http://localhost:3000/auth/callback
+        - https://h-dcn.nl/auth/callback
+      LogoutURLs:
+        - http://localhost:3000/auth/logout
+        - https://h-dcn.nl/auth/logout
+
+  # Cognito User Pool Domain (for hosted UI if needed)
+  HDCNCognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      Domain: !Sub "h-dcn-auth-${AWS::AccountId}"
+
+  # H-DCN User Pool Groups (Roles)
+  # Basic member role
+  HDCNLedenGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: hdcnLeden
+      Description: "Basic H-DCN member role - access to personal data and webshop"
+      Precedence: 100
+
+  # Member management roles
+  MembersCRUDAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Members_CRUD_All
+      Description: "Full member management permissions - create, read, update, delete all member data"
+      Precedence: 10
+
+  MembersReadAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Members_Read_All
+      Description: "Read access to all member data"
+      Precedence: 20
+
+  MembersStatusApproveGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Members_Status_Approve
+      Description: "Permission to approve member status changes"
+      Precedence: 15
+
+  # Event management roles
+  EventsReadAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Events_Read_All
+      Description: "Read access to all events"
+      Precedence: 30
+
+  EventsCRUDAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Events_CRUD_All
+      Description: "Full event management permissions"
+      Precedence: 25
+
+  # Product management roles
+  ProductsReadAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Products_Read_All
+      Description: "Read access to all products"
+      Precedence: 40
+
+  ProductsCRUDAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Products_CRUD_All
+      Description: "Full product management permissions"
+      Precedence: 35
+
+  # Communication roles
+  CommunicationReadAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Communication_Read_All
+      Description: "Read access to all communication data"
+      Precedence: 50
+
+  CommunicationExportAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Communication_Export_All
+      Description: "Permission to export communication data and create mailing lists"
+      Precedence: 45
+
+  # System administration roles
+  SystemUserManagementGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: System_User_Management
+      Description: "System user management permissions"
+      Precedence: 5
+
+  SystemLogsReadGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: System_Logs_Read
+      Description: "Permission to read system logs and audit trails"
+      Precedence: 55
+
+  # Lambda function for custom Cognito email messages
+  CognitoCustomMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/cognito_custom_message
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt CognitoLambdaRole.Arn
+      Environment:
+        Variables:
+          ORGANIZATION_NAME: !Ref OrganizationName
+          ORGANIZATION_WEBSITE: !Ref OrganizationWebsite
+          ORGANIZATION_EMAIL: !Ref OrganizationEmail
+          ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
+          # Account recovery specific settings
+          RECOVERY_URL: !Sub "${OrganizationWebsite}${RecoveryPageUrl}"
+          HELP_URL: !Sub "${OrganizationWebsite}${HelpPageUrl}"
+          SUPPORT_PHONE: !Ref SupportPhoneNumber
+
+  # Lambda function for post-confirmation actions
+  CognitoPostConfirmationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/cognito_post_confirmation
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt CognitoLambdaRole.Arn
+      Environment:
+        Variables:
+          DEFAULT_MEMBER_GROUP: hdcnLeden
+          ORGANIZATION_NAME: !Ref OrganizationName
+          ORGANIZATION_WEBSITE: !Ref OrganizationWebsite
+          ORGANIZATION_EMAIL: !Ref OrganizationEmail
+          ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
+
+  # IAM Role for Cognito Lambda triggers
+  CognitoLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: CognitoLambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:ListUsers
+                Resource: 
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+
+  # Lambda permissions for Cognito triggers
+  CognitoCustomMessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CognitoCustomMessageFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}"
+
+  CognitoPostConfirmationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CognitoPostConfirmationFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}"
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -151,7 +582,14 @@ Resources:
                   - cognito-idp:DeleteGroup
                   - cognito-idp:ListUsersInGroup
                   - cognito-idp:DescribeUserPool
-                Resource: "arn:aws:cognito-idp:eu-west-1:*:userpool/eu-west-1_VtKQHhXGN"
+                  - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminInitiateAuth
+                  - cognito-idp:AdminRespondToAuthChallenge
+                  - cognito-idp:GetGroup
+                  - cognito-idp:UpdateGroup
+                Resource: 
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}"
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}/*"
 
     
   InsertProductFunction:
@@ -438,6 +876,8 @@ Resources:
       Environment:
         Variables:
           DEFAULT_TEMP_PASSWORD: !Ref DefaultTempPassword
+          COGNITO_USER_POOL_ID: !Ref HDCNCognitoUserPool
+          COGNITO_USER_POOL_CLIENT_ID: !Ref HDCNCognitoUserPoolClient
       Events:
         CognitoRoot:
           Type: Api
@@ -450,6 +890,18 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /cognito/{proxy+}
+            Method: ANY
+        AuthRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /auth
+            Method: ANY
+        AuthProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /auth/{proxy+}
             Method: ANY
 
   # Membership Type Functions
@@ -808,3 +1260,34 @@ Outputs:
   ApiBaseUrl:
     Description: "API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  
+  CognitoUserPoolId:
+    Description: "Cognito User Pool ID for H-DCN Authentication"
+    Value: !Ref HDCNCognitoUserPool
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoUserPoolId"
+  
+  CognitoUserPoolClientId:
+    Description: "Cognito User Pool Client ID for H-DCN Web Application"
+    Value: !Ref HDCNCognitoUserPoolClient
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoUserPoolClientId"
+  
+  CognitoUserPoolDomain:
+    Description: "Cognito User Pool Domain for hosted UI"
+    Value: !Sub "https://${HDCNCognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+    Export:
+      Name: !Sub "${AWS::StackName}-CognitoUserPoolDomain"
+
+  # H-DCN Role Group Names (for application configuration)
+  HDCNBasicMemberRole:
+    Description: "Basic H-DCN member role group name"
+    Value: !Ref HDCNLedenGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-HDCNLedenGroup"
+
+  HDCNAdminRoles:
+    Description: "List of administrative role group names"
+    Value: !Sub "${MembersCRUDAllGroup},${SystemUserManagementGroup},${EventsCRUDAllGroup},${ProductsCRUDAllGroup}"
+    Export:
+      Name: !Sub "${AWS::StackName}-HDCNAdminRoles"

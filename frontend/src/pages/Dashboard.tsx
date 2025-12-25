@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, VStack, Heading, Text, SimpleGrid, Alert, AlertIcon } from '@chakra-ui/react';
 import AppCard from '../components/AppCard';
-import { FunctionGuard } from '../components/FunctionGuard';
+import { FunctionGuard } from '../components/common/FunctionGuard';
 import { initializeFunctionPermissions } from '../utils/initializeFunctionPermissions';
 
 interface User {

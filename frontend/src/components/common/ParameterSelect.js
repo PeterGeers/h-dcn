@@ -1,6 +1,6 @@
 import React from 'react';
 import { Select } from '@chakra-ui/react';
-import { useParameters } from '../utils/parameterStore';
+import { useParameters } from '../../utils/parameterStore';
 
 function ParameterSelect({ category, placeholder, value, onChange, ...props }) {
   const { parameters, loading } = useParameters(category);

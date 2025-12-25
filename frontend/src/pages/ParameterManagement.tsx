@@ -3,18 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, VStack, HStack, Heading, Button, Table, Thead, Tbody, Tr, Th, Td,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, useToast, IconButton, Select, Text
+  useDisclosure, useToast, IconButton, Select, Text, Alert, AlertIcon, AlertTitle, AlertDescription
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { FormControl, FormLabel, Input } from '@chakra-ui/react';
 import { parameterStore } from '../utils/parameterStore';
 import { ApiService } from '../utils/apiService';
+import { FunctionPermissionManager, getUserRoles } from '../utils/functionPermissions';
 
 interface User {
   attributes?: {
     email?: string;
     given_name?: string;
+  };
+  signInUserSession?: {
+    accessToken?: {
+      payload: {
+        'cognito:groups'?: string[];
+      };
+    };
   };
 }
 
@@ -74,9 +82,126 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState('loading');
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [accessLoading, setAccessLoading] = useState<boolean>(true);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isCategoryOpen, onOpen: onCategoryOpen, onClose: onCategoryClose } = useDisclosure();
   const toast = useToast();
+
+  // Check user access permissions on component mount
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        setAccessLoading(true);
+        
+        // Extract user roles from Cognito JWT token
+        const roles = getUserRoles(user);
+        setUserRoles(roles);
+        console.log('🔍 ParameterManagement - User roles:', roles);
+        
+        // Create permission manager and check access
+        const permissions = await FunctionPermissionManager.create(user);
+        const canAccessParameters = permissions.hasAccess('parameters', 'read');
+        
+        console.log('🔍 ParameterManagement - Can access parameters:', canAccessParameters);
+        
+        // Additional check for administrative roles
+        const hasAdminRole = roles.some(role => 
+          role === 'hdcnAdmins' ||
+          role === 'System_User_Management' ||
+          role === 'System_CRUD_All' ||
+          role === 'Webmaster' ||
+          role === 'Members_CRUD_All' ||
+          role === 'hdcnWebmaster' ||
+          role === 'hdcnLedenadministratie'
+        );
+        
+        console.log('🔍 ParameterManagement - Has admin role:', hasAdminRole);
+        
+        // Grant access if user has parameter permissions OR administrative roles
+        const finalAccess = canAccessParameters || hasAdminRole;
+        setHasAccess(finalAccess);
+        
+        if (!finalAccess) {
+          console.log('❌ ParameterManagement - Access denied. User roles:', roles);
+          toast({
+            title: 'Toegang geweigerd',
+            description: 'Je hebt geen toestemming om parameters te beheren. Neem contact op met een beheerder.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true
+          });
+        }
+      } catch (error) {
+        console.error('❌ ParameterManagement - Permission check failed:', error);
+        setHasAccess(false);
+        toast({
+          title: 'Fout bij toegangscontrole',
+          description: 'Er is een fout opgetreden bij het controleren van je toegangsrechten.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true
+        });
+      } finally {
+        setAccessLoading(false);
+      }
+    };
+
+    if (user) {
+      checkAccess();
+    } else {
+      setAccessLoading(false);
+      setHasAccess(false);
+    }
+  }, [user, toast]);
+
+  // Show loading state while checking access
+  if (accessLoading) {
+    return (
+      <Box maxW="6xl" mx="auto" p={6} bg="gray.900" minH="100vh">
+        <VStack spacing={6} align="center" justify="center" minH="50vh">
+          <Heading color="orange.400">Parameter Beheer</Heading>
+          <Text color="gray.300">Toegangsrechten controleren...</Text>
+        </VStack>
+      </Box>
+    );
+  }
+
+  // Show access denied message if user doesn't have permission
+  if (!hasAccess) {
+    return (
+      <Box maxW="6xl" mx="auto" p={6} bg="gray.900" minH="100vh">
+        <VStack spacing={6} align="stretch">
+          <Heading color="orange.400">Parameter Beheer</Heading>
+          
+          <Alert status="error" bg="red.800" borderColor="red.600" border="1px">
+            <AlertIcon color="red.300" />
+            <Box>
+              <AlertTitle color="red.300">Toegang geweigerd!</AlertTitle>
+              <AlertDescription color="red.200">
+                Je hebt geen toestemming om parameters te beheren. Deze functionaliteit is alleen beschikbaar voor beheerders.
+                <br /><br />
+                <strong>Je huidige rollen:</strong> {userRoles.length > 0 ? userRoles.join(', ') : 'Geen rollen toegewezen'}
+                <br /><br />
+                <strong>Vereiste rollen:</strong> hdcnAdmins, System_User_Management, System_CRUD_All, Webmaster, Members_CRUD_All, hdcnWebmaster, of hdcnLedenadministratie
+                <br /><br />
+                Neem contact op met een systeembeheerder als je denkt dat je toegang zou moeten hebben.
+              </AlertDescription>
+            </Box>
+          </Alert>
+          
+          <Button 
+            colorScheme="orange" 
+            onClick={() => navigate('/')}
+            alignSelf="flex-start"
+          >
+            Terug naar Dashboard
+          </Button>
+        </VStack>
+      </Box>
+    );
+  }
 
   const getCategories = (): string[] => {
     if (Object.keys(parameters).length > 0) {
@@ -88,37 +213,40 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   };
 
   useEffect(() => {
-    loadParameters();
-    // Force create function_permissions if missing
-    const initFunctionPermissions = async () => {
-      try {
-        const params = await parameterStore.getParameters();
-        if (!params.Function_permissions || params.Function_permissions.length === 0) {
-          console.log('Creating function_permissions category...');
-          const updatedParams = {
-            ...params,
-            Function_permissions: [{
-              id: 'default',
-              value: {
-                members: { read: ['hdcnAdmins', 'hdcnRegio_*'], write: ['hdcnAdmins'] },
-                events: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
-                products: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
-                webshop: { read: ['hdcnLeden', 'hdcnAdmins'], write: ['hdcnLeden', 'hdcnAdmins'] },
-                parameters: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
-                memberships: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] }
-              }
-            }]
-          };
-          await parameterStore.saveParameters(updatedParams);
-          await loadParameters(); // Reload to show new category
-          toast({ title: 'Function permissions aangemaakt', status: 'success' });
+    // Only load parameters if user has access
+    if (hasAccess && !accessLoading) {
+      loadParameters();
+      // Force create function_permissions if missing
+      const initFunctionPermissions = async () => {
+        try {
+          const params = await parameterStore.getParameters();
+          if (!params.Function_permissions || params.Function_permissions.length === 0) {
+            console.log('Creating function_permissions category...');
+            const updatedParams = {
+              ...params,
+              Function_permissions: [{
+                id: 'default',
+                value: {
+                  members: { read: ['hdcnAdmins', 'hdcnRegio_*'], write: ['hdcnAdmins'] },
+                  events: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+                  products: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+                  webshop: { read: ['hdcnLeden', 'hdcnAdmins'], write: ['hdcnLeden', 'hdcnAdmins'] },
+                  parameters: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
+                  memberships: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] }
+                }
+              }]
+            };
+            await parameterStore.saveParameters(updatedParams);
+            await loadParameters(); // Reload to show new category
+            toast({ title: 'Function permissions aangemaakt', status: 'success' });
+          }
+        } catch (error) {
+          console.error('Failed to create function_permissions:', error);
         }
-      } catch (error) {
-        console.error('Failed to create function_permissions:', error);
-      }
-    };
-    setTimeout(initFunctionPermissions, 1000); // Wait for initial load
-  }, []);
+      };
+      setTimeout(initFunctionPermissions, 1000); // Wait for initial load
+    }
+  }, [hasAccess, accessLoading]); // Only run when access is determined
 
   const loadParameters = async () => {
     try {
@@ -236,7 +364,39 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   };
 
   const handleSave = async (values: FormValues) => {
+    // Double-check write permissions before saving
+    if (!hasAccess) {
+      toast({ 
+        title: 'Toegang geweigerd', 
+        description: 'Je hebt geen toestemming om parameters te wijzigen.',
+        status: 'error' 
+      });
+      return;
+    }
+
     try {
+      // Additional permission check for write operations
+      const permissions = await FunctionPermissionManager.create(user);
+      const canWrite = permissions.hasAccess('parameters', 'write');
+      
+      if (!canWrite) {
+        const hasWriteRole = userRoles.some(role => 
+          role === 'hdcnAdmins' ||
+          role === 'System_CRUD_All' ||
+          role === 'Webmaster' ||
+          role === 'hdcnWebmaster'
+        );
+        
+        if (!hasWriteRole) {
+          toast({ 
+            title: 'Schrijftoegang geweigerd', 
+            description: 'Je hebt alleen leestoegang tot parameters. Schrijftoegang vereist hogere rechten.',
+            status: 'error' 
+          });
+          return;
+        }
+      }
+
       const currentData = { ...parameters };
       
       if (!currentData[selectedCategory]) {
@@ -277,8 +437,40 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   };
 
   const handleDelete = async (id: string) => {
+    // Double-check write permissions before deleting
+    if (!hasAccess) {
+      toast({ 
+        title: 'Toegang geweigerd', 
+        description: 'Je hebt geen toestemming om parameters te verwijderen.',
+        status: 'error' 
+      });
+      return;
+    }
+
     if (window.confirm('Weet je zeker dat je deze parameter wilt verwijderen?')) {
       try {
+        // Additional permission check for write operations
+        const permissions = await FunctionPermissionManager.create(user);
+        const canWrite = permissions.hasAccess('parameters', 'write');
+        
+        if (!canWrite) {
+          const hasWriteRole = userRoles.some(role => 
+            role === 'hdcnAdmins' ||
+            role === 'System_CRUD_All' ||
+            role === 'Webmaster' ||
+            role === 'hdcnWebmaster'
+          );
+          
+          if (!hasWriteRole) {
+            toast({ 
+              title: 'Verwijdertoegang geweigerd', 
+              description: 'Je hebt geen toestemming om parameters te verwijderen.',
+              status: 'error' 
+            });
+            return;
+          }
+        }
+
         const currentData = { ...parameters };
         if (currentData[selectedCategory]) {
           currentData[selectedCategory] = currentData[selectedCategory].filter(item => item.id !== id);
@@ -301,7 +493,39 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
     
+    // Double-check write permissions before adding category
+    if (!hasAccess) {
+      toast({ 
+        title: 'Toegang geweigerd', 
+        description: 'Je hebt geen toestemming om categorieën toe te voegen.',
+        status: 'error' 
+      });
+      return;
+    }
+    
     try {
+      // Additional permission check for write operations
+      const permissions = await FunctionPermissionManager.create(user);
+      const canWrite = permissions.hasAccess('parameters', 'write');
+      
+      if (!canWrite) {
+        const hasWriteRole = userRoles.some(role => 
+          role === 'hdcnAdmins' ||
+          role === 'System_CRUD_All' ||
+          role === 'Webmaster' ||
+          role === 'hdcnWebmaster'
+        );
+        
+        if (!hasWriteRole) {
+          toast({ 
+            title: 'Categorie toevoegen geweigerd', 
+            description: 'Je hebt geen toestemming om categorieën toe te voegen of te wijzigen.',
+            status: 'error' 
+          });
+          return;
+        }
+      }
+
       if (editingCategory) {
         // Rename existing category
         const currentData = await parameterStore.getParameters();
@@ -390,7 +614,39 @@ function ParameterManagement({ user }: ParameterManagementProps) {
 
   const handleDeleteCategory = async () => {
     if (window.confirm(`Weet je zeker dat je de categorie "${selectedCategory}" wilt verwijderen? Alle parameters in deze categorie worden ook verwijderd.`)) {
+      // Double-check write permissions before deleting category
+      if (!hasAccess) {
+        toast({ 
+          title: 'Toegang geweigerd', 
+          description: 'Je hebt geen toestemming om categorieën te verwijderen.',
+          status: 'error' 
+        });
+        return;
+      }
+
       try {
+        // Additional permission check for write operations
+        const permissions = await FunctionPermissionManager.create(user);
+        const canWrite = permissions.hasAccess('parameters', 'write');
+        
+        if (!canWrite) {
+          const hasWriteRole = userRoles.some(role => 
+            role === 'hdcnAdmins' ||
+            role === 'System_CRUD_All' ||
+            role === 'Webmaster' ||
+            role === 'hdcnWebmaster'
+          );
+          
+          if (!hasWriteRole) {
+            toast({ 
+              title: 'Categorie verwijderen geweigerd', 
+              description: 'Je hebt geen toestemming om categorieën te verwijderen.',
+              status: 'error' 
+            });
+            return;
+          }
+        }
+
         // Get the parameter ID for this category
         const categoryMetadata = parameters._metadata?.[selectedCategory];
         if (categoryMetadata?.parameter_id) {
@@ -465,16 +721,29 @@ function ParameterManagement({ user }: ParameterManagementProps) {
       <VStack spacing={6} align="stretch">
         <HStack justify="space-between">
           <Heading color="orange.400">Parameter Beheer</Heading>
-          <Box 
-            bg={dataSource === 'S3 via API' ? 'green.600' : dataSource === 'LocalStorage/Public' ? 'blue.600' : 'yellow.600'} 
-            px={3} 
-            py={1} 
-            borderRadius="md"
-            color="white"
-            fontSize="sm"
-          >
-            📊 Data bron: {dataSource}
-          </Box>
+          <HStack spacing={4}>
+            {/* User role indicator */}
+            <Box 
+              bg="green.600" 
+              px={3} 
+              py={1} 
+              borderRadius="md"
+              color="white"
+              fontSize="sm"
+            >
+              👤 Rollen: {userRoles.length > 0 ? userRoles.slice(0, 2).join(', ') : 'Geen'}{userRoles.length > 2 ? ` +${userRoles.length - 2}` : ''}
+            </Box>
+            <Box 
+              bg={dataSource === 'S3 via API' ? 'green.600' : dataSource === 'LocalStorage/Public' ? 'blue.600' : 'yellow.600'} 
+              px={3} 
+              py={1} 
+              borderRadius="md"
+              color="white"
+              fontSize="sm"
+            >
+              📊 Data bron: {dataSource}
+            </Box>
+          </HStack>
         </HStack>
         
         <VStack align="stretch" spacing={4}>
