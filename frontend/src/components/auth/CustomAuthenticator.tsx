@@ -17,7 +17,6 @@ import {
   TabPanel,
   Image
 } from '@chakra-ui/react';
-import { getCurrentUser, signIn, signOut } from 'aws-amplify/auth';
 import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
 import { CrossDeviceAuth } from './CrossDeviceAuth';
@@ -42,10 +41,39 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const checkAuthState = async () => {
     try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      setAuthState('authenticated');
+      // Check if we have stored authentication tokens
+      const storedUser = localStorage.getItem('hdcn_auth_user');
+      const storedTokens = localStorage.getItem('hdcn_auth_tokens');
+      
+      if (storedUser && storedTokens) {
+        const user = JSON.parse(storedUser);
+        const tokens = JSON.parse(storedTokens);
+        
+        // Verify token is still valid by checking expiration
+        if (tokens.AccessTokenPayload && tokens.AccessTokenPayload.exp) {
+          const expirationTime = tokens.AccessTokenPayload.exp * 1000; // Convert to milliseconds
+          const currentTime = Date.now();
+          
+          if (currentTime < expirationTime) {
+            // Token is still valid
+            setUser(user);
+            setAuthState('authenticated');
+            return;
+          } else {
+            // Token expired, clear storage
+            localStorage.removeItem('hdcn_auth_user');
+            localStorage.removeItem('hdcn_auth_tokens');
+          }
+        }
+      }
+      
+      // No valid authentication found
+      setAuthState('signIn');
     } catch (err) {
+      console.error('Error checking auth state:', err);
+      // Clear any corrupted data
+      localStorage.removeItem('hdcn_auth_user');
+      localStorage.removeItem('hdcn_auth_tokens');
       setAuthState('signIn');
     }
   };
@@ -90,36 +118,82 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             });
 
             if (authResult.ok) {
-              // Passkey authentication successful
-              // Now authenticate with Cognito using the verified email
-              try {
-                const cognitoUser = await signIn({ username: signInData.email });
-                setUser(cognitoUser);
+              const authData = await authResult.json();
+              
+              // Passkey authentication successful - backend returns Cognito tokens
+              if (authData.tokens && authData.tokens.AccessToken) {
+                // Store tokens and create user object compatible with Amplify
+                const user = {
+                  username: signInData.email,
+                  attributes: {
+                    email: signInData.email,
+                    given_name: authData.user?.given_name || '',
+                    family_name: authData.user?.family_name || ''
+                  },
+                  signInUserSession: {
+                    accessToken: {
+                      jwtToken: authData.tokens.AccessToken,
+                      payload: authData.tokens.AccessTokenPayload || {}
+                    },
+                    idToken: {
+                      jwtToken: authData.tokens.IdToken,
+                      payload: authData.tokens.IdTokenPayload || {}
+                    },
+                    refreshToken: {
+                      token: authData.tokens.RefreshToken
+                    }
+                  }
+                };
+                
+                // Store authentication data
+                localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+                localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+                
+                setUser(user);
                 setAuthState('authenticated');
                 return;
-              } catch (cognitoError) {
-                console.log('Cognito authentication after passkey failed:', cognitoError);
-                // Fall through to email recovery
+              } else {
+                throw new Error('Authentication successful but no tokens received');
               }
+            } else {
+              const errorData = await authResult.json();
+              throw new Error(errorData.message || 'Passkey authentication failed');
+            }
+          } else {
+            // User doesn't have a passkey registered, offer to set one up
+            const errorData = await authOptions.json();
+            if (errorData.code === 'NO_PASSKEY_REGISTERED') {
+              setNewUserEmail(signInData.email);
+              setAuthState('passkeySetup');
+              return;
+            } else {
+              throw new Error(errorData.message || 'Failed to initiate passkey authentication');
             }
           }
-        } catch (passkeyError) {
-          console.log('Passkey authentication failed, falling back to email recovery:', passkeyError);
-          // Fall through to email recovery
+        } catch (passkeyError: any) {
+          console.log('Passkey authentication failed:', passkeyError);
+          
+          // Check if this is a "no passkey" error
+          if (passkeyError.name === 'NotAllowedError' || passkeyError.message?.includes('no credentials')) {
+            // User might not have a passkey set up, offer to create one
+            setNewUserEmail(signInData.email);
+            setAuthState('passkeySetup');
+            return;
+          }
+          
+          // For other errors, show the error message
+          setError(passkeyError.message || 'Passkey authenticatie mislukt');
         }
+      } else {
+        // WebAuthn not supported
+        setError('Passkey authenticatie wordt niet ondersteund door deze browser');
       }
 
-      // Fallback to email-based recovery or cross-device authentication
+      // If we get here, passkey auth failed - offer alternatives
       if (WebAuthnService.shouldOfferCrossDeviceAuth()) {
-        setError(
-          'Passkey authenticatie niet beschikbaar op dit apparaat. ' +
-          'Probeer cross-device authenticatie of gebruik account recovery.'
-        );
+        setError(prev => prev + '. Probeer cross-device authenticatie of gebruik account recovery via email.');
       } else {
-        setError(
-          'Passkey authenticatie niet beschikbaar. ' +
-          'Gebruik account recovery of neem contact op met de beheerder.'
-        );
+        setError(prev => prev + '. Gebruik account recovery via email hieronder.');
       }
 
     } catch (err: any) {
@@ -132,7 +206,10 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      // Clear stored authentication data
+      localStorage.removeItem('hdcn_auth_user');
+      localStorage.removeItem('hdcn_auth_tokens');
+      
       setUser(null);
       setAuthState('signIn');
     } catch (err) {
@@ -150,21 +227,96 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleSignUpSuccess = (email: string) => {
     setNewUserEmail(email);
-    setAuthState('passkeySetup');
+    // After successful signup, user needs to verify email and set up passkey
+    setAuthState('signIn'); // Stay on sign in to show success message
   };
 
-  const handlePasskeySetupSuccess = () => {
-    // After passkey setup, check auth state again
-    checkAuthState();
+  const handlePasskeySetupSuccess = (authData?: any) => {
+    // After passkey setup, user might be authenticated or need to sign in
+    if (authData && authData.tokens && authData.tokens.AccessToken) {
+      // User is authenticated after passkey setup
+      const user = {
+        username: authData.user?.email || newUserEmail,
+        attributes: {
+          email: authData.user?.email || newUserEmail,
+          given_name: authData.user?.given_name || '',
+          family_name: authData.user?.family_name || ''
+        },
+        signInUserSession: {
+          accessToken: {
+            jwtToken: authData.tokens.AccessToken,
+            payload: authData.tokens.AccessTokenPayload || {}
+          },
+          idToken: {
+            jwtToken: authData.tokens.IdToken,
+            payload: authData.tokens.IdTokenPayload || {}
+          },
+          refreshToken: {
+            token: authData.tokens.RefreshToken
+          }
+        }
+      };
+      
+      // Store authentication data
+      localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+      
+      setUser(user);
+      setAuthState('authenticated');
+    } else {
+      // Passkey setup complete, return to sign in
+      setAuthState('signIn');
+      setError(''); // Clear any errors
+      // Set the email for convenience
+      setSignInData({ email: newUserEmail });
+    }
   };
 
   const handleCrossDeviceAuth = () => {
+    if (!signInData.email) {
+      setError('Voer eerst je e-mailadres in voor cross-device authenticatie');
+      return;
+    }
     setAuthState('crossDevice');
+    setError(''); // Clear any existing errors
   };
 
-  const handleCrossDeviceSuccess = (result: any) => {
-    // Cross-device authentication successful, check auth state
-    checkAuthState();
+  const handleCrossDeviceSuccess = (authData: any) => {
+    // Cross-device authentication successful, set user with tokens
+    if (authData.tokens && authData.tokens.AccessToken) {
+      const user = {
+        username: authData.user?.email || signInData.email,
+        attributes: {
+          email: authData.user?.email || signInData.email,
+          given_name: authData.user?.given_name || '',
+          family_name: authData.user?.family_name || ''
+        },
+        signInUserSession: {
+          accessToken: {
+            jwtToken: authData.tokens.AccessToken,
+            payload: authData.tokens.AccessTokenPayload || {}
+          },
+          idToken: {
+            jwtToken: authData.tokens.IdToken,
+            payload: authData.tokens.IdTokenPayload || {}
+          },
+          refreshToken: {
+            token: authData.tokens.RefreshToken
+          }
+        }
+      };
+      
+      // Store authentication data
+      localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+      
+      setUser(user);
+      setAuthState('authenticated');
+    } else {
+      setError('Authentication successful but no tokens received');
+      setAuthState('signIn');
+    }
+    setError(''); // Clear any errors
   };
 
   const handlePasskeySetupSkip = () => {
@@ -174,11 +326,44 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleEmailRecovery = () => {
     setAuthState('emailRecovery');
+    setError(''); // Clear any existing errors
   };
 
-  const handleEmailRecoverySuccess = () => {
-    // After successful recovery, check auth state
-    checkAuthState();
+  const handleEmailRecoverySuccess = (authData: any) => {
+    // After successful recovery, set user with tokens
+    if (authData.tokens && authData.tokens.AccessToken) {
+      const user = {
+        username: authData.user?.email || '',
+        attributes: {
+          email: authData.user?.email || '',
+          given_name: authData.user?.given_name || '',
+          family_name: authData.user?.family_name || ''
+        },
+        signInUserSession: {
+          accessToken: {
+            jwtToken: authData.tokens.AccessToken,
+            payload: authData.tokens.AccessTokenPayload || {}
+          },
+          idToken: {
+            jwtToken: authData.tokens.IdToken,
+            payload: authData.tokens.IdTokenPayload || {}
+          },
+          refreshToken: {
+            token: authData.tokens.RefreshToken
+          }
+        }
+      };
+      
+      // Store authentication data
+      localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+      
+      setUser(user);
+      setAuthState('authenticated');
+    } else {
+      setError('Recovery successful but no tokens received');
+    }
+    setError(''); // Clear any errors
   };
 
   const handleEmailRecoveryCancel = () => {
@@ -207,6 +392,26 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           onSkip={handlePasskeySetupSkip}
           onError={(error) => {
             console.error('Passkey setup error:', error);
+            setError(error);
+            setAuthState('signIn');
+          }}
+        />
+      </Box>
+    );
+  }
+
+  if (authState === 'crossDevice') {
+    return (
+      <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
+        <CrossDeviceAuth
+          userEmail={signInData.email}
+          onSuccess={handleCrossDeviceSuccess}
+          onCancel={() => {
+            setAuthState('signIn');
+            setError('');
+          }}
+          onError={(error) => {
+            console.error('Cross-device auth error:', error);
             setError(error);
             setAuthState('signIn');
           }}
@@ -261,11 +466,10 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                 <Box textAlign="center">
                   <Heading color="orange.400" size="md">Inloggen</Heading>
                   <Text color="gray.400" mt={2}>
-                    Passwordless authenticatie wordt momenteel geconfigureerd.
+                    Veilig inloggen met passkey authenticatie
                   </Text>
                   <Text color="orange.300" mt={2} fontSize="sm">
-                    Nieuwe gebruikers kunnen zich registreren via het "Registreren" tabblad.
-                    Bestaande gebruikers: neem contact op met de beheerder.
+                    Gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN om in te loggen
                   </Text>
                 </Box>
 
@@ -303,16 +507,42 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                       isLoading={loading}
                       loadingText="Inloggen..."
                     >
-                      Inloggen
+                      🔐 Inloggen met Passkey
+                    </Button>
+
+                    <Button
+                      colorScheme="blue"
+                      variant="outline"
+                      size="lg"
+                      width="full"
+                      type="button"
+                      onClick={() => {
+                        if (signInData.email) {
+                          setNewUserEmail(signInData.email);
+                          setAuthState('passkeySetup');
+                        } else {
+                          setError('Voer eerst je e-mailadres in');
+                        }
+                      }}
+                      isDisabled={loading || !signInData.email}
+                    >
+                      Passkey Instellen
                     </Button>
 
                     {WebAuthnService.shouldOfferCrossDeviceAuth() && (
                       <Button
-                        colorScheme="blue"
+                        colorScheme="purple"
                         variant="outline"
                         size="lg"
                         width="full"
-                        onClick={handleCrossDeviceAuth}
+                        type="button"
+                        onClick={() => {
+                          if (signInData.email) {
+                            handleCrossDeviceAuth();
+                          } else {
+                            setError('Voer eerst je e-mailadres in');
+                          }
+                        }}
                         isDisabled={loading || !signInData.email}
                       >
                         Cross-Device Authenticatie
@@ -324,10 +554,11 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                       variant="outline"
                       size="lg"
                       width="full"
+                      type="button"
                       onClick={handleEmailRecovery}
                       isDisabled={loading}
                     >
-                      Account Recovery via Email
+                      📧 Account Herstellen via Email
                     </Button>
                   </VStack>
                 </form>
@@ -336,14 +567,18 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                   <Text color="gray.400" fontSize="sm">
                     Geen account? Gebruik het "Registreren" tabblad om een account aan te maken.
                   </Text>
+                  <Text color="orange.300" fontSize="sm" mt={2}>
+                    Problemen met inloggen? Gebruik "Account Herstellen via Email" hierboven.
+                  </Text>
                 </Box>
               </VStack>
             </TabPanel>
 
             <TabPanel>
               <PasswordlessSignUp 
-                onSuccess={() => {
-                  // Stay on sign up tab to show success message
+                onSuccess={(email) => {
+                  // Show success message and guide user to verify email
+                  setNewUserEmail(email);
                 }}
                 onError={(error) => {
                   console.error('Sign up error:', error);

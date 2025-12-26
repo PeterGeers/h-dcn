@@ -17,6 +17,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from template_service import template_service
 
 # Configure logging
 logger = logging.getLogger()
@@ -109,37 +110,15 @@ def handle_admin_create_user(event, display_name, email):
     """Handle admin-created user welcome message"""
     temp_password = event.get('request', {}).get('tempPassword', '')
     
-    subject = f"{ORGANIZATION_SHORT_NAME} Account Aangemaakt - Welkom bij de club!"
+    # Use template service to render email
+    context = {
+        'DISPLAY_NAME': display_name,
+        'EMAIL': email,
+        'TEMP_PASSWORD': temp_password
+    }
     
-    message = f"""Welkom bij {ORGANIZATION_SHORT_NAME}, {display_name}!
-
-Er is een account voor u aangemaakt in het {ORGANIZATION_SHORT_NAME} lidmaatschapsportaal.
-
-Uw inloggegevens:
-• E-mailadres: {email}
-• Tijdelijk wachtwoord: {temp_password}
-
-Volg deze stappen om uw account te activeren:
-1. Ga naar {ORGANIZATION_WEBSITE}/login
-2. Log in met uw e-mailadres en tijdelijk wachtwoord
-3. Stel een nieuwe authenticatiemethode in (passkey aanbevolen)
-4. Verifieer uw e-mailadres indien gevraagd
-
-Na activatie heeft u toegang tot:
-• Uw persoonlijke lidmaatschapsgegevens
-• De {ORGANIZATION_SHORT_NAME} webshop
-• Evenementen en ritten
-• Contact met andere leden
-
-Het tijdelijke wachtwoord verloopt over 7 dagen.
-
-Heeft u vragen? Neem contact op via {ORGANIZATION_EMAIL}
-
-Met vriendelijke groet,
-Het {ORGANIZATION_SHORT_NAME} Team
-
-{get_email_footer()}"""
-
+    subject, message = template_service.render_template('welcome-user', context)
+    
     event['response']['emailMessage'] = message
     event['response']['emailSubject'] = subject
     
@@ -149,25 +128,15 @@ def handle_resend_code(event, display_name, email):
     """Handle resend verification code message"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
-    subject = f"{ORGANIZATION_SHORT_NAME} Verificatiecode - Nieuwe code aangevraagd"
+    # Use template service to render email
+    context = {
+        'DISPLAY_NAME': display_name,
+        'EMAIL': email,
+        'CODE': code_parameter
+    }
     
-    message = f"""Hallo {display_name},
-
-U heeft een nieuwe verificatiecode aangevraagd voor uw {ORGANIZATION_SHORT_NAME} account.
-
-Uw nieuwe verificatiecode is: {code_parameter}
-
-Voer deze code in om uw e-mailadres te bevestigen en toegang te krijgen tot uw {ORGANIZATION_SHORT_NAME} account.
-
-Deze code is 24 uur geldig.
-
-Als u deze code niet heeft aangevraagd, kunt u deze e-mail negeren.
-
-Met vriendelijke groet,
-Het {ORGANIZATION_SHORT_NAME} Team
-
-{get_email_footer()}"""
-
+    subject, message = template_service.render_template('resend-code', context)
+    
     event['response']['emailMessage'] = message
     event['response']['emailSubject'] = subject
     

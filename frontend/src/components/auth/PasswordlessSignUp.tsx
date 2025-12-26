@@ -11,7 +11,6 @@ import {
   AlertIcon,
   Heading
 } from '@chakra-ui/react';
-import { signUp } from 'aws-amplify/auth';
 
 interface PasswordlessSignUpProps {
   onSuccess?: (email: string) => void;
@@ -43,11 +42,8 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
     setMessage('');
 
     try {
-      // Create user account without password using Cognito Admin API
-      // This will create the user in "FORCE_CHANGE_PASSWORD" state
-      // which allows for passwordless authentication setup
-      
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/cognito/auth/signup`, {
+      // Call backend API for passwordless signup
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,9 +52,10 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
           email: formData.email,
           given_name: formData.given_name,
           family_name: formData.family_name,
-          passwordless: true
-        })
+        }),
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         setMessage(
@@ -67,11 +64,26 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
         );
         if (onSuccess) onSuccess(formData.email);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registratie mislukt');
+        // Handle specific backend errors
+        let errorMessage = data.error || 'Er is een fout opgetreden bij het aanmaken van je account';
+        
+        if (response.status === 409) {
+          errorMessage = 'Er bestaat al een account met dit e-mailadres. Probeer in te loggen of gebruik account recovery.';
+        }
+        
+        setError(errorMessage);
+        if (onError) onError(errorMessage);
       }
     } catch (err: any) {
-      const errorMessage = err.message || 'Er is een fout opgetreden bij het aanmaken van je account';
+      console.error('Sign up error:', err);
+      
+      // Handle network and other errors
+      let errorMessage = 'Er is een fout opgetreden bij het aanmaken van je account. Controleer je internetverbinding en probeer opnieuw.';
+      
+      if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
       if (onError) onError(errorMessage);
     } finally {

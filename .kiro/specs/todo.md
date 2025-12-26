@@ -40,3 +40,6 @@ Check je build logs om te zien waar de tijd heen gaat
 Gebruik caching voor dependencies
 Overweeg incrementele deployments
 Optimaliseer je CI/CD pipeline
+
+##########################################################################################
+Order handling functions are not implemented yet Please advice hoiw to do that based on what we have now

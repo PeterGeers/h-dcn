@@ -68,13 +68,6 @@ export function useAuth() {
     }
   };
 
-  const login = async (username: string, password: string) => {
-    // TODO: Implement login logic with Cognito
-    console.log('Login:', username);
-    // After successful login, reinitialize auth to get user data
-    await initializeAuth();
-  };
-
   const logout = async () => {
     // TODO: Implement logout logic with Cognito
     setUser(null);
@@ -103,7 +96,6 @@ export function useAuth() {
     user,
     loading,
     isAuthenticated,
-    login,
     logout,
     hasRole,
     refreshUserRoles

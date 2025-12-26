@@ -35,9 +35,19 @@ describe('Role-Based UI Rendering', () => {
   });
 
   // Helper function to create mock permission manager
-  const createMockPermissionManager = (hasAccess: boolean) => ({
-    hasAccess: jest.fn().mockReturnValue(hasAccess)
-  });
+  const createMockPermissionManager = (hasAccess: boolean) => {
+    const mockManager = {
+      hasAccess: jest.fn().mockReturnValue(hasAccess),
+      hasLegacyAccess: jest.fn().mockReturnValue(hasAccess),
+      hasLegacyGroup: jest.fn().mockReturnValue(false),
+      getLegacyGroups: jest.fn().mockReturnValue([]),
+      hasFieldAccess: jest.fn().mockReturnValue(hasAccess),
+      getAccessibleFunctions: jest.fn().mockReturnValue({})
+    };
+    
+    // Create a proper mock that satisfies the FunctionPermissionManager interface
+    return mockManager as any;
+  };
 
   describe('Basic Member Role Rendering', () => {
     it('should render webshop content for basic members', async () => {

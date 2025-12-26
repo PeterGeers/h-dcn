@@ -21,11 +21,15 @@ logger.setLevel(logging.INFO)
 # Initialize Cognito client
 cognito_client = boto3.client('cognito-idp')
 
+# Initialize DynamoDB client for member status checking
+dynamodb = boto3.resource('dynamodb')
+
 # Get organization details from environment variables
 ORGANIZATION_NAME = os.environ.get('ORGANIZATION_NAME', 'Harley-Davidson Club Nederland')
 ORGANIZATION_WEBSITE = os.environ.get('ORGANIZATION_WEBSITE', 'https://h-dcn.nl')
 ORGANIZATION_EMAIL = os.environ.get('ORGANIZATION_EMAIL', 'webhulpje@h-dcn.nl')
 ORGANIZATION_SHORT_NAME = os.environ.get('ORGANIZATION_SHORT_NAME', 'H-DCN')
+MEMBERS_TABLE_NAME = os.environ.get('MEMBERS_TABLE_NAME', 'Members')
 
 def lambda_handler(event, context):
     """
@@ -75,6 +79,9 @@ def handle_signup_confirmation(user_pool_id, username, email, given_name, family
     """
     Handle post-confirmation actions for new user signup
     
+    NOTE: This function NO LONGER automatically assigns roles to new users.
+    Role assignment now happens only after member application approval.
+    
     Args:
         user_pool_id: Cognito User Pool ID
         username: User's username (usually email)
@@ -83,23 +90,31 @@ def handle_signup_confirmation(user_pool_id, username, email, given_name, family
         family_name: User's last name
     """
     try:
-        # Get default member group from environment variable
-        default_group = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
+        logger.info(f"Processing post-confirmation for new user: {email}")
         
-        logger.info(f"Adding new user {email} to default group: {default_group}")
+        # Check if user already exists in Members table
+        member_status = check_member_status(email)
         
-        # Add user to default member group
-        add_user_to_group(user_pool_id, username, default_group)
+        if member_status:
+            logger.info(f"User {email} found in Members table with status: {member_status}")
+            
+            # If user is already approved, assign default role
+            approved_statuses = ['active', 'approved']
+            if member_status in approved_statuses:
+                default_group = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
+                logger.info(f"User {email} is approved member, adding to group: {default_group}")
+                add_user_to_group(user_pool_id, username, default_group)
+                logger.info(f"Successfully added existing approved member {email} to group {default_group}")
+            else:
+                logger.info(f"User {email} is not approved (status: {member_status}), no role assigned")
+        else:
+            logger.info(f"User {email} not found in Members table - new applicant, no role assigned")
         
-        # Log successful group assignment
-        logger.info(f"Successfully added user {email} to group {default_group}")
-        
-        # Additional setup tasks can be added here:
-        # - Send welcome email to administrators
-        # - Create user profile in external systems
-        # - Initialize user preferences
-        
+        # Send admin notification about new signup
         send_admin_notification(email, given_name, family_name, 'new_signup')
+        
+        # Log the role assignment decision for audit
+        log_role_assignment_decision(email, member_status, given_name, family_name)
         
     except Exception as e:
         logger.error(f"Error in signup confirmation handler: {str(e)}")
@@ -190,3 +205,91 @@ def send_admin_notification(email, given_name, family_name, event_type):
     except Exception as e:
         logger.error(f"Error sending admin notification: {str(e)}")
         # Don't raise exception for notification failures
+
+def check_member_status(email):
+    """
+    Check if user exists in Members table and return their status
+    
+    Args:
+        email (str): User's email address
+        
+    Returns:
+        str or None: Member status if found, None if not found
+    """
+    try:
+        members_table = dynamodb.Table(MEMBERS_TABLE_NAME)
+        
+        # Scan for member with matching email
+        response = members_table.scan(
+            FilterExpression='email = :email',
+            ExpressionAttributeValues={':email': email}
+        )
+        
+        if response.get('Items'):
+            member = response['Items'][0]
+            status = member.get('status')
+            logger.info(f"Found member {email} with status: {status}")
+            return status
+        else:
+            logger.info(f"No member record found for email: {email}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error checking member status for {email}: {str(e)}")
+        return None
+
+def log_role_assignment_decision(email, member_status, given_name, family_name):
+    """
+    Log the role assignment decision for audit purposes
+    
+    Args:
+        email (str): User's email address
+        member_status (str or None): Member status from database
+        given_name (str): User's first name
+        family_name (str): User's last name
+    """
+    try:
+        from datetime import datetime
+        
+        # Create display name
+        if given_name or family_name:
+            display_name = f"{given_name} {family_name}".strip()
+        else:
+            display_name = email.split('@')[0]
+        
+        # Determine role assignment decision
+        approved_statuses = ['active', 'approved']
+        if member_status and member_status in approved_statuses:
+            decision = 'ROLE_ASSIGNED'
+            reason = f'Existing approved member (status: {member_status})'
+            role_assigned = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
+        elif member_status:
+            decision = 'NO_ROLE_ASSIGNED'
+            reason = f'Member exists but not approved (status: {member_status})'
+            role_assigned = None
+        else:
+            decision = 'NO_ROLE_ASSIGNED'
+            reason = 'New applicant - no member record found'
+            role_assigned = None
+        
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'event_type': 'POST_CONFIRMATION_ROLE_DECISION',
+            'user_email': email,
+            'display_name': display_name,
+            'member_status': member_status,
+            'decision': decision,
+            'reason': reason,
+            'role_assigned': role_assigned,
+            'organization': ORGANIZATION_SHORT_NAME
+        }
+        
+        # Log as structured JSON for monitoring systems
+        logger.info(f"ROLE_ASSIGNMENT_DECISION: {json.dumps(log_entry)}")
+        
+        # Human-readable log
+        logger.info(f"Role assignment decision for {display_name} ({email}): {decision} - {reason}")
+        
+    except Exception as e:
+        logger.error(f"Error logging role assignment decision: {str(e)}")
+        # Don't raise exception for logging failures

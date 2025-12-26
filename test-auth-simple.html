@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>H-DCN Auth Test - Simple</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px 15px; margin: 5px; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; font-size: 12px; }
+        .info { background-color: #d1ecf1; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>H-DCN Authentication Test</h1>
+    
+    <div class="info">
+        <strong>Instructions:</strong>
+        <ol>
+            <li>Serve this file with a local server (not file://)</li>
+            <li>Or use the frontend development server</li>
+            <li>Test the authentication endpoints</li>
+        </ol>
+    </div>
+
+    <div class="test">
+        <h3>Test 1: Create Account</h3>
+        <input type="email" id="email" placeholder="Email" value="test@example.com">
+        <input type="text" id="firstName" placeholder="First Name" value="Test">
+        <input type="text" id="lastName" placeholder="Last Name" value="User">
+        <button onclick="testCreateAccount()">Test Create Account</button>
+        <div id="result1"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 2: Check Authentication</h3>
+        <input type="email" id="authEmail" placeholder="Email" value="test@example.com">
+        <button onclick="testAuthentication()">Test Authentication</button>
+        <div id="result2"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 3: CORS Check</h3>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="result3"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod';
+
+        async function testCreateAccount() {
+            const email = document.getElementById('email').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            
+            const resultDiv = document.getElementById('result1');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        given_name: firstName,
+                        family_name: lastName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ SUCCESS<pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ERROR (${response.status})<pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ NETWORK ERROR<pre>${error.message}</pre></div>`;
+            }
+        }
+
+        async function testAuthentication() {
+            const email = document.getElementById('authEmail').value;
+            
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/passkey/authenticate/begin`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ SUCCESS<pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ EXPECTED ERROR (${response.status})<pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ NETWORK ERROR<pre>${error.message}</pre></div>`;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('result3');
+            resultDiv.innerHTML = '<p>Testing CORS...</p>';
+            
+            try {
+                // Test OPTIONS request
+                const response = await fetch(`${API_BASE}/auth/signup`, {
+                    method: 'OPTIONS',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                if (response.ok) {
+                    const headers = {};
+                    for (let [key, value] of response.headers.entries()) {
+                        headers[key] = value;
+                    }
+                    resultDiv.innerHTML = `<div class="success">✅ CORS OK<pre>${JSON.stringify(headers, null, 2)}</pre></div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ CORS FAILED (${response.status})</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ CORS ERROR<pre>${error.message}</pre></div>`;
+            }
+        }
+    </script>
+</body>
+</html>

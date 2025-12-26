@@ -2,10 +2,19 @@ import json
 import boto3
 import os
 from datetime import datetime
+from role_permissions import (
+    DEFAULT_ROLE_PERMISSIONS,
+    get_combined_permissions,
+    has_permission,
+    can_edit_field,
+    ADMINISTRATIVE_FIELDS,
+    PERSONAL_FIELDS,
+    MOTORCYCLE_FIELDS
+)
 
 # Initialize Cognito client
 cognito_client = boto3.client('cognito-idp')
-USER_POOL_ID = 'eu-west-1_OAT3oPCIm'
+USER_POOL_ID = os.environ.get('COGNITO_USER_POOL_ID', 'eu-west-1_OAT3oPCIm')
 
 def validate_role_assignment_rules(user_id, role, requesting_user):
     """
@@ -156,6 +165,10 @@ def lambda_handler(event, context):
     method = event['httpMethod']
     path = event['path']
     
+    # Debug logging
+    print(f"Received request: {method} {path}")
+    print(f"Event: {json.dumps(event, default=str)}")
+    
     try:
         # CORS headers
         headers = {
@@ -225,8 +238,16 @@ def lambda_handler(event, context):
             return get_pool_info(headers)
             
         elif path == '/auth/signup' or path == '/cognito/auth/signup':
+            print(f"Matched auth/signup route with method: {method}")
             if method == 'POST':
+                print("Calling passwordless_signup function")
                 return passwordless_signup(event, headers)
+            else:
+                return {
+                    'statusCode': 405,
+                    'headers': headers,
+                    'body': json.dumps({'error': f'Method {method} not allowed for /auth/signup'})
+                }
         
         elif path == '/auth/passkey/register/begin':
             if method == 'POST':
@@ -279,10 +300,16 @@ def lambda_handler(event, context):
                 if method == 'DELETE':
                     return remove_user_role_auth(user_id, role, event, headers)
         
+        print(f"No route matched for: {method} {path}")
         return {
             'statusCode': 404,
             'headers': headers,
-            'body': json.dumps({'error': 'Endpoint not found'})
+            'body': json.dumps({
+                'error': 'Endpoint not found',
+                'path': path,
+                'method': method,
+                'available_auth_endpoints': ['/auth/signup', '/auth/passkey/register/begin', '/auth/passkey/authenticate/begin']
+            })
         }
         
     except Exception as e:
@@ -1059,21 +1086,24 @@ def passwordless_signup(event, headers):
         ]
         
         # Create user without password (for passwordless authentication)
+        # Use standard user creation which will trigger email verification
         response = cognito_client.admin_create_user(
             UserPoolId=USER_POOL_ID,
             Username=email,
             UserAttributes=user_attributes,
-            MessageAction='SEND',  # Send welcome email with verification
-            DesiredDeliveryMediums=['EMAIL']
+            DesiredDeliveryMediums=['EMAIL'],
+            # Don't suppress message - let Cognito send verification email
         )
         
-        # Automatically assign basic member role
+        # Automatically assign basic member role (if group exists)
         try:
             cognito_client.admin_add_user_to_group(
                 UserPoolId=USER_POOL_ID,
                 Username=email,
                 GroupName='hdcnLeden'
             )
+        except cognito_client.exceptions.ResourceNotFoundException:
+            print(f"Warning: Group 'hdcnLeden' does not exist in User Pool {USER_POOL_ID}")
         except Exception as group_error:
             print(f"Warning: Could not add user {email} to hdcnLeden group: {str(group_error)}")
         
@@ -1095,10 +1125,17 @@ def passwordless_signup(event, headers):
         }
     except Exception as e:
         print(f"Error in passwordless signup: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        print(f"User Pool ID: {USER_POOL_ID}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
         return {
             'statusCode': 500,
             'headers': headers,
-            'body': json.dumps({'error': 'Failed to create account. Please try again.'})
+            'body': json.dumps({
+                'error': 'Failed to create account. Please try again.',
+                'debug_info': str(e) if os.environ.get('DEBUG') == 'true' else None
+            })
         }
 
 def begin_passkey_registration(event, headers):
@@ -1145,7 +1182,7 @@ def begin_passkey_registration(event, headers):
             'challenge': challenge_b64,
             'rp': {
                 'name': 'H-DCN Portal',
-                'id': 'h-dcn.nl'  # This should match your domain
+                'id': os.environ.get('WEBAUTHN_RP_ID', 'portal.h-dcn.nl')  # Use environment variable
             },
             'user': {
                 'id': email,
@@ -1300,7 +1337,11 @@ def begin_passkey_authentication(event, headers):
                 return {
                     'statusCode': 400,
                     'headers': headers,
-                    'body': json.dumps({'error': 'No passkey registered for this user'})
+                    'body': json.dumps({
+                        'error': 'No passkey registered for this user',
+                        'code': 'NO_PASSKEY_REGISTERED',
+                        'message': 'User exists but has no passkey registered. Please set up a passkey first.'
+                    })
                 }
                 
         except cognito_client.exceptions.UserNotFoundException:
@@ -1874,75 +1915,9 @@ def get_auth_login(event, headers):
 def calculate_user_permissions(roles):
     """
     Calculate user permissions based on assigned roles
+    Uses the centralized role permission mapping constants
     """
     try:
-        # Define role permission mapping based on design document
-        ROLE_PERMISSIONS = {
-            'hdcnLeden': [
-                'members:read_own',
-                'members:update_own_personal',
-                'members:update_own_motorcycle',
-                'events:read_public',
-                'products:browse_catalog',
-                'webshop:access'
-            ],
-            'Members_CRUD_All': [
-                'members:read_all',
-                'members:create',
-                'members:update_all',
-                'members:delete',
-                'members:update_status',
-                'members:export_all'
-            ],
-            'Members_Read_All': [
-                'members:read_all',
-                'members:export_all'
-            ],
-            'Members_Status_Approve': [
-                'members:read_all',
-                'members:update_status',
-                'members:approve_status'
-            ],
-            'Events_Read_All': [
-                'events:read_all',
-                'events:export_all'
-            ],
-            'Events_CRUD_All': [
-                'events:read_all',
-                'events:create',
-                'events:update_all',
-                'events:delete',
-                'events:export_all'
-            ],
-            'Products_Read_All': [
-                'products:read_all',
-                'products:export_all'
-            ],
-            'Products_CRUD_All': [
-                'products:read_all',
-                'products:create',
-                'products:update_all',
-                'products:delete',
-                'products:export_all'
-            ],
-            'Communication_Read_All': [
-                'communication:read_all'
-            ],
-            'Communication_Export_All': [
-                'communication:read_all',
-                'communication:export_all'
-            ],
-            'System_User_Management': [
-                'system:user_management',
-                'system:role_assignment',
-                'cognito:admin_access'
-            ],
-            'System_Logs_Read': [
-                'system:logs_read',
-                'system:audit_read'
-            ]
-        }
-        
         # Validate input
         if not roles:
             print("Warning: No roles provided to calculate_user_permissions")
@@ -1952,28 +1927,8 @@ def calculate_user_permissions(roles):
             print(f"Warning: Invalid roles type in calculate_user_permissions: {type(roles)}")
             return []
         
-        # Combine permissions from all roles
-        all_permissions = set()
-        invalid_roles = []
-        
-        for role in roles:
-            if not isinstance(role, str):
-                print(f"Warning: Invalid role type: {type(role)} for role: {role}")
-                continue
-                
-            role_permissions = ROLE_PERMISSIONS.get(role)
-            if role_permissions is None:
-                invalid_roles.append(role)
-                print(f"Warning: Unknown role '{role}' encountered in permission calculation")
-                continue
-                
-            all_permissions.update(role_permissions)
-        
-        # Log invalid roles for audit purposes
-        if invalid_roles:
-            print(f"Invalid roles encountered during permission calculation: {invalid_roles}")
-        
-        return sorted(list(all_permissions))
+        # Use the centralized permission calculation function
+        return get_combined_permissions(roles)
         
     except Exception as e:
         print(f"Error in calculate_user_permissions: {str(e)}")
@@ -2860,4 +2815,215 @@ def remove_user_role_auth(user_id, role, event, headers):
             'statusCode': 500,
             'headers': headers,
             'body': json.dumps({'error': 'Failed to remove user role'})
+        }
+
+# Utility functions using the new role permission constants
+
+def validate_field_permissions(user_roles, field_name, target_user_id, requesting_user_id):
+    """
+    Validate if a user can edit a specific field based on their roles and field type
+    
+    Args:
+        user_roles (list): List of user's role names
+        field_name (str): Name of the field to validate
+        target_user_id (str): ID of the user whose record is being edited
+        requesting_user_id (str): ID of the user making the request
+        
+    Returns:
+        dict: Validation result with 'allowed' boolean and 'reason' string
+    """
+    try:
+        is_own_record = target_user_id == requesting_user_id
+        
+        # Use the centralized field permission function
+        can_edit = can_edit_field(user_roles, field_name, is_own_record)
+        
+        if can_edit:
+            if field_name in ADMINISTRATIVE_FIELDS:
+                return {
+                    'allowed': True,
+                    'reason': 'User has administrative permissions to edit this field'
+                }
+            elif is_own_record and (field_name in PERSONAL_FIELDS or field_name in MOTORCYCLE_FIELDS):
+                return {
+                    'allowed': True,
+                    'reason': 'User can edit their own personal/motorcycle information'
+                }
+            else:
+                return {
+                    'allowed': True,
+                    'reason': 'User has sufficient permissions to edit this field'
+                }
+        else:
+            if field_name in ADMINISTRATIVE_FIELDS:
+                return {
+                    'allowed': False,
+                    'reason': 'Administrative fields require Members_CRUD_All or System_User_Management role'
+                }
+            elif not is_own_record and (field_name in PERSONAL_FIELDS or field_name in MOTORCYCLE_FIELDS):
+                return {
+                    'allowed': False,
+                    'reason': 'Can only edit personal/motorcycle fields for your own record'
+                }
+            else:
+                return {
+                    'allowed': False,
+                    'reason': 'Insufficient permissions to edit this field'
+                }
+                
+    except Exception as e:
+        print(f"Error validating field permissions: {str(e)}")
+        return {
+            'allowed': False,
+            'reason': 'Error validating field permissions'
+        }
+
+def get_user_field_permissions(user_roles, target_user_id, requesting_user_id):
+    """
+    Get field-level permissions for a user
+    
+    Args:
+        user_roles (list): List of user's role names
+        target_user_id (str): ID of the user whose record is being accessed
+        requesting_user_id (str): ID of the user making the request
+        
+    Returns:
+        dict: Field permissions organized by category
+    """
+    try:
+        is_own_record = target_user_id == requesting_user_id
+        
+        field_permissions = {
+            'personal_fields': {},
+            'motorcycle_fields': {},
+            'administrative_fields': {}
+        }
+        
+        # Check personal fields
+        for field in PERSONAL_FIELDS:
+            validation = validate_field_permissions(user_roles, field, target_user_id, requesting_user_id)
+            field_permissions['personal_fields'][field] = validation
+        
+        # Check motorcycle fields
+        for field in MOTORCYCLE_FIELDS:
+            validation = validate_field_permissions(user_roles, field, target_user_id, requesting_user_id)
+            field_permissions['motorcycle_fields'][field] = validation
+        
+        # Check administrative fields
+        for field in ADMINISTRATIVE_FIELDS:
+            validation = validate_field_permissions(user_roles, field, target_user_id, requesting_user_id)
+            field_permissions['administrative_fields'][field] = validation
+        
+        return field_permissions
+        
+    except Exception as e:
+        print(f"Error getting user field permissions: {str(e)}")
+        return {
+            'personal_fields': {},
+            'motorcycle_fields': {},
+            'administrative_fields': {}
+        }
+
+def check_role_permission(user_roles, required_permission):
+    """
+    Check if user has a specific permission based on their roles
+    
+    Args:
+        user_roles (list): List of user's role names
+        required_permission (str): Permission to check for
+        
+    Returns:
+        dict: Permission check result with 'allowed' boolean and details
+    """
+    try:
+        # Use the centralized permission checking function
+        has_perm = has_permission(user_roles, required_permission)
+        
+        if has_perm:
+            # Find which roles provide this permission
+            providing_roles = []
+            for role in user_roles:
+                role_permissions = DEFAULT_ROLE_PERMISSIONS.get(role, [])
+                if required_permission in role_permissions:
+                    providing_roles.append(role)
+            
+            return {
+                'allowed': True,
+                'permission': required_permission,
+                'providing_roles': providing_roles,
+                'user_roles': user_roles
+            }
+        else:
+            return {
+                'allowed': False,
+                'permission': required_permission,
+                'user_roles': user_roles,
+                'reason': f'User does not have required permission: {required_permission}'
+            }
+            
+    except Exception as e:
+        print(f"Error checking role permission: {str(e)}")
+        return {
+            'allowed': False,
+            'permission': required_permission,
+            'error': str(e)
+        }
+
+def get_role_summary(role_name):
+    """
+    Get summary information about a specific role
+    
+    Args:
+        role_name (str): Name of the role
+        
+    Returns:
+        dict: Role summary with permissions and metadata
+    """
+    try:
+        role_permissions = DEFAULT_ROLE_PERMISSIONS.get(role_name, [])
+        
+        if not role_permissions:
+            return {
+                'role_name': role_name,
+                'exists': False,
+                'permissions': [],
+                'permission_count': 0
+            }
+        
+        # Categorize permissions
+        permission_categories = {
+            'members': [],
+            'events': [],
+            'products': [],
+            'communication': [],
+            'system': [],
+            'webshop': [],
+            'cognito': []
+        }
+        
+        for permission in role_permissions:
+            category = permission.split(':')[0]
+            if category in permission_categories:
+                permission_categories[category].append(permission)
+            else:
+                if 'other' not in permission_categories:
+                    permission_categories['other'] = []
+                permission_categories['other'].append(permission)
+        
+        return {
+            'role_name': role_name,
+            'exists': True,
+            'permissions': role_permissions,
+            'permission_count': len(role_permissions),
+            'permission_categories': permission_categories,
+            'is_administrative': any(perm.startswith('system:') or perm.startswith('cognito:') for perm in role_permissions),
+            'is_basic_member': role_name == 'hdcnLeden'
+        }
+        
+    except Exception as e:
+        print(f"Error getting role summary for {role_name}: {str(e)}")
+        return {
+            'role_name': role_name,
+            'exists': False,
+            'error': str(e)
         }

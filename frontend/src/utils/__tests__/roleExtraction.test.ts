@@ -265,7 +265,7 @@ describe('Role Extraction from User Tokens', () => {
       expect(userHasRole(adminUser, 'Members_CRUD_All')).toBe(true);
       expect(userHasAnyRole(adminUser, ['Members_CRUD_All', 'Members_Read_All'])).toBe(true);
       expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD_All'])).toBe(true);
-      expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD_All', 'NonExistentRole'])).toBe(false);
+      expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD_All', 'System_CRUD_All'])).toBe(false);
     });
 
     it('should handle regional roles correctly', () => {

@@ -438,7 +438,7 @@ export const validateParameterBackwardCompatibility = async (): Promise<{
 
       const validation = {
         category,
-        status: 'compatible' as const,
+        status: 'compatible' as 'compatible' | 'needs_attention' | 'error',
         issues: [] as string[],
         recommendations: [] as string[]
       };

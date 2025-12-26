@@ -19,7 +19,7 @@ import {
 import { PasskeySetup } from './PasskeySetup';
 
 interface EmailRecoveryProps {
-  onSuccess: () => void;
+  onSuccess: (authData?: any) => void;
   onCancel: () => void;
   onError: (error: string) => void;
 }
@@ -148,9 +148,9 @@ export function EmailRecovery({ onSuccess, onCancel, onError }: EmailRecoveryPro
           isClosable: true,
         });
         
-        // Wait a moment then call success
+        // Wait a moment then call success with auth data
         setTimeout(() => {
-          onSuccess();
+          onSuccess(data);
         }, 2000);
       } else {
         setError(data.error || 'Failed to complete recovery');
@@ -233,7 +233,7 @@ export function EmailRecovery({ onSuccess, onCancel, onError }: EmailRecoveryPro
             colorScheme="green"
             size="lg"
             width="full"
-            onClick={onSuccess}
+            onClick={() => onSuccess()}
           >
             Continue to Sign In
           </Button>

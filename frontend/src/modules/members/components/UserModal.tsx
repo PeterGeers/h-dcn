@@ -27,7 +27,6 @@ interface UserFormData {
   given_name: string;
   family_name: string;
   phone_number: string;
-  password: string;
 }
 
 interface UserModalProps {
@@ -44,8 +43,7 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
     email: '',
     given_name: '',
     family_name: '',
-    phone_number: '',
-    password: ''
+    phone_number: ''
   });
   const [userGroups, setUserGroups] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,8 +60,7 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
         email: getUserAttribute('email'),
         given_name: getUserAttribute('given_name'),
         family_name: getUserAttribute('family_name'),
-        phone_number: getUserAttribute('phone_number'),
-        password: ''
+        phone_number: getUserAttribute('phone_number')
       });
 
       loadUserGroups(user.Username);
@@ -73,8 +70,7 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
         email: '',
         given_name: '',
         family_name: '',
-        phone_number: '',
-        password: ''
+        phone_number: ''
       });
       setUserGroups([]);
     }
@@ -124,10 +120,6 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
 
         await cognitoService.updateUserAttributes(user.Username, attributes);
 
-        if (formData.password) {
-          await cognitoService.setUserPassword(user.Username, formData.password);
-        }
-
         // Update groups
         const currentGroups = await cognitoService.getUserGroups(user.Username);
         const currentGroupNames = currentGroups.Groups?.map(g => g.GroupName) || [];
@@ -146,15 +138,14 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
           }
         }
       } else {
-        // Create new user
-        const tempPassword = formData.password || 'TempPass123!';
+        // Create new user - passwordless authentication
         const attributes = {
           given_name: formData.given_name,
           family_name: formData.family_name,
           phone_number: formData.phone_number
         };
 
-        await cognitoService.createUser(formData.username, formData.email, tempPassword, attributes);
+        await cognitoService.createUser(formData.username, formData.email, attributes);
 
         // Add to groups
         for (const groupName of userGroups) {
@@ -239,19 +230,6 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
                 <Input
                   value={formData.phone_number}
                   onChange={(e) => handleChange('phone_number', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel color="orange.300">
-                  {user ? 'Nieuw Wachtwoord (optioneel)' : 'Tijdelijk Wachtwoord'}
-                </FormLabel>
-                <Input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleChange('password', e.target.value)}
                   bg="gray.700"
                   borderColor="orange.400"
                 />

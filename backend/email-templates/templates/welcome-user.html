@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Account Aangemaakt</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Welkom bij {{ORGANIZATION_SHORT_NAME}}, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Er is een account voor u aangemaakt in het {{ORGANIZATION_SHORT_NAME}} lidmaatschapsportaal.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Uw inloggegevens:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>E-mailadres:</strong> {{EMAIL}}</li>
+                <li><strong>Tijdelijk wachtwoord:</strong> {{TEMP_PASSWORD}}</li>
+            </ul>
+        </div>
+        
+        <h3>Volg deze stappen om uw account te activeren:</h3>
+        <ol>
+            <li>Ga naar <a href="{{ORGANIZATION_WEBSITE}}/login">{{ORGANIZATION_WEBSITE}}/login</a></li>
+            <li>Log in met uw e-mailadres en tijdelijk wachtwoord</li>
+            <li>Stel een nieuwe authenticatiemethode in (passkey aanbevolen)</li>
+            <li>Verifieer uw e-mailadres indien gevraagd</li>
+        </ol>
+        
+        <h3>Na activatie heeft u toegang tot:</h3>
+        <ul>
+            <li>Uw persoonlijke lidmaatschapsgegevens</li>
+            <li>De {{ORGANIZATION_SHORT_NAME}} webshop</li>
+            <li>Evenementen en ritten</li>
+            <li>Contact met andere leden</li>
+        </ul>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Belangrijk:</strong> Het tijdelijke wachtwoord verloopt over 7 dagen.
+        </div>
+        
+        <p>Heeft u vragen? Neem contact op via <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Met vriendelijke groet,<br>
+        Het {{ORGANIZATION_SHORT_NAME}} Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

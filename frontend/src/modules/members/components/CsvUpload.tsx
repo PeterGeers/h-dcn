@@ -13,7 +13,6 @@ interface CsvUser {
   family_name: string;
   phone_number: string;
   groups: string;
-  tempPassword: string;
   rowIndex: number;
   voornaam?: string;
   achternaam?: string;
@@ -77,7 +76,6 @@ function CsvUpload({ onUsersCreated }: CsvUploadProps) {
           user.family_name = values[3] || '';
           user.phone_number = values[4] || '';
           user.groups = values[5] || '';
-          user.tempPassword = values[6] || 'WelkomHDCN2024!';
           user.rowIndex = index + 2;
           
           console.log('Parsed user:', user); // Debug
@@ -111,7 +109,6 @@ function CsvUpload({ onUsersCreated }: CsvUploadProps) {
         await cognitoService.createUser(
           user.username,
           user.email, 
-          user.tempPassword || 'WelkomHDCN2024!',
           {
             given_name: user.given_name || user.voornaam || '',
             family_name: user.family_name || user.achternaam || '',
@@ -170,7 +167,7 @@ function CsvUpload({ onUsersCreated }: CsvUploadProps) {
           <Alert status="info" bg="blue.900" color="white">
             <AlertIcon />
             <Text fontSize="sm">
-              CSV formaat: username,email,given_name,family_name,phone_number,groups,tempPassword
+              CSV formaat: username,email,given_name,family_name,phone_number,groups
               <br />
               Groepen scheiden met ; (bijv: hdcnLeden;hdcnRegio_Utrecht)
             </Text>

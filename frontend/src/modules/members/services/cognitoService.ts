@@ -1,6 +1,6 @@
 import { CognitoIdentityProviderClient, 
   ListUsersCommand, AdminCreateUserCommand, AdminDeleteUserCommand,
-  AdminUpdateUserAttributesCommand, AdminSetUserPasswordCommand,
+  AdminUpdateUserAttributesCommand,
   AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand,
   ListGroupsCommand, CreateGroupCommand, DeleteGroupCommand,
   AdminListGroupsForUserCommand, ListUsersInGroupCommand,
@@ -63,13 +63,12 @@ class CognitoService {
     return { Users: response };
   }
 
-  async createUser(username: string, email: string, tempPassword: string, attributes: UserAttributes = {}, groups: string = ''): Promise<any> {
+  async createUser(username: string, email: string, attributes: UserAttributes = {}, groups: string = ''): Promise<any> {
     return await this.makeRequest('/cognito/users', {
       method: 'POST',
       body: JSON.stringify({
         username,
         email,
-        tempPassword,
         attributes,
         groups
       })
@@ -86,13 +85,6 @@ class CognitoService {
     return await this.makeRequest(`/cognito/users/${username}`, {
       method: 'PUT',
       body: JSON.stringify({ attributes })
-    });
-  }
-
-  async setUserPassword(username: string, password: string, permanent: boolean = true): Promise<any> {
-    return await this.makeRequest(`/cognito/users/${username}/password`, {
-      method: 'PUT',
-      body: JSON.stringify({ password, permanent })
     });
   }
 

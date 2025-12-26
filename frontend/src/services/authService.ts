@@ -68,7 +68,8 @@ export async function getCurrentAuthTokens(): Promise<AuthTokens | null> {
     return {
       idToken: session.tokens.idToken?.toString(),
       accessToken: session.tokens.accessToken?.toString(),
-      refreshToken: session.tokens.refreshToken?.toString()
+      // Note: refreshToken may not be available in all Amplify v6 configurations
+      refreshToken: (session.tokens as any).refreshToken?.toString()
     };
   } catch (error) {
     console.error('Failed to get auth tokens:', error);

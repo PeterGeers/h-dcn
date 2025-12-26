@@ -1,0 +1,388 @@
+
+=== H-DCN COGNITO USER STATUS REPORT ===
+Report Date: 2025-12-26 16:53:11
+User Pool: eu-west-1_OAT3oPCIm
+
+SUMMARY STATISTICS:
+- Total Users: 74
+- Enabled Users: 74
+- Verified Email Addresses: 9
+- Users Needing Password Fix: 0
+
+USER STATUS BREAKDOWN:
+- CONFIRMED: 74 users (100.0%)
+
+✅ All users are ready for passwordless authentication!
+
+=== DETAILED USER LIST ===
+  1. ✅ penningmeester.limburg@h-dcn.nl
+     Name: Penningmeester Regio Limburg
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  2. ✅ activiteiten.duitsland@h-dcn.nl
+     Name: activiteiten duitsland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  3. ✅ secretaris.noordbrabant-zeeland@h-dcn.nl
+     Name: Secretaris Regio Noord Brabant Zeeland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  4. ✅ clubsjop@h-dcn.nl
+     Name: club shop
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  5. ✅ secretaris.duitsland@h-dcn.nl
+     Name: Secretaris Regio Duitsland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  6. ✅ redacteur@h-dcn.nl
+     Name: Redactie H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  7. ✅ vice-president@h-dcn.nl
+     Name: Vice President H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  8. ✅ nyp@h-dcn.nl
+     Name: Nieuwjaarsreceptie HDCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+  9. ✅ session.test@hdcn-test.nl
+     Name: session.test@hdcn-test.nl
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 10. ✅ web.friesland@h-dcn.nl
+     Name: Website Friesland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 11. ✅ penningmeester.zuid-holland@h-dcn.nl
+     Name: Penningmeester Zuid-holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 12. ✅ ledenadministratie@h-dcn.nl
+     Name: ledenadministratie H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 13. ✅ hulpje.penningmeester@h-dcn.nl
+     Name: Dick Bos
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 14. ✅ president@h-dcn.nl
+     Name: Jan-pieter Steunebrink
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 15. ✅ secretaris.friesland@h-dcn.nl
+     Name: Secretaris Regio Friesland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 16. ✅ secretaris.limburg@h-dcn.nl
+     Name: Secretaris Regio Limburg
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 17. ✅ toercommissaris.groningen-drenthe@h-dcn.nl
+     Name: Toercommissaris Groningen Drenthe
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 18. ✅ voorzitter.groningen-drenthe@h-dcn.nl
+     Name: Voorzitter Regio Groningen-Drenthe
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 19. ✅ algemeen1.limburg@h-dcn.nl
+     Name: Algemeen1 Limburg
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 20. ✅ clubshop.limburg@h-dcn.nl
+     Name: Clubshop Limburg
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 21. ✅ voorzitter.brabant-zeeland@h-dcn.nl
+     Name: Voorzitter Regio Brabant Zeeland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 22. ✅ secretaris@h-dcn.nl
+     Name: Secretaris H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 23. ✅ acriviteiten.noordholland@h-dcn.nl
+     Name: acriviteiten NoordHolland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 24. ✅ kimgeers@hotmail.com
+     Name: Kim Geers
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 25. ✅ media.oost@h-dcn.nl
+     Name: Media Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 26. ✅ voorzitter.noordholland@h-dcn.nl
+     Name: Voorzitter Regio Noordholland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 27. ✅ penningmeester.duitsland@h-dcn.nl
+     Name: Penningmeester Regio Duitsland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 28. ✅ voorzitter.zuid-holland@h-dcn.nl
+     Name: Voorzitter Regio Zuid-Holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 29. ✅ penningmeester.friesland@h-dcn.nl
+     Name: Penningmeester Regio Friesland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 30. ✅ voorzitter.friesland@h-dcn.nl
+     Name: Voorzitter Regio Friesland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 31. ✅ secretaris.groningen-drenthe@h-dcn.nl
+     Name: Secretaris Regio Groningen Drenthe
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 32. ✅ algemeen1.oost@h-dcn.nl
+     Name: Algemeen1 Regio Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 33. ✅ algemeen.oost@h-dcn.nl
+     Name: Algemeen Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 34. ✅ secretaris.utrecht@h-dcn.nl
+     Name: Secretaris Regio Utrecht
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 35. ✅ test.rolechange@hdcn-test.nl
+     Name: Test RoleChange
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 36. ✅ test.memberadmin@hdcn-test.nl
+     Name: Test MemberAdmin
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 37. ✅ voorzitter.utrecht@h-dcn.nl
+     Name: Voorzitter Regio utrecht
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 38. ✅ webmaster.zuid-holland@h-dcn.nl
+     Name: webmaster zuid-holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 39. ✅ penningmeester.oost@h-dcn.nl
+     Name: Penningmeester Regio Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 40. ✅ toercommissaris.oost@h-dcn.nl
+     Name: Toercommissaris Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 41. ✅ webmaster@h-dcn.nl
+     Name: Web Master
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 42. ✅ robstolkerring@h-dcn.nl
+     Name: Veerle Stolker
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 43. ✅ voorzitter.limburg@h-dcn.nl
+     Name: Voorzitter Regio Limburg
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 44. ✅ penningmeester.groningen-drenthe@h-dcn.nl
+     Name: Penningmeester Regio Groningen Drenthe
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 45. ✅ peter.geers@live.nl
+     Name: Peter Geers
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 46. ✅ algemeen.limburg@h-dcn.nl
+     Name: Algemeen Limburg
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 47. ✅ timing.test@hdcn-test.nl
+     Name: timing.test@hdcn-test.nl
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 48. ✅ console.test@hdcn-test.nl
+     Name: console.test@hdcn-test.nl
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 49. ✅ voorzitter.oost@h-dcn.nl
+     Name: Voorzitter Regio Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 50. ✅ algemeen.noordholland@h-dcn.nl
+     Name: Algemeen NH
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 51. ✅ clubblad@h-dcn.nl
+     Name: clubblad H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 52. ✅ toercommissaris.noordholland@h-dcn.nl
+     Name: Toer Commissaris
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 53. ✅ tourcommissie.zuid-holland@h-dcn.nl
+     Name: Tourcommissie Zuid Holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 54. ✅ penningmeester.brabantzeeland@h-dcn.nl
+     Name: Penningmeester Regio Noord Brabant Zeeland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 55. ✅ penningmeester.utrecht@h-dcn.nl
+     Name: Penningmeester Regio Utrecht
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 56. ✅ vrijwilligers.utrecht@h-dcn.nl
+     Name: Vrijwilligers Utrecht
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 57. ✅ voorzitter.duitsland@h-dcn.nl
+     Name: Voorzitter Regio Duitsland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 58. ✅ toercommissie@h-dcn.nl
+     Name: Toer Commissie
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 59. ✅ test.regular@hdcn-test.nl
+     Name: Test Regular
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 60. ✅ peter@pgeers.nl
+     Name: Peter Geers
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 61. ✅ test.webmaster@hdcn-test.nl
+     Name: Test Webmaster
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 62. ✅ peter@jabaki.nl
+     Name: Peter Jabaki
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 63. ✅ vrijwilligers@h-dcn.nl
+     Name: Vrijwilligers H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 64. ✅ algemeen.duitsland@h-dcn.nl
+     Name: Algemeen Regio Duitsland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 65. ✅ penningmeester.noordholland@h-dcn.nl
+     Name: Penningmeester Regio Noord-Holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 66. ✅ avs.duitsland@h-dcn.nl
+     Name: Angelique van Schaijk
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 67. ✅ penningmeester@h-dcn.nl
+     Name: Penningmeester H-DCN
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 68. ✅ secretaris.zuid-holland@h-dcn.nl
+     Name: Annette van der Helm
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 69. ✅ secretaris.oost@h-dcn.nl
+     Name: Secretaris Regio Oost
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 70. ✅ session.test2@hdcn-test.nl
+     Name: session.test2@hdcn-test.nl
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 71. ✅ secretaris.noordholland@h-dcn.nl
+     Name: Secretaris Regio Noord-Holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 72. ✅ test.chairman@hdcn-test.nl
+     Name: Test Chairman
+     Status: CONFIRMED | Enabled: True
+     Email Verified: True
+
+ 73. ✅ merchandise.noordholland@h-dcn.nl
+     Name: Merchandise Noord-Holland
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+ 74. ✅ toercommissaris.utrecht@h-dcn.nl
+     Name: Toercommissaris Regio Utrecht
+     Status: CONFIRMED | Enabled: True
+     Email Verified: False
+
+=== END REPORT ===

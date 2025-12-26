@@ -70,7 +70,7 @@ Parameters:
   
   OrganizationWebsite:
     Type: String
-    Default: "https://h-dcn.nl"
+    Default: "https://portal.h-dcn.nl"
     Description: "Organization website URL used in email templates"
   
   OrganizationEmail:
@@ -100,6 +100,25 @@ Parameters:
     Description: "Relative URL path for the passwordless recovery help page"
 
 Resources:
+  
+  # S3 Bucket for Email Templates
+  EmailTemplatesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-email-templates"
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Application
+          Value: H-DCN
+        - Key: Purpose
+          Value: EmailTemplates
+
   # Cognito User Pool for H-DCN Authentication (Passwordless Configuration)
   HDCNCognitoUserPool:
     Type: AWS::Cognito::UserPool
@@ -156,68 +175,12 @@ Resources:
       # Comprehensive verification message template for different message types
       VerificationMessageTemplate:
         DefaultEmailOption: CONFIRM_WITH_CODE
-        EmailMessage: |
-          Welkom bij H-DCN!
-          
-          Uw verificatiecode is: {####}
-          
-          Voer deze code in om uw e-mailadres te bevestigen en toegang te krijgen tot uw H-DCN lidmaatschapsportaal.
-          
-          Na verificatie kunt u:
-          • Uw persoonlijke gegevens beheren
-          • Toegang krijgen tot de H-DCN webshop
-          • Deelnemen aan evenementen en ritten
-          • Contact maken met andere leden
-          
-          Deze code is 24 uur geldig.
-          
-          Heeft u vragen? Neem contact op via webhulpje@h-dcn.nl
-          
-          Met vriendelijke groet,
-          Het H-DCN Team
-          
-          ---
-          Harley-Davidson Club Nederland
-          Website: https://h-dcn.nl
-          E-mail: webhulpje@h-dcn.nl
-        EmailSubject: "H-DCN Account Verificatie - Welkom bij de club!"
+        # Email templates handled by Lambda Custom Message trigger
       
       # Admin creation message template (for bulk user creation)
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
-        InviteMessageTemplate:
-          EmailMessage: |
-            Welkom bij H-DCN!
-            
-            Er is een account voor u aangemaakt in het H-DCN lidmaatschapsportaal.
-            
-            Uw gebruikersnaam: {username}
-            Tijdelijk wachtwoord: {####}
-            
-            Volg deze stappen om uw account te activeren:
-            1. Ga naar https://h-dcn.nl/login
-            2. Log in met uw e-mailadres en tijdelijk wachtwoord
-            3. Stel een nieuwe authenticatiemethode in (passkey aanbevolen)
-            4. Verifieer uw e-mailadres
-            
-            Na activatie heeft u toegang tot:
-            • Uw persoonlijke lidmaatschapsgegevens
-            • De H-DCN webshop
-            • Evenementen en ritten
-            • Contact met andere leden
-            
-            Het tijdelijke wachtwoord verloopt over 7 dagen.
-            
-            Heeft u vragen? Neem contact op via webhulpje@h-dcn.nl
-            
-            Met vriendelijke groet,
-            Het H-DCN Team
-            
-            ---
-            Harley-Davidson Club Nederland
-            Website: https://h-dcn.nl
-            E-mail: webhulpje@h-dcn.nl
-          EmailSubject: "H-DCN Account Aangemaakt - Activeer uw toegang"
+        # Email templates handled by Lambda Custom Message trigger
         UnusedAccountValidityDays: 7
       
       # Lambda triggers for custom email templates
@@ -257,6 +220,14 @@ Resources:
           AttributeDataType: String
           Required: false
           Mutable: true
+        - Name: passkey_registered
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: passkey_date
+          AttributeDataType: String
+          Required: false
+          Mutable: true
 
   # Cognito User Pool Client (Passwordless Configuration)
   HDCNCognitoUserPoolClient:
@@ -270,6 +241,7 @@ Resources:
         - ALLOW_USER_AUTH          # Choice-based auth for passwordless authentication
         - ALLOW_REFRESH_TOKEN_AUTH  # Required for token refresh
         - ALLOW_USER_SRP_AUTH       # SRP auth for compatibility
+        - ALLOW_USER_PASSWORD_AUTH  # Required for forgot password flow
       # Enable passwordless authentication options
       AuthSessionValidity: 3  # 3 minutes for auth session
       # Configure supported identity providers
@@ -303,10 +275,10 @@ Resources:
       # Enable callback URLs for authentication flows
       CallbackURLs:
         - http://localhost:3000/auth/callback
-        - https://h-dcn.nl/auth/callback
+        - https://portal.h-dcn.nl/auth/callback
       LogoutURLs:
         - http://localhost:3000/auth/logout
-        - https://h-dcn.nl/auth/logout
+        - https://portal.h-dcn.nl/auth/logout
 
   # Cognito User Pool Domain (for hosted UI if needed)
   HDCNCognitoUserPoolDomain:
@@ -453,6 +425,8 @@ Resources:
           RECOVERY_URL: !Sub "${OrganizationWebsite}${RecoveryPageUrl}"
           HELP_URL: !Sub "${OrganizationWebsite}${HelpPageUrl}"
           SUPPORT_PHONE: !Ref SupportPhoneNumber
+          # S3 Template Bucket
+          EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
 
   # Lambda function for post-confirmation actions
   CognitoPostConfirmationFunction:
@@ -496,6 +470,20 @@ Resources:
                   - cognito-idp:ListUsers
                 Resource: 
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+        - PolicyName: S3EmailTemplatesAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: 
+                  - !Sub "${EmailTemplatesBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: 
+                  - !GetAtt EmailTemplatesBucket.Arn
 
   # Lambda permissions for Cognito triggers
   CognitoCustomMessagePermission:
@@ -895,6 +883,7 @@ Resources:
           DEFAULT_TEMP_PASSWORD: !Ref DefaultTempPassword
           COGNITO_USER_POOL_ID: !Ref HDCNCognitoUserPool
           COGNITO_USER_POOL_CLIENT_ID: !Ref HDCNCognitoUserPoolClient
+          WEBAUTHN_RP_ID: "portal.h-dcn.nl"
       Events:
         CognitoRoot:
           Type: Api
