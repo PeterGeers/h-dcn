@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Box, Flex, Heading, Button, Text, Spacer, HStack, Image } from '@chakra-ui/react';
-import { ArrowBackIcon, SettingsIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon } from '@chakra-ui/icons';
 import { Suspense, lazy } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
@@ -30,7 +30,6 @@ interface AppProps {
 
 // Lazy load components
 const Dashboard = lazy(() => import('./pages/Dashboard')) as any;
-const ProfileManager = lazy(() => import('./pages/ProfileManager')) as any;
 const MembershipForm = lazy(() => import('./pages/MembershipForm')) as any;
 const ParameterManagement = lazy(() => import('./pages/ParameterManagement')) as any;
 const WebshopPage = lazy(() => import('./modules/webshop/WebshopPage')) as any;
@@ -78,16 +77,6 @@ function NavigationHeader({ signOut, user }: AppProps) {
             Dashboard
           </Button>
         )}
-        <Button
-          leftIcon={<SettingsIcon />}
-          onClick={() => navigate('/profile')}
-          variant="ghost"
-          colorScheme="orange"
-          size={{ base: 'sm', md: 'sm' }}
-          w={{ base: 'full', sm: 'auto' }}
-        >
-          Profiel
-        </Button>
         
         {/* User Account Popup - Shows email address and role information */}
         <UserAccountPopup user={user} signOut={signOut} />
@@ -108,7 +97,6 @@ function AppContent({ signOut, user }: AppProps) {
         }>
           <Routes>
             <Route path="/" element={<Dashboard user={user} />} />
-            <Route path="/profile" element={<ProfileManager user={user} />} />
             <Route path="/membership" element={<MembershipForm user={user} />} />
             <Route path="/parameters" element={<ParameterManagement user={user} />} />
             <Route path="/webshop" element={<WebshopPage user={user} />} />

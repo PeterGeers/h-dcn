@@ -120,9 +120,13 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             if (authResult.ok) {
               const authData = await authResult.json();
               
-              // Passkey authentication successful - backend returns Cognito tokens
-              if (authData.tokens && authData.tokens.AccessToken) {
+              // Debug: Log the actual response structure
+              console.log('Backend response:', JSON.stringify(authData, null, 2));
+              
+              // Passkey authentication successful - backend returns authenticationResult
+              if (authData.authenticationResult && authData.authenticationResult.AccessToken) {
                 // Store tokens and create user object compatible with Amplify
+                const tokens = authData.authenticationResult;
                 const user = {
                   username: signInData.email,
                   attributes: {
@@ -132,22 +136,22 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                   },
                   signInUserSession: {
                     accessToken: {
-                      jwtToken: authData.tokens.AccessToken,
-                      payload: authData.tokens.AccessTokenPayload || {}
+                      jwtToken: tokens.AccessToken,
+                      payload: tokens.AccessTokenPayload || {}
                     },
                     idToken: {
-                      jwtToken: authData.tokens.IdToken,
-                      payload: authData.tokens.IdTokenPayload || {}
+                      jwtToken: tokens.IdToken,
+                      payload: tokens.IdTokenPayload || {}
                     },
                     refreshToken: {
-                      token: authData.tokens.RefreshToken
+                      token: tokens.RefreshToken
                     }
                   }
                 };
                 
                 // Store authentication data
                 localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-                localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+                localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
                 
                 setUser(user);
                 setAuthState('authenticated');
@@ -233,8 +237,9 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handlePasskeySetupSuccess = (authData?: any) => {
     // After passkey setup, user might be authenticated or need to sign in
-    if (authData && authData.tokens && authData.tokens.AccessToken) {
+    if (authData && authData.authenticationResult && authData.authenticationResult.AccessToken) {
       // User is authenticated after passkey setup
+      const tokens = authData.authenticationResult;
       const user = {
         username: authData.user?.email || newUserEmail,
         attributes: {
@@ -244,22 +249,22 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         },
         signInUserSession: {
           accessToken: {
-            jwtToken: authData.tokens.AccessToken,
-            payload: authData.tokens.AccessTokenPayload || {}
+            jwtToken: tokens.AccessToken,
+            payload: tokens.AccessTokenPayload || {}
           },
           idToken: {
-            jwtToken: authData.tokens.IdToken,
-            payload: authData.tokens.IdTokenPayload || {}
+            jwtToken: tokens.IdToken,
+            payload: tokens.IdTokenPayload || {}
           },
           refreshToken: {
-            token: authData.tokens.RefreshToken
+            token: tokens.RefreshToken
           }
         }
       };
       
       // Store authentication data
       localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
       
       setUser(user);
       setAuthState('authenticated');
@@ -283,7 +288,8 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleCrossDeviceSuccess = (authData: any) => {
     // Cross-device authentication successful, set user with tokens
-    if (authData.tokens && authData.tokens.AccessToken) {
+    if (authData.authenticationResult && authData.authenticationResult.AccessToken) {
+      const tokens = authData.authenticationResult;
       const user = {
         username: authData.user?.email || signInData.email,
         attributes: {
@@ -293,22 +299,22 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         },
         signInUserSession: {
           accessToken: {
-            jwtToken: authData.tokens.AccessToken,
-            payload: authData.tokens.AccessTokenPayload || {}
+            jwtToken: tokens.AccessToken,
+            payload: tokens.AccessTokenPayload || {}
           },
           idToken: {
-            jwtToken: authData.tokens.IdToken,
-            payload: authData.tokens.IdTokenPayload || {}
+            jwtToken: tokens.IdToken,
+            payload: tokens.IdTokenPayload || {}
           },
           refreshToken: {
-            token: authData.tokens.RefreshToken
+            token: tokens.RefreshToken
           }
         }
       };
       
       // Store authentication data
       localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
       
       setUser(user);
       setAuthState('authenticated');
@@ -331,7 +337,8 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleEmailRecoverySuccess = (authData: any) => {
     // After successful recovery, set user with tokens
-    if (authData.tokens && authData.tokens.AccessToken) {
+    if (authData.authenticationResult && authData.authenticationResult.AccessToken) {
+      const tokens = authData.authenticationResult;
       const user = {
         username: authData.user?.email || '',
         attributes: {
@@ -341,22 +348,22 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         },
         signInUserSession: {
           accessToken: {
-            jwtToken: authData.tokens.AccessToken,
-            payload: authData.tokens.AccessTokenPayload || {}
+            jwtToken: tokens.AccessToken,
+            payload: tokens.AccessTokenPayload || {}
           },
           idToken: {
-            jwtToken: authData.tokens.IdToken,
-            payload: authData.tokens.IdTokenPayload || {}
+            jwtToken: tokens.IdToken,
+            payload: tokens.IdTokenPayload || {}
           },
           refreshToken: {
-            token: authData.tokens.RefreshToken
+            token: tokens.RefreshToken
           }
         }
       };
       
       // Store authentication data
       localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(authData.tokens));
+      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
       
       setUser(user);
       setAuthState('authenticated');

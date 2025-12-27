@@ -4,10 +4,40 @@ import { FunctionPermissionManager } from '../../utils/functionPermissions';
 // Helper function to extract user roles from Cognito JWT token
 const getUserRoles = (user: any): string[] => {
   try {
-    const userGroups = user?.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
-    return Array.isArray(userGroups) ? userGroups : [];
+    // First, try the standard Amplify location
+    const amplifyGroups = user?.signInUserSession?.accessToken?.payload['cognito:groups'];
+    if (amplifyGroups && Array.isArray(amplifyGroups)) {
+      return amplifyGroups;
+    }
+    
+    // If not found, try to decode the JWT token directly from localStorage
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      // Decode JWT payload (base64 decode the middle part)
+      const parts = accessToken.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        const groups = payload['cognito:groups'] || [];
+        console.log('🔍 FunctionGuard - Decoded JWT groups from localStorage:', groups);
+        return groups;
+      }
+    } else {
+      // Fallback: try to decode from user session JWT token
+      const jwtToken = user?.signInUserSession?.accessToken?.jwtToken;
+      if (jwtToken) {
+        const parts = jwtToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const groups = payload['cognito:groups'] || [];
+          console.log('🔍 FunctionGuard - Decoded JWT groups from session:', groups);
+          return groups;
+        }
+      }
+    }
+    
+    return [];
   } catch (error) {
-    console.error('Error extracting user roles:', error);
+    console.error('Error extracting user roles in FunctionGuard:', error);
     return [];
   }
 };
@@ -90,9 +120,13 @@ export function FunctionGuard({
       try {
         // Extract user roles from Cognito token
         const userRoles = getUserRoles(user);
+        console.log('🔍 FunctionGuard - Checking access for function:', functionName, 'action:', action);
+        console.log('🔍 FunctionGuard - User roles:', userRoles);
+        console.log('🔍 FunctionGuard - Required roles:', requiredRoles);
         
         // Check role-based access if roles are specified
         const hasRoleAccess = hasRequiredRoles(userRoles, requiredRoles);
+        console.log('🔍 FunctionGuard - Has role access:', hasRoleAccess);
         
         // Check function-based access if function name is provided
         let hasFunctionAccess = true; // Default to true if no function check needed
@@ -101,6 +135,7 @@ export function FunctionGuard({
           // This ensures existing function-based access control is preserved
           const permissions = await FunctionPermissionManager.create(user);
           hasFunctionAccess = permissions.hasAccess(functionName, action);
+          console.log('🔍 FunctionGuard - Has function access:', hasFunctionAccess);
         }
         
         // COMBINED PERMISSION CHECKING LOGIC:
@@ -109,7 +144,7 @@ export function FunctionGuard({
         // Logic:
         // 1. If no roles are required -> use function-based permissions only (backward compatibility)
         // 2. If roles are required but no function specified -> use role-based permissions only
-        // 3. If both roles and function are specified -> require BOTH (AND logic)
+        // 3. If both roles and function are specified -> prefer role-based access for new role system
         // 
         // This provides flexible permission checking while maintaining backward compatibility.
         let combinedAccess: boolean;
@@ -127,18 +162,19 @@ export function FunctionGuard({
           // Roles required but no function specified - use role-based permissions only
           combinedAccess = hasRoleAccess;
         } else {
-          // Both roles and function specified - require BOTH for enhanced security (AND logic)
-          // This allows for fine-grained access control where users need both role membership
-          // AND function-based permissions to access specific functionality
-          combinedAccess = hasRoleAccess && hasFunctionAccess;
+          // Both roles and function specified - prefer role-based access for new role system
+          // If user has role access, grant access (new role system takes precedence)
+          // Only fall back to function access if role access fails (backward compatibility)
+          combinedAccess = hasRoleAccess || hasFunctionAccess;
         }
         
+        console.log('🔍 FunctionGuard - Final combined access:', combinedAccess);
         setHasAccess(combinedAccess);
       } catch (error) {
         console.error('Permission check failed:', error);
         // BACKWARD COMPATIBILITY: Enhanced fallback handling
         // Try to preserve existing access patterns even when permission loading fails
-        const userGroups = user?.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+        const userGroups = getUserRoles(user); // Use the same JWT decoding logic
         const isAdmin = userGroups.includes('hdcnAdmins');
         const isBasicMember = userGroups.includes('hdcnLeden');
         

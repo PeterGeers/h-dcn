@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Email Recovery</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        input { padding: 8px; margin: 5px; width: 300px; }
+        .result { margin: 20px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test Email Recovery</h1>
+    
+    <div>
+        <input type="email" id="email" placeholder="webmaster@h-dcn.nl" value="webmaster@h-dcn.nl">
+        <button onclick="testRecovery()">Test Email Recovery</button>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        async function testRecovery() {
+            const email = document.getElementById('email').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!email) {
+                resultDiv.innerHTML = '<div class="error">Please enter an email address</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div>🔄 Testing email recovery...</div>';
+            
+            try {
+                const response = await fetch('https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/auth/recovery/initiate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Success: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error ${response.status}: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ interface CognitoUser {
       payload: {
         'cognito:groups'?: string[];
       };
+      jwtToken?: string;
     };
   };
   attributes?: {
@@ -22,8 +23,35 @@ interface GroupAccessGuardProps {
 }
 
 function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
-  const userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+  // Try to get groups from different possible locations
+  let userGroups: string[] = [];
+  
+  // First, try the standard Amplify location
+  const amplifyGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'];
+  if (amplifyGroups && Array.isArray(amplifyGroups)) {
+    userGroups = amplifyGroups;
+  } else {
+    // If not found, try to decode the JWT token directly
+    const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+    if (jwtToken) {
+      try {
+        // Decode JWT payload (base64 decode the middle part)
+        const parts = jwtToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          userGroups = payload['cognito:groups'] || [];
+        }
+      } catch (error) {
+        console.error('Error decoding JWT token:', error);
+      }
+    }
+  }
+  
   const hasGroupAccess = userGroups.length > 0;
+  
+  // Debug logging
+  console.log('GroupAccessGuard - User groups:', userGroups);
+  console.log('GroupAccessGuard - Has access:', hasGroupAccess);
 
   if (!hasGroupAccess) {
     return (

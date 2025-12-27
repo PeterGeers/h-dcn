@@ -9,6 +9,7 @@ interface User {
       payload: {
         'cognito:groups'?: string[];
       };
+      jwtToken?: string;
     };
   };
   attributes?: {
@@ -30,13 +31,35 @@ export function getUserRoles(user: User): string[] {
     return user.groups;
   }
 
-  // Legacy approach: Extract from JWT token payload
-  if (!user?.signInUserSession?.accessToken?.payload) {
-    return [];
+  // Try to get groups from JWT token payload first
+  if (user?.signInUserSession?.accessToken?.payload) {
+    const cognitoGroups = user.signInUserSession.accessToken.payload['cognito:groups'];
+    if (cognitoGroups && Array.isArray(cognitoGroups)) {
+      return cognitoGroups;
+    }
   }
-  
-  const cognitoGroups = user.signInUserSession.accessToken.payload['cognito:groups'];
-  return cognitoGroups || [];
+
+  // If payload is empty, try to decode the JWT token directly
+  const jwtToken = user?.signInUserSession?.accessToken?.jwtToken;
+  if (jwtToken) {
+    try {
+      // Decode JWT payload (base64 decode the middle part)
+      const parts = jwtToken.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        const cognitoGroups = payload['cognito:groups'];
+        if (cognitoGroups && Array.isArray(cognitoGroups)) {
+          console.log('🔍 getUserRoles - Decoded JWT groups:', cognitoGroups);
+          return cognitoGroups;
+        }
+      }
+    } catch (error) {
+      console.error('Error decoding JWT token in getUserRoles:', error);
+    }
+  }
+
+  console.log('🔍 getUserRoles - No groups found, returning empty array');
+  return [];
 }
 
 /**

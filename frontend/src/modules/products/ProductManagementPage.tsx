@@ -6,7 +6,6 @@ import ProductFilter from './components/ProductFilter';
 import Header from './components/Header';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
-import { useAuthContext } from '../../context/AuthContext';
 import { getUserRoles } from '../../utils/functionPermissions';
 
 import { Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, Text } from '@chakra-ui/react';
@@ -17,8 +16,26 @@ interface FilterOption {
   group?: string;
 }
 
-export default function ProductManagementPage() {
-  const { user } = useAuthContext();
+interface User {
+  attributes?: {
+    given_name?: string;
+    family_name?: string;
+    email?: string;
+  };
+  signInUserSession?: {
+    accessToken?: {
+      payload: {
+        'cognito:groups'?: string[];
+      };
+    };
+  };
+}
+
+interface ProductManagementPageProps {
+  user: User;
+}
+
+export default function ProductManagementPage({ user }: ProductManagementPageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
 

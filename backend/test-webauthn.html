@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebAuthn Test - H-DCN</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔐 WebAuthn Passkey Test</h1>
+    <p>Test de passkey functionaliteit lokaal voordat we deployen.</p>
+    
+    <div>
+        <h3>Stap 1: Check WebAuthn Support</h3>
+        <button onclick="checkSupport()">Check Browser Support</button>
+        <div id="support-result"></div>
+    </div>
+    
+    <div>
+        <h3>Stap 2: Test Passkey Registratie</h3>
+        <input type="email" id="email" placeholder="test@h-dcn.nl" value="test@h-dcn.nl">
+        <button onclick="testRegistration()">Test Passkey Registratie</button>
+        <div id="registration-result"></div>
+    </div>
+    
+    <div>
+        <h3>Stap 3: Test Passkey Authenticatie</h3>
+        <button onclick="testAuthentication()">Test Passkey Login</button>
+        <div id="authentication-result"></div>
+    </div>
+
+    <script>
+        let registrationCredential = null;
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML += `<div class="${className}">${message}</div>`;
+        }
+
+        function checkSupport() {
+            const resultDiv = document.getElementById('support-result');
+            resultDiv.innerHTML = '';
+            
+            log('support-result', '🔍 Checking WebAuthn support...', 'info');
+            
+            if (!window.PublicKeyCredential) {
+                log('support-result', '❌ WebAuthn not supported in this browser', 'error');
+                return;
+            }
+            
+            log('support-result', '✅ WebAuthn is supported!', 'success');
+            
+            // Check for platform authenticator
+            PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+                .then(available => {
+                    if (available) {
+                        log('support-result', '✅ Platform authenticator available (Touch ID, Windows Hello, etc.)', 'success');
+                    } else {
+                        log('support-result', '⚠️ No platform authenticator available', 'error');
+                    }
+                });
+                
+            // Check conditional mediation
+            if (PublicKeyCredential.isConditionalMediationAvailable) {
+                PublicKeyCredential.isConditionalMediationAvailable()
+                    .then(available => {
+                        if (available) {
+                            log('support-result', '✅ Conditional mediation supported', 'success');
+                        } else {
+                            log('support-result', '⚠️ Conditional mediation not supported', 'info');
+                        }
+                    });
+            }
+        }
+
+        async function testRegistration() {
+            const resultDiv = document.getElementById('registration-result');
+            resultDiv.innerHTML = '';
+            
+            const email = document.getElementById('email').value;
+            if (!email) {
+                log('registration-result', '❌ Please enter an email address', 'error');
+                return;
+            }
+            
+            log('registration-result', '🔄 Starting passkey registration...', 'info');
+            
+            try {
+                // Simulate the registration options from our backend
+                const registrationOptions = {
+                    challenge: new Uint8Array(32), // Random challenge
+                    rp: {
+                        name: 'H-DCN Portal',
+                        id: window.location.hostname // Use current hostname
+                    },
+                    user: {
+                        id: new TextEncoder().encode(email),
+                        name: email,
+                        displayName: email
+                    },
+                    pubKeyCredParams: [
+                        { type: 'public-key', alg: -7 },   // ES256
+                        { type: 'public-key', alg: -257 }  // RS256
+                    ],
+                    authenticatorSelection: {
+                        userVerification: 'preferred',
+                        requireResidentKey: false
+                        // No authenticatorAttachment - allows both platform and cross-platform
+                    },
+                    timeout: 60000,
+                    attestation: 'none'
+                };
+                
+                log('registration-result', '📋 Registration options:', 'info');
+                log('registration-result', `<pre>${JSON.stringify(registrationOptions, null, 2)}</pre>`, 'info');
+                
+                // Create credential
+                const credential = await navigator.credentials.create({
+                    publicKey: registrationOptions
+                });
+                
+                registrationCredential = credential;
+                
+                log('registration-result', '✅ Passkey registration successful!', 'success');
+                log('registration-result', `Credential ID: ${credential.id}`, 'success');
+                log('registration-result', `Type: ${credential.type}`, 'success');
+                
+            } catch (error) {
+                log('registration-result', `❌ Registration failed: ${error.message}`, 'error');
+                console.error('Registration error:', error);
+            }
+        }
+
+        async function testAuthentication() {
+            const resultDiv = document.getElementById('authentication-result');
+            resultDiv.innerHTML = '';
+            
+            if (!registrationCredential) {
+                log('authentication-result', '❌ Please register a passkey first', 'error');
+                return;
+            }
+            
+            log('authentication-result', '🔄 Starting passkey authentication...', 'info');
+            
+            try {
+                const authenticationOptions = {
+                    challenge: new Uint8Array(32), // Random challenge
+                    allowCredentials: [{
+                        type: 'public-key',
+                        id: registrationCredential.rawId
+                    }],
+                    userVerification: 'preferred',
+                    timeout: 60000
+                };
+                
+                log('authentication-result', '📋 Authentication options:', 'info');
+                log('authentication-result', `<pre>${JSON.stringify({
+                    ...authenticationOptions,
+                    allowCredentials: [{
+                        type: 'public-key',
+                        id: `[${authenticationOptions.allowCredentials[0].id.byteLength} bytes]`
+                    }]
+                }, null, 2)}</pre>`, 'info');
+                
+                const assertion = await navigator.credentials.get({
+                    publicKey: authenticationOptions
+                });
+                
+                log('authentication-result', '✅ Passkey authentication successful!', 'success');
+                log('authentication-result', `Credential ID: ${assertion.id}`, 'success');
+                
+            } catch (error) {
+                log('authentication-result', `❌ Authentication failed: ${error.message}`, 'error');
+                console.error('Authentication error:', error);
+            }
+        }
+
+        // Auto-check support on load
+        window.onload = function() {
+            checkSupport();
+        };
+    </script>
+</body>
+</html>

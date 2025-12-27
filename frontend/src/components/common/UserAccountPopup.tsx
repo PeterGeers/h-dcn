@@ -48,6 +48,7 @@ interface User {
       payload: {
         'cognito:groups'?: string[];
       };
+      jwtToken?: string;
     };
   };
 }
@@ -137,7 +138,42 @@ const getRoleColor = (role: string): string => {
 };
 
 export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
-  const userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+  // Enhanced JWT token decoding to get user groups
+  let userGroups: string[] = [];
+  
+  // First, try the standard Amplify location
+  const amplifyGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'];
+  if (amplifyGroups && Array.isArray(amplifyGroups)) {
+    userGroups = amplifyGroups;
+  } else {
+    // If not found, try to decode the JWT token directly from localStorage
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (accessToken) {
+        // Decode JWT payload (base64 decode the middle part)
+        const parts = accessToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          userGroups = payload['cognito:groups'] || [];
+          console.log('🔍 UserAccountPopup - Decoded JWT groups from localStorage:', userGroups);
+        }
+      } else {
+        // Fallback: try to decode from user session JWT token
+        const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+        if (jwtToken) {
+          const parts = jwtToken.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            userGroups = payload['cognito:groups'] || [];
+            console.log('🔍 UserAccountPopup - Decoded JWT groups from session:', userGroups);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error decoding JWT token in UserAccountPopup:', error);
+    }
+  }
+  
   const userEmail = user.attributes?.email || 'Onbekend';
   const userName = user.attributes?.given_name || user.attributes?.family_name ? 
     `${user.attributes.given_name || ''} ${user.attributes.family_name || ''}`.trim() : 

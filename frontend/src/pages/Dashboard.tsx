@@ -15,6 +15,7 @@ interface User {
       payload: {
         'cognito:groups'?: string[];
       };
+      jwtToken?: string;
     };
   };
 }
@@ -39,8 +40,29 @@ function Dashboard({ user }: DashboardProps) {
     init();
   }, []);
   
-  // Extract user roles from Cognito token
-  const userGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+  // Extract user roles from Cognito token - try payload first, then decode JWT
+  let userGroups: string[] = [];
+  
+  // First try the payload
+  const payloadGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'];
+  if (payloadGroups && Array.isArray(payloadGroups)) {
+    userGroups = payloadGroups;
+  } else {
+    // If payload is empty, decode the JWT token directly
+    const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+    if (jwtToken) {
+      try {
+        const parts = jwtToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          userGroups = payload['cognito:groups'] || [];
+        }
+      } catch (error) {
+        console.error('Error decoding JWT token in Dashboard:', error);
+      }
+    }
+  }
+  
   const isBasicMember = userGroups.includes('hdcnLeden');
   const hasAdminRoles = userGroups.some(group => 
     group.includes('Members_') || 

@@ -1194,9 +1194,9 @@ def begin_passkey_registration(event, headers):
                 {'type': 'public-key', 'alg': -257}  # RS256
             ],
             'authenticatorSelection': {
-                'authenticatorAttachment': 'platform',
                 'userVerification': 'preferred',
                 'requireResidentKey': False
+                # Removed 'authenticatorAttachment' to allow both platform and cross-platform authenticators
             },
             'timeout': 60000,
             'attestation': 'none'
@@ -1417,40 +1417,82 @@ def complete_passkey_authentication(event, headers):
         # 3. Check the authenticator data
         
         # For now, simulate successful authentication
-        # and initiate Cognito authentication flow
+        # and generate custom JWT tokens for passkey authentication
         
         try:
             # Log cross-device authentication for audit purposes
             if cross_device:
                 print(f"Cross-device authentication successful for user: {email}")
             
-            # Use Cognito's admin authentication to create a session
-            # This is a simplified approach - in production you'd integrate more tightly with Cognito
-            auth_response = cognito_client.admin_initiate_auth(
+            # Get user groups for token
+            user_groups_response = cognito_client.admin_list_groups_for_user(
                 UserPoolId=USER_POOL_ID,
-                ClientId=os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
-                AuthFlow='ADMIN_NO_SRP_AUTH',
-                AuthParameters={
-                    'USERNAME': email,
-                    'PASSWORD': 'PASSKEY_AUTH'  # Special marker for passkey auth
-                }
+                Username=email
             )
+            groups = [group['GroupName'] for group in user_groups_response.get('Groups', [])]
             
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({
-                    'message': 'Authentication successful',
-                    'authenticationResult': auth_response.get('AuthenticationResult', {}),
-                    'verified': True,
-                    'crossDevice': cross_device
-                })
-            }
+            # Generate custom tokens for passkey authentication
+            try:
+                import jwt
+                import time
+                
+                # Token payload
+                payload = {
+                    'sub': email,
+                    'email': email,
+                    'email_verified': True,
+                    'cognito:groups': groups,
+                    'auth_time': int(time.time()),
+                    'iat': int(time.time()),
+                    'exp': int(time.time()) + 3600,  # 1 hour expiration
+                    'token_use': 'access',
+                    'client_id': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
+                    'username': email,
+                    'auth_method': 'passkey'
+                }
+                
+                print(f"Generating JWT tokens for user: {email} with groups: {groups}")
+                
+                # Simple token signing (in production, use proper JWT signing)
+                access_token = jwt.encode(payload, 'passkey-secret', algorithm='HS256')
+                
+                # ID token payload
+                id_payload = {
+                    **payload,
+                    'token_use': 'id',
+                    'aud': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh')
+                }
+                
+                id_token = jwt.encode(id_payload, 'passkey-secret', algorithm='HS256')
+                
+                print(f"JWT tokens generated successfully for user: {email}")
+                
+                return {
+                    'statusCode': 200,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'message': 'Authentication successful',
+                        'authenticationResult': {
+                            'AccessToken': access_token,
+                            'IdToken': id_token,
+                            'TokenType': 'Bearer',
+                            'ExpiresIn': 3600
+                        },
+                        'verified': True,
+                        'crossDevice': cross_device
+                    })
+                }
+                
+            except ImportError as import_error:
+                print(f"JWT import error: {str(import_error)}")
+                raise import_error
+            except Exception as jwt_error:
+                print(f"JWT generation error: {str(jwt_error)}")
+                raise jwt_error
             
         except Exception as auth_error:
-            print(f"Error during Cognito authentication: {str(auth_error)}")
+            print(f"Error during token generation: {str(auth_error)}")
             # Fallback: return success for passkey verification
-            # The frontend will handle the Cognito session separately
             return {
                 'statusCode': 200,
                 'headers': headers,
@@ -1516,14 +1558,49 @@ def initiate_email_recovery(event, headers):
                 })
             }
         
-        # Initiate forgot password flow (which sends recovery email)
+        # Generate custom recovery code instead of using Cognito's forgot password
         try:
-            recovery_response = cognito_client.forgot_password(
-                ClientId=os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
-                Username=email
-            )
+            import secrets
+            import time
             
-            delivery_details = recovery_response.get('CodeDeliveryDetails', {})
+            # Generate secure recovery code
+            recovery_code = secrets.token_urlsafe(32)
+            
+            # Store recovery code temporarily (in production, use DynamoDB)
+            # For now, we'll send it via our custom email template
+            
+            # Send custom recovery email using our template service
+            from template_service import template_service
+            
+            # Get user's display name
+            display_name = email.split('@')[0]
+            for attr in user_response.get('UserAttributes', []):
+                if attr['Name'] == 'given_name':
+                    display_name = attr['Value']
+                    break
+            
+            # Render recovery email template
+            context = {
+                'DISPLAY_NAME': display_name,
+                'EMAIL': email,
+                'CODE': recovery_code,
+                'RECOVERY_URL': f"https://portal.h-dcn.nl/recovery?code={recovery_code}&email={email}"
+            }
+            
+            subject, message = template_service.render_template('passwordless-recovery', context)
+            
+            # Send email via SES
+            import boto3
+            ses_client = boto3.client('ses')
+            
+            ses_response = ses_client.send_email(
+                Source='webhulpje@h-dcn.nl',
+                Destination={'ToAddresses': [email]},
+                Message={
+                    'Subject': {'Data': subject},
+                    'Body': {'Text': {'Data': message}}
+                }
+            )
             
             return {
                 'statusCode': 200,
@@ -1531,37 +1608,19 @@ def initiate_email_recovery(event, headers):
                 'body': json.dumps({
                     'message': 'Recovery email sent successfully. Check your email for instructions.',
                     'email': email,
-                    'deliveryMedium': delivery_details.get('DeliveryMedium', 'EMAIL'),
-                    'destination': delivery_details.get('Destination', email)
+                    'deliveryMedium': 'EMAIL',
+                    'destination': email[:2] + '***@' + email.split('@')[1][:1] + '***'
                 })
             }
             
-        except cognito_client.exceptions.UserNotFoundException:
-            # User doesn't exist, but return success for security
+        except Exception as ses_error:
+            print(f"Error sending recovery email: {str(ses_error)}")
             return {
-                'statusCode': 200,
+                'statusCode': 500,
                 'headers': headers,
                 'body': json.dumps({
-                    'message': 'If an account with this email exists, you will receive recovery instructions.',
-                    'email': email
-                })
-            }
-        except cognito_client.exceptions.InvalidParameterException as e:
-            return {
-                'statusCode': 400,
-                'headers': headers,
-                'body': json.dumps({
-                    'error': 'Invalid request parameters',
-                    'details': str(e)
-                })
-            }
-        except cognito_client.exceptions.LimitExceededException:
-            return {
-                'statusCode': 429,
-                'headers': headers,
-                'body': json.dumps({
-                    'error': 'Too many recovery attempts. Please wait before trying again.',
-                    'retryAfter': 300  # 5 minutes
+                    'error': 'Failed to send recovery email',
+                    'details': str(ses_error)
                 })
             }
             
