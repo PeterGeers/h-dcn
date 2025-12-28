@@ -1178,11 +1178,31 @@ def begin_passkey_registration(event, headers):
         # Store challenge temporarily (in production, use DynamoDB or Redis)
         # For now, we'll return it and expect the client to send it back
         
+        # Determine RP ID based on environment
+        # Use the actual domain from the request for consistency
+        rp_id = 'portal.h-dcn.nl'  # Default production domain
+        
+        # For test environments, we need to be more flexible
+        # This should match the domain the request is coming from
+        origin = event.get('headers', {}).get('origin', '')
+        host = event.get('headers', {}).get('host', '')
+        
+        if 'testportal' in origin or 'cloudfront.net' in origin:
+            # Extract hostname from origin
+            from urllib.parse import urlparse
+            parsed = urlparse(origin)
+            rp_id = parsed.hostname
+        elif 'cloudfront.net' in host:
+            # If no origin but host is CloudFront, use host
+            rp_id = host
+        elif 'localhost' in origin:
+            rp_id = 'localhost'
+        
         registration_options = {
             'challenge': challenge_b64,
             'rp': {
                 'name': 'H-DCN Portal',
-                'id': os.environ.get('WEBAUTHN_RP_ID', 'portal.h-dcn.nl')  # Use environment variable
+                'id': rp_id
             },
             'user': {
                 'id': email,
@@ -1251,11 +1271,34 @@ def complete_passkey_registration(event, headers):
         # 3. Store the credential public key
         # 4. Associate it with the user account
         
-        # For now, we'll simulate successful registration
-        # and update the user's custom attributes to indicate passkey is set up
+        # Extract credential ID for storage
+        credential_id = credential.get('id', '')
+        if not credential_id:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Invalid credential - missing ID'})
+            }
         
         try:
-            # Update user attributes to indicate passkey is registered
+            # Get existing credential IDs
+            user_attributes = user_response.get('UserAttributes', [])
+            existing_credentials = []
+            
+            for attr in user_attributes:
+                if attr['Name'] == 'custom:passkey_cred_ids':
+                    # Parse existing credential IDs (stored as JSON array)
+                    try:
+                        existing_credentials = json.loads(attr['Value'])
+                    except:
+                        existing_credentials = []
+                    break
+            
+            # Add new credential ID to the list
+            if credential_id not in existing_credentials:
+                existing_credentials.append(credential_id)
+            
+            # Update user attributes with multiple credential IDs
             cognito_client.admin_update_user_attributes(
                 UserPoolId=USER_POOL_ID,
                 Username=email,
@@ -1267,6 +1310,10 @@ def complete_passkey_registration(event, headers):
                     {
                         'Name': 'custom:passkey_date',
                         'Value': datetime.now().isoformat()
+                    },
+                    {
+                        'Name': 'custom:passkey_cred_ids',
+                        'Value': json.dumps(existing_credentials)
                     }
                 ]
             )
@@ -1324,14 +1371,23 @@ def begin_passkey_authentication(event, headers):
                 Username=email
             )
             
-            # Check if user has passkey registered
+            # Check if user has passkey registered and get credential IDs
             user_attributes = user_response.get('UserAttributes', [])
             passkey_registered = False
+            credential_ids = []
             
             for attr in user_attributes:
                 if attr['Name'] == 'custom:passkey_registered' and attr['Value'] == 'true':
                     passkey_registered = True
-                    break
+                elif attr['Name'] == 'custom:passkey_cred_ids':
+                    try:
+                        credential_ids = json.loads(attr['Value'])
+                    except:
+                        credential_ids = []
+                elif attr['Name'] == 'custom:passkey_credential_id':
+                    # Legacy single credential ID support
+                    if attr['Value'] and attr['Value'] not in credential_ids:
+                        credential_ids.append(attr['Value'])
             
             if not passkey_registered:
                 return {
@@ -1358,12 +1414,22 @@ def begin_passkey_authentication(event, headers):
         challenge = secrets.token_bytes(32)
         challenge_b64 = base64.urlsafe_b64encode(challenge).decode('utf-8').rstrip('=')
         
+        # Build allowCredentials array
+        allow_credentials = []
+        if credential_ids:
+            # Always populate allowCredentials if we have stored credential IDs
+            # This helps the authenticator find the right credentials
+            allow_credentials = [{
+                'type': 'public-key',
+                'id': cred_id
+            } for cred_id in credential_ids]
+        # If no stored credentials, leave empty to allow any credential (cross-device flow)
+        
         authentication_options = {
             'challenge': challenge_b64,
             'timeout': 300000 if cross_device else 60000,  # 5 minutes for cross-device, 1 minute for same-device
             'userVerification': 'preferred',
-            # Empty allowCredentials enables cross-device authentication
-            'allowCredentials': [],
+            'allowCredentials': allow_credentials,
             'crossDevice': cross_device
         }
         

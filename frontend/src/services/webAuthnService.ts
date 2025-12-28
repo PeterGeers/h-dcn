@@ -33,7 +33,7 @@ export interface PasskeyAuthenticationOptions {
   challenge: string;
   allowCredentials?: Array<{
     type: 'public-key';
-    id: ArrayBuffer;
+    id: ArrayBuffer | string; // Allow both ArrayBuffer and string (base64url)
   }>;
   userVerification?: 'required' | 'preferred' | 'discouraged';
   timeout?: number;
@@ -182,14 +182,17 @@ export class WebAuthnService {
     }
 
     try {
+      // Convert allowCredentials IDs from base64url strings to ArrayBuffers if needed
+      const processedAllowCredentials = options.allowCredentials?.map(cred => ({
+        type: cred.type,
+        id: typeof cred.id === 'string' ? this.base64urlToArrayBuffer(cred.id) : cred.id,
+      }));
+
       const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
         challenge: this.base64urlToArrayBuffer(options.challenge),
-        allowCredentials: options.allowCredentials?.map(cred => ({
-          type: cred.type,
-          id: cred.id,
-        })),
+        allowCredentials: processedAllowCredentials,
         userVerification: options.userVerification || 'preferred',
-        timeout: options.timeout || 60000,
+        timeout: options.timeout || (this.isMobileDevice() ? 300000 : 60000), // 5 minutes for mobile, 1 minute for desktop
       };
 
       const credential = await navigator.credentials.get({
@@ -296,7 +299,11 @@ export class WebAuthnService {
     }
     
     if (error.name === 'NotAllowedError') {
-      return new Error('Passkey registratie geannuleerd door gebruiker');
+      if (this.isMobileDevice()) {
+        return new Error('Passkey authenticatie geannuleerd. Probeer opnieuw en gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN.');
+      } else {
+        return new Error('Passkey authenticatie geannuleerd door gebruiker');
+      }
     }
     
     if (error.name === 'InvalidStateError') {
@@ -309,6 +316,15 @@ export class WebAuthnService {
     
     if (error.name === 'UnknownError') {
       return new Error('Onbekende fout bij passkey registratie');
+    }
+
+    // Check for timeout errors
+    if (error.message && error.message.includes('timeout')) {
+      if (this.isMobileDevice()) {
+        return new Error('Passkey authenticatie time-out. Probeer opnieuw en reageer sneller op de biometrische prompt.');
+      } else {
+        return new Error('Passkey authenticatie time-out. Probeer opnieuw.');
+      }
     }
 
     // Return original error if we don't have a specific translation

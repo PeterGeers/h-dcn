@@ -6,6 +6,16 @@ Description: >
   Sample SAM Template for python-crud-api-test
   # Updated to remove Cognito function temporarily
 
+Conditions:
+  HasGoogleCredentials: !Not [!Equals [!Ref GoogleClientId, ""]]
+
+Parameters:
+  Environment:
+    Type: String
+    Default: "dev"
+    AllowedValues: ["dev", "test", "prod"]
+    Description: "Environment name"
+
 Globals:
   Function:
     Timeout: 10
@@ -60,7 +70,7 @@ Parameters:
     Default: Parameters
   ForceUpdate:
     Type: String
-    Default: "2024-01-16"
+    Default: "2025-12-28"
   
   # Email template customization parameters
   OrganizationName:
@@ -98,6 +108,19 @@ Parameters:
     Type: String
     Default: "/help/passwordless-recovery"
     Description: "Relative URL path for the passwordless recovery help page"
+
+  # Google Workspace SSO Configuration
+  GoogleClientId:
+    Type: String
+    NoEcho: true
+    Description: "Google OAuth 2.0 Client ID for Workspace SSO"
+    Default: ""
+  
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+    Description: "Google OAuth 2.0 Client Secret for Workspace SSO"
+    Default: ""
 
 Resources:
   
@@ -228,6 +251,28 @@ Resources:
           AttributeDataType: String
           Required: false
           Mutable: true
+        - Name: passkey_cred_ids
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+
+  # Google Workspace Identity Provider (Staff SSO)
+  HDCNGoogleIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Condition: HasGoogleCredentials
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      ProviderName: Google
+      ProviderType: Google
+      ProviderDetails:
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: "openid email profile"
+      AttributeMapping:
+        email: email
+        given_name: given_name
+        family_name: family_name
+        username: sub
 
   # Cognito User Pool Client (Passwordless Configuration)
   HDCNCognitoUserPoolClient:
@@ -247,6 +292,7 @@ Resources:
       # Configure supported identity providers
       SupportedIdentityProviders:
         - COGNITO
+        - !If [HasGoogleCredentials, Google, !Ref "AWS::NoValue"]
       # Configure appropriate read attributes for H-DCN member data
       ReadAttributes:
         - email
@@ -272,13 +318,23 @@ Resources:
       IdTokenValidity: 1          # 1 hour for ID tokens  
       RefreshTokenValidity: 30    # 30 days for refresh tokens
       PreventUserExistenceErrors: ENABLED
+      # OAuth configuration for Google SSO
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
       # Enable callback URLs for authentication flows
       CallbackURLs:
         - http://localhost:3000/auth/callback
         - https://portal.h-dcn.nl/auth/callback
+        - https://de1irtdutlxqu.cloudfront.net/auth/callback
       LogoutURLs:
         - http://localhost:3000/auth/logout
         - https://portal.h-dcn.nl/auth/logout
+        - https://de1irtdutlxqu.cloudfront.net/auth/logout
 
   # Cognito User Pool Domain (for hosted UI if needed)
   HDCNCognitoUserPoolDomain:
@@ -893,7 +949,6 @@ Resources:
           DEFAULT_TEMP_PASSWORD: !Ref DefaultTempPassword
           COGNITO_USER_POOL_ID: !Ref HDCNCognitoUserPool
           COGNITO_USER_POOL_CLIENT_ID: !Ref HDCNCognitoUserPoolClient
-          WEBAUTHN_RP_ID: "portal.h-dcn.nl"
       Events:
         CognitoRoot:
           Type: Api

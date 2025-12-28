@@ -21,7 +21,10 @@ import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
 import { CrossDeviceAuth } from './CrossDeviceAuth';
 import { EmailRecovery } from './EmailRecovery';
+import { MobilePasskeyDebug } from './MobilePasskeyDebug';
+import GoogleSignInButton from './GoogleSignInButton';
 import { WebAuthnService } from '../../services/webAuthnService';
+import { getWebAuthnRPID } from '../../utils/webauthnConfig';
 
 interface CustomAuthenticatorProps {
   children: (props: { signOut: () => void; user: any }) => React.ReactNode;
@@ -29,7 +32,7 @@ interface CustomAuthenticatorProps {
 
 export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const [user, setUser] = useState<any>(null);
-  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'crossDevice' | 'emailRecovery' | 'authenticated'>('loading');
+  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'crossDevice' | 'emailRecovery' | 'debug' | 'authenticated'>('loading');
   const [signInData, setSignInData] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -95,14 +98,23 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             },
             body: JSON.stringify({
               email: signInData.email,
+              crossDevice: WebAuthnService.isMobileDevice(), // Enable cross-device for mobile
             }),
           });
 
           if (authOptions.ok) {
             const options = await authOptions.json();
             
+            // Frontend always provides the correct RP ID for current domain
+            // Don't rely on backend RP ID since it may not match the actual domain
+            
             // Attempt passkey authentication
-            const credential = await WebAuthnService.authenticateWithPasskey(options);
+            const credential = await WebAuthnService.authenticateWithPasskey({
+              challenge: options.challenge,
+              allowCredentials: options.allowCredentials, // Service will handle ArrayBuffer conversion
+              userVerification: options.userVerification || 'preferred',
+              timeout: options.timeout || (WebAuthnService.isMobileDevice() ? 300000 : 60000), // 5 min mobile, 1 min desktop
+            });
             const credentialJSON = WebAuthnService.credentialToJSON(credential);
 
             // Complete authentication with backend
@@ -185,8 +197,19 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             return;
           }
           
-          // For other errors, show the error message
-          setError(passkeyError.message || 'Passkey authenticatie mislukt');
+          // For mobile devices, provide more specific guidance
+          if (WebAuthnService.isMobileDevice()) {
+            if (passkeyError.name === 'NotAllowedError') {
+              setError('Passkey authenticatie geannuleerd. Probeer opnieuw en gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN.');
+            } else if (passkeyError.message?.includes('timeout')) {
+              setError('Passkey authenticatie time-out. Probeer opnieuw en reageer sneller op de biometrische prompt.');
+            } else {
+              setError(passkeyError.message || 'Passkey authenticatie mislukt op mobiel apparaat');
+            }
+          } else {
+            // For other errors, show the error message
+            setError(passkeyError.message || 'Passkey authenticatie mislukt');
+          }
         }
       } else {
         // WebAuthn not supported
@@ -330,6 +353,16 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     checkAuthState();
   };
 
+  const handleGoogleAuthSuccess = (authData: any) => {
+    setUser(authData);
+    setAuthState('authenticated');
+    setError('');
+  };
+
+  const handleGoogleAuthError = (error: string) => {
+    setError(`Google SSO fout: ${error}`);
+  };
+
   const handleEmailRecovery = () => {
     setAuthState('emailRecovery');
     setError(''); // Clear any existing errors
@@ -377,6 +410,23 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     setAuthState('signIn');
     setError('');
   };
+
+  if (authState === 'debug') {
+    return (
+      <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
+        <VStack spacing={4}>
+          <MobilePasskeyDebug userEmail={signInData.email || newUserEmail} />
+          <Button
+            colorScheme="gray"
+            variant="outline"
+            onClick={() => setAuthState('signIn')}
+          >
+            ← Back to Sign In
+          </Button>
+        </VStack>
+      </Box>
+    );
+  }
 
   if (authState === 'loading') {
     return (
@@ -517,6 +567,20 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                       🔐 Inloggen met Passkey
                     </Button>
 
+                    {/* Divider for alternative login methods */}
+                    <Box width="full" textAlign="center" py={2}>
+                      <Text color="gray.500" fontSize="sm">of</Text>
+                    </Box>
+
+                    {/* Google SSO for Staff */}
+                    <GoogleSignInButton
+                      onError={handleGoogleAuthError}
+                      disabled={loading}
+                    />
+                    <Text color="gray.500" fontSize="xs" textAlign="center">
+                      Google SSO alleen voor H-DCN medewerkers (@h-dcn.nl)
+                    </Text>
+
                     <Button
                       colorScheme="blue"
                       variant="outline"
@@ -566,6 +630,25 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                       isDisabled={loading}
                     >
                       📧 Account Herstellen via Email
+                    </Button>
+
+                    {/* Debug button for mobile issues */}
+                    <Button
+                      colorScheme="red"
+                      variant="outline"
+                      size="sm"
+                      width="full"
+                      type="button"
+                      onClick={() => {
+                        if (signInData.email) {
+                          setAuthState('debug');
+                        } else {
+                          setError('Voer eerst je e-mailadres in voor debug informatie');
+                        }
+                      }}
+                      isDisabled={loading || !signInData.email}
+                    >
+                      🔧 Debug Passkey Problemen
                     </Button>
                   </VStack>
                 </form>

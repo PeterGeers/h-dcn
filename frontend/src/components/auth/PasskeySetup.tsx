@@ -16,6 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { CheckIcon, WarningIcon } from '@chakra-ui/icons';
 import { WebAuthnService } from '../../services/webAuthnService';
+import { getWebAuthnRPID } from '../../utils/webauthnConfig';
 
 interface PasskeySetupProps {
   userEmail: string;
@@ -118,11 +119,13 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
       // Step 2: Create the passkey using WebAuthn
       const credential = await WebAuthnService.registerPasskey({
         challenge: registrationOptions.challenge,
-        rp: {
+        rp: registrationOptions.rp || {
+          // Fallback to client-side RP if server doesn't provide it (for backward compatibility)
           name: 'H-DCN Portal',
-          id: window.location.hostname,
+          id: getWebAuthnRPID(),
         },
-        user: {
+        user: registrationOptions.user || {
+          // Fallback to email if server doesn't provide user info
           id: userEmail,
           name: userEmail,
           displayName: userEmail,
@@ -132,11 +135,11 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
           { type: 'public-key', alg: -257 }, // RS256
         ],
         authenticatorSelection: {
-          authenticatorAttachment: compatibility?.recommendedAttachment || 'platform',
+          authenticatorAttachment: compatibility?.recommendedAttachment || (WebAuthnService.isMobileDevice() ? 'platform' : 'platform'),
           userVerification: 'preferred',
           requireResidentKey: false,
         },
-        timeout: 60000,
+        timeout: WebAuthnService.isMobileDevice() ? 120000 : 60000, // 2 minutes for mobile, 1 minute for desktop
         attestation: 'none',
       });
 

@@ -7,6 +7,7 @@ import { Spinner, Center } from '@chakra-ui/react';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
+import OAuthCallback from './components/auth/OAuthCallback';
 
 interface User {
   attributes?: {
