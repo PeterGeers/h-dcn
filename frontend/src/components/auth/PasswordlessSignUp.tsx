@@ -59,8 +59,8 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
 
       if (response.ok) {
         setMessage(
-          'Account aangemaakt! Controleer je e-mail voor verificatie-instructies. ' +
-          'Na verificatie kun je een passkey instellen voor veilig inloggen.'
+          'Account succesvol aangemaakt! Controleer je e-mail voor verificatie-instructies. ' +
+          'Na e-mailverificatie kun je het "Inloggen" tabblad gebruiken om een passkey in te stellen.'
         );
         if (onSuccess) onSuccess(formData.email);
       } else {
@@ -97,10 +97,10 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
         <Box textAlign="center">
           <Heading color="orange.400" size="md">Account Aanmaken</Heading>
           <Text color="gray.400" mt={2}>
-            Maak een account aan met alleen je e-mailadres. 
+            Maak een nieuw account aan met je voor- en achternaam.
           </Text>
           <Text color="orange.300" mt={1} fontSize="sm">
-            Na registratie ontvang je instructies voor passwordless authenticatie.
+            Na registratie ontvang je een verificatie-e-mail. Daarna kun je inloggen met een passkey.
           </Text>
         </Box>
 
@@ -186,10 +186,10 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
 
         <Box textAlign="center">
           <Text color="gray.400" fontSize="sm">
-            Na registratie ontvang je een verificatie-e-mail met verdere instructies.
+            Na registratie ontvang je een verificatie-e-mail. Gebruik daarna het "Inloggen" tabblad.
           </Text>
           <Text color="orange.300" fontSize="xs" mt={1}>
-            Let op: Backend deployment vereist voor volledige functionaliteit.
+            Heb je al een account? Gebruik het "Inloggen" tabblad.
           </Text>
         </Box>
       </VStack>

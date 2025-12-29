@@ -50,21 +50,26 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         color: 'white',
         border: 'none',
         borderRadius: '8px',
-        fontSize: '16px',
-        fontWeight: '500',
+        fontSize: '15px',
+        fontWeight: '600',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.6 : 1,
         transition: 'all 0.2s ease',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}
       onMouseEnter={(e) => {
         if (!disabled) {
           e.currentTarget.style.backgroundColor = '#3367d6';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
         }
       }}
       onMouseLeave={(e) => {
         if (!disabled) {
           e.currentTarget.style.backgroundColor = '#4285f4';
+          e.currentTarget.style.transform = 'translateY(0px)';
+          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
         }
       }}
     >
@@ -94,7 +99,7 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         />
       </svg>
       
-      <span>Sign in with Google</span>
+      <span>Inloggen met Google</span>
     </button>
   );
 };

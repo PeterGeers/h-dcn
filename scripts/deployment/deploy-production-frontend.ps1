@@ -2,13 +2,20 @@
 # Run this after building your React app
 
 param(
-    [string]$BuildPath = "frontend/build"
+    [string]$BuildPath = $null
 )
 
-$BUCKET_NAME = "de1irtdutlxqu.cloudfront.net"  # Your main CloudFront bucket
-$CLOUDFRONT_DISTRIBUTION_ID = "E1IRTDUTLXQU"  # Your main CloudFront distribution
+$BUCKET_NAME = "testportal-h-dcn-frontend"  # Correct S3 bucket name
+$CLOUDFRONT_DISTRIBUTION_ID = "E2QTMDOE6H0R87"  # Correct CloudFront distribution
 
 Write-Host "Deploying frontend to PRODUCTION environment" -ForegroundColor Green
+
+# Determine build path based on current location
+if (-not $BuildPath) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $rootDir = Split-Path -Parent (Split-Path -Parent $scriptDir)
+    $BuildPath = Join-Path $rootDir "frontend\build"
+}
 
 # Check if build directory exists
 if (-not (Test-Path $BuildPath)) {
@@ -28,4 +35,6 @@ aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID
 
 Write-Host "Deployment complete! Changes will be live in 1-2 minutes." -ForegroundColor Green
 Write-Host ""
-Write-Host "Test your deployment at: https://de1irtdutlxqu.cloudfront.net" -ForegroundColor Cyan
+Write-Host "Test your deployment at:" -ForegroundColor Cyan
+Write-Host "  - https://testportal.h-dcn.nl" -ForegroundColor White
+Write-Host "  - https://de1irtdutlxqu.cloudfront.net" -ForegroundColor White

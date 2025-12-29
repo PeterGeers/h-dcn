@@ -10,17 +10,20 @@ import {
   Alert,
   AlertIcon,
   Heading,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Image
+  Image,
+  IconButton,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverHeader,
+  PopoverBody,
+  HStack
 } from '@chakra-ui/react';
 import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
 import { CrossDeviceAuth } from './CrossDeviceAuth';
-import { EmailRecovery } from './EmailRecovery';
 import { MobilePasskeyDebug } from './MobilePasskeyDebug';
 import GoogleSignInButton from './GoogleSignInButton';
 import { WebAuthnService } from '../../services/webAuthnService';
@@ -32,11 +35,12 @@ interface CustomAuthenticatorProps {
 
 export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const [user, setUser] = useState<any>(null);
-  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'crossDevice' | 'emailRecovery' | 'debug' | 'authenticated'>('loading');
+  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'crossDevice' | 'debug' | 'authenticated'>('loading');
   const [signInData, setSignInData] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
   // Check if current route should bypass authentication
   const shouldBypassAuth = () => {
@@ -211,12 +215,21 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
               throw new Error(errorData.message || 'Passkey authentication failed');
             }
           } else {
-            // User doesn't have a passkey registered, offer to set one up
+            // User doesn't have a passkey registered, check if user exists
             const errorData = await authOptions.json();
             if (errorData.code === 'NO_PASSKEY_REGISTERED') {
-              setNewUserEmail(signInData.email);
-              setAuthState('passkeySetup');
-              return;
+              // Check if this is a completely new user (no account) vs existing user without passkey
+              if (errorData.userExists === false) {
+                // New user - show registration form inline
+                setShowRegistrationForm(true);
+                setError('');
+                return;
+              } else {
+                // Existing user without passkey - can proceed to passkey setup
+                setNewUserEmail(signInData.email);
+                setAuthState('passkeySetup');
+                return;
+              }
             } else {
               throw new Error(errorData.message || 'Failed to initiate passkey authentication');
             }
@@ -226,7 +239,36 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           
           // Check if this is a "no passkey" error
           if (passkeyError.name === 'NotAllowedError' || passkeyError.message?.includes('no credentials')) {
-            // User might not have a passkey set up, offer to create one
+            // This could be a new user or existing user without passkey
+            // Try to check user existence via a separate API call
+            try {
+              const userCheckResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/user/exists`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: signInData.email }),
+              });
+              
+              if (userCheckResponse.ok) {
+                const userCheckData = await userCheckResponse.json();
+                if (userCheckData.exists === false) {
+                  // New user - show registration form inline
+                  setShowRegistrationForm(true);
+                  setError('');
+                  return;
+                } else {
+                  // Existing user without passkey - can proceed to setup
+                  setNewUserEmail(signInData.email);
+                  setAuthState('passkeySetup');
+                  return;
+                }
+              }
+            } catch (userCheckError) {
+              console.log('User existence check failed, proceeding with passkey setup');
+            }
+            
+            // Fallback: assume existing user and offer passkey setup
             setNewUserEmail(signInData.email);
             setAuthState('passkeySetup');
             return;
@@ -289,8 +331,15 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleSignUpSuccess = (email: string) => {
     setNewUserEmail(email);
-    // After successful signup, user needs to verify email and set up passkey
-    setAuthState('signIn'); // Stay on sign in to show success message
+    // After successful signup, return to login interface
+    setShowRegistrationForm(false);
+    setError(''); // Clear any errors
+    // The PasswordlessSignUp component will show its own success message
+  };
+
+  const handleRegistrationCancel = () => {
+    setShowRegistrationForm(false);
+    setError(''); // Clear any errors
   };
 
   const handlePasskeySetupSuccess = (authData?: any) => {
@@ -406,54 +455,6 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     setError(`Google SSO fout: ${error}`);
   };
 
-  const handleEmailRecovery = () => {
-    setAuthState('emailRecovery');
-    setError(''); // Clear any existing errors
-  };
-
-  const handleEmailRecoverySuccess = (authData: any) => {
-    // After successful recovery, set user with tokens
-    if (authData.authenticationResult && authData.authenticationResult.AccessToken) {
-      const tokens = authData.authenticationResult;
-      const user = {
-        username: authData.user?.email || '',
-        attributes: {
-          email: authData.user?.email || '',
-          given_name: authData.user?.given_name || '',
-          family_name: authData.user?.family_name || ''
-        },
-        signInUserSession: {
-          accessToken: {
-            jwtToken: tokens.AccessToken,
-            payload: tokens.AccessTokenPayload || {}
-          },
-          idToken: {
-            jwtToken: tokens.IdToken,
-            payload: tokens.IdTokenPayload || {}
-          },
-          refreshToken: {
-            token: tokens.RefreshToken
-          }
-        }
-      };
-      
-      // Store authentication data
-      localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
-      
-      setUser(user);
-      setAuthState('authenticated');
-    } else {
-      setError('Recovery successful but no tokens received');
-    }
-    setError(''); // Clear any errors
-  };
-
-  const handleEmailRecoveryCancel = () => {
-    setAuthState('signIn');
-    setError('');
-  };
-
   if (authState === 'debug') {
     return (
       <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
@@ -520,206 +521,243 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     );
   }
 
-  if (authState === 'emailRecovery') {
-    return (
-      <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
-        <EmailRecovery
-          onSuccess={handleEmailRecoverySuccess}
-          onCancel={handleEmailRecoveryCancel}
-          onError={(error) => {
-            console.error('Email recovery error:', error);
-            setError(error);
-          }}
-        />
-      </Box>
-    );
-  }
-
   return (
     <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
       <Box maxW="md" w="full" p={6}>
         <Box textAlign="center" mb={8}>
           <Image 
-            src="/hdcn-logo.svg" 
+            src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png" 
             alt="H-DCN Logo" 
             mx="auto" 
             mb={4}
-            maxW="200px"
+            maxW="100px"
+            maxH="100px"
+            objectFit="contain"
+            borderRadius="lg"
+            shadow="md"
           />
-          <Heading color="orange.400" size="lg">H-DCN Portal</Heading>
-          <Text color="gray.400" mt={2}>Welkom bij het H-DCN Dashboard</Text>
+          <Text color="gray.400" fontSize="12px">Welkom bij het H-DCN Portaal</Text>
         </Box>
 
-        <Tabs variant="enclosed" colorScheme="orange">
-          <TabList>
-            <Tab color="gray.400" _selected={{ color: 'orange.400', bg: 'gray.800' }}>
-              Inloggen
-            </Tab>
-            <Tab color="gray.400" _selected={{ color: 'orange.400', bg: 'gray.800' }}>
-              Registreren
-            </Tab>
-          </TabList>
-
-          <TabPanels>
-            <TabPanel>
-              <VStack spacing={6}>
-                <Box textAlign="center">
-                  <Heading color="orange.400" size="md">Inloggen</Heading>
-                  <Text color="gray.400" mt={2}>
-                    Veilig inloggen met passkey authenticatie
-                  </Text>
-                  <Text color="orange.300" mt={2} fontSize="sm">
-                    Gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN om in te loggen
-                  </Text>
-                </Box>
-
-                {error && (
-                  <Alert status="error" bg="red.900" borderColor="red.500" border="1px solid">
-                    <AlertIcon color="red.300" />
-                    <Text color="red.100">{error}</Text>
-                  </Alert>
-                )}
-
-                <form onSubmit={handleSignIn} style={{ width: '100%' }}>
-                  <VStack spacing={4}>
-                    <FormControl isRequired>
-                      <FormLabel color="gray.300">E-mailadres</FormLabel>
-                      <Input
-                        type="email"
-                        name="email"
-                        value={signInData.email}
-                        onChange={handleInputChange}
-                        placeholder="Voer je e-mailadres in"
-                        bg="gray.700"
-                        border="1px solid"
-                        borderColor="gray.600"
-                        color="white"
-                        _placeholder={{ color: 'gray.400' }}
-                        _focus={{ borderColor: 'orange.400' }}
-                      />
-                    </FormControl>
-
-                    <Button
-                      type="submit"
-                      colorScheme="orange"
-                      size="lg"
-                      width="full"
-                      isLoading={loading}
-                      loadingText="Inloggen..."
-                    >
-                      🔐 Inloggen met Passkey
-                    </Button>
-
-                    {/* Divider for alternative login methods */}
-                    <Box width="full" textAlign="center" py={2}>
-                      <Text color="gray.500" fontSize="sm">of</Text>
-                    </Box>
-
-                    {/* Google SSO for Staff */}
-                    <GoogleSignInButton
-                      onError={handleGoogleAuthError}
-                      disabled={loading}
+        {/* Single Interface - No Tabs */}
+        <Box>
+          <HStack justify="space-between" align="center" mb={4}>
+            <Heading color="orange.400" size="lg">
+              {showRegistrationForm ? 'Account Aanmaken' : 'Inloggen'}
+            </Heading>
+            
+            <Popover placement="bottom-end">
+              <PopoverTrigger>
+                <IconButton
+                  aria-label="Authenticatie informatie"
+                  icon={
+                    <Image 
+                      src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/info-icon-orange.svg"
+                      alt="Info"
+                      w="20px"
+                      h="20px"
                     />
-                    <Text color="gray.500" fontSize="xs" textAlign="center">
-                      Google SSO alleen voor H-DCN medewerkers (@h-dcn.nl)
-                    </Text>
-
-                    <Button
-                      colorScheme="blue"
-                      variant="outline"
-                      size="lg"
-                      width="full"
-                      type="button"
-                      onClick={() => {
-                        if (signInData.email) {
-                          setNewUserEmail(signInData.email);
-                          setAuthState('passkeySetup');
-                        } else {
-                          setError('Voer eerst je e-mailadres in');
-                        }
-                      }}
-                      isDisabled={loading || !signInData.email}
-                    >
-                      Passkey Instellen
-                    </Button>
-
-                    {WebAuthnService.shouldOfferCrossDeviceAuth() && (
-                      <Button
-                        colorScheme="purple"
-                        variant="outline"
-                        size="lg"
-                        width="full"
-                        type="button"
-                        onClick={() => {
-                          if (signInData.email) {
-                            handleCrossDeviceAuth();
-                          } else {
-                            setError('Voer eerst je e-mailadres in');
-                          }
-                        }}
-                        isDisabled={loading || !signInData.email}
-                      >
-                        Cross-Device Authenticatie
-                      </Button>
-                    )}
-
-                    <Button
-                      colorScheme="gray"
-                      variant="outline"
-                      size="lg"
-                      width="full"
-                      type="button"
-                      onClick={handleEmailRecovery}
-                      isDisabled={loading}
-                    >
-                      📧 Account Herstellen via Email
-                    </Button>
-
-                    {/* Debug button for mobile issues */}
-                    <Button
-                      colorScheme="red"
-                      variant="outline"
-                      size="sm"
-                      width="full"
-                      type="button"
-                      onClick={() => {
-                        if (signInData.email) {
-                          setAuthState('debug');
-                        } else {
-                          setError('Voer eerst je e-mailadres in voor debug informatie');
-                        }
-                      }}
-                      isDisabled={loading || !signInData.email}
-                    >
-                      🔧 Debug Passkey Problemen
-                    </Button>
+                  }
+                  size="md"
+                  variant="ghost"
+                  _hover={{ bg: 'gray.800', transform: 'scale(1.1)' }}
+                  transition="all 0.2s"
+                />
+              </PopoverTrigger>
+              <PopoverContent bg="gray.800" borderColor="gray.600" maxW="320px">
+                <PopoverArrow bg="gray.800" />
+                <PopoverCloseButton color="gray.400" />
+                <PopoverHeader color="orange.400" fontWeight="bold" fontSize="sm">
+                  Authenticatie Informatie
+                </PopoverHeader>
+                <PopoverBody>
+                  <VStack align="start" spacing={3}>
+                    <Box>
+                      <Text color="gray.300" fontSize="sm" fontWeight="medium">
+                        Inloggen kan met je e-mailadres
+                      </Text>
+                      <Text color="gray.400" fontSize="xs">
+                        Voer je e-mailadres in en kies je voorkeursmanier van inloggen
+                      </Text>
+                    </Box>
+                    
+                    <Box>
+                      <Text color="gray.300" fontSize="sm" fontWeight="medium">
+                        🔐 Passkey (aanbevolen)
+                      </Text>
+                      <Text color="gray.400" fontSize="xs">
+                        Veilig inloggen met vingerafdruk, gezichtsherkenning, of apparaat-PIN
+                      </Text>
+                    </Box>
+                    
+                    <Box>
+                      <Text color="gray.300" fontSize="sm" fontWeight="medium">
+                        🌐 Google Account
+                      </Text>
+                      <Text color="gray.400" fontSize="xs">
+                        Gebruik je bestaande Google account om snel in te loggen
+                      </Text>
+                    </Box>
+                    
+                    <Box>
+                      <Text color="gray.300" fontSize="sm" fontWeight="medium">
+                        ✨ Nieuwe gebruiker?
+                      </Text>
+                      <Text color="gray.400" fontSize="xs">
+                        Het systeem detecteert automatisch of je een nieuw account nodig hebt
+                      </Text>
+                    </Box>
+                    
+                    <Box>
+                      <Text color="gray.300" fontSize="sm" fontWeight="medium">
+                        🔧 Problemen?
+                      </Text>
+                      <Text color="gray.400" fontSize="xs">
+                        Stel een nieuwe passkey in of probeer Google inloggen
+                      </Text>
+                    </Box>
                   </VStack>
-                </form>
+                </PopoverBody>
+              </PopoverContent>
+            </Popover>
+          </HStack>
 
-                <Box textAlign="center">
-                  <Text color="gray.400" fontSize="sm">
-                    Geen account? Gebruik het "Registreren" tabblad om een account aan te maken.
-                  </Text>
-                  <Text color="orange.300" fontSize="sm" mt={2}>
-                    Problemen met inloggen? Gebruik "Account Herstellen via Email" hierboven.
-                  </Text>
-                </Box>
-              </VStack>
-            </TabPanel>
-
-            <TabPanel>
+          {/* Conditional Content */}
+          {showRegistrationForm ? (
+            <VStack spacing={6}>
               <PasswordlessSignUp 
-                onSuccess={(email) => {
-                  // Show success message and guide user to verify email
-                  setNewUserEmail(email);
-                }}
+                onSuccess={handleSignUpSuccess}
                 onError={(error) => {
                   console.error('Sign up error:', error);
                 }}
               />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+              <Button
+                variant="ghost"
+                colorScheme="gray"
+                size="sm"
+                onClick={handleRegistrationCancel}
+              >
+                ← Terug naar inloggen
+              </Button>
+            </VStack>
+          ) : (
+            <VStack spacing={6}>
+              {error && (
+                <Alert status="error" bg="red.900" borderColor="red.500" border="1px solid">
+                  <AlertIcon color="red.300" />
+                  <Text color="red.100">{error}</Text>
+                </Alert>
+              )}
+
+              <form onSubmit={handleSignIn} style={{ width: '100%' }}>
+                <VStack spacing={4}>
+                  <FormControl isRequired>
+                    <Input
+                      type="email"
+                      name="email"
+                      value={signInData.email}
+                      onChange={handleInputChange}
+                      placeholder="Voer je e-mailadres in"
+                      bg="gray.700"
+                      border="1px solid"
+                      borderColor="gray.600"
+                      color="white"
+                      _placeholder={{ color: 'gray.400' }}
+                      _focus={{ borderColor: 'orange.400' }}
+                    />
+                  </FormControl>
+
+                  <Button
+                    type="submit"
+                    colorScheme="orange"
+                    size="lg"
+                    width="full"
+                    isLoading={loading}
+                    loadingText="Inloggen..."
+                    leftIcon={<span>🔐</span>}
+                    _hover={{ bg: 'orange.500', transform: 'translateY(-1px)' }}
+                    _active={{ transform: 'translateY(0px)' }}
+                    transition="all 0.2s"
+                    fontWeight="bold"
+                    fontSize="md"
+                  >
+                    Inloggen met Passkey
+                  </Button>
+
+                  {/* Divider */}
+                  <Box width="full" textAlign="center" py={3}>
+                    <Text color="gray.500" fontSize="sm" fontWeight="medium">
+                      of gebruik
+                    </Text>
+                  </Box>
+
+                  {/* Google SSO */}
+                  <GoogleSignInButton
+                    onError={handleGoogleAuthError}
+                    disabled={loading}
+                  />
+
+                  {/* Alternative Options */}
+
+                  {/* Advanced Options - Only show if email is entered */}
+                  {signInData.email && (
+                    <Box width="full" pt={4} borderTop="1px solid" borderColor="gray.700">
+                      <Text color="gray.500" fontSize="xs" textAlign="center" mb={3}>
+                        Geavanceerde opties
+                      </Text>
+                      
+                      <VStack spacing={2}>
+                        <Button
+                          colorScheme="blue"
+                          variant="ghost"
+                          size="sm"
+                          width="full"
+                          type="button"
+                          onClick={() => {
+                            setNewUserEmail(signInData.email);
+                            setAuthState('passkeySetup');
+                          }}
+                          isDisabled={loading}
+                        >
+                          Nieuwe Passkey Instellen
+                        </Button>
+
+                        {WebAuthnService.shouldOfferCrossDeviceAuth() && (
+                          <Button
+                            colorScheme="purple"
+                            variant="ghost"
+                            size="sm"
+                            width="full"
+                            type="button"
+                            onClick={handleCrossDeviceAuth}
+                            isDisabled={loading}
+                          >
+                            Cross-Device Authenticatie
+                          </Button>
+                        )}
+
+                        {/* Debug button - only show in development or for staff */}
+                        {(process.env.NODE_ENV === 'development' || signInData.email.includes('@h-dcn.nl')) && (
+                          <Button
+                            colorScheme="red"
+                            variant="ghost"
+                            size="xs"
+                            width="full"
+                            type="button"
+                            onClick={() => setAuthState('debug')}
+                            isDisabled={loading}
+                          >
+                            🔧 Debug Passkey Problemen
+                          </Button>
+                        )}
+                      </VStack>
+                    </Box>
+                  )}
+                </VStack>
+              </form>
+            </VStack>
+          )}
+        </Box>
       </Box>
     </Box>
   );
