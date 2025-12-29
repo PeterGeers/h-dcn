@@ -46,9 +46,7 @@ export class GoogleAuthService {
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
       scope: 'openid email profile',
-      identity_provider: 'Google',
-      // Force Google login (skip Cognito UI)
-      idp_identifier: 'Google'
+      identity_provider: 'Google'
     });
 
     const authUrl = `https://${this.config.domain}/oauth2/authorize?${params.toString()}`;
@@ -60,6 +58,7 @@ export class GoogleAuthService {
    */
   async handleCallback(code: string): Promise<GoogleAuthResult> {
     try {
+      // Use Cognito token endpoint with proper parameters
       const tokenResponse = await fetch(`https://${this.config.domain}/oauth2/token`, {
         method: 'POST',
         headers: {
@@ -74,7 +73,9 @@ export class GoogleAuthService {
       });
 
       if (!tokenResponse.ok) {
-        throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+        const errorText = await tokenResponse.text();
+        console.error('Token exchange error:', errorText);
+        throw new Error(`Token exchange failed: ${tokenResponse.status} - ${errorText}`);
       }
 
       const tokens = await tokenResponse.json();

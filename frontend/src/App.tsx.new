@@ -125,7 +125,7 @@ function App() {
               <OAuthCallback 
                 onAuthSuccess={(authUser) => {
                   console.log('✅ OAuth authentication successful:', authUser);
-                  // The component will handle navigation to main app
+                  // The component will handle navigation
                 }}
                 onAuthError={(error) => {
                   console.error('❌ OAuth authentication failed:', error);

@@ -237,6 +237,10 @@ def lambda_handler(event, context):
         elif path == '/cognito/pool':
             return get_pool_info(headers)
             
+        elif path == '/auth/verify-user':
+            if method == 'POST':
+                return verify_user_exists(event, headers)
+                
         elif path == '/auth/signup' or path == '/cognito/auth/signup':
             print(f"Matched auth/signup route with method: {method}")
             if method == 'POST':
@@ -350,6 +354,63 @@ def get_users(headers):
         'headers': headers,
         'body': json.dumps(all_users, default=str)
     }
+
+def verify_user_exists(event, headers):
+    """
+    Verify if a user exists in the Cognito User Pool by email
+    """
+    try:
+        body = json.loads(event['body'])
+        email = body.get('email')
+        
+        if not email:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Email is required'})
+            }
+        
+        # Search for user by email
+        response = cognito_client.list_users(
+            UserPoolId=USER_POOL_ID,
+            Filter=f'email = "{email}"',
+            Limit=1
+        )
+        
+        users = response.get('Users', [])
+        
+        if not users:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'User not found in H-DCN system'})
+            }
+        
+        user = users[0]
+        
+        # Return basic user info
+        user_info = {
+            'username': user['Username'],
+            'email': email,
+            'userStatus': user['UserStatus'],
+            'enabled': user['Enabled'],
+            'userCreateDate': user['UserCreateDate'],
+            'userLastModifiedDate': user['UserLastModifiedDate']
+        }
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps(user_info, default=str)
+        }
+        
+    except Exception as e:
+        print(f"Error verifying user: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': 'Internal server error'})
+        }
 
 def create_user(event, headers):
     """

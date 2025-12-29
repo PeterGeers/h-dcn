@@ -128,6 +128,13 @@ venv.bak/
 *.md
 config.md
 
+# Secrets and credentials (NEVER commit these!)
+.secrets
+*.secrets
+.credentials
+*.credentials
+.env.secrets
+
 # Test passwd keys
 test_lambda_role_assignment
 test_member_admin_login

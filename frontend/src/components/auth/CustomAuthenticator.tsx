@@ -38,42 +38,77 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const [error, setError] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
 
+  // Check if current route should bypass authentication
+  const shouldBypassAuth = () => {
+    const path = window.location.pathname;
+    const bypassRoutes = ['/auth/callback', '/test-route'];
+    return bypassRoutes.includes(path);
+  };
+
   useEffect(() => {
+    // If route should bypass auth, skip auth check
+    if (shouldBypassAuth()) {
+      setAuthState('authenticated');
+      setUser({ bypass: true }); // Dummy user for bypass routes
+      return;
+    }
+    
     checkAuthState();
   }, []);
 
   const checkAuthState = async () => {
     try {
+      console.log('🔥 checkAuthState - Starting auth check');
+      
       // Check if we have stored authentication tokens
       const storedUser = localStorage.getItem('hdcn_auth_user');
       const storedTokens = localStorage.getItem('hdcn_auth_tokens');
       
+      console.log('🔥 checkAuthState - Stored user exists:', !!storedUser);
+      console.log('🔥 checkAuthState - Stored tokens exist:', !!storedTokens);
+      
       if (storedUser && storedTokens) {
         const user = JSON.parse(storedUser);
         const tokens = JSON.parse(storedTokens);
+        
+        console.log('🔥 checkAuthState - Parsed user:', user);
+        console.log('🔥 checkAuthState - User groups:', user?.signInUserSession?.accessToken?.payload?.['cognito:groups']);
         
         // Verify token is still valid by checking expiration
         if (tokens.AccessTokenPayload && tokens.AccessTokenPayload.exp) {
           const expirationTime = tokens.AccessTokenPayload.exp * 1000; // Convert to milliseconds
           const currentTime = Date.now();
           
+          console.log('🔥 checkAuthState - Token expires at:', new Date(expirationTime));
+          console.log('🔥 checkAuthState - Current time:', new Date(currentTime));
+          console.log('🔥 checkAuthState - Token valid:', currentTime < expirationTime);
+          
           if (currentTime < expirationTime) {
             // Token is still valid
+            console.log('✅ checkAuthState - Setting user as authenticated');
             setUser(user);
             setAuthState('authenticated');
             return;
           } else {
             // Token expired, clear storage
+            console.log('❌ checkAuthState - Token expired, clearing storage');
             localStorage.removeItem('hdcn_auth_user');
             localStorage.removeItem('hdcn_auth_tokens');
           }
+        } else {
+          // No expiration info, assume token is valid (OAuth tokens might not have exp in payload)
+          console.log('✅ checkAuthState - No expiration check, assuming valid');
+          setUser(user);
+          setAuthState('authenticated');
+          return;
         }
       }
       
       // No valid authentication found
+      console.log('❌ checkAuthState - No valid auth found, showing sign in');
       setAuthState('signIn');
     } catch (err) {
-      console.error('Error checking auth state:', err);
+      console.error('❌ checkAuthState - Error:', err);
       // Clear any corrupted data
       localStorage.removeItem('hdcn_auth_user');
       localStorage.removeItem('hdcn_auth_tokens');
@@ -354,9 +389,17 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   };
 
   const handleGoogleAuthSuccess = (authData: any) => {
+    console.log('🔥 handleGoogleAuthSuccess called with:', authData);
+    console.log('🔥 Auth data groups:', authData?.signInUserSession?.accessToken?.payload?.['cognito:groups']);
     setUser(authData);
     setAuthState('authenticated');
     setError('');
+    
+    // Force re-render by clearing and setting user again
+    setTimeout(() => {
+      console.log('🔥 Setting user state again to force re-render');
+      setUser(authData);
+    }, 100);
   };
 
   const handleGoogleAuthError = (error: string) => {

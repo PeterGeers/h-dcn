@@ -14,8 +14,19 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 }) => {
   const handleGoogleSignIn = () => {
     try {
-      const googleAuth = createGoogleAuthService();
-      googleAuth.initiateGoogleLogin();
+      // Direct redirect to Cognito Hosted UI with Google provider
+      const params = new URLSearchParams({
+        response_type: 'code',  // Use authorization_code flow (more secure)
+        client_id: '6unl8mg5tbv5r727vc39d847vn',  // Correct Client ID
+        redirect_uri: `${window.location.origin}/auth/callback`,
+        scope: 'openid email profile',
+        identity_provider: 'Google'
+      });
+
+      const cognitoDomain = 'h-dcn-auth-344561557829.auth.eu-west-1.amazoncognito.com';
+      const authUrl = `https://${cognitoDomain}/oauth2/authorize?${params.toString()}`;
+      
+      window.location.href = authUrl;
     } catch (error) {
       console.error('Google Sign-In error:', error);
       onError?.(error instanceof Error ? error.message : 'Failed to initiate Google Sign-In');

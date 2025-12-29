@@ -210,6 +210,7 @@ Resources:
       LambdaConfig:
         CustomMessage: !GetAtt CognitoCustomMessageFunction.Arn
         PostConfirmation: !GetAtt CognitoPostConfirmationFunction.Arn
+        PostAuthentication: !GetAtt CognitoPostAuthenticationFunction.Arn
       # Require email verification before updates
       UserAttributeUpdateSettings:
         AttributesRequireVerificationBeforeUpdate:
@@ -280,7 +281,7 @@ Resources:
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
       ClientName: H-DCN-Web-Client
-      GenerateSecret: false
+      GenerateSecret: false  # Keep false for public client
       # Configure AuthFlows for passwordless authentication
       ExplicitAuthFlows:
         - ALLOW_USER_AUTH          # Choice-based auth for passwordless authentication
@@ -320,7 +321,7 @@ Resources:
       PreventUserExistenceErrors: ENABLED
       # OAuth configuration for Google SSO
       AllowedOAuthFlows:
-        - code
+        - implicit  # Use implicit flow for public client (no secret needed)
       AllowedOAuthScopes:
         - openid
         - email
@@ -329,11 +330,11 @@ Resources:
       # Enable callback URLs for authentication flows
       CallbackURLs:
         - http://localhost:3000/auth/callback
-        - https://portal.h-dcn.nl/auth/callback
+        - https://testportal.h-dcn.nl/auth/callback
         - https://de1irtdutlxqu.cloudfront.net/auth/callback
       LogoutURLs:
         - http://localhost:3000/auth/logout
-        - https://portal.h-dcn.nl/auth/logout
+        - https://testportal.h-dcn.nl/auth/logout
         - https://de1irtdutlxqu.cloudfront.net/auth/logout
 
   # Cognito User Pool Domain (for hosted UI if needed)
@@ -499,6 +500,24 @@ Resources:
           ORGANIZATION_WEBSITE: !Ref OrganizationWebsite
           ORGANIZATION_EMAIL: !Ref OrganizationEmail
           ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+
+  # Lambda function for post-authentication actions (handles Google SSO role assignment)
+  CognitoPostAuthenticationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/cognito_post_authentication
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt CognitoLambdaRole.Arn
+      Environment:
+        Variables:
+          DEFAULT_MEMBER_GROUP: hdcnLeden
+          ORGANIZATION_NAME: !Ref OrganizationName
+          ORGANIZATION_WEBSITE: !Ref OrganizationWebsite
+          ORGANIZATION_EMAIL: !Ref OrganizationEmail
+          ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
+          MEMBERS_TABLE_NAME: !Ref MembersTable
 
   # IAM Role for Cognito Lambda triggers
   CognitoLambdaRole:
@@ -567,13 +586,21 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: cognito-idp.amazonaws.com
       SourceArn: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}"
+
+  CognitoPostAuthenticationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CognitoPostAuthenticationFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${HDCNCognitoUserPool}"
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with'"
         AllowOrigin: "'*'"
 
   # IAM Role for DynamoDB access (updated for GSI)
