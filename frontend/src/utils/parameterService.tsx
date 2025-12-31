@@ -67,8 +67,6 @@ export const getParameters = async (): Promise<Parameters> => {
     // Force refresh to ensure we get latest data
     await parameterStore.refresh();
     const params = await parameterStore.getParameters();
-    console.log('🔍 parameterService.getParameters result:', Object.keys(params));
-    console.log('🔍 Function_permissions in params:', params.Function_permissions);
     return params;
   } catch (error) {
     console.error('Error loading parameters:', error);

@@ -77,28 +77,31 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
         setProducts(res.data || []);
       })
       .catch((error: any) => {
-        console.error('Error loading products:', error);
+        alert('Fout bij laden producten: ' + (error.response?.data?.error || error.message));
         setProducts([]);
       });
   }, []);
 
   const handleSave = (data: Product) => {
-    console.log('Saving product data:', data);
+    // Remove fields that should be managed by the backend
+    const { updated_at, created_at, ...cleanData } = data as any;
+    
     const processedData = {
-      ...data,
-      prijs: data.prijs ? data.prijs.toString() : data.prijs
+      ...cleanData,
+      prijs: cleanData.prijs ? cleanData.prijs.toString() : cleanData.prijs
     };
+    
     if (data.id) {
       updateProduct(data.id, processedData)
         .then(() => refresh())
         .catch((error: any) => {
-          console.error('Update error:', error.response?.data || error.message);
+          alert('Fout bij opslaan product: ' + (error.response?.data?.error || error.message));
         });
     } else {
       insertProduct(processedData)
         .then(() => refresh())
         .catch((error: any) => {
-          console.error('Insert error:', error.response?.data || error.message);
+          alert('Fout bij aanmaken product: ' + (error.response?.data?.error || error.message));
         });
     }
   };
@@ -161,7 +164,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
                 onClick={() => {
                   // Bulk product operations
                   const activeProducts = products.filter(p => p.price > 0);
-                  console.log(`🛍️ ${activeProducts.length} actieve producten gevonden`);
+                  alert(`🛍️ ${activeProducts.length} actieve producten gevonden`);
                 }}
               >
                 📦 Bulk Product Beheer
@@ -171,7 +174,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
                 colorScheme="blue"
                 onClick={() => {
                   // Inventory management
-                  console.log('📊 Voorraad beheer functionaliteit');
+                  alert('📊 Voorraad beheer functionaliteit - nog niet geïmplementeerd');
                 }}
               >
                 📊 Voorraad Beheer
@@ -186,7 +189,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
                     categorieën: [...new Set(products.map(p => p.groep))].length,
                     gemiddeldePrijs: products.reduce((sum, p) => sum + (p.price || 0), 0) / products.length
                   };
-                  console.log('📈 Product statistieken:', productStats);
+                  alert(`📈 Product statistieken:\nTotaal: ${productStats.totaal}\nCategorieën: ${productStats.categorieën}\nGemiddelde prijs: €${productStats.gemiddeldePrijs.toFixed(2)}`);
                 }}
               >
                 📈 Product Analytics

@@ -32,7 +32,6 @@ function Dashboard({ user }: DashboardProps) {
     const init = async () => {
       try {
         await initializeFunctionPermissions();
-        console.log('✅ Function permissions initialized');
       } catch (error) {
         console.error('❌ Failed to initialize function permissions:', error);
       }

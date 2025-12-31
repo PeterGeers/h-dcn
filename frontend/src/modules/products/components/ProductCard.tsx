@@ -40,11 +40,15 @@ interface GroupItemProps {
 }
 
 const schema = Yup.object().shape({
-  id: Yup.string().required(),
-  naam: Yup.string().required(),
-  groep: Yup.string().required(),
-  subgroep: Yup.string().required(),
-  prijs: Yup.number().required().min(0),
+  id: Yup.string().required('Product ID is verplicht'),
+  naam: Yup.string().required('Productnaam is verplicht'),
+  groep: Yup.string().required('Productgroep is verplicht'),
+  subgroep: Yup.string().when('groep', {
+    is: (groep: string) => groep && groep.length > 0,
+    then: (schema) => schema.notRequired(), // Subgroep is optional if groep is selected
+    otherwise: (schema) => schema.notRequired()
+  }),
+  prijs: Yup.number().required('Prijs is verplicht').min(0, 'Prijs moet 0 of hoger zijn'),
   opties: Yup.string().test('opties-validation', 'Opties moet leeg zijn of minimaal 2 waarden bevatten gescheiden door komma\'s', function(value) {
     if (!value || value.trim() === '') return true;
     const parts = value.split(',').map(part => part.trim()).filter(part => part.length > 0);
@@ -59,15 +63,16 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
 
   useEffect(() => {
-    // Load product categories from static JSON file instead of API
+    // Load product categories from S3 bucket parameters
     const loadCategories = async () => {
       try {
-        const version = process.env.REACT_APP_CACHE_VERSION || '1.0';
-        const response = await fetch(`/parameters.json?v=${version}`);
+        const s3Url = 'https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/parameters.json';
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${s3Url}?t=${timestamp}`);
         
         if (response.ok) {
           const parameters = await response.json();
-          // Use productgroepen from JSON or create a simple structure
+          // Use productgroepen from S3 parameters
           const productGroups = parameters.productgroepen || {};
           setCategoryStructure(productGroups);
         } else {
@@ -81,7 +86,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     };
     
     loadCategories();
-  }, [products]);
+  }, []);
 
   useEffect(() => {
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
@@ -90,6 +95,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const CategorySelector = ({ setFieldValue }: CategorySelectorProps) => {
     const GroupItem = ({ groupName, groupData }: GroupItemProps) => {
       const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: selectedCategory.groep === groupName });
+      const hasChildren = groupData.children && Object.keys(groupData.children).length > 0;
       
       return (
         <Box>
@@ -99,26 +105,37 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
             width="full"
             size="sm"
             fontSize="md"
-            py={1}
-            leftIcon={groupData.children ? (isOpen ? <ChevronDownIcon /> : <ChevronRight />) : undefined}
-            onClick={onToggle}
+            py={2}
+            leftIcon={hasChildren ? (isOpen ? <ChevronDownIcon /> : <ChevronRight />) : undefined}
+            onClick={() => {
+              if (hasChildren) {
+                onToggle();
+              } else if (!readOnly) {
+                // If no children, select this as both groep and subgroep
+                setSelectedCategory({ groep: groupName, subgroep: '' });
+                setFieldValue('groep', groupName);
+                setFieldValue('subgroep', '');
+              }
+            }}
             bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.200' : 'transparent'}
             _hover={{ bg: readOnly ? 'transparent' : 'orange.100' }}
             isDisabled={readOnly}
+            fontWeight={selectedCategory.groep === groupName ? 'bold' : 'normal'}
           >
             {groupName}
+            {!hasChildren && <Text fontSize="xs" color="gray.500" ml={2}>(geen subgroepen)</Text>}
           </Button>
           
-          {groupData.children && (
+          {hasChildren && (
             <Collapse in={isOpen}>
-              <VStack align="stretch" pl={4} spacing={0}>
-                {Object.keys(groupData.children).map(subgroup => (
+              <VStack align="stretch" pl={6} spacing={1} mt={1}>
+                {Object.entries(groupData.children).map(([subgroup, subgroupData]) => (
                   <Button
                     key={subgroup}
                     variant="ghost"
                     size="sm"
-                    fontSize="md"
-                    py={1}
+                    fontSize="sm"
+                    py={2}
                     justifyContent="flex-start"
                     onClick={() => {
                       if (!readOnly) {
@@ -130,8 +147,13 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.300' : 'transparent'}
                     _hover={{ bg: readOnly ? 'transparent' : 'orange.200' }}
                     isDisabled={readOnly}
+                    fontWeight={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'bold' : 'normal'}
+                    borderLeft="2px solid"
+                    borderColor="orange.200"
+                    borderRadius="0"
+                    ml={2}
                   >
-                    {subgroup}
+                    📁 {subgroup}
                   </Button>
                 ))}
               </VStack>
@@ -142,14 +164,39 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     };
 
     return (
-      <Box p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="200px" overflowY="auto">
-        <Text fontSize="md" fontWeight="bold" mb={1} color="gray.700">
-          {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer categorie:'}
+      <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="250px" overflowY="auto">
+        <Text fontSize="md" fontWeight="bold" mb={2} color="gray.700">
+          {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer Categorie:'}
         </Text>
-        <VStack align="stretch" spacing={0}>
-          {Object.keys(categoryStructure).map(groupName => (
-            <GroupItem key={groupName} groupName={groupName} groupData={categoryStructure[groupName]} />
-          ))}
+        
+        {/* Show current selection clearly */}
+        {selectedCategory.groep && (
+          <Box mb={3} p={2} bg="orange.100" borderRadius="md" border="1px solid" borderColor="orange.300">
+            <Text fontSize="sm" fontWeight="bold" color="orange.800">
+              Geselecteerd:
+            </Text>
+            <Text fontSize="sm" color="orange.700">
+              📂 <strong>{selectedCategory.groep}</strong>
+              {selectedCategory.subgroep && (
+                <>
+                  <br />
+                  📁 <strong>{selectedCategory.subgroep}</strong>
+                </>
+              )}
+            </Text>
+          </Box>
+        )}
+        
+        <VStack align="stretch" spacing={1}>
+          {Object.keys(categoryStructure).length === 0 ? (
+            <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
+              Geen categorieën beschikbaar
+            </Text>
+          ) : (
+            Object.entries(categoryStructure).map(([groupName, groupData]) => (
+              <GroupItem key={groupName} groupName={groupName} groupData={groupData} />
+            ))
+          )}
         </VStack>
       </Box>
     );
@@ -197,29 +244,23 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           prijs: product.prijs ? parseFloat(product.prijs.toString()).toFixed(2) : '',
           naam: product.naam || product.name || '',
           images: (() => {
-            console.log('Product data for', product.id, ':', product);
             const productAny = product as any;
             
             if (productAny.images && Array.isArray(productAny.images)) {
-              console.log('Using images array:', productAny.images);
               return productAny.images;
             }
             if (productAny.image) {
               const imageArray = Array.isArray(productAny.image) ? productAny.image : [productAny.image];
-              console.log('Using image field:', imageArray);
               return imageArray;
             }
             if (productAny.afbeelding) {
               const afbeeldingArray = Array.isArray(productAny.afbeelding) ? productAny.afbeelding : [productAny.afbeelding];
-              console.log('Using afbeelding field:', afbeeldingArray);
               return afbeeldingArray;
             }
             if (productAny.foto) {
               const fotoArray = Array.isArray(productAny.foto) ? productAny.foto : [productAny.foto];
-              console.log('Using foto field:', fotoArray);
               return fotoArray;
             }
-            console.log('No images found for product', product.id);
             return [];
           })(),
           groep: product.groep || '',
@@ -281,12 +322,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Field>
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
-              
-              {selectedCategory.groep && selectedCategory.subgroep && (
-                <Text fontSize="sm" color="gray.600">
-                  Geselecteerd: <strong>{selectedCategory.groep} - {selectedCategory.subgroep}</strong>
-                </Text>
-              )}
               <FormControl isInvalid={!!(errors.opties && touched.opties)}>
                 <Field name="opties" as={Input} placeholder="Opties (gescheiden door komma's)" color="black" borderColor={errors.opties && touched.opties ? 'red.500' : 'gray.200'} isDisabled={readOnly} />
                 <FormErrorMessage>{errors.opties as string}</FormErrorMessage>

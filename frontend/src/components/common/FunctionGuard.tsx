@@ -29,7 +29,6 @@ const getUserRoles = (user: any): string[] => {
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
           const groups = payload['cognito:groups'] || [];
-          console.log('🔍 FunctionGuard - Decoded JWT groups from session:', groups);
           return groups;
         }
       }

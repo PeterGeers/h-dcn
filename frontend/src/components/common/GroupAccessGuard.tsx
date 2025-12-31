@@ -49,10 +49,6 @@ function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
   
   const hasGroupAccess = userGroups.length > 0;
   
-  // Debug logging
-  console.log('GroupAccessGuard - User groups:', userGroups);
-  console.log('GroupAccessGuard - Has access:', hasGroupAccess);
-
   if (!hasGroupAccess) {
     return (
       <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">

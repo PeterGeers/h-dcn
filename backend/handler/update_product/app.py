@@ -9,7 +9,7 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('DYNAMODB_TABLE', 'Producten')
 table = dynamodb.Table(table_name)
 
-@require_auth(['products_update', 'products_create'])
+@require_auth(['Products_CRUD_All', 'Webshop_Management', 'hdcnAdmins', 'System_CRUD_All', 'Webmaster'])
 def lambda_handler(event, context):
     try:
         # Get product ID and data

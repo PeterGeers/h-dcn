@@ -10,7 +10,6 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
       const enhancedGroups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
       
       if (token) {
-        console.log('🔍 Using enhanced user token with groups:', enhancedGroups);
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -71,7 +70,6 @@ export const getAuthHeadersForGet = async (): Promise<Record<string, string>> =>
       const enhancedGroups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
       
       if (token) {
-        console.log('🔍 Using enhanced user token with groups:', enhancedGroups);
         const headers: Record<string, string> = {
           'Authorization': `Bearer ${token}`
         };

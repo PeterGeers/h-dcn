@@ -54,8 +54,23 @@ def extract_user_credentials(event):
         payload_encoded = parts[1]
         # Add padding if needed for base64 decoding
         payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        payload_decoded = base64.urlsafe_b64decode(payload_encoded)
-        payload = json.loads(payload_decoded)
+        try:
+            payload_decoded = base64.urlsafe_b64decode(payload_encoded)
+        except Exception as decode_error:
+            return None, None, {
+                'statusCode': 401,
+                'headers': cors_headers(),
+                'body': json.dumps({'error': 'Invalid JWT token encoding'})
+            }
+        
+        try:
+            payload = json.loads(payload_decoded)
+        except Exception as json_error:
+            return None, None, {
+                'statusCode': 401,
+                'headers': cors_headers(),
+                'body': json.dumps({'error': 'Invalid JWT token payload'})
+            }
         
         # Extract user email
         user_email = payload.get('email') or payload.get('username')
@@ -75,29 +90,26 @@ def extract_user_credentials(event):
                 # Try parsing as JSON first (array format)
                 enhanced_groups = json.loads(enhanced_groups_header)
                 if isinstance(enhanced_groups, list):
-                    print(f"🔍 LAYER AUTH: Using enhanced groups from frontend (JSON): {enhanced_groups} for authenticated user {user_email}")
                     # Return the mapped user email (webmaster@h-dcn.nl) instead of Google email for audit trail
                     mapped_email = "webmaster@h-dcn.nl" if user_email.startswith("Google_") else user_email
                     return mapped_email, enhanced_groups, None
                 else:
-                    print(f"⚠️ LAYER AUTH: Invalid enhanced groups JSON format, falling back to JWT groups")
+                    pass  # Fall back to JWT groups
             except json.JSONDecodeError:
                 # If JSON parsing fails, try comma-separated string format
                 try:
                     enhanced_groups = [group.strip() for group in enhanced_groups_header.split(',') if group.strip()]
                     if enhanced_groups:
-                        print(f"🔍 LAYER AUTH: Using enhanced groups from frontend (CSV): {enhanced_groups} for authenticated user {user_email}")
                         # Return the mapped user email (webmaster@h-dcn.nl) instead of Google email for audit trail
                         mapped_email = "webmaster@h-dcn.nl" if user_email.startswith("Google_") else user_email
                         return mapped_email, enhanced_groups, None
                     else:
-                        print(f"⚠️ LAYER AUTH: Empty enhanced groups, falling back to JWT groups")
+                        pass  # Fall back to JWT groups
                 except Exception as e:
-                    print(f"⚠️ LAYER AUTH: Failed to parse enhanced groups header as CSV: {e}, falling back to JWT groups")
+                    pass  # Fall back to JWT groups
         
         # Fallback to JWT token groups
         user_roles = payload.get('cognito:groups', [])
-        print(f"🔍 LAYER AUTH: Using JWT token groups: {user_roles} for user {user_email}")
         
         return user_email, user_roles, None
         
@@ -116,7 +128,7 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
     
     Args:
         user_roles (list): List of user's roles from credentials
-        required_permissions (list or str): Required permission(s) for the operation
+        required_permissions (list or str): Required permission(s) or roles for the operation
         user_email (str): Optional user email for logging
         resource_context (dict): Optional context about the resource being accessed
         
@@ -130,65 +142,16 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
         if isinstance(required_permissions, str):
             required_permissions = [required_permissions]
         
-        # Define role-to-permission mappings
-        role_permissions = {
-            # Administrative roles - full access
-            'hdcnAdmins': ['*'],
-            'System_CRUD_All': ['*'],
-            'Webmaster': ['*'],
-            
-            # Member management
-            'Members_CRUD_All': ['members_create', 'members_read', 'members_update', 'members_delete', 'members_export'],
-            'Members_Read_All': ['members_read', 'members_list'],
-            'Members_Status_Approve': ['members_status_change'],
-            'Members_Export_All': ['members_export'],
-            
-            # Event management
-            'Events_CRUD_All': ['events_create', 'events_read', 'events_update', 'events_delete', 'events_export'],
-            'Events_Read_All': ['events_read', 'events_list'],
-            'Events_Export_All': ['events_export'],
-            
-            # Product management
-            'Products_CRUD_All': ['products_create', 'products_read', 'products_update', 'products_delete', 'products_export'],
-            'Products_Read_All': ['products_read', 'products_list'],
-            'Products_Export_All': ['products_export'],
-            
-            # Communication
-            'Communication_CRUD_All': ['communication_create', 'communication_read', 'communication_update', 'communication_delete'],
-            'Communication_Read_All': ['communication_read'],
-            'Communication_Export_All': ['communication_export'],
-            
-            # System administration
-            'System_User_Management': ['users_manage', 'roles_assign'],
-            'System_Logs_Read': ['logs_read', 'audit_read'],
-            
-            # Webshop
-            'Webshop_Management': ['products_create', 'products_read', 'products_update', 'products_delete', 'orders_manage'],
-            
-            # Organizational roles
-            'National_Chairman': ['members_read', 'events_read', 'communication_read', 'reports_read'],
-            'National_Secretary': ['members_read', 'events_read', 'communication_create', 'communication_read'],
-            'National_Treasurer': ['members_read', 'payments_read', 'financial_reports'],
-            'Tour_Commissioner': ['events_create', 'events_read', 'events_update', 'events_delete'],
-            'Club_Magazine_Editorial': ['communication_create', 'communication_read', 'communication_update'],
-            
-            # Basic member
-            'hdcnLeden': ['profile_read', 'profile_update_own', 'events_read', 'products_read']
-        }
+        # SIMPLIFIED APPROACH: Check if user has any of the required roles directly
+        # This eliminates the complex mapping layer and makes authorization clearer
         
-        # Get all permissions for user's roles
-        user_permissions = set()
-        for role in user_roles:
-            if role in role_permissions:
-                permissions = role_permissions[role]
-                if '*' in permissions:
-                    # Full access - authorize everything
-                    print(f"🔍 LAYER AUTH: User {user_email} has full access via role {role}")
-                    return True, None
-                user_permissions.update(permissions)
+        # Admin roles get full access
+        admin_roles = ['hdcnAdmins', 'System_CRUD_All', 'Webmaster']
+        if any(role in user_roles for role in admin_roles):
+            return True, None
         
-        # Check if user has any of the required permissions
-        has_permission = any(perm in user_permissions for perm in required_permissions)
+        # Check if user has any of the required roles directly
+        has_permission = any(role in user_roles for role in required_permissions)
         
         if not has_permission:
             # Log permission denial
@@ -196,7 +159,7 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
                 user_email=user_email,
                 user_roles=user_roles,
                 required_permissions=required_permissions,
-                user_permissions=list(user_permissions),
+                user_permissions=user_roles,  # User permissions are just their roles now
                 resource_context=resource_context
             )
             
@@ -205,12 +168,11 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
                 'headers': cors_headers(),
                 'body': json.dumps({
                     'error': 'Access denied: Insufficient permissions',
-                    'required_permissions': required_permissions,
+                    'required_roles': required_permissions,
                     'user_roles': user_roles
                 })
             }
         
-        print(f"🔍 LAYER AUTH: User {user_email} authorized for {required_permissions}")
         return True, None
         
     except Exception as e:

@@ -62,30 +62,19 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const checkAuthState = async () => {
     try {
-      console.log('🔥 checkAuthState - Starting auth check');
       
       // Check if we have stored authentication tokens
       const storedUser = localStorage.getItem('hdcn_auth_user');
       const storedTokens = localStorage.getItem('hdcn_auth_tokens');
       
-      console.log('🔥 checkAuthState - Stored user exists:', !!storedUser);
-      console.log('🔥 checkAuthState - Stored tokens exist:', !!storedTokens);
-      
       if (storedUser && storedTokens) {
         const user = JSON.parse(storedUser);
         const tokens = JSON.parse(storedTokens);
-        
-        console.log('🔥 checkAuthState - Parsed user:', user);
-        console.log('🔥 checkAuthState - User groups:', user?.signInUserSession?.accessToken?.payload?.['cognito:groups']);
         
         // Verify token is still valid by checking expiration
         if (tokens.AccessTokenPayload && tokens.AccessTokenPayload.exp) {
           const expirationTime = tokens.AccessTokenPayload.exp * 1000; // Convert to milliseconds
           const currentTime = Date.now();
-          
-          console.log('🔥 checkAuthState - Token expires at:', new Date(expirationTime));
-          console.log('🔥 checkAuthState - Current time:', new Date(currentTime));
-          console.log('🔥 checkAuthState - Token valid:', currentTime < expirationTime);
           
           if (currentTime < expirationTime) {
             // Token is still valid
@@ -101,7 +90,6 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           }
         } else {
           // No expiration info, assume token is valid (OAuth tokens might not have exp in payload)
-          console.log('✅ checkAuthState - No expiration check, assuming valid');
           setUser(user);
           setAuthState('authenticated');
           return;

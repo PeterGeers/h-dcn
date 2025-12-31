@@ -24,9 +24,6 @@ export const uploadToS3 = async (
     fileName = `product-images/${Date.now()}-${file.name}`;
   }
   
-  console.log('Using bucket:', targetBucket);
-  console.log('Uploading to:', fileName);
-  
   try {
     // Convert File to base64 for API upload
     const fileBuffer = await file.arrayBuffer();
@@ -43,35 +40,21 @@ export const uploadToS3 = async (
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        console.log('🔍 DEBUG: Parsed user object keys:', Object.keys(user));
-        console.log('🔍 DEBUG: Full user object:', user);
         
         // Extract JWT token for Authorization header
         const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
         if (jwtToken) {
           authToken = jwtToken;
-          console.log('✅ DEBUG: Found JWT token for authorization');
-        } else {
-          console.log('⚠️ DEBUG: No JWT token found in stored user');
         }
         
         const groups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
-        console.log('🔍 DEBUG: Extracted groups:', groups);
-        console.log('🔍 DEBUG: Groups type:', typeof groups);
-        console.log('🔍 DEBUG: Is groups array:', Array.isArray(groups));
         
         if (groups && Array.isArray(groups)) {
           enhancedGroups = groups;
-          console.log('✅ DEBUG: Using real groups for upload:', enhancedGroups);
-        } else {
-          console.log('⚠️ DEBUG: No valid groups found, using fallback:', enhancedGroups);
         }
       } catch (error) {
-        console.error('❌ DEBUG: Error parsing stored user:', error);
-        console.log('⚠️ DEBUG: Using fallback groups due to parse error:', enhancedGroups);
+        // Use fallback groups on parse error
       }
-    } else {
-      console.log('⚠️ DEBUG: No stored user found, using fallback groups:', enhancedGroups);
     }
     
     // Upload via secure backend API
@@ -117,26 +100,14 @@ export const uploadToS3 = async (
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ DEBUG: Upload failed with detailed info:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData,
-        groups: enhancedGroups,
-        headers: requestHeaders,
-        url: apiUrl,
-        fileName: fileName,
-        bucketName: targetBucket
-      });
       throw new Error(errorData.error || `Upload failed: ${response.status}`);
     }
     
     const result = await response.json();
-    console.log('✅ Image uploaded successfully:', result);
     
     return result.fileUrl;
     
   } catch (error) {
-    console.error('S3 upload error:', error);
     throw error;
   }
 };
@@ -223,8 +194,6 @@ export const cleanupUnusedImages = async (
     
     const unusedImages = s3ImageKeys.filter((key: string) => key && !usedImageUrls.includes(key));
     
-    console.log(`Found ${unusedImages.length} unused images to delete:`, unusedImages);
-    
     if (unusedImages.length > 0) {
       // Delete unused images via secure API
       let deletedCount = 0;
@@ -251,12 +220,9 @@ export const cleanupUnusedImages = async (
           
           if (deleteResponse.ok) {
             deletedCount++;
-            console.log(`✅ Deleted unused image: ${imageKey}`);
-          } else {
-            console.warn(`⚠️ Failed to delete ${imageKey}: ${deleteResponse.status}`);
           }
         } catch (error) {
-          console.warn(`⚠️ Error deleting ${imageKey}:`, error);
+          // Continue with other deletions
         }
       }
       
@@ -265,7 +231,6 @@ export const cleanupUnusedImages = async (
     
     return 0;
   } catch (error) {
-    console.error('Cleanup error:', error);
     throw error;
   }
 };

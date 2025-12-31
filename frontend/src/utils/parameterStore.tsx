@@ -57,11 +57,11 @@ class ParameterStore {
         const validation = this.validateParameterCompatibility(migratedData);
         
         if (validation.autoFixApplied) {
-          console.log('🔧 Parameter compatibility auto-fixes applied');
+          // Parameter compatibility auto-fixes applied
         }
         
         if (!validation.isCompatible) {
-          console.warn('⚠️ Parameter compatibility issues detected:', validation.issues);
+          // Parameter compatibility issues detected - continue with auto-fixes applied
           // Continue with the data but log issues for monitoring
         }
         
@@ -89,7 +89,6 @@ class ParameterStore {
           const validation = this.validateParameterCompatibility(migratedData);
           
           if (validation.autoFixApplied) {
-            console.log('🔧 Parameter compatibility auto-fixes applied to localStorage data');
             // Save the fixed data back to localStorage
             try {
               localStorage.setItem('hdcn-form-parameters', JSON.stringify(migratedData));
@@ -133,11 +132,11 @@ class ParameterStore {
     const validation = this.validateParameterCompatibility(migratedData);
     
     if (validation.autoFixApplied) {
-      console.log('🔧 Parameter compatibility auto-fixes applied before saving');
+      // Parameter compatibility auto-fixes applied before saving
     }
     
     if (!validation.isCompatible) {
-      console.warn('⚠️ Parameter compatibility issues detected before saving:', validation.issues);
+      // Parameter compatibility issues detected before saving - continue with auto-fixes applied
       // Continue with save but log issues for monitoring
     }
     
@@ -493,16 +492,20 @@ class ParameterStore {
       // AUTO-FIX: Add default Function_permissions if missing
       data.Function_permissions = this.getDefaults().Function_permissions;
       autoFixApplied = true;
-      console.log('🔧 Auto-fix applied: Added default Function_permissions structure');
     } else {
-      const permissionItem = data.Function_permissions.find(item => item.value && typeof item.value === 'object');
-      if (!permissionItem) {
-        issues.push('Function_permissions missing valid permission configuration');
-        
+      // Check if we have at least one valid permission item
+      const hasValidPermissionItem = data.Function_permissions.some(item => 
+        item && 
+        typeof item === 'object' && 
+        item.value && 
+        typeof item.value === 'object' &&
+        Object.keys(item.value).length > 0
+      );
+      
+      if (!hasValidPermissionItem) {
         // AUTO-FIX: Add default permission structure
         data.Function_permissions.push(this.getDefaults().Function_permissions[0]);
         autoFixApplied = true;
-        console.log('🔧 Auto-fix applied: Added default permission configuration');
       }
     }
 

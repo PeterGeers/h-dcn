@@ -8,7 +8,6 @@ export const initializeFunctionPermissions = async (): Promise<boolean> => {
     
     // Check if function_permissions already exists
     if (!parameters.function_permissions || parameters.function_permissions.length === 0) {
-      console.log('Initializing function_permissions parameter...');
       
       // Add default function permissions
       const updatedParameters = {
@@ -17,7 +16,6 @@ export const initializeFunctionPermissions = async (): Promise<boolean> => {
       };
       
       await parameterStore.saveParameters(updatedParameters);
-      console.log('Function permissions initialized successfully');
       
       return true;
     }
