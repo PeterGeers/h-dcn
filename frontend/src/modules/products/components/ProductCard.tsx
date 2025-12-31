@@ -3,7 +3,6 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
-import { getParameterByName } from '../api/productApi';
 import { useState, useEffect } from 'react';
 import { Product } from '../../../types';
 
@@ -60,14 +59,28 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
 
   useEffect(() => {
-    getParameterByName('productgroepen')
-      .then(res => {
-        const data = JSON.parse(res.data.value || '{}');
-        setCategoryStructure(data);
-      })
-      .catch(() => {
+    // Load product categories from static JSON file instead of API
+    const loadCategories = async () => {
+      try {
+        const version = process.env.REACT_APP_CACHE_VERSION || '1.0';
+        const response = await fetch(`/parameters.json?v=${version}`);
+        
+        if (response.ok) {
+          const parameters = await response.json();
+          // Use productgroepen from JSON or create a simple structure
+          const productGroups = parameters.productgroepen || {};
+          setCategoryStructure(productGroups);
+        } else {
+          // Fallback to empty structure
+          setCategoryStructure({});
+        }
+      } catch (error) {
+        console.error('Error loading product categories:', error);
         setCategoryStructure({});
-      });
+      }
+    };
+    
+    loadCategories();
   }, [products]);
 
   useEffect(() => {
@@ -319,7 +332,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                       if (files.length > 0) {
                         try {
                           setUploading(true);
-                          const uploadPromises = files.map(file => uploadToS3(file));
+                          const uploadPromises = files.map(file => uploadToS3(file, product.id));
                           const s3Urls = await Promise.all(uploadPromises);
                           const currentImages = values.images || [];
                           setFieldValue('images', [...currentImages, ...s3Urls]);

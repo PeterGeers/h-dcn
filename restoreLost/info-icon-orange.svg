@@ -1,0 +1,16 @@
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Orange circular background -->
+  <circle cx="12" cy="12" r="11" fill="#FF8C00" stroke="#E67300" stroke-width="1"/>
+  
+  <!-- Information "i" symbol -->
+  <g fill="white">
+    <!-- Dot above the i -->
+    <circle cx="12" cy="8" r="1.5"/>
+    
+    <!-- Vertical line of the i -->
+    <rect x="10.5" y="10.5" width="3" height="7" rx="1.5"/>
+  </g>
+  
+  <!-- Subtle shadow/depth effect -->
+  <circle cx="12" cy="12" r="11" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+</svg>

@@ -155,7 +155,6 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
           userGroups = payload['cognito:groups'] || [];
-          console.log('🔍 UserAccountPopup - Decoded JWT groups from localStorage:', userGroups);
         }
       } else {
         // Fallback: try to decode from user session JWT token
@@ -165,7 +164,6 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1]));
             userGroups = payload['cognito:groups'] || [];
-            console.log('🔍 UserAccountPopup - Decoded JWT groups from session:', userGroups);
           }
         }
       }

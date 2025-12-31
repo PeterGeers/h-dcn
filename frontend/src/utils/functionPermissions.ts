@@ -49,7 +49,6 @@ export function getUserRoles(user: User): string[] {
         const payload = JSON.parse(atob(parts[1]));
         const cognitoGroups = payload['cognito:groups'];
         if (cognitoGroups && Array.isArray(cognitoGroups)) {
-          console.log('🔍 getUserRoles - Decoded JWT groups:', cognitoGroups);
           return cognitoGroups;
         }
       }
@@ -896,32 +895,13 @@ export class FunctionPermissionManager {
     const userGroups = getUserRoles(user);
     const isAdmin = userGroups.includes('hdcnAdmins');
     
-    console.log('🔍 FunctionPermissionManager.create - User groups:', userGroups);
-    console.log('🔍 FunctionPermissionManager.create - Is admin:', isAdmin);
-    
     try {
       // Wait a bit for initialization to complete
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Test direct API call
-      try {
-        const headers = await getAuthHeadersForGet();
-        const apiResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod'}/parameters`, {
-          headers
-        });
-        const apiData = await apiResponse.json();
-        console.log('🔍 Direct API call - all parameters:', apiData.map(p => p.name));
-        const functionPermsFromAPI = apiData.find(p => p.name === 'function_permissions');
-        console.log('🔍 Direct API - function_permissions:', functionPermsFromAPI);
-      } catch (apiError) {
-        console.log('🔍 API call failed:', apiError);
-      }
-      
       const parameters = await getParameters();
-      console.log('🔍 Parameters loaded:', Object.keys(parameters));
       
       const functionPermissions = parameters['Function_permissions'] || [];
-      console.log('🔍 Function permissions raw:', functionPermissions);
       
       // Find the function_permissions parameter
       const permissionParam = functionPermissions.find(p => p.value && typeof p.value === 'object');
@@ -930,7 +910,6 @@ export class FunctionPermissionManager {
       // BACKWARD COMPATIBILITY: Ensure existing parameter-based permissions are preserved
       // If no parameter config exists, initialize with legacy default structure
       if (Object.keys(parameterConfig).length === 0) {
-        console.log('🔄 No parameter config found, initializing with legacy defaults');
         parameterConfig = {
           members: { read: [], write: [] },
           events: { read: [], write: [] },
@@ -948,7 +927,6 @@ export class FunctionPermissionManager {
       
       // Calculate role-based permissions from user's assigned roles
       const roleBasedPermissions = calculatePermissions(userGroups);
-      console.log('🔍 Role-based permissions calculated:', roleBasedPermissions);
       
       // BACKWARD COMPATIBILITY: Merge parameter-based permissions with role-based permissions
       // Parameter-based permissions take precedence to maintain existing behavior
@@ -977,7 +955,6 @@ export class FunctionPermissionManager {
       
       // BACKWARD COMPATIBILITY: Ensure legacy admin permissions are preserved
       if (isAdmin) {
-        console.log('🔄 Ensuring admin permissions are preserved');
         const adminFunctions = ['members', 'events', 'products', 'orders', 'webshop', 'parameters', 'memberships'];
         adminFunctions.forEach(functionName => {
           if (!mergedConfig[functionName]) {
@@ -997,7 +974,6 @@ export class FunctionPermissionManager {
       // BACKWARD COMPATIBILITY: Ensure basic member permissions are preserved
       const hasBasicMemberRole = userGroups.includes('hdcnLeden');
       if (hasBasicMemberRole) {
-        console.log('🔄 Ensuring basic member permissions are preserved');
         if (!mergedConfig.webshop) {
           mergedConfig.webshop = { read: [], write: [] };
         }
@@ -1011,12 +987,10 @@ export class FunctionPermissionManager {
       
       // ENHANCED: Preserve parameter-based module visibility
       // Ensure that parameter-based module access rules are maintained
-      console.log('🔄 Preserving parameter-based module visibility');
       
       // Check if there are any parameter-based module visibility rules
       const moduleVisibilityParams = parameters['Module_visibility'] || [];
       if (moduleVisibilityParams.length > 0) {
-        console.log('🔍 Found module visibility parameters:', moduleVisibilityParams);
         
         // Apply module visibility rules to merged config
         moduleVisibilityParams.forEach(visibilityRule => {
@@ -1056,7 +1030,6 @@ export class FunctionPermissionManager {
       
       // BACKWARD COMPATIBILITY: If merged config is still empty, use comprehensive fallback
       if (Object.keys(mergedConfig).length === 0) {
-        console.log('🔄 Using comprehensive fallback config');
         mergedConfig = isAdmin ? {
           members: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
           events: { read: ['hdcnAdmins'], write: ['hdcnAdmins'] },
@@ -1069,8 +1042,6 @@ export class FunctionPermissionManager {
           webshop: { read: ['hdcnLeden'], write: ['hdcnLeden'] }
         };
       }
-      
-      console.log('🔍 Final merged permission config with parameter-based visibility preserved:', mergedConfig);
       
       return new FunctionPermissionManager(user, mergedConfig);
     } catch (error) {

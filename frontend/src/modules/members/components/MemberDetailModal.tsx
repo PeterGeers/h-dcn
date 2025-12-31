@@ -5,6 +5,7 @@ import {
 } from '@chakra-ui/react';
 import { Member } from '../../../types';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
+import { hasRegionalAccess } from '../../../utils/regionalMapping';
 
 interface MemberDetailModalProps {
   isOpen: boolean;
@@ -72,19 +73,7 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
 
     // Regional access - check if user has regional permissions for this member's region
     if (member.regio) {
-      const memberRegion = member.regio;
-      const hasRegionalAccess = userRoles.some(role => {
-        if (role.includes('Regional_') && role.includes('Region')) {
-          const regionMatch = role.match(/Region(\d+)/);
-          if (regionMatch) {
-            const roleRegion = regionMatch[1];
-            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
-          }
-        }
-        return false;
-      });
-      
-      if (hasRegionalAccess) {
+      if (hasRegionalAccess(userRoles, member.regio)) {
         // Regional users can view personal, address, membership, motor fields
         // PRESERVE EXISTING MEMBERSHIP TYPE RESTRICTIONS for motor fields
         if (fieldType === 'motor') {
@@ -149,7 +138,7 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
   ].filter(([_, value]) => hasValue(value));
 
   const membershipFields = [
-    ['Type', member.lidmaatschap || member.membership_type],
+    ['Type', member.lidmaatschap || member.membership_type || member.membershipType],
     ['Regio', member.regio],
     ['Clubblad', member.clubblad],
     ['Nieuwsbrief', member.nieuwsbrief],

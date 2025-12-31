@@ -18,9 +18,24 @@ function ParameterSelect({
 }: ParameterSelectProps) {
   const { parameters, loading } = useParameters(category);
   
+  // Debug logging
+  React.useEffect(() => {
+    if (category === 'WieWatWaar' && !loading && parameters.length === 0) {
+      console.warn(`⚠️ No parameters found for category "${category}"`);
+    }
+  }, [category, parameters, loading]);
+  
   if (loading) {
     return (
       <Select placeholder="Laden..." isDisabled {...props}>
+      </Select>
+    );
+  }
+  
+  if (!parameters || parameters.length === 0) {
+    console.warn(`⚠️ No parameters found for category "${category}"`);
+    return (
+      <Select placeholder={`Geen opties voor ${category}`} isDisabled {...props}>
       </Select>
     );
   }
@@ -32,8 +47,8 @@ function ParameterSelect({
       onChange={onChange}
       {...props}
     >
-      {parameters.map(param => (
-        <option key={param.id} value={param.value}>
+      {parameters.map((param, index) => (
+        <option key={param.id || param.value || index} value={param.value}>
           {param.value}
         </option>
       ))}

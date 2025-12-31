@@ -5,6 +5,7 @@ import {
   Alert, AlertIcon, Text
 } from '@chakra-ui/react';
 import { useParameters } from '../../../utils/parameterService';
+import { getAllowedRegions } from '../../../utils/regionalMapping';
 import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
@@ -53,39 +54,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
   const hasFullEventAccess = permissionManager?.hasAccess('events', 'write') || false;
   
   // Get user's allowed regions for regional users
-  const getAllowedRegions = (): string[] => {
-    if (hasFullEventAccess) return []; // Full access users can select any region
-    
-    const allowedRegions: string[] = [];
-    const regionMap: { [key: string]: string } = {
-      '1': 'Noord-Holland',
-      '2': 'Zuid-Holland', 
-      '3': 'Friesland',
-      '4': 'Utrecht',
-      '5': 'Oost',
-      '6': 'Limburg',
-      '7': 'Groningen/Drente',
-      '8': 'Noord-Brabant/Zeeland',
-      '9': 'Duitsland'
-    };
-    
-    userRoles.forEach(role => {
-      if (role.includes('Regional_') && role.includes('Region')) {
-        const regionMatch = role.match(/Region(\d+)/);
-        if (regionMatch) {
-          const regionNumber = regionMatch[1];
-          const regionName = regionMap[regionNumber];
-          if (regionName && !allowedRegions.includes(regionName)) {
-            allowedRegions.push(regionName);
-          }
-        }
-      }
-    });
-    
-    return allowedRegions;
-  };
-
-  const allowedRegions = getAllowedRegions();
+  const allowedRegions = getAllowedRegions(userRoles, hasFullEventAccess);
 
   useEffect(() => {
     if (event) {
@@ -223,8 +192,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                   placeholder="Selecteer regio..."
                   isDisabled={allowedRegions.length === 1} // Disable if user can only access one region
                 >
-                  {availableRegions.map((region) => (
-                    <option key={region.id} value={region.value} style={{backgroundColor: '#2D3748', color: 'white'}}>
+                  {availableRegions.map((region, index) => (
+                    <option key={region.id || region.value || index} value={region.value} style={{backgroundColor: '#2D3748', color: 'white'}}>
                       {region.value}
                     </option>
                   ))}

@@ -76,10 +76,6 @@ function Dashboard({ user }: DashboardProps) {
     group.includes('hdcnAdmins')
   );
   const isLid = userGroups.length > 0;
-  
-  console.log('🔍 Dashboard - User groups:', userGroups);
-  console.log('🔍 Dashboard - Is basic member:', isBasicMember);
-  console.log('🔍 Dashboard - Has admin roles:', hasAdminRoles);
 
   return (
     <Box maxW="1200px" mx="auto" px={{ base: 2, md: 0 }}>

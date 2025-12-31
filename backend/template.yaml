@@ -28,11 +28,12 @@ Globals:
       Variables:
         DYNAMODB_TABLE: !Ref Table
         REGION_NAME: !Ref Region
+        PYTHONPATH: /opt/python
   Api:
     TracingEnabled: True
     Cors:
       AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-enhanced-groups'"
       AllowOrigin: "'*'"
         
 Parameters:
@@ -65,9 +66,6 @@ Parameters:
     NoEcho: true
     Description: Default temporary password for new Cognito users
     Default: TempPass123!
-  ParametersTable:
-    Type: String
-    Default: Parameters
   ForceUpdate:
     Type: String
     Default: "2025-12-28"
@@ -123,6 +121,17 @@ Parameters:
     Default: ""
 
 Resources:
+  
+  # Lambda Layer for Shared Authentication
+  AuthLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${AWS::StackName}-auth-layer"
+      Description: "Shared authentication utilities for H-DCN Lambda functions"
+      ContentUri: layers/auth-layer/
+      CompatibleRuntimes:
+        - python3.11
+      RetentionPolicy: Retain
   
   # S3 Bucket for Email Templates
   EmailTemplatesBucket:
@@ -600,7 +609,7 @@ Resources:
       StageName: prod
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-enhanced-groups,x-requested-with'"
         AllowOrigin: "'*'"
 
   # IAM Role for DynamoDB access (updated for GSI)
@@ -638,8 +647,6 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembershipsTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CartsTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ParametersTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ParametersTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CartsTable}/index/*"
@@ -756,6 +763,8 @@ Resources:
       CodeUri: handler/update_product
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdatePost:
@@ -817,6 +826,8 @@ Resources:
       CodeUri: handler/update_member
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdateMember:
@@ -1224,6 +1235,8 @@ Resources:
       CodeUri: handler/update_event
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdateEvent:
@@ -1248,97 +1261,6 @@ Resources:
             Path: /events/{event_id}
             Method: delete
 
-  # Parameter Functions
-  CreateParameterFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/create_parameter
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        CreateParameter:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /parameters
-            Method: post
-
-  GetParametersFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/get_parameters
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        GetParameters:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /parameters
-            Method: get
-
-  GetParameterByIdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/get_parameter_byid
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        GetParameterById:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /parameters/{id}
-            Method: get
-
-  UpdateParameterFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/update_parameter
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        UpdateParameter:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /parameters/{id}
-            Method: put
-
-  DeleteParameterFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/delete_parameter
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        DeleteParameter:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /parameters/{id}
-            Method: delete
-
-  GetParameterByNameFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/get_parameter_byname
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        GetParameterByName:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /parameters/name/{name}
-            Method: get
-
   UpdateCartItemsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1353,6 +1275,47 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /carts/{cart_id}/items
             Method: put
+
+  # Generic S3 File Manager Function
+  S3FileManagerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/s3_file_manager
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Policies:
+        - S3ReadPolicy:
+            BucketName: my-hdcn-bucket
+        - S3WritePolicy:
+            BucketName: my-hdcn-bucket
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:DeleteObject
+            Resource: 
+              - arn:aws:s3:::my-hdcn-bucket/*
+      Events:
+        UploadFile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /s3/files
+            Method: post
+        DeleteFile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /s3/files
+            Method: delete
+        ListFiles:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /s3/files
+            Method: get
 
 Outputs:
   ApiBaseUrl:

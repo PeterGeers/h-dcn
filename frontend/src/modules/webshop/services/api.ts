@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import { getAuthHeaders, getAuthHeadersForGet } from '../../../utils/authHeaders';
 
 interface CartData {
   items?: any[];
@@ -27,31 +28,32 @@ if (!validateApiUrl(API_BASE_URL)) {
   console.warn('Invalid API base URL, using fallback');
 }
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-});
+// Helper function to create axios config with auth headers
+const createAuthConfig = async (method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET') => {
+  const headers = method === 'GET' ? await getAuthHeadersForGet() : await getAuthHeaders();
+  return { 
+    baseURL: API_BASE_URL,
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    }
+  };
+};
 
 export const productService = {
-  scanProducts: (): Promise<AxiosResponse<any>> => api.get('/scan-product/'),
+  scanProducts: async (): Promise<AxiosResponse<any>> => {
+    const config = await createAuthConfig('GET');
+    return axios.get('/scan-product/', config);
+  },
 };
 
 export const cartService = {
-  createCart: (data: CartData): Promise<AxiosResponse<any>> => api.post('/carts', data),
-  getCart: (cartId: string): Promise<AxiosResponse<any>> => {
-    if (!cartId || typeof cartId !== 'string') {
-      throw new Error('Invalid cart ID');
-    }
-    const sanitizedCartId = cartId.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!sanitizedCartId || sanitizedCartId !== cartId) {
-      throw new Error('Cart ID contains invalid characters');
-    }
-    return api.get(`/carts/${sanitizedCartId}`);
+  createCart: async (data: CartData): Promise<AxiosResponse<any>> => {
+    const config = await createAuthConfig('POST');
+    return axios.post('/carts', data, config);
   },
-  updateCartItems: (cartId: string, cartData: CartData): Promise<AxiosResponse<any>> => {
+  getCart: async (cartId: string): Promise<AxiosResponse<any>> => {
     if (!cartId || typeof cartId !== 'string') {
       throw new Error('Invalid cart ID');
     }
@@ -59,9 +61,10 @@ export const cartService = {
     if (!sanitizedCartId || sanitizedCartId !== cartId) {
       throw new Error('Cart ID contains invalid characters');
     }
-    return api.put(`/carts/${sanitizedCartId}/items`, cartData);
+    const config = await createAuthConfig('GET');
+    return axios.get(`/carts/${sanitizedCartId}`, config);
   },
-  clearCart: (cartId: string): Promise<AxiosResponse<any>> => {
+  updateCartItems: async (cartId: string, cartData: CartData): Promise<AxiosResponse<any>> => {
     if (!cartId || typeof cartId !== 'string') {
       throw new Error('Invalid cart ID');
     }
@@ -69,29 +72,69 @@ export const cartService = {
     if (!sanitizedCartId || sanitizedCartId !== cartId) {
       throw new Error('Cart ID contains invalid characters');
     }
-    return api.delete(`/carts/${sanitizedCartId}`);
+    const config = await createAuthConfig('PUT');
+    return axios.put(`/carts/${sanitizedCartId}/items`, cartData, config);
+  },
+  clearCart: async (cartId: string): Promise<AxiosResponse<any>> => {
+    if (!cartId || typeof cartId !== 'string') {
+      throw new Error('Invalid cart ID');
+    }
+    const sanitizedCartId = cartId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedCartId || sanitizedCartId !== cartId) {
+      throw new Error('Cart ID contains invalid characters');
+    }
+    const config = await createAuthConfig('DELETE');
+    return axios.delete(`/carts/${sanitizedCartId}`, config);
   },
 };
 
 export const orderService = {
-  createOrder: (data: OrderData): Promise<AxiosResponse<any>> => api.post('/orders', data),
+  createOrder: async (data: OrderData): Promise<AxiosResponse<any>> => {
+    const config = await createAuthConfig('POST');
+    return axios.post('/orders', data, config);
+  },
 };
 
 export const parameterService = {
-  getParameter: (name: string): Promise<AxiosResponse<any>> => {
+  getParameter: async (name: string): Promise<AxiosResponse<any>> => {
     if (!name || typeof name !== 'string') {
       throw new Error('Invalid parameter name');
     }
-    const sanitizedName = name.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!sanitizedName || sanitizedName !== name) {
-      throw new Error('Parameter name contains invalid characters');
+    
+    try {
+      // Load from parameters.json file instead of API
+      const version = process.env.REACT_APP_CACHE_VERSION || '1.0';
+      const response = await fetch(`/parameters.json?v=${version}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load parameters.json: ${response.status}`);
+      }
+      
+      const jsonData = await response.json();
+      
+      // Find the parameter by name
+      const parameterValue = jsonData[name];
+      if (parameterValue === undefined) {
+        throw new Error(`Parameter '${name}' not found`);
+      }
+      
+      // Return in the same format as the old API
+      return {
+        data: {
+          value: Array.isArray(parameterValue) ? JSON.stringify(parameterValue) : parameterValue,
+          name: name
+        }
+      } as AxiosResponse<any>;
+      
+    } catch (error) {
+      console.error(`Error loading parameter '${name}':`, error);
+      throw error;
     }
-    return api.get(`/parameters/name/${sanitizedName}`);
   },
 };
 
 export const memberService = {
-  getMember: (memberId: string): Promise<AxiosResponse<any>> => {
+  getMember: async (memberId: string): Promise<AxiosResponse<any>> => {
     if (!memberId || typeof memberId !== 'string') {
       throw new Error('Invalid member ID');
     }
@@ -99,6 +142,7 @@ export const memberService = {
     if (!sanitizedMemberId || sanitizedMemberId !== memberId) {
       throw new Error('Member ID contains invalid characters');
     }
-    return api.get(`/members/${sanitizedMemberId}`);
+    const config = await createAuthConfig('GET');
+    return axios.get(`/members/${sanitizedMemberId}`, config);
   },
 };

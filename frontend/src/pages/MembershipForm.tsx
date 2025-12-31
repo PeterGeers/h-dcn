@@ -6,7 +6,6 @@ import {
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import ParameterSelect from '../components/common/ParameterSelect';
-import MembershipSelect from '../components/common/MembershipSelect';
 import { getAuthHeaders, getAuthHeadersForGet } from '../utils/authHeaders';
 import { API_URLS } from '../config/api';
 import { useErrorHandler, apiCall } from '../utils/errorHandler';
@@ -480,10 +479,16 @@ function MembershipForm({ user }: MembershipFormProps) {
                     {({ field }) => (
                       <FormControl isInvalid={errors.geslacht && touched.geslacht}>
                         <FormLabel color="orange.300">Geslacht *</FormLabel>
-                        <Select {...field} placeholder="Selecteer geslacht" bg="gray.200" color="black" focusBorderColor="orange.400">
-                          <option value="Man">Man</option>
-                          <option value="Vrouw">Vrouw</option>
-                        </Select>
+                        <ParameterSelect
+                          category="Geslacht"
+                          placeholder="Selecteer geslacht"
+                          value={field.value}
+                          onChange={field.onChange}
+                          name={field.name}
+                          bg="gray.200"
+                          color="black"
+                          focusBorderColor="orange.400"
+                        />
                         {errors.geslacht && touched.geslacht && <Text color="red.400" fontSize="sm">{errors.geslacht}</Text>}
                       </FormControl>
                     )}
@@ -546,7 +551,8 @@ function MembershipForm({ user }: MembershipFormProps) {
                     {({ field }) => (
                       <FormControl isInvalid={errors.lidmaatschap && touched.lidmaatschap}>
                         <FormLabel color="orange.300">Soort lidmaatschap *</FormLabel>
-                        <MembershipSelect
+                        <ParameterSelect
+                          category="Lidmaatschap"
                           placeholder="Selecteer lidmaatschap"
                           value={field.value}
                           onChange={field.onChange}

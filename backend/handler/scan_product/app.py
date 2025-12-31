@@ -36,5 +36,5 @@ def cors_headers():
     return {
         "Access-Control-Allow-Origin": "*",   # of "https://jouwdomein.nl"
         "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
     }

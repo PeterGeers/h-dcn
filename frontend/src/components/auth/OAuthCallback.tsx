@@ -102,23 +102,47 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
         // This ensures one email = one user regardless of authentication method
         let existingUserGroups = [];
         
-        // For webmaster@h-dcn.nl, assign the known groups
-        if (idTokenPayload.email === 'webmaster@h-dcn.nl') {
-          existingUserGroups = [
-            'Events_CRUD_All',
-            'hdcnLeden', 
-            'System_User_Management',
-            'System_Logs_Read',
-            'Members_Read_All',
-            'Members_CRUD_All',
-            'Communication_CRUD_All',
-            'Webshop_Management'
-          ];
-          console.log('✅ Assigned webmaster groups:', existingUserGroups);
-        } else {
-          // For other users, assign basic member access
-          existingUserGroups = ['hdcnLeden'];
-          console.log('✅ Assigned default member groups:', existingUserGroups);
+        try {
+          // Try to fetch user permissions from the backend
+          const response = await fetch(`${window.location.origin.replace('https://de1irtdutlxqu.cloudfront.net', 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod')}/hdcn-cognito-admin/get-user-groups`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tokens.id_token}`
+            },
+            body: JSON.stringify({
+              email: idTokenPayload.email
+            })
+          });
+          
+          if (response.ok) {
+            const userData = await response.json();
+            existingUserGroups = userData.groups || ['hdcnLeden'];
+            console.log('✅ Retrieved user groups from backend:', existingUserGroups);
+          } else {
+            throw new Error('Failed to fetch user groups');
+          }
+        } catch (error) {
+          console.log('⚠️ Failed to fetch user groups, using fallback logic:', error);
+          
+          // Fallback: For webmaster@h-dcn.nl, assign the known groups
+          if (idTokenPayload.email === 'webmaster@h-dcn.nl') {
+            existingUserGroups = [
+              'Events_CRUD_All',
+              'hdcnLeden', 
+              'System_User_Management',
+              'System_Logs_Read',
+              'Members_Read_All',
+              'Members_CRUD_All',
+              'Communication_CRUD_All',
+              'Webshop_Management'
+            ];
+            console.log('✅ Assigned webmaster groups (fallback):', existingUserGroups);
+          } else {
+            // For other users, assign basic member access
+            existingUserGroups = ['hdcnLeden'];
+            console.log('✅ Assigned default member groups (fallback):', existingUserGroups);
+          }
         }
         
         // Override access token payload with correct groups

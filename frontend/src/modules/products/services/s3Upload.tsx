@@ -1,58 +1,210 @@
-import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { Product as BaseProduct } from '../../../types';
 
 interface ProductWithImage extends BaseProduct {
   image?: string | string[];
 }
 
-// Configure AWS SDK v3
-const s3Client = new S3Client({
-  region: process.env.REACT_APP_AWS_REGION || 'eu-west-1',
-  credentials: {
-    accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY || ''
-  }
-});
-
 export const uploadToS3 = async (
   file: File, 
-  bucketName: string = process.env.REACT_APP_S3_BUCKET || 'my-hdcn-bucket'
+  productId?: string,
+  bucketName?: string
 ): Promise<string> => {
-  const fileName = `product-images/${Date.now()}-${file.name}`;
+  // Use provided bucket name or default to my-hdcn-bucket
+  const targetBucket = bucketName || 'my-hdcn-bucket';
   
-  console.log('Using bucket:', bucketName);
+  // Use logical naming: if productId provided, use it; otherwise use timestamp
+  let fileName: string;
   
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: fileName,
-    Body: file,
-    ContentType: file.type
-  });
-
+  if (productId) {
+    // For existing products, use the product ID as filename
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    fileName = `product-images/${productId}.${fileExtension}`;
+  } else {
+    // For new products without ID, use timestamp (will be updated later)
+    fileName = `product-images/${Date.now()}-${file.name}`;
+  }
+  
+  console.log('Using bucket:', targetBucket);
+  console.log('Uploading to:', fileName);
+  
   try {
-    await s3Client.send(command);
-    // Construct the URL manually since v3 doesn't return Location by default
-    const region = process.env.REACT_APP_AWS_REGION || 'eu-west-1';
-    const url = `https://${bucketName}.s3.${region}.amazonaws.com/${fileName}`;
-    return url;
+    // Convert File to base64 for API upload
+    const fileBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(fileBuffer);
+    const base64String = btoa(String.fromCharCode(...uint8Array));
+    
+    // Get enhanced groups from localStorage for authentication
+    const storedUser = localStorage.getItem('hdcn_auth_user');
+    let enhancedGroups = ['hdcnAdmins', 'Products_CRUD_All']; // fallback with multiple roles
+    let authToken = '';
+    
+    console.log('🔍 DEBUG: Raw stored user data:', storedUser);
+    
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        console.log('🔍 DEBUG: Parsed user object keys:', Object.keys(user));
+        console.log('🔍 DEBUG: Full user object:', user);
+        
+        // Extract JWT token for Authorization header
+        const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+        if (jwtToken) {
+          authToken = jwtToken;
+          console.log('✅ DEBUG: Found JWT token for authorization');
+        } else {
+          console.log('⚠️ DEBUG: No JWT token found in stored user');
+        }
+        
+        const groups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
+        console.log('🔍 DEBUG: Extracted groups:', groups);
+        console.log('🔍 DEBUG: Groups type:', typeof groups);
+        console.log('🔍 DEBUG: Is groups array:', Array.isArray(groups));
+        
+        if (groups && Array.isArray(groups)) {
+          enhancedGroups = groups;
+          console.log('✅ DEBUG: Using real groups for upload:', enhancedGroups);
+        } else {
+          console.log('⚠️ DEBUG: No valid groups found, using fallback:', enhancedGroups);
+        }
+      } catch (error) {
+        console.error('❌ DEBUG: Error parsing stored user:', error);
+        console.log('⚠️ DEBUG: Using fallback groups due to parse error:', enhancedGroups);
+      }
+    } else {
+      console.log('⚠️ DEBUG: No stored user found, using fallback groups:', enhancedGroups);
+    }
+    
+    // Upload via secure backend API
+    const apiUrl = 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/s3/files';
+    
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Enhanced-Groups': JSON.stringify(enhancedGroups)
+    };
+    
+    // Add Authorization header if we have a token
+    if (authToken) {
+      requestHeaders['Authorization'] = `Bearer ${authToken}`;
+      console.log('✅ DEBUG: Added Authorization header');
+    } else {
+      console.log('⚠️ DEBUG: No auth token available - request may fail');
+    }
+    
+    const requestBody = {
+      bucketName: targetBucket,
+      fileKey: fileName,
+      fileData: base64String,
+      contentType: file.type,
+      cacheControl: 'public, max-age=31536000' // Cache images for 1 year
+    };
+    
+    console.log('🚀 DEBUG: Making API request to:', apiUrl);
+    console.log('🚀 DEBUG: Request headers:', requestHeaders);
+    console.log('🚀 DEBUG: Request body keys:', Object.keys(requestBody));
+    console.log('🚀 DEBUG: File info:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      targetBucket,
+      fileName
+    });
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: requestHeaders,
+      body: JSON.stringify(requestBody)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ DEBUG: Upload failed with detailed info:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+        groups: enhancedGroups,
+        headers: requestHeaders,
+        url: apiUrl,
+        fileName: fileName,
+        bucketName: targetBucket
+      });
+      throw new Error(errorData.error || `Upload failed: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Image uploaded successfully:', result);
+    
+    return result.fileUrl;
+    
   } catch (error) {
     console.error('S3 upload error:', error);
     throw error;
   }
 };
 
+// Helper function to generate logical image URL for a product
+export const getLogicalImageUrl = (
+  productId: string, 
+  fileExtension: string = 'jpg',
+  bucketName?: string
+): string => {
+  // Use provided bucket name or default to my-hdcn-bucket
+  const targetBucket = bucketName || 'my-hdcn-bucket';
+  
+  const region = 'eu-west-1';
+  return `https://${targetBucket}.s3.${region}.amazonaws.com/product-images/${productId}.${fileExtension}`;
+};
+
 export const cleanupUnusedImages = async (
   products: ProductWithImage[], 
-  bucketName: string = process.env.REACT_APP_S3_BUCKET || 'my-hdcn-bucket'
+  bucketName?: string
 ): Promise<number> => {
+  // Use provided bucket name or default to my-hdcn-bucket
+  const targetBucket = bucketName || 'my-hdcn-bucket';
+  
   try {
-    const listCommand = new ListObjectsV2Command({
-      Bucket: bucketName,
-      Prefix: 'product-images/'
+    // Get enhanced groups from localStorage for authentication
+    const storedUser = localStorage.getItem('hdcn_auth_user');
+    let enhancedGroups = ['hdcnAdmins']; // fallback
+    let authToken = '';
+    
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      
+      // Extract JWT token for Authorization header
+      const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+      if (jwtToken) {
+        authToken = jwtToken;
+      }
+      
+      const groups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
+      if (groups && Array.isArray(groups)) {
+        enhancedGroups = groups;
+      }
+    }
+    
+    // List all files in product-images folder via secure API
+    const apiUrl = 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/s3/files';
+    const listUrl = `${apiUrl}?bucketName=${targetBucket}&prefix=product-images/&recursive=true`;
+    
+    const listHeaders: Record<string, string> = {
+      'X-Enhanced-Groups': JSON.stringify(enhancedGroups)
+    };
+    
+    if (authToken) {
+      listHeaders['Authorization'] = `Bearer ${authToken}`;
+    }
+    
+    const listResponse = await fetch(listUrl, {
+      method: 'GET',
+      headers: listHeaders
     });
     
-    const s3Objects = await s3Client.send(listCommand);
-    const s3ImageKeys = s3Objects.Contents?.map(obj => obj.Key).filter(Boolean) || [];
+    if (!listResponse.ok) {
+      throw new Error(`Failed to list images: ${listResponse.status}`);
+    }
+    
+    const listResult = await listResponse.json();
+    const s3ImageKeys = listResult.files?.map((file: any) => file.key) || [];
     
     const usedImageUrls: string[] = [];
     
@@ -69,21 +221,46 @@ export const cleanupUnusedImages = async (
       }
     });
     
-    const unusedImages = s3ImageKeys.filter(key => key && !usedImageUrls.includes(key));
+    const unusedImages = s3ImageKeys.filter((key: string) => key && !usedImageUrls.includes(key));
     
     console.log(`Found ${unusedImages.length} unused images to delete:`, unusedImages);
     
     if (unusedImages.length > 0) {
-      const deleteCommand = new DeleteObjectsCommand({
-        Bucket: bucketName,
-        Delete: {
-          Objects: unusedImages.map(key => ({ Key: key }))
-        }
-      });
+      // Delete unused images via secure API
+      let deletedCount = 0;
       
-      const result = await s3Client.send(deleteCommand);
-      console.log('Deleted unused images:', result.Deleted);
-      return result.Deleted?.length || 0;
+      for (const imageKey of unusedImages) {
+        try {
+          const deleteHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-Enhanced-Groups': JSON.stringify(enhancedGroups)
+          };
+          
+          if (authToken) {
+            deleteHeaders['Authorization'] = `Bearer ${authToken}`;
+          }
+          
+          const deleteResponse = await fetch(apiUrl, {
+            method: 'DELETE',
+            headers: deleteHeaders,
+            body: JSON.stringify({
+              bucketName: targetBucket,
+              fileKey: imageKey
+            })
+          });
+          
+          if (deleteResponse.ok) {
+            deletedCount++;
+            console.log(`✅ Deleted unused image: ${imageKey}`);
+          } else {
+            console.warn(`⚠️ Failed to delete ${imageKey}: ${deleteResponse.status}`);
+          }
+        } catch (error) {
+          console.warn(`⚠️ Error deleting ${imageKey}:`, error);
+        }
+      }
+      
+      return deletedCount;
     }
     
     return 0;

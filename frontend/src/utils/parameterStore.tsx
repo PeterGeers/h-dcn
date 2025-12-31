@@ -1,11 +1,15 @@
 import React from 'react';
-import { ApiService } from './apiService';
 
 interface ParameterItem {
-  id: string;
-  value: any;
+  id?: string;
+  value?: any;
   parent?: string;
   children?: Record<string, ParameterItem>;
+  // Leveropties specific fields
+  name?: string;
+  cost?: string;
+  // Display fields
+  displayValue?: string;
 }
 
 interface Parameters {
@@ -122,7 +126,7 @@ class ParameterStore {
     return this.cache;
   }
 
-  // Save parameters
+  // Save parameters to localStorage only (no DynamoDB)
   async saveParameters(data: Parameters): Promise<void> {
     // BACKWARD COMPATIBILITY: Apply migration and validation before saving
     const migratedData = this.migrateParameterStructure(data);
@@ -142,14 +146,6 @@ class ParameterStore {
       localStorage.setItem('hdcn-form-parameters', JSON.stringify(migratedData));
     } catch (e) {
       console.warn('localStorage write failed:', e.message);
-    }
-    
-    // Save to DynamoDB via API
-    try {
-      await this.saveToDynamoDB(migratedData);
-      console.log('Parameters saved to DynamoDB and localStorage with backward compatibility');
-    } catch (error) {
-      console.log('DynamoDB save failed, saved to localStorage only:', error.message);
     }
     
     this.notifyListeners();
@@ -201,129 +197,106 @@ class ParameterStore {
     return null;
   }
 
-  // Load individual categories using GET /parameters/name/{name}
+  // Load parameters from static JSON file only - NO API calls
   private async convertApiToFormStructure(): Promise<Parameters> {
-    const formStructure: any = {};
-    const categoryMetadata: any = {};
-    
-    const categories = ['regio', 'lidmaatschap', 'motormerk', 'clubblad', 'wiewatwaar', 'function_permissions'];
-    
-    // Use Promise.all for parallel API calls instead of sequential
-    const promises = categories.map(async (categoryName) => {
-      try {
-        const param = await ApiService.getParameterByName(categoryName);
-        const displayName = this.getCategoryName(categoryName);
-        
-        if (displayName) {
-          const items = JSON.parse(param.value);
-          return {
-            category: displayName,
-            data: Array.isArray(items) ? items : [],
-            metadata: param
-          };
-        }
-      } catch (error) {
-        console.log(`Error loading ${categoryName}:`, error.message);
-        return null;
-      }
-    });
-    
-    // Process results
-    const results = await Promise.all(promises);
-    results.filter(Boolean).forEach(({ category, data, metadata }) => {
-      if (category === 'Configuratie') {
-        if (!formStructure.Configuratie) formStructure.Configuratie = [];
-        formStructure.Configuratie.push(...data);
-      } else {
-        formStructure[category] = data;
+    try {
+      // Load parameters from JSON file in data bucket - no API calls to avoid 500 errors
+      // Add timestamp to force cache refresh
+      const timestamp = new Date().getTime();
+      const version = process.env.REACT_APP_CACHE_VERSION || '1.0';
+      const imagesBaseUrl = process.env.REACT_APP_IMAGES_BASE_URL || 'https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com';
+      const response = await fetch(`${imagesBaseUrl}/parameters.json?v=${version}&t=${timestamp}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load parameters.json: ${response.status}`);
       }
       
-      categoryMetadata[category] = {
-        description: metadata.description,
-        created_at: metadata.created_at,
-        parameter_id: metadata.parameter_id
+      const jsonData = await response.json();
+      
+      // Convert JSON structure to expected format
+      const formStructure: any = {};
+      const categoryMetadata: any = {};
+      
+      // Map JSON keys to display names
+      const keyMapping: Record<string, string> = {
+        'regio': 'Regio',
+        'lidmaatschap': 'Lidmaatschap', 
+        'statuslidmaatschap': 'StatusLidmaatschap',
+        'motormerk': 'Motormerk',
+        'clubblad': 'Clubblad',
+        'wiewatwaar': 'WieWatWaar'
       };
-    });
-
-    formStructure._metadata = categoryMetadata;
-    return formStructure;
-  }
-
-  // Save to DynamoDB by updating existing parameter records
-  private async saveToDynamoDB(formData: Parameters): Promise<void> {
-    // Cache category map to avoid repeated API calls
-    if (!this.categoryMapCache) {
-      const apiData = await ApiService.getAllParameters();
-      this.categoryMapCache = new Map();
-      for (const param of apiData) {
-        const name = param.name?.toLowerCase();
-        if (name) this.categoryMapCache.set(name, param.parameter_id);
-      }
-    }
-    
-    const categoryMap = this.categoryMapCache;
-
-    const promises = [];
-
-    // Update each category
-    for (const [category, items] of Object.entries(formData)) {
-      if (category === '_metadata') continue;
       
-      const categoryKey = category.toLowerCase();
-      const parameterId = categoryMap.get(categoryKey);
-      
-      if (parameterId && Array.isArray(items)) {
-        let valueToSave;
+      // Convert each category
+      Object.entries(jsonData).forEach(([key, items]) => {
+        const displayName = keyMapping[key] || key.charAt(0).toUpperCase() + key.slice(1);
         
-        if (categoryKey === 'productgroepen') {
-          // Optimize nested structure conversion
-          const nested: any = {};
-          const parentMap = new Map<string, any>();
-          const childrenMap = new Map<string, any[]>();
-          
-          // Single pass to separate parents and children
-          for (const item of items) {
-            if (!item.parent) {
-              parentMap.set(item.id, item);
-              childrenMap.set(item.id, []);
-            }
+        if (Array.isArray(items)) {
+          // For simple arrays, keep them simple - only add IDs where they're actually needed
+          if (key === 'regio') {
+            // Regions need IDs for Cognito access control
+            formStructure[displayName] = items.map((item, index) => {
+              if (typeof item === 'string') {
+                return {
+                  id: String(index + 1),
+                  value: item
+                };
+              } else {
+                return {
+                  id: item.id || String(index + 1),
+                  value: item.value || '',
+                  ...item
+                };
+              }
+            });
+          } else {
+            // For other arrays, keep them as simple text arrays
+            formStructure[displayName] = items.map((item, index) => {
+              if (typeof item === 'string') {
+                return {
+                  value: item
+                };
+              } else {
+                return {
+                  id: item.id,
+                  value: item.value || '',
+                  ...item
+                };
+              }
+            });
           }
-          
-          for (const item of items) {
-            if (item.parent) {
-              if (!childrenMap.has(item.parent)) childrenMap.set(item.parent, []);
-              childrenMap.get(item.parent).push(item);
-            }
-          }
-          
-          // Build nested structure
-          for (const [parentId, parent] of Array.from(parentMap.entries())) {
-            const children: any = {};
-            for (const child of childrenMap.get(parentId) || []) {
-              children[child.value] = { id: child.id, value: child.value };
-            }
-            nested[parent.value] = { id: parent.id, value: parent.value, children };
-          }
-          
-          valueToSave = JSON.stringify(nested);
         } else {
-          valueToSave = JSON.stringify(items);
+          formStructure[displayName] = items;
         }
         
-        promises.push(ApiService.updateParameter(parameterId, {
-          name: categoryKey,
-          value: valueToSave,
-          description: `Configuration data for ${category}`
-        }));
+        categoryMetadata[displayName] = {
+          description: `Configuration data for ${displayName}`,
+          parameter_id: key
+        };
+      });
+      
+      // Add default function permissions if not present
+      if (!formStructure.Function_permissions) {
+        formStructure.Function_permissions = this.getDefaults().Function_permissions;
+        categoryMetadata.Function_permissions = {
+          description: 'Function permissions configuration',
+          parameter_id: 'function_permissions'
+        };
       }
+      
+      formStructure._metadata = categoryMetadata;
+      return formStructure;
+      
+    } catch (error) {
+      console.error('❌ Error loading parameters from JSON:', error);
+      throw error;
     }
-
-    await Promise.all(promises);
   }
 
   // Helper: Convert nested structure to flat array for dropdowns
   getFlatArray(category: string): ParameterItem[] {
     const data = this.cache?.[category];
+    
     if (!data) return [];
     
     if (Array.isArray(data)) {
@@ -331,7 +304,7 @@ class ParameterStore {
     }
     
     // Convert nested object to flat array
-    return Object.entries(data).flatMap(([key, item]: [string, any]) => {
+    const result = Object.entries(data).flatMap(([key, item]: [string, any]) => {
       const parent = { id: item.id, value: item.value };
       const children = item.children ? Object.values(item.children).map((child: any) => ({
         id: child.id, 
@@ -340,6 +313,8 @@ class ParameterStore {
       })) : [];
       return [parent, ...children];
     });
+    
+    return result;
   }
 
   // Helper: Get hierarchical structure for Parameter Management

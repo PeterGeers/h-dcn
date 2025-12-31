@@ -1,0 +1,170 @@
+{
+  "SD": {
+    "naam": "Dames sweater (Nog beperkt verkrijgbaar)",
+    "prijs": 25,
+    "groep": "Dames",
+    "subgroep": "Longsleeve",
+    "maten": "[\"S\",\"M\",\"L\"]"
+  },
+  "TD-60": {
+    "naam": "H-DCN 60 jarig jubileum T-shirt dames",
+    "prijs": 15,
+    "groep": "Dames",
+    "subgroep": "T-Shirt",
+    "maten": "[\"S\",\"L\",\"XL\",\"XXL\",\"XXXL\"]"
+  },
+  "TD": {
+    "naam": "H-DCN T-Shirt dames",
+    "prijs": 12.5,
+    "groep": "Dames",
+    "subgroep": "T-Shirt",
+    "maten": "[\"S\",\"M\",\"L\",\"XL\",\"XXL\"]"
+  },
+  "SH": {
+    "naam": "H-DCN Heren sweater (SH) (Nog beperkt verkrijgbaar)",
+    "prijs": 25,
+    "groep": "Heren",
+    "subgroep": "Longsleeve",
+    "maten": "[\"M\",\"XL\"]"
+  },
+  "TH-60": {
+    "naam": "H-DCN 60 jarig jubileum T-shirt heren",
+    "prijs": 15,
+    "groep": "Heren",
+    "subgroep": "T-Shirt",
+    "maten": "[\"L\",\"XL\"]"
+  },
+  "TH": {
+    "naam": "H-DCN T-Shirt heren",
+    "prijs": 12.5,
+    "groep": "Heren",
+    "subgroep": "T-Shirt",
+    "maten": "[\"M\",\"XL\",\"XXL\",\"XXXL\"]"
+  },
+  "G5": {
+    "naam": "H-DCN Pin - Logo H-DCN kleur",
+    "prijs": 3,
+    "groep": "Diversen",
+    "subgroep": "Pin",
+    "maten": ""
+  },
+  "G13": {
+    "naam": "H-DCN Pin - 60 Years kleur",
+    "prijs": 7.5,
+    "groep": "Diversen",
+    "subgroep": "Pin",
+    "maten": ""
+  },
+  "G12": {
+    "naam": "H-DCN Pin - 60 Years monochrome ",
+    "prijs": 6,
+    "groep": "Diversen",
+    "subgroep": "Pin",
+    "maten": ""
+  },
+  "G6": {
+    "naam": "H-DCE Pin - Federatie pin kleur",
+    "prijs": 3,
+    "groep": "Diversen",
+    "subgroep": "Pin",
+    "maten": ""
+  },
+  "G8": {
+    "naam": "Badge - Federatie H-DCEU",
+    "prijs": 3.5,
+    "groep": "Diversen",
+    "subgroep": "Badge",
+    "maten": ""
+  },
+  "G10": {
+    "naam": "Sticker - H-DCN Retro 5 stuks",
+    "prijs": 2.5,
+    "groep": "Diversen",
+    "subgroep": "Stickers",
+    "maten": ""
+  },
+  "G9": {
+    "naam": "Sticker - H-DCN 5 stuks",
+    "prijs": 2.5,
+    "groep": "Diversen",
+    "subgroep": "Stickers",
+    "maten": ""
+  },
+  "BEST": {
+    "naam": "Bestelling versturen € 5",
+    "prijs": 5,
+    "groep": "Diversen",
+    "subgroep": "Bestelling",
+    "maten": ""
+  },
+  "G15": {
+    "naam": "H-DCN Autoruit sticker 70 cm x 10 cm",
+    "prijs": 7.5,
+    "groep": "Diversen",
+    "subgroep": "Stickers",
+    "maten": "[\"70 cm x 10 cm\"]"
+  },
+  "G11": {
+    "naam": "Emaille bordje 10 cm x 9 cm (G11) € 7,50",
+    "prijs": 7.5,
+    "groep": "Diversen",
+    "subgroep": "Bordjes",
+    "maten": ""
+  },
+  "DA-H": {
+    "naam": "H-DCN Longsleeve heren - H-D retro lijnen",
+    "prijs": 25,
+    "groep": "Heren",
+    "subgroep": "Longsleeve",
+    "maten": "[\"S\",\"M\",\"L\",\"XL\",\"XXL\",\"XXXL\"]"
+  },
+  "DA-D": {
+    "naam": "H-DCN Longsleeve dames - H-D retro lijnen",
+    "prijs": 25,
+    "groep": "Dames",
+    "subgroep": "Longsleeve",
+    "maten": "[\"S\",\"M\",\"L\",\"XL\",\"XXL\"]"
+  },
+  "DB-H": {
+    "naam": "H-DCN Longsleeve heren - Classic Eagle",
+    "prijs": 20,
+    "groep": "Heren",
+    "subgroep": "Longsleeve",
+    "maten": "[\"S\",\"M\",\"L\",\"XL\",\"XXL\",\"XXXL\"]"
+  },
+  "DB-D": {
+    "naam": "H-DCN Longsleeve dames - Classic Eagle",
+    "prijs": 20,
+    "groep": "Dames",
+    "subgroep": "Longsleeve",
+    "maten": "[\"M\",\"L\",\"XL\"]"
+  },
+  "BS-U": {
+    "naam": "H-DCN Longsleeve unisex - 1. HDC-Nederland",
+    "prijs": 25,
+    "groep": "[\"Dames\",\"Heren\"]",
+    "subgroep": "Longsleeve",
+    "maten": "[\"S\",\"M\",\"L\",\"XL\",\"XXL\",\"XXXL\"]"
+  },
+  "TH-65": {
+    "naam": "H-DCN T-Shirt heren - Diamant",
+    "prijs": 19.5,
+    "groep": "Heren",
+    "subgroep": "T-Shirt",
+    "maten": "[\"S\",\"M\",\"XXL\",\"XXXL\"]"
+  },
+  "TD-65": {
+    "naam": "H-DCN T-Shirt dames - Diamant",
+    "prijs": 19.5,
+    "groep": "Dames",
+    "subgroep": "T-Shirt",
+    "maten": "[\"S\",\"M\",\"XL\",\"XXL\",\"XXXL\"]"
+  },
+  "RC-H": {
+    "naam": "H-DCN T-Shirt heren - Oldschool Cirkel",
+    "prijs": 22.5,
+    "groep": "Heren",
+    "subgroep": "T-Shirt",
+    "maten": "[\"S\",\"M\",\"L\",\"XL\",\"XXL\",\"XXXL\",\"XXXXL\"]"
+  }
+}

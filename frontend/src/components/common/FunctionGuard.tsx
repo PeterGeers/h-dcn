@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, useMemo } from 'react';
 import { FunctionPermissionManager } from '../../utils/functionPermissions';
 
 // Helper function to extract user roles from Cognito JWT token
@@ -115,18 +115,16 @@ export function FunctionGuard({
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Memoize user roles extraction to prevent unnecessary recalculations
+  const userRoles = useMemo(() => getUserRoles(user), [user]);
+
   useEffect(() => {
     const checkAccess = async () => {
       try {
-        // Extract user roles from Cognito token
-        const userRoles = getUserRoles(user);
-        console.log('🔍 FunctionGuard - Checking access for function:', functionName, 'action:', action);
-        console.log('🔍 FunctionGuard - User roles:', userRoles);
-        console.log('🔍 FunctionGuard - Required roles:', requiredRoles);
+        // Use memoized user roles
         
         // Check role-based access if roles are specified
         const hasRoleAccess = hasRequiredRoles(userRoles, requiredRoles);
-        console.log('🔍 FunctionGuard - Has role access:', hasRoleAccess);
         
         // Check function-based access if function name is provided
         let hasFunctionAccess = true; // Default to true if no function check needed
@@ -135,7 +133,6 @@ export function FunctionGuard({
           // This ensures existing function-based access control is preserved
           const permissions = await FunctionPermissionManager.create(user);
           hasFunctionAccess = permissions.hasAccess(functionName, action);
-          console.log('🔍 FunctionGuard - Has function access:', hasFunctionAccess);
         }
         
         // COMBINED PERMISSION CHECKING LOGIC:
@@ -168,15 +165,13 @@ export function FunctionGuard({
           combinedAccess = hasRoleAccess || hasFunctionAccess;
         }
         
-        console.log('🔍 FunctionGuard - Final combined access:', combinedAccess);
         setHasAccess(combinedAccess);
       } catch (error) {
         console.error('Permission check failed:', error);
         // BACKWARD COMPATIBILITY: Enhanced fallback handling
         // Try to preserve existing access patterns even when permission loading fails
-        const userGroups = getUserRoles(user); // Use the same JWT decoding logic
-        const isAdmin = userGroups.includes('hdcnAdmins');
-        const isBasicMember = userGroups.includes('hdcnLeden');
+        const isAdmin = userRoles.includes('hdcnAdmins');
+        const isBasicMember = userRoles.includes('hdcnLeden');
         
         // Fallback logic that preserves existing access patterns
         let fallbackAccess = false;
@@ -189,7 +184,7 @@ export function FunctionGuard({
           fallbackAccess = true;
         } else if (requiredRoles.length > 0) {
           // Check if user has any of the required roles as final fallback
-          fallbackAccess = hasRequiredRoles(userGroups, requiredRoles);
+          fallbackAccess = hasRequiredRoles(userRoles, requiredRoles);
         } else if (!functionName) {
           // If no function name and no roles, deny access
           fallbackAccess = false;
@@ -202,7 +197,7 @@ export function FunctionGuard({
     };
 
     checkAccess();
-  }, [user, functionName, action, requiredRoles]);
+  }, [user, functionName, action, requiredRoles, userRoles]); // Add userRoles to dependencies
 
   if (loading) return null;
   return hasAccess ? <>{children}</> : <>{fallback}</>;

@@ -17,51 +17,67 @@ export const processDeliveryOptions = (optionsString: string): DeliveryOption[] 
   }
   
   const sanitizedString = optionsString.replace(/[\u0000-\u001f\u007f-\u009f]/g, '');
-  const rawOptions: RawOption[] = JSON.parse(sanitizedString);
+  const rawOptions: any[] = JSON.parse(sanitizedString);
   
   if (!Array.isArray(rawOptions)) {
     throw new Error('Invalid options format');
   }
   
-  if (!rawOptions.every(item => item && typeof item === 'object')) {
-    throw new Error('Invalid options structure');
-  }
-  
+  // Handle both old complex format and new simple format
   const processedOptions: DeliveryOption[] = [];
-  const parents = rawOptions.filter(item => {
-    return item && 
-           typeof item === 'object' && 
-           item.parent === null &&
-           typeof item.id !== 'undefined' &&
-           typeof item.value === 'string';
-  });
   
-  parents.forEach(parent => {
-    if (!parent.id || typeof parent.value !== 'string') {
-      return;
-    }
-    
-    const priceItem = rawOptions.find(item => {
+  // Check if it's the new simple format (objects with name and cost)
+  if (rawOptions.length > 0 && rawOptions[0].name && rawOptions[0].cost !== undefined) {
+    // New simple format
+    rawOptions.forEach((option, index) => {
+      if (option && typeof option === 'object' && option.name) {
+        const sanitizedLabel = String(option.name).replace(/[<>"'&]/g, '');
+        const sanitizedCost = String(option.cost || '0').replace(/[^0-9.]/g, '');
+        
+        processedOptions.push({
+          value: String(index + 1), // Simple sequential ID
+          label: sanitizedLabel,
+          cost: sanitizedCost
+        });
+      }
+    });
+  } else {
+    // Old complex format (parent/child structure)
+    const parents = rawOptions.filter(item => {
       return item && 
              typeof item === 'object' && 
-             item.parent === parent.id &&
-             typeof item.value !== 'undefined';
+             item.parent === null &&
+             typeof item.id !== 'undefined' &&
+             typeof item.value === 'string';
     });
     
-    let cost = '0';
-    if (priceItem && priceItem.value) {
-      const sanitizedCost = String(priceItem.value).replace(/[^0-9.]/g, '');
-      cost = isNaN(parseFloat(sanitizedCost)) ? '0' : sanitizedCost;
-    }
-    
-    const sanitizedLabel = String(parent.value).replace(/[<>"'&]/g, '');
-    
-    processedOptions.push({
-      value: String(parent.id),
-      label: sanitizedLabel,
-      cost: cost
+    parents.forEach(parent => {
+      if (!parent.id || typeof parent.value !== 'string') {
+        return;
+      }
+      
+      const priceItem = rawOptions.find(item => {
+        return item && 
+               typeof item === 'object' && 
+               item.parent === parent.id &&
+               typeof item.value !== 'undefined';
+      });
+      
+      let cost = '0';
+      if (priceItem && priceItem.value) {
+        const sanitizedCost = String(priceItem.value).replace(/[^0-9.]/g, '');
+        cost = isNaN(parseFloat(sanitizedCost)) ? '0' : sanitizedCost;
+      }
+      
+      const sanitizedLabel = String(parent.value).replace(/[<>"'&]/g, '');
+      
+      processedOptions.push({
+        value: String(parent.id),
+        label: sanitizedLabel,
+        cost: cost
+      });
     });
-  });
+  }
   
   return processedOptions;
 };

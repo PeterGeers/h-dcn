@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Auth Test</title>
+</head>
+<body>
+    <h1>Frontend Authentication Test</h1>
+    <button onclick="testAuth()">Test Authentication</button>
+    <div id="result"></div>
+
+    <script>
+        function testAuth() {
+            // Simulate what the frontend should be doing
+            const storedUser = localStorage.getItem('hdcn_auth_user');
+            let enhancedGroups = 'hdcnAdmins,System_CRUD_All'; // fallback
+            
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                const groups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
+                if (groups && Array.isArray(groups)) {
+                    enhancedGroups = groups.join(',');
+                }
+            }
+            
+            console.log('🔍 Enhanced groups:', enhancedGroups);
+            console.log('🔍 Stored user:', storedUser ? 'Found' : 'Not found');
+            
+            // Test the API call
+            const apiUrl = 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/s3/files';
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Enhanced-Groups': enhancedGroups
+                },
+                body: JSON.stringify({
+                    bucketName: 'my-hdcn-bucket',
+                    fileKey: 'test-frontend-auth.txt',
+                    fileData: 'Hello from frontend test',
+                    contentType: 'text/plain'
+                })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                document.getElementById('result').innerHTML = `
+                    <h3>Result:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <p>Groups sent: ${enhancedGroups}</p>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                    <p>Groups sent: ${enhancedGroups}</p>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

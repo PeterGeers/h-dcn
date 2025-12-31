@@ -1,17 +1,12 @@
 import json
 import boto3
 from datetime import datetime
-
-def cors_headers():
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "PUT, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
+from shared.auth_utils import require_auth, create_success_response, create_error_response
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Events')
 
+@require_auth(['events_update', 'events_create'])
 def lambda_handler(event, context):
     try:
         event_id = event['pathParameters']['event_id']
@@ -39,14 +34,17 @@ def lambda_handler(event, context):
         
         table.update_item(**update_params)
         
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': json.dumps({'message': 'Event updated successfully'})
-        }
+        print(f"Event {event_id} updated by {event['auth_user']} with roles {event['auth_roles']}")
+        
+        return create_success_response({
+            'message': 'Event updated successfully',
+            'updated_fields': list(body.keys())
+        })
+        
+    except KeyError as e:
+        return create_error_response(400, f'Missing required parameter: {str(e)}')
+    except json.JSONDecodeError:
+        return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': str(e)})
-        }
+        print(f"Unexpected error in update_event: {str(e)}")
+        return create_error_response(500, 'Internal server error')

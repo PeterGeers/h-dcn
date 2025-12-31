@@ -4,10 +4,11 @@ import {
   VStack, HStack, Button, Select, FormControl, FormLabel, Input, SimpleGrid, useToast, Text, Box
 } from '@chakra-ui/react';
 import { Member } from '../../../types';
-import { getAuthHeadersForGet } from '../../../utils/authHeaders';
+import { getAuthHeadersForGet, getAuthHeaders } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
 import { getUserRoles } from '../../../utils/functionPermissions';
+import { hasRegionalAccess } from '../../../utils/regionalMapping';
 
 interface ParameterOption {
   value?: string;
@@ -27,6 +28,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
   const [regioOptions, setRegioOptions] = useState<ParameterOption[]>([]);
   const [statusOptions, setStatusOptions] = useState<ParameterOption[]>([]);
   const [lidmaatschapOptions, setLidmaatschapOptions] = useState<ParameterOption[]>([]);
+  const [geslachtOptions, setGeslachtOptions] = useState<ParameterOption[]>([]);
   const [showAddField, setShowAddField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldValue, setNewFieldValue] = useState('');
@@ -89,17 +91,8 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
       
       // Regional roles can edit membership fields for their region
       if (member?.regio) {
-        const memberRegion = member.regio;
-        return userRoles.some(role => {
-          if (role.includes('Regional_Chairman_') && role.includes('Region')) {
-            const regionMatch = role.match(/Region(\d+)/);
-            if (regionMatch) {
-              const roleRegion = regionMatch[1];
-              return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
-            }
-          }
-          return false;
-        });
+        return hasRegionalAccess(userRoles, member.regio) && 
+               userRoles.some(role => role.includes('Regional_Chairman_'));
       }
     }
 
@@ -228,31 +221,50 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
 
   const loadParameterOptions = async () => {
     try {
-      const headers = await getAuthHeadersForGet();
-      const parameters = await apiCall<any[]>(
-        fetch(API_URLS.parameters(), { headers }),
-        'laden parameters'
-      );
+      // Load parameters from JSON file only - no API calls
+      // Add timestamp to force cache refresh
+      const timestamp = new Date().getTime();
+      const version = process.env.REACT_APP_CACHE_VERSION || '1.0';
+      const response = await fetch(`/parameters.json?v=${version}&t=${timestamp}`);
       
-      const regioParam = parameters.find(p => p.name?.toLowerCase() === 'regio');
-      if (regioParam) {
-        const regios = JSON.parse(regioParam.value);
-        setRegioOptions(regios);
-      }
-      
-      const statusParam = parameters.find(p => p.name?.toLowerCase() === 'statuslidmaatschap');
-      if (statusParam) {
-        const statuses = JSON.parse(statusParam.value);
-        setStatusOptions(statuses);
-      }
-      
-      const lidmaatschapParam = parameters.find(p => p.name?.toLowerCase() === 'lidmaatschap');
-      if (lidmaatschapParam) {
-        const lidmaatschappen = JSON.parse(lidmaatschapParam.value);
-        setLidmaatschapOptions(lidmaatschappen);
+      if (response.ok) {
+        const parameters = await response.json();
+        console.log('🔍 Loaded parameters from JSON:', parameters);
+        
+        // Set parameter options directly from JSON structure
+        setRegioOptions(parameters.regio || []);
+        setStatusOptions(parameters.statuslidmaatschap || []);
+        setLidmaatschapOptions(parameters.lidmaatschap || []);
+        setGeslachtOptions(parameters.geslacht || []);
+        
+        console.log('🔍 Loaded membership options:', parameters.lidmaatschap);
+        console.log('🔍 Loaded wiewatwaar options:', parameters.wiewatwaar);
+      } else {
+        console.error('Failed to load parameters.json:', response.status);
+        // Set fallback options
+        setRegioOptions([]);
+        setStatusOptions([]);
+        setGeslachtOptions([]);
+        setLidmaatschapOptions([
+          { value: 'Gewoon lid' },
+          { value: 'Gezins lid' },
+          { value: 'Donateur zonder motor' },
+          { value: 'Gezins donateur zonder motor' }
+        ]);
       }
     } catch (error: any) {
+      console.error('Error loading parameters from JSON:', error);
       handleError(error, 'laden parameters');
+      // Set fallback options
+      setRegioOptions([]);
+      setStatusOptions([]);
+      setGeslachtOptions([]);
+      setLidmaatschapOptions([
+        { value: 'Gewoon lid' },
+        { value: 'Gezins lid' },
+        { value: 'Donateur zonder motor' },
+        { value: 'Gezins donateur zonder motor' }
+      ]);
     }
   };
 
@@ -291,27 +303,58 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
 
     setIsLoading(true);
     try {
+      // Create the update payload with only the changed fields
+      const updatePayload: any = {};
+      
+      // Always include basic required fields
+      updatePayload.voornaam = formData.voornaam;
+      updatePayload.achternaam = formData.achternaam;
+      updatePayload.email = formData.email;
+      
+      // Include other fields that have values
+      Object.keys(formData).forEach(key => {
+        if (formData[key] && formData[key] !== '' && key !== 'member_id' && key !== 'updated_at') {
+          updatePayload[key] = formData[key];
+        }
+      });
+      
+      // Ensure name field is updated
+      updatePayload.name = `${formData.voornaam} ${formData.achternaam}`;
+      
+      console.log('🔄 Sending member update:', updatePayload);
+      
+      // Call the backend update endpoint directly
+      const headers = await getAuthHeaders();
+      const response = await fetch(API_URLS.member(member.member_id), {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updatePayload)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Member update failed:', response.status, errorText);
+        throw new Error(`Update failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Member update successful:', result);
+      
+      // Create updated member object for parent component
       const updatedMember: Member = {
+        ...member,
+        ...updatePayload,
         id: member.id,
         member_id: member.member_id,
-        name: `${formData.voornaam} ${formData.achternaam}`,
-        voornaam: formData.voornaam,
-        achternaam: formData.achternaam,
-        email: formData.email,
-        telefoon: formData.telefoon,
-        lidmaatschap: formData.lidmaatschap,
-        membershipType: formData.lidmaatschap,
-        status: formData.status,
-        regio: formData.regio,
-        region: formData.regio,
-        created_at: member.created_at,
-        updated_at: member.updated_at
+        created_at: member.created_at
+        // updated_at will come from backend or be preserved from original member
       };
 
       await onSave(updatedMember);
       onClose();
       handleSuccess('Lid succesvol bijgewerkt');
     } catch (error: any) {
+      console.error('❌ Error updating member:', error);
       handleError({ status: 0, message: error.message }, 'opslaan lid');
     } finally {
       setIsLoading(false);
@@ -345,9 +388,10 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
     // Check if user can edit this field type
     const canEdit = canEditFieldType(fieldType);
 
-    if (['status', 'lidmaatschap', 'regio'].includes(fieldKey)) {
+    if (['status', 'lidmaatschap', 'regio', 'geslacht'].includes(fieldKey)) {
       const options = fieldKey === 'status' ? statusOptions :
-                    fieldKey === 'lidmaatschap' ? lidmaatschapOptions : regioOptions;
+                    fieldKey === 'lidmaatschap' ? lidmaatschapOptions : 
+                    fieldKey === 'geslacht' ? geslachtOptions : regioOptions;
       return (
         <FormControl key={fieldKey} isRequired={isRequired} isDisabled={!canEdit}>
           <FormLabel color="orange.300">{label}{isRequired && ' *'}{!canEdit && ' (Alleen-lezen)'}</FormLabel>
@@ -373,11 +417,10 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
       );
     }
 
-    if (['clubblad', 'nieuwsbrief', 'geslacht', 'betaalwijze', 'incasso', 'privacy', 'toestemmingfoto'].includes(fieldKey)) {
+    if (['clubblad', 'nieuwsbrief', 'betaalwijze', 'incasso', 'privacy', 'toestemmingfoto'].includes(fieldKey)) {
       const options: Record<string, string[]> = {
         clubblad: ['Digitaal', 'Papier', 'Beide', 'Geen'],
         nieuwsbrief: ['Ja', 'Nee'],
-        geslacht: ['M', 'V', 'X'],
         betaalwijze: ['Incasso', 'Overmaking', 'Contant'],
         incasso: ['Ja', 'Nee'],
         privacy: ['Ja', 'Nee'],

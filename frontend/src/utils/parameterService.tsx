@@ -453,11 +453,11 @@ export const validateParameterBackwardCompatibility = async (): Promise<{
 
         // Check for required fields in known categories
         if (category === 'Regio' && Array.isArray(items)) {
-          const hasValidRegions = items.every(item => item.id && item.value);
+          const hasValidRegions = items.every(item => item.value); // Only require value, not ID
           if (!hasValidRegions) {
             validation.status = 'needs_attention';
-            validation.issues.push('Some region entries missing required id or value fields');
-            validation.recommendations.push('Ensure all region entries have both id and value fields');
+            validation.issues.push('Some region entries missing required value field');
+            validation.recommendations.push('Ensure all region entries have value fields');
           }
         }
 

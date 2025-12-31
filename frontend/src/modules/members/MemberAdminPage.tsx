@@ -8,6 +8,7 @@ import { SearchIcon, EditIcon, ViewIcon } from '@chakra-ui/icons';
 import MemberDetailModal from './components/MemberDetailModal';
 import MemberEditModal from './components/MemberEditModal';
 import CognitoAdminPage from './CognitoAdminPage';
+import { hasRegionalAccess } from '../../utils/regionalMapping';
 import { Member } from '../../types';
 import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
@@ -181,28 +182,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
 
     // Regional access - check if user has regional permissions for this member's region
     if (member.regio) {
-      const memberRegion = member.regio;
-      const hasRegionalAccess = userRoles.some(role => {
-        // Check for regional roles that match the member's region
-        if (role.includes('Regional_') && role.includes('Region')) {
-          const regionMatch = role.match(/Region(\d+)/);
-          if (regionMatch) {
-            const roleRegion = regionMatch[1];
-            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
-          }
-        }
-        // Legacy regional role support
-        if (role.startsWith('hdcnRegio_')) {
-          const regionMatch = role.match(/hdcnRegio_(\d+)_/);
-          if (regionMatch) {
-            const roleRegion = regionMatch[1];
-            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
-          }
-        }
-        return false;
-      });
-      
-      if (hasRegionalAccess) {
+      if (hasRegionalAccess(userRoles, member.regio)) {
         return true;
       }
     }
@@ -271,21 +251,15 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
 
     // Regional roles with write access
     if (member.regio) {
-      const memberRegion = member.regio;
-      const hasRegionalWriteAccess = userRoles.some(role => {
-        // Regional Chairman can edit members in their region
-        if (role.includes('Regional_Chairman_') && role.includes('Region')) {
-          const regionMatch = role.match(/Region(\d+)/);
-          if (regionMatch) {
-            const roleRegion = regionMatch[1];
-            return memberRegion === roleRegion || memberRegion === `Region${roleRegion}`;
-          }
+      if (hasRegionalAccess(userRoles, member.regio)) {
+        // Check if user has write permissions (Chairman roles)
+        const hasRegionalWriteAccess = userRoles.some(role => 
+          role.includes('Regional_Chairman_') && role.includes('Region')
+        );
+        
+        if (hasRegionalWriteAccess) {
+          return true;
         }
-        return false;
-      });
-      
-      if (hasRegionalWriteAccess) {
-        return true;
       }
     }
 
@@ -630,7 +604,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                       <Text isTruncated maxW="150px">{member.email}</Text>
                     </Td>
                     <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
-                      {member.lidmaatschap || member.membership_type}
+                      {member.lidmaatschap || member.membership_type || member.membershipType || '-'}
                     </Td>
                     <Td>
                       <Badge colorScheme={getStatusColor(member.status)} fontSize={{ base: 'xs', md: 'sm' }}>

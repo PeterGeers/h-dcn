@@ -1,16 +1,19 @@
-import boto3
-import os
 import json
-from boto3.dynamodb.conditions import Key
+import boto3
+import sys
+import os
 from datetime import datetime
+from shared.auth_utils import require_auth, create_success_response, create_error_response
 
 dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('DYNAMODB_TABLE', 'Producten')
 table = dynamodb.Table(table_name)
 
+@require_auth(['products_update', 'products_create'])
 def lambda_handler(event, context):
     try:
-        id = event['pathParameters']['id']
+        # Get product ID and data
+        product_id = event['pathParameters']['id']
         data = json.loads(event['body']) if event['body'] else {}
 
         # Dynamically build update expression and attribute values
@@ -32,31 +35,32 @@ def lambda_handler(event, context):
             expression_attribute_names[placeholder_name] = key
             expression_attribute_values[placeholder_value] = value
 
+        # Add updated timestamp
+        update_expression_parts.append("#updated_at = :updated_at")
+        expression_attribute_names["#updated_at"] = "updated_at"
+        expression_attribute_values[":updated_at"] = datetime.now().isoformat()
+
         update_expression = "SET " + ", ".join(update_expression_parts)
 
         table.update_item(
-            Key={'id': id},
+            Key={'id': product_id},
             UpdateExpression=update_expression,
             ExpressionAttributeNames=expression_attribute_names,
             ExpressionAttributeValues=expression_attribute_values
         )
 
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': json.dumps({'message': f'Product {id} updated successfully'})
-        }
-        
-    except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': str(e)})
-        }
+        print(f"Product {product_id} updated by {event['auth_user']} with roles {event['auth_roles']}")
 
-def cors_headers():
-    return {
-        "Access-Control-Allow-Origin": "*",   # of "https://jouwdomein.nl"
-        "Access-Control-Allow-Methods": "PUT,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
+        return create_success_response({
+            'message': f'Product {product_id} updated successfully',
+            'updated_fields': list(data.keys())
+        })
+        
+    except KeyError as e:
+        return create_error_response(400, f'Missing required parameter: {str(e)}')
+    except json.JSONDecodeError:
+        return create_error_response(400, 'Invalid JSON in request body')
+    except Exception as e:
+        print(f"Unexpected error in update_product: {str(e)}")
+        return create_error_response(500, 'Internal server error')
+
