@@ -29,7 +29,6 @@ interface Product {
   groep: string;
   subgroep: string;
   prijs: number;
-  beschrijving?: string;
   images?: string[];
   opties?: string;
 }
@@ -149,7 +148,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           groep: 'Kleding',
           subgroep: 'T-shirts',
           prijs: 25.00,
-          beschrijving: 'Officieel H-DCN T-shirt',
           images: [],
           opties: 'S,M,L,XL'
         },
@@ -159,7 +157,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           groep: 'Kleding',
           subgroep: 'Hoodies',
           prijs: 45.00,
-          beschrijving: 'Warme H-DCN hoodie',
           images: [],
           opties: 'S,M,L,XL'
         },
@@ -169,7 +166,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           groep: 'Accessoires',
           subgroep: 'Hoofddeksels',
           prijs: 18.00,
-          beschrijving: 'H-DCN baseball cap',
           images: [],
           opties: 'One Size'
         }

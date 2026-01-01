@@ -17,7 +17,7 @@ interface Product {
   groep?: string;
   subgroep?: string;
   prijs: number | string;
-  beschrijving?: string;
+  opties?: string;
 }
 
 interface ProductTableProps {
@@ -42,7 +42,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
             <Th color="orange.300" minW="100px" display={{ base: 'none', md: 'table-cell' }}>Groep</Th>
             <Th color="orange.300" minW="100px" display={{ base: 'none', lg: 'table-cell' }}>Subgroep</Th>
             <Th color="orange.300" minW="80px" isNumeric>Prijs</Th>
-            <Th color="orange.300" w="30%" display={{ base: 'none', md: 'table-cell' }}>Beschrijving</Th>
+            <Th color="orange.300" w="30%" display={{ base: 'none', md: 'table-cell' }}>Opties</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -68,7 +68,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
               </Td>
               <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
                 <Box maxW="150px">
-                  <Text noOfLines={2}>{product.beschrijving}</Text>
+                  <Text noOfLines={2}>{product.opties}</Text>
                 </Box>
               </Td>
             </Tr>

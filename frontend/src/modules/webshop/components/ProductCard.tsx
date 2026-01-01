@@ -24,7 +24,6 @@ interface Product {
   id: string;
   naam: string;
   prijs: number | string;
-  beschrijving?: string;
   opties?: string;
   images?: string | string[];
   image?: string | string[];
@@ -179,11 +178,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                   <Text fontSize={{ base: 'md', md: 'lg' }}>
                     Prijs: <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>€{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}</Text>
                   </Text>
-                  {product.beschrijving && (
-                    <Text fontSize={{ base: 'sm', md: 'md' }}>
-                      <strong>Beschrijving:</strong> {product.beschrijving}
-                    </Text>
-                  )}
+                  <Text fontSize={{ base: 'sm', md: 'md' }}>
+                    <strong>Product:</strong> {product.naam}
+                  </Text>
                 </VStack>
 
                 {options.length > 0 && (

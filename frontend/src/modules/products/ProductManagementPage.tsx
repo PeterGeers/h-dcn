@@ -3,12 +3,11 @@ import { scanProducts, updateProduct, deleteProduct, insertProduct } from './api
 import ProductTable from './components/ProductTable';
 import ProductCard from './components/ProductCard';
 import ProductFilter from './components/ProductFilter';
-import Header from './components/Header';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 
-import { Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, Text } from '@chakra-ui/react';
+import { Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, Text, VStack, Heading } from '@chakra-ui/react';
 
 interface FilterOption {
   type: 'group' | 'subgroup';
@@ -129,7 +128,9 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
 
   return (
     <>
-      <Header />
+      <Box p={6} bg="black" minH="100vh">
+        <VStack spacing={6} align="stretch">
+          <Heading color="orange.400">Product Management</Heading>
       
       {/* Check if user has read access to products */}
       <FunctionGuard 
@@ -152,52 +153,6 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
         }
       >
         {/* Enhanced functionality for different admin roles */}
-        {hasProductsFullAccess && (
-          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400" mb={4}>
-            <Text color="green.400" fontWeight="bold" mb={3}>
-              🛍️ Geavanceerd Productbeheer (Products_CRUD_All / Webshop_Management)
-            </Text>
-            <HStack spacing={4} wrap="wrap">
-              <Button
-                size="sm"
-                colorScheme="green"
-                onClick={() => {
-                  // Bulk product operations
-                  const activeProducts = products.filter(p => p.price > 0);
-                  alert(`🛍️ ${activeProducts.length} actieve producten gevonden`);
-                }}
-              >
-                📦 Bulk Product Beheer
-              </Button>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                onClick={() => {
-                  // Inventory management
-                  alert('📊 Voorraad beheer functionaliteit - nog niet geïmplementeerd');
-                }}
-              >
-                📊 Voorraad Beheer
-              </Button>
-              <Button
-                size="sm"
-                colorScheme="purple"
-                onClick={() => {
-                  // Product analytics
-                  const productStats = {
-                    totaal: products.length,
-                    categorieën: [...new Set(products.map(p => p.groep))].length,
-                    gemiddeldePrijs: products.reduce((sum, p) => sum + (p.price || 0), 0) / products.length
-                  };
-                  alert(`📈 Product statistieken:\nTotaal: ${productStats.totaal}\nCategorieën: ${productStats.categorieën}\nGemiddelde prijs: €${productStats.gemiddeldePrijs.toFixed(2)}`);
-                }}
-              >
-                📈 Product Analytics
-              </Button>
-            </HStack>
-          </Box>
-        )}
-
         {(hasProductsFinancialAccess && !hasProductsFullAccess) && (
           <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="yellow.400" mb={4}>
             <Text color="yellow.400" fontWeight="bold" mb={3}>
@@ -321,6 +276,8 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
           </FunctionGuard>
         )}
       </FunctionGuard>
+        </VStack>
+      </Box>
     </>
   );
 }

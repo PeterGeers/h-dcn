@@ -2,12 +2,13 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Box, Flex, Heading, Button, Text, Spacer, HStack, Image } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
 import OAuthCallback from './components/auth/OAuthCallback';
+import { blockPasswordManagers, disablePasswordManagersOnInputs } from './utils/blockPasswordManagers';
 
 interface User {
   attributes?: {
@@ -35,6 +36,7 @@ const MembershipForm = lazy(() => import('./pages/MembershipForm')) as any;
 const ParameterManagement = lazy(() => import('./pages/ParameterManagement')) as any;
 const WebshopPage = lazy(() => import('./modules/webshop/WebshopPage')) as any;
 const ProductManagementPage = lazy(() => import('./modules/products/ProductManagementPage')) as any;
+const AdvancedExportsPage = lazy(() => import('./modules/advanced-exports/AdvancedExportsPage')) as any;
 const MemberAdminPage = lazy(() => import('./modules/members/MemberAdminPage')) as any;
 const EventAdminPage = lazy(() => import('./modules/events/EventAdminPage')) as any;
 const MembershipManagement = lazy(() => import('./pages/MembershipManagement')) as any;
@@ -87,6 +89,24 @@ function NavigationHeader({ signOut, user }: AppProps) {
 }
 
 function AppContent({ signOut, user }: AppProps) {
+  useEffect(() => {
+    // Block password managers after login
+    const cleanup = blockPasswordManagers();
+    
+    // Disable password managers on existing inputs
+    disablePasswordManagersOnInputs();
+    
+    // Set up periodic cleanup for dynamically added inputs
+    const inputCleanupInterval = setInterval(() => {
+      disablePasswordManagersOnInputs();
+    }, 2000);
+    
+    return () => {
+      cleanup();
+      clearInterval(inputCleanupInterval);
+    };
+  }, []);
+
   return (
     <Box minH="100vh" bg="black">
       <NavigationHeader signOut={signOut} user={user} />
@@ -102,6 +122,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/parameters" element={<ParameterManagement user={user} />} />
             <Route path="/webshop" element={<WebshopPage user={user} />} />
             <Route path="/products" element={<ProductManagementPage user={user} />} />
+            <Route path="/advanced-exports" element={<AdvancedExportsPage user={user} />} />
             <Route path="/members" element={<MemberAdminPage user={user} />} />
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />

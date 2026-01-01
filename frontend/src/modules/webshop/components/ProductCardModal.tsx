@@ -24,7 +24,6 @@ interface Product {
   id: string;
   naam: string;
   prijs: number | string;
-  beschrijving?: string;
   groep?: string;
   subgroep?: string;
   opties?: string;
@@ -91,8 +90,6 @@ const ProductCardModal: React.FC<ProductCardModalProps> = ({ product, isOpen, on
             <Text fontSize="xl" fontWeight="bold" color="orange.500">
               €{Number(product.prijs).toFixed(2)}
             </Text>
-            
-            <Text>{product.beschrijving}</Text>
             
             <Text><strong>Groep:</strong> {product.groep}</Text>
             <Text><strong>Subgroep:</strong> {product.subgroep}</Text>

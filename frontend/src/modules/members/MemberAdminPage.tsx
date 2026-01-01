@@ -343,78 +343,6 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
               <VStack spacing={6} align="stretch">
 
                 {/* Enhanced functionality for Members_CRUD_All role */}
-                {hasFullMemberAccess && (
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400" mb={4}>
-                    <Text color="green.400" fontWeight="bold" mb={3}>
-                      🔧 Geavanceerde Ledenadministratie (Members_CRUD_All)
-                    </Text>
-                    <HStack spacing={4} wrap="wrap">
-                      <Button
-                        size="sm"
-                        colorScheme="green"
-                        onClick={() => {
-                          // Bulk status update functionality
-                          const selectedMembers = filteredMembers.filter(m => m.status === 'pending');
-                          if (selectedMembers.length > 0) {
-                            handleSuccess(`${selectedMembers.length} leden met status 'pending' gevonden voor bulk bewerking`);
-                          } else {
-                            handleError({ status: 404, message: 'Geen leden met status pending gevonden' }, 'bulk bewerking');
-                          }
-                        }}
-                      >
-                        📋 Bulk Status Update
-                      </Button>
-                      <Button
-                        size="sm"
-                        colorScheme="blue"
-                        onClick={() => {
-                          // Member data export functionality
-                          const exportData = filteredMembers.map(m => ({
-                            lidnummer: m.lidnummer,
-                            naam: m.name,
-                            email: m.email,
-                            status: m.status,
-                            regio: m.regio,
-                            lidmaatschap: m.lidmaatschap
-                          }));
-                          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `leden-export-${new Date().toISOString().split('T')[0]}.json`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                          handleSuccess('Ledendata geëxporteerd');
-                        }}
-                      >
-                        📊 Export Ledendata
-                      </Button>
-                      <Button
-                        size="sm"
-                        colorScheme="purple"
-                        onClick={() => {
-                          // Advanced member statistics
-                          const stats = {
-                            totaal: filteredMembers.length,
-                            perStatus: uniqueStatuses.reduce((acc, status) => {
-                              acc[status] = filteredMembers.filter(m => m.status === status).length;
-                              return acc;
-                            }, {}),
-                            perRegio: uniqueRegions.reduce((acc, regio) => {
-                              acc[regio] = filteredMembers.filter(m => m.regio === regio).length;
-                              return acc;
-                            }, {})
-                          };
-                          console.log('📊 Geavanceerde ledenstatistieken:', stats);
-                          handleSuccess('Statistieken gegenereerd (zie console)');
-                        }}
-                      >
-                        📈 Geavanceerde Statistieken
-                      </Button>
-                    </HStack>
-                  </Box>
-                )}
-
                 {/* Enhanced functionality for other admin roles */}
                 {(hasMemberExportAccess && !hasFullMemberAccess) && (
                   <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="blue.400" mb={4}>
@@ -584,8 +512,8 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                 <Th color="orange.300" minW="120px">Naam</Th>
                 <Th color="orange.300" minW="150px">Email</Th>
                 <Th color="orange.300" minW="100px" display={{ base: 'none', lg: 'table-cell' }}>Lidmaatschap</Th>
-                <Th color="orange.300" minW="80px">Status</Th>
-                <Th color="orange.300" minW="100px" display={{ base: 'none', md: 'table-cell' }}>Lid sinds</Th>
+                <Th color="orange.300" minW="120px">Status</Th>
+                <Th color="orange.300" minW="120px" display={{ base: 'none', md: 'table-cell' }}>Lid sinds</Th>
                 <Th color="orange.300" minW="150px" position="sticky" right={0} bg="gray.700">Acties</Th>
               </Tr>
             </Thead>
@@ -612,7 +540,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                       </Badge>
                     </Td>
                     <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                      {member.created_at ? new Date(member.created_at).toLocaleDateString('nl-NL') : '-'}
+                      {member.tijdstempel ? new Date(member.tijdstempel).toLocaleDateString('nl-NL') : ''}
                     </Td>
                     <Td position="sticky" right={0} bg="gray.800">
                       {isMobile ? (
@@ -641,24 +569,24 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                       ) : (
                         <HStack spacing={2}>
                           {canViewMemberRecord(member) && (
-                            <Button
+                            <IconButton
                               size="sm"
                               colorScheme="blue"
-                              leftIcon={<ViewIcon />}
+                              icon={<ViewIcon />}
                               onClick={() => handleViewMember(member)}
-                            >
-                              Bekijk
-                            </Button>
+                              title="Bekijk"
+                              aria-label="Bekijk"
+                            />
                           )}
                           {canEditMemberRecord(member) && (
-                            <Button
+                            <IconButton
                               size="sm"
                               colorScheme="orange"
-                              leftIcon={<EditIcon />}
+                              icon={<EditIcon />}
                               onClick={() => handleEditMember(member)}
-                            >
-                              Bewerk
-                            </Button>
+                              title="Bewerk"
+                              aria-label="Bewerk"
+                            />
                           )}
                         </HStack>
                       )}

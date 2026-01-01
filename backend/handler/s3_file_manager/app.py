@@ -276,7 +276,14 @@ def lambda_handler(event, context):
             return auth_error
         
         # Validate permissions for S3 operations using shared auth layer
-        required_permissions = ['products_create', 'products_update', 'products_delete']  # S3 file operations
+        # S3 is used for multiple resources (products, parameters.json, etc.)
+        # Allow any user with CRUD permissions or admin roles
+        required_permissions = [
+            'Products_CRUD_All', 'Webshop_Management', 'System_CRUD_All', 
+            'Members_CRUD_All', 'Events_CRUD_All', 'Communication_CRUD_All',
+            'hdcnAdmins', 'Webmaster', 'National_Chairman', 'National_Secretary',
+            'System_User_Management', 'System_Logs_Read'  # Add more roles that might need S3 access
+        ]
         has_permission, permission_error = validate_permissions(
             user_roles, 
             required_permissions, 

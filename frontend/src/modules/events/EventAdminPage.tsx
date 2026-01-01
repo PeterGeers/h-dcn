@@ -198,55 +198,6 @@ function EventAdminPage({ user }: EventAdminPageProps) {
         <Heading color="orange.400">Evenementenadministratie</Heading>
         
         {/* Enhanced functionality for different admin roles */}
-        {hasEventsFullAccess && (
-          <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="green.400" mb={4}>
-            <Text color="green.400" fontWeight="bold" mb={3}>
-              🎯 Geavanceerd Evenementenbeheer (Events_CRUD_All / Tour_Commissioner)
-            </Text>
-            <HStack spacing={4} wrap="wrap">
-              <Button
-                size="sm"
-                colorScheme="green"
-                onClick={() => {
-                  // Bulk event operations
-                  const upcomingEvents = events.filter(e => {
-                    const eventDate = new Date(e.event_date || e.datum_van);
-                    return eventDate > new Date();
-                  });
-                  console.log(`📅 ${upcomingEvents.length} aankomende evenementen gevonden`);
-                }}
-              >
-                📅 Bulk Evenement Beheer
-              </Button>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                onClick={() => {
-                  // Event template creation
-                  console.log('📋 Evenement sjablonen functionaliteit');
-                }}
-              >
-                📋 Evenement Sjablonen
-              </Button>
-              <Button
-                size="sm"
-                colorScheme="purple"
-                onClick={() => {
-                  // Advanced event analytics
-                  const eventStats = {
-                    totaal: events.length,
-                    aankomend: events.filter(e => new Date(e.event_date || e.datum_van) > new Date()).length,
-                    afgelopen: events.filter(e => new Date(e.event_date || e.datum_van) < new Date()).length
-                  };
-                  console.log('📊 Evenement statistieken:', eventStats);
-                }}
-              >
-                📊 Geavanceerde Analytics
-              </Button>
-            </HStack>
-          </Box>
-        )}
-
         {(finalCanExportEvents && !hasEventsFullAccess) && (
           <Box bg="gray.800" p={4} borderRadius="md" border="1px" borderColor="blue.400" mb={4}>
             <Text color="blue.400" fontWeight="bold" mb={3}>

@@ -207,6 +207,26 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
+          {/* Advanced Exports - Only for users with advanced product management roles */}
+          <FunctionGuard 
+            user={user} 
+            functionName="advanced-exports" 
+            action="read"
+            requiredRoles={['Products_CRUD_All', 'Webmaster', 'Webshop_Management', 'hdcnAdmins']}
+          >
+            <AppCard 
+              key="advanced-exports"
+              app={{
+                id: 'advanced-exports',
+                title: 'Geavanceerde Exports',
+                description: 'Bulk exports en analytics',
+                icon: '🚀',
+                path: '/advanced-exports'
+              }}
+              onClick={() => navigate('/advanced-exports')}
+            />
+          </FunctionGuard>
+          
           {/* Parameters - Only for system administrators */}
           <FunctionGuard 
             user={user} 

@@ -39,6 +39,99 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
 
   const hasValue = (value: any) => value && value !== '' && value !== 'undefined' && value !== null;
 
+  // Convert date from various formats to ISO format (yyyy-MM-dd) for HTML date inputs
+  const convertToISODate = (dateValue: string): string => {
+    if (!dateValue) return '';
+    
+    // If already in ISO format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+    
+    // Handle Dutch format variations (d-M-yyyy, dd-MM-yyyy, d/M/yyyy, dd/MM/yyyy)
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateValue)) {
+      const parts = dateValue.split(/[-/]/);
+      const [day, month, year] = parts;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Handle European format with dots (d.M.yyyy, dd.MM.yyyy)
+    if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateValue)) {
+      const [day, month, year] = dateValue.split('.');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Handle US format (M/d/yyyy, MM/dd/yyyy)
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+      const [month, day, year] = dateValue.split('/');
+      // Check if this looks like US format (month > 12 would indicate day/month swap)
+      if (parseInt(month) <= 12) {
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      } else {
+        // Treat as European format
+        return `${year}-${day.padStart(2, '0')}-${month.padStart(2, '0')}`;
+      }
+    }
+    
+    // Handle reverse format (yyyy-M-d, yyyy/M/d)
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateValue)) {
+      const parts = dateValue.split(/[-/]/);
+      const [year, month, day] = parts;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Handle timestamp or other formats
+    try {
+      const date = new Date(dateValue);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch (e) {
+      // Silent fail for invalid dates
+    }
+    
+    // If all else fails, try to parse common text formats
+    try {
+      // Handle formats like "3 februari 1974"
+      const months = {
+        'januari': '01', 'februari': '02', 'maart': '03', 'april': '04',
+        'mei': '05', 'juni': '06', 'juli': '07', 'augustus': '08',
+        'september': '09', 'oktober': '10', 'november': '11', 'december': '12'
+      };
+      
+      const dutchDateMatch = dateValue.toLowerCase().match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+      if (dutchDateMatch) {
+        const [, day, monthName, year] = dutchDateMatch;
+        const month = months[monthName];
+        if (month) {
+          return `${year}-${month}-${day.padStart(2, '0')}`;
+        }
+      }
+    } catch (e) {
+      // Silent fail
+    }
+    
+    console.warn('Could not convert date format:', dateValue);
+    return '';
+  };
+
+  // Convert date from ISO format back to display format when saving
+  const convertFromISODate = (isoDate: string): string => {
+    if (!isoDate) return '';
+    
+    try {
+      const date = new Date(isoDate);
+      if (!isNaN(date.getTime())) {
+        // Return in original format or keep ISO format for backend
+        return isoDate; // Keep ISO format for backend compatibility
+      }
+    } catch (e) {
+      console.warn('Could not convert ISO date:', isoDate);
+    }
+    
+    return isoDate;
+  };
+
   /**
    * Check if current user can edit a specific field type based on their roles AND membership type restrictions
    */
@@ -116,6 +209,9 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
     // Membership
     status: 'Status', lidmaatschap: 'Lidmaatschap', lidnummer: 'Lidnummer', ingangsdatum: 'Ingangsdatum',
     einddatum: 'Einddatum', opzegtermijn: 'Opzegtermijn', regio: 'Regio', clubblad: 'Clubblad', nieuwsbrief: 'Nieuwsbrief',
+    // Administrative fields that should be in membership section
+    tijdstempel: 'Tijdstempel', aanmeldingsjaar: 'Aanmeldingsjaar', datum_ondertekening: 'Datum ondertekening',
+    ingangsdatum_lidmaatschap: 'Ingangsdatum lidmaatschap', aanmeldingsdatum: 'Aanmeldingsdatum',
     // Motor
     motormerk: 'Motormerk', motortype: 'Motortype', motormodel: 'Motormodel', motorkleur: 'Motorkleur',
     bouwjaar: 'Bouwjaar', kenteken: 'Kenteken', cilinderinhoud: 'Cilinderinhoud', vermogen: 'Vermogen',
@@ -128,18 +224,22 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
     privacy: 'Privacy', toestemmingfoto: 'Toestemming foto\'s'
   };
 
-  const personalFields = ['voornaam', 'achternaam', 'initialen', 'tussenvoegsel', 'geboortedatum', 'geslacht', 'bsn', 'nationaliteit', 'email', 'telefoon', 'mobiel', 'werktelefoon'].filter(field => hasValue((member && member[field]) || formData[field]));
+  // Show all fields that are in the view modal, regardless of whether they have values
+  // This allows users to fill in empty fields
+  const personalFields = ['voornaam', 'achternaam', 'initialen', 'tussenvoegsel', 'geboortedatum', 'geslacht', 'bsn', 'nationaliteit', 'email', 'telefoon', 'mobiel', 'werktelefoon'];
   
-  const addressFields = ['straat', 'huisnummer', 'postcode', 'woonplaats', 'land', 'postadres', 'postpostcode', 'postwoonplaats', 'postland'].filter(field => hasValue((member && member[field]) || formData[field]));
+  const addressFields = ['straat', 'huisnummer', 'postcode', 'woonplaats', 'land', 'postadres', 'postpostcode', 'postwoonplaats', 'postland'];
   
-  const membershipFields = ['lidmaatschap', 'lidnummer', 'ingangsdatum', 'einddatum', 'opzegtermijn', 'regio', 'clubblad', 'nieuwsbrief'].filter(field => hasValue((member && member[field]) || formData[field]));
+  // Updated membership fields to match view modal grouping - show all fields
+  const membershipFields = ['lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'lidnummer', 'ingangsdatum', 'einddatum', 'opzegtermijn', 'tijdstempel', 'aanmeldingsjaar', 'datum_ondertekening', 'ingangsdatum_lidmaatschap', 'aanmeldingsdatum'];
   
-  const motorFields = ['motormerk', 'motortype', 'motormodel', 'motorkleur', 'bouwjaar', 'kenteken', 'cilinderinhoud', 'vermogen'].filter(field => hasValue((member && member[field]) || formData[field]));
+  const motorFields = ['motormerk', 'motortype', 'motormodel', 'motorkleur', 'bouwjaar', 'kenteken', 'cilinderinhoud', 'vermogen'];
   
-  const financialFields = ['bankrekeningnummer', 'iban', 'bic', 'contributie', 'betaalwijze', 'incasso'].filter(field => hasValue((member && member[field]) || formData[field]));
+  const financialFields = ['bankrekeningnummer', 'iban', 'bic', 'contributie', 'betaalwijze', 'incasso'];
   
-  const knownFields = new Set(['member_id', 'created_at', 'updated_at', 'name', 'phone', 'membership_type', 'address', 'status', ...personalFields, ...addressFields, ...membershipFields, ...motorFields, ...financialFields]);
+  const knownFields = new Set(['member_id', 'created_at', 'updated_at', 'name', 'phone', 'membership_type', 'address', 'status', 'datumOndertekening', 'ingangsdatumLidmaatschap', 'aanmeldingsDatum', ...personalFields, ...addressFields, ...membershipFields, ...motorFields, ...financialFields]);
   
+  // Only filter other fields that actually have values
   const otherFields = member ? Object.keys(member).filter(field => !knownFields.has(field) && hasValue((member && member[field]) || formData[field])) : [];
 
   useEffect(() => {
@@ -149,7 +249,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
         achternaam: member.achternaam || '',
         initialen: member.initialen || '',
         tussenvoegsel: member.tussenvoegsel || '',
-        geboortedatum: member.geboortedatum || '',
+        geboortedatum: convertToISODate(member.geboortedatum || ''),
         geslacht: member.geslacht || '',
         bsn: member.bsn || '',
         nationaliteit: member.nationaliteit || '',
@@ -169,12 +269,18 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
         status: member.status || '',
         lidmaatschap: member.lidmaatschap || member.membership_type || '',
         lidnummer: String(member.lidnummer || ''),
-        ingangsdatum: member.ingangsdatum || '',
-        einddatum: member.einddatum || '',
+        ingangsdatum: convertToISODate(member.ingangsdatum || ''),
+        einddatum: convertToISODate(member.einddatum || ''),
         opzegtermijn: member.opzegtermijn || '',
         regio: member.regio || '',
         clubblad: member.clubblad || '',
         nieuwsbrief: member.nieuwsbrief || '',
+        // Administrative fields that should be in membership section
+        tijdstempel: convertToISODate(member.tijdstempel || ''),
+        aanmeldingsjaar: member.aanmeldingsjaar || '',
+        datum_ondertekening: convertToISODate(member.datum_ondertekening || member.datumOndertekening || ''),
+        ingangsdatum_lidmaatschap: convertToISODate(member.ingangsdatum_lidmaatschap || member.ingangsdatumLidmaatschap || ''),
+        aanmeldingsdatum: convertToISODate(member.aanmeldingsdatum || member.aanmeldingsDatum || ''),
         motormerk: member.motormerk || '',
         motortype: member.motortype || '',
         motormodel: member.motormodel || '',
@@ -208,6 +314,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
         postadres: '', postpostcode: '', postwoonplaats: '', postland: '',
         status: '', lidmaatschap: '', lidnummer: '', ingangsdatum: '', einddatum: '', opzegtermijn: '',
         regio: '', clubblad: '', nieuwsbrief: '',
+        tijdstempel: '', aanmeldingsjaar: '', datum_ondertekening: '', ingangsdatum_lidmaatschap: '', aanmeldingsdatum: '',
         motormerk: '', motortype: '', motormodel: '', motorkleur: '', bouwjaar: '', kenteken: '', cilinderinhoud: '', vermogen: '',
         bankrekeningnummer: '', iban: '', bic: '', contributie: '', betaalwijze: '', incasso: '',
         beroep: '', werkgever: '', hobbys: '', wiewatwaar: '', minderjarigNaam: '', notities: '', opmerkingen: '', privacy: '', toestemmingfoto: ''
@@ -446,9 +553,9 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
       );
     }
 
-    const inputType = ['geboortedatum', 'ingangsdatum', 'einddatum'].includes(fieldKey) ? 'date' :
+    const inputType = ['geboortedatum', 'ingangsdatum', 'einddatum', 'tijdstempel', 'datum_ondertekening', 'aanmeldingsdatum', 'ingangsdatum_lidmaatschap'].includes(fieldKey) ? 'date' :
                      fieldKey === 'email' ? 'email' :
-                     fieldKey === 'bouwjaar' ? 'number' : 'text';
+                     ['bouwjaar', 'aanmeldingsjaar'].includes(fieldKey) ? 'number' : 'text';
 
     return (
       <FormControl key={fieldKey} isRequired={isRequired} isDisabled={!canEdit}>
@@ -487,7 +594,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
             )}
 
             {/* Personal Info */}
-            {canEditFieldType('personal') && personalFields.length > 0 && (
+            {canEditFieldType('personal') && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Persoonlijke Gegevens
@@ -499,7 +606,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
             )}
 
             {/* Address */}
-            {canEditFieldType('address') && addressFields.length > 0 && (
+            {canEditFieldType('address') && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Adresgegevens
@@ -511,7 +618,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
             )}
 
             {/* Membership */}
-            {canEditFieldType('membership') && membershipFields.length > 0 && (
+            {canEditFieldType('membership') && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Lidmaatschap
@@ -523,7 +630,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
             )}
 
             {/* Motor Info */}
-            {canEditFieldType('motor') && motorFields.length > 0 && (
+            {canEditFieldType('motor') && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Motor Gegevens
@@ -547,7 +654,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
             )}
 
             {/* Financial */}
-            {canEditFieldType('financial') && financialFields.length > 0 && (
+            {canEditFieldType('financial') && (
               <Box>
                 <Text fontSize="lg" fontWeight="bold" color="orange.400" mb={3}>
                   Financiële Gegevens

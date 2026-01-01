@@ -73,3 +73,55 @@ code {
 [data-amplify-authenticator] .amplify-button--primary:hover {
   background-color: #e55a00;
 }
+
+/* Block Bitwarden and other password manager overlays */
+div[data-lastpass-icon-root],
+div[data-lastpass-root],
+div[id*="bitwarden"],
+div[class*="bitwarden"],
+div[id*="lastpass"],
+div[class*="lastpass"],
+div[id*="1password"],
+div[class*="1password"],
+div[id*="dashlane"],
+div[class*="dashlane"],
+div[id*="keeper"],
+div[class*="keeper"],
+iframe[src*="bitwarden"],
+iframe[src*="lastpass"],
+iframe[src*="1password"],
+iframe[src*="dashlane"],
+iframe[src*="keeper"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Block password manager button overlays on inputs */
+input::-webkit-credentials-auto-fill-button,
+input::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+}
+
+/* Additional blocking for common password manager selectors */
+[data-lastpass-icon-root] *,
+[data-lastpass-root] *,
+[id*="bitwarden"] *,
+[class*="bitwarden"] *,
+[id*="lastpass"] *,
+[class*="lastpass"] *,
+[id*="1password"] *,
+[class*="1password"] *,
+[id*="dashlane"] *,
+[class*="dashlane"] *,
+[id*="keeper"] *,
+[class*="keeper"] * {
+  display: none !important;
+  visibility: hidden !important;
+}

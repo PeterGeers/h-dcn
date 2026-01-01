@@ -63,6 +63,15 @@ export interface Member {
   privacy?: string;
   toestemmingfoto?: string;
   address?: string;
+  // Additional timestamp and membership fields
+  tijdstempel?: string;
+  aanmeldingsjaar?: string;
+  datum_ondertekening?: string;
+  datumOndertekening?: string;
+  ingangsdatum_lidmaatschap?: string;
+  ingangsdatumLidmaatschap?: string;
+  aanmeldingsdatum?: string;
+  aanmeldingsDatum?: string;
 }
 
 export interface Product {

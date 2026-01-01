@@ -324,21 +324,22 @@ function MembershipForm({ user }: MembershipFormProps) {
           <Alert status="info" bg="gray.800" color="orange.200" borderColor="orange.400">
             <AlertIcon color="orange.400" />
             <Text fontSize="sm">
-              Je bent al aangemeld op deze omgeving sinds {new Date(existingMember.created_at).toLocaleDateString('nl-NL')}. 
-              Je kunt je gegevens hieronder bekijken en wijzigen.
+              Je kunt je eigen gegevens hieronder bekijken en wijzigen.
             </Text>
           </Alert>
         )}
         
-        <Alert status="info" bg="gray.800" color="orange.200" borderColor="orange.400">
-          <AlertIcon color="orange.400" />
-          <Box>
-            <Text fontSize="sm">
-              Met dit formulier kun je je aanmelden en of je gegevens bijwerken voor het lidmaatschap van de H-DCN (Harley-Davidson Club Nederland).
-              Door je aan te melden verklaar je akkoord te gaan met de statuten en het huishoudelijk reglement.
-            </Text>
-          </Box>
-        </Alert>
+        {!existingMember && (
+          <Alert status="info" bg="gray.800" color="orange.200" borderColor="orange.400">
+            <AlertIcon color="orange.400" />
+            <Box>
+              <Text fontSize="sm">
+                Met dit formulier kun je je aanmelden voor het lidmaatschap van de H-DCN (Harley-Davidson Club Nederland).
+                Door je aan te melden verklaar je akkoord te gaan met de statuten en het huishoudelijk reglement.
+              </Text>
+            </Box>
+          </Alert>
+        )}
 
         <Formik
           initialValues={getInitialValues()}

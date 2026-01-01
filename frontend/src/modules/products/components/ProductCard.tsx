@@ -1,5 +1,5 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox } from '@chakra-ui/react';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight } from '@chakra-ui/icons';
+import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton } from '@chakra-ui/react';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
@@ -61,6 +61,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [uploading, setUploading] = useState<boolean>(false);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
+  const { isOpen: isCategoryModalOpen, onOpen: onCategoryModalOpen, onClose: onCategoryModalClose } = useDisclosure();
+  const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
 
   useEffect(() => {
     // Load product categories from S3 bucket parameters
@@ -92,6 +94,38 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
   }, [product]);
 
+  const CategoryDisplay = ({ groep, subgroep, onClick }: { groep: string; subgroep: string; onClick: () => void }) => {
+    const displayText = groep && subgroep 
+      ? `${groep} - ${subgroep}`
+      : groep 
+        ? groep
+        : 'Selecteer categorie...';
+    
+    return (
+      <Box
+        height="40px"
+        px={4}
+        py={2}
+        bg="gray.600"
+        borderRadius="md"
+        border="1px solid"
+        borderColor="gray.500"
+        cursor={readOnly ? 'default' : 'pointer'}
+        onClick={readOnly ? undefined : onClick}
+        _hover={readOnly ? {} : { borderColor: 'gray.400' }}
+        display="flex"
+        alignItems="center"
+        fontSize="md"
+        width="50%"
+        _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+      >
+        <Text color={groep ? 'white' : 'gray.300'}>
+          {displayText}
+        </Text>
+      </Box>
+    );
+  };
+
   const CategorySelector = ({ setFieldValue }: CategorySelectorProps) => {
     const GroupItem = ({ groupName, groupData }: GroupItemProps) => {
       const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: selectedCategory.groep === groupName });
@@ -115,6 +149,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 setSelectedCategory({ groep: groupName, subgroep: '' });
                 setFieldValue('groep', groupName);
                 setFieldValue('subgroep', '');
+                onCategoryModalClose(); // Close modal after selection
               }
             }}
             bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.200' : 'transparent'}
@@ -142,6 +177,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                         setSelectedCategory({ groep: groupName, subgroep: subgroup });
                         setFieldValue('groep', groupName);
                         setFieldValue('subgroep', subgroup);
+                        onCategoryModalClose(); // Close modal after selection
                       }
                     }}
                     bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.300' : 'transparent'}
@@ -164,28 +200,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     };
 
     return (
-      <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="250px" overflowY="auto">
-        <Text fontSize="md" fontWeight="bold" mb={2} color="gray.700">
+      <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="400px" overflowY="auto">
+        <Text fontSize="md" fontWeight="bold" mb={3} color="gray.700">
           {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer Categorie:'}
         </Text>
-        
-        {/* Show current selection clearly */}
-        {selectedCategory.groep && (
-          <Box mb={3} p={2} bg="orange.100" borderRadius="md" border="1px solid" borderColor="orange.300">
-            <Text fontSize="sm" fontWeight="bold" color="orange.800">
-              Geselecteerd:
-            </Text>
-            <Text fontSize="sm" color="orange.700">
-              📂 <strong>{selectedCategory.groep}</strong>
-              {selectedCategory.subgroep && (
-                <>
-                  <br />
-                  📁 <strong>{selectedCategory.subgroep}</strong>
-                </>
-              )}
-            </Text>
-          </Box>
-        )}
         
         <VStack align="stretch" spacing={1}>
           {Object.keys(categoryStructure).length === 0 ? (
@@ -238,6 +256,20 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
       overflowY="auto"
       width="400px"
     >
+      {/* Close button in top-right corner */}
+      <IconButton
+        icon={<CloseIcon />}
+        size="sm"
+        colorScheme="gray"
+        variant="ghost"
+        position="absolute"
+        top={2}
+        right={2}
+        onClick={onClose}
+        aria-label="Sluiten"
+        _hover={{ bg: 'gray.200' }}
+      />
+
       <Formik
         initialValues={{
           ...product,
@@ -271,12 +303,35 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         validationSchema={schema}
         onSubmit={(values) => onSave(values)}
       >
-        {({ values, setFieldValue, errors, touched }: FormikProps<any>) => (
+        {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
+          // Store the setFieldValue function for use in the modal
+          if (!mainFormSetFieldValue) {
+            setMainFormSetFieldValue(() => setFieldValue);
+          }
+          
+          return (
           <Form>
             <VStack spacing={4}>
-              <HStack spacing={4}>
+              {/* Name field at the top */}
+              <FormControl isInvalid={!!(errors.naam && touched.naam)}>
+                <Field name="naam" as={Input} placeholder="Naam" color="white" bg="gray.600" borderColor={errors.naam && touched.naam ? 'red.500' : 'gray.500'} id="product-naam" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
+                <FormErrorMessage>{errors.naam as string}</FormErrorMessage>
+              </FormControl>
+
+              {/* ID and Price with navigation buttons */}
+              <HStack spacing={4} width="100%">
+                {filteredProducts.length > 1 && (
+                  <IconButton
+                    icon={<ChevronLeftIcon />}
+                    colorScheme="orange"
+                    isDisabled={!canGoPrevious}
+                    onClick={handlePrevious}
+                    aria-label="Vorige product"
+                    size="sm"
+                  />
+                )}
                 <FormControl isInvalid={!!(errors.id && touched.id)} flex={1}>
-                  <Field name="id" as={Input} placeholder="id" color="black" borderColor={errors.id && touched.id ? 'red.500' : 'gray.200'} id="product-id" isDisabled={readOnly} />
+                  <Field name="id" as={Input} placeholder="id" color="white" bg="gray.600" borderColor={errors.id && touched.id ? 'red.500' : 'gray.500'} id="product-id" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
                   <FormErrorMessage>{errors.id as string}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!(errors.prijs && touched.prijs)} flex={1}>
@@ -289,9 +344,11 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                           placeholder="0.00" 
                           type="number" 
                           step="0.01" 
-                          color="black" 
+                          color="white" 
+                          bg="gray.600"
                           fontWeight="bold"
-                          borderColor={errors.prijs && touched.prijs ? 'red.500' : 'gray.200'}
+                          borderColor={errors.prijs && touched.prijs ? 'red.500' : 'gray.500'}
+                          _placeholder={{ color: 'gray.300' }}
                           isDisabled={readOnly}
                           onChange={(e) => {
                             const value = e.target.value;
@@ -309,23 +366,35 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   </Field>
                   <FormErrorMessage>{errors.prijs as string}</FormErrorMessage>
                 </FormControl>
+                {filteredProducts.length > 1 && (
+                  <IconButton
+                    icon={<ChevronRightIcon />}
+                    colorScheme="orange"
+                    isDisabled={!canGoNext}
+                    onClick={handleNext}
+                    aria-label="Volgende product"
+                    size="sm"
+                  />
+                )}
               </HStack>
-              <FormControl isInvalid={!!(errors.naam && touched.naam)}>
-                <Field name="naam" as={Input} placeholder="Naam" color="black" borderColor={errors.naam && touched.naam ? 'red.500' : 'gray.200'} id="product-naam" isDisabled={readOnly} />
-                <FormErrorMessage>{errors.naam as string}</FormErrorMessage>
-              </FormControl>
+
+              {/* Category field */}
               <FormControl isInvalid={!!((errors.groep && touched.groep) || (errors.subgroep && touched.subgroep))}>
-                <Field name="groep">
-                  {({ form }: any) => (
-                    <CategorySelector setFieldValue={form.setFieldValue} />
-                  )}
-                </Field>
+                <CategoryDisplay 
+                  groep={values.groep || ''} 
+                  subgroep={values.subgroep || ''} 
+                  onClick={onCategoryModalOpen}
+                />
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
+
+              {/* Options field */}
               <FormControl isInvalid={!!(errors.opties && touched.opties)}>
-                <Field name="opties" as={Input} placeholder="Opties (gescheiden door komma's)" color="black" borderColor={errors.opties && touched.opties ? 'red.500' : 'gray.200'} isDisabled={readOnly} />
+                <Field name="opties" as={Input} placeholder="Opties (gescheiden door komma's)" color="white" bg="gray.600" borderColor={errors.opties && touched.opties ? 'red.500' : 'gray.500'} isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
                 <FormErrorMessage>{errors.opties as string}</FormErrorMessage>
               </FormControl>
+
+              {/* Checkbox */}
               <FormControl>
                 <Field name="nietInWinkel">
                   {({ field, form }: any) => (
@@ -341,62 +410,44 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   )}
                 </Field>
               </FormControl>
-              <HStack spacing={4} justifyContent="center">
-                {filteredProducts.length > 1 && (
-                  <IconButton
-                    icon={<ChevronLeftIcon />}
-                    colorScheme="orange"
-                    isDisabled={!canGoPrevious}
-                    onClick={handlePrevious}
-                    aria-label="Vorige product"
-                    size="sm"
-                  />
-                )}
-                <Button 
-                  colorScheme="orange" 
-                  size="sm"
-                  isDisabled={readOnly}
-                  onClick={async () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.multiple = true;
-                    input.onchange = async (e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const files = Array.from(target.files || []);
-                      if (files.length > 0) {
-                        try {
-                          setUploading(true);
-                          const uploadPromises = files.map(file => uploadToS3(file, product.id));
-                          const s3Urls = await Promise.all(uploadPromises);
-                          const currentImages = values.images || [];
-                          setFieldValue('images', [...currentImages, ...s3Urls]);
-                        } catch (error: any) {
-                          console.error('Error uploading images:', error);
-                          alert('Upload failed: ' + error.message);
-                        } finally {
-                          setUploading(false);
-                        }
+
+              {/* Image upload button */}
+              <Button 
+                colorScheme="orange" 
+                size="sm"
+                isDisabled={readOnly}
+                onClick={async () => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.multiple = true;
+                  input.onchange = async (e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const files = Array.from(target.files || []);
+                    if (files.length > 0) {
+                      try {
+                        setUploading(true);
+                        const uploadPromises = files.map(file => uploadToS3(file, product.id));
+                        const s3Urls = await Promise.all(uploadPromises);
+                        const currentImages = values.images || [];
+                        setFieldValue('images', [...currentImages, ...s3Urls]);
+                      } catch (error: any) {
+                        console.error('Error uploading images:', error);
+                        alert('Upload failed: ' + error.message);
+                      } finally {
+                        setUploading(false);
                       }
-                    };
-                    input.click();
-                  }}
-                >
-                  + Afbeeldingen
-                </Button>
-                {filteredProducts.length > 1 && (
-                  <IconButton
-                    icon={<ChevronRightIcon />}
-                    colorScheme="orange"
-                    isDisabled={!canGoNext}
-                    onClick={handleNext}
-                    aria-label="Volgende product"
-                    size="sm"
-                  />
-                )}
-              </HStack>
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                + Afbeeldingen
+              </Button>
+
               {uploading && <Text color="blue.500">Uploading...</Text>}
 
+              {/* Images section with 30% larger size */}
               {values.images && values.images.length > 0 && (
                 <Box>
                   <Text fontSize="sm" fontWeight="bold" mb={2}>Afbeeldingen ({values.images.length}):</Text>
@@ -405,7 +456,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                       <HStack key={index} spacing={2} width="100%">
                         <Image 
                           src={imageUrl} 
-                          boxSize="60px"
+                          boxSize="78px"
                           objectFit="cover"
                           border="1px solid gray"
                           borderRadius="md"
@@ -428,15 +479,38 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Box>
               )}
 
+              {/* Action buttons */}
               <HStack spacing={4}>
-                {!readOnly && <Button type="submit" colorScheme="orange">Opslaan</Button>}
-                {!readOnly && product.id && (
-                  <Button colorScheme="red" onClick={() => onDelete(product.id)}>Verwijder</Button>
+                {!readOnly && (
+                  <IconButton
+                    icon={<CheckIcon />}
+                    colorScheme="orange"
+                    size="sm"
+                    type="submit"
+                    aria-label="Opslaan"
+                    _hover={{ bg: 'orange.600' }}
+                  />
                 )}
-                {!readOnly && <Button onClick={onNew}>Nieuw</Button>}
-                <Button colorScheme="gray" onClick={onClose}>
-                  {readOnly ? 'Sluiten' : 'Sluiten'}
-                </Button>
+                {!readOnly && product.id && (
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    colorScheme="red"
+                    size="sm"
+                    onClick={() => onDelete(product.id)}
+                    aria-label="Verwijder product"
+                    _hover={{ bg: 'red.600' }}
+                  />
+                )}
+                {!readOnly && (
+                  <IconButton
+                    icon={<AddIcon />}
+                    colorScheme="green"
+                    size="sm"
+                    onClick={onNew}
+                    aria-label="Nieuw product"
+                    _hover={{ bg: 'green.600' }}
+                  />
+                )}
                 {readOnly && (
                   <Text fontSize="sm" color="gray.600" fontStyle="italic">
                     Alleen-lezen modus - geen bewerkingsrechten
@@ -445,8 +519,28 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               </HStack>
             </VStack>
           </Form>
-        )}
+          );
+        }}
       </Formik>
+
+      {/* Category Selection Modal */}
+      <Modal isOpen={isCategoryModalOpen} onClose={onCategoryModalClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Selecteer Categorie</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {mainFormSetFieldValue && (
+              <CategorySelector setFieldValue={mainFormSetFieldValue} />
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="gray" onClick={onCategoryModalClose}>
+              Sluiten
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

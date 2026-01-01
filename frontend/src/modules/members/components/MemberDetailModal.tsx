@@ -143,11 +143,40 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
     ['Clubblad', member.clubblad],
     ['Nieuwsbrief', member.nieuwsbrief],
     ['Lidnummer', member.lidnummer],
-    ['Lid sinds', member.created_at ? new Date(member.created_at).toLocaleDateString('nl-NL') : null],
-    ['Laatste update', member.updated_at ? new Date(member.updated_at).toLocaleDateString('nl-NL') : null],
     ['Ingangsdatum', member.ingangsdatum],
     ['Einddatum', member.einddatum],
-    ['Opzegtermijn', member.opzegtermijn]
+    ['Opzegtermijn', member.opzegtermijn],
+    // Administrative fields that should be in membership section
+    // Use the actual timestamp field from the data (not created_at)
+    ['Lid sinds', member.tijdstempel || (member.created_at ? new Date(member.created_at).toLocaleDateString('nl-NL') : null)],
+    ['Aanmeldingsjaar', member.aanmeldingsjaar || (member.created_at ? new Date(member.created_at).getFullYear().toString() : null)],
+    ['Datum ondertekening', member.datum_ondertekening || member.datumOndertekening || (member.updated_at ? new Date(member.updated_at).toLocaleDateString('nl-NL') : null)],
+    // Additional fields that should be in membership section
+    ['Ingangsdatum lidmaatschap', member.ingangsdatum_lidmaatschap || member.ingangsdatumLidmaatschap],
+    ['Aanmeldingsdatum', member.aanmeldingsdatum || member.aanmeldingsDatum],
+    // Calculated field: Years of membership
+    ['Jaren lid', (() => {
+      // Use tijdstempel (actual membership start date) or ingangsdatum as fallback
+      const startDateStr = member.tijdstempel || member.ingangsdatum;
+      if (!startDateStr) return null;
+      
+      const memberSince = new Date(startDateStr);
+      const currentDate = new Date();
+      
+      // Validate the date
+      if (isNaN(memberSince.getTime())) return null;
+      
+      // Calculate years difference
+      let years = currentDate.getFullYear() - memberSince.getFullYear();
+      
+      // Adjust if the anniversary hasn't occurred this year yet
+      const monthDiff = currentDate.getMonth() - memberSince.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < memberSince.getDate())) {
+        years--;
+      }
+      
+      return years >= 0 ? `${years} jaar${years !== 1 ? '' : ''}` : null;
+    })()]
   ].filter(([_, value]) => hasValue(value));
 
   const motorFields = [
@@ -174,10 +203,13 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
   const knownFields = new Set([
     'voornaam', 'achternaam', 'initialen', 'tussenvoegsel', 'geboortedatum', 'geslacht', 'email', 'telefoon', 'phone', 'mobiel', 'werktelefoon', 'bsn', 'nationaliteit',
     'straat', 'huisnummer', 'postcode', 'woonplaats', 'land', 'postadres', 'postpostcode', 'postwoonplaats', 'postland',
-    'lidmaatschap', 'membership_type', 'regio', 'clubblad', 'nieuwsbrief', 'lidnummer', 'created_at', 'updated_at', 'ingangsdatum', 'einddatum', 'opzegtermijn', 'status',
+    'lidmaatschap', 'membership_type', 'regio', 'clubblad', 'nieuwsbrief', 'lidnummer', 'ingangsdatum', 'einddatum', 'opzegtermijn', 'status',
     'motormerk', 'motortype', 'motormodel', 'motorkleur', 'bouwjaar', 'kenteken', 'cilinderinhoud', 'vermogen',
     'bankrekeningnummer', 'iban', 'bic', 'contributie', 'betaalwijze', 'incasso',
-    'member_id', 'name', 'address'
+    'member_id', 'name', 'address', 'created_at', 'updated_at',
+    // Add the new timestamp and membership fields
+    'tijdstempel', 'aanmeldingsjaar', 'datum_ondertekening', 'datumOndertekening', 
+    'ingangsdatum_lidmaatschap', 'ingangsdatumLidmaatschap', 'aanmeldingsdatum', 'aanmeldingsDatum'
   ]);
   
   const otherFields = Object.entries(member)
