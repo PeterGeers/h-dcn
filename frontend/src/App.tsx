@@ -42,6 +42,7 @@ const EventAdminPage = lazy(() => import('./modules/events/EventAdminPage')) as 
 const MembershipManagement = lazy(() => import('./pages/MembershipManagement')) as any;
 const PasskeyTest = lazy(() => import('./components/auth/PasskeyTest')) as any;
 const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCompatibilityTest')) as any;
+const FieldRegistryTestPage = lazy(() => import('./pages/FieldRegistryTestPage')) as any;
 
 function NavigationHeader({ signOut, user }: AppProps) {
   const navigate = useNavigate();
@@ -128,6 +129,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
             <Route path="/test/passkey" element={<PasskeyTest />} />
             <Route path="/test/browser-compatibility" element={<BrowserCompatibilityTest />} />
+            <Route path="/test/field-registry" element={<FieldRegistryTestPage user={user} />} />
           </Routes>
         </Suspense>
       </Box>

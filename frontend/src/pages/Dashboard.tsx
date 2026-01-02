@@ -266,6 +266,26 @@ function Dashboard({ user }: DashboardProps) {
               onClick={() => navigate('/memberships')}
             />
           </FunctionGuard>
+
+          {/* Field Registry Test - Only for system administrators and developers */}
+          <FunctionGuard 
+            user={user} 
+            functionName="field-registry-test" 
+            action="read"
+            requiredRoles={['System_CRUD_All', 'System_User_Management', 'Webmaster']}
+          >
+            <AppCard 
+              key="field-registry-test"
+              app={{
+                id: 'field-registry-test',
+                title: '🧪 Field Registry Test',
+                description: 'Test field registry system & modal views',
+                icon: '🔬',
+                path: '/test/field-registry'
+              }}
+              onClick={() => navigate('/test/field-registry')}
+            />
+          </FunctionGuard>
         </SimpleGrid>
         
 

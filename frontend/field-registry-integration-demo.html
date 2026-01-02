@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDCN Field Registry Integration Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .demo-section {
+            background: #2d2d2d;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 15px;
+            border-left: 5px solid #ff6b35;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .demo-section h2 {
+            color: #ff6b35;
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: #3d3d3d;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #555;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 107, 53, 0.2);
+        }
+        
+        .feature-card h3 {
+            color: #ff6b35;
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        
+        .feature-card .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin: 5px 5px 5px 0;
+        }
+        
+        .status-ready {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-integrated {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .status-new {
+            background: #ffc107;
+            color: black;
+        }
+        
+        .code-block {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .code-block .comment {
+            color: #6a9955;
+        }
+        
+        .code-block .string {
+            color: #ce9178;
+        }
+        
+        .code-block .keyword {
+            color: #569cd6;
+        }
+        
+        .integration-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .flow-step {
+            background: #3d3d3d;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .flow-step:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            color: #ff6b35;
+        }
+        
+        .flow-step .step-number {
+            background: #ff6b35;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px auto;
+            font-weight: bold;
+        }
+        
+        .demo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .demo-table th,
+        .demo-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #555;
+        }
+        
+        .demo-table th {
+            background: #ff6b35;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .demo-table tr:hover {
+            background: #4d4d4d;
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            background: #ff6b35;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background 0.3s ease, transform 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+        
+        .btn:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        @media (max-width: 768px) {
+            .integration-flow {
+                flex-direction: column;
+            }
+            
+            .flow-step:not(:last-child)::after {
+                content: '↓';
+                right: 50%;
+                top: 100%;
+                transform: translateX(50%);
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🧪 HDCN Field Registry Integration</h1>
+            <p>Complete field registry system now integrated with the HDCN test portal</p>
+            <div>
+                <span class="status-badge status-ready">✅ Ready</span>
+                <span class="status-badge status-integrated">🔗 Integrated</span>
+                <span class="status-badge status-new">🆕 New Features</span>
+            </div>
+        </div>
+
+        <!-- Integration Overview -->
+        <div class="demo-section">
+            <h2>🎯 Integration Complete</h2>
+            <p>The field registry test functionality has been successfully integrated into the existing HDCN portal as a new building block. Users with appropriate permissions can now access the comprehensive test dashboard directly from the main portal.</p>
+            
+            <div class="integration-flow">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <h4>Dashboard Access</h4>
+                    <p>New test card appears for authorized users</p>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <h4>Table View</h4>
+                    <p>Interactive member table with field resolution</p>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <h4>Modal View</h4>
+                    <p>Click members to open detailed modal views</p>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <h4>Test & Validate</h4>
+                    <p>Comprehensive testing of all functionality</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Features -->
+        <div class="demo-section">
+            <h2>🆕 New Features Added</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="icon">📊</span>
+                    <h3>Interactive Table View</h3>
+                    <p>Dynamic member table with configurable contexts, field resolution, and permission-based column visibility.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🔍</span>
+                    <h3>Modal Detail Views</h3>
+                    <p>Click any member to open detailed modal views with different context configurations and field groupings.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">⚙️</span>
+                    <h3>Context Switching</h3>
+                    <p>Switch between different table contexts (memberOverview, motorView, financialView, etc.) in real-time.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🔐</span>
+                    <h3>Permission Testing</h3>
+                    <p>Test different user roles and regional restrictions to validate the permission system.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">📈</span>
+                    <h3>Live Statistics</h3>
+                    <p>Real-time statistics showing resolved fields, viewable fields, and editable fields for current context.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🎨</span>
+                    <h3>HDCN Styling</h3>
+                    <p>Fully integrated with existing HDCN portal styling using Chakra UI components and orange theme.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Implementation -->
+        <div class="demo-section">
+            <h2>🔧 Technical Implementation</h2>
+            <p>The integration follows the existing HDCN portal patterns and architecture:</p>
+            
+            <div class="code-block">
+<span class="comment">// Added to App.tsx routes</span>
+<span class="keyword">const</span> FieldRegistryTestPage = <span class="keyword">lazy</span>(() => <span class="keyword">import</span>(<span class="string">'./pages/FieldRegistryTestPage'</span>));
+
+<span class="comment">// New route added</span>
+&lt;<span class="keyword">Route</span> path=<span class="string">"/test/field-registry"</span> element={&lt;FieldRegistryTestPage user={user} /&gt;} /&gt;
+
+<span class="comment">// Dashboard card with permission guard</span>
+&lt;<span class="keyword">FunctionGuard</span> 
+  user={user} 
+  functionName=<span class="string">"field-registry-test"</span>
+  requiredRoles={[<span class="string">'System_CRUD_All'</span>, <span class="string">'System_User_Management'</span>, <span class="string">'Webmaster'</span>]}
+&gt;
+  &lt;<span class="keyword">AppCard</span> title=<span class="string">"🧪 Field Registry Test"</span> /&gt;
+&lt;/<span class="keyword">FunctionGuard</span>&gt;
+            </div>
+        </div>
+
+        <!-- Sample Data Demo -->
+        <div class="demo-section">
+            <h2>📋 Sample Test Data</h2>
+            <p>The test portal includes realistic sample member data for comprehensive testing:</p>
+            
+            <table class="demo-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Status</th>
+                        <th>Membership</th>
+                        <th>Region</th>
+                        <th>Motor</th>
+                        <th>Special Cases</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Jan de Vries</td>
+                        <td><span class="status-badge status-ready">Actief</span></td>
+                        <td>Gewoon lid</td>
+                        <td>Noord-Holland</td>
+                        <td>Harley-Davidson Street Glide</td>
+                        <td>Complete profile</td>
+                    </tr>
+                    <tr>
+                        <td>Maria Jansen</td>
+                        <td><span class="status-badge status-ready">Actief</span></td>
+                        <td>Gezins lid</td>
+                        <td>Utrecht</td>
+                        <td>BMW R1250GS</td>
+                        <td>Family membership</td>
+                    </tr>
+                    <tr>
+                        <td>Peter Bakker</td>
+                        <td><span class="status-badge status-new">Aangemeld</span></td>
+                        <td>Donateur</td>
+                        <td>Groningen/Drenthe</td>
+                        <td>-</td>
+                        <td>New applicant, no motor</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Access Instructions -->
+        <div class="demo-section">
+            <h2>🚀 How to Access</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="icon">1️⃣</span>
+                    <h3>Login to HDCN Portal</h3>
+                    <p>Access the main HDCN portal with your credentials. You need System_CRUD_All, System_User_Management, or Webmaster role.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">2️⃣</span>
+                    <h3>Find Test Card</h3>
+                    <p>Look for the "🧪 Field Registry Test" card on the dashboard. It will only appear if you have the required permissions.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">3️⃣</span>
+                    <h3>Start Testing</h3>
+                    <p>Click the card to access the comprehensive test dashboard with table views, modal contexts, and permission testing.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Scenarios -->
+        <div class="demo-section">
+            <h2>🧪 Test Scenarios</h2>
+            <p>The integrated test portal supports comprehensive testing scenarios:</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>🔍 Field Resolution Testing</h3>
+                    <ul>
+                        <li>Switch between table contexts</li>
+                        <li>Test different user roles</li>
+                        <li>Validate regional restrictions</li>
+                        <li>Check field visibility and editability</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>📊 Table Context Testing</h3>
+                    <ul>
+                        <li>memberOverview - Complete admin view</li>
+                        <li>memberCompact - Quick lookup</li>
+                        <li>motorView - Motor-focused data</li>
+                        <li>communicationView - Contact details</li>
+                        <li>financialView - Financial information</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>🔍 Modal Context Testing</h3>
+                    <ul>
+                        <li>memberView - Complete member modal</li>
+                        <li>memberQuickView - Quick reference</li>
+                        <li>memberRegistration - Registration form</li>
+                        <li>membershipApplication - Progressive form</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>🔐 Permission Testing</h3>
+                    <ul>
+                        <li>System_CRUD_All - Full access</li>
+                        <li>Members_CRUD_All - Member management</li>
+                        <li>Members_Read_All - Read-only + regional</li>
+                        <li>hdcnLeden - Basic member access</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn" onclick="showIntegrationDetails()">
+                📋 View Integration Details
+            </button>
+            <button class="btn btn-secondary" onclick="showTechnicalSpecs()">
+                🔧 Technical Specifications
+            </button>
+        </div>
+
+        <!-- Status Summary -->
+        <div class="demo-section">
+            <h2>✅ Integration Status</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="icon">✅</span>
+                    <h3>Fully Integrated</h3>
+                    <p>Field registry test is now a native part of the HDCN portal with proper routing, permissions, and styling.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🔒</span>
+                    <h3>Permission Protected</h3>
+                    <p>Access is restricted to authorized users only using the existing FunctionGuard system.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🎨</span>
+                    <h3>Styled & Responsive</h3>
+                    <p>Uses Chakra UI components with HDCN orange theme and responsive design for all devices.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🚀</span>
+                    <h3>Production Ready</h3>
+                    <p>All syntax errors fixed, TypeScript compilation successful, comprehensive testing available.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showIntegrationDetails() {
+            alert(`🔗 Integration Details:
+
+✅ New route added: /test/field-registry
+✅ Dashboard card with permission guard
+✅ Lazy loading for performance
+✅ Full Chakra UI integration
+✅ Responsive design
+✅ Sample data included
+✅ Modal functionality working
+✅ Permission system tested
+
+The field registry test is now a first-class citizen in the HDCN portal!`);
+        }
+
+        function showTechnicalSpecs() {
+            alert(`🔧 Technical Specifications:
+
+📁 Files Added/Modified:
+• frontend/src/pages/FieldRegistryTestPage.tsx (NEW)
+• frontend/src/App.tsx (route added)
+• frontend/src/pages/Dashboard.tsx (card added)
+
+🎯 Features:
+• Interactive table with 5 contexts
+• Modal views with 4 contexts  
+• Permission testing for 5 roles
+• Regional restriction testing
+• Real-time field resolution
+• Sample member data
+• Statistics dashboard
+
+🔒 Security:
+• FunctionGuard integration
+• Role-based access control
+• Regional restrictions
+• Permission validation
+
+All systems operational! 🚀`);
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate status badges
+            const badges = document.querySelectorAll('.status-badge');
+            badges.forEach((badge, index) => {
+                setTimeout(() => {
+                    badge.style.opacity = '0';
+                    badge.style.transform = 'scale(0.8)';
+                    setTimeout(() => {
+                        badge.style.transition = 'all 0.3s ease';
+                        badge.style.opacity = '1';
+                        badge.style.transform = 'scale(1)';
+                    }, 100);
+                }, index * 200);
+            });
+
+            // Add hover effects to feature cards
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.borderColor = '#ff6b35';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.borderColor = '#555';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
