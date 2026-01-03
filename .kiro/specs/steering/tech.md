@@ -1,21 +1,34 @@
----
-inclusion: manual
----
+# H-DCN Portal Technical Guidelines
 
-# H-DCN Dashboard Technology Stack & Conventions
+This document outlines the technical architecture, conventions, and development guidelines for the H-DCN portal project.
 
 ## Technology Stack
 
 ### Frontend (React TypeScript)
 
-- **Framework**: React 18 with TypeScript (strict mode)
-- **UI Library**: Chakra UI - use consistent theming and responsive design patterns
-- **Authentication**: AWS Amplify UI React with Cognito integration
-- **Forms**: Formik with Yup validation - always validate both client and server side
+- **Framework**: React 18 with TypeScript
+- **UI Library**: Chakra UI - component library with theme support
+- **Routing**: React Router v6 - client-side routing
+- **Forms**: Formik + Yup - form handling and validation
 - **State Management**: React Context API - avoid prop drilling
 - **HTTP Client**: Custom fetch utilities in `src/utils/api.ts`
 - **Payments**: Stripe React integration
 - **Build**: Create React App (CRA)
+
+#### Look and Feel Guidelines
+
+See detailed design system guidelines in: **[Look and Feel Guidelines](.kiro/specs/steering/look-and-feel.md)**
+
+**Quick Reference:**
+
+- **Primary Brand Color**: H-DCN Orange `#f56500`
+- **Field States**: Visual cues (colors, cursors, backgrounds) instead of text badges
+- **Dark Theme**: Gray.800/Gray.700 backgrounds with orange accents
+- **Icons**: Consistent Chakra UI icons with semantic colors (ViewIcon=blue, EditIcon=orange, DeleteIcon=red)
+- **Responsive**: Mobile-first design with `{{ base: 'sm', md: 'md' }}` patterns
+- **Accessibility**: WCAG AA compliance with proper ARIA labels
+- **Cards**: Orange headings, fixed modal positioning, proper spacing
+- **Tables**: Dark theme with orange headers, sticky actions, responsive hiding
 
 ### Backend (Python Serverless)
 
@@ -107,3 +120,17 @@ inclusion: manual
 - **Function Permissions**: Dynamic permissions loaded from Parameter Store
 - **Payment Processing**: Stripe integration with order tracking
 - **File Uploads**: S3 with proper content-type handling for images
+
+## Performance Guidelines
+
+- **Frontend**: Lazy loading, code splitting, memoization
+- **Backend**: DynamoDB query optimization, Lambda cold start reduction
+- **Caching**: CloudFront for static assets, API Gateway caching for dynamic content
+- **Monitoring**: CloudWatch metrics and alarms for performance tracking
+
+## Security Best Practices
+
+- **Data Protection**: Encrypt sensitive data at rest and in transit
+- **Access Control**: Principle of least privilege for all roles
+- **Input Sanitization**: Validate and sanitize all user inputs
+- **Audit Logging**: Log all significant user actions and system events

@@ -59,12 +59,21 @@ export const blockPasswordManagers = () => {
             });
 
             if (isPasswordManager || 
-                element.id?.includes('bitwarden') ||
-                element.id?.includes('lastpass') ||
-                element.id?.includes('1password') ||
-                element.className?.includes('bitwarden') ||
-                element.className?.includes('lastpass') ||
-                element.className?.includes('1password')) {
+                (element.id && typeof element.id === 'string' && (
+                  element.id.includes('bitwarden') ||
+                  element.id.includes('lastpass') ||
+                  element.id.includes('1password')
+                )) ||
+                (element.className && typeof element.className === 'string' && (
+                  element.className.includes('bitwarden') ||
+                  element.className.includes('lastpass') ||
+                  element.className.includes('1password')
+                )) ||
+                (element.classList && (
+                  element.classList.contains('bitwarden') ||
+                  element.classList.contains('lastpass') ||
+                  element.classList.contains('1password')
+                ))) {
               shouldCleanup = true;
             }
           }

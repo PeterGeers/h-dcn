@@ -8,7 +8,6 @@ import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
 import OAuthCallback from './components/auth/OAuthCallback';
-import { blockPasswordManagers, disablePasswordManagersOnInputs } from './utils/blockPasswordManagers';
 
 interface User {
   attributes?: {
@@ -37,6 +36,7 @@ const ParameterManagement = lazy(() => import('./pages/ParameterManagement')) as
 const WebshopPage = lazy(() => import('./modules/webshop/WebshopPage')) as any;
 const ProductManagementPage = lazy(() => import('./modules/products/ProductManagementPage')) as any;
 const AdvancedExportsPage = lazy(() => import('./modules/advanced-exports/AdvancedExportsPage')) as any;
+const MyAccount = lazy(() => import('./pages/MyAccount')) as any;
 const MemberAdminPage = lazy(() => import('./modules/members/MemberAdminPage')) as any;
 const EventAdminPage = lazy(() => import('./modules/events/EventAdminPage')) as any;
 const MembershipManagement = lazy(() => import('./pages/MembershipManagement')) as any;
@@ -90,23 +90,7 @@ function NavigationHeader({ signOut, user }: AppProps) {
 }
 
 function AppContent({ signOut, user }: AppProps) {
-  useEffect(() => {
-    // Block password managers after login
-    const cleanup = blockPasswordManagers();
-    
-    // Disable password managers on existing inputs
-    disablePasswordManagersOnInputs();
-    
-    // Set up periodic cleanup for dynamically added inputs
-    const inputCleanupInterval = setInterval(() => {
-      disablePasswordManagersOnInputs();
-    }, 2000);
-    
-    return () => {
-      cleanup();
-      clearInterval(inputCleanupInterval);
-    };
-  }, []);
+  // Removed password manager blocking since we don't use passwords
 
   return (
     <Box minH="100vh" bg="black">
@@ -120,6 +104,7 @@ function AppContent({ signOut, user }: AppProps) {
           <Routes>
             <Route path="/" element={<Dashboard user={user} />} />
             <Route path="/membership" element={<MembershipForm user={user} />} />
+            <Route path="/my-account" element={<MyAccount user={user} />} />
             <Route path="/parameters" element={<ParameterManagement user={user} />} />
             <Route path="/webshop" element={<WebshopPage user={user} />} />
             <Route path="/products" element={<ProductManagementPage user={user} />} />

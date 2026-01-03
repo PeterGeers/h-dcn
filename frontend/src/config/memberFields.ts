@@ -606,12 +606,26 @@ postcode: {
   wiewatwaar: {
     key: 'wiewatwaar',
     label: 'Hoe gevonden',
-    dataType: 'string',
-    inputType: 'text',
+    dataType: 'enum',
+    inputType: 'select',
     group: 'membership',
     order: 9,
+    enumOptions: [
+      'Eerder lid',
+      'Facebook',
+      'Familie',
+      'Harleydag',
+      'Instagram',
+      'Lid H-DCN',
+      'Internet',
+      'Openingsrit',
+      'Vrienden',
+      'Website H-DCN',
+      'The Young Ones',
+      'Bigtwin Bike Expo'
+    ],
     validation: [
-      { type: 'max_length', value: 200, message: 'Beschrijving mag maximaal 200 karakters bevatten' }
+      { type: 'required', message: 'Selecteer hoe u de H-DCN heeft gevonden' }
     ],
     permissions: {
       view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
@@ -619,7 +633,9 @@ postcode: {
       selfService: true,
       regionalRestricted: true
     },
-    helpText: 'Hoe heeft u de H-DCN gevonden?'
+    placeholder: 'Selecteer hoe u ons heeft gevonden',
+    helpText: 'Hoe heeft u de H-DCN gevonden?',
+    width: 'large'
   },
 
   notities: {
@@ -648,7 +664,7 @@ postcode: {
     group: 'membership',
     order: 7,
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
       edit: ['System_CRUD_All', 'Members_CRUD_All'],
       selfService: false,
       regionalRestricted: true
@@ -837,7 +853,7 @@ postcode: {
       { type: 'max_length', value: 15, message: 'Kenteken mag maximaal 15 karakters bevatten' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
       edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
       selfService: true,
       membershipTypeRestricted: ['Gewoon lid', 'Gezins lid'],
@@ -874,7 +890,7 @@ postcode: {
       { type: 'max_length', value: 34, message: 'IBAN mag maximaal 34 karakters bevatten' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_CRUD_All'],
+      view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
       edit: ['System_CRUD_All',  'Members_CRUD_All'],
       selfService: true,
       regionalRestricted: true
@@ -896,7 +912,7 @@ postcode: {
       { type: 'required', message: 'Betaalwijze is verplicht' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_CRUD_All'],
+      view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
       edit: ['System_CRUD_All', 'Members_CRUD_All'],
       selfService: true,
       regionalRestricted: true
@@ -1093,13 +1109,23 @@ export interface ModalFieldConfig {
   conditionalVisible?: ConditionalRule[];
 }
 
+export interface ModalGroupConfig {
+  group: FieldGroup;
+  visible: boolean;
+  order: number;
+  excludeFields?: string[]; // Fields to exclude from the group
+  includeFields?: string[]; // Only include these fields from the group
+  fieldOverrides?: Partial<ModalFieldConfig>[]; // Override specific field configs
+}
+
 export interface ModalSectionConfig {
   name: string;
   title: string;
   order: number;
   collapsible?: boolean;
   defaultExpanded?: boolean;
-  fields: ModalFieldConfig[];
+  fields?: ModalFieldConfig[]; // Individual field configs
+  groups?: ModalGroupConfig[]; // Group-based field configs
   showWhen?: ConditionalRule[];
   permissions?: {
     view: HDCNGroup[];
@@ -1153,7 +1179,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
           edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
         }
       },
@@ -1169,7 +1195,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'land', visible: true, order: 4, span: 1 }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
           edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
         }
       },
@@ -1191,7 +1217,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'wiewatwaar', visible: true, order: 10, span: 3 }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
           edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
         }
       },
@@ -1212,7 +1238,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
           edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
         }
       },
@@ -1227,7 +1253,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'bankrekeningnummer', visible: true, order: 2, span: 2 }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
           edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
         }
       },
@@ -1238,21 +1264,18 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         collapsible: true,
         defaultExpanded: false,
         fields: [
-          { fieldKey: 'tijdstempel', visible: true, readOnly: true, order: 1, span: 1 },
-          { fieldKey: 'aanmeldingsjaar', visible: true, readOnly: true, order: 2, span: 1 },
-          { fieldKey: 'datum_ondertekening', visible: true, order: 3, span: 1 },
           { fieldKey: 'created_at', visible: true, readOnly: true, order: 4, span: 1 },
           { fieldKey: 'updated_at', visible: true, readOnly: true, order: 5, span: 1 },
           { fieldKey: 'notities', visible: true, order: 6, span: 3 }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
           edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
         }
       }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
       edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
     }
   },
@@ -1288,31 +1311,57 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
     }
   },
 
-  // Registration form context
+  // Registration form context - GROUP-BASED VERSION
   memberRegistration: {
     name: 'Member Registration',
-    description: 'New member registration form',
+    description: 'New member registration form using field groups',
     sections: [
+      {
+        name: 'membership',
+        title: 'Lidmaatschap',
+        order: 1,
+        defaultExpanded: true,
+        groups: [
+          {
+            group: 'membership',
+            visible: true,
+            order: 1,
+            includeFields: ['lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'privacy', 'wiewatwaar', 'ingangsdatum', 'jaren_lid'],
+            fieldOverrides: [
+              { fieldKey: 'wiewatwaar', span: 3 },
+              { fieldKey: 'jaren_lid', readOnly: true }
+            ]
+          }
+        ],
+        fields: [
+          // Add some administrative fields that aren't in the membership group
+          { fieldKey: 'aanmeldingsjaar', visible: true, readOnly: true, order: 10, span: 1 },
+          { fieldKey: 'datum_ondertekening', visible: true, order: 11, span: 1 }
+        ],
+        permissions: {
+          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['System_CRUD_All', 'Members_CRUD_All']
+        }
+      },
       {
         name: 'personal',
         title: 'Persoonlijke Informatie',
-        order: 1,
+        order: 2,
         defaultExpanded: true,
-        fields: [
-          { fieldKey: 'voornaam', visible: true, order: 1, span: 1 },
-          { fieldKey: 'tussenvoegsel', visible: true, order: 2, span: 1 },
-          { fieldKey: 'achternaam', visible: true, order: 3, span: 1 },
-          { fieldKey: 'geboortedatum', visible: true, order: 4, span: 1 },
-          { fieldKey: 'geslacht', visible: true, order: 5, span: 1 },
-          { fieldKey: 'email', visible: true, order: 6, span: 2 },
-          { fieldKey: 'telefoon', visible: true, order: 7, span: 1 },
-          { 
-            fieldKey: 'minderjarigNaam', 
-            visible: true, 
-            order: 8, 
-            span: 3,
-            conditionalVisible: [
-              { field: 'geboortedatum', operator: 'age_less_than', value: 18 }
+        groups: [
+          {
+            group: 'personal',
+            visible: true,
+            order: 1,
+            fieldOverrides: [
+              { fieldKey: 'email', span: 2 },
+              { 
+                fieldKey: 'minderjarigNaam', 
+                span: 3,
+                conditionalVisible: [
+                  { field: 'geboortedatum', operator: 'age_less_than', value: 18 }
+                ]
+              }
             ]
           }
         ],
@@ -1324,13 +1373,18 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
       {
         name: 'address',
         title: 'Adresgegevens',
-        order: 2,
+        order: 3,
         defaultExpanded: true,
-        fields: [
-          { fieldKey: 'straat', visible: true, order: 1, span: 2 },
-          { fieldKey: 'postcode', visible: true, order: 2, span: 1 },
-          { fieldKey: 'woonplaats', visible: true, order: 3, span: 2 },
-          { fieldKey: 'land', visible: true, order: 4, span: 1 }
+        groups: [
+          {
+            group: 'address',
+            visible: true,
+            order: 1,
+            fieldOverrides: [
+              { fieldKey: 'straat', span: 2 },
+              { fieldKey: 'woonplaats', span: 2 }
+            ]
+          }
         ],
         permissions: {
           view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
@@ -1338,35 +1392,19 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         }
       },
       {
-        name: 'membership',
-        title: 'Lidmaatschap',
-        order: 3,
-        defaultExpanded: true,
-        fields: [
-          { fieldKey: 'lidmaatschap', visible: true, order: 1, span: 1 },
-          { fieldKey: 'regio', visible: true, order: 2, span: 1 },
-          { fieldKey: 'ingangsdatum', visible: true, order: 5, span: 1 },
-          { fieldKey: 'jaren_lid', visible: true, readOnly: true, order: 6, span: 1 },
-          { fieldKey: 'clubblad', visible: true, order: 3, span: 1 },
-          { fieldKey: 'nieuwsbrief', visible: true, order: 4, span: 1 },
-          { fieldKey: 'privacy', visible: true, order: 5, span: 1 },
-          { fieldKey: 'wiewatwaar', visible: true, order: 6, span: 3 }
-        ],
-        permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
-        }
-      },
-      {
         name: 'motor',
         title: 'Motorgegevens',
         order: 4,
         defaultExpanded: true,
-        fields: [
-          { fieldKey: 'motormerk', visible: true, order: 1, span: 1 },
-          { fieldKey: 'motortype', visible: true, order: 2, span: 2 },
-          { fieldKey: 'bouwjaar', visible: true, order: 3, span: 1 },
-          { fieldKey: 'kenteken', visible: true, order: 4, span: 1 }
+        groups: [
+          {
+            group: 'motor',
+            visible: true,
+            order: 1,
+            fieldOverrides: [
+              { fieldKey: 'motortype', span: 2 }
+            ]
+          }
         ],
         showWhen: [
           { field: 'lidmaatschap', operator: 'equals', value: 'Gewoon lid' },
@@ -1382,9 +1420,15 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         title: 'Betaalgegevens',
         order: 5,
         defaultExpanded: true,
-        fields: [
-          { fieldKey: 'betaalwijze', visible: true, order: 1, span: 1 },
-          { fieldKey: 'bankrekeningnummer', visible: true, order: 2, span: 2 }
+        groups: [
+          {
+            group: 'financial',
+            visible: true,
+            order: 1,
+            fieldOverrides: [
+              { fieldKey: 'bankrekeningnummer', span: 2 }
+            ]
+          }
         ],
         permissions: {
           view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
@@ -1398,31 +1442,24 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
     }
   },
 
-  // Multi-step membership application form
+  // Multi-step membership application form - GROUP-BASED VERSION
   membershipApplication: {
     name: 'Membership Application',
-    description: 'Progressive disclosure membership application form',
+    description: 'Progressive disclosure membership application form using field groups',
     sections: [
       {
         name: 'step1_personal',
         title: 'Stap 1: Wie ben je?',
         order: 1,
         defaultExpanded: true,
-        fields: [
-          { fieldKey: 'voornaam', visible: true, order: 1, span: 1 },
-          { fieldKey: 'tussenvoegsel', visible: true, order: 2, span: 1 },
-          { fieldKey: 'achternaam', visible: true, order: 3, span: 1 },
-          { fieldKey: 'geboortedatum', visible: true, order: 4, span: 1 },
-          { fieldKey: 'geslacht', visible: true, order: 5, span: 1 },
-          { fieldKey: 'email', visible: true, order: 6, span: 2 },
-          { fieldKey: 'telefoon', visible: true, order: 7, span: 1 },
-          { 
-            fieldKey: 'minderjarigNaam', 
-            visible: true, 
-            order: 8, 
-            span: 3,
-            conditionalVisible: [
-              { field: 'geboortedatum', operator: 'age_less_than', value: 18 }
+        groups: [
+          {
+            group: 'personal',
+            visible: true,
+            order: 1,
+            excludeFields: ['nationaliteit'], // Move nationality to address step
+            fieldOverrides: [
+              { fieldKey: 'minderjarigNaam', span: 3, conditionalVisible: [{ field: 'geboortedatum', operator: 'age_less_than', value: 18 }] }
             ]
           }
         ],
@@ -1436,12 +1473,15 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         title: 'Stap 2: Waar woon je?',
         order: 2,
         defaultExpanded: false,
+        groups: [
+          {
+            group: 'address',
+            visible: true,
+            order: 1
+          }
+        ],
         fields: [
-          { fieldKey: 'straat', visible: true, order: 1, span: 2 },
-          { fieldKey: 'postcode', visible: true, order: 2, span: 1 },
-          { fieldKey: 'woonplaats', visible: true, order: 3, span: 2 },
-          { fieldKey: 'land', visible: true, order: 4, span: 1 },
-          { fieldKey: 'nationaliteit', visible: true, order: 5, span: 1 }
+          { fieldKey: 'nationaliteit', visible: true, order: 5, span: 1 } // Add nationality here
         ],
         permissions: {
           view: ['System_CRUD_All', 'Members_CRUD_All'],
@@ -1453,10 +1493,16 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         title: 'Stap 3: Welk lidmaatschap wil je?',
         order: 3,
         defaultExpanded: false,
-        fields: [
-          { fieldKey: 'lidmaatschap', visible: true, order: 1, span: 2 },
-          { fieldKey: 'regio', visible: true, order: 2, span: 1 },
-          { fieldKey: 'wiewatwaar', visible: true, order: 3, span: 3 }
+        groups: [
+          {
+            group: 'membership',
+            visible: true,
+            order: 1,
+            includeFields: ['lidmaatschap', 'regio', 'wiewatwaar', 'clubblad', 'nieuwsbrief', 'privacy'], // Only these membership fields
+            fieldOverrides: [
+              { fieldKey: 'wiewatwaar', span: 3 }
+            ]
+          }
         ],
         permissions: {
           view: ['System_CRUD_All', 'Members_CRUD_All'],
@@ -1468,11 +1514,16 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         title: 'Stap 4: Vertel over je motor',
         order: 4,
         defaultExpanded: false,
-        fields: [
-          { fieldKey: 'motormerk', visible: true, order: 1, span: 1 },
-          { fieldKey: 'motortype', visible: true, order: 2, span: 2 },
-          { fieldKey: 'bouwjaar', visible: true, order: 3, span: 1 },
-          { fieldKey: 'kenteken', visible: true, order: 4, span: 2 }
+        groups: [
+          {
+            group: 'motor',
+            visible: true,
+            order: 1,
+            fieldOverrides: [
+              { fieldKey: 'motortype', span: 2 },
+              { fieldKey: 'kenteken', span: 2 }
+            ]
+          }
         ],
         showWhen: [
           { field: 'lidmaatschap', operator: 'equals', value: 'Gewoon lid' },
@@ -1484,28 +1535,19 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         }
       },
       {
-        name: 'step5_preferences',
-        title: 'Stap 5: Communicatie voorkeuren',
+        name: 'step5_payment',
+        title: 'Stap 5: Hoe wil je betalen?',
         order: 5,
         defaultExpanded: false,
-        fields: [
-          { fieldKey: 'clubblad', visible: true, order: 1, span: 1 },
-          { fieldKey: 'nieuwsbrief', visible: true, order: 2, span: 1 },
-          { fieldKey: 'privacy', visible: true, order: 3, span: 2 }
-        ],
-        permissions: {
-          view: ['System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
-        }
-      },
-      {
-        name: 'step6_payment',
-        title: 'Stap 6: Hoe wil je betalen?',
-        order: 6,
-        defaultExpanded: false,
-        fields: [
-          { fieldKey: 'betaalwijze', visible: true, order: 1, span: 1 },
-          { fieldKey: 'bankrekeningnummer', visible: true, order: 2, span: 2 }
+        groups: [
+          {
+            group: 'financial',
+            visible: true,
+            order: 1,
+            fieldOverrides: [
+              { fieldKey: 'bankrekeningnummer', span: 2 }
+            ]
+          }
         ],
         permissions: {
           view: ['System_CRUD_All', 'Members_CRUD_All'],
@@ -1545,11 +1587,55 @@ export function getVisibleSections(contextName: string, userRole: HDCNGroup): Mo
 
 /**
  * Get visible fields for a section, sorted by order
+ * Supports both individual fields and group-based configurations
  */
 export function getVisibleFields(section: ModalSectionConfig): ModalFieldConfig[] {
-  return section.fields
-    .filter(field => field.visible)
-    .sort((a, b) => a.order - b.order);
+  const fields: ModalFieldConfig[] = [];
+  
+  // Add individual fields
+  if (section.fields) {
+    fields.push(...section.fields.filter(field => field.visible));
+  }
+  
+  // Add group-based fields
+  if (section.groups) {
+    section.groups
+      .filter(groupConfig => groupConfig.visible)
+      .forEach(groupConfig => {
+        const groupFields = getFieldsByGroup(groupConfig.group);
+        
+        groupFields.forEach(fieldDef => {
+          // Check if field should be included
+          if (groupConfig.includeFields && !groupConfig.includeFields.includes(fieldDef.key)) {
+            return; // Skip if not in include list
+          }
+          
+          if (groupConfig.excludeFields && groupConfig.excludeFields.includes(fieldDef.key)) {
+            return; // Skip if in exclude list
+          }
+          
+          // Create field config with defaults
+          const fieldConfig: ModalFieldConfig = {
+            fieldKey: fieldDef.key,
+            visible: true,
+            order: fieldDef.order + (groupConfig.order * 100), // Offset by group order
+            span: fieldDef.width === 'small' ? 1 : fieldDef.width === 'large' ? 2 : fieldDef.width === 'full' ? 3 : 1
+          };
+          
+          // Apply field overrides
+          if (groupConfig.fieldOverrides) {
+            const override = groupConfig.fieldOverrides.find(o => o.fieldKey === fieldDef.key);
+            if (override) {
+              Object.assign(fieldConfig, override);
+            }
+          }
+          
+          fields.push(fieldConfig);
+        });
+      });
+  }
+  
+  return fields.sort((a, b) => a.order - b.order);
 }
 
 /**
@@ -1646,8 +1732,236 @@ export function getFieldsByPermission(permissionLevel: HDCNGroup, action: 'view'
 }
 
 /**
+ * Create a section configuration using field groups
+ */
+export function createGroupBasedSection(
+  name: string,
+  title: string,
+  order: number,
+  groups: ModalGroupConfig[],
+  options?: {
+    collapsible?: boolean;
+    defaultExpanded?: boolean;
+    showWhen?: ConditionalRule[];
+    permissions?: { view: HDCNGroup[]; edit?: HDCNGroup[]; };
+    additionalFields?: ModalFieldConfig[];
+  }
+): ModalSectionConfig {
+  return {
+    name,
+    title,
+    order,
+    collapsible: options?.collapsible,
+    defaultExpanded: options?.defaultExpanded,
+    groups,
+    fields: options?.additionalFields,
+    showWhen: options?.showWhen,
+    permissions: options?.permissions
+  };
+}
+
+/**
+ * Create a simple group configuration
+ */
+export function createGroupConfig(
+  group: FieldGroup,
+  order: number = 1,
+  options?: {
+    excludeFields?: string[];
+    includeFields?: string[];
+    fieldOverrides?: Partial<ModalFieldConfig>[];
+  }
+): ModalGroupConfig {
+  return {
+    group,
+    visible: true,
+    order,
+    excludeFields: options?.excludeFields,
+    includeFields: options?.includeFields,
+    fieldOverrides: options?.fieldOverrides
+  };
+}
+/**
  * Get field groups in display order
  */
 export function getFieldGroups(): FieldGroup[] {
   return ['personal', 'address', 'membership', 'motor', 'financial', 'administrative'];
 }
+
+/**
+ * Create a complete modal context using group-based sections
+ */
+export function createGroupBasedModalContext(
+  name: string,
+  description: string,
+  sections: ModalSectionConfig[],
+  permissions: { view: HDCNGroup[]; edit?: HDCNGroup[]; }
+): ModalContextConfig {
+  return {
+    name,
+    description,
+    sections,
+    permissions
+  };
+}
+
+// ============================================================================
+// EXAMPLE: SIMPLIFIED GROUP-BASED REGISTRATION FORM
+// ============================================================================
+
+/**
+ * Example of how to create a registration form using the new group-based system
+ * This is much more concise than listing individual fields
+ */
+export const SIMPLIFIED_REGISTRATION_EXAMPLE = createGroupBasedModalContext(
+  'Simplified Registration',
+  'Example of group-based registration form',
+  [
+    // Step 1: Personal info - just reference the group
+    createGroupBasedSection(
+      'personal_info',
+      'Persoonlijke Gegevens',
+      1,
+      [createGroupConfig('personal', 1, { excludeFields: ['nationaliteit'] })],
+      { defaultExpanded: true }
+    ),
+    
+    // Step 2: Address + nationality
+    createGroupBasedSection(
+      'address_info', 
+      'Adresgegevens',
+      2,
+      [createGroupConfig('address', 1)],
+      { 
+        defaultExpanded: false,
+        additionalFields: [
+          { fieldKey: 'nationaliteit', visible: true, order: 5, span: 1 }
+        ]
+      }
+    ),
+    
+    // Step 3: Membership preferences
+    createGroupBasedSection(
+      'membership_info',
+      'Lidmaatschap',
+      3,
+      [createGroupConfig('membership', 1, { 
+        includeFields: ['lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'privacy', 'wiewatwaar']
+      })],
+      { defaultExpanded: false }
+    ),
+    
+    // Step 4: Motor (conditional)
+    createGroupBasedSection(
+      'motor_info',
+      'Motorgegevens',
+      4,
+      [createGroupConfig('motor', 1)],
+      { 
+        defaultExpanded: false,
+        showWhen: [
+          { field: 'lidmaatschap', operator: 'equals', value: 'Gewoon lid' },
+          { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
+        ]
+      }
+    ),
+    
+    // Step 5: Payment
+    createGroupBasedSection(
+      'payment_info',
+      'Betaalgegevens', 
+      5,
+      [createGroupConfig('financial', 1)],
+      { defaultExpanded: false }
+    )
+  ],
+  {
+    view: ['System_CRUD_All', 'Members_CRUD_All'],
+    edit: ['System_CRUD_All', 'Members_CRUD_All']
+  }
+);
+// ============================================================================
+// ULTRA-SIMPLIFIED REGISTRATION USING HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Ultra-simplified registration form using the helper functions
+ * This shows how concise the configuration can be
+ */
+export const ULTRA_SIMPLE_REGISTRATION = createGroupBasedModalContext(
+  'Ultra Simple Registration',
+  'Minimal configuration using helper functions',
+  [
+    // Personal info with email spanning 2 columns
+    createGroupBasedSection(
+      'personal',
+      'Persoonlijke Informatie', 
+      1,
+      [createGroupConfig('personal', 1, {
+        fieldOverrides: [
+          { fieldKey: 'email', span: 2 },
+          { fieldKey: 'minderjarigNaam', span: 3, conditionalVisible: [{ field: 'geboortedatum', operator: 'age_less_than', value: 18 }] }
+        ]
+      })],
+      { defaultExpanded: true }
+    ),
+    
+    // Address info with street spanning 2 columns
+    createGroupBasedSection(
+      'address',
+      'Adresgegevens',
+      2, 
+      [createGroupConfig('address', 1, {
+        fieldOverrides: [
+          { fieldKey: 'straat', span: 2 },
+          { fieldKey: 'woonplaats', span: 2 }
+        ]
+      })],
+      { defaultExpanded: true }
+    ),
+    
+    // Membership info - only specific fields
+    createGroupBasedSection(
+      'membership',
+      'Lidmaatschap',
+      3,
+      [createGroupConfig('membership', 1, {
+        includeFields: ['lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'privacy', 'wiewatwaar'],
+        fieldOverrides: [{ fieldKey: 'wiewatwaar', span: 3 }]
+      })],
+      { defaultExpanded: true }
+    ),
+    
+    // Motor info (conditional)
+    createGroupBasedSection(
+      'motor',
+      'Motorgegevens',
+      4,
+      [createGroupConfig('motor', 1, {
+        fieldOverrides: [{ fieldKey: 'motortype', span: 2 }]
+      })],
+      { 
+        defaultExpanded: true,
+        showWhen: [
+          { field: 'lidmaatschap', operator: 'equals', value: 'Gewoon lid' },
+          { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
+        ]
+      }
+    ),
+    
+    // Payment info
+    createGroupBasedSection(
+      'financial',
+      'Betaalgegevens',
+      5,
+      [createGroupConfig('financial', 1, {
+        fieldOverrides: [{ fieldKey: 'bankrekeningnummer', span: 2 }]
+      })],
+      { defaultExpanded: true }
+    )
+  ],
+  {
+    view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+    edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+  }
+);

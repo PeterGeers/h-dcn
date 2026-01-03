@@ -112,18 +112,35 @@ function Dashboard({ user }: DashboardProps) {
         </Box>
         
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
-          {/* Membership - Always visible for authenticated users */}
-          <AppCard 
-            key="membership"
-            app={{
-              id: 'membership',
-              title: isLid ? 'Lidmaatschap Gegevens' : 'Aanmelden als Lid',
-              description: isLid ? 'Hier kun je je lidmaatschap gegevens wijzigen' : 'Word lid van de H-DCN',
-              icon: '📝',
-              path: '/membership'
-            }}
-            onClick={() => navigate('/membership')}
-          />
+          {/* My Account - Only for existing members */}
+          {isLid && (
+            <AppCard 
+              key="my-account"
+              app={{
+                id: 'my-account',
+                title: 'Mijn Gegevens',
+                description: 'Bekijk en bewerk uw persoonlijke gegevens',
+                icon: '👤',
+                path: '/my-account'
+              }}
+              onClick={() => navigate('/my-account')}
+            />
+          )}
+          
+          {/* Membership Application - Only for non-members */}
+          {!isLid && (
+            <AppCard 
+              key="membership"
+              app={{
+                id: 'membership',
+                title: 'Aanmelden als Lid',
+                description: 'Word lid van de H-DCN met ons nieuwe aanmeldingsformulier',
+                icon: '📝',
+                path: '/membership'
+              }}
+              onClick={() => navigate('/membership')}
+            />
+          )}
           
           {/* Webshop - Only for members with hdcnLeden role or higher */}
           <FunctionGuard 
