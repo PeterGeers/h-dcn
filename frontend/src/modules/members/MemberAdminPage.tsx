@@ -120,7 +120,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     if (userRoles.length > 0) {
       loadMembers();
     }
-  }, [userRoles, handleError]);
+  }, [userRoles]); // Removed handleError from dependencies
 
   // Handle member view
   const handleMemberView = (member: Member) => {
@@ -246,14 +246,9 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <HStack justify="space-between" align="center">
-          <VStack align="start" spacing={1}>
-            <Heading color="orange.500">
-              Ledenadministratie
-            </Heading>
-            <Text color="gray.600">
-              Beheer leden met de field registry system
-            </Text>
-          </VStack>
+          <Heading color="orange.500">
+            Ledenadministratie
+          </Heading>
           
           {/* Add member button for admins */}
           {['System_CRUD_All', 'Members_CRUD_All'].includes(getUserRole()) && (

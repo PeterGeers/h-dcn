@@ -34,7 +34,17 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  useDisclosure
+  useDisclosure,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverCloseButton,
+  FormControl,
+  FormLabel,
+  Collapse,
+  useColorModeValue
 } from '@chakra-ui/react';
 import { 
   ViewIcon, 
@@ -42,7 +52,8 @@ import {
   SearchIcon, 
   DownloadIcon,
   ChevronDownIcon,
-  SettingsIcon
+  SettingsIcon,
+  ChevronUpIcon
 } from '@chakra-ui/icons';
 import { MEMBER_TABLE_CONTEXTS, MEMBER_FIELDS, HDCNGroup } from '../config/memberFields';
 import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
@@ -68,10 +79,12 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   onMemberDelete,
   onExport
 }) => {
-  const [selectedContext, setSelectedContext] = useState('memberOverview');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedContext, setSelectedContext] = useState('memberCompact'); // Changed to memberCompact
   const [sortField, setSortField] = useState('achternaam');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+
+  const filterBg = useColorModeValue('gray.50', 'gray.700');
 
   // Get available contexts based on user permissions
   const availableContexts = useMemo(() => {
@@ -83,24 +96,38 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   // Get current table context
   const tableContext = MEMBER_TABLE_CONTEXTS[selectedContext];
 
-  // Filter members based on regional restrictions and search
+  // Filter members based on regional restrictions and column filters
   const filteredMembers = useMemo(() => {
     let filtered = members;
 
     // Apply regional filtering if needed
-    if (tableContext.regionalRestricted && userRole === 'Members_Read_All' && userRegion) {
+    if (tableContext?.regionalRestricted && userRole === 'Members_Read_All' && userRegion) {
       filtered = filtered.filter(member => member.regio === userRegion);
     }
 
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(member => {
-        const searchFields = ['voornaam', 'achternaam', 'email', 'lidnummer'];
-        return searchFields.some(field => 
-          member[field]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      });
-    }
+    // Apply column-specific filters
+    Object.entries(columnFilters).forEach(([fieldKey, filterValue]) => {
+      if (filterValue) {
+        const field = MEMBER_FIELDS[fieldKey];
+        if (field) {
+          filtered = filtered.filter(member => {
+            const memberValue = member[fieldKey];
+            
+            if (field.inputType === 'select' || field.dataType === 'enum') {
+              return memberValue === filterValue;
+            } else if (field.dataType === 'date') {
+              // For date filters, you might want more sophisticated logic
+              return memberValue?.toString().includes(filterValue);
+            } else if (field.dataType === 'number') {
+              return memberValue?.toString() === filterValue;
+            } else {
+              // Text filter
+              return memberValue?.toString().toLowerCase().includes(filterValue.toLowerCase());
+            }
+          });
+        }
+      }
+    });
 
     // Apply sorting
     filtered.sort((a, b) => {
@@ -115,10 +142,12 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
     });
 
     return filtered;
-  }, [members, tableContext, userRole, userRegion, searchTerm, sortField, sortDirection]);
+  }, [members, tableContext?.regionalRestricted, userRole, userRegion, columnFilters, sortField, sortDirection]);
 
   // Get visible columns based on context and permissions
   const visibleColumns = useMemo(() => {
+    if (!tableContext) return [];
+    
     return tableContext.columns
       .filter(col => col.visible)
       .filter(col => {
@@ -135,6 +164,95 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
       setSortField(fieldKey);
       setSortDirection('asc');
     }
+  };
+
+  const handleColumnFilter = (fieldKey: string, value: string) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [fieldKey]: value
+    }));
+  };
+
+  const clearAllFilters = () => {
+    setColumnFilters({});
+  };
+
+  const getFilterOptions = (fieldKey: string) => {
+    const field = MEMBER_FIELDS[fieldKey];
+    if (field?.enumOptions) {
+      return field.enumOptions;
+    }
+    
+    // For non-enum fields, get unique values from data
+    const uniqueValues = [...new Set(members.map(m => m[fieldKey]).filter(Boolean))];
+    return uniqueValues.sort();
+  };
+
+  const renderColumnFilter = (column: any) => {
+    const field = MEMBER_FIELDS[column.fieldKey];
+    if (!field || !column.filterable) return null;
+
+    const filterValue = columnFilters[column.fieldKey] || '';
+
+    if (column.filterType === 'select') {
+      const options = getFilterOptions(column.fieldKey);
+      return (
+        <Select
+          size="xs"
+          placeholder="Alle"
+          value={filterValue}
+          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
+          bg="white"
+          maxW="120px"
+          fontSize={{ base: "xs", md: "sm" }}
+        >
+          {options.map(option => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </Select>
+      );
+    } else if (column.filterType === 'text') {
+      return (
+        <Input
+          size="xs"
+          placeholder="Filter..."
+          value={filterValue}
+          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
+          bg="white"
+          maxW="120px"
+          fontSize={{ base: "xs", md: "sm" }}
+        />
+      );
+    } else if (column.filterType === 'number') {
+      return (
+        <Input
+          size="xs"
+          type="number"
+          placeholder="Nr..."
+          value={filterValue}
+          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
+          bg="white"
+          maxW="120px"
+          fontSize={{ base: "xs", md: "sm" }}
+        />
+      );
+    } else if (column.filterType === 'date') {
+      return (
+        <Input
+          size="xs"
+          type="date"
+          value={filterValue}
+          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
+          bg="white"
+          maxW="120px"
+          fontSize={{ base: "xs", md: "sm" }}
+        />
+      );
+    }
+
+    return null;
   };
 
   const getStatusColor = (status: string) => {
@@ -198,47 +316,21 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   return (
     <Box>
       <VStack spacing={4} align="stretch">
-        {/* Header */}
-        <Card>
-          <CardHeader>
-            <Flex align="center">
-              <VStack align="start" spacing={1}>
-                <Heading size="lg" color="orange.500">
-                  Ledenadministratie
-                </Heading>
-                <Text color="gray.600">
-                  {filteredMembers.length} van {members.length} leden
-                </Text>
-              </VStack>
-              <Spacer />
-              <HStack>
-                {onExport && tableContext.exportable && (
-                  <Button
-                    leftIcon={<DownloadIcon />}
-                    variant="outline"
-                    onClick={() => onExport(selectedContext)}
-                  >
-                    Exporteren
-                  </Button>
-                )}
-              </HStack>
-            </Flex>
-          </CardHeader>
-        </Card>
-
         {/* Controls */}
-        <Card>
-          <CardBody>
-            <HStack spacing={4} wrap="wrap">
-              {/* Context Selector */}
-              <Box minW="200px">
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+        <Card bg="gray.800" borderColor="orange.400" border="1px">
+          <CardBody bg="orange.300" borderRadius="0 0 lg lg">
+            <Flex align="start" wrap="wrap" gap={4} direction={{ base: "column", md: "row" }}>
+              {/* Mobile Context Selector */}
+              <VStack spacing={2} align="start" w="full" display={{ base: "flex", md: "none" }}>
+                <Text fontSize="sm" fontWeight="semibold" color="gray.700">
                   Tabelweergave:
                 </Text>
                 <Select 
                   value={selectedContext} 
                   onChange={(e) => setSelectedContext(e.target.value)}
                   size="sm"
+                  bg="white"
+                  w="full"
                 >
                   {availableContexts.map(([key, context]) => (
                     <option key={key} value={key}>
@@ -246,45 +338,116 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     </option>
                   ))}
                 </Select>
-              </Box>
+                {/* Export Button */}
+                {onExport && tableContext.exportable && (
+                  <Button
+                    leftIcon={<DownloadIcon />}
+                    variant="outline"
+                    onClick={() => onExport(selectedContext)}
+                    bg="white"
+                    borderColor="gray.300"
+                    _hover={{ bg: "gray.50" }}
+                    size="sm"
+                    w="full"
+                  >
+                    Exporteren
+                  </Button>
+                )}
+              </VStack>
 
-              {/* Search */}
-              <Box flex="1" minW="200px">
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  Zoeken:
-                </Text>
-                <InputGroup size="sm">
-                  <InputLeftElement>
-                    <SearchIcon color="gray.400" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Zoek op naam, email of lidnummer..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
-              </Box>
+              {/* Desktop Context Selector */}
+              <HStack spacing={4} display={{ base: "none", md: "flex" }}>
+                <Box minW="200px">
+                  <Text fontSize="sm" fontWeight="semibold" mb={2} color="gray.700">
+                    Tabelweergave:
+                  </Text>
+                  <Select 
+                    value={selectedContext} 
+                    onChange={(e) => setSelectedContext(e.target.value)}
+                    size="sm"
+                    bg="white"
+                  >
+                    {availableContexts.map(([key, context]) => (
+                      <option key={key} value={key}>
+                        {context.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Box>
 
-              {/* Context Info */}
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  Context:
+                {/* Export Button */}
+                {onExport && tableContext.exportable && (
+                  <Button
+                    leftIcon={<DownloadIcon />}
+                    variant="outline"
+                    onClick={() => onExport(selectedContext)}
+                    bg="white"
+                    borderColor="gray.300"
+                    _hover={{ bg: "gray.50" }}
+                  >
+                    Exporteren
+                  </Button>
+                )}
+              </HStack>
+
+              <Spacer display={{ base: "none", md: "block" }} />
+
+              {/* Mobile Statistics */}
+              <VStack spacing={2} align="start" display={{ base: "flex", md: "none" }}>
+                <HStack spacing={4} wrap="wrap">
+                  <Text color="gray.700" fontSize="xs">
+                    <Text as="span" fontWeight="semibold">{filteredMembers.length}</Text>/<Text as="span" fontWeight="semibold">{members.length}</Text> leden
+                  </Text>
+                  <Text color="gray.700" fontSize="xs">
+                    Actief: <Text as="span" fontWeight="semibold" color="green.700">{members.filter(m => m.status === 'Actief').length}</Text>
+                  </Text>
+                  <Text color="gray.700" fontSize="xs">
+                    Aangemeld: <Text as="span" fontWeight="semibold" color="yellow.700">{members.filter(m => m.status === 'Aangemeld').length}</Text>
+                  </Text>
+                </HStack>
+                <HStack spacing={4} wrap="wrap">
+                  <Text color="gray.700" fontSize="xs">
+                    Opgezegd: <Text as="span" fontWeight="semibold" color="red.700">{members.filter(m => m.status === 'Opgezegd').length}</Text>
+                  </Text>
+                  <Text color="gray.700" fontSize="xs">
+                    Hoogste Lidnr: <Text as="span" fontWeight="semibold" color="blue.700">
+                      {Math.max(...members.filter(m => m.lidnummer && !isNaN(m.lidnummer)).map(m => Number(m.lidnummer)), 0)}
+                    </Text>
+                  </Text>
+                </HStack>
+              </VStack>
+
+              {/* Desktop Statistics */}
+              <HStack spacing={6} display={{ base: "none", md: "flex" }}>
+                <Text color="gray.700" fontSize="sm">
+                  <Text as="span" fontWeight="semibold">{filteredMembers.length}</Text> van <Text as="span" fontWeight="semibold">{members.length}</Text> leden
                 </Text>
-                <Text fontSize="sm" color="gray.600">
-                  {tableContext.description}
+                <Text color="gray.700" fontSize="sm">
+                  Actief: <Text as="span" fontWeight="semibold" color="green.700">{members.filter(m => m.status === 'Actief').length}</Text>
                 </Text>
-              </Box>
-            </HStack>
+                <Text color="gray.700" fontSize="sm">
+                  Aangemeld: <Text as="span" fontWeight="semibold" color="yellow.700">{members.filter(m => m.status === 'Aangemeld').length}</Text>
+                </Text>
+                <Text color="gray.700" fontSize="sm">
+                  Opgezegd: <Text as="span" fontWeight="semibold" color="red.700">{members.filter(m => m.status === 'Opgezegd').length}</Text>
+                </Text>
+                <Text color="gray.700" fontSize="sm">
+                  Hoogste Lidnr: <Text as="span" fontWeight="semibold" color="blue.700">
+                    {Math.max(...members.filter(m => m.lidnummer && !isNaN(m.lidnummer)).map(m => Number(m.lidnummer)), 0)}
+                  </Text>
+                </Text>
+              </HStack>
+            </Flex>
           </CardBody>
         </Card>
 
         {/* Table */}
-        <Card>
+        <Card bg="gray.800" borderColor="orange.400" border="1px">
           <Box overflowX="auto">
-            <Table variant="simple" size="sm">
-              <Thead bg="gray.50">
+            <Table variant="simple" size="xs">
+              <Thead bg="gray.700">
                 <Tr>
-                  <Th minW="120px" position="sticky" left={0} bg="gray.50" zIndex={1}>
+                  <Th minW="120px" position="sticky" left={0} bg="gray.700" zIndex={1} py={2} color="orange.300">
                     Acties
                   </Th>
                   {visibleColumns.map(column => {
@@ -294,19 +457,33 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     return (
                       <Th 
                         key={column.fieldKey}
-                        minW={column.width || '120px'}
+                        minW={column.width ? `${column.width}px` : '120px'}
                         cursor={column.sortable ? 'pointer' : 'default'}
                         onClick={column.sortable ? () => handleSort(column.fieldKey) : undefined}
-                        _hover={column.sortable ? { bg: 'gray.100' } : {}}
+                        _hover={column.sortable ? { bg: 'gray.600' } : {}}
+                        py={2}
+                        color="orange.300"
+                        display={
+                          column.fieldKey === 'email' ? { base: 'none', lg: 'table-cell' } :
+                          column.fieldKey === 'regio' ? { base: 'none', md: 'table-cell' } :
+                          'table-cell'
+                        }
                       >
-                        <HStack spacing={1}>
-                          <Text>{field.label}</Text>
-                          {column.sortable && sortField === column.fieldKey && (
-                            <Text fontSize="xs">
-                              {sortDirection === 'asc' ? '↑' : '↓'}
-                            </Text>
-                          )}
-                        </HStack>
+                        <VStack spacing={1} align="start">
+                          <HStack spacing={1}>
+                            <Text fontSize="xs">{field.label}</Text>
+                            {column.sortable && sortField === column.fieldKey && (
+                              <Text fontSize="xs">
+                                {sortDirection === 'asc' ? '↑' : '↓'}
+                              </Text>
+                            )}
+                          </HStack>
+                          
+                          {/* Column Filter - Always Visible */}
+                          <Box onClick={(e) => e.stopPropagation()}>
+                            {renderColumnFilter(column)}
+                          </Box>
+                        </VStack>
                       </Th>
                     );
                   })}
@@ -314,8 +491,8 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
               </Thead>
               <Tbody>
                 {filteredMembers.map((member) => (
-                  <Tr key={member.member_id} _hover={{ bg: 'gray.50' }}>
-                    <Td position="sticky" left={0} bg="white" zIndex={1}>
+                  <Tr key={member.member_id} _hover={{ bg: 'gray.600' }}>
+                    <Td position="sticky" left={0} bg="gray.800" zIndex={1} py={1} color="white">
                       <HStack spacing={1}>
                         <Tooltip label="Bekijken">
                           <IconButton
@@ -346,7 +523,17 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                       const value = member[column.fieldKey];
                       
                       return (
-                        <Td key={column.fieldKey} textAlign={column.align || 'left'}>
+                        <Td 
+                          key={column.fieldKey} 
+                          textAlign={column.align || 'left'} 
+                          py={1} 
+                          color="white"
+                          display={
+                            column.fieldKey === 'email' ? { base: 'none', lg: 'table-cell' } :
+                            column.fieldKey === 'regio' ? { base: 'none', md: 'table-cell' } :
+                            'table-cell'
+                          }
+                        >
                           {renderCellValue(field, value, member)}
                         </Td>
                       );

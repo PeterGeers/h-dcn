@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Heading, Text, SimpleGrid, Alert, AlertIcon } from '@chakra-ui/react';
+import { Box, VStack, Heading, Text, SimpleGrid, Alert, AlertIcon, Spinner, Center } from '@chakra-ui/react';
 import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { initializeFunctionPermissions } from '../utils/initializeFunctionPermissions';
+import { membershipService } from '../utils/membershipService';
 
 interface User {
   attributes?: {
     given_name?: string;
     family_name?: string;
+    email?: string;
   };
   signInUserSession?: {
     accessToken?: {
@@ -26,6 +28,38 @@ interface DashboardProps {
 
 function Dashboard({ user }: DashboardProps) {
   const navigate = useNavigate();
+  const [isCheckingMembership, setIsCheckingMembership] = useState(true);
+  const [memberExists, setMemberExists] = useState<boolean | null>(null);
+  
+  // Check if user exists as member and redirect to application if not
+  useEffect(() => {
+    const checkMembershipStatus = async () => {
+      if (!user?.attributes?.email) {
+        setIsCheckingMembership(false);
+        return;
+      }
+
+      try {
+        const existingMember = await membershipService.getMemberByEmail(user.attributes.email);
+        
+        if (!existingMember) {
+          // User doesn't exist in member database, redirect to application
+          navigate('/new-member-application');
+          return;
+        }
+        
+        setMemberExists(true);
+      } catch (error) {
+        console.error('Error checking membership status:', error);
+        // On error, assume user exists and show dashboard
+        setMemberExists(true);
+      } finally {
+        setIsCheckingMembership(false);
+      }
+    };
+
+    checkMembershipStatus();
+  }, [user, navigate]);
   
   // Initialize function permissions on first load (background task)
   useEffect(() => {
@@ -38,6 +72,30 @@ function Dashboard({ user }: DashboardProps) {
     };
     init();
   }, []);
+
+  // Show loading while checking membership status
+  if (isCheckingMembership) {
+    return (
+      <Center h="400px">
+        <VStack spacing={4}>
+          <Spinner size="xl" color="orange.400" thickness="4px" />
+          <Text color="gray.300">Lidmaatschap controleren...</Text>
+        </VStack>
+      </Center>
+    );
+  }
+
+  // If member doesn't exist, the redirect should have happened
+  if (memberExists === false) {
+    return (
+      <Center h="400px">
+        <VStack spacing={4}>
+          <Spinner size="xl" color="orange.400" thickness="4px" />
+          <Text color="gray.300">Doorverwijzen naar aanmeldingsformulier...</Text>
+        </VStack>
+      </Center>
+    );
+  }
   
   // Extract user roles from Cognito token - try payload first, then decode JWT
   let userGroups: string[] = [];

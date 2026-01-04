@@ -98,7 +98,7 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
 
     try {
       // Step 1: Get registration options from the server
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/register/begin`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/register/begin?t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

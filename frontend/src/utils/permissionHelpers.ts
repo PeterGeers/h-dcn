@@ -382,7 +382,8 @@ export function getRoleLevel(role: HDCNGroup): number {
     'Communication_Read_All': 55,
     'Club_Magazine_Editorial': 50,
     'Event_Organizer': 45,
-    'hdcnLeden': 10
+    'hdcnLeden': 10,
+    'Verzoek_lid': 5
   };
   
   return roleLevels[role] || 0;
@@ -411,7 +412,8 @@ export function getRoleName(role: HDCNGroup): string {
     'Communication_Read_All': 'Communicatie Lezer',
     'Club_Magazine_Editorial': 'Clubblad Redactie',
     'Event_Organizer': 'Evenement Organisator',
-    'hdcnLeden': 'Lid'
+    'hdcnLeden': 'Lid',
+    'Verzoek_lid': 'Aanvrager'
   };
   
   return roleNames[role] || role;

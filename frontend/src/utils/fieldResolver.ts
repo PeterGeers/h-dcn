@@ -178,8 +178,19 @@ export function canViewField(
   userRole: HDCNGroup, 
   memberData?: any
 ): boolean {
-  const fields = applyPermissions([field], userRole, memberData);
-  return fields.length > 0;
+  if (!field.permissions) return true;
+  
+  // Check basic view permission
+  if (field.permissions.view.includes(userRole)) {
+    return true;
+  }
+  
+  // Check self-service permission for hdcnLeden users and applicants
+  if ((userRole === 'hdcnLeden' || userRole === 'Verzoek_lid') && field.permissions.selfService) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -192,8 +203,23 @@ export function canEditField(
 ): boolean {
   if (!field.permissions) return false;
   
+  // Special case: Verzoek_lid users cannot edit email field (tied to Cognito account)
+  if (userRole === 'Verzoek_lid' && field.key === 'email') {
+    return false;
+  }
+  
+  // Special case: Verzoek_lid users can edit lidmaatschap field (needed for application)
+  if (userRole === 'Verzoek_lid' && field.key === 'lidmaatschap') {
+    return true;
+  }
+  
   // Check basic edit permission
   if (!field.permissions.edit.includes(userRole)) {
+    // Check self-service permission for hdcnLeden users and applicants
+    if ((userRole === 'hdcnLeden' || userRole === 'Verzoek_lid') && field.permissions.selfService) {
+      return true;
+    }
+    
     // Check conditional edit permissions
     if (field.conditionalEdit && memberData) {
       const conditionMet = evaluateCondition(field.conditionalEdit.condition, memberData);

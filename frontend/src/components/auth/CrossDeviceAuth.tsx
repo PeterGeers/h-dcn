@@ -56,7 +56,7 @@ export function CrossDeviceAuth({ userEmail, onSuccess, onCancel, onError }: Cro
 
     try {
       // Step 1: Get authentication options from the server
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/authenticate/begin`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/authenticate/begin?t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

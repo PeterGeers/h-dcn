@@ -118,7 +118,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
       if (WebAuthnService.isSupported()) {
         try {
           // Try passkey authentication first
-          const authOptions = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/authenticate/begin`, {
+          const authOptions = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/authenticate/begin?t=${Date.now()}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -131,6 +131,14 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
           if (authOptions.ok) {
             const options = await authOptions.json();
+            
+            // Check if this is a "user not found" response that should redirect to setup
+            if (options.code === 'USER_NOT_FOUND' && options.action === 'SETUP_PASSKEY') {
+              // New user - redirect to passkey setup
+              setNewUserEmail(signInData.email);
+              setAuthState('passkeySetup');
+              return;
+            }
             
             // Frontend always provides the correct RP ID for current domain
             // Don't rely on backend RP ID since it may not match the actual domain

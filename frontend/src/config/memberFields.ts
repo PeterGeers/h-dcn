@@ -5,7 +5,7 @@
  * for use across different contexts (table, view, edit, forms).
  */
 
-export type HDCNGroup = 'hdcnLeden' | 'System_CRUD_All' | 'Members_Read_All' | 'Members_CRUD_All' | 'Members_Status_Approve' | 'System_User_Management' | 'National_Chairman' | 'National_Secretary' | 'Communication_Read_All' | 'Communication_CRUD_All' | 'Club_Magazine_Editorial' | 'Event_Organizer';
+export type HDCNGroup = 'hdcnLeden' | 'System_CRUD_All' | 'Members_Read_All' | 'Members_CRUD_All' | 'Members_Status_Approve' | 'System_User_Management' | 'National_Chairman' | 'National_Secretary' | 'Communication_Read_All' | 'Communication_CRUD_All' | 'Club_Magazine_Editorial' | 'Event_Organizer' | 'Verzoek_lid';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -74,6 +74,48 @@ export interface FieldDefinition {
   computeFrom?: string;
   computeFunction?: string;
 }
+
+// ============================================================================
+// EMAIL CONFIGURATION FOR MEMBERSHIP APPLICATIONS
+// ============================================================================
+
+export interface EmailNotificationConfig {
+  enabled: boolean;
+  templates: {
+    applicantConfirmation: string;
+    adminNotification: string;
+  };
+  recipients: {
+    admin: string[];
+    cc?: string[];
+    bcc?: string[];
+  };
+  triggers: {
+    onSubmission: boolean;
+    onStatusChange: boolean;
+    onApproval: boolean;
+    onRejection: boolean;
+  };
+}
+
+export const MEMBERSHIP_EMAIL_CONFIG: EmailNotificationConfig = {
+  enabled: true,
+  templates: {
+    applicantConfirmation: 'membership-application-confirmation',
+    adminNotification: 'membership-application-admin-notification'
+  },
+  recipients: {
+    admin: ['ledenadministratie@h-dcn.nl'],
+    cc: [], // Optional CC recipients
+    bcc: [] // Optional BCC recipients for audit trail
+  },
+  triggers: {
+    onSubmission: true,    // Send emails when application is submitted
+    onStatusChange: true,  // Send emails when status changes
+    onApproval: true,      // Send welcome email when approved
+    onRejection: false     // Don't send rejection emails (handled manually)
+  }
+};
 
 // ============================================================================
 // FIELD REGISTRY
@@ -230,7 +272,7 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       selfService: true
     },
     placeholder: 'naam@voorbeeld.nl',
-    helpText: 'Uw primaire emailadres voor communicatie',
+    helpText: 'Uw primaire emailadres (gekoppeld aan uw account, niet wijzigbaar)',
     width: 'large'
   },
 
@@ -478,7 +520,7 @@ postcode: {
       { type: 'required', message: 'Lidmaatschap is verplicht' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+      view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
       edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
       selfService: false,
       regionalRestricted: true
@@ -490,8 +532,8 @@ postcode: {
     conditionalEdit: {
       condition: { field: 'status', operator: 'equals', value: 'Aangemeld' },
       permissions: {
-        view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-        edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
+        view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
+        edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
         selfService: true // Allow self-service for new applicants
       }
     }
@@ -1000,7 +1042,7 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     name: 'Member Compact',
     description: 'Minimal member table for quick reference',
     columns: [
-      { fieldKey: 'lidnummer', visible: true, order: 1, width: 80, sortable: true, filterable: true, filterType: 'number', sticky: true },
+      { fieldKey: 'lidnummer', visible: true, order: 1, width: 50, sortable: true, filterable: true, filterType: 'number', sticky: true },
       { fieldKey: 'voornaam', visible: true, order: 2, width: 100, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'achternaam', visible: true, order: 3, width: 120, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'email', visible: true, order: 4, width: 180, sortable: true, filterable: true, filterType: 'text' },
@@ -1012,7 +1054,7 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     exportable: false,
     regionalRestricted: true, // Apply regional filtering for Members_Read_All users
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
     }
   },
 
@@ -1339,8 +1381,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'datum_ondertekening', visible: true, order: 11, span: 1 }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'System_CRUD_All', 'Members_CRUD_All']
         }
       },
       {
@@ -1366,8 +1408,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
         }
       },
       {
@@ -1387,8 +1429,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
         }
       },
       {
@@ -1411,8 +1453,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
         }
       },
       {
@@ -1431,14 +1473,14 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
         }
       }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-      edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+      view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+      edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
     }
   },
 

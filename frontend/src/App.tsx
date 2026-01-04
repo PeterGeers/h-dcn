@@ -43,6 +43,8 @@ const MembershipManagement = lazy(() => import('./pages/MembershipManagement')) 
 const PasskeyTest = lazy(() => import('./components/auth/PasskeyTest')) as any;
 const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCompatibilityTest')) as any;
 const FieldRegistryTestPage = lazy(() => import('./pages/FieldRegistryTestPage')) as any;
+const NewMemberApplication = lazy(() => import('./pages/NewMemberApplication')) as any;
+const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) as any;
 
 function NavigationHeader({ signOut, user }: AppProps) {
   const navigate = useNavigate();
@@ -105,6 +107,8 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/" element={<Dashboard user={user} />} />
             <Route path="/membership" element={<MembershipForm user={user} />} />
             <Route path="/my-account" element={<MyAccount user={user} />} />
+            <Route path="/new-member-application" element={<NewMemberApplication user={user} />} />
+            <Route path="/application-submitted" element={<ApplicationSubmitted />} />
             <Route path="/parameters" element={<ParameterManagement user={user} />} />
             <Route path="/webshop" element={<WebshopPage user={user} />} />
             <Route path="/products" element={<ProductManagementPage user={user} />} />

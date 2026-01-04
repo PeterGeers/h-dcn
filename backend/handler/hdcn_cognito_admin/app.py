@@ -1150,12 +1150,12 @@ def passwordless_signup(event, headers):
             cognito_client.admin_add_user_to_group(
                 UserPoolId=USER_POOL_ID,
                 Username=email,
-                GroupName='hdcnLeden'
+                GroupName='Verzoek_lid'
             )
         except cognito_client.exceptions.ResourceNotFoundException:
-            print(f"Warning: Group 'hdcnLeden' does not exist in User Pool {USER_POOL_ID}")
+            print(f"Warning: Group 'Verzoek_lid' does not exist in User Pool {USER_POOL_ID}")
         except Exception as group_error:
-            print(f"Warning: Could not add user {email} to hdcnLeden group: {str(group_error)}")
+            print(f"Warning: Could not add user {email} to Verzoek_lid group: {str(group_error)}")
         
         return {
             'statusCode': 201,
@@ -1203,18 +1203,17 @@ def begin_passkey_registration(event, headers):
                 'body': json.dumps({'error': 'Email is required'})
             }
         
-        # Verify user exists in Cognito
+        # Check if user exists in Cognito (allow new users for registration)
+        user_exists = True
         try:
             user_response = cognito_client.admin_get_user(
                 UserPoolId=USER_POOL_ID,
                 Username=email
             )
         except cognito_client.exceptions.UserNotFoundException:
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps({'error': 'User not found'})
-            }
+            # User doesn't exist yet - this is fine for new user registration
+            user_exists = False
+            print(f"New user passkey registration for: {email}")
         
         # Generate a challenge for WebAuthn registration
         # In a production environment, you would use a proper WebAuthn library
@@ -1302,18 +1301,47 @@ def complete_passkey_registration(event, headers):
                 'body': json.dumps({'error': 'Email and credential are required'})
             }
         
-        # Verify user exists in Cognito
+        # Check if user exists in Cognito, create if they don't
+        user_exists = True
         try:
             user_response = cognito_client.admin_get_user(
                 UserPoolId=USER_POOL_ID,
                 Username=email
             )
         except cognito_client.exceptions.UserNotFoundException:
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps({'error': 'User not found'})
-            }
+            # User doesn't exist - create them as part of passkey registration
+            user_exists = False
+            print(f"Creating new user during passkey registration: {email}")
+            
+            try:
+                # Create user in Cognito with email verified
+                user_response = cognito_client.admin_create_user(
+                    UserPoolId=USER_POOL_ID,
+                    Username=email,
+                    UserAttributes=[
+                        {'Name': 'email', 'Value': email},
+                        {'Name': 'email_verified', 'Value': 'true'}
+                    ],
+                    MessageAction='SUPPRESS'  # Don't send welcome email
+                )
+                
+                # Add user to basic member group
+                try:
+                    cognito_client.admin_add_user_to_group(
+                        UserPoolId=USER_POOL_ID,
+                        Username=email,
+                        GroupName='Verzoek_lid'
+                    )
+                except Exception as group_error:
+                    print(f"Warning: Could not add user to Verzoek_lid group: {str(group_error)}")
+                
+            except Exception as create_error:
+                print(f"Error creating user: {str(create_error)}")
+                return {
+                    'statusCode': 500,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Failed to create user account'})
+                }
         
         # In a production environment, you would:
         # 1. Verify the credential signature
@@ -1332,7 +1360,13 @@ def complete_passkey_registration(event, headers):
         
         try:
             # Get existing credential IDs
-            user_attributes = user_response.get('UserAttributes', [])
+            if user_exists:
+                # Existing user - get attributes from admin_get_user response
+                user_attributes = user_response.get('UserAttributes', [])
+            else:
+                # New user - get attributes from admin_create_user response
+                user_attributes = user_response.get('User', {}).get('Attributes', [])
+            
             existing_credentials = []
             
             for attr in user_attributes:
@@ -1452,9 +1486,14 @@ def begin_passkey_authentication(event, headers):
                 
         except cognito_client.exceptions.UserNotFoundException:
             return {
-                'statusCode': 404,
+                'statusCode': 200,
                 'headers': headers,
-                'body': json.dumps({'error': 'User not found'})
+                'body': json.dumps({
+                    'error': 'User not found',
+                    'code': 'USER_NOT_FOUND',
+                    'message': 'User does not exist. Please set up a new passkey.',
+                    'action': 'SETUP_PASSKEY'
+                })
             }
         
         # Generate authentication challenge
