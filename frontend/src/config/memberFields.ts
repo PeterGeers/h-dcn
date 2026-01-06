@@ -22,7 +22,7 @@ export interface ConditionalRule {
 }
 
 export interface ValidationRule {
-  type: 'required' | 'email' | 'phone' | 'postal_code' | 'iban' | 'min_length' | 'max_length' | 'pattern' | 'custom';
+  type: 'required' | 'email' | 'phone' | 'postal_code' | 'iban' | 'min_length' | 'max_length' | 'min' | 'max' | 'pattern' | 'custom';
   value?: any;
   message?: string;
   condition?: ConditionalRule;
@@ -54,6 +54,7 @@ export interface FieldDefinition {
   
   // Data Properties
   enumOptions?: string[]; // For select/enum fields
+  enumPermissions?: Record<string, HDCNGroup[]>; // Role-based enum option filtering
   defaultValue?: any;
   
   // Conditional Logic
@@ -297,29 +298,6 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
     helpText: 'Uw telefoonnummer voor contact',
     width: 'medium'
   },
-
-  nationaliteit: {
-    key: 'nationaliteit',
-    label: 'Nationaliteit',
-    dataType: 'string',
-    inputType: 'text',
-    group: 'personal',
-    order: 9,
-    validation: [
-      { type: 'min_length', value: 2, message: 'Nationaliteit moet minimaal 2 karakters bevatten' },
-      { type: 'max_length', value: 50, message: 'Nationaliteit mag maximaal 50 karakters bevatten' }
-    ],
-    permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
-      regionalRestricted: true
-    },
-    defaultValue: 'Nederlandse',
-    placeholder: 'Bijv. Nederlandse, Duitse, Belgische',
-    helpText: 'Uw nationaliteit',
-    width: 'medium'
-  },
   
   privacy: {
     key: 'privacy',
@@ -492,7 +470,7 @@ postcode: {
     group: 'membership',
     order: 1,
     required: true,
-    enumOptions: ['Actief', 'Opgezegd', 'wachtRegio', 'Aangemeld', 'Geschorst','Overig'],
+    enumOptions: ['Actief', 'Opgezegd', 'wachtRegio', 'Aangemeld', 'Geschorst','HdcnAccount','Club','Sponsor','Overig'],
     validation: [
       { type: 'required', message: 'Status is verplicht' }
     ],
@@ -515,7 +493,12 @@ postcode: {
     group: 'membership',
     order: 2,
     required: true,
-    enumOptions: ['Gewoon lid', 'Gezins lid', 'Donateur', 'Gezins donateur','Erelid','Club','Sponsor', 'HDCNaccount'],
+    enumOptions: ['Gewoon lid', 'Gezins lid', 'Donateur', 'Gezins donateur','Erelid','Overig'],
+    // Role-based enum filtering - restrict certain membership types to specific roles
+    enumPermissions: {
+      'Erelid': ['Members_CRUD_All', 'System_CRUD_All'], // Only full CRUD roles can see/assign Erelid
+      'Other': ['Members_CRUD_All', 'System_CRUD_All']   // Only full CRUD roles can see/assign Other
+    },
     validation: [
       { type: 'required', message: 'Lidmaatschap is verplicht' }
     ],
@@ -555,9 +538,14 @@ postcode: {
       'Oost',
       'Limburg',
       'Groningen/Drenthe',
-      'Noord-Brabant',
-      'Zeeland'
+      'Brabant/Zeeland',
+      'Duitsland',
+      'Overig'
     ],
+    // Role-based enum filtering - restrict Other to specific roles
+    enumPermissions: {
+      'Other': ['Members_CRUD_All', 'System_CRUD_All'] // Only full CRUD roles can see/assign Other
+    },
     validation: [
       { type: 'required', message: 'Regio is verplicht' }
     ],
@@ -667,7 +655,11 @@ postcode: {
       'Bigtwin Bike Expo'
     ],
     validation: [
-      { type: 'required', message: 'Selecteer hoe u de H-DCN heeft gevonden' }
+      { 
+        type: 'required', 
+        message: 'Selecteer hoe u de H-DCN heeft gevonden',
+        condition: { field: 'member_id', operator: 'not_exists' } // Only required for new applications
+      }
     ],
     permissions: {
       view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
@@ -872,8 +864,8 @@ postcode: {
       regionalRestricted: true
     },
     validation: [
-      { type: 'min_length', value: 1900, message: 'Bouwjaar moet na 1900 zijn' },
-      { type: 'max_length', value: new Date().getFullYear() + 1, message: `Bouwjaar mag niet in de toekomst liggen` }
+      { type: 'min', value: 1900, message: 'Bouwjaar moet na 1900 zijn' },
+      { type: 'max', value: new Date().getFullYear() + 1, message: `Bouwjaar mag niet in de toekomst liggen` }
     ],
     showWhen: [
       { field: 'lidmaatschap', operator: 'equals', value: 'Gewoon lid' },
@@ -951,7 +943,11 @@ postcode: {
     order: 2,
     enumOptions: ['Incasso', 'Overmaking'],
     validation: [
-      { type: 'required', message: 'Betaalwijze is verplicht' }
+      { 
+        type: 'required', 
+        message: 'Betaalwijze is verplicht',
+        condition: { field: 'member_id', operator: 'not_exists' } // Only required for new applications
+      }
     ],
     permissions: {
       view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
@@ -1207,9 +1203,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'initialen', visible: true, order: 4, span: 1 },
           { fieldKey: 'geboortedatum', visible: true, order: 5, span: 1 },
           { fieldKey: 'geslacht', visible: true, order: 6, span: 1 },
-          { fieldKey: 'nationaliteit', visible: true, order: 7, span: 2 },
-          { fieldKey: 'email', visible: true, order: 8, span: 2 },
-          { fieldKey: 'telefoon', visible: true, order: 9, span: 1 },
+          { fieldKey: 'email', visible: true, order: 7, span: 2 },
+          { fieldKey: 'telefoon', visible: true, order: 8, span: 1 },
           { 
             fieldKey: 'minderjarigNaam', 
             visible: true, 
@@ -1368,17 +1363,11 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
             group: 'membership',
             visible: true,
             order: 1,
-            includeFields: ['lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'privacy', 'wiewatwaar', 'ingangsdatum', 'jaren_lid'],
+            includeFields: ['status', 'lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'privacy', 'wiewatwaar'],
             fieldOverrides: [
-              { fieldKey: 'wiewatwaar', span: 3 },
-              { fieldKey: 'jaren_lid', readOnly: true }
+              { fieldKey: 'wiewatwaar', span: 3 }
             ]
           }
-        ],
-        fields: [
-          // Add some administrative fields that aren't in the membership group
-          { fieldKey: 'aanmeldingsjaar', visible: true, readOnly: true, order: 10, span: 1 },
-          { fieldKey: 'datum_ondertekening', visible: true, order: 11, span: 1 }
         ],
         permissions: {
           view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
@@ -1396,7 +1385,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
             visible: true,
             order: 1,
             fieldOverrides: [
-              { fieldKey: 'email', span: 2 },
+              { fieldKey: 'email', span: 2, readOnly: true },
               { 
                 fieldKey: 'minderjarigNaam', 
                 span: 3,
@@ -1476,6 +1465,28 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
           edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
         }
+      },
+      {
+        name: 'vrijwaring',
+        title: 'Vrijwaring',
+        order: 6,
+        defaultExpanded: true,
+        fields: [],
+        permissions: {
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+        }
+      },
+      {
+        name: 'ondergetekende',
+        title: 'Ondergetekende',
+        order: 7,
+        defaultExpanded: true,
+        fields: [],
+        permissions: {
+          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
+          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+        }
       }
     ],
     permissions: {
@@ -1499,7 +1510,6 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
             group: 'personal',
             visible: true,
             order: 1,
-            excludeFields: ['nationaliteit'], // Move nationality to address step
             fieldOverrides: [
               { fieldKey: 'minderjarigNaam', span: 3, conditionalVisible: [{ field: 'geboortedatum', operator: 'age_less_than', value: 18 }] }
             ]
@@ -1521,9 +1531,6 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
             visible: true,
             order: 1
           }
-        ],
-        fields: [
-          { fieldKey: 'nationaliteit', visible: true, order: 5, span: 1 } // Add nationality here
         ],
         permissions: {
           view: ['System_CRUD_All', 'Members_CRUD_All'],
@@ -1774,6 +1781,25 @@ export function getFieldsByPermission(permissionLevel: HDCNGroup, action: 'view'
 }
 
 /**
+ * Get filtered enum options based on user role permissions
+ */
+export function getFilteredEnumOptions(field: FieldDefinition, userRole: HDCNGroup): string[] {
+  if (!field.enumOptions) return [];
+  
+  // If no enum permissions are defined, return all options
+  if (!field.enumPermissions) return field.enumOptions;
+  
+  // Filter options based on role permissions
+  return field.enumOptions.filter(option => {
+    const requiredRoles = field.enumPermissions![option];
+    // If no specific permissions for this option, it's available to all
+    if (!requiredRoles) return true;
+    // Check if user role is in the required roles
+    return requiredRoles.includes(userRole);
+  });
+}
+
+/**
  * Create a section configuration using field groups
  */
 export function createGroupBasedSection(
@@ -1864,7 +1890,7 @@ export const SIMPLIFIED_REGISTRATION_EXAMPLE = createGroupBasedModalContext(
       'personal_info',
       'Persoonlijke Gegevens',
       1,
-      [createGroupConfig('personal', 1, { excludeFields: ['nationaliteit'] })],
+      [createGroupConfig('personal', 1)],
       { defaultExpanded: true }
     ),
     
@@ -1875,10 +1901,7 @@ export const SIMPLIFIED_REGISTRATION_EXAMPLE = createGroupBasedModalContext(
       2,
       [createGroupConfig('address', 1)],
       { 
-        defaultExpanded: false,
-        additionalFields: [
-          { fieldKey: 'nationaliteit', visible: true, order: 5, span: 1 }
-        ]
+        defaultExpanded: false
       }
     ),
     
@@ -2007,3 +2030,61 @@ export const ULTRA_SIMPLE_REGISTRATION = createGroupBasedModalContext(
     edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
   }
 );
+
+// ============================================================================
+// REGION NORMALIZATION MAPPING
+// ============================================================================
+
+/**
+ * Region normalization mapping for consistent region names
+ * Maps various input formats to standardized region names
+ */
+export const REGION_NORMALIZATION_MAP: Record<string, string> = {
+  // Brabant/Zeeland variations
+  'brabant/zeeland': 'Brabant/Zeeland',
+  'BRABANT/ZEELAND': 'Brabant/Zeeland',
+  'Noord-Brabant/Zeeland': 'Brabant/Zeeland',
+  'noord-brabant/zeeland': 'Brabant/Zeeland',
+  'NOORD-BRABANT/ZEELAND': 'Brabant/Zeeland',
+  
+  // Other region normalizations can be added here as needed
+  'noord-holland': 'Noord-Holland',
+  'NOORD-HOLLAND': 'Noord-Holland',
+  'zuid-holland': 'Zuid-Holland',
+  'ZUID-HOLLAND': 'Zuid-Holland',
+  'friesland': 'Friesland',
+  'FRIESLAND': 'Friesland',
+  'utrecht': 'Utrecht',
+  'UTRECHT': 'Utrecht',
+  'oost': 'Oost',
+  'OOST': 'Oost',
+  'limburg': 'Limburg',
+  'LIMBURG': 'Limburg',
+  'groningen/drenthe': 'Groningen/Drenthe',
+  'GRONINGEN/DRENTHE': 'Groningen/Drenthe',
+  'duitsland': 'Duitsland',
+  'DUITSLAND': 'Duitsland',
+  'overig': 'Overig',
+  'OVERIG': 'Overig'
+};
+
+/**
+ * Normalize region name to standard format
+ * @param region - Input region name (any case/format)
+ * @returns Normalized region name or original if no mapping found
+ */
+export function normalizeRegion(region: string): string {
+  if (!region) return region;
+  
+  // Check direct mapping first
+  const normalized = REGION_NORMALIZATION_MAP[region];
+  if (normalized) return normalized;
+  
+  // Check case-insensitive mapping
+  const lowerRegion = region.toLowerCase();
+  const normalizedLower = REGION_NORMALIZATION_MAP[lowerRegion];
+  if (normalizedLower) return normalizedLower;
+  
+  // Return original if no mapping found
+  return region;
+}

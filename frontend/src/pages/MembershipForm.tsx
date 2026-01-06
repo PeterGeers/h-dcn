@@ -53,10 +53,11 @@ function MembershipForm({ user }: MembershipFormProps) {
   };
 
   return (
-    <Box minH="100vh" bg="gray.50" py={8}>
+    <Box minH="100vh" bg="black" py={8}>
       <MemberApplicationForm 
         onSubmit={handleSubmit}
         onCancel={handleCancel}
+        userRole={user?.signInUserSession?.accessToken?.payload?.['cognito:groups']?.[0] || 'Members_CRUD_All'}
       />
     </Box>
   );

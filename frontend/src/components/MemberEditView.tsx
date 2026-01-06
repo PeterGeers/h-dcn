@@ -70,6 +70,37 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
   // Get member view context
   const memberContext = MEMBER_MODAL_CONTEXTS.memberView;
 
+  // Evaluate validation condition
+  const evaluateValidationCondition = (condition: any, memberData: any): boolean => {
+    const fieldValue = memberData[condition.field];
+    
+    switch (condition.operator) {
+      case 'equals':
+        return fieldValue === condition.value;
+      case 'not_equals':
+        return fieldValue !== condition.value;
+      case 'exists':
+        return fieldValue !== undefined && fieldValue !== null && fieldValue !== '';
+      case 'not_exists':
+        return fieldValue === undefined || fieldValue === null || fieldValue === '';
+      case 'age_less_than':
+        if (condition.field === 'geboortedatum' && fieldValue) {
+          const birthDate = new Date(fieldValue);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            return (age - 1) < condition.value;
+          }
+          return age < condition.value;
+        }
+        return false;
+      default:
+        return true;
+    }
+  };
+
   // Create validation schema from field definitions
   const createValidationSchema = () => {
     const schema: any = {};
@@ -77,21 +108,63 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     memberContext.sections.forEach(section => {
       section.fields.forEach(fieldConfig => {
         const field = MEMBER_FIELDS[fieldConfig.fieldKey];
-        if (field && field.validation && canEditField(field, userRole, member)) {
+        if (field && field.validation && canEditField(field, userRole, member) && !field.computed) {
+          let fieldSchema: any;
+          
+          // Use the field's actual database key for validation (respecting the mapping)
+          const validationKey = field.key || fieldConfig.fieldKey;
+          
+          // Start with appropriate base schema based on data type
+          if (field.dataType === 'number') {
+            fieldSchema = Yup.number().nullable().transform((value, originalValue) => {
+              return originalValue === '' ? null : value;
+            });
+          } else {
+            fieldSchema = Yup.string().nullable();
+          }
+          
           field.validation.forEach(rule => {
+            // Check if this validation rule has a condition
+            if (rule.condition) {
+              // Evaluate the condition against current member data
+              const conditionMet = evaluateValidationCondition(rule.condition, member);
+              if (!conditionMet) {
+                return; // Skip this validation rule
+              }
+            }
+            
             if (rule.type === 'required') {
-              schema[field.key] = Yup.string().required(rule.message || `${field.label} is verplicht`);
+              if (field.dataType === 'number') {
+                fieldSchema = fieldSchema.required(rule.message || `${field.label} is verplicht`);
+              } else {
+                fieldSchema = fieldSchema.required(rule.message || `${field.label} is verplicht`);
+              }
             } else if (rule.type === 'email') {
-              schema[field.key] = Yup.string().email(rule.message || 'Ongeldig emailadres');
+              // Make email validation optional if field is empty
+              fieldSchema = Yup.string().nullable().test(
+                'email',
+                rule.message || 'Ongeldig emailadres',
+                (value) => !value || Yup.string().email().isValidSync(value)
+              );
             } else if (rule.type === 'min_length') {
-              schema[field.key] = Yup.string().min(rule.value, rule.message);
+              fieldSchema = fieldSchema.min(rule.value, rule.message);
+            } else if (rule.type === 'min') {
+              // For number fields
+              fieldSchema = fieldSchema.min(rule.value, rule.message);
+            } else if (rule.type === 'max') {
+              // For number fields
+              fieldSchema = fieldSchema.max(rule.value, rule.message);
             } else if (rule.type === 'iban') {
-              schema[field.key] = Yup.string().matches(
-                /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/,
-                rule.message || 'Ongeldig IBAN nummer'
+              // Make IBAN validation optional if field is empty
+              fieldSchema = Yup.string().nullable().test(
+                'iban',
+                rule.message || 'Ongeldig IBAN nummer',
+                (value) => !value || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value)
               );
             }
           });
+          
+          schema[validationKey] = fieldSchema;
         }
       });
     });
@@ -102,23 +175,18 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
   const handleSave = async (values: any) => {
     setIsSubmitting(true);
     try {
+      console.log('Saving member data:', values);
       await onSave({
         ...values,
         updated_at: new Date().toISOString()
       });
       
       onClose();
-      toast({
-        title: 'Lid bijgewerkt',
-        description: 'De lidgegevens zijn succesvol bijgewerkt.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error saving member:', error);
       toast({
         title: 'Fout bij opslaan',
-        description: 'Er is een fout opgetreden. Probeer het opnieuw.',
+        description: error?.message || 'Er is een fout opgetreden. Probeer het opnieuw.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -160,9 +228,36 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     
     if (!canView) return null;
 
-    const value = values[fieldKey];
-    const error = errors[fieldKey];
-    const isTouched = touched[fieldKey];
+    // Use the field's actual key for data access, fallback to fieldKey
+    const dataKey = field.key || fieldKey;
+    let value = values[dataKey] || values[fieldKey];
+    
+    // Handle computed fields
+    if (field.computed && field.computeFrom && field.computeFunction) {
+      if (field.computeFunction === 'yearsDifference') {
+        const sourceValue = values[field.computeFrom] || values[MEMBER_FIELDS[field.computeFrom]?.key];
+        if (sourceValue) {
+          const startDate = new Date(sourceValue);
+          const today = new Date();
+          const years = today.getFullYear() - startDate.getFullYear();
+          const monthDiff = today.getMonth() - startDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < startDate.getDate())) {
+            value = years - 1;
+          } else {
+            value = years;
+          }
+        }
+      } else if (field.computeFunction === 'year') {
+        const sourceValue = values[field.computeFrom] || values[MEMBER_FIELDS[field.computeFrom]?.key];
+        if (sourceValue) {
+          value = new Date(sourceValue).getFullYear();
+        }
+      }
+    }
+    
+    const error = errors[dataKey] || errors[fieldKey];
+    const isTouched = touched[dataKey] || touched[fieldKey];
 
     // Check conditional visibility
     if (field.showWhen) {
@@ -181,70 +276,159 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     }
 
     return (
-      <FormControl key={fieldKey} isInvalid={!!(error && isTouched)}>
-        <FormLabel>
-          <HStack>
-            <Text>{field.label}</Text>
-            {!canEdit && (
-              <Badge colorScheme="gray" size="sm">Alleen lezen</Badge>
-            )}
-            {field.required && (
-              <Text color="red.500">*</Text>
-            )}
-          </HStack>
-        </FormLabel>
-        
-        {canEdit ? (
-          <Field name={fieldKey}>
-            {({ field: formikField }: any) => {
-              if (field.inputType === 'select' && field.enumOptions) {
-                return (
-                  <Select {...formikField} placeholder={field.placeholder}>
-                    {field.enumOptions.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </Select>
-                );
-              } else if (field.inputType === 'textarea') {
-                return <Textarea {...formikField} placeholder={field.placeholder} rows={3} />;
-              } else if (field.inputType === 'date') {
-                return <Input {...formikField} type="date" />;
-              } else if (field.inputType === 'number') {
-                return <Input {...formikField} type="number" placeholder={field.placeholder} />;
-              } else if (field.inputType === 'email') {
-                return <Input {...formikField} type="email" placeholder={field.placeholder} />;
-              } else if (field.inputType === 'tel') {
-                return <Input {...formikField} type="tel" placeholder={field.placeholder} />;
-              } else if (field.inputType === 'iban') {
-                return <Input {...formikField} type="text" placeholder={field.placeholder} fontFamily="mono" />;
-              } else {
-                return <Input {...formikField} type="text" placeholder={field.placeholder} />;
-              }
-            }}
-          </Field>
-        ) : (
-          <Box p={3} bg="gray.50" borderRadius="md" border="1px" borderColor="gray.200">
-            <Text fontWeight="medium">
-              {field.key === 'status' ? (
-                <Badge colorScheme={getStatusColor(value)}>
-                  {value || '-'}
-                </Badge>
+      <Box key={fieldKey} mb={1}>
+        <FormControl isInvalid={!!(error && isTouched)}>
+          <FormLabel mb={0} color="gray.700" fontWeight="semibold" fontSize="sm">
+            {field.label}
+          </FormLabel>
+          
+          {canEdit ? (
+            <Field name={dataKey}>
+              {({ field: formikField }: any) => {
+                if (field.inputType === 'select' && field.enumOptions) {
+                  return (
+                    <Select 
+                      {...formikField} 
+                      placeholder={field.placeholder}
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    >
+                      {field.enumOptions.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </Select>
+                  );
+                } else if (field.inputType === 'textarea') {
+                  return (
+                    <Textarea 
+                      {...formikField} 
+                      placeholder={field.placeholder} 
+                      rows={3}
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                } else if (field.inputType === 'date') {
+                  return (
+                    <Input 
+                      {...formikField} 
+                      type="date"
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                } else if (field.inputType === 'number') {
+                  return (
+                    <Input 
+                      {...formikField} 
+                      type="number" 
+                      placeholder={field.placeholder}
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                } else if (field.inputType === 'email') {
+                  return (
+                    <Input 
+                      {...formikField} 
+                      type="email" 
+                      placeholder={field.placeholder}
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                } else if (field.inputType === 'tel') {
+                  return (
+                    <Input 
+                      {...formikField} 
+                      type="tel" 
+                      placeholder={field.placeholder}
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                } else if (field.inputType === 'iban') {
+                  return (
+                    <Input 
+                      {...formikField} 
+                      type="text" 
+                      placeholder={field.placeholder} 
+                      fontFamily="mono"
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                } else {
+                  return (
+                    <Input 
+                      {...formikField} 
+                      type="text" 
+                      placeholder={field.placeholder}
+                      bg="white"
+                      borderColor="gray.300"
+                      _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                      _hover={{ borderColor: "orange.400" }}
+                      size="sm"
+                      fontSize="sm"
+                    />
+                  );
+                }
+              }}
+            </Field>
+          ) : (
+            <Input
+              value={field.key === 'status' ? (
+                value || '-'
               ) : field.key === 'lidmaatschap' ? (
-                <Badge colorScheme={getMembershipColor(value)}>
-                  {value || '-'}
-                </Badge>
+                value || '-'
               ) : (
                 renderFieldValue(field, value) || '-'
               )}
-            </Text>
-          </Box>
-        )}
-        
-        {field.helpText && (
-          <Text fontSize="sm" color="gray.600" mt={1}>{field.helpText}</Text>
-        )}
-        <FormErrorMessage>{error as string}</FormErrorMessage>
-      </FormControl>
+              bg="gray.200"
+              borderColor="gray.400"
+              color="gray.700"
+              cursor="default"
+              isReadOnly
+              size="sm"
+              fontSize="sm"
+              minH="32px"
+              _hover={{ bg: "gray.200" }}
+            />
+          )}
+          
+          {error && isTouched && (
+            <FormErrorMessage>{error as string}</FormErrorMessage>
+          )}
+        </FormControl>
+      </Box>
     );
   };
 
@@ -276,7 +460,7 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     if (visibleFields.length === 0) return null;
 
     const content = (
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
         {visibleFields.map((fieldConfig: any) => 
           renderField(fieldConfig.fieldKey, values, errors, touched, setFieldValue)
         )}
@@ -285,16 +469,39 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
 
     if (section.collapsible) {
       return (
-        <AccordionItem key={section.name}>
-          <AccordionButton>
+        <AccordionItem 
+          key={section.name} 
+          border="1px" 
+          borderColor="orange.400" 
+          borderRadius="lg" 
+          bg="gray.800"
+          mb={4}
+          _last={{ mb: 0 }}
+        >
+          <AccordionButton 
+            bg="gray.700 !important" 
+            borderRadius="lg lg 0 0" 
+            py={3}
+            px={4}
+            _hover={{ bg: "gray.600 !important" }}
+            _expanded={{ bg: "gray.700 !important", borderRadius: "lg lg 0 0" }}
+            _focus={{ boxShadow: "none" }}
+          >
             <Box flex="1" textAlign="left">
-              <Text fontWeight="semibold" color="orange.500">
+              <Text fontWeight="semibold" color="orange.300" fontSize="sm">
                 {section.title}
               </Text>
             </Box>
-            <AccordionIcon />
+            <AccordionIcon color="orange.300" />
           </AccordionButton>
-          <AccordionPanel pb={4}>
+          <AccordionPanel 
+            pb={4} 
+            pt={4} 
+            px={4}
+            bg="orange.300 !important" 
+            borderRadius="0 0 lg lg"
+            color="gray.700"
+          >
             {content}
           </AccordionPanel>
         </AccordionItem>
@@ -302,13 +509,13 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     }
 
     return (
-      <Card key={section.name}>
-        <CardHeader>
-          <Text fontWeight="semibold" color="orange.500" fontSize="lg">
+      <Card key={section.name} bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg">
+        <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
+          <Text fontWeight="semibold" color="orange.300" fontSize="sm" textAlign="left">
             {section.title}
           </Text>
         </CardHeader>
-        <CardBody>
+        <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
           {content}
         </CardBody>
       </Card>
@@ -318,50 +525,102 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside">
       <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
+      <ModalContent bg="gray.800" borderColor="orange.400" border="1px">
+        <ModalHeader bg="gray.700" color="orange.300">
           <Flex align="center">
             <VStack align="start" spacing={1}>
               <HStack>
                 <Text>
-                  Bewerken: {member.voornaam} {member.tussenvoegsel} {member.achternaam}
+                  {member.voornaam} {member.tussenvoegsel} {member.achternaam}
                 </Text>
                 {member.lidnummer && (
                   <Badge colorScheme="blue">#{member.lidnummer}</Badge>
                 )}
               </HStack>
-              <Text fontSize="sm" color="gray.600">
-                Wijzig de lidgegevens en klik op opslaan
+              <Text fontSize="sm" color="gray.300">
+                Lidgegevens
               </Text>
             </VStack>
             <Spacer />
-            <Badge colorScheme={getStatusColor(member.status)} size="lg">
-              {member.status || 'Onbekend'}
-            </Badge>
+            <HStack spacing={3}>
+              <Badge colorScheme={getStatusColor(member.status)} size="lg">
+                {member.status || 'Onbekend'}
+              </Badge>
+            </HStack>
           </Flex>
         </ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton color="orange.300" />
         
-        <ModalBody>
+        <ModalBody bg="black" p={6}>
           <Formik
             initialValues={member}
             validationSchema={createValidationSchema()}
             onSubmit={handleSave}
             enableReinitialize
           >
-            {({ values, errors, touched, setFieldValue, isValid }) => (
-              <Form>
+            {({ values, errors, touched, setFieldValue, isValid }) => {
+              // Check if user can edit ANY fields
+              const canEditAnyField = memberContext.sections.some(section =>
+                section.fields?.some(fieldConfig => {
+                  const field = MEMBER_FIELDS[fieldConfig.fieldKey];
+                  return field && canEditField(field, userRole, member);
+                })
+              );
+
+              return (
+              <Form id="member-edit-form">
                 <VStack spacing={6} align="stretch">
-                  {/* Warning for sensitive data */}
-                  <Alert status="warning">
-                    <AlertIcon />
-                    <VStack align="start" spacing={1}>
-                      <Text fontWeight="semibold">Let op bij het bewerken van lidgegevens</Text>
-                      <Text fontSize="sm">
-                        Controleer alle wijzigingen zorgvuldig voordat u opslaat. Sommige velden zijn alleen-lezen vanwege uw gebruikersrechten.
-                      </Text>
-                    </VStack>
-                  </Alert>
+                  {/* Action buttons at top right - only show if user can edit */}
+                  {canEditAnyField && (
+                    <Flex justify="flex-end">
+                      <HStack spacing={3}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<CloseIcon />}
+                          onClick={onClose}
+                          isDisabled={isSubmitting}
+                          color="gray.300"
+                          borderColor="gray.500"
+                          _hover={{ borderColor: "gray.400", color: "white" }}
+                        >
+                          Annuleren
+                        </Button>
+                        <Button
+                          type="submit"
+                          colorScheme="orange"
+                          size="sm"
+                          leftIcon={<CheckIcon />}
+                          isLoading={isSubmitting}
+                          isDisabled={!isValid}
+                          loadingText="Opslaan..."
+                        >
+                          Opslaan
+                        </Button>
+                      </HStack>
+                    </Flex>
+                  )}
+
+                  {/* Validation error message - only show if user can edit */}
+                  {canEditAnyField && !isValid && Object.keys(errors).length > 0 && (
+                    <Alert status="error" bg="red.900" color="white" borderRadius="lg">
+                      <AlertIcon />
+                      <VStack align="start" spacing={1}>
+                        <Text fontSize="sm" fontWeight="bold">
+                          Corrigeer de volgende fouten:
+                        </Text>
+                        {Object.entries(errors).map(([field, error]) => {
+                          const fieldDef = Object.values(MEMBER_FIELDS).find(f => f.key === field || Object.keys(MEMBER_FIELDS).find(k => k === field));
+                          const fieldLabel = fieldDef?.label || field;
+                          return (
+                            <Text key={field} fontSize="sm" color="red.200">
+                              • {fieldLabel}: {error as string}
+                            </Text>
+                          );
+                        })}
+                      </VStack>
+                    </Alert>
+                  )}
 
                   {/* Non-collapsible sections */}
                   {memberContext.sections
@@ -370,41 +629,63 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
                     .map(section => renderSection(section, values, errors, touched, setFieldValue))}
 
                   {/* Collapsible sections in accordion */}
-                  <Accordion allowMultiple defaultIndex={[]}>
+                  <Accordion allowMultiple defaultIndex={[0, 1, 2, 3, 4, 5]} bg="transparent">
                     {memberContext.sections
                       .filter(section => section.collapsible)
                       .sort((a, b) => a.order - b.order)
                       .map(section => renderSection(section, values, errors, touched, setFieldValue))}
                   </Accordion>
 
-                  {/* Save/Cancel Buttons */}
-                  <Card>
-                    <CardBody>
-                      <HStack justify="center" spacing={4}>
-                        <Button
-                          variant="outline"
-                          leftIcon={<CloseIcon />}
-                          onClick={onClose}
-                          isDisabled={isSubmitting}
-                        >
-                          Annuleren
-                        </Button>
-                        <Button
-                          type="submit"
-                          colorScheme="orange"
-                          leftIcon={<CheckIcon />}
-                          isLoading={isSubmitting}
-                          isDisabled={!isValid}
-                          size="lg"
-                        >
-                          Wijzigingen Opslaan
-                        </Button>
-                      </HStack>
-                    </CardBody>
-                  </Card>
+                  {/* Debug Information (only in development) */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <Card bg="gray.900" borderColor="blue.400" border="1px" borderRadius="lg">
+                      <CardHeader bg="blue.800" borderRadius="lg lg 0 0" py={2}>
+                        <Text fontWeight="semibold" color="blue.300" fontSize="sm">
+                          Debug Info (Development Only)
+                        </Text>
+                      </CardHeader>
+                      <CardBody pt={2} pb={2} bg="blue.900" borderRadius="0 0 lg lg">
+                        <VStack align="start" spacing={1}>
+                          <Text fontSize="xs" color="blue.200">
+                            Form Valid: {isValid ? '✅ Ja' : '❌ Nee'}
+                          </Text>
+                          <Text fontSize="xs" color="blue.200">
+                            Submitting: {isSubmitting ? '⏳ Ja' : '✅ Nee'}
+                          </Text>
+                          <Text fontSize="xs" color="blue.200">
+                            Error Count: {Object.keys(errors).length}
+                          </Text>
+                          {Object.keys(errors).length > 0 && (
+                            <Box>
+                              <Text fontSize="xs" color="red.300" fontWeight="bold">
+                                Validation Errors:
+                              </Text>
+                              {Object.entries(errors).map(([field, error]) => {
+                                const fieldDef = Object.values(MEMBER_FIELDS).find(f => f.key === field) || 
+                                                Object.entries(MEMBER_FIELDS).find(([k, f]) => k === field)?.[1];
+                                const fieldLabel = fieldDef?.label || field;
+                                return (
+                                  <Text key={field} fontSize="xs" color="red.300">
+                                    {field} ({fieldLabel}): {error as string}
+                                  </Text>
+                                );
+                              })}
+                            </Box>
+                          )}
+                          <Text fontSize="xs" color="blue.200">
+                            Form Values Keys: {Object.keys(values).length} fields
+                          </Text>
+                          <Text fontSize="xs" color="blue.200">
+                            Validation Schema Keys: {Object.keys(createValidationSchema().fields).length} rules
+                          </Text>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  )}
                 </VStack>
               </Form>
-            )}
+              );
+            }}
           </Formik>
         </ModalBody>
       </ModalContent>

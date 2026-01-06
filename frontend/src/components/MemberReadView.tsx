@@ -133,28 +133,35 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
     }
 
     return (
-      <Box key={fieldKey}>
-        <Text fontSize="sm" color="gray.600" fontWeight="semibold">
+      <Box key={fieldKey} mb={1}>
+        <Text fontSize="sm" color="gray.700" fontWeight="semibold" mb={0}>
           {field.label}
         </Text>
-        <Text fontSize="md" mt={1}>
-          {field.key === 'status' ? (
-            <Badge colorScheme={getStatusColor(value)} size="sm">
-              {renderFieldValue(field, value)}
-            </Badge>
-          ) : field.key === 'lidmaatschap' ? (
-            <Badge colorScheme={getMembershipColor(value)} size="sm">
-              {renderFieldValue(field, value)}
-            </Badge>
-          ) : (
-            renderFieldValue(field, value)
-          )}
-        </Text>
-        {field.helpText && (
-          <Text fontSize="xs" color="gray.500" mt={1}>
-            {field.helpText}
+        <Box
+          bg="gray.100"
+          borderColor="gray.300"
+          border="1px"
+          borderRadius="md"
+          p={2}
+          minH="32px"
+          display="flex"
+          alignItems="center"
+          fontSize="sm"
+        >
+          <Text color="gray.600">
+            {field.key === 'status' ? (
+              <Badge colorScheme={getStatusColor(value)} size="sm">
+                {renderFieldValue(field, value)}
+              </Badge>
+            ) : field.key === 'lidmaatschap' ? (
+              <Badge colorScheme={getMembershipColor(value)} size="sm">
+                {renderFieldValue(field, value)}
+              </Badge>
+            ) : (
+              renderFieldValue(field, value)
+            )}
           </Text>
-        )}
+        </Box>
       </Box>
     );
   };
@@ -187,7 +194,7 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
     if (visibleFields.length === 0) return null;
 
     const content = (
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
         {visibleFields.map((fieldConfig: any) => 
           renderField(fieldConfig.fieldKey)
         )}
@@ -199,7 +206,7 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
         <AccordionItem key={section.name}>
           <AccordionButton>
             <Box flex="1" textAlign="left">
-              <Text fontWeight="semibold" color="orange.500">
+              <Text fontWeight="semibold" color="orange.300">
                 {section.title}
               </Text>
             </Box>
@@ -213,13 +220,13 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
     }
 
     return (
-      <Card key={section.name}>
-        <CardHeader>
-          <Heading size="md" color="orange.500">
+      <Card key={section.name} bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg">
+        <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
+          <Heading size="sm" color="orange.300" textAlign="left">
             {section.title}
           </Heading>
         </CardHeader>
-        <CardBody>
+        <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
           {content}
         </CardBody>
       </Card>
@@ -239,8 +246,8 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside">
       <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
+      <ModalContent bg="gray.800" borderColor="orange.400" border="1px">
+        <ModalHeader bg="gray.700" color="orange.300">
           <Flex align="center">
             <VStack align="start" spacing={1}>
               <HStack>
@@ -251,7 +258,7 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
                   <Badge colorScheme="blue">#{member.lidnummer}</Badge>
                 )}
               </HStack>
-              <HStack spacing={4} fontSize="sm" color="gray.600">
+              <HStack spacing={4} fontSize="sm" color="gray.300">
                 {member.email && (
                   <HStack spacing={1}>
                     <EmailIcon />
@@ -282,43 +289,43 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
             </VStack>
           </Flex>
         </ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton color="orange.300" />
         
-        <ModalBody>
+        <ModalBody bg="black" p={6}>
           <VStack spacing={6} align="stretch">
             {/* Quick Stats */}
             <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
               {memberAge && (
-                <Stat>
-                  <StatLabel>Leeftijd</StatLabel>
-                  <StatNumber>{memberAge}</StatNumber>
-                  <StatHelpText>jaar</StatHelpText>
+                <Stat bg="gray.800" p={3} borderRadius="md" border="1px" borderColor="orange.400">
+                  <StatLabel color="orange.300">Leeftijd</StatLabel>
+                  <StatNumber color="white">{memberAge}</StatNumber>
+                  <StatHelpText color="gray.300">jaar</StatHelpText>
                 </Stat>
               )}
               {yearsAsMember && (
-                <Stat>
-                  <StatLabel>Lid sinds</StatLabel>
-                  <StatNumber>{yearsAsMember}</StatNumber>
-                  <StatHelpText>jaar</StatHelpText>
+                <Stat bg="gray.800" p={3} borderRadius="md" border="1px" borderColor="orange.400">
+                  <StatLabel color="orange.300">Lid sinds</StatLabel>
+                  <StatNumber color="white">{yearsAsMember}</StatNumber>
+                  <StatHelpText color="gray.300">jaar</StatHelpText>
                 </Stat>
               )}
               {member.motormerk && (
-                <Stat>
-                  <StatLabel>Motor</StatLabel>
-                  <StatNumber fontSize="md">{member.motormerk}</StatNumber>
-                  <StatHelpText>{member.motortype}</StatHelpText>
+                <Stat bg="gray.800" p={3} borderRadius="md" border="1px" borderColor="orange.400">
+                  <StatLabel color="orange.300">Motor</StatLabel>
+                  <StatNumber fontSize="md" color="white">{member.motormerk}</StatNumber>
+                  <StatHelpText color="gray.300">{member.motortype}</StatHelpText>
                 </Stat>
               )}
               {member.bouwjaar && (
-                <Stat>
-                  <StatLabel>Bouwjaar</StatLabel>
-                  <StatNumber>{member.bouwjaar}</StatNumber>
-                  <StatHelpText>motor</StatHelpText>
+                <Stat bg="gray.800" p={3} borderRadius="md" border="1px" borderColor="orange.400">
+                  <StatLabel color="orange.300">Bouwjaar</StatLabel>
+                  <StatNumber color="white">{member.bouwjaar}</StatNumber>
+                  <StatHelpText color="gray.300">motor</StatHelpText>
                 </Stat>
               )}
             </SimpleGrid>
 
-            <Divider />
+            <Divider borderColor="orange.400" />
 
             {/* Sections */}
             <VStack spacing={4} align="stretch">
@@ -339,9 +346,15 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
           </VStack>
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter bg="gray.700">
           <HStack spacing={3}>
-            <Button variant="outline" onClick={onClose}>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              color="gray.300"
+              borderColor="gray.500"
+              _hover={{ borderColor: "gray.400", color: "white" }}
+            >
               Sluiten
             </Button>
             {onEdit && (

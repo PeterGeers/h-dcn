@@ -29,7 +29,6 @@ import {
   Card,
   CardHeader,
   CardBody,
-  Tooltip,
   Menu,
   MenuButton,
   MenuList,
@@ -47,15 +46,14 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { 
-  ViewIcon, 
-  EditIcon, 
   SearchIcon, 
   DownloadIcon,
   ChevronDownIcon,
   SettingsIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  AddIcon
 } from '@chakra-ui/icons';
-import { MEMBER_TABLE_CONTEXTS, MEMBER_FIELDS, HDCNGroup } from '../config/memberFields';
+import { MEMBER_TABLE_CONTEXTS, MEMBER_FIELDS, HDCNGroup, getFilteredEnumOptions } from '../config/memberFields';
 import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { canPerformAction, hasRegionalAccess } from '../utils/permissionHelpers';
@@ -68,6 +66,7 @@ interface MemberAdminTableProps {
   onMemberEdit: (member: any) => void;
   onMemberDelete?: (member: any) => void;
   onExport?: (context: string) => void;
+  onAddMember?: () => void; // Add this prop
 }
 
 const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
@@ -77,7 +76,8 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   onMemberView,
   onMemberEdit,
   onMemberDelete,
-  onExport
+  onExport,
+  onAddMember
 }) => {
   const [selectedContext, setSelectedContext] = useState('memberCompact'); // Changed to memberCompact
   const [sortField, setSortField] = useState('achternaam');
@@ -108,23 +108,34 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
     // Apply column-specific filters
     Object.entries(columnFilters).forEach(([fieldKey, filterValue]) => {
       if (filterValue) {
-        const field = MEMBER_FIELDS[fieldKey];
-        if (field) {
+        if (fieldKey === 'fullName') {
+          // Special handling for full name filter (mobile)
           filtered = filtered.filter(member => {
-            const memberValue = member[fieldKey];
-            
-            if (field.inputType === 'select' || field.dataType === 'enum') {
-              return memberValue === filterValue;
-            } else if (field.dataType === 'date') {
-              // For date filters, you might want more sophisticated logic
-              return memberValue?.toString().includes(filterValue);
-            } else if (field.dataType === 'number') {
-              return memberValue?.toString() === filterValue;
-            } else {
-              // Text filter
-              return memberValue?.toString().toLowerCase().includes(filterValue.toLowerCase());
-            }
+            const fullName = [member.voornaam, member.tussenvoegsel, member.achternaam]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+            return fullName.includes(filterValue.toLowerCase());
           });
+        } else {
+          const field = MEMBER_FIELDS[fieldKey];
+          if (field) {
+            filtered = filtered.filter(member => {
+              const memberValue = member[fieldKey];
+              
+              if (field.inputType === 'select' || field.dataType === 'enum') {
+                return memberValue === filterValue;
+              } else if (field.dataType === 'date') {
+                // For date filters, you might want more sophisticated logic
+                return memberValue?.toString().includes(filterValue);
+              } else if (field.dataType === 'number') {
+                return memberValue?.toString() === filterValue;
+              } else {
+                // Text filter
+                return memberValue?.toString().toLowerCase().includes(filterValue.toLowerCase());
+              }
+            });
+          }
         }
       }
     });
@@ -180,7 +191,8 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   const getFilterOptions = (fieldKey: string) => {
     const field = MEMBER_FIELDS[fieldKey];
     if (field?.enumOptions) {
-      return field.enumOptions;
+      // Use filtered enum options based on user role
+      return getFilteredEnumOptions(field, userRole);
     }
     
     // For non-enum fields, get unique values from data
@@ -203,6 +215,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           value={filterValue}
           onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
           bg="white"
+          color="black"
           maxW="120px"
           fontSize={{ base: "xs", md: "sm" }}
         >
@@ -221,6 +234,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           value={filterValue}
           onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
           bg="white"
+          color="black"
           maxW="120px"
           fontSize={{ base: "xs", md: "sm" }}
         />
@@ -234,6 +248,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           value={filterValue}
           onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
           bg="white"
+          color="black"
           maxW="120px"
           fontSize={{ base: "xs", md: "sm" }}
         />
@@ -246,6 +261,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           value={filterValue}
           onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
           bg="white"
+          color="black"
           maxW="120px"
           fontSize={{ base: "xs", md: "sm" }}
         />
@@ -262,6 +278,10 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
       case 'Opgezegd': return 'red';
       case 'Geschorst': return 'red';
       case 'wachtRegio': return 'orange';
+      case 'HdcnAccount': return 'purple';
+      case 'Club': return 'blue';
+      case 'Sponsor': return 'teal';
+      case 'Overig': return 'gray';
       default: return 'gray';
     }
   };
@@ -330,6 +350,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                   onChange={(e) => setSelectedContext(e.target.value)}
                   size="sm"
                   bg="white"
+                  color="black"
                   w="full"
                 >
                   {availableContexts.map(([key, context]) => (
@@ -338,21 +359,6 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     </option>
                   ))}
                 </Select>
-                {/* Export Button */}
-                {onExport && tableContext.exportable && (
-                  <Button
-                    leftIcon={<DownloadIcon />}
-                    variant="outline"
-                    onClick={() => onExport(selectedContext)}
-                    bg="white"
-                    borderColor="gray.300"
-                    _hover={{ bg: "gray.50" }}
-                    size="sm"
-                    w="full"
-                  >
-                    Exporteren
-                  </Button>
-                )}
               </VStack>
 
               {/* Desktop Context Selector */}
@@ -366,6 +372,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     onChange={(e) => setSelectedContext(e.target.value)}
                     size="sm"
                     bg="white"
+                    color="black"
                   >
                     {availableContexts.map(([key, context]) => (
                       <option key={key} value={key}>
@@ -375,17 +382,17 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                   </Select>
                 </Box>
 
-                {/* Export Button */}
-                {onExport && tableContext.exportable && (
+                {/* Add Member Button */}
+                {onAddMember && ['System_CRUD_All', 'Members_CRUD_All'].includes(userRole) && (
                   <Button
-                    leftIcon={<DownloadIcon />}
-                    variant="outline"
-                    onClick={() => onExport(selectedContext)}
-                    bg="white"
-                    borderColor="gray.300"
-                    _hover={{ bg: "gray.50" }}
+                    leftIcon={<AddIcon />}
+                    colorScheme="orange"
+                    onClick={onAddMember}
+                    bg="orange.500"
+                    color="white"
+                    _hover={{ bg: "orange.600" }}
                   >
-                    Exporteren
+                    Nieuw Lid
                   </Button>
                 )}
               </HStack>
@@ -394,49 +401,135 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
 
               {/* Mobile Statistics */}
               <VStack spacing={2} align="start" display={{ base: "flex", md: "none" }}>
-                <HStack spacing={4} wrap="wrap">
-                  <Text color="gray.700" fontSize="xs">
-                    <Text as="span" fontWeight="semibold">{filteredMembers.length}</Text>/<Text as="span" fontWeight="semibold">{members.length}</Text> leden
-                  </Text>
-                  <Text color="gray.700" fontSize="xs">
-                    Actief: <Text as="span" fontWeight="semibold" color="green.700">{members.filter(m => m.status === 'Actief').length}</Text>
-                  </Text>
-                  <Text color="gray.700" fontSize="xs">
-                    Aangemeld: <Text as="span" fontWeight="semibold" color="yellow.700">{members.filter(m => m.status === 'Aangemeld').length}</Text>
-                  </Text>
-                </HStack>
-                <HStack spacing={4} wrap="wrap">
-                  <Text color="gray.700" fontSize="xs">
-                    Opgezegd: <Text as="span" fontWeight="semibold" color="red.700">{members.filter(m => m.status === 'Opgezegd').length}</Text>
-                  </Text>
-                  <Text color="gray.700" fontSize="xs">
-                    Hoogste Lidnr: <Text as="span" fontWeight="semibold" color="blue.700">
-                      {Math.max(...members.filter(m => m.lidnummer && !isNaN(m.lidnummer)).map(m => Number(m.lidnummer)), 0)}
-                    </Text>
-                  </Text>
-                </HStack>
+                {(() => {
+                  // Calculate status counts from filtered members
+                  const statusCounts = {
+                    'Actief': filteredMembers.filter(m => m.status === 'Actief').length,
+                    'Aangemeld': filteredMembers.filter(m => m.status === 'Aangemeld').length,
+                    'HdcnAccount': filteredMembers.filter(m => m.status === 'HdcnAccount').length,
+                    'Club': filteredMembers.filter(m => m.status === 'Club').length,
+                    'Sponsor': filteredMembers.filter(m => m.status === 'Sponsor').length,
+                    'Opgezegd': filteredMembers.filter(m => m.status === 'Opgezegd').length,
+                    'Geschorst': filteredMembers.filter(m => m.status === 'Geschorst').length,
+                    'wachtRegio': filteredMembers.filter(m => m.status === 'wachtRegio').length,
+                    'Overig': filteredMembers.filter(m => m.status === 'Overig').length
+                  };
+
+                  const statusColors = {
+                    'Actief': 'green.700',
+                    'Aangemeld': 'yellow.700',
+                    'HdcnAccount': 'purple.700',
+                    'Club': 'blue.700',
+                    'Sponsor': 'teal.700',
+                    'Opgezegd': 'red.700',
+                    'Geschorst': 'red.700',
+                    'wachtRegio': 'orange.700',
+                    'Overig': 'gray.700'
+                  };
+
+                  // Filter out statuses with 0 count
+                  const nonZeroStatuses = Object.entries(statusCounts).filter(([_, count]) => count > 0);
+                  
+                  // Group statuses into rows of 3
+                  const statusRows = [];
+                  for (let i = 0; i < nonZeroStatuses.length; i += 3) {
+                    statusRows.push(nonZeroStatuses.slice(i, i + 3));
+                  }
+
+                  return (
+                    <>
+                      {/* Total count row */}
+                      <HStack spacing={4} wrap="wrap">
+                        <Text color="gray.700" fontSize="xs">
+                          <Text as="span" fontWeight="semibold">{filteredMembers.length}</Text>/<Text as="span" fontWeight="semibold">{members.length}</Text> leden
+                        </Text>
+                        <Text color="gray.700" fontSize="xs">
+                          Hoogste Lidnr: <Text as="span" fontWeight="semibold" color="blue.700">
+                            {Math.max(...members.filter(m => m.lidnummer && !isNaN(m.lidnummer)).map(m => Number(m.lidnummer)), 0)}
+                          </Text>
+                        </Text>
+                      </HStack>
+                      
+                      {/* Status rows */}
+                      {statusRows.map((row, rowIndex) => (
+                        <HStack key={rowIndex} spacing={4} wrap="wrap">
+                          {row.map(([status, count]) => (
+                            <Text key={status} color="gray.700" fontSize="xs">
+                              {status}: <Text as="span" fontWeight="semibold" color={statusColors[status]}>{count}</Text>
+                            </Text>
+                          ))}
+                        </HStack>
+                      ))}
+                    </>
+                  );
+                })()}
               </VStack>
 
               {/* Desktop Statistics */}
-              <HStack spacing={6} display={{ base: "none", md: "flex" }}>
-                <Text color="gray.700" fontSize="sm">
-                  <Text as="span" fontWeight="semibold">{filteredMembers.length}</Text> van <Text as="span" fontWeight="semibold">{members.length}</Text> leden
-                </Text>
-                <Text color="gray.700" fontSize="sm">
-                  Actief: <Text as="span" fontWeight="semibold" color="green.700">{members.filter(m => m.status === 'Actief').length}</Text>
-                </Text>
-                <Text color="gray.700" fontSize="sm">
-                  Aangemeld: <Text as="span" fontWeight="semibold" color="yellow.700">{members.filter(m => m.status === 'Aangemeld').length}</Text>
-                </Text>
-                <Text color="gray.700" fontSize="sm">
-                  Opgezegd: <Text as="span" fontWeight="semibold" color="red.700">{members.filter(m => m.status === 'Opgezegd').length}</Text>
-                </Text>
-                <Text color="gray.700" fontSize="sm">
-                  Hoogste Lidnr: <Text as="span" fontWeight="semibold" color="blue.700">
-                    {Math.max(...members.filter(m => m.lidnummer && !isNaN(m.lidnummer)).map(m => Number(m.lidnummer)), 0)}
-                  </Text>
-                </Text>
-              </HStack>
+              <VStack spacing={2} align="start" display={{ base: "none", md: "flex" }}>
+                {(() => {
+                  // Calculate status counts from filtered members
+                  const statusCounts = {
+                    'Actief': filteredMembers.filter(m => m.status === 'Actief').length,
+                    'Aangemeld': filteredMembers.filter(m => m.status === 'Aangemeld').length,
+                    'HdcnAccount': filteredMembers.filter(m => m.status === 'HdcnAccount').length,
+                    'Club': filteredMembers.filter(m => m.status === 'Club').length,
+                    'Sponsor': filteredMembers.filter(m => m.status === 'Sponsor').length,
+                    'Opgezegd': filteredMembers.filter(m => m.status === 'Opgezegd').length,
+                    'Geschorst': filteredMembers.filter(m => m.status === 'Geschorst').length,
+                    'wachtRegio': filteredMembers.filter(m => m.status === 'wachtRegio').length,
+                    'Overig': filteredMembers.filter(m => m.status === 'Overig').length
+                  };
+
+                  const statusColors = {
+                    'Actief': 'green.700',
+                    'Aangemeld': 'yellow.700',
+                    'HdcnAccount': 'purple.700',
+                    'Club': 'blue.700',
+                    'Sponsor': 'teal.700',
+                    'Opgezegd': 'red.700',
+                    'Geschorst': 'red.700',
+                    'wachtRegio': 'orange.700',
+                    'Overig': 'gray.700'
+                  };
+
+                  // Filter out statuses with 0 count
+                  const nonZeroStatuses = Object.entries(statusCounts).filter(([_, count]) => count > 0);
+                  
+                  // Group statuses into rows of 4-5
+                  const statusRows = [];
+                  for (let i = 0; i < nonZeroStatuses.length; i += 4) {
+                    statusRows.push(nonZeroStatuses.slice(i, i + 4));
+                  }
+
+                  return (
+                    <>
+                      {/* Total count row */}
+                      <HStack spacing={6}>
+                        <Text color="gray.700" fontSize="sm">
+                          <Text as="span" fontWeight="semibold">{filteredMembers.length}</Text> van <Text as="span" fontWeight="semibold">{members.length}</Text> leden
+                        </Text>
+                        <Text color="gray.700" fontSize="sm">
+                          Hoogste Lidnr: <Text as="span" fontWeight="semibold" color="blue.700">
+                            {Math.max(...members.filter(m => m.lidnummer && !isNaN(m.lidnummer)).map(m => Number(m.lidnummer)), 0)}
+                          </Text>
+                        </Text>
+                      </HStack>
+                      
+                      {/* Status rows */}
+                      {statusRows.map((row, rowIndex) => (
+                        <HStack key={rowIndex} spacing={6}>
+                          {row.map(([status, count]) => (
+                            <Text key={status} color="gray.700" fontSize="sm">
+                              {status}: <Text as="span" fontWeight="semibold" color={statusColors[status]}>{count}</Text>
+                            </Text>
+                          ))}
+                        </HStack>
+                      ))}
+                    </>
+                  );
+                })()}
+              </VStack>
             </Flex>
           </CardBody>
         </Card>
@@ -447,9 +540,81 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
             <Table variant="simple" size="xs">
               <Thead bg="gray.700">
                 <Tr>
-                  <Th minW="120px" position="sticky" left={0} bg="gray.700" zIndex={1} py={2} color="orange.300">
-                    Acties
+                  {/* Mobile Portrait: Only Lidnummer and Full Name */}
+                  <Th 
+                    py={2}
+                    color="orange.300"
+                    display={{ base: 'table-cell', md: 'none' }}
+                    minW="60px"
+                  >
+                    <VStack spacing={1} align="start">
+                      <Text fontSize="xs">Lidnr</Text>
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <Input
+                          size="xs"
+                          type="number"
+                          placeholder="Nr..."
+                          value={columnFilters['lidnummer'] || ''}
+                          onChange={(e) => handleColumnFilter('lidnummer', e.target.value)}
+                          bg="white"
+                          color="black"
+                          maxW="50px"
+                          fontSize="xs"
+                        />
+                      </Box>
+                    </VStack>
                   </Th>
+                  <Th 
+                    py={2}
+                    color="orange.300"
+                    display={{ base: 'table-cell', md: 'none' }}
+                  >
+                    <VStack spacing={1} align="start">
+                      <Text fontSize="xs">Naam</Text>
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <Input
+                          size="xs"
+                          placeholder="Naam..."
+                          value={columnFilters['fullName'] || ''}
+                          onChange={(e) => handleColumnFilter('fullName', e.target.value)}
+                          bg="white"
+                          color="black"
+                          maxW="120px"
+                          fontSize="xs"
+                        />
+                      </Box>
+                    </VStack>
+                  </Th>
+                  <Th 
+                    py={2}
+                    color="orange.300"
+                    display={{ base: 'table-cell', md: 'none' }}
+                    minW="80px"
+                  >
+                    <VStack spacing={1} align="start">
+                      <Text fontSize="xs">Status</Text>
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          size="xs"
+                          placeholder="Alle"
+                          value={columnFilters['status'] || ''}
+                          onChange={(e) => handleColumnFilter('status', e.target.value)}
+                          bg="white"
+                          color="black"
+                          maxW="80px"
+                          fontSize="xs"
+                        >
+                          {getFilterOptions('status').map(option => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Box>
+                    </VStack>
+                  </Th>
+                  
+                  {/* Desktop: Regular columns */}
                   {visibleColumns.map(column => {
                     const field = MEMBER_FIELDS[column.fieldKey];
                     if (!field) return null;
@@ -463,11 +628,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                         _hover={column.sortable ? { bg: 'gray.600' } : {}}
                         py={2}
                         color="orange.300"
-                        display={
-                          column.fieldKey === 'email' ? { base: 'none', lg: 'table-cell' } :
-                          column.fieldKey === 'regio' ? { base: 'none', md: 'table-cell' } :
-                          'table-cell'
-                        }
+                        display={{ base: 'none', md: 'table-cell' }}
                       >
                         <VStack spacing={1} align="start">
                           <HStack spacing={1}>
@@ -491,31 +652,30 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
               </Thead>
               <Tbody>
                 {filteredMembers.map((member) => (
-                  <Tr key={member.member_id} _hover={{ bg: 'gray.600' }}>
-                    <Td position="sticky" left={0} bg="gray.800" zIndex={1} py={1} color="white">
-                      <HStack spacing={1}>
-                        <Tooltip label="Bekijken">
-                          <IconButton
-                            aria-label="View member"
-                            icon={<ViewIcon />}
-                            size="xs"
-                            colorScheme="blue"
-                            onClick={() => onMemberView(member)}
-                          />
-                        </Tooltip>
-                        {canPerformAction('edit', userRole, member, userRegion) && (
-                          <Tooltip label="Bewerken">
-                            <IconButton
-                              aria-label="Edit member"
-                              icon={<EditIcon />}
-                              size="xs"
-                              colorScheme="orange"
-                              onClick={() => onMemberEdit(member)}
-                            />
-                          </Tooltip>
-                        )}
-                      </HStack>
+                  <Tr 
+                    key={member.member_id} 
+                    _hover={{ bg: 'gray.600', cursor: 'pointer' }}
+                    onClick={() => onMemberEdit(member)}
+                  >
+                    
+                    {/* Mobile Portrait: Lidnummer, Full Name, Status */}
+                    <Td py={1} color="white" display={{ base: 'table-cell', md: 'none' }} fontSize="xs">
+                      <Text fontWeight="semibold">{member.lidnummer || '-'}</Text>
                     </Td>
+                    <Td py={1} color="white" display={{ base: 'table-cell', md: 'none' }} fontSize="xs">
+                      <Text fontWeight="medium">
+                        {[member.voornaam, member.tussenvoegsel, member.achternaam]
+                          .filter(Boolean)
+                          .join(' ') || '-'}
+                      </Text>
+                    </Td>
+                    <Td py={1} color="white" display={{ base: 'table-cell', md: 'none' }} fontSize="xs">
+                      <Badge colorScheme={getStatusColor(member.status)} size="sm" fontSize="xs">
+                        {member.status}
+                      </Badge>
+                    </Td>
+                    
+                    {/* Desktop: Regular columns */}
                     {visibleColumns.map(column => {
                       const field = MEMBER_FIELDS[column.fieldKey];
                       if (!field) return null;
@@ -528,11 +688,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                           textAlign={column.align || 'left'} 
                           py={1} 
                           color="white"
-                          display={
-                            column.fieldKey === 'email' ? { base: 'none', lg: 'table-cell' } :
-                            column.fieldKey === 'regio' ? { base: 'none', md: 'table-cell' } :
-                            'table-cell'
-                          }
+                          display={{ base: 'none', md: 'table-cell' }}
                         >
                           {renderCellValue(field, value, member)}
                         </Td>

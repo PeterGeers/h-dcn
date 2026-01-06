@@ -1,7 +1,7 @@
 /**
- * Member Application Form - Using Field Registry System
+ * Admin Member Creation Form - Using Field Registry System
  * 
- * Progressive disclosure membership application form using membershipApplication context
+ * Form for administrators to manually create new member records
  */
 
 import React, { useState } from 'react';
@@ -18,71 +18,85 @@ import {
   Input,
   Select,
   Textarea,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepIcon,
-  StepNumber,
-  StepTitle,
-  StepDescription,
-  StepSeparator,
-  useSteps,
-  Alert,
-  AlertIcon,
   Card,
   CardHeader,
   CardBody,
   SimpleGrid,
-  Checkbox,
-  useToast
+  useToast,
+  Divider
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
-import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS } from '../config/memberFields';
-import { renderFieldValue, getFieldInputComponent } from '../utils/fieldRenderers';
-import { canViewField, canEditField } from '../utils/fieldResolver';
+import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getFieldsByGroup, getFilteredEnumOptions } from '../config/memberFields';
 
 interface MemberApplicationFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
+  userRole?: string;
 }
 
-const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit, onCancel }) => {
+const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ 
+  onSubmit, 
+  onCancel, 
+  userRole = 'Members_CRUD_All' 
+}) => {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Get membershipApplication context
-  const applicationContext = MEMBER_MODAL_CONTEXTS.membershipApplication;
-  const steps = applicationContext.sections.map(section => ({
-    title: section.title,
-    description: section.name
-  }));
-
-  const { activeStep, setActiveStep } = useSteps({
-    index: 0,
-    count: steps.length,
-  });
+  // Get memberRegistration context
+  const applicationContext = MEMBER_MODAL_CONTEXTS.memberRegistration;
 
   // Create validation schema from field definitions
   const createValidationSchema = () => {
     const schema: any = {};
     
     applicationContext.sections.forEach(section => {
-      section.fields.forEach(fieldConfig => {
-        const field = MEMBER_FIELDS[fieldConfig.fieldKey];
-        if (field && field.validation) {
-          field.validation.forEach(rule => {
-            if (rule.type === 'required') {
-              schema[field.key] = Yup.string().required(rule.message || `${field.label} is verplicht`);
-            } else if (rule.type === 'email') {
-              schema[field.key] = Yup.string().email(rule.message || 'Ongeldig emailadres');
-            } else if (rule.type === 'min_length') {
-              schema[field.key] = Yup.string().min(rule.value, rule.message);
+      // Handle sections with direct fields
+      if (section.fields) {
+        section.fields.forEach(fieldConfig => {
+          const field = MEMBER_FIELDS[fieldConfig.fieldKey];
+          if (field && field.validation) {
+            field.validation.forEach(rule => {
+              if (rule.type === 'required') {
+                schema[field.key] = Yup.string().required(rule.message || `${field.label} is verplicht`);
+              } else if (rule.type === 'email') {
+                schema[field.key] = Yup.string().email(rule.message || 'Ongeldig emailadres');
+              } else if (rule.type === 'min_length') {
+                schema[field.key] = Yup.string().min(rule.value, rule.message);
+              }
+            });
+          }
+        });
+      }
+      
+      // Handle sections with groups
+      if (section.groups) {
+        section.groups.forEach(groupConfig => {
+          const groupFields = getFieldsByGroup(groupConfig.group);
+          groupFields.forEach(field => {
+            // Check if field should be included
+            if (groupConfig.includeFields && !groupConfig.includeFields.includes(field.key)) {
+              return; // Skip if not in include list
+            }
+            
+            if (groupConfig.excludeFields && groupConfig.excludeFields.includes(field.key)) {
+              return; // Skip if in exclude list
+            }
+            
+            if (field.validation) {
+              field.validation.forEach(rule => {
+                if (rule.type === 'required') {
+                  schema[field.key] = Yup.string().required(rule.message || `${field.label} is verplicht`);
+                } else if (rule.type === 'email') {
+                  schema[field.key] = Yup.string().email(rule.message || 'Ongeldig emailadres');
+                } else if (rule.type === 'min_length') {
+                  schema[field.key] = Yup.string().min(rule.value, rule.message);
+                }
+              });
             }
           });
-        }
-      });
+        });
+      }
     });
 
     return Yup.object().shape(schema);
@@ -99,18 +113,22 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit,
     email: '',
     telefoon: '',
     minderjarigNaam: '',
+    nationaliteit: 'Nederlandse',
     
     // Address
     straat: '',
     postcode: '',
     woonplaats: '',
     land: 'Nederland',
-    nationaliteit: 'Nederlandse',
     
     // Membership
+    status: 'Aangemeld',
     lidmaatschap: '',
     regio: '',
     wiewatwaar: '',
+    clubblad: 'Digitaal',
+    nieuwsbrief: 'Ja',
+    privacy: 'Nee',
     
     // Motor (conditional)
     motormerk: '',
@@ -118,17 +136,9 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit,
     bouwjaar: '',
     kenteken: '',
     
-    // Preferences
-    clubblad: 'Digitaal',
-    nieuwsbrief: 'Ja',
-    privacy: 'Nee',
-    
     // Payment
     betaalwijze: 'Incasso',
-    bankrekeningnummer: '',
-    
-    // Agreement
-    akkoord: false
+    bankrekeningnummer: ''
   };
 
   const handleSubmit = async (values: any) => {
@@ -143,15 +153,15 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit,
       });
       
       toast({
-        title: 'Aanmelding verzonden!',
-        description: 'Uw aanmelding is succesvol verzonden en wordt binnenkort behandeld.',
+        title: 'Lid aangemaakt!',
+        description: 'Het nieuwe lid is succesvol aangemaakt.',
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: 'Fout bij verzenden',
+        title: 'Fout bij aanmaken',
         description: 'Er is een fout opgetreden. Probeer het opnieuw.',
         status: 'error',
         duration: 5000,
@@ -162,7 +172,7 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit,
     }
   };
 
-  const renderField = (fieldKey: string, values: any, errors: any, touched: any, setFieldValue: any) => {
+  const renderField = (fieldKey: string, values: any, errors: any, touched: any) => {
     const field = MEMBER_FIELDS[fieldKey];
     if (!field) return null;
 
@@ -186,70 +196,170 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit,
     const isTouched = touched[fieldKey];
 
     return (
-      <FormControl key={fieldKey} isInvalid={!!(error && isTouched)}>
-        <FormLabel>{field.label}</FormLabel>
-        <Field name={fieldKey}>
-          {({ field: formikField }: any) => {
-            if (field.inputType === 'select' && field.enumOptions) {
-              return (
-                <Select {...formikField} placeholder={field.placeholder}>
-                  {field.enumOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </Select>
-              );
-            } else if (field.inputType === 'textarea') {
-              return <Textarea {...formikField} placeholder={field.placeholder} />;
-            } else if (field.inputType === 'date') {
-              return <Input {...formikField} type="date" />;
-            } else if (field.inputType === 'number') {
-              return <Input {...formikField} type="number" placeholder={field.placeholder} />;
-            } else if (field.inputType === 'email') {
-              return <Input {...formikField} type="email" placeholder={field.placeholder} />;
-            } else if (field.inputType === 'tel') {
-              return <Input {...formikField} type="tel" placeholder={field.placeholder} />;
-            } else {
-              return <Input {...formikField} type="text" placeholder={field.placeholder} />;
-            }
-          }}
-        </Field>
-        {field.helpText && <Text fontSize="sm" color="gray.600" mt={1}>{field.helpText}</Text>}
-        <FormErrorMessage>{error as string}</FormErrorMessage>
-      </FormControl>
+      <Box key={fieldKey} mb={1}>
+        <FormControl isInvalid={!!(error && isTouched)}>
+          <FormLabel mb={0} color="gray.700" fontWeight="semibold" fontSize="sm">
+            {field.label}
+          </FormLabel>
+          <Field name={fieldKey}>
+            {({ field: formikField }: any) => {
+              if (field.inputType === 'select' && field.enumOptions) {
+                // Get filtered enum options based on user role
+                const filteredOptions = getFilteredEnumOptions(field, userRole as any);
+                return (
+                  <Select 
+                    {...formikField} 
+                    placeholder={field.placeholder}
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    size="sm"
+                    fontSize="sm"
+                  >
+                    {filteredOptions.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </Select>
+                );
+              } else if (field.inputType === 'textarea') {
+                return (
+                  <Textarea 
+                    {...formikField} 
+                    placeholder={field.placeholder}
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    rows={3}
+                    size="sm"
+                    fontSize="sm"
+                  />
+                );
+              } else if (field.inputType === 'date') {
+                return (
+                  <Input 
+                    {...formikField} 
+                    type="date"
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    size="sm"
+                    fontSize="sm"
+                  />
+                );
+              } else if (field.inputType === 'number') {
+                return (
+                  <Input 
+                    {...formikField} 
+                    type="number" 
+                    placeholder={field.placeholder}
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    size="sm"
+                    fontSize="sm"
+                  />
+                );
+              } else if (field.inputType === 'email') {
+                return (
+                  <Input 
+                    {...formikField} 
+                    type="email" 
+                    placeholder={field.placeholder}
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    size="sm"
+                    fontSize="sm"
+                  />
+                );
+              } else if (field.inputType === 'tel') {
+                return (
+                  <Input 
+                    {...formikField} 
+                    type="tel" 
+                    placeholder={field.placeholder}
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    size="sm"
+                    fontSize="sm"
+                  />
+                );
+              } else {
+                return (
+                  <Input 
+                    {...formikField} 
+                    type="text" 
+                    placeholder={field.placeholder}
+                    bg="white"
+                    borderColor="gray.300"
+                    _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
+                    _hover={{ borderColor: "orange.400" }}
+                    size="sm"
+                    fontSize="sm"
+                  />
+                );
+              }
+            }}
+          </Field>
+          {error && isTouched && (
+            <FormErrorMessage>{error as string}</FormErrorMessage>
+          )}
+        </FormControl>
+      </Box>
     );
   };
 
+  const renderSectionFields = (section: any, values: any, errors: any, touched: any) => {
+    const fields: any[] = [];
+    
+    // Add fields from groups
+    if (section.groups) {
+      section.groups.forEach((groupConfig: any) => {
+        const groupFields = getFieldsByGroup(groupConfig.group);
+        groupFields.forEach(field => {
+          // Check if field should be included
+          if (groupConfig.includeFields && !groupConfig.includeFields.includes(field.key)) {
+            return;
+          }
+          if (groupConfig.excludeFields && groupConfig.excludeFields.includes(field.key)) {
+            return;
+          }
+          fields.push(field.key);
+        });
+      });
+    }
+    
+    // Add individual fields
+    if (section.fields) {
+      section.fields.forEach((fieldConfig: any) => {
+        if (fieldConfig.visible) {
+          fields.push(fieldConfig.fieldKey);
+        }
+      });
+    }
+    
+    return fields.map(fieldKey => renderField(fieldKey, values, errors, touched));
+  };
+
   return (
-    <Box maxW="800px" mx="auto" p={6}>
+    <Box maxW="1200px" mx="auto" p={6} bg="black" minH="100vh">
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Box textAlign="center">
-          <Heading color="orange.500" mb={2}>
-            Aanmelding H-DCN Lidmaatschap
+        <Box>
+          <Heading color="orange.400" mb={2} textAlign="left">
+            Nieuw Lid Aanmaken
           </Heading>
-          <Text color="gray.600">
-            Vul onderstaande gegevens in om lid te worden van de H-DCN
+          <Text color="gray.300" textAlign="left">
+            Vul onderstaande gegevens in om een nieuw lid aan te maken
           </Text>
         </Box>
-
-        {/* Progress Stepper */}
-        <Stepper index={activeStep} colorScheme="orange">
-          {steps.map((step, index) => (
-            <Step key={index}>
-              <StepIndicator>
-                <StepStatus
-                  complete={<StepIcon />}
-                  incomplete={<StepNumber />}
-                  active={<StepNumber />}
-                />
-              </StepIndicator>
-              <Box flexShrink="0">
-                <StepTitle>{step.title}</StepTitle>
-              </Box>
-              <StepSeparator />
-            </Step>
-          ))}
-        </Stepper>
 
         {/* Form */}
         <Formik
@@ -257,84 +367,91 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ onSubmit,
           validationSchema={createValidationSchema()}
           onSubmit={handleSubmit}
         >
-          {({ values, errors, touched, setFieldValue, isValid }) => (
+          {({ values, errors, touched, isValid }) => (
             <Form>
               <VStack spacing={6} align="stretch">
-                {/* Current Step Content */}
-                <Card>
-                  <CardHeader>
-                    <Heading size="md" color="orange.500">
-                      {applicationContext.sections[activeStep]?.title}
+                {/* Render all sections */}
+                {applicationContext.sections
+                  .filter(section => section.name !== 'vrijwaring' && section.name !== 'ondergetekende')
+                  .sort((a, b) => a.order - b.order)
+                  .map(section => {
+                    // Check section conditional visibility
+                    if (section.showWhen) {
+                      const shouldShow = section.showWhen.some(condition => {
+                        if (condition.operator === 'equals') {
+                          return values[condition.field] === condition.value;
+                        }
+                        return true;
+                      });
+                      if (!shouldShow) return null;
+                    }
+
+                    return (
+                      <Card key={section.name} bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg">
+                        <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
+                          <Heading size="sm" color="orange.300" textAlign="left">
+                            {section.title}
+                          </Heading>
+                        </CardHeader>
+                        <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
+                          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
+                            {renderSectionFields(section, values, errors, touched)}
+                          </SimpleGrid>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+
+                {/* Vrijwaring Section */}
+                <Card bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg">
+                  <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
+                    <Heading size="sm" color="orange.300" textAlign="left">
+                      Vrijwaring
                     </Heading>
                   </CardHeader>
-                  <CardBody>
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-                      {applicationContext.sections[activeStep]?.fields
-                        .filter(fieldConfig => fieldConfig.visible)
-                        .sort((a, b) => a.order - b.order)
-                        .map(fieldConfig => 
-                          renderField(fieldConfig.fieldKey, values, errors, touched, setFieldValue)
-                        )}
-                    </SimpleGrid>
+                  <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
+                    <Text fontSize="sm" color="gray.700">
+                      Met aanvaarding van het lidmaatschap verklaar je dat deelname aan activiteiten, wel of niet georganiseerd door of namens het bestuur van H-DCN, geheel voor eigen risico en rekening is. Het bestuur H-DCN, noch haar afzonderlijke bestuursleden c.q. commissarissen aanvaarden enige aansprakelijkheid voor schade in welke vorm dan ook, direct of indirect, voortvloeiende uit activiteiten door of namens H-DCN.
+                    </Text>
                   </CardBody>
                 </Card>
 
-                {/* Agreement Checkbox (last step) */}
-                {activeStep === steps.length - 1 && (
-                  <Card>
-                    <CardBody>
-                      <FormControl isInvalid={!!(errors.akkoord && touched.akkoord)}>
-                        <Field name="akkoord">
-                          {({ field }: any) => (
-                            <Checkbox {...field} isChecked={values.akkoord} colorScheme="orange">
-                              Ik ga akkoord met de voorwaarden en het lidmaatschap van de H-DCN
-                            </Checkbox>
-                          )}
-                        </Field>
-                        <FormErrorMessage>{errors.akkoord as string}</FormErrorMessage>
-                      </FormControl>
-                    </CardBody>
-                  </Card>
-                )}
+                {/* Ondergetekende Section */}
+                <Card bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg">
+                  <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
+                    <Heading size="sm" color="orange.300" textAlign="left">
+                      Ondergetekende
+                    </Heading>
+                  </CardHeader>
+                  <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
+                    <Text fontSize="sm" color="gray.700">
+                      Ondergetekende verklaart bovenstaande naar waarheid te hebben ingevuld en zich te zullen houden aan de Statuten en het Huishoudelijk Reglement van de H-DCN (dit inzage op de website (https://h-dcn.nl/home/hdcnalgemeneinformatie), en of bij het regio- c.q. algemeen secretariaat). Ondergetekende machtigt hierbij de H-DCN de jaarlijkse contributie te innen m.b.v. automatische incasso van haar of zijn bankrekening, tot schriftelijke wederopzegging, waarbij de termijn tot uiterlijk 01 november voor het komende jaar in acht genomen moet worden.
+                    </Text>
+                  </CardBody>
+                </Card>
 
-                {/* Navigation Buttons */}
-                <HStack justify="space-between">
-                  <HStack>
-                    <Button
-                      variant="outline"
-                      onClick={onCancel}
-                    >
-                      Annuleren
-                    </Button>
-                    {activeStep > 0 && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setActiveStep(activeStep - 1)}
-                      >
-                        Vorige
-                      </Button>
-                    )}
-                  </HStack>
+                {/* Action Buttons */}
+                <HStack justify="space-between" pt={4}>
+                  <Button
+                    variant="outline"
+                    onClick={onCancel}
+                    size="lg"
+                    color="gray.300"
+                    borderColor="gray.500"
+                    _hover={{ borderColor: "gray.400", color: "white" }}
+                  >
+                    Annuleren
+                  </Button>
                   
-                  <HStack>
-                    {activeStep < steps.length - 1 ? (
-                      <Button
-                        colorScheme="orange"
-                        onClick={() => setActiveStep(activeStep + 1)}
-                      >
-                        Volgende
-                      </Button>
-                    ) : (
-                      <Button
-                        type="submit"
-                        colorScheme="orange"
-                        isLoading={isSubmitting}
-                        isDisabled={!isValid || !values.akkoord}
-                      >
-                        Aanmelding Verzenden
-                      </Button>
-                    )}
-                  </HStack>
+                  <Button
+                    type="submit"
+                    colorScheme="orange"
+                    isLoading={isSubmitting}
+                    isDisabled={!isValid}
+                    size="lg"
+                  >
+                    Lid Aanmaken
+                  </Button>
                 </HStack>
               </VStack>
             </Form>

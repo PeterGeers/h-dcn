@@ -324,6 +324,18 @@ function validateRule(rule: any, value: any, field: FieldDefinition): string | n
       }
       break;
     
+    case 'min':
+      if (value !== null && value !== undefined && Number(value) < rule.value) {
+        return rule.message || `Waarde moet minimaal ${rule.value} zijn`;
+      }
+      break;
+    
+    case 'max':
+      if (value !== null && value !== undefined && Number(value) > rule.value) {
+        return rule.message || `Waarde mag maximaal ${rule.value} zijn`;
+      }
+      break;
+    
     case 'pattern':
       if (value && !new RegExp(rule.value).test(value)) {
         return rule.message || 'Ongeldige invoer';

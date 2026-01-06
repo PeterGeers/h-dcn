@@ -29,7 +29,7 @@ import {
   Spinner
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
-import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields } from '../config/memberFields';
+import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields, getFilteredEnumOptions } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { membershipService } from '../utils/membershipService';
 
@@ -193,6 +193,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
           <Field name={fieldKey}>
             {({ field: formikField }: any) => {
               if (field.inputType === 'select' && field.enumOptions) {
+                const filteredOptions = getFilteredEnumOptions(field, userRole);
                 return (
                   <Select
                     {...formikField}
@@ -207,7 +208,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                     fontSize="sm"
                   >
                     <option value="">Selecteer...</option>
-                    {field.enumOptions.map((option: any) => (
+                    {filteredOptions.map((option: any) => (
                       <option key={option} value={option}>
                         {option}
                       </option>

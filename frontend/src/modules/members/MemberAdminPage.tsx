@@ -25,9 +25,11 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
 import MemberAdminTable from '../../components/MemberAdminTable';
-import MemberReadView from '../../components/MemberReadView';
 import MemberEditView from '../../components/MemberEditView';
 import MemberSelfServiceView from '../../components/MemberSelfServiceView';
+import UserManagement from './components/UserManagement';
+import GroupManagement from './components/GroupManagement';
+import PoolSettings from './components/PoolSettings';
 import { HDCNGroup } from '../../config/memberFields';
 import { Member } from '../../types';
 import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
@@ -49,17 +51,11 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const toast = useToast();
   const { handleError } = useErrorHandler();
   
-  // Modal controls
+  // Modal controls - only need one modal now
   const { 
-    isOpen: isReadModalOpen, 
-    onOpen: onReadModalOpen, 
-    onClose: onReadModalClose 
-  } = useDisclosure();
-  
-  const { 
-    isOpen: isEditModalOpen, 
-    onOpen: onEditModalOpen, 
-    onClose: onEditModalClose 
+    isOpen: isModalOpen, 
+    onOpen: onModalOpen, 
+    onClose: onModalClose 
   } = useDisclosure();
 
   // Get user role for field registry system
@@ -122,16 +118,16 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     }
   }, [userRoles]); // Removed handleError from dependencies
 
-  // Handle member view
+  // Handle member view/edit - now uses same modal
   const handleMemberView = (member: Member) => {
     setSelectedMember(member);
-    onReadModalOpen();
+    onModalOpen();
   };
 
-  // Handle member edit
+  // Handle member edit - same as view now
   const handleMemberEdit = (member: Member) => {
     setSelectedMember(member);
-    onEditModalOpen();
+    onModalOpen();
   };
 
   // Handle member save
@@ -167,6 +163,12 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     }
   };
 
+  // Handle add member
+  const handleAddMember = () => {
+    // Navigate to membership form
+    window.location.href = '/membership';
+  };
+
   // Handle export (disabled for now - no backend endpoint)
   const handleExport = async (context: string) => {
     toast({
@@ -178,22 +180,10 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     });
   };
 
-  // Handle edit modal close
-  const handleEditModalClose = () => {
-    onEditModalClose();
+  // Handle modal close
+  const handleModalClose = () => {
+    onModalClose();
     setSelectedMember(null);
-  };
-
-  // Handle read modal close
-  const handleReadModalClose = () => {
-    onReadModalClose();
-    setSelectedMember(null);
-  };
-
-  // Handle edit from read modal
-  const handleEditFromReadModal = () => {
-    onReadModalClose();
-    onEditModalOpen();
   };
 
   if (loading) {
@@ -245,32 +235,16 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     <Box p={6}>
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <HStack justify="space-between" align="center">
-          <Heading color="orange.500">
-            Ledenadministratie
-          </Heading>
-          
-          {/* Add member button for admins */}
-          {['System_CRUD_All', 'Members_CRUD_All'].includes(getUserRole()) && (
-            <Button
-              leftIcon={<AddIcon />}
-              colorScheme="orange"
-              onClick={() => {
-                // Navigate to membership form or open add modal
-                window.location.href = '/membership';
-              }}
-            >
-              Nieuw Lid
-            </Button>
-          )}
-        </HStack>
+        <Heading color="orange.500">
+          Ledenadministratie
+        </Heading>
 
         {/* Main Content */}
         <Tabs variant="enclosed" colorScheme="orange">
           <TabList>
             <Tab>📊 Leden Overzicht</Tab>
-            {getUserRole() === 'System_CRUD_All' && (
-              <Tab>👥 Gebruikersbeheer</Tab>
+            {['System_CRUD_All', 'Members_CRUD_All'].includes(getUserRole()) && (
+              <Tab>🔐 Cognito Beheer</Tab>
             )}
           </TabList>
 
@@ -284,37 +258,42 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                 onMemberView={handleMemberView}
                 onMemberEdit={handleMemberEdit}
                 onExport={handleExport}
+                onAddMember={handleAddMember}
               />
             </TabPanel>
 
-            {/* User Management Tab (System_CRUD_All only) */}
-            {getUserRole() === 'System_CRUD_All' && (
-              <TabPanel>
-                <Box p={4}>
-                  <Text>Gebruikersbeheer functionaliteit komt hier...</Text>
-                </Box>
+            {/* Cognito Management Tab (System_CRUD_All and Members_CRUD_All) */}
+            {['System_CRUD_All', 'Members_CRUD_All'].includes(getUserRole()) && (
+              <TabPanel p={0}>
+                <Tabs colorScheme="orange" variant="enclosed" size="sm">
+                  <TabList>
+                    <Tab>Gebruikers</Tab>
+                    <Tab>Groepen</Tab>
+                    <Tab>Pool Instellingen</Tab>
+                  </TabList>
+
+                  <TabPanels>
+                    <TabPanel p={0} pt={6}>
+                      <UserManagement user={user} />
+                    </TabPanel>
+                    <TabPanel p={0} pt={6}>
+                      <GroupManagement user={user} />
+                    </TabPanel>
+                    <TabPanel p={0} pt={6}>
+                      <PoolSettings user={user} />
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
               </TabPanel>
             )}
           </TabPanels>
         </Tabs>
 
-        {/* Read Modal */}
-        {selectedMember && (
-          <MemberReadView
-            isOpen={isReadModalOpen}
-            onClose={handleReadModalClose}
-            member={selectedMember}
-            userRole={getUserRole()}
-            userRegion={userRegion}
-            onEdit={handleEditFromReadModal}
-          />
-        )}
-
-        {/* Edit Modal */}
+        {/* Unified Modal - handles both view and edit */}
         {selectedMember && (
           <MemberEditView
-            isOpen={isEditModalOpen}
-            onClose={handleEditModalClose}
+            isOpen={isModalOpen}
+            onClose={handleModalClose}
             member={selectedMember}
             userRole={getUserRole()}
             userRegion={userRegion}

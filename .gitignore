@@ -147,3 +147,13 @@ test_member_admin_login
 # SAM build artifacts
 .aws-sam/
 samconfig.toml
+# Credentials and secrets
+.awsCredentials.json
+.googleCredentials.json
+.secrets
+*.key
+*.pem
+
+# Migration reports
+migration_data_quality_report.json
+migration_*.json
