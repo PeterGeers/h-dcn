@@ -1,13 +1,31 @@
 import json
 import boto3
-import base64
+from datetime import datetime
 
-def cors_headers():
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
-    }
+# Import from shared auth layer (REQUIRED)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using shared auth layer")
+except ImportError:
+    # Fallback to local auth_fallback.py (UPDATED FOR NEW ROLE STRUCTURE)
+    from auth_fallback import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using fallback auth - ensure auth_fallback.py is updated")
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Orders')
@@ -63,119 +81,48 @@ def log_order_audit(event_type, order_id, user_email, user_roles, additional_dat
         print(f"Error logging order audit: {str(e)}")
         # Don't fail the order operation if logging fails
 
-def extract_user_roles_from_jwt(event):
-    """
-    Extract user roles from JWT token in Authorization header
-    
-    Args:
-        event: Lambda event containing headers
-        
-    Returns:
-        tuple: (user_email, user_roles, error_response)
-               If successful: (email_string, roles_list, None)
-               If error: (None, None, error_response_dict)
-    """
-    try:
-        # Extract Authorization header
-        auth_header = event.get('headers', {}).get('Authorization')
-        if not auth_header:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Authorization header required'})
-            }
-        
-        # Validate Bearer token format
-        if not auth_header.startswith('Bearer '):
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid authorization header format'})
-            }
-        
-        # Extract JWT token
-        jwt_token = auth_header.replace('Bearer ', '')
-        
-        # Decode JWT token to get user info and roles
-        parts = jwt_token.split('.')
-        if len(parts) != 3:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid JWT token format'})
-            }
-        
-        # Decode payload (second part of JWT)
-        payload_encoded = parts[1]
-        # Add padding if needed for base64 decoding
-        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        payload_decoded = base64.urlsafe_b64decode(payload_encoded)
-        payload = json.loads(payload_decoded)
-        
-        # Extract user email and roles
-        user_email = payload.get('email') or payload.get('username')
-        user_roles = payload.get('cognito:groups', [])
-        
-        if not user_email:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'User email not found in token'})
-            }
-        
-        return user_email, user_roles, None
-        
-    except Exception as e:
-        print(f"Error extracting user roles from JWT: {str(e)}")
-        return None, None, {
-            'statusCode': 401,
-            'headers': cors_headers(),
+# REMOVED: Custom JWT parsing function - now using shared auth system
+# This function has been replaced by extract_user_credentials from shared.auth_utils
             'body': json.dumps({'error': 'Invalid authorization token'})
         }
 
 def lambda_handler(event, context):
     try:
-        # Handle OPTIONS request for CORS
+        # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': cors_headers(),
-                'body': ''
-            }
+            return handle_options_request()
         
-        # Extract user roles from JWT token
-        user_email, user_roles, auth_error = extract_user_roles_from_jwt(event)
+        # Extract user credentials
+        user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
             return auth_error
         
-        # Validate user has webshop access permission (hdcnLeden role)
-        if 'hdcnLeden' not in user_roles:
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: webshop access requires hdcnLeden role',
-                    'required_role': 'hdcnLeden',
-                    'user_roles': user_roles
-                })
-            }
+        # UPDATED: Check for webshop access permission with new role structure
+        # Users need hdcnLeden role for webshop access
+        required_permissions = ['webshop_access']
+        
+        is_authorized, error_response, regional_info = validate_permissions_with_regions(
+            user_roles, required_permissions, user_email, None
+        )
+        if not is_authorized:
+            return error_response
+        
+        # Log successful access
+        log_successful_access(user_email, user_roles, 'get_order_byid')
         
         order_id = event['pathParameters']['order_id']
         
         response = table.get_item(Key={'order_id': order_id})
         
         if 'Item' not in response:
-            return {
-                'statusCode': 404,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Order not found'})
-            }
+            return create_error_response(404, 'Order not found')
         
         order = response['Item']
         
         # Validate order ownership - users can only access their own orders unless they have admin role
         order_user_email = order.get('user_email')
-        has_admin_role = any(role in user_roles for role in ['Members_CRUD_All', 'Webshop_Management'])
+        # Check if user has admin permissions for accessing any order
+        has_admin_role = any(role in user_roles for role in ['Members_CRUD', 'Webshop_Management'])
         
         if not has_admin_role and order_user_email and order_user_email.lower() != user_email.lower():
             # Log unauthorized order access attempt for comprehensive audit trail
@@ -185,11 +132,7 @@ def lambda_handler(event, context):
                 'security_violation': True,
                 'severity': 'CRITICAL'
             })
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Access denied: You can only access your own orders'})
-            }
+            return create_error_response(403, 'Access denied: You can only access your own orders')
         
         # Log order access for comprehensive audit trail
         access_type = "admin" if has_admin_role else "owner"
@@ -199,24 +142,13 @@ def lambda_handler(event, context):
             'access_method': 'direct_id_lookup',
             'order_total': order.get('total_amount', 0),
             'order_status': order.get('status', 'unknown'),
-            'admin_roles': [role for role in user_roles if role in ['Members_CRUD_All', 'Webshop_Management']] if has_admin_role else []
+            'admin_roles': [role for role in user_roles if role in ['Members_CRUD', 'Webshop_Management']] if has_admin_role else []
         })
         
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': json.dumps(order, default=str)
-        }
+        return create_success_response(order)
+        
     except KeyError as e:
-        return {
-            'statusCode': 400,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': f'Missing required parameter: {str(e)}'})
-        }
+        return create_error_response(400, f'Missing required parameter: {str(e)}')
     except Exception as e:
         print(f"Error retrieving order: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Internal server error'})
-        }
+        return create_error_response(500, 'Internal server error')

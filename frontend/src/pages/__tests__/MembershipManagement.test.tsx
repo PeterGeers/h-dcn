@@ -12,27 +12,27 @@ describe('MembershipManagement Component Tests', () => {
   });
 
   describe('Role-based Access Control Logic', () => {
-    it('should grant access only to Members_CRUD_All role', () => {
-      mockGetUserRoles.mockReturnValue(['Members_CRUD_All']);
+    it('should grant access only to Members_CRUD role', () => {
+      mockGetUserRoles.mockReturnValue(['Members_CRUD']);
       
       const mockUser = {
         attributes: { email: 'admin@test.com' },
         signInUserSession: {
           accessToken: {
-            payload: { 'cognito:groups': ['Members_CRUD_All'] }
+            payload: { 'cognito:groups': ['Members_CRUD'] }
           }
         }
       };
       
       const userRoles = getUserRoles(mockUser);
-      const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+      const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
       
       expect(hasMembersCRUDRole).toBe(true);
       expect(getUserRoles).toHaveBeenCalledWith(mockUser);
     });
 
-    it('should deny access to users without Members_CRUD_All role', () => {
-      const nonMembersRoles = ['hdcnAdmins', 'System_CRUD_All', 'Webmaster', 'hdcnLeden', 'hdcnRegio_Noord'];
+    it('should deny access to users without Members_CRUD role', () => {
+      const nonMembersRoles = ['System_User_Management', 'hdcnLeden', 'Regio_Noord'];
       
       nonMembersRoles.forEach(role => {
         mockGetUserRoles.mockReturnValue([role]);
@@ -47,7 +47,7 @@ describe('MembershipManagement Component Tests', () => {
         };
         
         const userRoles = getUserRoles(mockUser);
-        const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+        const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
         
         expect(hasMembersCRUDRole).toBe(false);
         expect(getUserRoles).toHaveBeenCalledWith(mockUser);
@@ -65,7 +65,7 @@ describe('MembershipManagement Component Tests', () => {
       };
       
       const userRoles = getUserRoles(mockUser);
-      const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+      const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
       
       expect(hasMembersCRUDRole).toBe(false);
       expect(userRoles).toEqual([]);
@@ -76,15 +76,15 @@ describe('MembershipManagement Component Tests', () => {
       
       [null, undefined].forEach(user => {
         const userRoles = getUserRoles(user);
-        const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+        const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
         
         expect(hasMembersCRUDRole).toBe(false);
         expect(userRoles).toEqual([]);
       });
     });
 
-    it('should handle multiple roles including Members_CRUD_All', () => {
-      const multipleRoles = ['hdcnAdmins', 'Members_CRUD_All', 'Webmaster'];
+    it('should handle multiple roles including Members_CRUD', () => {
+      const multipleRoles = ['System_User_Management', 'Members_CRUD', 'Regio_All'];
       mockGetUserRoles.mockReturnValue(multipleRoles);
       
       const mockUser = {
@@ -97,7 +97,7 @@ describe('MembershipManagement Component Tests', () => {
       };
       
       const userRoles = getUserRoles(mockUser);
-      const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+      const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
       
       expect(hasMembersCRUDRole).toBe(true);
       expect(userRoles).toEqual(multipleRoles);
@@ -105,32 +105,31 @@ describe('MembershipManagement Component Tests', () => {
   });
 
   describe('Permission Validation Logic', () => {
-    it('should validate specific Members_CRUD_All permission', () => {
-      mockGetUserRoles.mockReturnValue(['Members_CRUD_All']);
+    it('should validate specific Members_CRUD permission', () => {
+      mockGetUserRoles.mockReturnValue(['Members_CRUD']);
       
       const userRoles = getUserRoles({});
       
       // Test the specific logic used in MembershipManagement
-      const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+      const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
       
       expect(hasMembersCRUDRole).toBe(true);
     });
 
-    it('should reject admin roles that are not Members_CRUD_All', () => {
+    it('should reject admin roles that are not Members_CRUD', () => {
       const otherAdminRoles = [
-        'hdcnAdmins',
-        'System_CRUD_All', 
-        'Webmaster',
         'System_User_Management',
-        'hdcnWebmaster',
-        'hdcnLedenadministratie'
+        'Products_CRUD',
+        'Events_CRUD',
+        'Members_Read',
+        'Webshop_Management'
       ];
 
       otherAdminRoles.forEach(role => {
         mockGetUserRoles.mockReturnValue([role]);
         
         const userRoles = getUserRoles({});
-        const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+        const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
         
         expect(hasMembersCRUDRole).toBe(false);
       });
@@ -139,16 +138,16 @@ describe('MembershipManagement Component Tests', () => {
     it('should reject regular user roles', () => {
       const regularRoles = [
         'hdcnLeden',
-        'hdcnRegio_Noord',
-        'hdcnRegio_Zuid',
-        'Members_Read_Only'
+        'Regio_Noord',
+        'Regio_Zuid',
+        'Members_Read'
       ];
 
       regularRoles.forEach(role => {
         mockGetUserRoles.mockReturnValue([role]);
         
         const userRoles = getUserRoles({});
-        const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+        const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
         
         expect(hasMembersCRUDRole).toBe(false);
       });
@@ -159,23 +158,18 @@ describe('MembershipManagement Component Tests', () => {
     it('should determine access correctly based on role', () => {
       const testScenarios = [
         {
-          description: 'User with Members_CRUD_All role',
-          roles: ['Members_CRUD_All'],
+          description: 'User with Members_CRUD role',
+          roles: ['Members_CRUD'],
           expectedAccess: true
         },
         {
-          description: 'Admin user without Members_CRUD_All',
-          roles: ['hdcnAdmins'],
+          description: 'System admin without Members_CRUD',
+          roles: ['System_User_Management'],
           expectedAccess: false
         },
         {
-          description: 'System admin without Members_CRUD_All',
-          roles: ['System_CRUD_All'],
-          expectedAccess: false
-        },
-        {
-          description: 'Webmaster without Members_CRUD_All',
-          roles: ['Webmaster'],
+          description: 'Products admin without Members_CRUD',
+          roles: ['Products_CRUD'],
           expectedAccess: false
         },
         {
@@ -185,17 +179,17 @@ describe('MembershipManagement Component Tests', () => {
         },
         {
           description: 'Regional user',
-          roles: ['hdcnRegio_Noord'],
+          roles: ['Regio_Noord'],
           expectedAccess: false
         },
         {
-          description: 'Multiple roles including Members_CRUD_All',
-          roles: ['hdcnLeden', 'Members_CRUD_All', 'hdcnRegio_Noord'],
+          description: 'Multiple roles including Members_CRUD',
+          roles: ['hdcnLeden', 'Members_CRUD', 'Regio_Noord'],
           expectedAccess: true
         },
         {
-          description: 'Multiple admin roles without Members_CRUD_All',
-          roles: ['hdcnAdmins', 'System_CRUD_All', 'Webmaster'],
+          description: 'Multiple admin roles without Members_CRUD',
+          roles: ['System_User_Management', 'Products_CRUD', 'Events_CRUD'],
           expectedAccess: false
         },
         {
@@ -209,7 +203,7 @@ describe('MembershipManagement Component Tests', () => {
         mockGetUserRoles.mockReturnValue(roles);
         
         const userRoles = getUserRoles({});
-        const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+        const hasMembersCRUDRole = userRoles.includes('Members_CRUD');
         
         expect(hasMembersCRUDRole).toBe(expectedAccess);
       });
@@ -278,33 +272,33 @@ describe('MembershipManagement Component Tests', () => {
         attributes: { email: 'test@test.com' },
         signInUserSession: {
           accessToken: {
-            payload: { 'cognito:groups': ['Members_CRUD_All'] }
+            payload: { 'cognito:groups': ['Members_CRUD'] }
           }
         }
       };
 
-      mockGetUserRoles.mockReturnValue(['Members_CRUD_All']);
+      mockGetUserRoles.mockReturnValue(['Members_CRUD']);
       
       const result = getUserRoles(testUser);
       
       expect(getUserRoles).toHaveBeenCalledWith(testUser);
-      expect(result).toEqual(['Members_CRUD_All']);
+      expect(result).toEqual(['Members_CRUD']);
     });
 
     it('should handle edge cases in role checking', () => {
       // Test empty array
       mockGetUserRoles.mockReturnValue([]);
-      expect(getUserRoles({}).includes('Members_CRUD_All')).toBe(false);
+      expect(getUserRoles({}).includes('Members_CRUD')).toBe(false);
 
       // Test undefined result
       mockGetUserRoles.mockReturnValue(undefined as any);
       const result = getUserRoles({});
-      expect(Array.isArray(result) ? result.includes('Members_CRUD_All') : false).toBe(false);
+      expect(Array.isArray(result) ? result.includes('Members_CRUD') : false).toBe(false);
 
       // Test null result
       mockGetUserRoles.mockReturnValue(null as any);
       const result2 = getUserRoles({});
-      expect(Array.isArray(result2) ? result2.includes('Members_CRUD_All') : false).toBe(false);
+      expect(Array.isArray(result2) ? result2.includes('Members_CRUD') : false).toBe(false);
     });
   });
 });

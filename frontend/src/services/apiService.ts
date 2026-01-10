@@ -86,11 +86,47 @@ export class ApiService {
 
   /**
    * Get current user's roles from JWT token
+   * Only returns roles that are part of the new role structure (no legacy roles)
    */
   static getCurrentUserRoles(): string[] {
     const tokens = this.getAuthTokens();
     if (tokens && tokens.AccessTokenPayload && tokens.AccessTokenPayload['cognito:groups']) {
-      return tokens.AccessTokenPayload['cognito:groups'];
+      const cognitoGroups = tokens.AccessTokenPayload['cognito:groups'];
+      
+      // Filter out any legacy roles that might still exist in JWT tokens
+      // Only allow roles that are part of the new permission + region structure
+      const validRoles = cognitoGroups.filter((role: string) => {
+        // Allow new permission-based roles (but NOT old _All versions)
+        if (role.includes('_CRUD') || role.includes('_Read') || role.includes('_Export') || role.includes('_Status_Approve')) {
+          // Reject old _All roles (except Regio_All which is valid)
+          if (role.endsWith('_All') && role !== 'Regio_All') {
+            console.warn(`ApiService: Filtering out legacy role: ${role}`);
+            return false;
+          }
+          return true;
+        }
+        
+        // Allow regional roles
+        if (role.startsWith('Regio_')) {
+          return true;
+        }
+        
+        // Allow system roles
+        if (role.startsWith('System_')) {
+          return true;
+        }
+        
+        // Allow specific valid roles
+        if (['hdcnLeden', 'Webshop_Management', 'verzoek_lid'].includes(role)) {
+          return true;
+        }
+        
+        // Reject any other legacy roles (deprecated roles no longer supported)
+        console.warn(`ApiService: Filtering out legacy role: ${role}`);
+        return false;
+      });
+      
+      return validRoles;
     }
     return [];
   }

@@ -75,7 +75,7 @@ export function applyPermissions(
     }
     
     // Check regional restrictions
-    if (field.permissions.regionalRestricted && userRole === 'Members_Read_All') {
+    if (field.permissions.regionalRestricted && userRole === 'Members_Read') {
       // TODO: Implement regional boundary checking
       // For now, allow all - this needs user's region vs member's region comparison
       return true;
@@ -186,7 +186,7 @@ export function canViewField(
   }
   
   // Check self-service permission for hdcnLeden users and applicants
-  if ((userRole === 'hdcnLeden' || userRole === 'Verzoek_lid') && field.permissions.selfService) {
+  if ((userRole === 'hdcnLeden' || userRole === 'verzoek_lid') && field.permissions.selfService) {
     return true;
   }
   
@@ -203,20 +203,20 @@ export function canEditField(
 ): boolean {
   if (!field.permissions) return false;
   
-  // Special case: Verzoek_lid users cannot edit email field (tied to Cognito account)
-  if (userRole === 'Verzoek_lid' && field.key === 'email') {
+  // Special case: verzoek_lid users cannot edit email field (tied to Cognito account)
+  if (userRole === 'verzoek_lid' && field.key === 'email') {
     return false;
   }
   
-  // Special case: Verzoek_lid users can edit lidmaatschap field (needed for application)
-  if (userRole === 'Verzoek_lid' && field.key === 'lidmaatschap') {
+  // Special case: verzoek_lid users can edit lidmaatschap field (needed for application)
+  if (userRole === 'verzoek_lid' && field.key === 'lidmaatschap') {
     return true;
   }
   
   // Check basic edit permission
   if (!field.permissions.edit.includes(userRole)) {
     // Check self-service permission for hdcnLeden users and applicants
-    if ((userRole === 'hdcnLeden' || userRole === 'Verzoek_lid') && field.permissions.selfService) {
+    if ((userRole === 'hdcnLeden' || userRole === 'verzoek_lid') && field.permissions.selfService) {
       return true;
     }
     

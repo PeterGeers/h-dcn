@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { getAuthHeaders, getAuthHeadersForGet } from '../../../utils/authHeaders';
+import { ApiService } from '../../../services/apiService';
 
 interface CartData {
   items?: any[];
@@ -28,15 +28,18 @@ if (!validateApiUrl(API_BASE_URL)) {
   console.warn('Invalid API base URL, using fallback');
 }
 
-// Helper function to create axios config with auth headers
+// Helper function to create axios config with auth headers - now uses main ApiService
 const createAuthConfig = async (method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET') => {
-  const headers = method === 'GET' ? await getAuthHeadersForGet() : await getAuthHeaders();
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  
   return { 
     baseURL: API_BASE_URL,
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
-      ...headers
+      'X-Requested-With': 'XMLHttpRequest'
     }
   };
 };

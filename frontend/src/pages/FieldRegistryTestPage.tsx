@@ -79,7 +79,7 @@ interface FieldRegistryTestPageProps {
 const FieldRegistryTestPage: React.FC<FieldRegistryTestPageProps> = ({ user }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedContext, setSelectedContext] = useState('memberOverview');
-  const [selectedRole, setSelectedRole] = useState<HDCNGroup>('System_CRUD_All');
+  const [selectedRole, setSelectedRole] = useState<HDCNGroup>('System_User_Management');
   const [userRegion, setUserRegion] = useState('Noord-Holland');
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [modalContext, setModalContext] = useState('memberView');
@@ -188,9 +188,9 @@ const FieldRegistryTestPage: React.FC<FieldRegistryTestPageProps> = ({ user }) =
   ];
 
   const roles: HDCNGroup[] = [
-    'System_CRUD_All',
-    'Members_CRUD_All',
-    'Members_Read_All',
+    'System_User_Management',
+    'Members_CRUD',
+    'Members_Read',
     'System_User_Management',
     'hdcnLeden'
   ];
@@ -549,7 +549,7 @@ const FieldRegistryTestPage: React.FC<FieldRegistryTestPageProps> = ({ user }) =
                         <Text><strong>Test Member Region:</strong> {sampleMembers[0].regio}</Text>
                         <Divider />
                         <Text fontSize="sm" color="gray.600">
-                          Regional restrictions apply to Members_Read_All role only
+                          Regional restrictions apply to Members_Read role only
                         </Text>
                       </VStack>
                     </CardBody>

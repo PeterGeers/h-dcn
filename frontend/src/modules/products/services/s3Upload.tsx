@@ -32,7 +32,7 @@ export const uploadToS3 = async (
     
     // Get enhanced groups from localStorage for authentication
     const storedUser = localStorage.getItem('hdcn_auth_user');
-    let enhancedGroups = ['hdcnAdmins', 'Products_CRUD_All']; // fallback with multiple roles
+    let enhancedGroups = ['System_User_Management', 'Products_CRUD']; // fallback with multiple roles
     let authToken = '';
     
     console.log('🔍 DEBUG: Raw stored user data:', storedUser);
@@ -135,7 +135,7 @@ export const cleanupUnusedImages = async (
   try {
     // Get enhanced groups from localStorage for authentication
     const storedUser = localStorage.getItem('hdcn_auth_user');
-    let enhancedGroups = ['hdcnAdmins']; // fallback
+    let enhancedGroups = ['System_User_Management']; // fallback
     let authToken = '';
     
     if (storedUser) {

@@ -1,17 +1,37 @@
 import json
 import boto3
-import base64
+import sys
+import os
 from datetime import datetime
 
-def cors_headers():
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "PUT, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
-    }
+# Import from shared auth layer (REQUIRED)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using shared auth layer")
+except ImportError:
+    # Fallback to local auth_fallback.py (UPDATED FOR NEW ROLE STRUCTURE)
+    from auth_fallback import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using fallback auth - ensure auth_fallback.py is updated")
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Payments')
+table_name = os.environ.get('DYNAMODB_TABLE', 'Payments')
+table = dynamodb.Table(table_name)
 
 def log_payment_audit(event_type, payment_id, user_email, user_roles, additional_data=None):
     """
@@ -66,156 +86,90 @@ def log_payment_audit(event_type, payment_id, user_email, user_roles, additional
         print(f"Error logging payment audit: {str(e)}")
         # Don't fail the payment operation if logging fails
 
-def extract_user_roles_from_jwt(event):
-    """
-    Extract user roles from JWT token in Authorization header
-    
-    Args:
-        event: Lambda event containing headers
-        
-    Returns:
-        tuple: (user_email, user_roles, error_response)
-               If successful: (email_string, roles_list, None)
-               If error: (None, None, error_response_dict)
-    """
-    try:
-        # Extract Authorization header
-        auth_header = event.get('headers', {}).get('Authorization')
-        if not auth_header:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Authorization header required'})
-            }
-        
-        # Validate Bearer token format
-        if not auth_header.startswith('Bearer '):
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid authorization header format'})
-            }
-        
-        # Extract JWT token
-        jwt_token = auth_header.replace('Bearer ', '')
-        
-        # Decode JWT token to get user info and roles
-        parts = jwt_token.split('.')
-        if len(parts) != 3:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid JWT token format'})
-            }
-        
-        # Decode payload (second part of JWT)
-        payload_encoded = parts[1]
-        # Add padding if needed for base64 decoding
-        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        payload_decoded = base64.urlsafe_b64decode(payload_encoded)
-        payload = json.loads(payload_decoded)
-        
-        # Extract user email and roles
-        user_email = payload.get('email') or payload.get('username')
-        user_roles = payload.get('cognito:groups', [])
-        
-        if not user_email:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'User email not found in token'})
-            }
-        
-        return user_email, user_roles, None
-        
-    except Exception as e:
-        print(f"Error extracting user roles from JWT: {str(e)}")
-        return None, None, {
-            'statusCode': 401,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Invalid authorization token'})
-        }
-
 def lambda_handler(event, context):
-    # Handle OPTIONS request for CORS
-    if event.get('httpMethod') == 'OPTIONS':
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': ''
-        }
-    
     try:
-        # Extract user roles from JWT token
-        user_email, user_roles, auth_error = extract_user_roles_from_jwt(event)
+        # Handle OPTIONS request
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options_request()
+        
+        # Extract user credentials
+        user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
             return auth_error
         
-        # Validate user has webshop access permission (hdcnLeden role)
-        if 'hdcnLeden' not in user_roles:
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: webshop access requires hdcnLeden role',
-                    'required_role': 'hdcnLeden',
-                    'user_roles': user_roles
-                })
-            }
+        # DUAL ACCESS PATTERN: Admin access OR user access to own payments
+        
+        # First check if user has admin permissions for payment management
+        required_permissions = ['products_update']
+        is_admin_authorized, admin_error_response, regional_info = validate_permissions_with_regions(
+            user_roles, required_permissions, user_email, None
+        )
+        
+        # If not admin, check if user has basic webshop access (hdcnLeden) for own payments
+        has_webshop_access = 'hdcnLeden' in user_roles
+        
+        if not is_admin_authorized and not has_webshop_access:
+            return create_error_response(403, 'Access denied: Requires admin permissions or hdcnLeden membership for own payments', {
+                'required_admin_permissions': required_permissions,
+                'required_user_role': 'hdcnLeden',
+                'user_roles': user_roles
+            })
+        
+        # Log successful access
+        log_successful_access(user_email, user_roles, 'update_payment')
         
         payment_id = event['pathParameters']['payment_id']
-        data = json.loads(event['body'])
+        data = json.loads(event['body']) if event['body'] else {}
         
         # Get existing payment to validate ownership
         existing_payment_response = table.get_item(Key={'payment_id': payment_id})
         
         if 'Item' not in existing_payment_response:
-            return {
-                'statusCode': 404,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Payment not found'})
-            }
+            return create_error_response(404, 'Payment not found')
         
         existing_payment = existing_payment_response['Item']
         
         # Validate payment ownership (only payment owner or admin can update)
         payment_owner_email = existing_payment.get('user_email')
-        is_admin = any(role in user_roles for role in ['Members_CRUD_All', 'Webmaster'])
+        is_admin = is_admin_authorized  # Use the admin authorization result
         
         if not is_admin and (not payment_owner_email or payment_owner_email.lower() != user_email.lower()):
             print(f"SECURITY ALERT: User {user_email} attempted to update payment {payment_id} owned by {payment_owner_email}")
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: You can only update your own payments',
-                    'payment_id': payment_id
-                })
-            }
+            return create_error_response(403, 'Access denied: You can only update your own payments', {
+                'payment_id': payment_id
+            })
         
-        update_expression = "SET #updated_at = :updated_at, #updated_by = :updated_by"
-        expression_values = {
-            ':updated_at': datetime.utcnow().isoformat(),
-            ':updated_by': user_email
-        }
-        expression_names = {
-            '#updated_at': 'updated_at',
-            '#updated_by': 'updated_by'
-        }
+        # Dynamically build update expression and attribute values
+        update_expression_parts = []
+        expression_attribute_names = {}
+        expression_attribute_values = {}
         
         for key, value in data.items():
             # Prevent updating sensitive fields
             if key in ['payment_id', 'user_email', 'created_at']:
                 continue
-            update_expression += f", #{key} = :{key}"
-            expression_values[f":{key}"] = value
-            expression_names[f"#{key}"] = key
+            
+            placeholder_name = f"#{key}"
+            placeholder_value = f":{key}"
+            update_expression_parts.append(f"{placeholder_name} = {placeholder_value}")
+            expression_attribute_names[placeholder_name] = key
+            expression_attribute_values[placeholder_value] = value
+        
+        # Add updated timestamp and user
+        update_expression_parts.append("#updated_at = :updated_at")
+        update_expression_parts.append("#updated_by = :updated_by")
+        expression_attribute_names["#updated_at"] = "updated_at"
+        expression_attribute_names["#updated_by"] = "updated_by"
+        expression_attribute_values[":updated_at"] = datetime.utcnow().isoformat()
+        expression_attribute_values[":updated_by"] = user_email
+        
+        update_expression = "SET " + ", ".join(update_expression_parts)
         
         table.update_item(
             Key={'payment_id': payment_id},
             UpdateExpression=update_expression,
-            ExpressionAttributeValues=expression_values,
-            ExpressionAttributeNames=expression_names
+            ExpressionAttributeNames=expression_attribute_names,
+            ExpressionAttributeValues=expression_attribute_values
         )
         
         # Log payment update for comprehensive audit trail
@@ -226,27 +180,17 @@ def lambda_handler(event, context):
             'payment_amount': existing_payment.get('amount', 0)
         })
         
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': json.dumps({'message': 'Payment updated successfully'})
-        }
-    except json.JSONDecodeError:
-        return {
-            'statusCode': 400,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Invalid JSON in request body'})
-        }
+        print(f"Payment {payment_id} updated by {user_email} with roles {user_roles}")
+        
+        return create_success_response({
+            'message': f'Payment {payment_id} updated successfully',
+            'updated_fields': list(data.keys())
+        })
+        
     except KeyError as e:
-        return {
-            'statusCode': 400,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': f'Missing required parameter: {str(e)}'})
-        }
+        return create_error_response(400, f'Missing required parameter: {str(e)}')
+    except json.JSONDecodeError:
+        return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
-        print(f"Error updating payment: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Internal server error'})
-        }
+        print(f"Unexpected error in update_payment: {str(e)}")
+        return create_error_response(500, 'Internal server error')

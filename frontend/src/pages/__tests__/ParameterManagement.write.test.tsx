@@ -13,10 +13,9 @@ describe('ParameterManagement Write Permission Tests', () => {
   describe('Write Access Control', () => {
     it('should allow write access for admin roles', () => {
       const writeAllowedRoles = [
-        'hdcnAdmins',
-        'System_CRUD_All',
+        'Members_CRUD',
+        'System_User_Management',
         'Webmaster',
-        'hdcnWebmaster',
         'National_Chairman',
         'National_Secretary'
       ];
@@ -28,10 +27,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         // Test the specific write permission logic used in ParameterManagement
         const hasWriteRole = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );
@@ -43,9 +41,8 @@ describe('ParameterManagement Write Permission Tests', () => {
     it('should deny write access for non-admin roles', () => {
       const writeRestrictedRoles = [
         'hdcnLeden',
-        'hdcnRegio_Noord',
-        'Members_Read_All',
-        'System_User_Management', // Has read access but not write
+        'Regio_Utrecht',
+        'Members_Read',
         'Regional_Chairman_Region1',
         'Regional_Secretary_Region1'
       ];
@@ -57,10 +54,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         // Test the specific write permission logic used in ParameterManagement
         const hasWriteRole = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );
@@ -71,14 +67,13 @@ describe('ParameterManagement Write Permission Tests', () => {
 
     it('should handle mixed roles correctly for write access', () => {
       // User with read-only role and write role should have write access
-      mockGetUserRoles.mockReturnValue(['hdcnLeden', 'hdcnAdmins']);
+      mockGetUserRoles.mockReturnValue(['hdcnLeden', 'Members_CRUD']);
       
       const userRoles = getUserRoles({});
       const hasWriteRole = userRoles.some(userRole => 
-        userRole === 'hdcnAdmins' ||
-        userRole === 'System_CRUD_All' ||
+        userRole === 'Members_CRUD' ||
+        userRole === 'System_User_Management' ||
         userRole === 'Webmaster' ||
-        userRole === 'hdcnWebmaster' ||
         userRole === 'National_Chairman' ||
         userRole === 'National_Secretary'
       );
@@ -88,14 +83,13 @@ describe('ParameterManagement Write Permission Tests', () => {
 
     it('should deny write access for users with only read roles', () => {
       // User with multiple read-only roles should not have write access
-      mockGetUserRoles.mockReturnValue(['hdcnLeden', 'System_User_Management', 'Members_Read_All']);
+      mockGetUserRoles.mockReturnValue(['hdcnLeden', 'Members_Read', 'Regio_All']);
       
       const userRoles = getUserRoles({});
       const hasWriteRole = userRoles.some(userRole => 
-        userRole === 'hdcnAdmins' ||
-        userRole === 'System_CRUD_All' ||
+        userRole === 'Members_CRUD' ||
+        userRole === 'System_User_Management' ||
         userRole === 'Webmaster' ||
-        userRole === 'hdcnWebmaster' ||
         userRole === 'National_Chairman' ||
         userRole === 'National_Secretary'
       );
@@ -107,15 +101,14 @@ describe('ParameterManagement Write Permission Tests', () => {
   describe('Parameter Operations Write Protection', () => {
     it('should validate parameter save operation permissions', () => {
       const testCases = [
-        { role: 'hdcnAdmins', shouldHaveAccess: true },
-        { role: 'System_CRUD_All', shouldHaveAccess: true },
+        { role: 'Members_CRUD', shouldHaveAccess: true },
+        { role: 'System_User_Management', shouldHaveAccess: true },
         { role: 'Webmaster', shouldHaveAccess: true },
-        { role: 'hdcnWebmaster', shouldHaveAccess: true },
         { role: 'National_Chairman', shouldHaveAccess: true },
         { role: 'National_Secretary', shouldHaveAccess: true },
         { role: 'hdcnLeden', shouldHaveAccess: false },
-        { role: 'System_User_Management', shouldHaveAccess: false },
-        { role: 'Members_Read_All', shouldHaveAccess: false }
+        { role: 'Members_Read', shouldHaveAccess: false },
+        { role: 'Regio_Utrecht', shouldHaveAccess: false }
       ];
 
       testCases.forEach(({ role, shouldHaveAccess }) => {
@@ -123,10 +116,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         const userRoles = getUserRoles({});
         const hasWriteAccess = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );
@@ -136,8 +128,8 @@ describe('ParameterManagement Write Permission Tests', () => {
     });
 
     it('should validate parameter delete operation permissions', () => {
-      const writeRoles = ['hdcnAdmins', 'System_CRUD_All', 'Webmaster'];
-      const readOnlyRoles = ['hdcnLeden', 'System_User_Management', 'Members_Read_All'];
+      const writeRoles = ['Members_CRUD', 'System_User_Management', 'Webmaster'];
+      const readOnlyRoles = ['hdcnLeden', 'Members_Read', 'Regio_All'];
 
       // Write roles should have delete access
       writeRoles.forEach(role => {
@@ -145,10 +137,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         const userRoles = getUserRoles({});
         const canDelete = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );
@@ -162,10 +153,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         const userRoles = getUserRoles({});
         const canDelete = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );
@@ -175,8 +165,8 @@ describe('ParameterManagement Write Permission Tests', () => {
     });
 
     it('should validate category management permissions', () => {
-      const categoryManagementRoles = ['hdcnAdmins', 'System_CRUD_All', 'Webmaster', 'hdcnWebmaster'];
-      const restrictedRoles = ['hdcnLeden', 'System_User_Management', 'Members_Read_All', 'National_Chairman'];
+      const categoryManagementRoles = ['Members_CRUD', 'System_User_Management', 'Webmaster'];
+      const restrictedRoles = ['hdcnLeden', 'Members_Read', 'Regio_Utrecht', 'National_Chairman'];
 
       // Category management roles should have access
       categoryManagementRoles.forEach(role => {
@@ -184,10 +174,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         const userRoles = getUserRoles({});
         const canManageCategories = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );
@@ -201,10 +190,9 @@ describe('ParameterManagement Write Permission Tests', () => {
         
         const userRoles = getUserRoles({});
         const canManageCategories = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management' ||
           userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster' ||
           userRole === 'National_Chairman' ||
           userRole === 'National_Secretary'
         );

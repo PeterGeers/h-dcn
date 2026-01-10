@@ -75,17 +75,13 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       }
     };
 
-    await apiCall(
-      fetch(`${API_URLS.base}/send-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(await getAuthHeaders())
-        },
-        body: JSON.stringify(emailData)
-      }),
-      `verzenden email (${options.template})`
-    );
+    // Use main ApiService for authenticated requests
+    const { ApiService } = await import('../services/apiService');
+    const response = await ApiService.post('/send-email', emailData);
+    
+    if (!response.success) {
+      throw new Error(response.error || `Failed to send email (${options.template})`);
+    }
 
     console.log(`✅ Email sent: ${options.template} to ${options.recipient}`);
   } catch (error) {

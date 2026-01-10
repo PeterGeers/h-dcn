@@ -24,10 +24,10 @@ def validate_role_assignment_rules(user_id, role, requesting_user):
     """
     try:
         # Rule 1: Prevent assignment of conflicting roles
+        # NOTE: Legacy _All roles have been removed - no conflicts to check
         CONFLICTING_ROLES = {
-            'Members_CRUD_All': ['Members_Read_All'],  # CRUD includes read permissions
-            'Events_CRUD_All': ['Events_Read_All'],    # CRUD includes read permissions
-            'Products_CRUD_All': ['Products_Read_All'], # CRUD includes read permissions
+            # Legacy conflicting roles have been removed
+            # New role structure uses Permission + Region combinations
         }
         
         # Get current user roles
@@ -1150,12 +1150,12 @@ def passwordless_signup(event, headers):
             cognito_client.admin_add_user_to_group(
                 UserPoolId=USER_POOL_ID,
                 Username=email,
-                GroupName='Verzoek_lid'
+                GroupName='verzoek_lid'
             )
         except cognito_client.exceptions.ResourceNotFoundException:
-            print(f"Warning: Group 'Verzoek_lid' does not exist in User Pool {USER_POOL_ID}")
+            print(f"Warning: Group 'verzoek_lid' does not exist in User Pool {USER_POOL_ID}")
         except Exception as group_error:
-            print(f"Warning: Could not add user {email} to Verzoek_lid group: {str(group_error)}")
+            print(f"Warning: Could not add user {email} to verzoek_lid group: {str(group_error)}")
         
         return {
             'statusCode': 201,
@@ -1330,10 +1330,10 @@ def complete_passkey_registration(event, headers):
                     cognito_client.admin_add_user_to_group(
                         UserPoolId=USER_POOL_ID,
                         Username=email,
-                        GroupName='Verzoek_lid'
+                        GroupName='verzoek_lid'
                     )
                 except Exception as group_error:
-                    print(f"Warning: Could not add user to Verzoek_lid group: {str(group_error)}")
+                    print(f"Warning: Could not add user to verzoek_lid group: {str(group_error)}")
                 
             except Exception as create_error:
                 print(f"Error creating user: {str(create_error)}")
@@ -1931,7 +1931,7 @@ def get_auth_permissions(event, headers):
                     'permissions': permissions,
                     'permission_categories': permission_categories,
                     'permission_count': len(permissions),
-                    'is_admin': any(role in ['Members_CRUD_All', 'System_User_Management'] for role in user_groups),
+                    'is_admin': any(role in ['System_User_Management'] for role in user_groups),
                     'is_regular_member': 'hdcnLeden' in user_groups,
                     'calculated_at': datetime.now().isoformat()
                 })
@@ -2016,12 +2016,11 @@ def get_user_roles(user_id, event, headers):
             
             requesting_user_roles = [group['GroupName'] for group in requesting_user_groups.get('Groups', [])]
             
-            # Only users with System_User_Management or Members_CRUD_All can view other users' roles
+            # Only users with System_User_Management can view other users' roles
             # Users can always view their own roles
             can_view_roles = (
                 user_id == requesting_user or
-                'System_User_Management' in requesting_user_roles or
-                'Members_CRUD_All' in requesting_user_roles
+                'System_User_Management' in requesting_user_roles
             )
             
             if not can_view_roles:
@@ -2030,7 +2029,7 @@ def get_user_roles(user_id, event, headers):
                     'headers': headers,
                     'body': json.dumps({
                         'error': 'Insufficient permissions to view user roles',
-                        'required_roles': ['System_User_Management', 'Members_CRUD_All']
+                        'required_roles': ['System_User_Management']
                     })
                 }
                 
@@ -2093,7 +2092,7 @@ def get_user_roles(user_id, event, headers):
                     'role_names': role_names,
                     'permissions': permissions,
                     'role_count': len(roles),
-                    'is_admin': any(role in ['Members_CRUD_All', 'System_User_Management'] for role in role_names),
+                    'is_admin': any(role in ['System_User_Management'] for role in role_names),
                     'is_regular_member': 'hdcnLeden' in role_names,
                     'requested_by': requesting_user,
                     'retrieved_at': datetime.now().isoformat()
@@ -2740,7 +2739,7 @@ def validate_field_permissions(user_roles, field_name, target_user_id, requestin
             if field_name in ADMINISTRATIVE_FIELDS:
                 return {
                     'allowed': False,
-                    'reason': 'Administrative fields require Members_CRUD_All or System_User_Management role'
+                    'reason': 'Administrative fields require System_User_Management role'
                 }
             elif not is_own_record and (field_name in PERSONAL_FIELDS or field_name in MOTORCYCLE_FIELDS):
                 return {

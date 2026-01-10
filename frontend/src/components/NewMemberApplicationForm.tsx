@@ -51,7 +51,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
 
   // Get membership registration context (not membershipApplication)
   const applicationContext = MEMBER_MODAL_CONTEXTS.memberRegistration;
-  const userRole = 'Verzoek_lid'; // New applicants have applicant role
+  const userRole = 'verzoek_lid'; // New applicants have applicant role
 
   // Check for existing application on component mount
   useEffect(() => {
@@ -142,7 +142,8 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
     }
     
     if (field.computed && field.computeFrom && field.computeFunction) {
-      let sourceValue = values[field.computeFrom];
+      const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
+      let sourceValue = values[sourceField];
       
       if (sourceValue && field.computeFunction === 'yearsDifference') {
         const sourceDate = new Date(sourceValue);

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Check if user exists in Cognito and add to Verzoek_lid group
+Check if user exists in Cognito and add to verzoek_lid group
 """
 
 import boto3
@@ -22,14 +22,14 @@ def check_and_add_user():
         print(f"   Status: {user_response['UserStatus']}")
         print(f"   Username: {user_response['Username']}")
         
-        # Now add to Verzoek_lid group
+        # Now add to verzoek_lid group
         try:
             cognito_client.admin_add_user_to_group(
                 UserPoolId=user_pool_id,
                 Username=email,
-                GroupName='Verzoek_lid'
+                GroupName='verzoek_lid'
             )
-            print(f"✅ Successfully added {email} to Verzoek_lid group")
+            print(f"✅ Successfully added {email} to verzoek_lid group")
             
         except Exception as group_error:
             print(f"❌ Error adding to group: {str(group_error)}")

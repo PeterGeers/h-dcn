@@ -1,192 +1,134 @@
 import json
 import boto3
-import base64
+import sys
+import os
 from datetime import datetime
 
-def cors_headers():
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "PUT, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
-    }
+# Import from shared auth layer (REQUIRED)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using shared auth layer")
+except ImportError:
+    # Fallback to local auth_fallback.py (UPDATED FOR NEW ROLE STRUCTURE)
+    from auth_fallback import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using fallback auth - ensure auth_fallback.py is updated")
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Orders')
-
-def extract_user_roles_from_jwt(event):
-    """
-    Extract user roles from JWT token in Authorization header
-    
-    Args:
-        event: Lambda event containing headers
-        
-    Returns:
-        tuple: (user_email, user_roles, error_response)
-               If successful: (email_string, roles_list, None)
-               If error: (None, None, error_response_dict)
-    """
-    try:
-        # Extract Authorization header
-        auth_header = event.get('headers', {}).get('Authorization')
-        if not auth_header:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Authorization header required'})
-            }
-        
-        # Validate Bearer token format
-        if not auth_header.startswith('Bearer '):
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid authorization header format'})
-            }
-        
-        # Extract JWT token
-        jwt_token = auth_header.replace('Bearer ', '')
-        
-        # Decode JWT token to get user info and roles
-        parts = jwt_token.split('.')
-        if len(parts) != 3:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid JWT token format'})
-            }
-        
-        # Decode payload (second part of JWT)
-        payload_encoded = parts[1]
-        # Add padding if needed for base64 decoding
-        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        payload_decoded = base64.urlsafe_b64decode(payload_encoded)
-        payload = json.loads(payload_decoded)
-        
-        # Extract user email and roles
-        user_email = payload.get('email') or payload.get('username')
-        user_roles = payload.get('cognito:groups', [])
-        
-        if not user_email:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'User email not found in token'})
-            }
-        
-        return user_email, user_roles, None
-        
-    except Exception as e:
-        print(f"Error extracting user roles from JWT: {str(e)}")
-        return None, None, {
-            'statusCode': 401,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Invalid authorization token'})
-        }
+table_name = os.environ.get('DYNAMODB_TABLE', 'Orders')
+table = dynamodb.Table(table_name)
 
 def lambda_handler(event, context):
     try:
-        # Handle OPTIONS request for CORS
+        # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': cors_headers(),
-                'body': ''
-            }
+            return handle_options_request()
         
-        # Extract user roles from JWT token
-        user_email, user_roles, auth_error = extract_user_roles_from_jwt(event)
+        # Extract user credentials
+        user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
             return auth_error
         
-        # Validate user has webshop access permission (hdcnLeden role)
-        if 'hdcnLeden' not in user_roles:
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: webshop access requires hdcnLeden role',
-                    'required_role': 'hdcnLeden',
-                    'user_roles': user_roles
-                })
-            }
+        # DUAL ACCESS PATTERN: Admin access OR user access to own orders
+        
+        # First check if user has admin permissions for order management
+        required_permissions = ['products_update']  # Orders are webshop/product domain
+        is_admin_authorized, admin_error_response, regional_info = validate_permissions_with_regions(
+            user_roles, required_permissions, user_email, None
+        )
+        
+        # If not admin, check if user has basic webshop access (hdcnLeden) for own orders
+        has_webshop_access = 'hdcnLeden' in user_roles
+        
+        if not is_admin_authorized and not has_webshop_access:
+            return create_error_response(403, 'Access denied: Requires admin permissions or hdcnLeden membership for own orders', {
+                'required_admin_permissions': required_permissions,
+                'required_user_role': 'hdcnLeden',
+                'user_roles': user_roles
+            })
+        
+        # Log successful access
+        log_successful_access(user_email, user_roles, 'update_order_status')
         
         order_id = event['pathParameters']['order_id']
-        body = json.loads(event['body'])
+        data = json.loads(event['body']) if event['body'] else {}
         
         # Get existing order to validate ownership
         existing_order_response = table.get_item(Key={'order_id': order_id})
         
         if 'Item' not in existing_order_response:
-            return {
-                'statusCode': 404,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Order not found'})
-            }
+            return create_error_response(404, 'Order not found')
         
         existing_order = existing_order_response['Item']
         
         # Validate order ownership (only order owner or admin can update)
         order_owner_email = existing_order.get('user_email')
-        is_admin = any(role in user_roles for role in ['Members_CRUD_All', 'Webmaster'])
+        is_admin = is_admin_authorized  # Use the admin authorization result
         
         if not is_admin and (not order_owner_email or order_owner_email.lower() != user_email.lower()):
             print(f"SECURITY ALERT: User {user_email} attempted to update order {order_id} owned by {order_owner_email}")
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: You can only update your own orders',
-                    'order_id': order_id
-                })
-            }
+            return create_error_response(403, 'Access denied: You can only update your own orders', {
+                'order_id': order_id
+            })
         
-        # Build dynamic update expression
-        update_expression = "SET updated_at = :updated_at"
-        expression_values = {':updated_at': datetime.now().isoformat()}
-        expression_names = {}
+        # Dynamically build update expression and attribute values
+        update_expression_parts = []
+        expression_attribute_names = {}
+        expression_attribute_values = {}
         
-        for key, value in body.items():
-            if key != 'order_id':  # Skip primary key
-                attr_name = f"#{key}"
-                update_expression += f", {attr_name} = :{key}"
-                expression_values[f":{key}"] = value
-                expression_names[attr_name] = key
+        for key, value in data.items():
+            # Prevent updating sensitive fields
+            if key in ['order_id', 'user_email', 'created_at']:
+                continue
+            
+            placeholder_name = f"#{key}"
+            placeholder_value = f":{key}"
+            update_expression_parts.append(f"{placeholder_name} = {placeholder_value}")
+            expression_attribute_names[placeholder_name] = key
+            expression_attribute_values[placeholder_value] = value
         
-        update_params = {
-            'Key': {'order_id': order_id},
-            'UpdateExpression': update_expression,
-            'ExpressionAttributeValues': expression_values
-        }
+        # Add updated timestamp
+        update_expression_parts.append("#updated_at = :updated_at")
+        expression_attribute_names["#updated_at"] = "updated_at"
+        expression_attribute_values[":updated_at"] = datetime.now().isoformat()
         
-        if expression_names:
-            update_params['ExpressionAttributeNames'] = expression_names
+        update_expression = "SET " + ", ".join(update_expression_parts)
         
-        table.update_item(**update_params)
+        table.update_item(
+            Key={'order_id': order_id},
+            UpdateExpression=update_expression,
+            ExpressionAttributeNames=expression_attribute_names,
+            ExpressionAttributeValues=expression_attribute_values
+        )
         
         # Log order update for audit purposes
-        print(f"Order {order_id} updated by user {user_email} with roles {user_roles}. Fields updated: {list(body.keys())}")
+        access_type = 'admin' if is_admin else 'owner'
+        print(f"Order {order_id} updated by user {user_email} ({access_type}) with roles {user_roles}. Fields updated: {list(data.keys())}")
         
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': json.dumps({'message': 'Order updated successfully'})
-        }
+        return create_success_response({
+            'message': f'Order {order_id} updated successfully',
+            'updated_fields': list(data.keys())
+        })
+        
     except KeyError as e:
-        return {
-            'statusCode': 400,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': f'Missing required parameter: {str(e)}'})
-        }
+        return create_error_response(400, f'Missing required parameter: {str(e)}')
     except json.JSONDecodeError:
-        return {
-            'statusCode': 400,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Invalid JSON in request body'})
-        }
+        return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
-        print(f"Error updating order: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Internal server error'})
-        }
+        print(f"Unexpected error in update_order_status: {str(e)}")
+        return create_error_response(500, 'Internal server error')

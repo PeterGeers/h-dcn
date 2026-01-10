@@ -138,11 +138,11 @@ class CognitoTestUserVerifier:
     
     def get_role_type_from_groups(self, groups: List[str]) -> str:
         """Determine role type based on group assignments"""
-        if 'Members_CRUD_All' in groups:
+        if 'Members_CRUD' in groups and 'Regio_All' in groups:
             return "Member Administration"
         elif 'Members_Status_Approve' in groups:
             return "National Chairman"
-        elif 'Events_CRUD_All' in groups and 'Products_CRUD_All' in groups:
+        elif 'Events_CRUD' in groups and 'Products_CRUD' in groups:
             return "Webmaster"
         elif 'hdcnLeden' in groups:
             return "Regular Member"

@@ -23,12 +23,12 @@ describe('Role Extraction from User Tokens', () => {
   describe('getUserRoles', () => {
     it('should extract roles from new user object with groups array', () => {
       const user = {
-        groups: ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[]
+        groups: ['hdcnLeden', 'Members_Read'] as HDCNGroup[]
       };
 
       const roles = getUserRoles(user);
       
-      expect(roles).toEqual(['hdcnLeden', 'Members_Read_All']);
+      expect(roles).toEqual(['hdcnLeden', 'Members_Read']);
     });
 
     it('should extract roles from legacy JWT token structure', () => {
@@ -36,7 +36,7 @@ describe('Role Extraction from User Tokens', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['hdcnLeden', 'Members_CRUD_All']
+              'cognito:groups': ['hdcnLeden', 'Members_CRUD']
             }
           }
         }
@@ -44,16 +44,16 @@ describe('Role Extraction from User Tokens', () => {
 
       const roles = getUserRoles(user);
       
-      expect(roles).toEqual(['hdcnLeden', 'Members_CRUD_All']);
+      expect(roles).toEqual(['hdcnLeden', 'Members_CRUD']);
     });
 
     it('should prefer groups array over JWT token payload', () => {
       const user = {
-        groups: ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[],
+        groups: ['hdcnLeden', 'Members_Read'] as HDCNGroup[],
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['hdcnLeden', 'Members_CRUD_All']
+              'cognito:groups': ['hdcnLeden', 'Members_CRUD']
             }
           }
         }
@@ -62,7 +62,7 @@ describe('Role Extraction from User Tokens', () => {
       const roles = getUserRoles(user);
       
       // Should use groups array, not JWT payload
-      expect(roles).toEqual(['hdcnLeden', 'Members_Read_All']);
+      expect(roles).toEqual(['hdcnLeden', 'Members_Read']);
     });
 
     it('should return empty array when no roles available', () => {
@@ -115,7 +115,7 @@ describe('Role Extraction from User Tokens', () => {
 
   describe('getCurrentUserRolesFromSession', () => {
     it('should get roles from current authentication session', async () => {
-      const expectedRoles: HDCNGroup[] = ['hdcnLeden', 'Members_Read_All'];
+      const expectedRoles: HDCNGroup[] = ['hdcnLeden', 'Members_Read'];
       mockGetCurrentUserRoles.mockResolvedValue(expectedRoles);
 
       const roles = await getCurrentUserRolesFromSession();
@@ -135,9 +135,9 @@ describe('Role Extraction from User Tokens', () => {
     it('should handle various H-DCN role types', async () => {
       const complexRoles: HDCNGroup[] = [
         'hdcnLeden',
-        'Members_CRUD_All',
-        'Events_Read_All',
-        'Regional_Chairman_Region1',
+        'Members_CRUD',
+        'Events_Read',
+        'Regio_Utrecht',
         'System_User_Management'
       ];
       mockGetCurrentUserRoles.mockResolvedValue(complexRoles);
@@ -152,11 +152,11 @@ describe('Role Extraction from User Tokens', () => {
   describe('userHasRole', () => {
     it('should return true when user has the specified role', () => {
       const user = {
-        groups: ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[]
+        groups: ['hdcnLeden', 'Members_Read'] as HDCNGroup[]
       };
 
       expect(userHasRole(user, 'hdcnLeden')).toBe(true);
-      expect(userHasRole(user, 'Members_Read_All')).toBe(true);
+      expect(userHasRole(user, 'Members_Read')).toBe(true);
     });
 
     it('should return false when user does not have the specified role', () => {
@@ -164,7 +164,7 @@ describe('Role Extraction from User Tokens', () => {
         groups: ['hdcnLeden'] as HDCNGroup[]
       };
 
-      expect(userHasRole(user, 'Members_CRUD_All')).toBe(false);
+      expect(userHasRole(user, 'Members_CRUD')).toBe(false);
     });
 
     it('should return false when user is null', () => {
@@ -176,25 +176,25 @@ describe('Role Extraction from User Tokens', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['hdcnLeden', 'Members_CRUD_All']
+              'cognito:groups': ['hdcnLeden', 'Members_CRUD']
             }
           }
         }
       };
 
       expect(userHasRole(user, 'hdcnLeden')).toBe(true);
-      expect(userHasRole(user, 'Members_CRUD_All')).toBe(true);
-      expect(userHasRole(user, 'Events_Read_All')).toBe(false);
+      expect(userHasRole(user, 'Members_CRUD')).toBe(true);
+      expect(userHasRole(user, 'Events_Read')).toBe(false);
     });
   });
 
   describe('userHasAnyRole', () => {
     it('should return true when user has any of the specified roles', () => {
       const user = {
-        groups: ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[]
+        groups: ['hdcnLeden', 'Members_Read'] as HDCNGroup[]
       };
 
-      expect(userHasAnyRole(user, ['Members_Read_All', 'Members_CRUD_All'])).toBe(true);
+      expect(userHasAnyRole(user, ['Members_Read', 'Members_CRUD'])).toBe(true);
       expect(userHasAnyRole(user, ['hdcnLeden'])).toBe(true);
     });
 
@@ -203,7 +203,7 @@ describe('Role Extraction from User Tokens', () => {
         groups: ['hdcnLeden'] as HDCNGroup[]
       };
 
-      expect(userHasAnyRole(user, ['Members_CRUD_All', 'Events_Read_All'])).toBe(false);
+      expect(userHasAnyRole(user, ['Members_CRUD', 'Events_Read'])).toBe(false);
     });
 
     it('should return false when user is null', () => {
@@ -222,19 +222,19 @@ describe('Role Extraction from User Tokens', () => {
   describe('userHasAllRoles', () => {
     it('should return true when user has all of the specified roles', () => {
       const user = {
-        groups: ['hdcnLeden', 'Members_Read_All', 'Events_Read_All'] as HDCNGroup[]
+        groups: ['hdcnLeden', 'Members_Read', 'Events_Read'] as HDCNGroup[]
       };
 
-      expect(userHasAllRoles(user, ['hdcnLeden', 'Members_Read_All'])).toBe(true);
+      expect(userHasAllRoles(user, ['hdcnLeden', 'Members_Read'])).toBe(true);
       expect(userHasAllRoles(user, ['hdcnLeden'])).toBe(true);
     });
 
     it('should return false when user is missing some of the specified roles', () => {
       const user = {
-        groups: ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[]
+        groups: ['hdcnLeden', 'Members_Read'] as HDCNGroup[]
       };
 
-      expect(userHasAllRoles(user, ['hdcnLeden', 'Members_Read_All', 'Events_Read_All'])).toBe(false);
+      expect(userHasAllRoles(user, ['hdcnLeden', 'Members_Read', 'Events_Read'])).toBe(false);
     });
 
     it('should return false when user is null', () => {
@@ -255,35 +255,35 @@ describe('Role Extraction from User Tokens', () => {
       const adminUser = {
         groups: [
           'hdcnLeden',
-          'Members_CRUD_All',
-          'Events_CRUD_All',
+          'Members_CRUD',
+          'Events_CRUD',
           'System_User_Management',
-          'Regional_Chairman_Region1'
+          'Regio_Utrecht'
         ] as HDCNGroup[]
       };
 
-      expect(userHasRole(adminUser, 'Members_CRUD_All')).toBe(true);
-      expect(userHasAnyRole(adminUser, ['Members_CRUD_All', 'Members_Read_All'])).toBe(true);
-      expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD_All'])).toBe(true);
-      expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD_All', 'System_CRUD_All'])).toBe(false);
+      expect(userHasRole(adminUser, 'Members_CRUD')).toBe(true);
+      expect(userHasAnyRole(adminUser, ['Members_CRUD', 'Members_Read'])).toBe(true);
+      expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD'])).toBe(true);
+      expect(userHasAllRoles(adminUser, ['hdcnLeden', 'Members_CRUD', 'Products_CRUD'])).toBe(false);
     });
 
     it('should handle regional roles correctly', () => {
       const regionalUser = {
         groups: [
           'hdcnLeden',
-          'Regional_Chairman_Region1',
-          'Regional_Secretary_Region2'
+          'Regio_Utrecht',
+          'Regio_Zuid-Holland'
         ] as HDCNGroup[]
       };
 
-      expect(userHasRole(regionalUser, 'Regional_Chairman_Region1')).toBe(true);
-      expect(userHasRole(regionalUser, 'Regional_Secretary_Region2')).toBe(true);
-      expect(userHasRole(regionalUser, 'Regional_Chairman_Region2')).toBe(false);
+      expect(userHasRole(regionalUser, 'Regio_Utrecht')).toBe(true);
+      expect(userHasRole(regionalUser, 'Regio_Zuid-Holland')).toBe(true);
+      expect(userHasRole(regionalUser, 'Regio_Groningen/Drenthe')).toBe(false);
       
       expect(userHasAnyRole(regionalUser, [
-        'Regional_Chairman_Region1',
-        'Regional_Chairman_Region3'
+        'Regio_Utrecht',
+        'Regio_Groningen/Drenthe'
       ])).toBe(true);
     });
 
@@ -293,10 +293,10 @@ describe('Role Extraction from User Tokens', () => {
       };
 
       expect(userHasRole(basicUser, 'hdcnLeden')).toBe(true);
-      expect(userHasRole(basicUser, 'Members_CRUD_All')).toBe(false);
-      expect(userHasAnyRole(basicUser, ['hdcnLeden', 'Members_CRUD_All'])).toBe(true);
+      expect(userHasRole(basicUser, 'Members_CRUD')).toBe(false);
+      expect(userHasAnyRole(basicUser, ['hdcnLeden', 'Members_CRUD'])).toBe(true);
       expect(userHasAllRoles(basicUser, ['hdcnLeden'])).toBe(true);
-      expect(userHasAllRoles(basicUser, ['hdcnLeden', 'Members_CRUD_All'])).toBe(false);
+      expect(userHasAllRoles(basicUser, ['hdcnLeden', 'Members_CRUD'])).toBe(false);
     });
   });
 
@@ -307,7 +307,7 @@ describe('Role Extraction from User Tokens', () => {
         id: 'user-123',
         username: 'testuser',
         email: 'test@example.com',
-        groups: ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[],
+        groups: ['hdcnLeden', 'Members_Read'] as HDCNGroup[],
         attributes: {
           email: 'test@example.com',
           username: 'testuser'
@@ -316,15 +316,15 @@ describe('Role Extraction from User Tokens', () => {
 
       const roles = getUserRoles(userFromAuth);
       
-      expect(roles).toEqual(['hdcnLeden', 'Members_Read_All']);
+      expect(roles).toEqual(['hdcnLeden', 'Members_Read']);
       expect(userHasRole(userFromAuth, 'hdcnLeden')).toBe(true);
-      expect(userHasRole(userFromAuth, 'Members_Read_All')).toBe(true);
+      expect(userHasRole(userFromAuth, 'Members_Read')).toBe(true);
     });
 
     it('should handle role updates during session', async () => {
       // Simulate role update scenario
       const initialRoles: HDCNGroup[] = ['hdcnLeden'];
-      const updatedRoles: HDCNGroup[] = ['hdcnLeden', 'Members_Read_All'];
+      const updatedRoles: HDCNGroup[] = ['hdcnLeden', 'Members_Read'];
 
       mockGetCurrentUserRoles
         .mockResolvedValueOnce(initialRoles)

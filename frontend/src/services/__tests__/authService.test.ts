@@ -2,7 +2,9 @@ import {
   decodeJWTPayload, 
   validateCognitoGroupsClaim, 
   getCurrentUserRoles,
-  getCurrentUserInfo 
+  getCurrentUserInfo,
+  validateRoleCombinations,
+  getCurrentUserRolesValidated
 } from '../authService';
 import { HDCNGroup } from '../../types/user';
 
@@ -28,7 +30,7 @@ describe('AuthService JWT Token Handling', () => {
   describe('decodeJWTPayload', () => {
     it('should decode valid JWT token payload', () => {
       const payload = {
-        'cognito:groups': ['hdcnLeden', 'Members_Read_All'],
+        'cognito:groups': ['hdcnLeden', 'Members_Read'],
         username: 'testuser',
         email: 'test@example.com',
         sub: 'user-123'
@@ -58,7 +60,7 @@ describe('AuthService JWT Token Handling', () => {
   describe('validateCognitoGroupsClaim', () => {
     it('should validate JWT token with cognito:groups claim', () => {
       const payload = {
-        'cognito:groups': ['hdcnLeden', 'Members_Read_All'],
+        'cognito:groups': ['hdcnLeden', 'Members_Read'],
         username: 'testuser'
       };
       
@@ -117,9 +119,9 @@ describe('AuthService JWT Token Handling', () => {
       jest.clearAllMocks();
     });
 
-    it('should extract roles from access token', async () => {
+    it('should extract and filter roles from access token', async () => {
       const payload = {
-        'cognito:groups': ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[],
+        'cognito:groups': ['hdcnLeden', 'Members_Read', 'hdcnAdmins', 'Webmaster'] as any[], // Mix of valid and legacy roles
         username: 'testuser'
       };
       
@@ -135,7 +137,8 @@ describe('AuthService JWT Token Handling', () => {
 
       const roles = await getCurrentUserRoles();
       
-      expect(roles).toEqual(['hdcnLeden', 'Members_Read_All']);
+      // Should only return valid roles, filtering out legacy ones
+      expect(roles).toEqual(['hdcnLeden', 'Members_Read']);
     });
 
     it('should return empty array when no access token', async () => {
@@ -169,12 +172,66 @@ describe('AuthService JWT Token Handling', () => {
       expect(roles).toEqual([]);
     });
 
-    it('should handle authentication errors gracefully', async () => {
-      mockFetchAuthSession.mockRejectedValue(new Error('Auth failed'));
+    it('should filter out legacy roles completely', async () => {
+      const payload = {
+        'cognito:groups': ['hdcnAdmins', 'Webmaster', 'Members_CRUD_All'] as any[], // All legacy roles
+        username: 'testuser'
+      };
+      
+      const accessToken = createMockJWT(payload);
+      
+      mockFetchAuthSession.mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => accessToken
+          }
+        }
+      } as any);
 
       const roles = await getCurrentUserRoles();
       
+      // Should return empty array since all roles are legacy
       expect(roles).toEqual([]);
+    });
+
+    it('should allow all valid new role structure roles', async () => {
+      const payload = {
+        'cognito:groups': [
+          'Members_CRUD', 
+          'Events_Read', 
+          'Products_Export',
+          'Regio_All',
+          'Regio_Utrecht',
+          'System_User_Management',
+          'Webshop_Management',
+          'verzoek_lid'
+        ] as any[],
+        username: 'testuser'
+      };
+      
+      const accessToken = createMockJWT(payload);
+      
+      mockFetchAuthSession.mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => accessToken
+          }
+        }
+      } as any);
+
+      const roles = await getCurrentUserRoles();
+      
+      // Should return all roles since they're all valid
+      expect(roles).toEqual([
+        'Members_CRUD', 
+        'Events_Read', 
+        'Products_Export',
+        'Regio_All',
+        'Regio_Utrecht',
+        'System_User_Management',
+        'Webshop_Management',
+        'verzoek_lid'
+      ]);
     });
   });
 
@@ -185,7 +242,7 @@ describe('AuthService JWT Token Handling', () => {
 
     it('should extract complete user info from access token', async () => {
       const payload = {
-        'cognito:groups': ['hdcnLeden', 'Members_Read_All'] as HDCNGroup[],
+        'cognito:groups': ['hdcnLeden', 'Members_Read'] as HDCNGroup[],
         username: 'testuser',
         email: 'test@example.com',
         sub: 'user-123'
@@ -206,7 +263,7 @@ describe('AuthService JWT Token Handling', () => {
       expect(userInfo).toEqual({
         username: 'testuser',
         email: 'test@example.com',
-        roles: ['hdcnLeden', 'Members_Read_All'],
+        roles: ['hdcnLeden', 'Members_Read'],
         sub: 'user-123'
       });
     });
@@ -252,7 +309,7 @@ describe('AuthService JWT Token Handling', () => {
     it('should properly handle real-world JWT token structure', () => {
       // Simulate a real Cognito JWT token structure
       const realWorldPayload = {
-        'cognito:groups': ['hdcnLeden', 'Members_Read_All'],
+        'cognito:groups': ['hdcnLeden', 'Members_Read'],
         'cognito:username': 'testuser',
         'email': 'test@example.com',
         'email_verified': true,
@@ -274,16 +331,16 @@ describe('AuthService JWT Token Handling', () => {
       expect(isValid).toBe(true);
       
       // Test role extraction
-      expect(decoded?.['cognito:groups']).toEqual(['hdcnLeden', 'Members_Read_All']);
+      expect(decoded?.['cognito:groups']).toEqual(['hdcnLeden', 'Members_Read']);
     });
 
     it('should handle JWT tokens with multiple H-DCN roles', () => {
       const payload = {
         'cognito:groups': [
           'hdcnLeden',
-          'Members_CRUD_All',
-          'Events_Read_All',
-          'Regional_Chairman_Region1'
+          'Members_CRUD',
+          'Events_Read',
+          'Regio_Utrecht'
         ] as HDCNGroup[],
         username: 'admin-user',
         email: 'admin@h-dcn.nl'
@@ -294,9 +351,153 @@ describe('AuthService JWT Token Handling', () => {
       
       expect(decoded?.['cognito:groups']).toHaveLength(4);
       expect(decoded?.['cognito:groups']).toContain('hdcnLeden');
-      expect(decoded?.['cognito:groups']).toContain('Members_CRUD_All');
-      expect(decoded?.['cognito:groups']).toContain('Events_Read_All');
-      expect(decoded?.['cognito:groups']).toContain('Regional_Chairman_Region1');
+      expect(decoded?.['cognito:groups']).toContain('Members_CRUD');
+      expect(decoded?.['cognito:groups']).toContain('Events_Read');
+      expect(decoded?.['cognito:groups']).toContain('Regio_Utrecht');
+    });
+  });
+
+  describe('validateRoleCombinations', () => {
+    it('should validate valid permission + region combination', () => {
+      const roles: HDCNGroup[] = ['Members_CRUD', 'Regio_All'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(true);
+      expect(validation.hasPermissions).toBe(true);
+      expect(validation.hasRegions).toBe(true);
+      expect(validation.missingRoles).toEqual([]);
+    });
+
+    it('should reject permission role without region', () => {
+      const roles: HDCNGroup[] = ['Members_CRUD'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(false);
+      expect(validation.hasPermissions).toBe(true);
+      expect(validation.hasRegions).toBe(false);
+      expect(validation.missingRoles).toContain('Regional role (Regio_*)');
+    });
+
+    it('should reject region role without permission', () => {
+      const roles: HDCNGroup[] = ['Regio_Utrecht'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(false);
+      expect(validation.hasPermissions).toBe(false);
+      expect(validation.hasRegions).toBe(true);
+      expect(validation.missingRoles).toContain('Permission role (*_CRUD, *_Read, *_Export)');
+    });
+
+    it('should allow system roles without regional requirements', () => {
+      const roles: HDCNGroup[] = ['System_User_Management'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(true);
+      expect(validation.hasPermissions).toBe(true);
+      expect(validation.hasRegions).toBe(true); // System roles bypass regional requirements
+      expect(validation.missingRoles).toEqual([]);
+    });
+
+    it('should allow basic member roles without additional requirements', () => {
+      const roles: HDCNGroup[] = ['hdcnLeden'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(true);
+      expect(validation.hasPermissions).toBe(false); // Basic roles don't have admin permissions
+      expect(validation.hasRegions).toBe(true); // Basic roles bypass regional requirements
+      expect(validation.missingRoles).toEqual([]);
+    });
+
+    it('should warn about multiple regional roles', () => {
+      const roles: HDCNGroup[] = ['Members_Read', 'Regio_Utrecht', 'Regio_Limburg'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(true);
+      expect(validation.warnings).toContain('User has multiple regional roles - this may cause unexpected behavior');
+    });
+
+    it('should not warn about Regio_All with other regions', () => {
+      const roles: HDCNGroup[] = ['Members_Read', 'Regio_All', 'Regio_Utrecht'];
+      const validation = validateRoleCombinations(roles);
+      
+      expect(validation.isValid).toBe(true);
+      expect(validation.warnings).toEqual([]); // No warning when Regio_All is present
+    });
+  });
+
+  describe('getCurrentUserRolesValidated', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return roles with validation for valid combination', async () => {
+      const payload = {
+        'cognito:groups': ['Members_CRUD', 'Regio_All'] as HDCNGroup[],
+        username: 'testuser'
+      };
+      
+      const accessToken = createMockJWT(payload);
+      
+      mockFetchAuthSession.mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => accessToken
+          }
+        }
+      } as any);
+
+      const result = await getCurrentUserRolesValidated();
+      
+      expect(result.roles).toEqual(['Members_CRUD', 'Regio_All']);
+      expect(result.validation.isValid).toBe(true);
+    });
+
+    it('should return roles with validation for invalid combination', async () => {
+      const payload = {
+        'cognito:groups': ['Members_CRUD'] as HDCNGroup[], // Missing region
+        username: 'testuser'
+      };
+      
+      const accessToken = createMockJWT(payload);
+      
+      mockFetchAuthSession.mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => accessToken
+          }
+        }
+      } as any);
+
+      const result = await getCurrentUserRolesValidated();
+      
+      expect(result.roles).toEqual(['Members_CRUD']);
+      expect(result.validation.isValid).toBe(false);
+      expect(result.validation.missingRoles).toContain('Regional role (Regio_*)');
+    });
+  });
+
+  describe('Role Filtering Integration', () => {
+    it('should filter legacy roles in getCurrentUserInfo', async () => {
+      const payload = {
+        'cognito:groups': ['hdcnLeden', 'Members_Read', 'hdcnAdmins', 'Webmaster'] as any[], // Mix of valid and legacy
+        username: 'testuser',
+        email: 'test@example.com',
+        sub: 'user-123'
+      };
+      
+      const accessToken = createMockJWT(payload);
+      
+      mockFetchAuthSession.mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => accessToken
+          }
+        }
+      } as any);
+
+      const userInfo = await getCurrentUserInfo();
+      
+      expect(userInfo?.roles).toEqual(['hdcnLeden', 'Members_Read']); // Legacy roles filtered out
     });
   });
 });

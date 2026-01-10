@@ -38,7 +38,7 @@ interface MemberApplicationFormProps {
 const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({ 
   onSubmit, 
   onCancel, 
-  userRole = 'Members_CRUD_All' 
+  userRole = 'Members_CRUD' 
 }) => {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);

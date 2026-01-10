@@ -72,53 +72,146 @@ def extract_user_credentials_fallback(event):
         }
 
 def validate_permissions_fallback(user_roles, required_permissions, user_email=None):
-    """Basic permission validation"""
-    admin_roles = [
-        'hdcnAdmins', 'System_CRUD_All', 'Webmaster', 
-        'Members_CRUD_All', 'Products_CRUD_All', 'Events_CRUD_All',
-        'Communication_CRUD_All', 'National_Chairman', 'National_Secretary',
-        'System_User_Management', 'Members_Read_All', 'Webshop_Management'
-    ]
-    
-    # Check for admin roles first
-    if any(role in admin_roles for role in user_roles):
-        print(f"🔍 FALLBACK AUTH: User {user_email} has admin access via roles: {user_roles}")
-        return True, None
-    
-    # Allow hdcnLeden (basic members) to update their own records
-    if 'hdcnLeden' in user_roles:
-        print(f"🔍 FALLBACK AUTH: User {user_email} has basic member access via hdcnLeden role")
-        return True, None
-    
-    return False, {
-        'statusCode': 403,
-        'headers': cors_headers(),
-        'body': json.dumps({
-            'error': 'Access denied: Insufficient permissions',
-            'required_permissions': required_permissions,
-            'user_roles': user_roles
-        })
-    }
+    """
+    UPDATED permission validation using new role structure
+    Replaces old Members_CRUD_All references with new permission + region validation
+    """
+    try:
+        # Convert single permission to list
+        if isinstance(required_permissions, str):
+            required_permissions = [required_permissions]
+        
+        # SYSTEM ADMIN ROLES (Full access, no region required)
+        system_admin_roles = ['System_CRUD', 'System_User_Management', 'System_Logs_Read']
+        if any(role in system_admin_roles for role in user_roles):
+            print(f"✅ System admin access granted for {user_email}: {[r for r in user_roles if r in system_admin_roles]}")
+            return True, None
+        
+        # LEGACY ADMIN ROLES (Backward compatibility)
+        legacy_admin_roles = ['National_Chairman', 'National_Secretary']
+        if any(role in legacy_admin_roles for role in user_roles):
+            print(f"✅ Legacy admin access granted for {user_email}: {[r for r in user_roles if r in legacy_admin_roles]}")
+            return True, None
+        
+        # NEW ROLE STRUCTURE: Permission-based roles
+        permission_roles = [
+            'Members_CRUD', 'Members_Read', 'Members_Export',
+            'Events_CRUD', 'Events_Read', 'Events_Export', 
+            'Products_CRUD', 'Products_Read', 'Products_Export',
+            'Communication_CRUD', 'Communication_Read', 'Communication_Export',
+            'Webshop_Management', 'Members_Status_Approve'
+        ]
+        
+        # Check if user has any permission roles
+        user_permission_roles = [role for role in user_roles if role in permission_roles]
+        if user_permission_roles:
+            # For new role structure, also check for region roles
+            region_roles = [role for role in user_roles if role.startswith('Regio_')]
+            
+            if region_roles:
+                print(f"✅ Permission + region access granted for {user_email}: permissions={user_permission_roles}, regions={region_roles}")
+                return True, None
+            else:
+                # User has permission role but no region role - incomplete new structure
+                print(f"❌ Incomplete role structure for {user_email}: has permissions {user_permission_roles} but no region role")
+                return False, {
+                    'statusCode': 403,
+                    'headers': cors_headers(),
+                    'body': json.dumps({
+                        'error': 'Access denied: Permission role requires region role',
+                        'required_structure': 'Permission role (e.g., Members_CRUD) + Region role (e.g., Regio_All)',
+                        'user_roles': user_roles,
+                        'missing': 'Region role (Regio_All, Regio_Noord-Holland, etc.)'
+                    })
+                }
+        
+        # LEGACY COMPATIBILITY: Check for old _All roles (being phased out)
+        # This includes the old Members_CRUD_All that was previously hardcoded
+        legacy_all_roles = [role for role in user_roles if role.endswith('_All') and not role.startswith('Regio_')]
+        if legacy_all_roles:
+            print(f"⚠️ Legacy _All role access for {user_email}: {legacy_all_roles} (migration recommended)")
+            return True, None
+        
+        # SPECIAL ROLES: Limited access roles
+        special_roles = ['hdcnLeden', 'Verzoek Lid']
+        if any(role in special_roles for role in user_roles):
+            # These roles have limited access - allow for own record updates only
+            print(f"⚠️ Limited role access for {user_email}: {[r for r in user_roles if r in special_roles]} (own records only)")
+            return True, None  # Let field-level validation handle the restrictions
+        
+        # No valid roles found
+        print(f"❌ No valid roles found for {user_email}: {user_roles}")
+        return False, {
+            'statusCode': 403,
+            'headers': cors_headers(),
+            'body': json.dumps({
+                'error': 'Access denied: No valid permissions found',
+                'required_permissions': required_permissions,
+                'user_roles': user_roles,
+                'help': 'Contact administrator to assign appropriate permission and region roles'
+            })
+        }
+        
+    except Exception as e:
+        print(f"Error validating permissions: {str(e)}")
+        return False, {
+            'statusCode': 500,
+            'headers': cors_headers(),
+            'body': json.dumps({'error': 'Error validating permissions'})
+        }
 
-# Try to import from layer, fall back to local implementation
+# Try to import from shared auth layer, fall back to local implementation
 try:
-    from shared.auth_utils import require_auth, create_success_response, create_error_response
-    print("🔍 Successfully imported from shared layer")
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,  # UPDATED: Use enhanced validation
+        create_success_response, 
+        create_error_response,
+        cors_headers,
+        handle_options_request
+    )
+    print("🔍 Successfully imported enhanced auth from shared layer")
+    
+    # Use the enhanced validation system
+    def extract_user_credentials_fallback(event):
+        return extract_user_credentials(event)
+    
+    def validate_permissions_fallback(user_roles, required_permissions, user_email=None):
+        """Enhanced validation using new role structure"""
+        is_authorized, error_response, regional_info = validate_permissions_with_regions(
+            user_roles, required_permissions, user_email
+        )
+        if is_authorized:
+            return True, None, regional_info
+        else:
+            return False, error_response, None
+            
 except ImportError:
-    print("⚠️ Layer import failed, using fallback auth")
+    print("⚠️ Shared auth layer import failed, using enhanced fallback auth")
+    # Enhanced fallback implementations are defined below
+    
     def create_success_response(data, status_code=200):
         return {
             'statusCode': status_code,
             'headers': cors_headers(),
             'body': json.dumps(data)
         }
+        
     def create_error_response(status_code, error_message, details=None):
         body = {'error': error_message}
-        if details: body.update(details)
+        if details: 
+            body.update(details)
         return {
             'statusCode': status_code,
             'headers': cors_headers(),
             'body': json.dumps(body)
+        }
+        
+    def handle_options_request():
+        return {
+            'statusCode': 200,
+            'headers': cors_headers(),
+            'body': ''
         }
 
 def validate_status_change(user_roles, user_email, member_id, new_status, current_status=None):
@@ -156,13 +249,16 @@ def validate_status_change(user_roles, user_email, member_id, new_status, curren
         # The frontend already shows this user has "Systeembeheerder - Volledige toegang"
         # so we should respect that instead of hardcoding role name checks
         
-        # For now, allow status changes for users who can access the member admin functionality
-        # This matches the frontend logic where system administrators can edit all fields
-        has_status_permission = True  # Temporary fix - trust the frontend permission system
+        # Check if user has permission to modify member status using new role structure
+        # Users need Members_CRUD permission to modify member status
+        has_members_crud = any(role.startswith('Members_CRUD') for role in user_roles)
+        has_system_management = 'System_User_Management' in user_roles
+        
+        has_status_permission = has_members_crud or has_system_management
         
         if not has_status_permission:
             validation_details['validation_result'] = 'DENIED'
-            validation_details['reason'] = 'Missing permission to modify member status'
+            validation_details['reason'] = 'Missing Members_CRUD permission'
             
             # Log the denial attempt
             log_status_change_denial(
@@ -178,7 +274,7 @@ def validate_status_change(user_roles, user_email, member_id, new_status, curren
                 'statusCode': 403,
                 'headers': cors_headers(),
                 'body': json.dumps({
-                    'error': 'Access denied: Insufficient permissions to modify member status',
+                    'error': 'Access denied: Requires Members_CRUD permission to modify member status',
                     'field': 'status',
                     'user_roles': user_roles,
                     'user_email': user_email
@@ -371,91 +467,10 @@ def cors_headers():
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Members')
 
-def extract_user_roles_from_jwt(event):
-    """
-    Extract user roles from JWT token in Authorization header
-    Enhanced to support combined credentials via X-Enhanced-Groups header
-    
-    Args:
-        event: Lambda event containing headers
-        
-    Returns:
-        tuple: (user_email, user_roles, error_response)
-               If successful: (email_string, roles_list, None)
-               If error: (None, None, error_response_dict)
-    """
-    try:
-        # Extract Authorization header
-        auth_header = event.get('headers', {}).get('Authorization')
-        if not auth_header:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Authorization header required'})
-            }
-        
-        # Validate Bearer token format
-        if not auth_header.startswith('Bearer '):
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid authorization header format'})
-            }
-        
-        # Extract JWT token
-        jwt_token = auth_header.replace('Bearer ', '')
-        
-        # Decode JWT token to get user info and roles
-        parts = jwt_token.split('.')
-        if len(parts) != 3:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Invalid JWT token format'})
-            }
-        
-        # Decode payload (second part of JWT)
-        payload_encoded = parts[1]
-        # Add padding if needed for base64 decoding
-        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        payload_decoded = base64.urlsafe_b64decode(payload_encoded)
-        payload = json.loads(payload_decoded)
-        
-        # Extract user email
-        user_email = payload.get('email') or payload.get('username')
-        if not user_email:
-            return None, None, {
-                'statusCode': 401,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'User email not found in token'})
-            }
-        
-        # Check for enhanced groups from frontend credential combination
-        enhanced_groups_header = event.get('headers', {}).get('X-Enhanced-Groups') or event.get('headers', {}).get('x-enhanced-groups')
-        if enhanced_groups_header:
-            try:
-                enhanced_groups = json.loads(enhanced_groups_header)
-                if isinstance(enhanced_groups, list):
-                    print(f"🔍 Using enhanced groups from frontend: {enhanced_groups} for user {user_email}")
-                    return user_email, enhanced_groups, None
-                else:
-                    print(f"⚠️ Invalid enhanced groups format, falling back to JWT groups")
-            except json.JSONDecodeError:
-                print(f"⚠️ Failed to parse enhanced groups header, falling back to JWT groups")
-        
-        # Fallback to JWT token groups
-        user_roles = payload.get('cognito:groups', [])
-        print(f"🔍 Using JWT token groups: {user_roles} for user {user_email}")
-        
-        return user_email, user_roles, None
-        
-    except Exception as e:
-        print(f"Error extracting user roles from JWT: {str(e)}")
-        return None, None, {
-            'statusCode': 401,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Invalid authorization token'})
-        }
+# REMOVED: Custom JWT parsing function - now using shared auth system
+# This function has been replaced by extract_user_credentials from shared.auth_utils
+# REMOVED: Custom JWT parsing logic - now using shared auth system
+# The extract_user_credentials function from shared.auth_utils handles all JWT parsing
 
 def validate_field_permissions(user_roles, user_email, member_id, fields_to_update):
     """
@@ -808,21 +823,23 @@ def lambda_handler(event, context):
                 'body': ''
             }
         
-        # Extract user credentials using fallback auth
+        # Extract user credentials using enhanced auth system
         user_email, user_roles, auth_error = extract_user_credentials_fallback(event)
         if auth_error:
             return auth_error
         
-        # Validate permissions using fallback auth
-        has_permission, permission_error = validate_permissions_fallback(
+        # UPDATED: Use enhanced permission validation with new role structure
+        # This replaces the old Members_CRUD_All hardcoded role check
+        is_authorized, error_response, regional_info = validate_permissions_with_regions(
             user_roles, 
-            ['members_update', 'members_create'],
-            user_email
+            ['members_update', 'members_create'],  # Required permissions for member updates
+            user_email,
+            {'operation': 'update_member'}
         )
-        if not has_permission:
-            return permission_error
+        if not is_authorized:
+            return error_response
         
-        print(f"🔍 AUTH SUCCESS: User {user_email} with roles {user_roles} authorized for member update")
+        print(f"🔍 AUTH SUCCESS: User {user_email} with roles {user_roles} authorized for member update using new role structure")
         
         # Get member ID and request body
         member_id = event['pathParameters']['id']
@@ -840,12 +857,40 @@ def lambda_handler(event, context):
         member_record = member_response['Item']
         member_email = member_record.get('email', '')
         
+        # REGIONAL FILTERING: Apply regional access control
+        if regional_info and not regional_info.get('has_full_access', False):
+            member_region = member_record.get('regio', 'Overig')  # Default to 'Overig' if no region
+            allowed_regions = regional_info.get('allowed_regions', [])
+            
+            # Check if user can access this member's region
+            if member_region and allowed_regions and member_region not in allowed_regions:
+                print(f"REGIONAL_ACCESS_DENIED: User {user_email} (regions: {allowed_regions}) "
+                      f"attempted to update member from region: {member_region}")
+                return create_error_response(403, 
+                    f'Access denied: You can only update members from regions: {", ".join(allowed_regions)}')
+        
+        # Log successful regional access check
+        if regional_info:
+            print(f"✅ Regional access granted for member update: User {user_email} "
+                  f"(access: {regional_info.get('access_type', 'unknown')}) updating member from region: {member_record.get('regio', 'Overig')}")
+        
         # Validate field permissions
         is_valid, permission_error, forbidden_fields = validate_field_permissions(
             user_roles, user_email, member_id, body
         )
         if not is_valid:
             return permission_error
+        
+        # Special validation for status field changes
+        if 'status' in body:
+            current_status = member_record.get('status')
+            new_status = body['status']
+            
+            is_status_valid, status_error, status_details = validate_status_change(
+                user_roles, user_email, member_id, new_status, current_status
+            )
+            if not is_status_valid:
+                return status_error
         
         # If validation passes, proceed with update
         update_expression = "SET updated_at = :updated_at"

@@ -23,7 +23,7 @@ export function canViewField(
   }
   
   // Check regional restrictions
-  if (field.permissions.regionalRestricted && userRole === 'Members_Read_All') {
+  if (field.permissions.regionalRestricted && userRole === 'Members_Read') {
     if (!memberData || !userRegion) return false;
     
     // User can only view members from their own region
@@ -107,7 +107,7 @@ export function canEditField(
   }
   
   // Check regional restrictions for editing
-  if (field.permissions.regionalRestricted && userRole === 'Members_Read_All') {
+  if (field.permissions.regionalRestricted && userRole === 'Members_Read') {
     if (!memberData || !userRegion) return false;
     
     // User can only edit members from their own region
@@ -128,12 +128,12 @@ export function hasRegionalAccess(
   userRegion?: string
 ): boolean {
   // System admins and full member admins have access to all regions
-  if (['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'].includes(userRole)) {
+  if (['System_CRUD', 'Members_CRUD', 'System_User_Management'].includes(userRole)) {
     return true;
   }
   
-  // Regional users (Members_Read_All) can only access their own region
-  if (userRole === 'Members_Read_All') {
+  // Regional users (Members_Read) can only access their own region
+  if (userRole === 'Members_Read') {
     return userRegion === memberRegion;
   }
   
@@ -188,7 +188,7 @@ export function canPerformAction(
       }
       
       // Basic view permissions
-      return ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'hdcnLeden'].includes(userRole);
+      return ['System_CRUD', 'Members_Read', 'Members_CRUD', 'System_User_Management', 'hdcnLeden'].includes(userRole);
     
     case 'edit':
       // Check regional access first
@@ -202,15 +202,15 @@ export function canPerformAction(
       }
       
       // Admin edit permissions
-      return ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'].includes(userRole);
+      return ['System_CRUD', 'Members_CRUD', 'System_User_Management'].includes(userRole);
     
     case 'delete':
       // Only system admins can delete
-      return userRole === 'System_CRUD_All';
+      return userRole === 'System_User_Management';
     
     case 'approve':
       // Status approval permissions
-      return ['System_CRUD_All', 'Members_CRUD_All', 'Members_Status_Approve'].includes(userRole);
+      return ['System_CRUD', 'Members_CRUD', 'Members_Status_Approve'].includes(userRole);
     
     default:
       return false;
@@ -257,7 +257,7 @@ export function canAccessTableContext(
 ): boolean {
   // This would integrate with table context permissions
   // For now, basic role checking
-  const adminRoles = ['System_CRUD_All', 'Members_CRUD_All', 'Members_Read_All', 'System_User_Management'];
+  const adminRoles = ['System_CRUD', 'Members_CRUD', 'Members_Read', 'System_User_Management'];
   const memberRoles = ['hdcnLeden'];
   
   switch (contextName) {
@@ -269,10 +269,10 @@ export function canAccessTableContext(
       return [...adminRoles, ...memberRoles, 'Event_Organizer'].includes(userRole);
     
     case 'communicationView':
-      return [...adminRoles, 'Communication_Read_All', 'Communication_CRUD_All'].includes(userRole);
+      return [...adminRoles, 'Communication_Read', 'Communication_CRUD'].includes(userRole);
     
     case 'financialView':
-      return ['System_CRUD_All', 'Members_CRUD_All', 'Members_Read_All'].includes(userRole);
+      return ['System_CRUD', 'Members_CRUD', 'Members_Read'].includes(userRole);
     
     default:
       return adminRoles.includes(userRole);
@@ -286,7 +286,7 @@ export function canAccessModalContext(
   contextName: string,
   userRole: HDCNGroup
 ): boolean {
-  const adminRoles = ['System_CRUD_All', 'Members_CRUD_All', 'Members_Read_All', 'System_User_Management'];
+  const adminRoles = ['System_CRUD', 'Members_CRUD', 'Members_Read', 'System_User_Management'];
   
   switch (contextName) {
     case 'memberView':
@@ -296,7 +296,7 @@ export function canAccessModalContext(
     
     case 'membershipApplication':
       // New applicants don't have roles yet, so this is handled differently
-      return ['System_CRUD_All', 'Members_CRUD_All'].includes(userRole);
+      return ['System_CRUD', 'Members_CRUD'].includes(userRole);
     
     default:
       return adminRoles.includes(userRole);
@@ -312,12 +312,12 @@ export function filterMembersByRegion(
   userRegion?: string
 ): any[] {
   // No filtering needed for system admins
-  if (['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'].includes(userRole)) {
+  if (['System_CRUD', 'Members_CRUD', 'System_User_Management'].includes(userRole)) {
     return members;
   }
   
   // Filter by region for regional users
-  if (userRole === 'Members_Read_All' && userRegion) {
+  if (userRole === 'Members_Read' && userRegion) {
     return members.filter(member => member.regio === userRegion);
   }
   
@@ -370,20 +370,25 @@ function evaluateCondition(condition: ConditionalRule, memberData: any): boolean
  * Get role hierarchy level (higher number = more permissions)
  */
 export function getRoleLevel(role: HDCNGroup): number {
-  const roleLevels: Record<HDCNGroup, number> = {
-    'System_CRUD_All': 100,
+  // Define role levels for the roles we actually use
+  const roleLevels: Partial<Record<HDCNGroup, number>> = {
     'System_User_Management': 90,
-    'Members_CRUD_All': 80,
+    'Members_CRUD': 80,
     'Members_Status_Approve': 70,
-    'Members_Read_All': 60,
-    'National_Chairman': 85,
-    'National_Secretary': 75,
-    'Communication_CRUD_All': 65,
-    'Communication_Read_All': 55,
-    'Club_Magazine_Editorial': 50,
-    'Event_Organizer': 45,
+    'Members_Read': 60,
+    'Members_Export': 55,
+    'Communication_CRUD': 65,
+    'Communication_Read': 55,
+    'Communication_Export': 50,
+    'Events_CRUD': 65,
+    'Events_Read': 55,
+    'Events_Export': 50,
+    'Products_CRUD': 65,
+    'Products_Read': 55,
+    'Products_Export': 50,
+    'System_Logs_Read': 40,
     'hdcnLeden': 10,
-    'Verzoek_lid': 5
+    'verzoek_lid': 5
   };
   
   return roleLevels[role] || 0;
@@ -400,20 +405,25 @@ export function hasMinimumRole(userRole: HDCNGroup, requiredRole: HDCNGroup): bo
  * Get user-friendly role name
  */
 export function getRoleName(role: HDCNGroup): string {
-  const roleNames: Record<HDCNGroup, string> = {
-    'System_CRUD_All': 'Systeem Beheerder',
+  // Define role names for the roles we actually use
+  const roleNames: Partial<Record<HDCNGroup, string>> = {
     'System_User_Management': 'Gebruikers Beheerder',
-    'Members_CRUD_All': 'Leden Beheerder',
+    'Members_CRUD': 'Leden Beheerder',
     'Members_Status_Approve': 'Leden Goedkeurder',
-    'Members_Read_All': 'Regio Beheerder',
-    'National_Chairman': 'Landelijk Voorzitter',
-    'National_Secretary': 'Landelijk Secretaris',
-    'Communication_CRUD_All': 'Communicatie Beheerder',
-    'Communication_Read_All': 'Communicatie Lezer',
-    'Club_Magazine_Editorial': 'Clubblad Redactie',
-    'Event_Organizer': 'Evenement Organisator',
+    'Members_Read': 'Regio Beheerder',
+    'Members_Export': 'Leden Export',
+    'Communication_CRUD': 'Communicatie Beheerder',
+    'Communication_Read': 'Communicatie Lezer',
+    'Communication_Export': 'Communicatie Export',
+    'Events_CRUD': 'Evenementen Beheerder',
+    'Events_Read': 'Evenementen Lezer',
+    'Events_Export': 'Evenementen Export',
+    'Products_CRUD': 'Producten Beheerder',
+    'Products_Read': 'Producten Lezer',
+    'Products_Export': 'Producten Export',
+    'System_Logs_Read': 'Systeem Logs',
     'hdcnLeden': 'Lid',
-    'Verzoek_lid': 'Aanvrager'
+    'verzoek_lid': 'Aanvrager'
   };
   
   return roleNames[role] || role;

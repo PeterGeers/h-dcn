@@ -198,7 +198,7 @@ export const useParameterManagement = (hasAccess: boolean, accessLoading: boolea
       
       // Get enhanced groups from localStorage for authentication
       const storedUser = localStorage.getItem('hdcn_auth_user');
-      let enhancedGroups = ['hdcnAdmins', 'System_CRUD_All']; // fallback with multiple roles
+      let enhancedGroups = ['System_User_Management']; // fallback with new role structure
       let authToken = '';
       
       if (storedUser) {

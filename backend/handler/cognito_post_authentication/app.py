@@ -172,7 +172,7 @@ def should_assign_roles(current_groups, email):
         return True
     
     # If they don't have basic member role or applicant role, they might need it
-    if 'hdcnLeden' not in current_groups and 'Verzoek_lid' not in current_groups:
+    if 'hdcnLeden' not in current_groups and 'verzoek_lid' not in current_groups:
         logger.info(f"User {email} missing member or applicant role, checking if they should have it")
         return True
     

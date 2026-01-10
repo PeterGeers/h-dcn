@@ -72,10 +72,10 @@ interface FunctionGuardProps {
    * <FunctionGuard user={user} functionName="webshop">
    * 
    * // Role-based access only (no function restriction)
-   * <FunctionGuard user={user} requiredRoles={['Members_Read_All']}>
+   * <FunctionGuard user={user} requiredRoles={['Members_Read']}>
    * 
    * // Combined security (requires BOTH role AND function access)
-   * <FunctionGuard user={user} functionName="members" requiredRoles={['Members_CRUD_All']}>
+   * <FunctionGuard user={user} functionName="members" requiredRoles={['Members_CRUD']}>
    */
   requiredRoles?: string[];
 }
@@ -169,14 +169,14 @@ export function FunctionGuard({
         console.error('Permission check failed:', error);
         // BACKWARD COMPATIBILITY: Enhanced fallback handling
         // Try to preserve existing access patterns even when permission loading fails
-        const isAdmin = userRoles.includes('hdcnAdmins');
+        const isSystemAdmin = userRoles.includes('System_User_Management');
         const isBasicMember = userRoles.includes('hdcnLeden');
         
         // Fallback logic that preserves existing access patterns
         let fallbackAccess = false;
         
-        if (isAdmin) {
-          // Admins get access to everything (existing behavior)
+        if (isSystemAdmin) {
+          // System admins get access to everything (existing behavior)
           fallbackAccess = true;
         } else if (isBasicMember && functionName && (functionName === 'webshop' || functionName === 'products')) {
           // Basic members get webshop access (existing behavior)

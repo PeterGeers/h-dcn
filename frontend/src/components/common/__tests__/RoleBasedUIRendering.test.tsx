@@ -96,8 +96,8 @@ describe('Role-Based UI Rendering', () => {
   });
 
   describe('Administrative Role Rendering', () => {
-    it('should render member management content for Members_CRUD_All role', async () => {
-      const adminUser = createMockUser(['hdcnLeden', 'Members_CRUD_All']);
+    it('should render member management content for Members_CRUD role', async () => {
+      const adminUser = createMockUser(['hdcnLeden', 'Members_CRUD']);
       mockFunctionPermissionManager.mockResolvedValue(createMockPermissionManager(true));
 
       render(
@@ -126,7 +126,7 @@ describe('Role-Based UI Rendering', () => {
     });
 
     it('should hide system content from non-admin users', async () => {
-      const regularUser = createMockUser(['hdcnLeden', 'Members_Read_All']);
+      const regularUser = createMockUser(['hdcnLeden', 'Members_Read']);
 
       render(
         <FunctionGuard user={regularUser} requiredRoles={['System_User_Management']}>
@@ -142,58 +142,58 @@ describe('Role-Based UI Rendering', () => {
 
   describe('Regional Role Rendering', () => {
     it('should render regional content for regional roles', async () => {
-      const regionalChairman = createMockUser(['hdcnLeden', 'Regional_Chairman_Region1']);
+      const regionalUser = createMockUser(['hdcnLeden', 'Regio_Utrecht']);
 
       render(
-        <FunctionGuard user={regionalChairman} requiredRoles={['Regional_Chairman_Region1']}>
-          <div>Region 1 Chairman Content</div>
+        <FunctionGuard user={regionalUser} requiredRoles={['Regio_Utrecht']}>
+          <div>Utrecht Region Content</div>
         </FunctionGuard>
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Region 1 Chairman Content')).toBeInTheDocument();
+        expect(screen.getByText('Utrecht Region Content')).toBeInTheDocument();
       });
     });
 
     it('should hide regional content from users in different regions', async () => {
-      const region2User = createMockUser(['hdcnLeden', 'Regional_Secretary_Region2']);
+      const region2User = createMockUser(['hdcnLeden', 'Regio_Limburg']);
 
       render(
-        <FunctionGuard user={region2User} requiredRoles={['Regional_Chairman_Region1']}>
-          <div>Region 1 Chairman Content</div>
+        <FunctionGuard user={region2User} requiredRoles={['Regio_Utrecht']}>
+          <div>Utrecht Region Content</div>
         </FunctionGuard>
       );
 
       await waitFor(() => {
-        expect(screen.queryByText('Region 1 Chairman Content')).not.toBeInTheDocument();
+        expect(screen.queryByText('Utrecht Region Content')).not.toBeInTheDocument();
       });
     });
 
     it('should render content for users with multiple regional roles', async () => {
       const multiRegionalUser = createMockUser([
         'hdcnLeden', 
-        'Regional_Secretary_Region1', 
-        'Regional_Treasurer_Region2'
+        'Regio_Utrecht', 
+        'Regio_Limburg'
       ]);
 
       render(
-        <FunctionGuard user={multiRegionalUser} requiredRoles={['Regional_Secretary_Region1']}>
-          <div>Region 1 Secretary Content</div>
+        <FunctionGuard user={multiRegionalUser} requiredRoles={['Regio_Utrecht']}>
+          <div>Utrecht Region Content</div>
         </FunctionGuard>
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Region 1 Secretary Content')).toBeInTheDocument();
+        expect(screen.getByText('Utrecht Region Content')).toBeInTheDocument();
       });
     });
   });
 
   describe('Multiple Role Requirements', () => {
     it('should render content when user has any of the required roles', async () => {
-      const user = createMockUser(['hdcnLeden', 'Members_Read_All']);
+      const user = createMockUser(['hdcnLeden', 'Members_Read']);
 
       render(
-        <FunctionGuard user={user} requiredRoles={['Members_Read_All', 'Members_CRUD_All']}>
+        <FunctionGuard user={user} requiredRoles={['Members_Read', 'Members_CRUD']}>
           <div>Member Data Access</div>
         </FunctionGuard>
       );
@@ -207,7 +207,7 @@ describe('Role-Based UI Rendering', () => {
       const user = createMockUser(['hdcnLeden']);
 
       render(
-        <FunctionGuard user={user} requiredRoles={['Members_CRUD_All', 'System_User_Management']}>
+        <FunctionGuard user={user} requiredRoles={['Members_CRUD', 'System_User_Management']}>
           <div>Admin Only Content</div>
         </FunctionGuard>
       );
@@ -220,7 +220,7 @@ describe('Role-Based UI Rendering', () => {
 
   describe('Combined Role and Function Permissions', () => {
     it('should render content when user has both role and function access', async () => {
-      const user = createMockUser(['hdcnLeden', 'Members_CRUD_All']);
+      const user = createMockUser(['hdcnLeden', 'Members_CRUD']);
       mockFunctionPermissionManager.mockResolvedValue(createMockPermissionManager(true));
 
       render(
@@ -228,7 +228,7 @@ describe('Role-Based UI Rendering', () => {
           user={user} 
           functionName="members" 
           action="write"
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
         >
           <div>Full Member Management</div>
         </FunctionGuard>
@@ -240,7 +240,7 @@ describe('Role-Based UI Rendering', () => {
     });
 
     it('should hide content when user has role but no function access', async () => {
-      const user = createMockUser(['hdcnLeden', 'Members_CRUD_All']);
+      const user = createMockUser(['hdcnLeden', 'Members_CRUD']);
       mockFunctionPermissionManager.mockResolvedValue(createMockPermissionManager(false));
 
       render(
@@ -248,7 +248,7 @@ describe('Role-Based UI Rendering', () => {
           user={user} 
           functionName="members" 
           action="write"
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
         >
           <div>Full Member Management</div>
         </FunctionGuard>
@@ -268,7 +268,7 @@ describe('Role-Based UI Rendering', () => {
           user={user} 
           functionName="members" 
           action="read"
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
         >
           <div>Full Member Management</div>
         </FunctionGuard>
@@ -287,7 +287,7 @@ describe('Role-Based UI Rendering', () => {
       render(
         <FunctionGuard 
           user={user} 
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
           fallback={<div>Access Denied</div>}
         >
           <div>Protected Content</div>
@@ -304,7 +304,7 @@ describe('Role-Based UI Rendering', () => {
       const user = createMockUser(['hdcnLeden']);
 
       const { container } = render(
-        <FunctionGuard user={user} requiredRoles={['Members_CRUD_All']}>
+        <FunctionGuard user={user} requiredRoles={['Members_CRUD']}>
           <div>Protected Content</div>
         </FunctionGuard>
       );
@@ -319,15 +319,15 @@ describe('Role-Based UI Rendering', () => {
     it('should handle users with multiple administrative roles', async () => {
       const superAdmin = createMockUser([
         'hdcnLeden',
-        'Members_CRUD_All',
-        'Events_CRUD_All',
+        'Members_CRUD',
+        'Events_CRUD',
         'System_User_Management',
-        'Regional_Chairman_Region1'
+        'Regio_All'
       ]);
 
       // Test multiple different role requirements
       const { rerender } = render(
-        <FunctionGuard user={superAdmin} requiredRoles={['Members_CRUD_All']}>
+        <FunctionGuard user={superAdmin} requiredRoles={['Members_CRUD']}>
           <div>Member Management</div>
         </FunctionGuard>
       );
@@ -337,7 +337,7 @@ describe('Role-Based UI Rendering', () => {
       });
 
       rerender(
-        <FunctionGuard user={superAdmin} requiredRoles={['Events_CRUD_All']}>
+        <FunctionGuard user={superAdmin} requiredRoles={['Events_CRUD']}>
           <div>Event Management</div>
         </FunctionGuard>
       );
@@ -357,18 +357,18 @@ describe('Role-Based UI Rendering', () => {
       });
     });
 
-    it('should handle legacy admin role compatibility', async () => {
-      const legacyAdmin = createMockUser(['hdcnAdmins']);
+    it('should handle system admin role compatibility', async () => {
+      const systemAdmin = createMockUser(['System_User_Management']);
       mockFunctionPermissionManager.mockResolvedValue(createMockPermissionManager(true));
 
       render(
-        <FunctionGuard user={legacyAdmin} functionName="members">
-          <div>Legacy Admin Content</div>
+        <FunctionGuard user={systemAdmin} functionName="members">
+          <div>System Admin Content</div>
         </FunctionGuard>
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Legacy Admin Content')).toBeInTheDocument();
+        expect(screen.getByText('System Admin Content')).toBeInTheDocument();
       });
     });
 
@@ -391,7 +391,7 @@ describe('Role-Based UI Rendering', () => {
 
   describe('UI Component Integration', () => {
     it('should work with complex UI components', async () => {
-      const user = createMockUser(['hdcnLeden', 'Members_Read_All']);
+      const user = createMockUser(['hdcnLeden', 'Members_Read']);
 
       render(
         <div>
@@ -399,10 +399,10 @@ describe('Role-Based UI Rendering', () => {
           <FunctionGuard user={user} requiredRoles={['hdcnLeden']}>
             <div>
               <h2>Member Section</h2>
-              <FunctionGuard user={user} requiredRoles={['Members_Read_All']}>
+              <FunctionGuard user={user} requiredRoles={['Members_Read']}>
                 <button>View Members</button>
               </FunctionGuard>
-              <FunctionGuard user={user} requiredRoles={['Members_CRUD_All']}>
+              <FunctionGuard user={user} requiredRoles={['Members_CRUD']}>
                 <button>Edit Members</button>
               </FunctionGuard>
             </div>
@@ -423,7 +423,7 @@ describe('Role-Based UI Rendering', () => {
       const user = createMockUser(userRoles);
 
       const { rerender } = render(
-        <FunctionGuard user={user} requiredRoles={['Members_CRUD_All']}>
+        <FunctionGuard user={user} requiredRoles={['Members_CRUD']}>
           <div>Admin Content</div>
         </FunctionGuard>
       );
@@ -433,11 +433,11 @@ describe('Role-Based UI Rendering', () => {
       });
 
       // Simulate role change
-      userRoles = ['hdcnLeden', 'Members_CRUD_All'];
+      userRoles = ['hdcnLeden', 'Members_CRUD'];
       const updatedUser = createMockUser(userRoles);
 
       rerender(
-        <FunctionGuard user={updatedUser} requiredRoles={['Members_CRUD_All']}>
+        <FunctionGuard user={updatedUser} requiredRoles={['Members_CRUD']}>
           <div>Admin Content</div>
         </FunctionGuard>
       );

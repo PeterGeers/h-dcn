@@ -120,10 +120,11 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({ member, o
     }
     
     if (field.computed && field.computeFrom && field.computeFunction) {
-      let sourceValue = values[field.computeFrom] || member[field.computeFrom];
+      const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
+      let sourceValue = values[sourceField] || member[sourceField];
       
       // If computeFrom is 'ingangsdatum' but we need to get from 'tijdstempel'
-      if (field.computeFrom === 'ingangsdatum') {
+      if (sourceField === 'ingangsdatum') {
         sourceValue = values['tijdstempel'] || member['tijdstempel'];
       }
       if (sourceValue && field.computeFunction === 'yearsDifference') {

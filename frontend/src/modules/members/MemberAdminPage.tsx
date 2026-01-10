@@ -27,6 +27,7 @@ import { AddIcon } from '@chakra-ui/icons';
 import MemberAdminTable from '../../components/MemberAdminTable';
 import MemberEditView from '../../components/MemberEditView';
 import MemberSelfServiceView from '../../components/MemberSelfServiceView';
+import MemberReportingDashboard from '../../components/reporting/MemberReportingDashboard';
 import UserManagement from './components/UserManagement';
 import GroupManagement from './components/GroupManagement';
 import PoolSettings from './components/PoolSettings';
@@ -36,14 +37,13 @@ import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { getUserRoles } from '../../utils/functionPermissions';
+import { useMemberParquetData } from './hooks/useMemberParquetData';
 
 interface MemberAdminPageProps {
   user: any;
 }
 
 function MemberAdminPage({ user }: MemberAdminPageProps) {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [userRegion, setUserRegion] = useState<string>('');
@@ -60,13 +60,28 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
 
   // Get user role for field registry system
   const getUserRole = (): HDCNGroup => {
-    if (userRoles.includes('System_CRUD_All')) return 'System_CRUD_All';
-    if (userRoles.includes('Members_CRUD_All')) return 'Members_CRUD_All';
-    if (userRoles.includes('Members_Read_All')) return 'Members_Read_All';
     if (userRoles.includes('System_User_Management')) return 'System_User_Management';
+    if (userRoles.includes('Members_CRUD')) return 'Members_CRUD';
+    if (userRoles.includes('Members_Read')) return 'Members_Read';
     if (userRoles.includes('hdcnLeden')) return 'hdcnLeden';
     return 'hdcnLeden'; // Default fallback
   };
+
+  // Use parquet data service for member data (loads when Ledenadministratie opens)
+  const {
+    data: members,
+    loading,
+    error: parquetError,
+    recordCount,
+    fromCache,
+    loadData: reloadMembers,
+    refreshData: refreshMembers
+  } = useMemberParquetData(getUserRole(), userRegion, {
+    autoLoad: true, // Load data when Ledenadministratie opens
+    applyCalculatedFields: true,
+    applyRegionalFiltering: true,
+    enableCaching: true
+  });
 
   // Check if user is viewing their own data
   const isOwnRecord = (member: Member) => {
@@ -81,7 +96,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         setUserRoles(roles);
         
         // Get user region if they have regional restrictions
-        if (roles.includes('Members_Read_All') && user?.attributes?.email) {
+        if (roles.includes('Members_Read') && user?.attributes?.email) {
           // In a real implementation, you'd fetch the user's region from the API
           // For now, we'll use a placeholder
           setUserRegion('Noord-Holland'); // This should come from user profile
@@ -93,30 +108,6 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
 
     loadUserInfo();
   }, [user]);
-
-  // Load members
-  useEffect(() => {
-    const loadMembers = async () => {
-      try {
-        setLoading(true);
-        
-        const headers = await getAuthHeadersForGet();
-        const data = await apiCall<any>(
-          fetch(API_URLS.members(), { headers }),
-          'laden leden'
-        );
-        setMembers(Array.isArray(data) ? data : (data?.members || []));
-      } catch (error) {
-        handleError(error, 'Fout bij het laden van leden');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (userRoles.length > 0) {
-      loadMembers();
-    }
-  }, [userRoles]); // Removed handleError from dependencies
 
   // Handle member view/edit - now uses same modal
   const handleMemberView = (member: Member) => {
@@ -130,7 +121,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     onModalOpen();
   };
 
-  // Handle member save
+  // Handle member save (still uses API for CRUD operations)
   const handleMemberSave = async (memberData: any) => {
     try {
       const headers = await getAuthHeaders();
@@ -143,12 +134,8 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         'bijwerken lid'
       );
 
-      // Update local state
-      setMembers(prev => prev.map(m => 
-        m.member_id === selectedMember?.member_id 
-          ? { ...m, ...memberData }
-          : m
-      ));
+      // Refresh parquet data to reflect changes
+      await refreshMembers();
       
       toast({
         title: 'Lid bijgewerkt',
@@ -192,14 +179,37 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.500" />
           <Text>Leden laden...</Text>
+          {fromCache && (
+            <Text fontSize="sm" color="gray.400">
+              Gegevens uit cache ({recordCount} leden)
+            </Text>
+          )}
         </VStack>
+      </Box>
+    );
+  }
+
+  // Show error if parquet data failed to load
+  if (parquetError) {
+    return (
+      <Box p={6}>
+        <Alert status="error">
+          <AlertIcon />
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="semibold">Fout bij laden van ledengegevens</Text>
+            <Text fontSize="sm">{parquetError}</Text>
+            <Button size="sm" colorScheme="orange" onClick={reloadMembers}>
+              Opnieuw proberen
+            </Button>
+          </VStack>
+        </Alert>
       </Box>
     );
   }
 
   // Check if user has any member access
   const hasAnyMemberAccess = userRoles.some(role => 
-    ['System_CRUD_All', 'Members_CRUD_All', 'Members_Read_All', 'System_User_Management'].includes(role)
+    ['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export'].includes(role)
   );
 
   if (!hasAnyMemberAccess) {
@@ -219,7 +229,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   }
 
   // Show self-service view for regular members
-  if (getUserRole() === 'hdcnLeden' && members.length > 0) {
+  if (getUserRole() === 'hdcnLeden' && members && members.length > 0) {
     const ownMember = members.find(m => isOwnRecord(m));
     if (ownMember) {
       return (
@@ -243,7 +253,10 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         <Tabs variant="enclosed" colorScheme="orange">
           <TabList>
             <Tab>📊 Leden Overzicht</Tab>
-            {['System_CRUD_All', 'Members_CRUD_All'].includes(getUserRole()) && (
+            {['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export'].includes(getUserRole()) && (
+              <Tab>📈 Rapportages</Tab>
+            )}
+            {['System_User_Management', 'Members_CRUD'].includes(getUserRole()) && (
               <Tab>🔐 Cognito Beheer</Tab>
             )}
           </TabList>
@@ -252,7 +265,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
             {/* Members Table Tab */}
             <TabPanel p={0}>
               <MemberAdminTable
-                members={members}
+                members={members || []}
                 userRole={getUserRole()}
                 userRegion={userRegion}
                 onMemberView={handleMemberView}
@@ -262,8 +275,18 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
               />
             </TabPanel>
 
-            {/* Cognito Management Tab (System_CRUD_All and Members_CRUD_All) */}
-            {['System_CRUD_All', 'Members_CRUD_All'].includes(getUserRole()) && (
+            {/* Reporting Tab (Members_CRUD, Members_Read, Members_Export, System_User_Management) */}
+            {['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export'].includes(getUserRole()) && (
+              <TabPanel p={0}>
+                <MemberReportingDashboard
+                  userRole={getUserRole()}
+                  userRegion={userRegion}
+                />
+              </TabPanel>
+            )}
+
+            {/* Cognito Management Tab (System_User_Management and Members_CRUD) */}
+            {['System_User_Management', 'Members_CRUD'].includes(getUserRole()) && (
               <TabPanel p={0}>
                 <Tabs colorScheme="orange" variant="enclosed" size="sm">
                   <TabList>

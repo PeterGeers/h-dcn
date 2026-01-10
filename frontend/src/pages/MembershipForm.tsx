@@ -57,7 +57,7 @@ function MembershipForm({ user }: MembershipFormProps) {
       <MemberApplicationForm 
         onSubmit={handleSubmit}
         onCancel={handleCancel}
-        userRole={user?.signInUserSession?.accessToken?.payload?.['cognito:groups']?.[0] || 'Members_CRUD_All'}
+        userRole={user?.signInUserSession?.accessToken?.payload?.['cognito:groups']?.[0] || 'Members_CRUD'}
       />
     </Box>
   );

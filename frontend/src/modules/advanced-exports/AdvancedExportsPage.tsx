@@ -31,8 +31,7 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
   // Enhanced role-based access checks
   const userRoles = getUserRoles(user);
   const hasAdvancedAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Products_CRUD_All' ||
+    role === 'Products_CRUD' ||
     role === 'Webmaster' ||
     role === 'Webshop_Management'
   );
@@ -162,16 +161,16 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
         user={user} 
         functionName="advanced-exports" 
         action="read"
-        requiredRoles={['Products_CRUD_All', 'Webmaster', 'Webshop_Management', 'hdcnAdmins']}
+        requiredRoles={['Products_CRUD', 'Webshop_Management', 'System_User_Management']}
         fallback={
           <Alert status="warning" mt={4}>
             <AlertIcon />
             <Box>
               <AlertTitle>Geen toegang!</AlertTitle>
               <AlertDescription>
-                U heeft geen toegang tot de geavanceerde export module. Deze module is alleen beschikbaar voor gebruikers met Products_CRUD_All, Webshop_Management, Webmaster of hdcnAdmins rechten.
+                U heeft geen toegang tot de geavanceerde export module. Deze module is alleen beschikbaar voor gebruikers met Products_CRUD, Webshop_Management, of System_User_Management rechten.
                 <br /><br />
-                <strong>Vereiste rollen:</strong> Products_CRUD_All, Webshop_Management, Webmaster, of hdcnAdmins
+                <strong>Vereiste rollen:</strong> Products_CRUD, Webshop_Management, of System_User_Management
               </AlertDescription>
             </Box>
           </Alert>

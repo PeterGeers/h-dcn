@@ -6,6 +6,7 @@ import {
 import { Member } from '../../../types';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 import { hasRegionalAccess } from '../../../utils/regionalMapping';
+import { getMemberFullName } from '../../../utils/calculatedFields';
 
 interface MemberDetailModalProps {
   isOpen: boolean;
@@ -36,9 +37,8 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
    */
   const canViewFieldType = (fieldType: 'personal' | 'address' | 'membership' | 'motor' | 'financial' | 'administrative'): boolean => {
     // Admin roles can view all fields
-    if (userRoles.includes('hdcnAdmins') || 
-        userRoles.includes('Members_CRUD_All') || 
-        userRoles.includes('Members_Read_All')) {
+    if (userRoles.includes('Members_CRUD') || 
+        userRoles.includes('Members_Read')) {
       return true;
     }
 
@@ -59,15 +59,13 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
     if (fieldType === 'financial') {
       return userRoles.some(role => 
         role.includes('Treasurer') || 
-        role.includes('Members_CRUD_All') ||
-        role.includes('hdcnAdmins')
+        role.includes('Members_CRUD')
       );
     }
 
     // Administrative fields - only admin roles can view
     if (fieldType === 'administrative') {
-      return userRoles.includes('hdcnAdmins') || 
-             userRoles.includes('Members_CRUD_All') ||
+      return userRoles.includes('Members_CRUD') ||
              userRoles.includes('System_User_Management');
     }
 
@@ -221,7 +219,7 @@ function MemberDetailModal({ isOpen, onClose, member, user }: MemberDetailModalP
       <ModalOverlay />
       <ModalContent bg="gray.800" color="white" border="1px" borderColor="orange.400">
         <ModalHeader color="orange.400">
-          Lid Details - {member.name || `${member.voornaam} ${member.achternaam}`}
+          Lid Details - {member.name || getMemberFullName(member)}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>

@@ -129,8 +129,7 @@ function Dashboard({ user }: DashboardProps) {
     group.includes('Communication_') ||
     group.includes('National_') ||
     group.includes('Regional_') ||
-    group.includes('Webmaster') ||
-    group.includes('hdcnAdmins')
+    group.includes('Webmaster')
   );
   const isLid = userGroups.length > 0;
 
@@ -227,7 +226,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="members" 
             action="read"
-            requiredRoles={['Members_Read_All', 'Members_CRUD_All', 'National_Chairman', 'National_Secretary', 'Webmaster', 'Tour_Commissioner', 'Club_Magazine_Editorial']}
+            requiredRoles={['Members_Read', 'Members_CRUD', 'System_User_Management']}
           >
             <AppCard 
               key="members"
@@ -247,7 +246,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="events" 
             action="read"
-            requiredRoles={['Events_Read_All', 'Events_CRUD_All', 'National_Chairman', 'National_Secretary', 'Webmaster', 'Tour_Commissioner', 'Club_Magazine_Editorial']}
+            requiredRoles={['Events_Read', 'Events_CRUD', 'System_User_Management']}
           >
             <AppCard 
               key="events"
@@ -267,7 +266,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="products" 
             action="read"
-            requiredRoles={['Products_Read_All', 'Products_CRUD_All', 'National_Chairman', 'National_Secretary', 'Webmaster', 'Tour_Commissioner', 'Club_Magazine_Editorial', 'Webshop_Management']}
+            requiredRoles={['Products_Read', 'Products_CRUD', 'Webshop_Management', 'System_User_Management']}
           >
             <AppCard 
               key="products"
@@ -287,7 +286,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="advanced-exports" 
             action="read"
-            requiredRoles={['Products_CRUD_All', 'Webmaster', 'Webshop_Management', 'hdcnAdmins']}
+            requiredRoles={['Products_CRUD', 'Webshop_Management', 'System_User_Management']}
           >
             <AppCard 
               key="advanced-exports"
@@ -307,7 +306,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="parameters" 
             action="read"
-            requiredRoles={['System_User_Management', 'System_CRUD_All', 'Webmaster']}
+            requiredRoles={['System_User_Management']}
           >
             <AppCard 
               key="parameters"
@@ -327,7 +326,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="memberships" 
             action="read"
-            requiredRoles={['Members_CRUD_All', 'Webmaster']}
+            requiredRoles={['Members_CRUD', 'System_User_Management']}
           >
             <AppCard 
               key="memberships"
@@ -347,7 +346,7 @@ function Dashboard({ user }: DashboardProps) {
             user={user} 
             functionName="field-registry-test" 
             action="read"
-            requiredRoles={['System_CRUD_All', 'System_User_Management', 'Webmaster']}
+            requiredRoles={['System_User_Management']}
           >
             <AppCard 
               key="field-registry-test"

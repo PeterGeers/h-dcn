@@ -116,9 +116,9 @@ def main():
     
     print(f"\n🎯 Actions:")
     print("1. Remove from hdcnLeden group")
-    print("2. Add to Verzoek_lid group")
+    print("2. Add to verzoek_lid group")
     print("3. Show current groups only")
-    print("4. Remove from Verzoek_lid and add back to hdcnLeden")
+    print("4. Remove from verzoek_lid and add back to hdcnLeden")
     
     choice = input("\nEnter choice (1-4): ").strip()
     
@@ -129,17 +129,17 @@ def main():
             print(f"ℹ️  User is not in hdcnLeden group")
             
     elif choice == '2':
-        if 'Verzoek_lid' not in current_groups:
-            add_user_to_group(email, 'Verzoek_lid')
+        if 'verzoek_lid' not in current_groups:
+            add_user_to_group(email, 'verzoek_lid')
         else:
-            print(f"ℹ️  User is already in Verzoek_lid group")
+            print(f"ℹ️  User is already in verzoek_lid group")
             
     elif choice == '3':
         print("ℹ️  Current groups shown above")
         
     elif choice == '4':
-        if 'Verzoek_lid' in current_groups:
-            remove_user_from_group(email, 'Verzoek_lid')
+        if 'verzoek_lid' in current_groups:
+            remove_user_from_group(email, 'verzoek_lid')
         if 'hdcnLeden' not in current_groups:
             add_user_to_group(email, 'hdcnLeden')
     else:

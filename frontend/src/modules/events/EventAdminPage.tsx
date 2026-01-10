@@ -91,10 +91,9 @@ function EventAdminPage({ user }: EventAdminPageProps) {
 
   // Enhanced role-based access checks for events
   const hasEventsReadRole = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Events_Read_All' ||
-    role === 'Events_CRUD_All' ||
-    role === 'Events_Export_All' ||
+    role === 'Events_Read' ||
+    role === 'Events_CRUD' ||
+    role === 'Events_Export' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Chairman' ||
@@ -107,16 +106,14 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   );
 
   const hasEventsWriteRole = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Events_CRUD_All' ||
+    role === 'Events_CRUD' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role.includes('Regional_Chairman_')
   );
 
   const hasFinancialAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Events_CRUD_All' ||
+    role === 'Events_CRUD' ||
     role === 'Webmaster' ||
     role === 'National_Chairman' ||
     role === 'National_Secretary' ||
@@ -126,16 +123,14 @@ function EventAdminPage({ user }: EventAdminPageProps) {
 
   // Enhanced role-based functionality checks
   const hasEventsFullAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Events_CRUD_All' ||
+    role === 'Events_CRUD' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner'
   );
 
   const hasEventsExportAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Events_CRUD_All' ||
-    role === 'Events_Export_All' ||
+    role === 'Events_CRUD' ||
+    role === 'Events_Export' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Secretary' ||
@@ -144,9 +139,8 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   );
 
   const hasEventsAnalyticsAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Events_CRUD_All' ||
-    role === 'Events_Read_All' ||
+    role === 'Events_CRUD' ||
+    role === 'Events_Read' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Chairman' ||
@@ -185,7 +179,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
             Huidige rollen: {userRoles.length > 0 ? userRoles.join(', ') : 'Geen rollen toegewezen'}
           </Text>
           <Text color="gray.400" fontSize="xs">
-            Vereiste rollen: Events_Read_All, Events_CRUD_All, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, of andere event-gerelateerde rollen
+            Vereiste rollen: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, of andere event-gerelateerde rollen
           </Text>
         </VStack>
       </Box>

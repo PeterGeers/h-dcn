@@ -128,13 +128,13 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
           // Fallback: For webmaster@h-dcn.nl, assign the known groups
           if (idTokenPayload.email === 'webmaster@h-dcn.nl') {
             existingUserGroups = [
-              'Events_CRUD_All',
+              'Events_CRUD',
               'hdcnLeden', 
               'System_User_Management',
               'System_Logs_Read',
-              'Members_Read_All',
-              'Members_CRUD_All',
-              'Communication_CRUD_All',
+              'Members_Read',
+              'Members_CRUD',
+              'Communication_CRUD',
               'Webshop_Management'
             ];
             console.log('✅ Assigned webmaster groups (fallback):', existingUserGroups);

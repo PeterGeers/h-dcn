@@ -2,10 +2,11 @@
  * Parameter Service for H-DCN Application
  * 
  * This service handles parameter-related API calls and data transformations
+ * Updated to use main ApiService for authentication
  */
 
 import { API_CONFIG } from '../config/api';
-import { getAuthHeadersForGet } from '../utils/authHeaders';
+import { ApiService } from '../services/apiService';
 
 export interface ParameterItem {
   id?: string;

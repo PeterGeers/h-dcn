@@ -63,31 +63,43 @@ const ROLE_DESCRIPTIONS: { [key: string]: string } = {
   // Basic member role
   hdcnLeden: 'Basis lid - Toegang tot persoonlijke gegevens en webshop',
   
-  // Member management roles
-  Members_CRUD_All: 'Ledenadministratie - Volledig beheer van alle leden',
-  Members_Read_All: 'Ledenadministratie - Inzage in alle ledengegevens',
+  // Member management roles - NEW STRUCTURE (no _All suffix)
+  Members_CRUD: 'Ledenadministratie - Volledig beheer van alle leden',
+  Members_Read: 'Ledenadministratie - Inzage in alle ledengegevens',
+  Members_Export: 'Ledenadministratie - Export van alle ledengegevens',
   Members_Status_Approve: 'Ledenadministratie - Goedkeuring lidmaatschapsstatus',
-  Members_Export_All: 'Ledenadministratie - Export van alle ledengegevens',
   
-  // Event management roles
-  Events_Read_All: 'Evenementen - Inzage in alle evenementen',
-  Events_CRUD_All: 'Evenementen - Volledig beheer van evenementen',
-  Events_Export_All: 'Evenementen - Export van evenementengegevens',
+  // Event management roles - NEW STRUCTURE (no _All suffix)
+  Events_Read: 'Evenementen - Inzage in alle evenementen',
+  Events_CRUD: 'Evenementen - Volledig beheer van evenementen',
+  Events_Export: 'Evenementen - Export van evenementengegevens',
   
-  // Product management roles
-  Products_Read_All: 'Producten - Inzage in alle producten',
-  Products_CRUD_All: 'Producten - Volledig beheer van producten',
-  Products_Export_All: 'Producten - Export van productgegevens',
+  // Product management roles - NEW STRUCTURE (no _All suffix)
+  Products_Read: 'Producten - Inzage in alle producten',
+  Products_CRUD: 'Producten - Volledig beheer van producten',
+  Products_Export: 'Producten - Export van productgegevens',
   
-  // Communication roles
-  Communication_Read_All: 'Communicatie - Inzage in alle communicatie',
-  Communication_Export_All: 'Communicatie - Export van communicatiegegevens',
-  Communication_CRUD_All: 'Communicatie - Volledig beheer van communicatie',
+  // Communication roles - NEW STRUCTURE (no _All suffix)
+  Communication_Read: 'Communicatie - Inzage in alle communicatie',
+  Communication_Export: 'Communicatie - Export van communicatiegegevens',
+  Communication_CRUD: 'Communicatie - Volledig beheer van communicatie',
   
   // System administration roles
   System_User_Management: 'Systeem - Gebruikersbeheer en rolbeheer',
-  System_CRUD_All: 'Systeem - Volledig systeembeheer',
+  System_CRUD: 'Systeem - Volledig systeembeheer',
   System_Logs_Read: 'Systeem - Inzage in logbestanden en audit',
+  
+  // Regional roles
+  Regio_All: 'Toegang tot alle regio\'s',
+  Regio_Utrecht: 'Toegang tot regio Utrecht',
+  Regio_Limburg: 'Toegang tot regio Limburg',
+  Regio_Groningen: 'Toegang tot regio Groningen/Drenthe',
+  'Regio_Groningen/Drenthe': 'Toegang tot regio Groningen/Drenthe',
+  'Regio_Zuid-Holland': 'Toegang tot regio Zuid-Holland',
+  'Regio_Brabant/Zeeland': 'Toegang tot regio Brabant/Zeeland',
+  Regio_Friesland: 'Toegang tot regio Friesland',
+  Regio_Oost: 'Toegang tot regio Oost',
+  Regio_Duitsland: 'Toegang tot regio Duitsland',
   
   // Organizational roles
   National_Chairman: 'Landelijk Voorzitter - Bestuurlijke bevoegdheden',
@@ -104,8 +116,8 @@ const ROLE_DESCRIPTIONS: { [key: string]: string } = {
   Regional_Treasurer: 'Regionaal Penningmeester - Regionale financiën',
   Regional_Volunteer: 'Regionaal Vrijwilliger - Regionale ondersteuning',
   
-  // Legacy roles
-  hdcnAdmins: 'Beheerder (legacy) - Oude beheerdersrol'
+  // Special roles
+  verzoek_lid: 'Nieuwe gebruiker - Wacht op goedkeuring lidmaatschap'
 };
 
 // Get role category for better organization
@@ -118,8 +130,9 @@ const getRoleCategory = (role: string): string => {
   if (role.startsWith('System_')) return 'Systeem';
   if (role.startsWith('National_')) return 'Landelijk Bestuur';
   if (role.startsWith('Regional_')) return 'Regionaal Bestuur';
+  if (role.startsWith('Regio_')) return 'Regionale Toegang';
   if (role.includes('Webmaster') || role.includes('Tour_') || role.includes('Club_') || role.includes('Webshop_')) return 'Ondersteunende Functies';
-  if (role === 'hdcnAdmins') return 'Beheer (Legacy)';
+  if (role === 'verzoek_lid') return 'Nieuwe Gebruiker';
   return 'Overig';
 };
 
@@ -130,10 +143,12 @@ const getRoleColor = (role: string): string => {
   if (role.startsWith('Events_')) return 'purple';
   if (role.startsWith('Products_')) return 'orange';
   if (role.startsWith('Communication_')) return 'pink';
-  if (role.startsWith('System_') || role === 'hdcnAdmins' || role.includes('Webmaster')) return 'red';
+  if (role.startsWith('System_') || role.includes('Webmaster')) return 'red';
   if (role.startsWith('National_')) return 'teal';
   if (role.startsWith('Regional_')) return 'cyan';
+  if (role.startsWith('Regio_')) return 'cyan';
   if (role.includes('Tour_') || role.includes('Club_') || role.includes('Webshop_')) return 'yellow';
+  if (role === 'verzoek_lid') return 'gray';
   return 'gray';
 };
 

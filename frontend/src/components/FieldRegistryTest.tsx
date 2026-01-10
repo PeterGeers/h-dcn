@@ -13,7 +13,7 @@ import { HDCNGroup } from '../config/memberFields';
 
 const FieldRegistryTest: React.FC = () => {
   const [selectedContext, setSelectedContext] = useState('memberOverview');
-  const [selectedRole, setSelectedRole] = useState<HDCNGroup>('System_CRUD_All');
+  const [selectedRole, setSelectedRole] = useState<HDCNGroup>('Members_CRUD');
   const [userRegion, setUserRegion] = useState('Noord-Holland');
   const [memberData] = useState({
     lidmaatschap: 'Gewoon lid',
@@ -44,13 +44,19 @@ const FieldRegistryTest: React.FC = () => {
   ];
 
   const roles: HDCNGroup[] = [
-    'System_CRUD_All',
-    'Members_CRUD_All',
-    'Members_Read_All',
+    'Members_CRUD',
+    'Members_Read', 
+    'Members_Export',
+    'Events_CRUD',
+    'Events_Read',
+    'Products_CRUD',
+    'Products_Read',
+    'Communication_CRUD',
+    'Communication_Read',
     'System_User_Management',
-    'hdcnLeden',
-    'Communication_Read_All',
-    'Event_Organizer'
+    'System_Logs_Read',
+    'Webshop_Management',
+    'hdcnLeden'
   ];
 
   const regions = [

@@ -1,0 +1,19 @@
+{
+  "total_tests": 1,
+  "passed_tests": 0,
+  "failed_tests": 1,
+  "success_rate": 0.0,
+  "test_results": [
+    {
+      "test_name": "Docker Environment Setup",
+      "expected": "Successful import",
+      "actual": "Import failed: name 'pa' is not defined",
+      "status_code": 500,
+      "success": false,
+      "details": "Failed to import handler: name 'pa' is not defined",
+      "timestamp": "2026-01-10T13:32:21.512433"
+    }
+  ],
+  "timestamp": "2026-01-10T13:32:21.512433",
+  "test_type": "docker_container_authentication"
+}

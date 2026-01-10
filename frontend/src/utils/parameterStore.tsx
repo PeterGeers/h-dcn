@@ -435,28 +435,28 @@ class ParameterStore {
         id: 'default',
         value: {
           members: { 
-            read: ['hdcnAdmins', 'hdcnRegio_*', 'Members_Read_All', 'Members_CRUD_All'], 
-            write: ['hdcnAdmins', 'Members_CRUD_All'] 
+            read: ['System_User_Management', 'hdcnRegio_*', 'Members_Read', 'Members_CRUD'], 
+            write: ['System_User_Management', 'Members_CRUD'] 
           },
           events: { 
-            read: ['hdcnAdmins', 'Events_Read_All', 'Events_CRUD_All'], 
-            write: ['hdcnAdmins', 'Events_CRUD_All'] 
+            read: ['System_User_Management', 'Events_Read', 'Events_CRUD'], 
+            write: ['System_User_Management', 'Events_CRUD'] 
           },
           products: { 
-            read: ['hdcnAdmins', 'Products_Read_All', 'Products_CRUD_All'], 
-            write: ['hdcnAdmins', 'Products_CRUD_All'] 
+            read: ['System_User_Management', 'Products_Read', 'Products_CRUD'], 
+            write: ['System_User_Management', 'Products_CRUD'] 
           },
           webshop: { 
-            read: ['hdcnLeden', 'hdcnAdmins'], 
-            write: ['hdcnLeden', 'hdcnAdmins'] 
+            read: ['hdcnLeden', 'System_User_Management'], 
+            write: ['hdcnLeden', 'System_User_Management'] 
           },
           parameters: { 
-            read: ['hdcnAdmins', 'System_User_Management', 'National_Chairman', 'National_Secretary'], 
-            write: ['hdcnAdmins', 'System_CRUD_All', 'Webmaster'] 
+            read: ['System_User_Management', 'System_User_Management', 'National_Chairman', 'National_Secretary'], 
+            write: ['System_User_Management', 'System_CRUD', 'Webmaster'] 
           },
           memberships: { 
-            read: ['hdcnAdmins', 'Members_CRUD_All'], 
-            write: ['hdcnAdmins', 'Members_CRUD_All'] 
+            read: ['System_User_Management', 'Members_CRUD'], 
+            write: ['System_User_Management', 'Members_CRUD'] 
           }
         }
       }]

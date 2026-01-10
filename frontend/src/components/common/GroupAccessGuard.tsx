@@ -27,7 +27,7 @@ interface GroupAccessGuardProps {
 function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
   const location = useLocation();
   
-  // Routes that applicants (Verzoek_lid) can access
+  // Routes that applicants (verzoek_lid) can access
   const applicantAllowedRoutes = [
     '/new-member-application',
     '/application-submitted'
@@ -65,9 +65,9 @@ function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
   }
   
   // Check user status
-  const isApplicant = userGroups.includes('Verzoek_lid');
+  const isApplicant = userGroups.includes('verzoek_lid');
   const hasFullAccess = userGroups.some(group => 
-    group !== 'Verzoek_lid' && group.length > 0
+    group !== 'verzoek_lid' && group.length > 0
   );
   const hasNoGroups = userGroups.length === 0;
   
@@ -77,7 +77,7 @@ function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
   console.log('GroupAccessGuard - Has full access:', hasFullAccess);
   console.log('GroupAccessGuard - Current route:', location.pathname);
   
-  // Handle applicants (Verzoek_lid users)
+  // Handle applicants (verzoek_lid users)
   if (isApplicant && !hasFullAccess) {
     const isApplicantRoute = applicantAllowedRoutes.includes(location.pathname);
     

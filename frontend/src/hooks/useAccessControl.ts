@@ -30,11 +30,9 @@ export const useAccessControl = (user: any) => {
         
         // Additional check for administrative roles
         const hasAdminRole = roles.some(role => 
-          role === 'hdcnAdmins' ||
           role === 'System_User_Management' ||
-          role === 'System_CRUD_All' ||
           role === 'Webmaster' ||
-          role === 'Members_CRUD_All' ||
+          role === 'Members_CRUD' ||
           role === 'hdcnWebmaster' ||
           role === 'hdcnLedenadministratie' ||
           role === 'National_Chairman' ||

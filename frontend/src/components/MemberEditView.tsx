@@ -46,6 +46,7 @@ import * as Yup from 'yup';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, HDCNGroup } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
+import { computeCalculatedFields, getMemberFullName } from '../utils/calculatedFields';
 
 interface MemberEditViewProps {
   isOpen: boolean;
@@ -235,7 +236,8 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     // Handle computed fields
     if (field.computed && field.computeFrom && field.computeFunction) {
       if (field.computeFunction === 'yearsDifference') {
-        const sourceValue = values[field.computeFrom] || values[MEMBER_FIELDS[field.computeFrom]?.key];
+        const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
+        const sourceValue = values[sourceField] || values[MEMBER_FIELDS[sourceField]?.key];
         if (sourceValue) {
           const startDate = new Date(sourceValue);
           const today = new Date();
@@ -249,9 +251,44 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
           }
         }
       } else if (field.computeFunction === 'year') {
-        const sourceValue = values[field.computeFrom] || values[MEMBER_FIELDS[field.computeFrom]?.key];
+        const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
+        const sourceValue = values[sourceField] || values[MEMBER_FIELDS[sourceField]?.key];
         if (sourceValue) {
           value = new Date(sourceValue).getFullYear();
+        }
+      } else if (field.computeFunction === 'concatenateName') {
+        // Handle multiple source fields for name concatenation
+        const sourceFields = Array.isArray(field.computeFrom) ? field.computeFrom : [field.computeFrom];
+        const nameParts = sourceFields
+          .map(fieldName => values[fieldName] || values[MEMBER_FIELDS[fieldName]?.key])
+          .filter(part => part && part.trim() !== ''); // Remove empty parts
+        value = nameParts.join(' ');
+      } else if (field.computeFunction === 'calculateAge') {
+        const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
+        const sourceValue = values[sourceField] || values[MEMBER_FIELDS[sourceField]?.key];
+        if (sourceValue) {
+          const birthDate = new Date(sourceValue);
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age = age - 1;
+          }
+          value = age;
+        }
+      } else if (field.computeFunction === 'extractBirthday') {
+        const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
+        const sourceValue = values[sourceField] || values[MEMBER_FIELDS[sourceField]?.key];
+        if (sourceValue) {
+          const birthDate = new Date(sourceValue);
+          const monthNames = [
+            'januari', 'februari', 'maart', 'april', 'mei', 'juni',
+            'juli', 'augustus', 'september', 'oktober', 'november', 'december'
+          ];
+          const day = birthDate.getDate();
+          const monthName = monthNames[birthDate.getMonth()];
+          value = `${monthName} ${day}`;
         }
       }
     }
@@ -531,7 +568,7 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
             <VStack align="start" spacing={1}>
               <HStack>
                 <Text>
-                  {member.voornaam} {member.tussenvoegsel} {member.achternaam}
+                  {getMemberFullName(member)}
                 </Text>
                 {member.lidnummer && (
                   <Badge colorScheme="blue">#{member.lidnummer}</Badge>

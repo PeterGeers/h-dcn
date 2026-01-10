@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { Product } from '../../../types';
-import { getAuthHeaders, getAuthHeadersForGet } from '../../../utils/authHeaders';
+import { ApiService } from '../../../services/apiService';
 
 interface Parameter {
   id?: string;
@@ -13,10 +13,18 @@ import { API_CONFIG } from '../../../config/api';
 
 const BASE: string = API_CONFIG.BASE_URL;
 
-// Helper function to create axios config with auth headers
+// Helper function to create axios config with auth headers - now uses main ApiService
 const createAuthConfig = async (method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET') => {
-  const headers = method === 'GET' ? await getAuthHeadersForGet() : await getAuthHeaders();
-  return { headers };
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  
+  return { 
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  };
 };
 
 export const scanProducts = async (): Promise<AxiosResponse<any>> => {

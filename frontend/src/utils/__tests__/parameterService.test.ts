@@ -55,7 +55,7 @@ describe('Parameter Service - Backward Compatibility and Additive Enhancements',
       signInUserSession: {
         accessToken: {
           payload: {
-            'cognito:groups': ['hdcnLeden', 'Members_Read_All']
+            'cognito:groups': ['hdcnLeden', 'Members_Read', 'Regio_All']
           }
         }
       }
@@ -63,7 +63,7 @@ describe('Parameter Service - Backward Compatibility and Additive Enhancements',
 
     beforeEach(() => {
       const { getUserRoles, calculatePermissions } = require('../functionPermissions');
-      getUserRoles.mockReturnValue(['hdcnLeden', 'Members_Read_All']);
+      getUserRoles.mockReturnValue(['hdcnLeden', 'Members_Read', 'Regio_All']);
       calculatePermissions.mockReturnValue({
         members: { read: ['all'], write: [] },
         webshop: { read: ['own'], write: ['own'] }
@@ -101,7 +101,7 @@ describe('Parameter Service - Backward Compatibility and Additive Enhancements',
       signInUserSession: {
         accessToken: {
           payload: {
-            'cognito:groups': ['hdcnLeden', 'Members_Read_All']
+            'cognito:groups': ['hdcnLeden', 'Members_Read', 'Regio_All']
           }
         }
       }
@@ -119,7 +119,7 @@ describe('Parameter Service - Backward Compatibility and Additive Enhancements',
       parameterStore.refresh.mockResolvedValue();
 
       const { getUserRoles, calculatePermissions } = require('../functionPermissions');
-      getUserRoles.mockReturnValue(['hdcnLeden', 'Members_Read_All']);
+      getUserRoles.mockReturnValue(['hdcnLeden', 'Members_Read', 'Regio_All']);
       calculatePermissions.mockReturnValue({
         webshop: { read: ['own'], write: ['own'] }
       });
@@ -161,13 +161,14 @@ describe('Parameter Service - Backward Compatibility and Additive Enhancements',
     test('should demonstrate additive approach over replacement', () => {
       // This test demonstrates that the approach is additive, not replacement
       const existingPermissions = ['hdcnLeden', 'legacy_group'];
-      const newRolePermissions = ['Members_Read_All', 'own'];
+      const newRolePermissions = ['Members_Read', 'Regio_All', 'own'];
       
       // Additive approach: combine both
       const additiveResult = [...existingPermissions, ...newRolePermissions];
       expect(additiveResult).toContain('hdcnLeden'); // Preserves existing
       expect(additiveResult).toContain('legacy_group'); // Preserves existing
-      expect(additiveResult).toContain('Members_Read_All'); // Adds new
+      expect(additiveResult).toContain('Members_Read'); // Adds new
+      expect(additiveResult).toContain('Regio_All'); // Adds new
       expect(additiveResult).toContain('own'); // Adds new
       
       // Replacement approach would lose existing permissions

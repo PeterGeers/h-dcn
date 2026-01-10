@@ -79,6 +79,7 @@ export async function getCurrentAuthTokens(): Promise<AuthTokens | null> {
 
 /**
  * Extracts cognito:groups from current user's JWT tokens
+ * Only returns roles that are part of the new role structure (no legacy roles)
  * @returns Promise with array of user roles/groups or empty array if none found
  */
 export async function getCurrentUserRoles(): Promise<HDCNGroup[]> {
@@ -98,9 +99,43 @@ export async function getCurrentUserRoles(): Promise<HDCNGroup[]> {
     }
 
     const cognitoGroups = payload['cognito:groups'] || [];
-    console.log('Extracted cognito:groups from JWT:', cognitoGroups);
     
-    return cognitoGroups;
+    // Filter out any legacy roles that might still exist in JWT tokens
+    // Only allow roles that are part of the new permission + region structure
+    const validRoles = cognitoGroups.filter((role: string) => {
+      // Allow new permission-based roles (but NOT old _All versions)
+      if (role.includes('_CRUD') || role.includes('_Read') || role.includes('_Export') || role.includes('_Status_Approve')) {
+        // Reject old _All roles (except Regio_All which is valid)
+        if (role.endsWith('_All') && role !== 'Regio_All') {
+          console.warn(`Filtering out legacy role: ${role}`);
+          return false;
+        }
+        return true;
+      }
+      
+      // Allow regional roles
+      if (role.startsWith('Regio_')) {
+        return true;
+      }
+      
+      // Allow system roles
+      if (role.startsWith('System_')) {
+        return true;
+      }
+      
+      // Allow specific valid roles
+      if (['hdcnLeden', 'Webshop_Management', 'verzoek_lid'].includes(role)) {
+        return true;
+      }
+      
+      // Reject any other legacy roles (deprecated roles no longer supported)
+      console.warn(`Filtering out legacy role: ${role}`);
+      return false;
+    }) as HDCNGroup[];
+    
+    console.log('Extracted and filtered cognito:groups from JWT:', validRoles);
+    
+    return validRoles;
   } catch (error) {
     console.error('Failed to extract user roles from JWT:', error);
     return [];
@@ -159,14 +194,125 @@ export async function getCurrentUserInfo(): Promise<{
       return null;
     }
 
+    // Get filtered roles using the same logic as getCurrentUserRoles
+    const roles = await getCurrentUserRoles();
+
     return {
       username: payload.username,
       email: payload.email,
-      roles: payload['cognito:groups'] || [],
+      roles,
       sub: payload.sub
     };
   } catch (error) {
     console.error('Failed to get current user info:', error);
     return null;
   }
+}
+
+/**
+ * Validates that user has valid role combinations according to new role structure
+ * Users must have both permission roles AND regional roles (except for system roles)
+ * @param roles - Array of user roles to validate
+ * @returns Object with validation result and details
+ */
+export function validateRoleCombinations(roles: HDCNGroup[]): {
+  isValid: boolean;
+  hasPermissions: boolean;
+  hasRegions: boolean;
+  missingRoles: string[];
+  warnings: string[];
+} {
+  const permissionRoles = roles.filter(role => 
+    role.includes('_CRUD') || 
+    role.includes('_Read') || 
+    role.includes('_Export') || 
+    role.includes('_Status_Approve')
+  );
+  
+  const regionalRoles = roles.filter(role => role.startsWith('Regio_'));
+  
+  const systemRoles = roles.filter(role => 
+    role.startsWith('System_') || 
+    role === 'Webshop_Management'
+  );
+  
+  const basicRoles = roles.filter(role => 
+    ['hdcnLeden', 'verzoek_lid'].includes(role)
+  );
+
+  const hasPermissions = permissionRoles.length > 0;
+  const hasRegions = regionalRoles.length > 0;
+  const hasSystemAccess = systemRoles.length > 0;
+  const hasBasicAccess = basicRoles.length > 0;
+
+  const missingRoles: string[] = [];
+  const warnings: string[] = [];
+
+  // System roles don't need regional roles
+  if (hasSystemAccess) {
+    return {
+      isValid: true,
+      hasPermissions: true,
+      hasRegions: true, // System roles bypass regional requirements
+      missingRoles: [],
+      warnings: []
+    };
+  }
+
+  // Basic member roles (hdcnLeden, verzoek_lid) don't need additional permissions
+  if (hasBasicAccess && !hasPermissions) {
+    return {
+      isValid: true,
+      hasPermissions: false, // Basic roles don't have admin permissions
+      hasRegions: true, // Basic roles bypass regional requirements
+      missingRoles: [],
+      warnings: []
+    };
+  }
+
+  // For permission-based roles, both permission and region are required
+  if (hasPermissions && !hasRegions) {
+    missingRoles.push('Regional role (Regio_*)');
+  }
+
+  if (!hasPermissions && hasRegions) {
+    missingRoles.push('Permission role (*_CRUD, *_Read, *_Export)');
+  }
+
+  // Check for potentially problematic combinations
+  if (regionalRoles.length > 1 && !regionalRoles.includes('Regio_All')) {
+    warnings.push('User has multiple regional roles - this may cause unexpected behavior');
+  }
+
+  const isValid = missingRoles.length === 0;
+
+  return {
+    isValid,
+    hasPermissions,
+    hasRegions,
+    missingRoles,
+    warnings
+  };
+}
+
+/**
+ * Gets current user roles and validates they form valid combinations
+ * @returns Promise with validated user roles and validation details
+ */
+export async function getCurrentUserRolesValidated(): Promise<{
+  roles: HDCNGroup[];
+  validation: ReturnType<typeof validateRoleCombinations>;
+}> {
+  const roles = await getCurrentUserRoles();
+  const validation = validateRoleCombinations(roles);
+  
+  if (!validation.isValid) {
+    console.warn('User has invalid role combination:', {
+      roles,
+      missingRoles: validation.missingRoles,
+      warnings: validation.warnings
+    });
+  }
+  
+  return { roles, validation };
 }

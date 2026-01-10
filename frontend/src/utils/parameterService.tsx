@@ -1,6 +1,6 @@
 import React from 'react';
 import { parameterStore } from './parameterStore';
-import { getUserRoles, calculatePermissions } from './functionPermissions';
+import { getUserRoles, calculatePermissions, checkUIPermission } from './functionPermissions';
 
 interface ParameterItem {
   id: string;
@@ -230,8 +230,7 @@ export const hasCombinedModuleAccess = (user: User, membershipType: string, modu
   const hasMembershipAccess = hasMembershipTypeModuleAccess(membershipType, moduleName);
   
   // ENHANCED: Check role-based access (new functionality)
-  const userRoles = getUserRoles(user);
-  const hasRoleAccess = userRoles.length > 0; // Basic check - user has at least one role
+  const hasRoleAccess = checkUIPermission(user, 'system', 'read'); // Basic check - user has system access
   
   // COMBINED LOGIC: User needs BOTH membership type access AND role access
   // This preserves existing restrictions while adding role-based enhancements
@@ -260,8 +259,7 @@ export const getEnhancedParameters = async (category: string, user?: User, membe
   
   // ENHANCED: Apply role-based filtering if user is provided
   if (user) {
-    const userRoles = getUserRoles(user);
-    const isAdmin = userRoles.includes('hdcnAdmins');
+    const isAdmin = checkUIPermission(user, 'system', 'write'); // Check if user has system admin access
     
     // Admins see all parameters (existing behavior)
     if (isAdmin) {
@@ -292,9 +290,15 @@ export const getAdditivePermissionBreakdown = async (user: User, functionName: s
     const permissionParam = functionPermissions.find(p => p.value && typeof p.value === 'object');
     const parameterBasedPerms = permissionParam?.value?.[functionName] || { read: [], write: [] };
     
-    // Get role-based permissions
-    const userRoles = getUserRoles(user);
-    const roleBasedPerms = calculatePermissions(userRoles)[functionName] || { read: [], write: [] };
+    // Get role-based permissions using new permission system
+    const hasReadAccess = checkUIPermission(user, functionName, 'read');
+    const hasWriteAccess = checkUIPermission(user, functionName, 'write');
+    
+    // Convert to permission format for compatibility
+    const roleBasedPerms = {
+      read: hasReadAccess ? ['role_based_read'] : [],
+      write: hasWriteAccess ? ['role_based_write'] : []
+    };
     
     // Get membership type permissions (if applicable)
     let membershipBasedPerms = { read: [], write: [] };
@@ -335,7 +339,7 @@ export const getAdditivePermissionBreakdown = async (user: User, functionName: s
         description: 'Role-based permissions are added to existing parameter-based permissions, not replacing them',
         preservedFeatures: [
           'Existing parameter-based module access rules',
-          'Legacy group patterns (hdcnRegio_*, hdcnAdmins)',
+          'Legacy group patterns (hdcnRegio_*, System_User_Management)',
           'Membership type field restrictions',
           'Regional access patterns'
         ],

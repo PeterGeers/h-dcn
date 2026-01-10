@@ -9,6 +9,7 @@ import { API_URLS } from '../../../config/api';
 import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
 import { getUserRoles } from '../../../utils/functionPermissions';
 import { hasRegionalAccess } from '../../../utils/regionalMapping';
+import { getMemberFullName } from '../../../utils/calculatedFields';
 
 interface ParameterOption {
   value?: string;
@@ -137,14 +138,13 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
    */
   const canEditFieldType = (fieldType: 'personal' | 'address' | 'membership' | 'motor' | 'financial' | 'administrative' | 'status'): boolean => {
     // Admin roles can edit all fields
-    if (userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All')) {
+    if (userRoles.includes('Members_CRUD')) {
       return true;
     }
 
     // Status field - only specific admin roles can edit
     if (fieldType === 'status') {
-      return userRoles.includes('hdcnAdmins') || 
-             userRoles.includes('Members_CRUD_All') ||
+      return userRoles.includes('Members_CRUD') ||
              userRoles.includes('Members_Status_Approve');
     }
 
@@ -165,20 +165,18 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
     if (fieldType === 'financial') {
       return userRoles.some(role => 
         role.includes('Treasurer') || 
-        role.includes('Members_CRUD_All') ||
-        role.includes('hdcnAdmins')
+        role.includes('Members_CRUD')
       );
     }
 
     // Administrative fields - only admin roles can edit
     if (fieldType === 'administrative') {
-      return userRoles.includes('hdcnAdmins') || 
-             userRoles.includes('Members_CRUD_All');
+      return userRoles.includes('Members_CRUD');
     }
 
     // Membership fields - admin and regional roles can edit
     if (fieldType === 'membership') {
-      if (userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All')) {
+      if (userRoles.includes('Members_CRUD')) {
         return true;
       }
       
@@ -277,7 +275,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
         nieuwsbrief: member.nieuwsbrief || '',
         // Administrative fields that should be in membership section
         tijdstempel: convertToISODate(member.tijdstempel || ''),
-        aanmeldingsjaar: member.aanmeldingsjaar || '',
+        aanmeldingsjaar: String(member.aanmeldingsjaar || ''),
         datum_ondertekening: convertToISODate(member.datum_ondertekening || member.datumOndertekening || ''),
         ingangsdatum_lidmaatschap: convertToISODate(member.ingangsdatum_lidmaatschap || member.ingangsdatumLidmaatschap || ''),
         aanmeldingsdatum: convertToISODate(member.aanmeldingsdatum || member.aanmeldingsDatum || ''),
@@ -426,7 +424,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
       });
       
       // Ensure name field is updated
-      updatePayload.name = `${formData.voornaam} ${formData.achternaam}`;
+      updatePayload.name = getMemberFullName(formData as any);
       
       console.log('🔄 Sending member update:', updatePayload);
       
@@ -579,7 +577,7 @@ function MemberEditModal({ isOpen, onClose, member, onSave, user }: MemberEditMo
       <ModalOverlay />
       <ModalContent bg="gray.800" color="white" border="1px" borderColor="orange.400">
         <ModalHeader color="orange.400">
-          Lid Bewerken - {member.name || `${member.voornaam} ${member.achternaam}`}
+          Lid Bewerken - {member.name || getMemberFullName(member)}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>

@@ -47,9 +47,9 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   const { parameters, dataSource, loadParameters } = useParameterManagement(hasAccess, accessLoading);
 
   // Enhanced role-based access checks for parameter management
-  const hasFullMemberAccess = userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All') || userRoles.includes('Webmaster');
+  const hasFullMemberAccess = userRoles.includes('System_User_Management') || userRoles.includes('Members_CRUD');
   const hasSystemUserManagementRole = userRoles.includes('System_User_Management');
-  const hasNationalChairmanRole = userRoles.includes('National_Chairman');
+  const hasNationalChairmanRole = false; // This role doesn't exist in the new system
   const hasNationalSecretaryRole = userRoles.includes('National_Secretary');
 
   // Get categories and current parameters using service functions
@@ -86,7 +86,7 @@ function ParameterManagement({ user }: ParameterManagementProps) {
                 <br /><br />
                 <strong>Je huidige rollen:</strong> {userRoles.length > 0 ? userRoles.join(', ') : 'Geen rollen toegewezen'}
                 <br /><br />
-                <strong>Vereiste rollen:</strong> hdcnAdmins, System_User_Management, System_CRUD_All, Webmaster, Members_CRUD_All, National_Chairman, National_Secretary, hdcnWebmaster, of hdcnLedenadministratie
+                <strong>Vereiste rollen:</strong> System_User_Management, System_CRUD, Webmaster, Members_CRUD, National_Chairman, National_Secretary, hdcnWebmaster, of hdcnLedenadministratie
                 <br /><br />
                 Neem contact op met een systeembeheerder als je denkt dat je toegang zou moeten hebben.
               </AlertDescription>

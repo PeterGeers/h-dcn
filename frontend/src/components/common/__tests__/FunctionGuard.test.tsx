@@ -15,7 +15,7 @@ describe('FunctionGuard', () => {
     signInUserSession: {
       accessToken: {
         payload: {
-          'cognito:groups': ['hdcnLeden', 'Members_Read_All']
+          'cognito:groups': ['hdcnLeden', 'Members_Read']
         }
       }
     }
@@ -37,7 +37,7 @@ describe('FunctionGuard', () => {
       <FunctionGuard
         user={mockUser}
         functionName="members"
-        requiredRoles={['Members_Read_All']}
+        requiredRoles={['Members_Read']}
       >
         <div>Protected Content</div>
       </FunctionGuard>
@@ -57,7 +57,7 @@ describe('FunctionGuard', () => {
       <FunctionGuard
         user={mockUser}
         functionName="members"
-        requiredRoles={['Members_CRUD_All']} // User doesn't have this role
+        requiredRoles={['Members_CRUD']} // User doesn't have this role
       >
         <div>Protected Content</div>
       </FunctionGuard>
@@ -75,7 +75,7 @@ describe('FunctionGuard', () => {
     render(
       <FunctionGuard
         user={mockUser}
-        requiredRoles={['Members_Read_All']} // User has this role
+        requiredRoles={['Members_Read']} // User has this role
       >
         <div>Role-Protected Content</div>
       </FunctionGuard>
@@ -91,7 +91,7 @@ describe('FunctionGuard', () => {
     render(
       <FunctionGuard
         user={mockUser}
-        requiredRoles={['Members_CRUD_All']} // User doesn't have this role
+        requiredRoles={['Members_CRUD']} // User doesn't have this role
       >
         <div>Role-Protected Content</div>
       </FunctionGuard>
@@ -110,7 +110,7 @@ describe('FunctionGuard', () => {
       <FunctionGuard
         user={mockUser}
         functionName="members"
-        requiredRoles={['Members_Read_All']} // User has this role
+        requiredRoles={['Members_Read']} // User has this role
       >
         <div>Combined Protected Content</div>
       </FunctionGuard>
@@ -128,7 +128,7 @@ describe('FunctionGuard', () => {
       <FunctionGuard
         user={mockUser}
         functionName="members"
-        requiredRoles={['Members_CRUD_All']} // User doesn't have this role
+        requiredRoles={['Members_CRUD']} // User doesn't have this role
       >
         <div>Protected Content</div>
       </FunctionGuard>
@@ -164,7 +164,7 @@ describe('FunctionGuard', () => {
       <FunctionGuard
         user={mockUser}
         functionName="members"
-        requiredRoles={['Members_CRUD_All']}
+        requiredRoles={['Members_CRUD']}
         fallback={<div>Access Denied</div>}
       >
         <div>Protected Content</div>
@@ -184,7 +184,7 @@ describe('FunctionGuard', () => {
       signInUserSession: {
         accessToken: {
           payload: {
-            'cognito:groups': ['hdcnAdmins']
+            'cognito:groups': ['System_User_Management', 'Regio_All']
           }
         }
       }
@@ -194,7 +194,7 @@ describe('FunctionGuard', () => {
       <FunctionGuard
         user={adminUser}
         functionName="members"
-        requiredRoles={['Members_Read_All']}
+        requiredRoles={['Members_Read']}
       >
         <div>Protected Content</div>
       </FunctionGuard>
@@ -306,7 +306,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_CRUD_All', 'Events_Read_All', 'Products_Read_All', 'Communication_Read_All', 'System_User_Management']
+              'cognito:groups': ['Members_CRUD', 'Events_Read', 'Products_Read', 'Communication_Read', 'System_User_Management']
             }
           }
         }
@@ -315,7 +315,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={memberAdminUser}
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
         >
           <div>Member Admin Content</div>
         </FunctionGuard>
@@ -331,7 +331,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_Read_All', 'Members_Status_Approve', 'Events_Read_All', 'Products_Read_All', 'Communication_Read_All', 'System_Logs_Read']
+              'cognito:groups': ['Members_Read', 'Members_Status_Approve', 'Events_Read', 'Products_Read', 'Communication_Read', 'System_Logs_Read', 'Regio_All']
             }
           }
         }
@@ -340,7 +340,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={nationalChairmanUser}
-          requiredRoles={['Members_Read_All', 'Members_Status_Approve']}
+          requiredRoles={['Members_Read', 'Members_Status_Approve']}
         >
           <div>Chairman Content</div>
         </FunctionGuard>
@@ -356,7 +356,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_Read_All', 'Events_CRUD_All', 'Products_CRUD_All', 'Communication_CRUD_All', 'System_CRUD_All']
+              'cognito:groups': ['Members_Read', 'Events_CRUD', 'Products_CRUD', 'Communication_CRUD', 'System_User_Management', 'Regio_All']
             }
           }
         }
@@ -365,7 +365,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={webmasterUser}
-          requiredRoles={['System_CRUD_All']}
+          requiredRoles={['System_User_Management']}
         >
           <div>Webmaster Content</div>
         </FunctionGuard>
@@ -381,7 +381,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_Read_Region1', 'Members_Export_Region1', 'Events_Read_Region1', 'Products_Read_All', 'Communication_Export_Region1']
+              'cognito:groups': ['Members_Read', 'Members_Export', 'Events_Read', 'Products_Read', 'Communication_Export', 'Regio_Utrecht']
             }
           }
         }
@@ -390,7 +390,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={regionalSecretaryUser}
-          requiredRoles={['Members_Read_Region1']}
+          requiredRoles={['Members_Read']}
         >
           <div>Regional Secretary Content</div>
         </FunctionGuard>
@@ -406,7 +406,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_Read_All'] // Has read but not CRUD
+              'cognito:groups': ['Members_Read'] // Has read but not CRUD
             }
           }
         }
@@ -415,7 +415,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={partialRoleUser}
-          requiredRoles={['Members_CRUD_All']} // Requires CRUD access
+          requiredRoles={['Members_CRUD']} // Requires CRUD access
         >
           <div>Admin Content</div>
         </FunctionGuard>
@@ -431,7 +431,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['hdcnLeden', 'Members_Read_All', 'Events_Read_All']
+              'cognito:groups': ['hdcnLeden', 'Members_Read', 'Events_Read', 'Regio_All']
             }
           }
         }
@@ -440,7 +440,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={multiRoleUser}
-          requiredRoles={['Members_Read_All']} // User has this role among others
+          requiredRoles={['Members_Read']} // User has this role among others
         >
           <div>Multi Role Content</div>
         </FunctionGuard>
@@ -456,7 +456,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_Read_All', 'Events_CRUD_All', 'Products_Read_All']
+              'cognito:groups': ['Members_Read', 'Events_CRUD', 'Products_Read', 'Regio_All']
             }
           }
         }
@@ -465,7 +465,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={multiRoleUser}
-          requiredRoles={['Members_CRUD_All', 'Members_Read_All']} // User has Members_Read_All
+          requiredRoles={['Members_CRUD', 'Members_Read']} // User has Members_Read
         >
           <div>OR Logic Content</div>
         </FunctionGuard>
@@ -483,7 +483,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_CRUD_All', 'System_User_Management']
+              'cognito:groups': ['Members_CRUD', 'System_User_Management', 'Regio_All']
             }
           }
         }
@@ -493,7 +493,7 @@ describe('FunctionGuard', () => {
         <FunctionGuard
           user={combinedUser}
           functionName="members"
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
         >
           <div>Combined Permission Content</div>
         </FunctionGuard>
@@ -514,7 +514,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['Members_CRUD_All'] // Has role but not function access
+              'cognito:groups': ['Members_CRUD'] // Has role but not function access
             }
           }
         }
@@ -524,7 +524,7 @@ describe('FunctionGuard', () => {
         <FunctionGuard
           user={roleOnlyUser}
           functionName="members"
-          requiredRoles={['Members_CRUD_All']}
+          requiredRoles={['Members_CRUD']}
         >
           <div>Combined Permission Content</div>
         </FunctionGuard>
@@ -584,7 +584,7 @@ describe('FunctionGuard', () => {
         signInUserSession: {
           accessToken: {
             payload: {
-              'cognito:groups': ['hdcnRegio_Noord', 'Members_Read_Region1']
+              'cognito:groups': ['Members_Read', 'Regio_Noord']
             }
           }
         }
@@ -593,7 +593,7 @@ describe('FunctionGuard', () => {
       render(
         <FunctionGuard
           user={regionalUser}
-          requiredRoles={['hdcnRegio_Noord']}
+          requiredRoles={['Members_Read']}
         >
           <div>Regional Content</div>
         </FunctionGuard>

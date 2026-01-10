@@ -134,8 +134,14 @@ describe('Passwordless Authentication Flow', () => {
     mockWebAuthnService.shouldOfferCrossDeviceAuth.mockReturnValue(true);
     mockWebAuthnService.authenticateWithPasskey.mockResolvedValue({
       id: 'mock-credential-id',
-      response: { signature: 'mock-signature' }
-    });
+      rawId: new ArrayBuffer(0),
+      type: 'public-key',
+      authenticatorAttachment: null,
+      response: {
+        clientDataJSON: new ArrayBuffer(0)
+      } as AuthenticatorAssertionResponse,
+      getClientExtensionResults: () => ({})
+    } as PublicKeyCredential);
   });
 
   test('should render sign in form initially', () => {

@@ -1,5 +1,8 @@
 // API service for parameter management using the new backend API
+// Note: This is a legacy utility service. New code should use the main ApiService from services/apiService.ts
+
 import { API_CONFIG } from '../config/api';
+import { ApiService as MainApiService } from '../services/apiService';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
@@ -25,12 +28,18 @@ const validateUrl = (url: string): boolean => {
   }
 };
 
+// Updated to use main ApiService for authenticated requests
 const safeFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   if (!validateUrl(url)) {
     throw new Error('Invalid or unauthorized URL');
   }
   if (url.includes('..') || url.includes('%2e%2e')) {
     throw new Error('Path traversal detected');
+  }
+  
+  // Check authentication using main ApiService
+  if (!MainApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
   }
   
   try {
@@ -61,50 +70,63 @@ const handleResponse = async (response: Response, operation: string): Promise<an
 };
 
 export class ApiService {
-  // Get all parameters
+  // Get all parameters - now uses main ApiService for authentication
   static async getAllParameters(): Promise<any> {
-    const response = await safeFetch(`${API_BASE_URL}/parameters`);
-    return await handleResponse(response, 'Get parameters');
+    const endpoint = '/parameters';
+    const response = await MainApiService.get(endpoint);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get parameters');
+    }
+    return response.data;
   }
 
-  // Get parameter by ID
+  // Get parameter by ID - now uses main ApiService for authentication
   static async getParameter(id: string): Promise<any> {
-    const response = await safeFetch(`${API_BASE_URL}/parameters/${encodeURIComponent(id)}`);
-    return await handleResponse(response, 'Get parameter');
+    const endpoint = `/parameters/${encodeURIComponent(id)}`;
+    const response = await MainApiService.get(endpoint);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get parameter');
+    }
+    return response.data;
   }
 
-  // Get parameter by name
+  // Get parameter by name - now uses main ApiService for authentication
   static async getParameterByName(name: string): Promise<any> {
-    const response = await safeFetch(`${API_BASE_URL}/parameters/name/${encodeURIComponent(name)}`);
-    return await handleResponse(response, 'Get parameter by name');
+    const endpoint = `/parameters/name/${encodeURIComponent(name)}`;
+    const response = await MainApiService.get(endpoint);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get parameter by name');
+    }
+    return response.data;
   }
 
-  // Create parameter
+  // Create parameter - now uses main ApiService for authentication
   static async createParameter(parameterData: ParameterData): Promise<any> {
-    const response = await safeFetch(`${API_BASE_URL}/parameters`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(parameterData)
-    });
-    return await handleResponse(response, 'Create parameter');
+    const endpoint = '/parameters';
+    const response = await MainApiService.post(endpoint, parameterData);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to create parameter');
+    }
+    return response.data;
   }
 
-  // Update parameter
+  // Update parameter - now uses main ApiService for authentication
   static async updateParameter(id: string, parameterData: ParameterData): Promise<any> {
-    const response = await safeFetch(`${API_BASE_URL}/parameters/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(parameterData)
-    });
-    return await handleResponse(response, 'Update parameter');
+    const endpoint = `/parameters/${encodeURIComponent(id)}`;
+    const response = await MainApiService.put(endpoint, parameterData);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to update parameter');
+    }
+    return response.data;
   }
 
-  // Delete parameter
+  // Delete parameter - now uses main ApiService for authentication
   static async deleteParameter(id: string): Promise<boolean> {
-    const response = await safeFetch(`${API_BASE_URL}/parameters/${encodeURIComponent(id)}`, {
-      method: 'DELETE'
-    });
-    await handleResponse(response, 'Delete parameter');
+    const endpoint = `/parameters/${encodeURIComponent(id)}`;
+    const response = await MainApiService.delete(endpoint);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to delete parameter');
+    }
     return true;
   }
 }

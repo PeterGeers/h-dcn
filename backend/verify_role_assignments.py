@@ -6,9 +6,9 @@ This script verifies that the test users have the correct role combinations
 as specified in the design document permission matrix.
 
 Design Document Specifications:
-- Member Administration: Members_CRUD_All, Events_Read_All, Products_Read_All, Communication_Read_All, System_User_Management
-- National Chairman: Members_Read_All, Members_Status_Approve, Events_Read_All, Products_Read_All, Communication_Read_All, System_Logs_Read
-- Webmaster: Members_Read_All, Events_CRUD_All, Products_CRUD_All, Communication_CRUD_All, System_CRUD_All
+- Member Administration: Members_CRUD, Events_Read, Products_Read, Communication_Read, System_User_Management, Regio_All
+- National Chairman: Members_Read, Members_Status_Approve, Events_Read, Products_Read, Communication_Read, System_Logs_Read, Regio_All
+- Webmaster: Members_Read, Events_CRUD, Products_CRUD, Communication_CRUD, System_User_Management, Regio_All
 - Regular Members: hdcnLeden
 """
 
@@ -26,10 +26,11 @@ EXPECTED_ROLE_ASSIGNMENTS = {
     "test.memberadmin@hdcn-test.nl": {
         "role_type": "Member Administration",
         "expected_groups": {
-            "Members_CRUD_All",
-            "Events_Read_All", 
-            "Products_Read_All",
-            "Communication_Read_All",
+            "Members_CRUD",
+            "Events_Read", 
+            "Products_Read",
+            "Communication_Read",
+            "Regio_All",
             "System_User_Management"
         },
         "permissions": [
@@ -43,11 +44,12 @@ EXPECTED_ROLE_ASSIGNMENTS = {
     "test.chairman@hdcn-test.nl": {
         "role_type": "National Chairman",
         "expected_groups": {
-            "Members_Read_All",
+            "Members_Read",
             "Members_Status_Approve",
-            "Events_Read_All",
-            "Products_Read_All",
-            "Communication_Read_All", 
+            "Events_Read",
+            "Products_Read",
+            "Communication_Read", 
+            "Regio_All",
             "System_Logs_Read"
         },
         "permissions": [
@@ -61,20 +63,21 @@ EXPECTED_ROLE_ASSIGNMENTS = {
     "test.webmaster@hdcn-test.nl": {
         "role_type": "Webmaster",
         "expected_groups": {
-            "Members_Read_All",
-            "Events_CRUD_All",
-            "Products_CRUD_All",
-            "Communication_CRUD_All",  # Note: Using available Communication group
-            "System_CRUD_All"         # Note: Using available System group
+            "Members_Read",
+            "Events_CRUD",
+            "Products_CRUD",
+            "Communication_CRUD",  # Note: Using available Communication group
+            "System_User_Management",  # Note: Using available System group
+            "Regio_All"
         },
         "permissions": [
             "Read all member data",
             "CRUD all events",
             "CRUD all products",
             "CRUD all communication", 
-            "CRUD all system"
+            "System user management"
         ],
-        "note": "Using available Communication_Export_All and System_User_Management groups as Communication_CRUD_All and System_CRUD_All may not exist yet"
+        "note": "Updated to use new role structure with Permission + Region combinations"
     },
     "test.regular@hdcn-test.nl": {
         "role_type": "Regular Member",

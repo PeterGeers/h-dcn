@@ -23,7 +23,7 @@ interface ApplicantGuardProps {
 }
 
 /**
- * ApplicantGuard ensures that users with 'Verzoek_lid' role who haven't 
+ * ApplicantGuard ensures that users with 'verzoek_lid' role who haven't 
  * completed their membership application are redirected to the application form.
  */
 function ApplicantGuard({ user, children }: ApplicantGuardProps) {
@@ -63,7 +63,7 @@ function ApplicantGuard({ user, children }: ApplicantGuardProps) {
         }
 
         // Check if user is an applicant
-        const isApplicant = userGroups.includes('Verzoek_lid');
+        const isApplicant = userGroups.includes('verzoek_lid');
         
         if (isApplicant && user.attributes?.email) {
           // Check if they already exist in the member database

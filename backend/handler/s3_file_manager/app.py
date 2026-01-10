@@ -7,15 +7,29 @@ import uuid
 from datetime import datetime
 
 # Import shared authentication utilities from layer
-from shared.auth_utils import (
-    extract_user_credentials, 
-    validate_permissions, 
-    cors_headers, 
-    create_error_response, 
-    create_success_response,
-    handle_options_request,
-    log_successful_access
-)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using shared auth layer")
+except ImportError:
+    # Fallback to local auth_fallback.py
+    from auth_fallback import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using fallback auth - ensure auth_fallback.py is updated")
 
 # Initialize S3 client
 s3_client = boto3.client('s3')
@@ -275,30 +289,31 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
         
-        # Validate permissions for S3 operations using shared auth layer
-        # S3 is used for multiple resources (products, parameters.json, etc.)
-        # Allow any user with CRUD permissions or admin roles
-        required_permissions = [
-            'Products_CRUD_All', 'Webshop_Management', 'System_CRUD_All', 
-            'Members_CRUD_All', 'Events_CRUD_All', 'Communication_CRUD_All',
-            'hdcnAdmins', 'Webmaster', 'National_Chairman', 'National_Secretary',
-            'System_User_Management', 'System_Logs_Read'  # Add more roles that might need S3 access
-        ]
-        has_permission, permission_error = validate_permissions(
-            user_roles, 
-            required_permissions, 
-            user_email,
+        # NEW: Permission-based validation for S3 operations
+        # S3 is used for multiple resources (members, products, events, parquet files, etc.)
+        # Allow users with members_read, products_read, or events_read permissions
+        # When a user with members_read and regio Zuid Holland logs in, 
+        # the whole parquet file should be downloaded and the frontend will filter
+        # Note: Basic members (hdcnLeden) have events_read/products_read for webshop access
+        # This is acceptable as S3 operations are further secured by bucket validation
+        required_permissions = ['members_read', 'products_read', 'events_read']
+        
+        is_authorized, error_response, regional_info = validate_permissions_with_regions(
+            user_roles, required_permissions, user_email, 
             resource_context={'operation': 's3_file_management', 'bucket': 'my-hdcn-bucket'}
         )
-        if not has_permission:
-            return permission_error
+        if not is_authorized:
+            return error_response
         
-        # Log successful access
+        # Log successful access with regional info
         log_successful_access(
             user_email, 
             user_roles, 
             f"s3_file_manager_{event.get('httpMethod', 'UNKNOWN').lower()}",
-            resource_context={'bucket': 'my-hdcn-bucket'}
+            resource_context={
+                'bucket': 'my-hdcn-bucket',
+                'regional_access': regional_info
+            }
         )
         
         # Route based on HTTP method

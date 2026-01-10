@@ -14,7 +14,7 @@ describe('ParameterManagement Component Tests', () => {
 
   describe('Role-based Access Control Logic', () => {
     it('should identify admin users correctly', () => {
-      const adminRoles = ['hdcnAdmins', 'System_CRUD_All', 'Webmaster'];
+      const adminRoles = ['Members_CRUD', 'System_User_Management'];
       
       adminRoles.forEach(role => {
         mockGetUserRoles.mockReturnValue([role]);
@@ -29,9 +29,8 @@ describe('ParameterManagement Component Tests', () => {
         };
         
         const userRoles = getUserRoles(mockUser);
-        const hasAccess = userRoles.includes('hdcnAdmins') || 
-                         userRoles.includes('System_CRUD_All') || 
-                         userRoles.includes('Webmaster');
+        const hasAccess = userRoles.includes('Members_CRUD') || 
+                         userRoles.includes('System_User_Management');
         
         expect(hasAccess).toBe(true);
         expect(getUserRoles).toHaveBeenCalledWith(mockUser);
@@ -39,7 +38,7 @@ describe('ParameterManagement Component Tests', () => {
     });
 
     it('should deny access to non-admin users', () => {
-      const nonAdminRoles = ['hdcnLeden', 'hdcnRegio_Noord', 'Members_Read_Only'];
+      const nonAdminRoles = ['hdcnLeden', 'Regio_Utrecht', 'Members_Read'];
       
       nonAdminRoles.forEach(role => {
         mockGetUserRoles.mockReturnValue([role]);
@@ -54,9 +53,8 @@ describe('ParameterManagement Component Tests', () => {
         };
         
         const userRoles = getUserRoles(mockUser);
-        const hasAccess = userRoles.includes('hdcnAdmins') || 
-                         userRoles.includes('System_CRUD_All') || 
-                         userRoles.includes('Webmaster');
+        const hasAccess = userRoles.includes('Members_CRUD') || 
+                         userRoles.includes('System_User_Management');
         
         expect(hasAccess).toBe(false);
         expect(getUserRoles).toHaveBeenCalledWith(mockUser);
@@ -74,9 +72,8 @@ describe('ParameterManagement Component Tests', () => {
       };
       
       const userRoles = getUserRoles(mockUser);
-      const hasAccess = userRoles.includes('hdcnAdmins') || 
-                       userRoles.includes('System_CRUD_All') || 
-                       userRoles.includes('Webmaster');
+      const hasAccess = userRoles.includes('Members_CRUD') || 
+                       userRoles.includes('System_User_Management');
       
       expect(hasAccess).toBe(false);
       expect(userRoles).toEqual([]);
@@ -87,9 +84,8 @@ describe('ParameterManagement Component Tests', () => {
       
       [null, undefined].forEach(user => {
         const userRoles = getUserRoles(user);
-        const hasAccess = userRoles.includes('hdcnAdmins') || 
-                         userRoles.includes('System_CRUD_All') || 
-                         userRoles.includes('Webmaster');
+        const hasAccess = userRoles.includes('Members_CRUD') || 
+                         userRoles.includes('System_User_Management');
         
         expect(hasAccess).toBe(false);
         expect(userRoles).toEqual([]);
@@ -97,7 +93,7 @@ describe('ParameterManagement Component Tests', () => {
     });
 
     it('should handle multiple roles correctly', () => {
-      const multipleRoles = ['hdcnAdmins', 'Webmaster', 'Members_CRUD_All'];
+      const multipleRoles = ['Members_CRUD', 'System_User_Management', 'Regio_All'];
       mockGetUserRoles.mockReturnValue(multipleRoles);
       
       const mockUser = {
@@ -110,9 +106,8 @@ describe('ParameterManagement Component Tests', () => {
       };
       
       const userRoles = getUserRoles(mockUser);
-      const hasAccess = userRoles.includes('hdcnAdmins') || 
-                       userRoles.includes('System_CRUD_All') || 
-                       userRoles.includes('Webmaster');
+      const hasAccess = userRoles.includes('Members_CRUD') || 
+                       userRoles.includes('System_User_Management');
       
       expect(hasAccess).toBe(true);
       expect(userRoles).toEqual(multipleRoles);
@@ -122,13 +117,11 @@ describe('ParameterManagement Component Tests', () => {
   describe('Permission Logic Tests', () => {
     it('should validate admin role permissions', () => {
       const adminRoles = [
-        'hdcnAdmins',
+        'Members_CRUD',
         'System_User_Management', 
-        'System_CRUD_All',
         'Webmaster',
-        'Members_CRUD_All',
-        'hdcnWebmaster',
-        'hdcnLedenadministratie'
+        'Products_CRUD',
+        'Events_CRUD'
       ];
 
       adminRoles.forEach(role => {
@@ -138,13 +131,10 @@ describe('ParameterManagement Component Tests', () => {
         
         // Test the specific logic used in ParameterManagement
         const hasAdminRole = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
+          userRole === 'Members_CRUD' ||
           userRole === 'System_User_Management' ||
-          userRole === 'System_CRUD_All' ||
-          userRole === 'Webmaster' ||
-          userRole === 'Members_CRUD_All' ||
-          userRole === 'hdcnWebmaster' ||
-          userRole === 'hdcnLedenadministratie'
+          userRole === 'Products_CRUD' ||
+          userRole === 'Events_CRUD'
         );
         
         expect(hasAdminRole).toBe(true);
@@ -153,10 +143,8 @@ describe('ParameterManagement Component Tests', () => {
 
     it('should validate write permission roles', () => {
       const writeRoles = [
-        'hdcnAdmins',
-        'System_CRUD_All',
-        'Webmaster',
-        'hdcnWebmaster'
+        'Members_CRUD',
+        'System_User_Management'
       ];
 
       writeRoles.forEach(role => {
@@ -166,10 +154,8 @@ describe('ParameterManagement Component Tests', () => {
         
         // Test the specific logic used for write operations
         const hasWriteRole = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
-          userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster'
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management'
         );
         
         expect(hasWriteRole).toBe(true);
@@ -179,8 +165,8 @@ describe('ParameterManagement Component Tests', () => {
     it('should deny write access to read-only roles', () => {
       const readOnlyRoles = [
         'hdcnLeden',
-        'hdcnRegio_Noord',
-        'Members_Read_Only'
+        'Regio_Utrecht',
+        'Members_Read'
       ];
 
       readOnlyRoles.forEach(role => {
@@ -190,10 +176,8 @@ describe('ParameterManagement Component Tests', () => {
         
         // Test the specific logic used for write operations
         const hasWriteRole = userRoles.some(userRole => 
-          userRole === 'hdcnAdmins' ||
-          userRole === 'System_CRUD_All' ||
-          userRole === 'Webmaster' ||
-          userRole === 'hdcnWebmaster'
+          userRole === 'Members_CRUD' ||
+          userRole === 'System_User_Management'
         );
         
         expect(hasWriteRole).toBe(false);
@@ -205,16 +189,16 @@ describe('ParameterManagement Component Tests', () => {
     it('should format role display correctly', () => {
       const testCases = [
         {
-          roles: ['hdcnAdmins'],
-          expected: '👤 Rollen: hdcnAdmins'
+          roles: ['Members_CRUD'],
+          expected: '👤 Rollen: Members_CRUD'
         },
         {
-          roles: ['hdcnAdmins', 'Webmaster'],
-          expected: '👤 Rollen: hdcnAdmins, Webmaster'
+          roles: ['Members_CRUD', 'System_User_Management'],
+          expected: '👤 Rollen: Members_CRUD, System_User_Management'
         },
         {
-          roles: ['hdcnAdmins', 'Webmaster', 'System_CRUD_All', 'Members_CRUD_All'],
-          expected: '👤 Rollen: hdcnAdmins, Webmaster +2'
+          roles: ['Members_CRUD', 'System_User_Management', 'Products_CRUD', 'Regio_All'],
+          expected: '👤 Rollen: Members_CRUD, System_User_Management +2'
         },
         {
           roles: [],
@@ -233,18 +217,13 @@ describe('ParameterManagement Component Tests', () => {
     it('should determine access correctly based on role combinations', () => {
       const testScenarios = [
         {
-          description: 'Admin user with single role',
-          roles: ['hdcnAdmins'],
+          description: 'Admin user with CRUD role',
+          roles: ['Members_CRUD'],
           expectedAccess: true
         },
         {
-          description: 'System admin with CRUD role',
-          roles: ['System_CRUD_All'],
-          expectedAccess: true
-        },
-        {
-          description: 'Webmaster role',
-          roles: ['Webmaster'],
+          description: 'System admin with user management role',
+          roles: ['System_User_Management'],
           expectedAccess: true
         },
         {
@@ -254,12 +233,12 @@ describe('ParameterManagement Component Tests', () => {
         },
         {
           description: 'Regional user',
-          roles: ['hdcnRegio_Noord'],
+          roles: ['Regio_Utrecht'],
           expectedAccess: false
         },
         {
           description: 'Mixed admin and member roles',
-          roles: ['hdcnAdmins', 'hdcnLeden'],
+          roles: ['Members_CRUD', 'hdcnLeden'],
           expectedAccess: true
         },
         {
@@ -273,9 +252,8 @@ describe('ParameterManagement Component Tests', () => {
         mockGetUserRoles.mockReturnValue(roles);
         
         const userRoles = getUserRoles({});
-        const hasAccess = userRoles.includes('hdcnAdmins') || 
-                         userRoles.includes('System_CRUD_All') || 
-                         userRoles.includes('Webmaster');
+        const hasAccess = userRoles.includes('Members_CRUD') || 
+                         userRoles.includes('System_User_Management');
         
         expect(hasAccess).toBe(expectedAccess);
       });

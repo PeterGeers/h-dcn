@@ -3,9 +3,65 @@
  * 
  * This file defines all possible member fields with comprehensive metadata
  * for use across different contexts (table, view, edit, forms).
+ * 
+ * ============================================================================
+ * CALCULATED/COMPUTED FIELDS OVERVIEW
+ * ============================================================================
+ * 
+ * The following fields are automatically calculated and cannot be edited:
+ * 
+ * 1. korte_naam (Korte naam)
+ *    - Function: concatenateName
+ *    - Source: voornaam + tussenvoegsel + achternaam
+ *    - Description: Combines first name, prefix, and last name with spaces
+ *    - Example: "Jan van der Berg"
+ * 
+ * 2. leeftijd (Leeftijd)
+ *    - Function: calculateAge
+ *    - Source: geboortedatum
+ *    - Description: Calculates current age in years from birth date
+ *    - Example: 45 (if born in 1978 and current year is 2023)
+ * 
+ * 3. verjaardag (Verjaardag)
+ *    - Function: extractBirthday
+ *    - Source: geboortedatum
+ *    - Description: Extracts day and month from birth date in full month name format
+ *    - Example: "september 26" (for September 26th)
+ * 
+ * 4. jaren_lid (Aantal jaren lid)
+ *    - Function: yearsDifference
+ *    - Source: ingangsdatum (mapped to tijdstempel in database)
+ *    - Description: Calculates years of membership from start date
+ *    - Example: 5 (if member since 2018 and current year is 2023)
+ * 
+ * 5. aanmeldingsjaar (Aanmeldingsjaar)
+ *    - Function: year
+ *    - Source: ingangsdatum (mapped to tijdstempel in database)
+ *    - Description: Extracts year from membership start date
+ *    - Example: 2018
+ * 
+ * 6. lidnummer (Lidnummer)
+ *    - Function: nextLidnummer
+ *    - Source: computed automatically
+ *    - Description: Auto-assigned member number (highest existing + 1)
+ *    - Example: 1234
+ * 
+ * COMPUTE FUNCTION IMPLEMENTATIONS:
+ * - calculateAge: Calculates age with proper leap year and month/day handling
+ * - extractBirthday: Formats birth date as dd-mm string
+ * - concatenateName: Joins name parts with spaces, filtering empty values
+ * - yearsDifference: Calculates years between start date and current date
+ * - year: Extracts year from date
+ * - nextLidnummer: Auto-generates next available member number
+ * 
+ * All computed fields are read-only and update automatically when their
+ * source fields change in the form interface.
+ * ============================================================================
  */
 
-export type HDCNGroup = 'hdcnLeden' | 'System_CRUD_All' | 'Members_Read_All' | 'Members_CRUD_All' | 'Members_Status_Approve' | 'System_User_Management' | 'National_Chairman' | 'National_Secretary' | 'Communication_Read_All' | 'Communication_CRUD_All' | 'Club_Magazine_Editorial' | 'Event_Organizer' | 'Verzoek_lid';
+// Import HDCNGroup from user.ts to avoid duplication
+export type { HDCNGroup } from '../types/user';
+import type { HDCNGroup } from '../types/user';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -27,6 +83,70 @@ export interface ValidationRule {
   message?: string;
   condition?: ConditionalRule;
 }
+
+// ============================================================================
+// PERMISSION HELPER FUNCTIONS FOR NEW ROLE STRUCTURE
+// ============================================================================
+
+/**
+ * Helper function to generate permission configurations for the new role structure
+ * This makes it easier to maintain consistent permissions across all fields
+ */
+export const createPermissionConfig = (
+  viewLevel: 'public' | 'member' | 'admin' | 'system' = 'member',
+  editLevel: 'none' | 'self' | 'admin' | 'system' = 'none',
+  selfService: boolean = false
+): PermissionConfig => {
+  const viewPermissions: HDCNGroup[] = [];
+  const editPermissions: HDCNGroup[] = [];
+
+  // View permissions based on level
+  switch (viewLevel) {
+    case 'public':
+      viewPermissions.push('hdcnLeden', 'Members_Read', 'Members_CRUD');
+      break;
+    case 'member':
+      viewPermissions.push('hdcnLeden', 'Members_Read', 'Members_CRUD');
+      break;
+    case 'admin':
+      viewPermissions.push('Members_Read', 'Members_CRUD');
+      break;
+    case 'system':
+      viewPermissions.push('System_User_Management');
+      break;
+  }
+
+  // Edit permissions based on level
+  switch (editLevel) {
+    case 'self':
+      if (selfService) {
+        editPermissions.push('hdcnLeden');
+      }
+      editPermissions.push('Members_CRUD');
+      // System administrators can edit self-service fields for user support
+      if (selfService) {
+        editPermissions.push('System_User_Management');
+      }
+      break;
+    case 'admin':
+      editPermissions.push('Members_CRUD');
+      // System administrators can edit self-service fields for user support
+      if (selfService) {
+        editPermissions.push('System_User_Management');
+      }
+      break;
+    case 'system':
+      editPermissions.push('System_User_Management');
+      break;
+    // 'none' case: no edit permissions
+  }
+
+  return {
+    view: viewPermissions,
+    edit: editPermissions,
+    selfService
+  };
+};
 
 export interface PermissionConfig {
   view: HDCNGroup[];
@@ -72,7 +192,7 @@ export interface FieldDefinition {
   
   // Computed Fields
   computed?: boolean;
-  computeFrom?: string;
+  computeFrom?: string | string[];
   computeFunction?: string;
 }
 
@@ -139,9 +259,9 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'min_length', value: 1, message: 'Voornaam moet minimaal 1 karakter bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'National_Chairman', 'National_Secretary'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true
+      ...createPermissionConfig('member', 'admin', true),
+      view: [...createPermissionConfig('member', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: 'Voer uw voornaam in',
     helpText: 'Uw officiële voornaam',
@@ -161,9 +281,9 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'min_length', value: 1, message: 'Achternaam moet minimaal 1 karakter bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'National_Chairman', 'National_Secretary'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true
+      ...createPermissionConfig('member', 'admin', true),
+      view: [...createPermissionConfig('member', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: 'Voer uw achternaam in',
     helpText: 'Uw officiële achternaam',
@@ -182,9 +302,9 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'pattern', value: '^[A-Z]+(\\.[A-Z]+)*\\.?$', message: 'Initialen moeten hoofdletters zijn, gescheiden door punten (bijv. J.P.)' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true
+      ...createPermissionConfig('member', 'admin', true),
+      view: [...createPermissionConfig('member', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: 'Bijv. J.P.',
     helpText: 'Uw initialen met punten',
@@ -202,13 +322,28 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'max_length', value: 20, message: 'Tussenvoegsel mag maximaal 20 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true
+      ...createPermissionConfig('member', 'admin', true),
+      view: [...createPermissionConfig('member', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: 'Bijv. van, de, van der',
     helpText: 'Tussenvoegsel in uw naam',
     width: 'small'
+  },
+
+  korte_naam: {
+    key: 'korte_naam',
+    label: 'Korte naam',
+    dataType: 'string',
+    inputType: 'text',
+    group: 'personal',
+    order: 5,
+    computed: true,
+    computeFrom: ['voornaam', 'tussenvoegsel', 'achternaam'],
+    computeFunction: 'concatenateName',
+    permissions: createPermissionConfig('member', 'none', false),
+    helpText: 'Automatisch samengestelde naam',
+    width: 'large'
   },
 
   geboortedatum: {
@@ -222,15 +357,52 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'required', message: 'Geboortedatum is verplicht' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'National_Secretary'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
-      regionalRestricted: true
+      ...createPermissionConfig('admin', 'admin', true),
+      regionalRestricted: true,
+      view: [...createPermissionConfig('admin', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('admin', 'admin', true).edit, 'verzoek_lid']
     },
     displayFormat: 'dd-MM-yyyy',
     placeholder: 'dd-mm-jjjj',
     helpText: 'Uw geboortedatum voor leeftijdsverificatie',
     width: 'medium'
+  },
+
+  leeftijd: {
+    key: 'leeftijd',
+    label: 'Leeftijd',
+    dataType: 'number',
+    inputType: 'number',
+    group: 'personal',
+    order: 6,
+    computed: true,
+    computeFrom: 'geboortedatum',
+    computeFunction: 'calculateAge',
+    permissions: {
+      ...createPermissionConfig('admin', 'none', false),
+      regionalRestricted: true
+    },
+    helpText: 'Automatisch berekende leeftijd',
+    suffix: 'jaar',
+    width: 'small'
+  },
+
+  verjaardag: {
+    key: 'verjaardag',
+    label: 'Verjaardag',
+    dataType: 'string',
+    inputType: 'text',
+    group: 'personal',
+    order: 7,
+    computed: true,
+    computeFrom: 'geboortedatum',
+    computeFunction: 'extractBirthday',
+    permissions: {
+      ...createPermissionConfig('admin', 'none', false),
+      regionalRestricted: true
+    },
+    helpText: 'Dag en maand van verjaardag (bijv. September 26)',
+    width: 'small'
   },
 
   geslacht: {
@@ -245,10 +417,10 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'required', message: 'Geslacht is verplicht' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
-      regionalRestricted: true
+      ...createPermissionConfig('admin', 'admin', true),
+      regionalRestricted: true,
+      view: [...createPermissionConfig('admin', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('admin', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: 'Selecteer geslacht',
     helpText: 'M = Man, V = Vrouw, X = Onbepaald, N = Niet opgegeven',
@@ -268,9 +440,9 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'email', message: 'Voer een geldig emailadres in' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'Communication_Read_All'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true
+      ...createPermissionConfig('member', 'admin', true),
+      view: [...createPermissionConfig('member', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: 'naam@voorbeeld.nl',
     helpText: 'Uw primaire emailadres (gekoppeld aan uw account, niet wijzigbaar)',
@@ -289,10 +461,10 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'min_length', value: 10, message: 'Telefoonnummer moet minimaal 10 cijfers bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
-      regionalRestricted: true
+      ...createPermissionConfig('member', 'admin', true),
+      regionalRestricted: true,
+      view: [...createPermissionConfig('member', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', true).edit, 'verzoek_lid']
     },
     placeholder: '06-12345678 of +31612345678',
     helpText: 'Uw telefoonnummer voor contact',
@@ -308,9 +480,7 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
     order: 9,
     enumOptions: ['Ja', 'Nee'],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     helpText: 'Toestemming voor gebruik gegevens',
@@ -336,10 +506,10 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'max_length', value: 100, message: 'Naam mag maximaal 100 karakters bevatten' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
-      regionalRestricted: true
+      ...createPermissionConfig('admin', 'admin', true),
+      regionalRestricted: true,
+      view: [...createPermissionConfig('admin', 'admin', true).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('admin', 'admin', true).edit, 'verzoek_lid']
     },
     showWhen: [
       { field: 'geboortedatum', operator: 'age_less_than', value: 18 }
@@ -364,9 +534,7 @@ export const MEMBER_FIELDS: Record<string, FieldDefinition> = {
       { type: 'max_length', value: 100, message: 'Straat mag maximaal 100 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'Straatnaam en huisnummer',
@@ -404,9 +572,7 @@ postcode: {
     }
   ],
   permissions: {
-    view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-    edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-    selfService: true,
+    ...createPermissionConfig('member', 'admin', true),
     regionalRestricted: true
   },
   placeholder: '1234AB of internationaal formaat',
@@ -426,9 +592,7 @@ postcode: {
       { type: 'max_length', value: 50, message: 'Woonplaats mag maximaal 50 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'Plaatsnaam',
@@ -448,9 +612,7 @@ postcode: {
       { type: 'max_length', value: 50, message: 'Land mag maximaal 50 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     defaultValue: 'Nederland',
@@ -475,9 +637,7 @@ postcode: {
       { type: 'required', message: 'Status is verplicht' }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'Members_Status_Approve', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'Members_Status_Approve'],
-      selfService: false,
+      ...createPermissionConfig('admin', 'admin', false),
       regionalRestricted: true
     },
     placeholder: 'Selecteer status',
@@ -496,17 +656,17 @@ postcode: {
     enumOptions: ['Gewoon lid', 'Gezins lid', 'Donateur', 'Gezins donateur','Erelid','Overig'],
     // Role-based enum filtering - restrict certain membership types to specific roles
     enumPermissions: {
-      'Erelid': ['Members_CRUD_All', 'System_CRUD_All'], // Only full CRUD roles can see/assign Erelid
-      'Other': ['Members_CRUD_All', 'System_CRUD_All']   // Only full CRUD roles can see/assign Other
+      'Erelid': ['Members_CRUD', 'System_User_Management'], // Only full CRUD roles can see/assign Erelid
+      'Overig': ['Members_CRUD', 'System_User_Management']   // Only full CRUD roles can see/assign Other
     },
     validation: [
       { type: 'required', message: 'Lidmaatschap is verplicht' }
     ],
     permissions: {
-      view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: false,
-      regionalRestricted: true
+      ...createPermissionConfig('member', 'admin', false),
+      regionalRestricted: true,
+      view: [...createPermissionConfig('member', 'admin', false).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', false).edit, 'verzoek_lid']
     },
     placeholder: 'Selecteer lidmaatschapstype',
     helpText: 'Type lidmaatschap bepaalt rechten en contributie',
@@ -514,11 +674,7 @@ postcode: {
     // Allow new applicants to select membership type
     conditionalEdit: {
       condition: { field: 'status', operator: 'equals', value: 'Aangemeld' },
-      permissions: {
-        view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-        edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-        selfService: true // Allow self-service for new applicants
-      }
+      permissions: createPermissionConfig('member', 'self', true)
     }
   },
 
@@ -544,16 +700,16 @@ postcode: {
     ],
     // Role-based enum filtering - restrict Other to specific roles
     enumPermissions: {
-      'Other': ['Members_CRUD_All', 'System_CRUD_All'] // Only full CRUD roles can see/assign Other
+      'Overig': ['Members_CRUD', 'System_User_Management'] // Only full CRUD roles can see/assign Other
     },
     validation: [
       { type: 'required', message: 'Regio is verplicht' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All'],
-      selfService: false,
-      regionalRestricted: true
+      ...createPermissionConfig('member', 'admin', false),
+      regionalRestricted: true,
+      view: [...createPermissionConfig('member', 'admin', false).view, 'verzoek_lid'],
+      edit: [...createPermissionConfig('member', 'admin', false).edit, 'verzoek_lid']
     },
     placeholder: 'Selecteer uw regio',
     helpText: 'H-DCN regio waar u lid van bent',
@@ -561,11 +717,7 @@ postcode: {
     // Conditional edit permissions for new applicants
     conditionalEdit: {
       condition: { field: 'status', operator: 'equals', value: 'Aangemeld' },
-      permissions: {
-        view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-        edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'], // New applicants can select their region
-        selfService: true // Allow self-service for new applicants
-      }
+      permissions: createPermissionConfig('member', 'self', true)
     }
   },
 
@@ -577,9 +729,7 @@ postcode: {
     group: 'membership',
     order: 4,
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: [], // Cannot be edited - automatically calculated
-      selfService: false,
+      ...createPermissionConfig('member', 'none', false),
       membershipTypeRestricted: ['Gewoon lid', 'Gezins lid', 'Erelid']
     },
     showWhen: [
@@ -601,9 +751,7 @@ postcode: {
     order: 5,
     enumOptions: ['Digitaal', 'Papier', 'Geen'],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'Club_Magazine_Editorial'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management', 'Club_Magazine_Editorial'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'Selecteer clubblad voorkeur',
@@ -621,9 +769,7 @@ postcode: {
     order: 6,
     enumOptions: ['Ja', 'Nee'],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'Communication_Read_All'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management', 'Communication_CRUD_All'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'Nieuwsbrief ontvangen?',
@@ -662,9 +808,7 @@ postcode: {
       }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('admin', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'Selecteer hoe u ons heeft gevonden',
@@ -682,11 +826,7 @@ postcode: {
     validation: [
       { type: 'max_length', value: 1000, message: 'Notities mogen maximaal 1000 karakters bevatten' }
     ],
-    permissions: {
-      view: ['System_CRUD_All', 'Members_CRUD_All', 'System_CRUD_All'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_CRUD_All'],
-      selfService: false
-    },
+    permissions: createPermissionConfig('admin', 'admin', false),
     helpText: 'Interne notities voor administratieve doeleinden'
   },
 
@@ -698,9 +838,7 @@ postcode: {
     group: 'membership',
     order: 7,
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All'],
-      selfService: false,
+      ...createPermissionConfig('member', 'admin', false),
       regionalRestricted: true
     },
     displayFormat: 'dd-MM-yyyy',
@@ -714,11 +852,7 @@ postcode: {
     inputType: 'number',
     group: 'administrative',
     order: 1,
-    permissions: {
-      view: ['System_CRUD_All', 'Members_CRUD_All', 'System_CRUD_All'],
-      edit: [], // Cannot be edited - computed field
-      selfService: false
-    },
+    permissions: createPermissionConfig('admin', 'none', false),
     computed: true,
     computeFrom: 'ingangsdatum',
     computeFunction: 'year',
@@ -732,11 +866,7 @@ postcode: {
     inputType: 'number',
     group: 'membership',
     order: 8,
-    permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: [], // Cannot be edited - computed field
-      selfService: false
-    },
+    permissions: createPermissionConfig('member', 'none', false),
     computed: true,
     computeFrom: 'ingangsdatum',
     computeFunction: 'yearsDifference',
@@ -751,11 +881,7 @@ postcode: {
     inputType: 'date',
     group: 'administrative',
     order: 4,
-    permissions: {
-      view: ['System_CRUD_All', 'Members_CRUD_All', 'System_CRUD_All'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_CRUD_All'],
-      selfService: false
-    },
+    permissions: createPermissionConfig('admin', 'admin', false),
     displayFormat: 'dd-MM-yyyy'
   },
 
@@ -766,11 +892,7 @@ postcode: {
     inputType: 'date',
     group: 'administrative',
     order: 5,
-    permissions: {
-      view: ['System_CRUD_All', 'System_CRUD_All'],
-      edit: [], // Display only - cannot be edited
-      selfService: false
-    },
+    permissions: createPermissionConfig('system', 'none', false),
     displayFormat: 'dd-MM-yyyy HH:mm:ss',
     helpText: 'Technische datum wanneer record is aangemaakt'
   },
@@ -782,11 +904,7 @@ postcode: {
     inputType: 'date',
     group: 'administrative',
     order: 6,
-    permissions: {
-      view: ['System_CRUD_All', 'System_CRUD_All'],
-      edit: [], // Display only - cannot be edited
-      selfService: false
-    },
+    permissions: createPermissionConfig('system', 'none', false),
     displayFormat: 'dd-MM-yyyy HH:mm:ss',
     helpText: 'Technische datum wanneer record laatst is bijgewerkt'
   },
@@ -808,9 +926,7 @@ postcode: {
       'Eigenbouw'
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       membershipTypeRestricted: ['Gewoon lid', 'Gezins lid'],
       regionalRestricted: true
     },
@@ -834,9 +950,7 @@ postcode: {
       { type: 'max_length', value: 50, message: 'Motortype mag maximaal 50 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       membershipTypeRestricted: ['Gewoon lid', 'Gezins lid'],
       regionalRestricted: true
     },
@@ -857,9 +971,7 @@ postcode: {
     group: 'motor',
     order: 3,
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       membershipTypeRestricted: ['Gewoon lid', 'Gezins lid'],
       regionalRestricted: true
     },
@@ -887,9 +999,7 @@ postcode: {
       { type: 'max_length', value: 15, message: 'Kenteken mag maximaal 15 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       membershipTypeRestricted: ['Gewoon lid', 'Gezins lid'],
       regionalRestricted: true
     },
@@ -924,9 +1034,7 @@ postcode: {
       { type: 'max_length', value: 34, message: 'IBAN mag maximaal 34 karakters bevatten' }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-      edit: ['System_CRUD_All',  'Members_CRUD_All'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'NL12ABCD0123456789 of internationaal IBAN',
@@ -950,9 +1058,7 @@ postcode: {
       }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All'],
-      selfService: true,
+      ...createPermissionConfig('member', 'admin', true),
       regionalRestricted: true
     },
     placeholder: 'Selecteer betaalwijze',
@@ -1007,11 +1113,9 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     description: 'Standard member table for general administration',
     columns: [
       { fieldKey: 'lidnummer', visible: true, order: 1, width: 80, sortable: true, filterable: true, filterType: 'number', sticky: true },
-      { fieldKey: 'voornaam', visible: true, order: 2, width: 120, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'tussenvoegsel', visible: true, order: 3, width: 80, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'achternaam', visible: true, order: 4, width: 140, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'geboortedatum', visible: true, order: 5, width: 110, sortable: true, filterable: true, filterType: 'date' },
-      { fieldKey: 'email', visible: true, order: 6, width: 200, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'korte_naam', visible: true, order: 2, width: 200, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'geboortedatum', visible: true, order: 3, width: 110, sortable: true, filterable: true, filterType: 'date' },
+      { fieldKey: 'email', visible: true, order: 4, width: 200, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'telefoon', visible: false, order: 7, width: 120, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'straat', visible: true, order: 8, width: 180, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'postcode', visible: true, order: 9, width: 80, sortable: true, filterable: true, filterType: 'text' },
@@ -1023,13 +1127,13 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
       { fieldKey: 'ingangsdatum', visible: true, order: 15, width: 110, sortable: true, filterable: true, filterType: 'date' },
       { fieldKey: 'jaren_lid', visible: true, order: 16, width: 80, sortable: true, filterable: true, filterType: 'number', align: 'center' }
     ],
-    defaultSort: { field: 'achternaam', direction: 'asc' },
+    defaultSort: { field: 'korte_naam', direction: 'asc' },
     pageSize: 50,
     exportable: true,
-    regionalRestricted: true, // Apply regional filtering for Members_Read_All users
+    regionalRestricted: true, // Apply regional filtering for Members_Read users
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      export: ['System_CRUD_All','Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['Members_Read', 'Members_CRUD', 'System_User_Management'],
+      export: ['Members_Read', 'Members_CRUD', 'System_User_Management']
     }
   },
 
@@ -1039,18 +1143,17 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     description: 'Minimal member table for quick reference',
     columns: [
       { fieldKey: 'lidnummer', visible: true, order: 1, width: 50, sortable: true, filterable: true, filterType: 'number', sticky: true },
-      { fieldKey: 'voornaam', visible: true, order: 2, width: 100, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'achternaam', visible: true, order: 3, width: 120, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'email', visible: true, order: 4, width: 180, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'regio', visible: true, order: 5, width: 100, sortable: true, filterable: true, filterType: 'select' },
+      { fieldKey: 'korte_naam', visible: true, order: 2, width: 180, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'email', visible: true, order: 3, width: 180, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'regio', visible: true, order: 4, width: 100, sortable: true, filterable: true, filterType: 'select' },
       { fieldKey: 'status', visible: true, order: 6, width: 90, sortable: true, filterable: true, filterType: 'select' }
     ],
-    defaultSort: { field: 'achternaam', direction: 'asc' },
+    defaultSort: { field: 'lidnummer', direction: 'asc' },
     pageSize: 100,
     exportable: false,
-    regionalRestricted: true, // Apply regional filtering for Members_Read_All users
+    regionalRestricted: true, // Apply regional filtering for Members_Read users
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['Members_Read', 'Members_CRUD', 'System_User_Management']
     }
   },
 
@@ -1060,10 +1163,9 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     description: 'Member table focused on motor information',
     columns: [
       { fieldKey: 'lidnummer', visible: true, order: 1, width: 80, sortable: true, filterable: true, filterType: 'number', sticky: true },
-      { fieldKey: 'voornaam', visible: true, order: 2, width: 120, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'achternaam', visible: true, order: 3, width: 140, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'regio', visible: true, order: 4, width: 120, sortable: true, filterable: true, filterType: 'select' },
-      { fieldKey: 'motormerk', visible: true, order: 5, width: 130, sortable: true, filterable: true, filterType: 'select' },
+      { fieldKey: 'korte_naam', visible: true, order: 2, width: 180, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'regio', visible: true, order: 3, width: 120, sortable: true, filterable: true, filterType: 'select' },
+      { fieldKey: 'motormerk', visible: true, order: 4, width: 130, sortable: true, filterable: true, filterType: 'select' },
       { fieldKey: 'motortype', visible: true, order: 6, width: 150, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'bouwjaar', visible: true, order: 7, width: 90, sortable: true, filterable: true, filterType: 'number', align: 'center' },
       { fieldKey: 'kenteken', visible: true, order: 8, width: 120, sortable: true, filterable: true, filterType: 'text' },
@@ -1073,10 +1175,10 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     defaultSort: { field: 'motormerk', direction: 'asc' },
     pageSize: 50,
     exportable: true,
-    regionalRestricted: true, // Apply regional filtering for Members_Read_All users
+    regionalRestricted: true, // Apply regional filtering for Members_Read users
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management', 'Event_Organizer'],
-      export: ['System_CRUD_All', 'Members_CRUD_All', 'Event_Organizer']
+      view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management', 'Events_Read'],
+      export: ['Members_CRUD', 'Events_CRUD']
     }
   },
 
@@ -1085,10 +1187,9 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     name: 'Communication List',
     description: 'Member table for communication and marketing',
     columns: [
-      { fieldKey: 'voornaam', visible: true, order: 1, width: 120, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'achternaam', visible: true, order: 2, width: 140, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'email', visible: true, order: 3, width: 220, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'straat', visible: true, order: 4, width: 180, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'korte_naam', visible: true, order: 1, width: 180, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'email', visible: true, order: 2, width: 220, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'straat', visible: true, order: 3, width: 180, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'postcode', visible: true, order: 5, width: 80, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'woonplaats', visible: true, order: 6, width: 120, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'land', visible: false, order: 7, width: 100, sortable: true, filterable: true, filterType: 'text' },
@@ -1098,13 +1199,13 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
       { fieldKey: 'privacy', visible: true, order: 11, width: 80, sortable: true, filterable: true, filterType: 'select', align: 'center' },
       { fieldKey: 'status', visible: true, order: 12, width: 100, sortable: true, filterable: true, filterType: 'select' }
     ],
-    defaultSort: { field: 'achternaam', direction: 'asc' },
+    defaultSort: { field: 'korte_naam', direction: 'asc' },
     pageSize: 100,
     exportable: true,
-    regionalRestricted: true, // Apply regional filtering for Members_Read_All users
+    regionalRestricted: true, // Apply regional filtering for Members_Read users
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Communication_Read_All', 'Communication_CRUD_All'],
-      export: ['System_CRUD_All', 'Communication_CRUD_All', 'Communication_Read_All']
+      view: ['Members_Read', 'Members_CRUD', 'Communication_Read', 'Communication_CRUD'],
+      export: ['Members_CRUD', 'Communication_Export']
     }
   },
 
@@ -1114,22 +1215,21 @@ export const MEMBER_TABLE_CONTEXTS: Record<string, TableContextConfig> = {
     description: 'Member table for financial administration',
     columns: [
       { fieldKey: 'lidnummer', visible: true, order: 1, width: 80, sortable: true, filterable: true, filterType: 'number', sticky: true },
-      { fieldKey: 'voornaam', visible: true, order: 2, width: 120, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'achternaam', visible: true, order: 3, width: 140, sortable: true, filterable: true, filterType: 'text' },
-      { fieldKey: 'lidmaatschap', visible: true, order: 4, width: 130, sortable: true, filterable: true, filterType: 'select' },
-      { fieldKey: 'betaalwijze', visible: true, order: 5, width: 110, sortable: true, filterable: true, filterType: 'select' },
+      { fieldKey: 'korte_naam', visible: true, order: 2, width: 180, sortable: true, filterable: true, filterType: 'text' },
+      { fieldKey: 'lidmaatschap', visible: true, order: 3, width: 130, sortable: true, filterable: true, filterType: 'select' },
+      { fieldKey: 'betaalwijze', visible: true, order: 4, width: 110, sortable: true, filterable: true, filterType: 'select' },
       { fieldKey: 'bankrekeningnummer', visible: true, order: 6, width: 200, sortable: true, filterable: true, filterType: 'text' },
       { fieldKey: 'status', visible: true, order: 7, width: 100, sortable: true, filterable: true, filterType: 'select' },
       { fieldKey: 'regio', visible: true, order: 8, width: 120, sortable: true, filterable: true, filterType: 'select' },
       { fieldKey: 'ingangsdatum', visible: true, order: 9, width: 110, sortable: true, filterable: true, filterType: 'date' },
       { fieldKey: 'jaren_lid', visible: true, order: 10, width: 80, sortable: true, filterable: true, filterType: 'number', align: 'center' }
     ],
-    defaultSort: { field: 'achternaam', direction: 'asc' },
+    defaultSort: { field: 'korte_naam', direction: 'asc' },
     pageSize: 50,
     exportable: true,
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All'],
-      export:['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All']
+      view: ['Members_Read', 'Members_CRUD'],
+      export: ['Members_Read', 'Members_CRUD']
     }
   }
 };
@@ -1197,11 +1297,9 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         order: 1,
         defaultExpanded: true,
         fields: [
-          { fieldKey: 'voornaam', visible: true, order: 1, span: 1 },
-          { fieldKey: 'tussenvoegsel', visible: true, order: 2, span: 1 },
-          { fieldKey: 'achternaam', visible: true, order: 3, span: 1 },
-          { fieldKey: 'initialen', visible: true, order: 4, span: 1 },
-          { fieldKey: 'geboortedatum', visible: true, order: 5, span: 1 },
+          { fieldKey: 'korte_naam', visible: true, order: 1, span: 2 },
+          { fieldKey: 'initialen', visible: true, order: 2, span: 1 },
+          { fieldKey: 'geboortedatum', visible: true, order: 3, span: 1 },
           { fieldKey: 'geslacht', visible: true, order: 6, span: 1 },
           { fieldKey: 'email', visible: true, order: 7, span: 2 },
           { fieldKey: 'telefoon', visible: true, order: 8, span: 1 },
@@ -1216,8 +1314,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1232,8 +1330,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'land', visible: true, order: 4, span: 1 }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1254,8 +1352,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'wiewatwaar', visible: true, order: 10, span: 3 }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1275,8 +1373,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1290,8 +1388,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'bankrekeningnummer', visible: true, order: 2, span: 2 }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1306,14 +1404,14 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { fieldKey: 'notities', visible: true, order: 6, span: 3 }
         ],
         permissions: {
-          view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       }
     ],
     permissions: {
-      view: ['hdcnLeden', 'System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['hdcnLeden', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+      edit: ['Members_CRUD', 'System_User_Management']
     }
   },
 
@@ -1328,23 +1426,22 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         order: 1,
         defaultExpanded: true,
         fields: [
-          { fieldKey: 'voornaam', visible: true, readOnly: true, order: 1, span: 1 },
-          { fieldKey: 'achternaam', visible: true, readOnly: true, order: 2, span: 1 },
-          { fieldKey: 'lidnummer', visible: true, readOnly: true, order: 3, span: 1 },
-          { fieldKey: 'email', visible: true, readOnly: true, order: 4, span: 2 },
+          { fieldKey: 'korte_naam', visible: true, readOnly: true, order: 1, span: 2 },
+          { fieldKey: 'lidnummer', visible: true, readOnly: true, order: 2, span: 1 },
+          { fieldKey: 'email', visible: true, readOnly: true, order: 3, span: 2 },
           { fieldKey: 'telefoon', visible: true, readOnly: true, order: 5, span: 1 },
           { fieldKey: 'regio', visible: true, readOnly: true, order: 6, span: 1 },
           { fieldKey: 'status', visible: true, readOnly: true, order: 7, span: 1 },
           { fieldKey: 'lidmaatschap', visible: true, readOnly: true, order: 8, span: 1 }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['Members_Read', 'Members_CRUD', 'System_User_Management']
     }
   },
 
@@ -1370,8 +1467,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1397,8 +1494,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1418,8 +1515,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1442,8 +1539,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
         ],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1462,8 +1559,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1473,8 +1570,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         defaultExpanded: true,
         fields: [],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1484,14 +1581,14 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         defaultExpanded: true,
         fields: [],
         permissions: {
-          view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+          view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+          edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
         }
       }
     ],
     permissions: {
-      view: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-      edit: ['Verzoek_lid', 'hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+      view: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+      edit: ['verzoek_lid', 'hdcnLeden', 'Members_CRUD', 'System_User_Management']
     }
   },
 
@@ -1516,8 +1613,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
+          view: ['Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1533,8 +1630,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
+          view: ['Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1554,8 +1651,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
+          view: ['Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1579,8 +1676,8 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
+          view: ['Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       },
       {
@@ -1599,14 +1696,14 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
           }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_CRUD_All'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All']
+          view: ['Members_CRUD', 'System_User_Management'],
+          edit: ['Members_CRUD', 'System_User_Management']
         }
       }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_CRUD_All'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All']
+      view: ['Members_CRUD', 'System_User_Management'],
+      edit: ['Members_CRUD', 'System_User_Management']
     }
   }
 };
@@ -1941,8 +2038,8 @@ export const SIMPLIFIED_REGISTRATION_EXAMPLE = createGroupBasedModalContext(
     )
   ],
   {
-    view: ['System_CRUD_All', 'Members_CRUD_All'],
-    edit: ['System_CRUD_All', 'Members_CRUD_All']
+    view: ['Members_CRUD', 'System_User_Management'],
+    edit: ['Members_CRUD', 'System_User_Management']
   }
 );
 // ============================================================================
@@ -1979,6 +2076,7 @@ export const ULTRA_SIMPLE_REGISTRATION = createGroupBasedModalContext(
       [createGroupConfig('address', 1, {
         fieldOverrides: [
           { fieldKey: 'straat', span: 2 },
+          { fieldKey: 'postcode', span: 1 },
           { fieldKey: 'woonplaats', span: 2 }
         ]
       })],
@@ -2026,8 +2124,8 @@ export const ULTRA_SIMPLE_REGISTRATION = createGroupBasedModalContext(
     )
   ],
   {
-    view: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All'],
-    edit: ['hdcnLeden', 'System_CRUD_All', 'Members_CRUD_All']
+    view: ['hdcnLeden', 'Members_CRUD', 'System_User_Management'],
+    edit: ['hdcnLeden', 'Members_CRUD', 'System_User_Management']
   }
 );
 

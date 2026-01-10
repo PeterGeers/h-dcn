@@ -509,7 +509,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               user={user} 
               functionName="orders" 
               action="read"
-              requiredRoles={['Products_CRUD_All', 'System_User_Management']}
+              requiredRoles={['Products_CRUD', 'System_User_Management']}
               fallback={null}
             >
               <Button
@@ -538,7 +538,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               user={user} 
               functionName="orders" 
               action="read"
-              requiredRoles={['Products_CRUD_All', 'System_User_Management']}
+              requiredRoles={['Products_CRUD', 'System_User_Management']}
               fallback={
                 <Alert status="warning">
                   <AlertIcon />

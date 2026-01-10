@@ -1,6 +1,8 @@
 """
 Fallback authentication module that can be copied to individual handler directories
 This ensures consistent auth behavior even when shared modules aren't available
+
+Updated for new permission + region role structure
 """
 
 import json
@@ -66,27 +68,180 @@ def extract_user_credentials(event):
 
 
 def validate_permissions(user_roles, required_permissions, user_email=None, resource_context=None):
-    """Validate user permissions"""
-    admin_roles = [
-        'hdcnAdmins', 'System_CRUD_All', 'Webmaster', 
-        'Members_CRUD_All', 'Products_CRUD_All', 'Events_CRUD_All',
-        'Communication_CRUD_All', 'National_Chairman', 'National_Secretary'
+    """
+    Validate user permissions using new permission + region role structure
+    Updated to support both legacy and new role structures during migration
+    """
+    # NEW ROLE STRUCTURE: System admin roles (no region required)
+    system_admin_roles = [
+        'System_CRUD', 'System_User_Management', 'System_Logs_Read'
     ]
     
-    # Check for admin access
-    if any(role in admin_roles for role in user_roles):
+    # LEGACY COMPATIBILITY: Old admin roles (being phased out)
+    legacy_admin_roles = [
+        'hdcnAdmins', 'Webmaster', 'National_Chairman', 'National_Secretary'
+    ]
+    
+    # Check for system admin access (new structure)
+    if any(role in system_admin_roles for role in user_roles):
+        print(f"✅ System admin access granted for {user_email}: {[r for r in user_roles if r in system_admin_roles]}")
         return True, None
     
-    # For non-admin users, deny access (can be enhanced with specific permissions later)
+    # Check for legacy admin access (backward compatibility)
+    if any(role in legacy_admin_roles for role in user_roles):
+        print(f"✅ Legacy admin access granted for {user_email}: {[r for r in user_roles if r in legacy_admin_roles]}")
+        return True, None
+    
+    # NEW ROLE STRUCTURE: Permission-based roles
+    permission_roles = [
+        'Members_CRUD', 'Members_Read', 'Members_Export',
+        'Events_CRUD', 'Events_Read', 'Events_Export', 
+        'Products_CRUD', 'Products_Read', 'Products_Export',
+        'Communication_CRUD', 'Communication_Read', 'Communication_Export',
+        'Webshop_Management'
+    ]
+    
+    # Check if user has any permission roles
+    user_permission_roles = [role for role in user_roles if role in permission_roles]
+    if user_permission_roles:
+        # For new role structure, also check for region roles
+        region_roles = [role for role in user_roles if role.startswith('Regio_')]
+        
+        if region_roles or any(role in system_admin_roles for role in user_roles):
+            print(f"✅ Permission + region access granted for {user_email}: permissions={user_permission_roles}, regions={region_roles}")
+            return True, None
+        else:
+            # User has permission role but no region role - incomplete new structure
+            print(f"❌ Incomplete role structure for {user_email}: has permissions {user_permission_roles} but no region role")
+            return False, {
+                'statusCode': 403,
+                'headers': cors_headers(),
+                'body': json.dumps({
+                    'error': 'Access denied: Permission requires region assignment',
+                    'required_structure': 'Permission (e.g., Members_CRUD) + Region (e.g., Regio_All)',
+                    'user_roles': user_roles,
+                    'missing': 'Region assignment (Regio_All, Regio_Noord-Holland, etc.)'
+                })
+            }
+    
+    # LEGACY COMPATIBILITY: Check for old _All roles (being phased out)
+    legacy_all_roles = [role for role in user_roles if role.endswith('_All')]
+    if legacy_all_roles:
+        print(f"⚠️ Legacy _All role access for {user_email}: {legacy_all_roles} (should be migrated)")
+        return True, None
+    
+    # Special roles
+    special_roles = ['hdcnLeden', 'verzoek_lid']
+    if any(role in special_roles for role in user_roles):
+        # These roles have limited access - deny by default for admin functions
+        print(f"❌ Limited role access denied for {user_email}: {[r for r in user_roles if r in special_roles]}")
+        return False, {
+            'statusCode': 403,
+            'headers': cors_headers(),
+            'body': json.dumps({
+                'error': 'Access denied: Insufficient permissions',
+                'user_roles': user_roles,
+                'note': 'Limited access role - contact administrator for elevated permissions'
+            })
+        }
+    
+    # No valid roles found
+    print(f"❌ No valid roles found for {user_email}: {user_roles}")
     return False, {
         'statusCode': 403,
         'headers': cors_headers(),
         'body': json.dumps({
-            'error': 'Access denied: Insufficient permissions',
+            'error': 'Access denied: No valid permissions found',
             'required_permissions': required_permissions,
-            'user_roles': user_roles
+            'user_roles': user_roles,
+            'help': 'Contact administrator to assign appropriate permission and region roles'
         })
     }
+
+
+def validate_permissions_with_regions(user_roles, required_permissions, user_email=None, resource_context=None):
+    """
+    Enhanced permission validation that supports the new permission + region role structure
+    This is a simplified version for auth_fallback.py files
+    """
+    try:
+        # Convert single permission to list
+        if isinstance(required_permissions, str):
+            required_permissions = [required_permissions]
+        
+        # Use the updated validate_permissions function
+        is_authorized, error_response = validate_permissions(
+            user_roles, required_permissions, user_email, resource_context
+        )
+        
+        if is_authorized:
+            # Determine regional access (simplified for fallback)
+            regional_info = determine_regional_access(user_roles, resource_context)
+            return True, None, regional_info
+        else:
+            return False, error_response, None
+            
+    except Exception as e:
+        print(f"Error in validate_permissions_with_regions: {str(e)}")
+        return False, {
+            'statusCode': 500,
+            'headers': cors_headers(),
+            'body': json.dumps({'error': 'Error validating permissions'})
+        }, None
+
+
+def determine_regional_access(user_roles, resource_context=None):
+    """
+    Determine what regional access the user has based on their roles
+    Simplified version for auth_fallback.py files
+    """
+    # System admin roles have full access
+    system_admin_roles = ['System_CRUD', 'System_User_Management', 'System_Logs_Read']
+    if any(role in system_admin_roles for role in user_roles):
+        return {
+            'access_type': 'system_admin',
+            'has_full_access': True,
+            'allowed_regions': ['all']
+        }
+    
+    # Legacy admin roles have full access
+    legacy_admin_roles = ['hdcnAdmins', 'Webmaster', 'National_Chairman', 'National_Secretary']
+    if any(role in legacy_admin_roles for role in user_roles):
+        return {
+            'access_type': 'legacy_admin',
+            'has_full_access': True,
+            'allowed_regions': ['all']
+        }
+    
+    # Check for region roles
+    region_roles = [role for role in user_roles if role.startswith('Regio_')]
+    
+    if 'Regio_All' in region_roles:
+        return {
+            'access_type': 'national',
+            'has_full_access': True,
+            'allowed_regions': ['all']
+        }
+    elif region_roles:
+        # Extract region names from roles
+        allowed_regions = []
+        for role in region_roles:
+            if role.startswith('Regio_'):
+                region = role.replace('Regio_', '')
+                allowed_regions.append(region)
+        
+        return {
+            'access_type': 'regional',
+            'has_full_access': False,
+            'allowed_regions': allowed_regions
+        }
+    else:
+        # No region roles - limited access
+        return {
+            'access_type': 'limited',
+            'has_full_access': False,
+            'allowed_regions': []
+        }
 
 
 def cors_headers():
@@ -138,7 +293,7 @@ def create_success_response(data, status_code=200):
 def require_auth_and_permissions(required_permissions):
     """
     Decorator function to add authentication and permission checking to any handler
-    Usage: @require_auth_and_permissions(['events_update'])
+    Usage: @require_auth_and_permissions(['members_update'])
     """
     def decorator(handler_func):
         def wrapper(event, context):
@@ -151,7 +306,7 @@ def require_auth_and_permissions(required_permissions):
             if auth_error:
                 return auth_error
             
-            # Validate permissions
+            # Validate permissions using new structure
             has_permission, permission_error = validate_permissions(
                 user_roles, required_permissions, user_email
             )

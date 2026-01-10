@@ -46,10 +46,11 @@ TEST_USERS = [
         "family_name": "MemberAdmin",
         "role_type": "Member Administration",
         "groups": [
-            "Members_CRUD_All",
-            "Events_Read_All", 
-            "Products_Read_All",
-            "Communication_Read_All",
+            "Members_CRUD",
+            "Events_Read", 
+            "Products_Read",
+            "Communication_Read",
+            "Regio_All",
             "System_User_Management"
         ],
         "description": "Member administration with full member management permissions"
@@ -61,11 +62,12 @@ TEST_USERS = [
         "family_name": "Chairman",
         "role_type": "National Chairman",
         "groups": [
-            "Members_Read_All",
+            "Members_Read",
             "Members_Status_Approve",
-            "Events_Read_All",
-            "Products_Read_All", 
-            "Communication_Read_All",
+            "Events_Read",
+            "Products_Read", 
+            "Communication_Read",
+            "Regio_All",
             "System_Logs_Read"
         ],
         "description": "National Chairman with read access and status approval permissions"
@@ -77,10 +79,11 @@ TEST_USERS = [
         "family_name": "Webmaster",
         "role_type": "Webmaster",
         "groups": [
-            "Members_Read_All",
-            "Events_CRUD_All",
-            "Products_CRUD_All",
-            "Communication_Export_All",  # Using available Communication group
+            "Members_Read",
+            "Events_CRUD",
+            "Products_CRUD",
+            "Communication_Export",  # Using available Communication group
+            "Regio_All",
             "System_User_Management"     # Using available System group
         ],
         "description": "Webmaster with full system access and available CRUD permissions"

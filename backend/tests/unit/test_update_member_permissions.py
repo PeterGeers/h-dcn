@@ -192,16 +192,20 @@ class TestUpdateMemberPermissions:
         assert error['statusCode'] == 404
         assert 'Member record not found' in error['body']
     
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.extract_user_credentials_fallback')
     @patch('app.validate_field_permissions')
     @patch('app.table')
-    def test_lambda_handler_success(self, mock_table, mock_validate, mock_extract):
+    def test_lambda_handler_success(self, mock_table, mock_validate_fields, mock_extract, mock_validate_perms):
         """Test successful lambda handler execution"""
         # Mock JWT extraction
         mock_extract.return_value = ('test@example.com', ['hdcnLeden'], None)
         
+        # Mock permission validation to return success
+        mock_validate_perms.return_value = (True, None, {'has_full_access': True})
+        
         # Mock field validation
-        mock_validate.return_value = (True, None, [])
+        mock_validate_fields.return_value = (True, None, [])
         
         # Mock DynamoDB get_item for member record (needed for enhanced logging)
         mock_table.get_item.return_value = {
@@ -226,7 +230,7 @@ class TestUpdateMemberPermissions:
         assert result['statusCode'] == 200
         assert 'Member updated successfully' in result['body']
     
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.extract_user_credentials_fallback')
     def test_lambda_handler_auth_error(self, mock_extract):
         """Test lambda handler with authentication error"""
         # Mock JWT extraction error
@@ -248,13 +252,17 @@ class TestUpdateMemberPermissions:
         assert result['statusCode'] == 401
         assert 'Authorization header required' in result['body']
     
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.extract_user_credentials_fallback')
     @patch('app.validate_field_permissions')
     @patch('app.table')
-    def test_lambda_handler_permission_error(self, mock_table, mock_validate, mock_extract):
+    def test_lambda_handler_permission_error(self, mock_table, mock_validate_fields, mock_extract, mock_validate_perms):
         """Test lambda handler with permission error"""
         # Mock JWT extraction success
         mock_extract.return_value = ('test@example.com', ['hdcnLeden'], None)
+        
+        # Mock permission validation to return success (so we can test field validation)
+        mock_validate_perms.return_value = (True, None, {'has_full_access': True})
         
         # Mock DynamoDB get_item for member record (needed for status validation)
         mock_table.get_item.return_value = {
@@ -271,7 +279,7 @@ class TestUpdateMemberPermissions:
             'headers': {},
             'body': json.dumps({'error': 'Access denied'})
         }
-        mock_validate.return_value = (False, permission_error, ['status'])
+        mock_validate_fields.return_value = (False, permission_error, ['status'])
         
         event = {
             'httpMethod': 'PUT',
@@ -396,7 +404,7 @@ class TestUpdateMemberPermissions:
         }
         
         # Webmaster should have full access to all fields
-        user_roles = ['Members_CRUD_All', 'System_CRUD_All']
+        user_roles = ['System_User_Management']
         user_email = 'webmaster@example.com'
         member_id = 'other-123'
         fields_to_update = {
@@ -728,7 +736,7 @@ class TestUpdateMemberPermissions:
         """Test status change validation denied for insufficient role"""
         from app import validate_status_change
         
-        user_roles = ['hdcnLeden', 'Members_Read_All']  # No Members_CRUD_All
+        user_roles = ['hdcnLeden', 'Members_Read']  # No Members_CRUD
         user_email = 'user@example.com'
         member_id = 'test-123'
         new_status = 'active'
@@ -741,9 +749,9 @@ class TestUpdateMemberPermissions:
         assert is_valid is False
         assert error is not None
         assert error['statusCode'] == 403
-        assert 'Members_CRUD_All role' in error['body']
+        assert 'Members_CRUD permission' in error['body']
         assert validation_details['validation_result'] == 'DENIED'
-        assert validation_details['reason'] == 'Missing Members_CRUD_All role'
+        assert validation_details['reason'] == 'Missing Members_CRUD permission'
 
     @patch('app.table')
     def test_validate_status_change_invalid_status_value(self, mock_table):
@@ -885,12 +893,16 @@ class TestUpdateMemberPermissions:
         # Test general status update
         assert determine_status_change_type('active', 'pending') == 'status_update'
 
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.extract_user_credentials_fallback')
     @patch('app.table')
-    def test_lambda_handler_status_change_success(self, mock_table, mock_extract):
+    def test_lambda_handler_status_change_success(self, mock_table, mock_extract, mock_validate_perms):
         """Test lambda handler with successful status change"""
         # Mock JWT extraction
         mock_extract.return_value = ('admin@example.com', ['Members_CRUD_All'], None)
+        
+        # Mock permission validation to return success
+        mock_validate_perms.return_value = (True, None, {'has_full_access': True})
         
         # Mock DynamoDB get_item for member record
         mock_table.get_item.return_value = {
@@ -916,12 +928,26 @@ class TestUpdateMemberPermissions:
         assert result['statusCode'] == 200
         assert 'Member updated successfully' in result['body']
 
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.extract_user_credentials_fallback')
     @patch('app.table')
-    def test_lambda_handler_status_change_denied_insufficient_role(self, mock_table, mock_extract):
+    def test_lambda_handler_status_change_denied_insufficient_role(self, mock_table, mock_extract, mock_validate):
         """Test lambda handler with status change denied due to insufficient role"""
         # Mock JWT extraction with insufficient role
         mock_extract.return_value = ('user@example.com', ['hdcnLeden'], None)
+        
+        # Mock permission validation to return access denied
+        mock_validate.return_value = (
+            False, 
+            {
+                'statusCode': 403,
+                'headers': {'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'error': 'Access denied: Requires Members_CRUD permission to modify member status'
+                })
+            },
+            None
+        )
         
         # Mock DynamoDB get_item for member record
         mock_table.get_item.return_value = {
@@ -942,14 +968,18 @@ class TestUpdateMemberPermissions:
         result = lambda_handler(event, {})
         
         assert result['statusCode'] == 403
-        assert 'Members_CRUD_All role' in result['body']
+        assert 'Members_CRUD permission' in result['body']
 
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.extract_user_credentials_fallback')
     @patch('app.table')
-    def test_lambda_handler_status_change_invalid_value(self, mock_table, mock_extract):
+    def test_lambda_handler_status_change_invalid_value(self, mock_table, mock_extract, mock_validate_perms):
         """Test lambda handler with invalid status value"""
         # Mock JWT extraction with sufficient role
         mock_extract.return_value = ('admin@example.com', ['Members_CRUD_All'], None)
+        
+        # Mock permission validation to return success
+        mock_validate_perms.return_value = (True, None, {'has_full_access': True})
         
         # Mock DynamoDB get_item for member record
         mock_table.get_item.return_value = {
@@ -972,12 +1002,16 @@ class TestUpdateMemberPermissions:
         assert result['statusCode'] == 400
         assert 'Invalid status value' in result['body']
 
-    @patch('app.extract_user_roles_from_jwt')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.extract_user_credentials_fallback')
     @patch('app.table')
-    def test_lambda_handler_mixed_fields_with_status(self, mock_table, mock_extract):
+    def test_lambda_handler_mixed_fields_with_status(self, mock_table, mock_extract, mock_validate_perms):
         """Test lambda handler with mixed fields including status"""
         # Mock JWT extraction with sufficient role
         mock_extract.return_value = ('admin@example.com', ['Members_CRUD_All'], None)
+        
+        # Mock permission validation to return success
+        mock_validate_perms.return_value = (True, None, {'has_full_access': True})
         
         # Mock DynamoDB get_item for member record
         mock_table.get_item.return_value = {

@@ -9,7 +9,7 @@ import * as Yup from 'yup';
 import { FormControl, FormLabel, Input, Textarea } from '@chakra-ui/react';
 import { getAuthHeaders, getAuthHeadersForGet } from '../utils/authHeaders';
 import { FunctionGuard } from '../components/common/FunctionGuard';
-import { getUserRoles } from '../utils/functionPermissions';
+import { checkUIPermission } from '../utils/functionPermissions';
 
 interface User {
   attributes?: {
@@ -92,11 +92,18 @@ function MembershipManagement({ user }: MembershipManagementProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  // Check if user has Members_CRUD_All role
-  const userRoles = getUserRoles(user);
-  const hasMembersCRUDRole = userRoles.includes('Members_CRUD_All');
+  // Check if user has Members_CRUD permissions with any region
+  const hasMembersCRUDRole = checkUIPermission(user, 'members', 'write');
 
-  // If user doesn't have the required role, show access denied message
+  useEffect(() => {
+    if (hasMembersCRUDRole) {
+      loadMemberships();
+    } else {
+      setLoading(false);
+    }
+  }, [hasMembersCRUDRole]);
+
+  // If user doesn't have the required permission, show access denied message
   if (!hasMembersCRUDRole) {
     return (
       <Box p={6} bg="black" minH="100vh" textAlign="center">
@@ -106,7 +113,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
             Je hebt geen toegang tot het lidmaatschap beheer.
           </Text>
           <Text color="gray.400">
-            Deze functionaliteit is alleen beschikbaar voor gebruikers met de Members_CRUD_All rol.
+            Deze functionaliteit is alleen beschikbaar voor gebruikers met Members_CRUD permissies en een regionale toewijzing.
           </Text>
           <Text color="gray.400" fontSize="sm">
             Neem contact op met een beheerder als je denkt dat je toegang zou moeten hebben.
@@ -115,10 +122,6 @@ function MembershipManagement({ user }: MembershipManagementProps) {
       </Box>
     );
   }
-
-  useEffect(() => {
-    loadMemberships();
-  }, []);
 
   const loadMemberships = async () => {
     try {
@@ -297,7 +300,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
       user={user} 
       functionName="memberships" 
       action="read"
-      requiredRoles={['Members_CRUD_All']}
+      requiredRoles={['Members_CRUD']}
       fallback={
         <Box p={6} bg="black" minH="100vh" textAlign="center">
           <VStack spacing={6}>
@@ -323,7 +326,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
               user={user} 
               functionName="memberships" 
               action="write"
-              requiredRoles={['Members_CRUD_All']}
+              requiredRoles={['Members_CRUD']}
               fallback={null}
             >
               <Button colorScheme="orange" onClick={() => openModal()}>
@@ -356,7 +359,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
                           user={user} 
                           functionName="memberships" 
                           action="write"
-                          requiredRoles={['Members_CRUD_All']}
+                          requiredRoles={['Members_CRUD']}
                           fallback={
                             <Text color="gray.500" fontSize="sm">
                               Alleen lezen
@@ -375,7 +378,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
                           user={user} 
                           functionName="memberships" 
                           action="write"
-                          requiredRoles={['Members_CRUD_All']}
+                          requiredRoles={['Members_CRUD']}
                           fallback={null}
                         >
                           <Button

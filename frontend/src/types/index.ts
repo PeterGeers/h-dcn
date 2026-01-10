@@ -65,13 +65,33 @@ export interface Member {
   address?: string;
   // Additional timestamp and membership fields
   tijdstempel?: string;
-  aanmeldingsjaar?: string;
   datum_ondertekening?: string;
   datumOndertekening?: string;
   ingangsdatum_lidmaatschap?: string;
   ingangsdatumLidmaatschap?: string;
   aanmeldingsdatum?: string;
   aanmeldingsDatum?: string;
+  
+  // ============================================================================
+  // CALCULATED/COMPUTED FIELDS
+  // ============================================================================
+  // These fields are automatically calculated by computeCalculatedFields()
+  // and should be present on Member objects that have been processed
+  
+  /** Full name computed from voornaam + tussenvoegsel + achternaam */
+  korte_naam?: string;
+  
+  /** Age in years computed from geboortedatum */
+  leeftijd?: number | null;
+  
+  /** Birthday in format "month day" computed from geboortedatum */
+  verjaardag?: string;
+  
+  /** Years of membership computed from ingangsdatum/tijdstempel */
+  jaren_lid?: number | null;
+  
+  /** Registration year computed from ingangsdatum/tijdstempel */
+  aanmeldingsjaar?: number | null;
 }
 
 export interface Product {
@@ -115,5 +135,8 @@ export interface ApiResponse<T> {
   body: T;
 }
 
-// Cognito User Groups
-export type UserGroup = 'hdcnLeden' | 'hdcnAdmins' | `hdcnRegio_${string}`;
+// Import HDCNGroup from user.ts to avoid duplication
+export type { HDCNGroup } from './user';
+
+// Cognito User Groups - UPDATED TO NEW STRUCTURE
+export type UserGroup = 'hdcnLeden' | `Regio_${string}` | `Members_${string}` | `Events_${string}` | `Products_${string}` | `Communication_${string}` | `System_${string}` | 'Webshop_Management' | 'verzoek_lid';

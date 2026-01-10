@@ -22,8 +22,8 @@ describe('Permission System', () => {
       expect(permissions).toContain('events:read_public');
     });
 
-    it('should return correct permissions for Members_CRUD_All role', () => {
-      const permissions = getRolePermissions('Members_CRUD_All');
+    it('should return correct permissions for Members_CRUD role', () => {
+      const permissions = getRolePermissions('Members_CRUD');
       expect(permissions).toContain('members:read_all');
       expect(permissions).toContain('members:update_all');
       expect(permissions).toContain('members:update_administrative');
@@ -37,7 +37,7 @@ describe('Permission System', () => {
 
   describe('getCombinedPermissions', () => {
     it('should combine permissions from multiple roles', () => {
-      const roles = ['hdcnLeden', 'Members_Read_All'];
+      const roles = ['hdcnLeden', 'Members_Read'];
       const permissions = getCombinedPermissions(roles);
       
       expect(permissions).toContain('members:read_own');
@@ -46,7 +46,7 @@ describe('Permission System', () => {
     });
 
     it('should remove duplicates and sort permissions', () => {
-      const roles = ['hdcnLeden', 'Events_Read_All'];
+      const roles = ['hdcnLeden', 'Events_Read'];
       const permissions = getCombinedPermissions(roles);
       
       // Should be sorted
@@ -80,19 +80,19 @@ describe('Permission System', () => {
 
   describe('getAccessLevelSummary', () => {
     it('should return system level for system admin roles', () => {
-      const summary = getAccessLevelSummary(['System_CRUD_All']);
+      const summary = getAccessLevelSummary(['System_CRUD']);
       expect(summary.level).toBe('system');
       expect(summary.description).toContain('Systeembeheerder');
     });
 
     it('should return administrative level for admin roles', () => {
-      const summary = getAccessLevelSummary(['Members_CRUD_All']);
+      const summary = getAccessLevelSummary(['Members_CRUD']);
       expect(summary.level).toBe('administrative');
       expect(summary.description).toContain('Beheerder');
     });
 
     it('should return functional level for functional roles', () => {
-      const summary = getAccessLevelSummary(['Members_Read_All']);
+      const summary = getAccessLevelSummary(['Members_Read']);
       expect(summary.level).toBe('functional');
       expect(summary.description).toContain('Functionaris');
     });
@@ -112,19 +112,18 @@ describe('Permission System', () => {
 
   describe('isAdministrator', () => {
     it('should return true for system admin roles', () => {
-      expect(isAdministrator(['System_CRUD_All'])).toBe(true);
+      expect(isAdministrator(['System_CRUD'])).toBe(true);
       expect(isAdministrator(['Webmaster'])).toBe(true);
-      expect(isAdministrator(['hdcnAdmins'])).toBe(true);
     });
 
     it('should return true for administrative roles', () => {
-      expect(isAdministrator(['Members_CRUD_All'])).toBe(true);
+      expect(isAdministrator(['Members_CRUD'])).toBe(true);
       expect(isAdministrator(['National_Chairman'])).toBe(true);
     });
 
     it('should return false for basic roles', () => {
       expect(isAdministrator(['hdcnLeden'])).toBe(false);
-      expect(isAdministrator(['Members_Read_All'])).toBe(false);
+      expect(isAdministrator(['Members_Read'])).toBe(false);
     });
 
     it('should return false for no roles', () => {

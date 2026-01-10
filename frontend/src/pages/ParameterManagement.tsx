@@ -48,15 +48,11 @@ function ParameterManagement({ user }: ParameterManagementProps) {
         const roles = getUserRoles(user);
         setUserRoles(roles);
         
-        // Check for administrative roles
+        // Check for administrative roles - NEW ROLE STRUCTURE
         const hasAdminRole = roles.some(role => 
-          role === 'hdcnAdmins' ||
           role === 'System_User_Management' ||
-          role === 'System_CRUD_All' ||
-          role === 'Webmaster' ||
-          role === 'Members_CRUD_All' ||
-          role === 'hdcnWebmaster' ||
-          role === 'hdcnLedenadministratie' ||
+          role === 'System_CRUD' ||
+          role === 'Members_CRUD' ||
           role === 'National_Chairman' ||
           role === 'National_Secretary'
         );
@@ -82,7 +78,7 @@ function ParameterManagement({ user }: ParameterManagementProps) {
   const { parameters, dataSource, hasUnsavedChanges, loadParameters, updateParametersLocally, saveParameters } = useParameterManagement(hasAccess, accessLoading);
 
   // Enhanced role-based access checks for parameter management
-  const hasFullMemberAccess = userRoles.includes('hdcnAdmins') || userRoles.includes('Members_CRUD_All') || userRoles.includes('Webmaster');
+  const hasFullMemberAccess = userRoles.includes('Members_CRUD') || userRoles.includes('System_User_Management');
   const hasSystemUserManagementRole = userRoles.includes('System_User_Management');
   const hasNationalChairmanRole = userRoles.includes('National_Chairman');
   const hasNationalSecretaryRole = userRoles.includes('National_Secretary');
@@ -230,7 +226,7 @@ function ParameterManagement({ user }: ParameterManagementProps) {
                 <br /><br />
                 <strong>Je huidige rollen:</strong> {userRoles.length > 0 ? userRoles.join(', ') : 'Geen rollen toegewezen'}
                 <br /><br />
-                <strong>Vereiste rollen:</strong> hdcnAdmins, System_User_Management, System_CRUD_All, Webmaster, Members_CRUD_All, National_Chairman, National_Secretary, hdcnWebmaster, of hdcnLedenadministratie
+                <strong>Vereiste rollen:</strong> System_User_Management, System_CRUD, Members_CRUD (met regionale toewijzing), National_Chairman, of National_Secretary
                 <br /><br />
                 Neem contact op met een systeembeheerder als je denkt dat je toegang zou moeten hebben.
               </AlertDescription>

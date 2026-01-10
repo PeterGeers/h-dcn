@@ -1,10 +1,13 @@
 /**
  * Membership Service - API calls for membership applications
+ * Updated to use main ApiService for authentication
+ * I am not sure if it matters but these 2 fields should belong to membership  status?: string;
+  tijdstempel?: string; 
  */
 
 import { apiCall } from './errorHandler';
 import { API_URLS } from '../config/api';
-import { getAuthHeaders, getAuthHeadersForGet } from './authHeaders';
+import { ApiService } from '../services/apiService';
 import { emailService } from './emailService';
 import { MEMBERSHIP_EMAIL_CONFIG } from '../config/memberFields';
 
@@ -58,16 +61,17 @@ export interface MembershipApplicationData {
 
 /**
  * Check if a user already exists as a member by email
+ * Now uses main ApiService for authentication
  */
 export const getMemberByEmail = async (email: string): Promise<any> => {
   try {
-    const headers = await getAuthHeadersForGet();
-    const allMembers = await apiCall<any>(
-      fetch(API_URLS.members(), { headers }),
-      'controleren bestaand lid'
-    );
+    const response = await ApiService.get('/members');
     
-    const memberData = Array.isArray(allMembers) ? allMembers : (allMembers?.members || []);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get members');
+    }
+    
+    const memberData = Array.isArray(response.data) ? response.data : (response.data?.members || []);
     const existingMember = memberData.find((m: any) => m.email === email);
     
     return existingMember || null;
@@ -79,6 +83,7 @@ export const getMemberByEmail = async (email: string): Promise<any> => {
 
 /**
  * Submit a new membership application with Cognito integration
+ * Now uses main ApiService for authentication
  */
 export const submitMembershipApplication = async (data: any): Promise<any> => {
   try {
@@ -90,18 +95,12 @@ export const submitMembershipApplication = async (data: any): Promise<any> => {
       updated_at: new Date().toISOString()
     };
 
-    // Submit the application to the database
-    const result = await apiCall(
-      fetch(API_URLS.members(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(await getAuthHeaders())
-        },
-        body: JSON.stringify(submissionData)
-      }),
-      'aanmelden nieuw lid'
-    );
+    // Submit the application to the database using main ApiService
+    const response = await ApiService.post('/members', submissionData);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to submit membership application');
+    }
 
     // Send confirmation and admin notification emails
     try {
@@ -112,7 +111,7 @@ export const submitMembershipApplication = async (data: any): Promise<any> => {
       // Don't throw error - application was successful even if emails failed
     }
 
-    return result;
+    return response.data;
   } catch (error) {
     console.error('Error submitting membership application:', error);
     throw error;
@@ -128,16 +127,17 @@ export const checkExistingMember = async (email: string): Promise<any> => {
 
 /**
  * Get membership application status
+ * Now uses main ApiService for authentication
  */
 export const getMembershipApplicationStatus = async (applicationId: string): Promise<any> => {
   try {
-    const headers = await getAuthHeadersForGet();
-    const member = await apiCall<any>(
-      fetch(API_URLS.member(applicationId), { headers }),
-      'ophalen aanmeldingsstatus'
-    );
+    const response = await ApiService.get(`/members/${applicationId}`);
     
-    return member;
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get application status');
+    }
+    
+    return response.data;
   } catch (error) {
     console.error('Error getting application status:', error);
     throw error;

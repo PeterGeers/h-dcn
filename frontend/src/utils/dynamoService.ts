@@ -1,76 +1,55 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { ApiService } from '../services/apiService';
 
 interface ParameterData {
   [key: string]: any;
 }
 
-// DynamoDB service for parameter management
+// DynamoDB service for parameter management - now uses main ApiService for authentication
 export class DynamoService {
   static API_BASE = process.env.REACT_APP_API_BASE_URL;
   static _authCache: Record<string, string> | null = null;
   static _authExpiry = 0;
 
-  
+  /**
+   * Get authentication headers - now uses main ApiService
+   * @deprecated Use main ApiService directly instead
+   */
   static async getAuthHeaders(): Promise<Record<string, string>> {
-    const now = Date.now();
-    if (this._authCache && now < this._authExpiry) {
-      return this._authCache;
-    }
-    
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens?.idToken?.toString();
-      if (!token) {
-        throw new Error('No authentication token available');
-      }
-      this._authCache = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-Requested-With': 'XMLHttpRequest'
-      };
-      this._authExpiry = now + 300000; // 5 minutes
-      return this._authCache;
-    } catch (error) {
-      this._authCache = null;
+    if (!ApiService.isAuthenticated()) {
       throw new Error('Authentication required');
     }
+    
+    // Return empty object as main ApiService handles auth headers internally
+    return {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    };
   }
   
-  // Get all parameters
+  // Get all parameters - now uses main ApiService
   static async getParameters(): Promise<ParameterData> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.API_BASE}/parameters`, {
-        headers,
-        credentials: 'omit'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        this._setCachedData(data);
-        return data;
+      const response = await ApiService.get('/parameters');
+      if (response.success && response.data) {
+        this._setCachedData(response.data);
+        return response.data;
       }
-      throw new Error('API not available');
+      throw new Error(response.error || 'API not available');
     } catch (error) {
       console.log('Using cached parameters:', error.message);
       return this._getCachedData() || {};
     }
   }
   
-  // Save parameters
+  // Save parameters - now uses main ApiService
   static async saveParameters(data: ParameterData): Promise<boolean> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.API_BASE}/parameters`, {
-        method: 'PUT',
-        headers,
-        credentials: 'omit',
-        body: JSON.stringify(data)
-      });
-      if (response.ok) {
+      const response = await ApiService.put('/parameters', data);
+      if (response.success) {
         this._setCachedData(data);
         return true;
       }
-      throw new Error('API save failed');
+      throw new Error(response.error || 'API save failed');
     } catch (error) {
       console.log('Saving to cache only:', error.message);
       this._setCachedData(data);
@@ -100,6 +79,4 @@ export class DynamoService {
   static clearCache(): void {
     localStorage.removeItem('dynamo-parameters');
   }
-  
-
 }

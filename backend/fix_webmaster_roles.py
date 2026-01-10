@@ -5,8 +5,8 @@ Fix Webmaster Role Assignments - H-DCN Cognito Authentication System
 This script corrects the Webmaster test user role assignments to match
 the design document specifications.
 
-Current Webmaster groups: Members_Read_All, Events_CRUD_All, Products_CRUD_All, Communication_Export_All, System_User_Management
-Required Webmaster groups: Members_Read_All, Events_CRUD_All, Products_CRUD_All, Communication_CRUD_All, System_CRUD_All
+Current Webmaster groups: Members_Read, Events_CRUD, Products_CRUD, Communication_Export, System_User_Management
+Required Webmaster groups: Members_Read, Events_CRUD, Products_CRUD, Communication_CRUD, System_User_Management
 """
 
 import boto3
@@ -19,11 +19,11 @@ WEBMASTER_USERNAME = "test.webmaster@hdcn-test.nl"
 
 # Correct Webmaster role assignments per design document
 CORRECT_WEBMASTER_GROUPS = [
-    "Members_Read_All",
-    "Events_CRUD_All", 
-    "Products_CRUD_All",
-    "Communication_CRUD_All",  # Should be CRUD, not Export
-    "System_CRUD_All"          # Should be CRUD, not User_Management
+    "Members_Read",
+    "Events_CRUD", 
+    "Products_CRUD",
+    "Communication_CRUD",  # Should be CRUD, not Export
+    "System_User_Management"  # Keep existing System_User_Management
 ]
 
 class WebmasterRoleFixer:

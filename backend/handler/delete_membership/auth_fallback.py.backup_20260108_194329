@@ -1,0 +1,212 @@
+"""
+Fallback authentication module that can be copied to individual handler directories
+This ensures consistent auth behavior even when shared modules aren't available
+"""
+
+import json
+import base64
+from datetime import datetime
+
+
+def extract_user_credentials(event):
+    """Extract user credentials with enhanced groups support"""
+    try:
+        auth_header = event.get('headers', {}).get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return None, None, {
+                'statusCode': 401,
+                'headers': cors_headers(),
+                'body': json.dumps({'error': 'Authorization header required'})
+            }
+        
+        jwt_token = auth_header.replace('Bearer ', '')
+        parts = jwt_token.split('.')
+        if len(parts) != 3:
+            return None, None, {
+                'statusCode': 401,
+                'headers': cors_headers(),
+                'body': json.dumps({'error': 'Invalid JWT token format'})
+            }
+        
+        payload_encoded = parts[1]
+        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
+        payload_decoded = base64.urlsafe_b64decode(payload_encoded)
+        payload = json.loads(payload_decoded)
+        
+        user_email = payload.get('email') or payload.get('username')
+        if not user_email:
+            return None, None, {
+                'statusCode': 401,
+                'headers': cors_headers(),
+                'body': json.dumps({'error': 'User email not found in token'})
+            }
+        
+        # Check for enhanced groups from frontend
+        enhanced_groups_header = event.get('headers', {}).get('X-Enhanced-Groups')
+        if enhanced_groups_header:
+            try:
+                enhanced_groups = json.loads(enhanced_groups_header)
+                if isinstance(enhanced_groups, list):
+                    print(f"🔍 Using enhanced groups: {enhanced_groups} for {user_email}")
+                    return user_email, enhanced_groups, None
+            except json.JSONDecodeError:
+                pass
+        
+        user_roles = payload.get('cognito:groups', [])
+        print(f"🔍 Using JWT groups: {user_roles} for {user_email}")
+        return user_email, user_roles, None
+        
+    except Exception as e:
+        print(f"Auth error: {str(e)}")
+        return None, None, {
+            'statusCode': 401,
+            'headers': cors_headers(),
+            'body': json.dumps({'error': 'Invalid authorization token'})
+        }
+
+
+def validate_permissions(user_roles, required_permissions, user_email=None, resource_context=None):
+    """Validate user permissions"""
+    admin_roles = [
+        'hdcnAdmins', 'System_CRUD_All', 'System_CRUD', 'Webmaster', 
+        'System_User_Management', 'System_Logs_Read',
+        'National_Chairman', 'National_Secretary'
+    ]
+    
+    # Check for admin access
+    if any(role in admin_roles for role in user_roles):
+        return True, None
+    
+    # For non-admin users, deny access (can be enhanced with specific permissions later)
+    return False, {
+        'statusCode': 403,
+        'headers': cors_headers(),
+        'body': json.dumps({
+            'error': 'Access denied: Insufficient permissions',
+            'required_permissions': required_permissions,
+            'user_roles': user_roles
+        })
+    }
+
+
+def cors_headers():
+    """Standard CORS headers"""
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
+    }
+
+
+def handle_options_request():
+    """Handle OPTIONS requests"""
+    return {
+        'statusCode': 200,
+        'headers': cors_headers(),
+        'body': ''
+    }
+
+
+def log_successful_access(user_email, user_roles, operation, resource_context=None):
+    """Log successful access"""
+    print(f"ACCESS: {user_email} (roles: {user_roles}) performed {operation}")
+    if resource_context:
+        print(f"CONTEXT: {resource_context}")
+
+
+def create_error_response(status_code, error_message, details=None):
+    """Create standardized error response"""
+    body = {'error': error_message}
+    if details:
+        body.update(details)
+    return {
+        'statusCode': status_code,
+        'headers': cors_headers(),
+        'body': json.dumps(body)
+    }
+
+
+def create_success_response(data, status_code=200):
+    """Create standardized success response"""
+    return {
+        'statusCode': status_code,
+        'headers': cors_headers(),
+        'body': json.dumps(data)
+    }
+
+
+
+
+def validate_permissions_with_regions(user_roles, required_permissions, user_email=None, resource_context=None):
+    """
+    Enhanced permission validation that supports the new permission + region role structure
+    This is a simplified version for auth_fallback.py files
+    """
+    try:
+        # Convert single permission to list
+        if isinstance(required_permissions, str):
+            required_permissions = [required_permissions]
+        
+        # Check for admin roles that have full access
+        admin_roles = ['hdcnAdmins', 'System_CRUD_All', 'System_CRUD', 'Webmaster', 
+                      'System_User_Management', 'System_Logs_Read']
+        if any(role in user_roles for role in admin_roles):
+            return True, None, {'access_type': 'admin', 'has_full_access': True}
+        
+        # Use the existing validate_permissions function for now
+        # This provides basic compatibility during migration
+        is_authorized, error_response = validate_permissions(
+            user_roles, required_permissions, user_email, resource_context
+        )
+        
+        if is_authorized:
+            # Determine regional access (simplified for fallback)
+            regional_info = {
+                'access_type': 'permission_based',
+                'has_full_access': True,  # Simplified - assume full access if authorized
+                'allowed_regions': ['all']
+            }
+            return True, None, regional_info
+        else:
+            return False, error_response, None
+            
+    except Exception as e:
+        print(f"Error in validate_permissions_with_regions: {str(e)}")
+        return False, {
+            'statusCode': 500,
+            'headers': cors_headers(),
+            'body': json.dumps({'error': 'Error validating permissions'})
+        }, None
+
+
+def require_auth_and_permissions(required_permissions):
+    """
+    Decorator function to add authentication and permission checking to any handler
+    Usage: @require_auth_and_permissions(['events_update'])
+    """
+    def decorator(handler_func):
+        def wrapper(event, context):
+            # Handle OPTIONS request
+            if event.get('httpMethod') == 'OPTIONS':
+                return handle_options_request()
+            
+            # Extract credentials
+            user_email, user_roles, auth_error = extract_user_credentials(event)
+            if auth_error:
+                return auth_error
+            
+            # Validate permissions
+            has_permission, permission_error = validate_permissions(
+                user_roles, required_permissions, user_email
+            )
+            if not has_permission:
+                return permission_error
+            
+            # Log access
+            log_successful_access(user_email, user_roles, handler_func.__name__)
+            
+            # Call original handler with auth info
+            return handler_func(event, context, user_email, user_roles)
+        
+        return wrapper
+    return decorator

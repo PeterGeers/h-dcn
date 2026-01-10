@@ -1,4 +1,4 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { ApiService } from '../services/apiService';
 
 interface S3Config {
   bucketName: string;
@@ -17,7 +17,7 @@ const S3_CONFIG: S3Config = {
   region: 'eu-west-1'
 };
 
-// Parameter service with S3 bucket integration
+// Parameter service with S3 bucket integration - now uses main ApiService for authentication
 export class S3Service {
   static clearCache(key: string): void {
     localStorage.removeItem(`s3-${key}`);
@@ -85,23 +85,15 @@ export class S3Service {
   
   static async putObject(key: string, data: ParameterData): Promise<boolean> {
     try {
-      // Try API first (which can write to S3)
+      // Try API first (which can write to S3) - now uses main ApiService
       try {
-        const { getAuthHeaders } = await import('./authHeaders');
-        const headers = await getAuthHeaders();
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod'}/parameters`, {
-          method: 'PUT',
-          headers: {
-            ...headers,
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify(data)
-        });
-        if (response.ok) {
+        const response = await ApiService.put('/parameters', data);
+        if (response.success) {
           localStorage.setItem(`s3-${key}`, JSON.stringify(data));
           console.log('Data saved to S3 via API');
           return true;
         }
+        console.log('API save failed:', response.error);
       } catch (apiError) {
         console.log('API save failed, using localStorage:', apiError.message);
       }
@@ -115,6 +107,4 @@ export class S3Service {
       throw error;
     }
   }
-  
-
 }

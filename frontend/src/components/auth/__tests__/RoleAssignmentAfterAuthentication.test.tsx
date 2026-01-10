@@ -458,19 +458,19 @@ describe('Role Assignment After Authentication', () => {
       const multiRoleMemberUserInfo = {
         username: 'admin@example.com',
         email: 'admin@example.com',
-        roles: ['hdcnLeden', 'Members_CRUD_All', 'Events_Read_All'] as HDCNGroup[],
+        roles: ['hdcnLeden', 'Members_CRUD', 'Events_Read'] as HDCNGroup[],
         sub: 'admin-member-123'
       };
 
       mockGetCurrentUserInfo.mockResolvedValue(multiRoleMemberUserInfo);
-      mockGetCurrentUserRoles.mockResolvedValue(['hdcnLeden', 'Members_CRUD_All', 'Events_Read_All']);
+      mockGetCurrentUserRoles.mockResolvedValue(['hdcnLeden', 'Members_CRUD', 'Events_Read']);
 
       mockUseAuth.mockReturnValue({
         user: {
           id: 'admin-member-123',
           username: 'admin@example.com',
           email: 'admin@example.com',
-          groups: ['hdcnLeden', 'Members_CRUD_All', 'Events_Read_All'],
+          groups: ['hdcnLeden', 'Members_CRUD', 'Events_Read'],
           attributes: {
             email: 'admin@example.com',
             username: 'admin@example.com'
@@ -480,7 +480,7 @@ describe('Role Assignment After Authentication', () => {
         isAuthenticated: true,
         logout: jest.fn(),
         hasRole: jest.fn().mockImplementation((role: HDCNGroup) => 
-          ['hdcnLeden', 'Members_CRUD_All', 'Events_Read_All'].includes(role)
+          ['hdcnLeden', 'Members_CRUD', 'Events_Read'].includes(role)
         ),
         refreshUserRoles: jest.fn()
       });
@@ -492,7 +492,7 @@ describe('Role Assignment After Authentication', () => {
       });
 
       // Verify all roles are present
-      expect(screen.getByTestId('user-roles')).toHaveTextContent('hdcnLeden,Members_CRUD_All,Events_Read_All');
+      expect(screen.getByTestId('user-roles')).toHaveTextContent('hdcnLeden,Members_CRUD,Events_Read');
       expect(screen.getByTestId('has-hdcnleden')).toHaveTextContent('true');
       
       // Should show member portal since hdcnLeden role is present

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to create the Verzoek_lid Cognito User Pool group
+Script to create the verzoek_lid Cognito User Pool group
 """
 
 import boto3
@@ -8,7 +8,7 @@ import os
 from botocore.exceptions import ClientError
 
 def create_verzoek_lid_group():
-    """Create the Verzoek_lid group in Cognito User Pool"""
+    """Create the verzoek_lid group in Cognito User Pool"""
     
     # Get User Pool ID from environment or use default
     user_pool_id = os.environ.get('USER_POOL_ID', 'eu-west-1_OAT3oPCIm')
@@ -17,22 +17,22 @@ def create_verzoek_lid_group():
     cognito_client = boto3.client('cognito-idp', region_name='eu-west-1')
     
     try:
-        # Create the Verzoek_lid group
+        # Create the verzoek_lid group
         response = cognito_client.create_group(
-            GroupName='Verzoek_lid',
+            GroupName='verzoek_lid',
             UserPoolId=user_pool_id,
             Description='Membership applicants who have not been approved yet',
             Precedence=100  # Lower precedence than hdcnLeden (which should be higher priority)
         )
         
-        print(f"✅ Successfully created Verzoek_lid group in User Pool {user_pool_id}")
+        print(f"✅ Successfully created verzoek_lid group in User Pool {user_pool_id}")
         print(f"Group details: {response['Group']}")
         
     except ClientError as e:
         error_code = e.response['Error']['Code']
         
         if error_code == 'GroupExistsException':
-            print(f"ℹ️  Group 'Verzoek_lid' already exists in User Pool {user_pool_id}")
+            print(f"ℹ️  Group 'verzoek_lid' already exists in User Pool {user_pool_id}")
         else:
             print(f"❌ Error creating group: {e.response['Error']['Message']}")
             raise
@@ -58,7 +58,7 @@ def list_existing_groups():
         print(f"❌ Error listing groups: {str(e)}")
 
 if __name__ == "__main__":
-    print("🚀 Creating Verzoek_lid Cognito User Pool group...")
+    print("🚀 Creating verzoek_lid Cognito User Pool group...")
     
     # List existing groups first
     list_existing_groups()

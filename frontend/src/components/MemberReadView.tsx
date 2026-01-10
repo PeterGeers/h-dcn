@@ -42,6 +42,7 @@ import { EditIcon, InfoIcon, CalendarIcon, EmailIcon, PhoneIcon } from '@chakra-
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, HDCNGroup } from '../config/memberFields';
 import { canViewField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
+import { computeCalculatedFields, getMemberFullName, getMemberAge } from '../utils/calculatedFields';
 
 interface MemberReadViewProps {
   isOpen: boolean;
@@ -233,15 +234,18 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
     );
   };
 
-  // Calculate member statistics
-  const memberAge = member.geboortedatum ? 
-    new Date().getFullYear() - new Date(member.geboortedatum).getFullYear() : null;
+  // Process member with calculated fields
+  const processedMember = computeCalculatedFields(member);
   
-  const memberSince = member.tijdstempel ? 
-    new Date(member.tijdstempel).getFullYear() : null;
+  // Get calculated values using the computed field system
+  const memberAge = getMemberAge(processedMember);
+  const fullName = getMemberFullName(processedMember);
   
-  const yearsAsMember = memberSince ? 
-    new Date().getFullYear() - memberSince : null;
+  const memberSince = processedMember.tijdstempel ? 
+    new Date(processedMember.tijdstempel).getFullYear() : null;
+  
+  const yearsAsMember = processedMember.jaren_lid ?? (memberSince ? 
+    new Date().getFullYear() - memberSince : null);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside">
@@ -252,10 +256,10 @@ const MemberReadView: React.FC<MemberReadViewProps> = ({
             <VStack align="start" spacing={1}>
               <HStack>
                 <Text>
-                  {member.voornaam} {member.tussenvoegsel} {member.achternaam}
+                  {fullName}
                 </Text>
-                {member.lidnummer && (
-                  <Badge colorScheme="blue">#{member.lidnummer}</Badge>
+                {processedMember.lidnummer && (
+                  <Badge colorScheme="blue">#{processedMember.lidnummer}</Badge>
                 )}
               </HStack>
               <HStack spacing={4} fontSize="sm" color="gray.300">

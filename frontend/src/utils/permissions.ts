@@ -3,7 +3,7 @@
  * Based on the backend role_permissions.py system
  */
 
-// Permission definitions matching backend system
+// Permission definitions matching backend system - NEW ROLE STRUCTURE
 const DEFAULT_ROLE_PERMISSIONS: { [key: string]: string[] } = {
   // Basic member role - all authenticated members get this role
   'hdcnLeden': [
@@ -15,8 +15,8 @@ const DEFAULT_ROLE_PERMISSIONS: { [key: string]: string[] } = {
     'webshop:access'
   ],
   
-  // Member management roles
-  'Members_CRUD_All': [
+  // Member management roles - NEW STRUCTURE (no _All suffix)
+  'Members_CRUD': [
     'members:read_all',
     'members:create',
     'members:update_all',
@@ -25,7 +25,11 @@ const DEFAULT_ROLE_PERMISSIONS: { [key: string]: string[] } = {
     'members:export_all',
     'members:update_administrative'
   ],
-  'Members_Read_All': [
+  'Members_Read': [
+    'members:read_all',
+    'members:export_all'
+  ],
+  'Members_Export': [
     'members:read_all',
     'members:export_all'
   ],
@@ -35,41 +39,49 @@ const DEFAULT_ROLE_PERMISSIONS: { [key: string]: string[] } = {
     'members:approve_status'
   ],
   
-  // Event management roles
-  'Events_Read_All': [
+  // Event management roles - NEW STRUCTURE (no _All suffix)
+  'Events_Read': [
     'events:read_all',
     'events:export_all'
   ],
-  'Events_CRUD_All': [
+  'Events_CRUD': [
     'events:read_all',
     'events:create',
     'events:update_all',
     'events:delete',
     'events:export_all'
   ],
+  'Events_Export': [
+    'events:read_all',
+    'events:export_all'
+  ],
   
-  // Product management roles
-  'Products_Read_All': [
+  // Product management roles - NEW STRUCTURE (no _All suffix)
+  'Products_Read': [
     'products:read_all',
     'products:export_all'
   ],
-  'Products_CRUD_All': [
+  'Products_CRUD': [
     'products:read_all',
     'products:create',
     'products:update_all',
     'products:delete',
     'products:export_all'
   ],
+  'Products_Export': [
+    'products:read_all',
+    'products:export_all'
+  ],
   
-  // Communication roles
-  'Communication_Read_All': [
+  // Communication roles - NEW STRUCTURE (no _All suffix)
+  'Communication_Read': [
     'communication:read_all'
   ],
-  'Communication_Export_All': [
+  'Communication_Export': [
     'communication:read_all',
     'communication:export_all'
   ],
-  'Communication_CRUD_All': [
+  'Communication_CRUD': [
     'communication:read_all',
     'communication:create',
     'communication:update_all',
@@ -87,13 +99,22 @@ const DEFAULT_ROLE_PERMISSIONS: { [key: string]: string[] } = {
     'system:logs_read',
     'system:audit_read'
   ],
-  'System_CRUD_All': [
+  'System_CRUD': [
     'system:user_management',
     'system:role_assignment',
     'system:logs_read',
     'system:audit_read',
     'system:configuration',
     'system:maintenance'
+  ],
+  
+  // Webshop management
+  'Webshop_Management': [
+    'products:read_all',
+    'products:create',
+    'products:update_all',
+    'products:delete',
+    'webshop:management'
   ]
 };
 
@@ -243,11 +264,10 @@ export function getAccessLevelSummary(roles: string[]): {
     };
   }
   
-  // Check for system admin roles
+  // Check for system admin roles - using new role structure
   if (roles.some(role => 
     role.includes('System_') || 
-    role.includes('Webmaster') || 
-    role === 'hdcnAdmins'
+    role.includes('Webmaster')
   )) {
     return {
       level: 'system',
@@ -256,13 +276,13 @@ export function getAccessLevelSummary(roles: string[]): {
     };
   }
   
-  // Check for administrative roles
+  // Check for administrative roles - NEW ROLE STRUCTURE
   if (roles.some(role => 
-    role.includes('Members_CRUD_All') ||
+    role.includes('Members_CRUD') ||
     role.includes('National_') ||
-    role.includes('Communication_CRUD_All') ||
-    role.includes('Events_CRUD_All') ||
-    role.includes('Products_CRUD_All')
+    role.includes('Communication_CRUD') ||
+    role.includes('Events_CRUD') ||
+    role.includes('Products_CRUD')
   )) {
     return {
       level: 'administrative',
@@ -312,10 +332,8 @@ export function isAdministrator(roles: string[]): boolean {
   
   return roles.some(role => 
     role.includes('System_') || 
-    role.includes('Webmaster') || 
-    role === 'hdcnAdmins' ||
-    role.includes('Members_CRUD_All') ||
+    role.includes('Members_CRUD') ||
     role.includes('National_') ||
-    role.includes('Communication_CRUD_All')
+    role.includes('Communication_CRUD')
   );
 }

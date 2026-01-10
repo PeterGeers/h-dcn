@@ -41,16 +41,14 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
   // Enhanced role-based access checks for products
   const userRoles = getUserRoles(user);
   const hasProductsFullAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Products_CRUD_All' ||
+    role === 'Products_CRUD' ||
     role === 'Webmaster' ||
     role === 'Webshop_Management'
   );
 
   const hasProductsReadAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Products_Read_All' ||
-    role === 'Products_CRUD_All' ||
+    role === 'Products_Read' ||
+    role === 'Products_CRUD' ||
     role === 'Webmaster' ||
     role === 'Webshop_Management' ||
     role === 'hdcnLeden' ||
@@ -61,8 +59,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
   );
 
   const hasProductsFinancialAccess = userRoles.some(role => 
-    role === 'hdcnAdmins' ||
-    role === 'Products_CRUD_All' ||
+    role === 'Products_CRUD' ||
     role === 'Products_Read_Financial' ||
     role === 'Webmaster' ||
     role === 'Webshop_Management' ||
@@ -137,7 +134,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
         user={user} 
         functionName="products" 
         action="read"
-        requiredRoles={['Products_Read_All', 'Products_CRUD_All', 'Webmaster', 'Webshop_Management', 'hdcnLeden']}
+        requiredRoles={['Products_Read', 'Products_CRUD', 'Webshop_Management', 'System_User_Management', 'hdcnLeden']}
         fallback={
           <Alert status="warning" mt={4}>
             <AlertIcon />
@@ -146,7 +143,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
               <AlertDescription>
                 U heeft geen toegang tot de productbeheer module. Neem contact op met de beheerder als u denkt dat dit een fout is.
                 <br /><br />
-                <strong>Vereiste rollen:</strong> Products_Read_All, Products_CRUD_All, Webmaster, Webshop_Management, of hdcnLeden (voor catalogus)
+                <strong>Vereiste rollen:</strong> Products_Read, Products_CRUD, Webshop_Management, System_User_Management, of hdcnLeden (voor catalogus)
               </AlertDescription>
             </Box>
           </Alert>
@@ -245,7 +242,7 @@ export default function ProductManagementPage({ user }: ProductManagementPagePro
             user={user} 
             functionName="products" 
             action="write"
-            requiredRoles={['Products_CRUD_All', 'Webmaster', 'Webshop_Management']}
+            requiredRoles={['Products_CRUD', 'Webshop_Management', 'System_User_Management']}
             fallback={
               <ProductCard
                 key={selected.id}

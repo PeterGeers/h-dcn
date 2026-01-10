@@ -56,6 +56,7 @@ import {
 import { MEMBER_TABLE_CONTEXTS, MEMBER_FIELDS, HDCNGroup, getFilteredEnumOptions } from '../config/memberFields';
 import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
+import { computeCalculatedFieldsForArray, getMemberFullName } from '../utils/calculatedFields';
 import { canPerformAction, hasRegionalAccess } from '../utils/permissionHelpers';
 
 interface MemberAdminTableProps {
@@ -98,10 +99,12 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
 
   // Filter members based on regional restrictions and column filters
   const filteredMembers = useMemo(() => {
-    let filtered = members;
+    // First, process all members with calculated fields
+    const processedMembers = computeCalculatedFieldsForArray(members);
+    let filtered = processedMembers;
 
     // Apply regional filtering if needed
-    if (tableContext?.regionalRestricted && userRole === 'Members_Read_All' && userRegion) {
+    if (tableContext?.regionalRestricted && userRole === 'Members_Read' && userRegion) {
       filtered = filtered.filter(member => member.regio === userRegion);
     }
 
@@ -109,12 +112,9 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
     Object.entries(columnFilters).forEach(([fieldKey, filterValue]) => {
       if (filterValue) {
         if (fieldKey === 'fullName') {
-          // Special handling for full name filter (mobile)
+          // Special handling for full name filter (mobile) - use calculated field
           filtered = filtered.filter(member => {
-            const fullName = [member.voornaam, member.tussenvoegsel, member.achternaam]
-              .filter(Boolean)
-              .join(' ')
-              .toLowerCase();
+            const fullName = getMemberFullName(member).toLowerCase();
             return fullName.includes(filterValue.toLowerCase());
           });
         } else {
@@ -383,7 +383,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                 </Box>
 
                 {/* Add Member Button */}
-                {onAddMember && ['System_CRUD_All', 'Members_CRUD_All'].includes(userRole) && (
+                {onAddMember && ['System_User_Management', 'Members_CRUD'].includes(userRole) && (
                   <Button
                     leftIcon={<AddIcon />}
                     colorScheme="orange"
@@ -664,9 +664,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     </Td>
                     <Td py={1} color="white" display={{ base: 'table-cell', md: 'none' }} fontSize="xs">
                       <Text fontWeight="medium">
-                        {[member.voornaam, member.tussenvoegsel, member.achternaam]
-                          .filter(Boolean)
-                          .join(' ') || '-'}
+                        {getMemberFullName(member) || '-'}
                       </Text>
                     </Td>
                     <Td py={1} color="white" display={{ base: 'table-cell', md: 'none' }} fontSize="xs">
