@@ -1,0 +1,1088 @@
+{
+  "test_suite": "Authentication Performance",
+  "timestamp": "2026-01-10T15:22:44.858973",
+  "performance_tests": [
+    {
+      "test_name": "authentication_validation_performance",
+      "results": [
+        {
+          "user_type": "national_admin",
+          "execution_time_ms": 0.1609999999345746,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_CRUD",
+            "Regio_All"
+          ]
+        },
+        {
+          "user_type": "regional_admin",
+          "execution_time_ms": 0.12549999883049168,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_CRUD",
+            "Regio_Utrecht"
+          ]
+        },
+        {
+          "user_type": "read_only_national",
+          "execution_time_ms": 0.09580000005371403,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_Read",
+            "Regio_All"
+          ]
+        },
+        {
+          "user_type": "read_only_regional",
+          "execution_time_ms": 0.12369999967631884,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_Read",
+            "Regio_Groningen/Drenthe"
+          ]
+        },
+        {
+          "user_type": "export_user",
+          "execution_time_ms": 0.11210000047867652,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_Export",
+            "Regio_All"
+          ]
+        },
+        {
+          "user_type": "system_admin",
+          "execution_time_ms": 0.12380000043776818,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "System_CRUD"
+          ]
+        },
+        {
+          "user_type": "basic_member",
+          "execution_time_ms": 0.11719999929482583,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "hdcnLeden"
+          ]
+        },
+        {
+          "user_type": "incomplete_user",
+          "execution_time_ms": 0.09039999895321671,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_CRUD"
+          ]
+        },
+        {
+          "user_type": "multi_permission",
+          "execution_time_ms": 0.10870000005525071,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_CRUD",
+            "Events_CRUD",
+            "Products_CRUD",
+            "Regio_All"
+          ]
+        },
+        {
+          "user_type": "multi_region",
+          "execution_time_ms": 0.09619999946153257,
+          "success": true,
+          "meets_benchmark": true,
+          "extracted_roles": [
+            "Members_Read",
+            "Regio_Utrecht",
+            "Regio_Noord-Holland",
+            "Regio_Limburg"
+          ]
+        }
+      ],
+      "statistics": {
+        "avg_time_ms": 0.11543999971763697,
+        "max_time_ms": 0.1609999999345746,
+        "min_time_ms": 0.09039999895321671,
+        "benchmark_ms": 100
+      },
+      "overall_pass": true
+    },
+    {
+      "test_name": "permission_checking_performance",
+      "results": [
+        {
+          "user_type": "national_admin",
+          "scenario": "members_read",
+          "execution_time_ms": 0.0473000000056345,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "members_create",
+          "execution_time_ms": 0.026100000468431972,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "members_update",
+          "execution_time_ms": 0.019499999325489625,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.03420000030018855,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "members_export",
+          "execution_time_ms": 0.023499998860643245,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.3538000000844477,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.2691999998205574,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.036299999919719994,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "members_read",
+          "execution_time_ms": 0.025800000003073364,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "members_create",
+          "execution_time_ms": 0.03280000055383425,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "members_update",
+          "execution_time_ms": 0.03249999826948624,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.018500000805943273,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "members_export",
+          "execution_time_ms": 0.033099999200203456,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.17610000031709205,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.24670000129844993,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.026300000172341242,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "members_read",
+          "execution_time_ms": 0.01809999957913533,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "members_create",
+          "execution_time_ms": 0.2387000004091533,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "members_update",
+          "execution_time_ms": 0.19839999913529027,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.1785000004019821,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "members_export",
+          "execution_time_ms": 0.24309999935212545,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.17359999947075266,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.15589999929943588,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.023899998268461786,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "members_read",
+          "execution_time_ms": 0.01880000127130188,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "members_create",
+          "execution_time_ms": 0.1770999988366384,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "members_update",
+          "execution_time_ms": 0.16939999841270037,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.14539999938278925,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "members_export",
+          "execution_time_ms": 0.17079999997804407,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.15279999934136868,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.23049999981594738,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.034100001357728615,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "members_read",
+          "execution_time_ms": 0.02409999979136046,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "members_create",
+          "execution_time_ms": 0.22339999850373715,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "members_update",
+          "execution_time_ms": 0.15309999980672728,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.1934000010805903,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "members_export",
+          "execution_time_ms": 0.029400000130408444,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.23239999973156955,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.2777999998215819,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.027599999157246202,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "members_read",
+          "execution_time_ms": 0.01320000046689529,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "members_create",
+          "execution_time_ms": 0.016599999071331695,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "members_update",
+          "execution_time_ms": 0.008499999239575118,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.006499998562503606,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "members_export",
+          "execution_time_ms": 0.010100000508828089,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.0068999997893115506,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.013199998647905886,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.011800000720540993,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "members_read",
+          "execution_time_ms": 0.22309999985736795,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "members_create",
+          "execution_time_ms": 0.21100000049045775,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "members_update",
+          "execution_time_ms": 0.20640000002458692,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.22929999977350235,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "members_export",
+          "execution_time_ms": 0.22320000061881728,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.26280000020051375,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.4014000005554408,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.03369999831193127,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "members_read",
+          "execution_time_ms": 0.27570000020205043,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "members_create",
+          "execution_time_ms": 0.62189999880502,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "members_update",
+          "execution_time_ms": 0.4127000011067139,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.29410000024654437,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "members_export",
+          "execution_time_ms": 0.26959999922837596,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.25289999939559493,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.3785999997489853,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.3001000004587695,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "members_read",
+          "execution_time_ms": 0.03509999987727497,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "members_create",
+          "execution_time_ms": 0.03389999983482994,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "members_update",
+          "execution_time_ms": 0.025200000891345553,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.03570000080799218,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "members_export",
+          "execution_time_ms": 0.03249999826948624,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.02499999936844688,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.06900000153109431,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.025100000129896216,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "members_read",
+          "execution_time_ms": 0.0562999994144775,
+          "is_authorized": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "members_create",
+          "execution_time_ms": 0.23909999981697183,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "members_update",
+          "execution_time_ms": 0.1762000010785414,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "members_delete",
+          "execution_time_ms": 0.26199999956588726,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "members_export",
+          "execution_time_ms": 0.15829999938432593,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "events_crud",
+          "execution_time_ms": 0.20600000061676838,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "products_crud",
+          "execution_time_ms": 0.18219999947177712,
+          "is_authorized": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "scenario": "multi_permission",
+          "execution_time_ms": 0.027800000680144876,
+          "is_authorized": true,
+          "meets_benchmark": true
+        }
+      ],
+      "statistics": {
+        "avg_time_ms": 0.13955874985640548,
+        "max_time_ms": 0.62189999880502,
+        "benchmark_ms": 50
+      },
+      "overall_pass": true
+    },
+    {
+      "test_name": "regional_filtering_performance",
+      "results": [
+        {
+          "user_type": "national_admin",
+          "region": "Utrecht",
+          "execution_time_ms": 0.008799999704933725,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.008600000001024455,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.00799999907030724,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "region": "Limburg",
+          "execution_time_ms": 0.009700001101009548,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "national_admin",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.007599999662488699,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "region": "Utrecht",
+          "execution_time_ms": 0.028500000553322025,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.09299999874201603,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.0745999986975221,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "region": "Limburg",
+          "execution_time_ms": 0.07729999924777076,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "regional_admin",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.1097999993362464,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "region": "Utrecht",
+          "execution_time_ms": 0.008900000466383062,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.0070000005507608876,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.004999999873689376,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "region": "Limburg",
+          "execution_time_ms": 0.008099999831756577,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_national",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.008700000762473792,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "region": "Utrecht",
+          "execution_time_ms": 0.06129999928816687,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.05469999996421393,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.010800000382005237,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "region": "Limburg",
+          "execution_time_ms": 0.07759999971312936,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "read_only_regional",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.1095000006898772,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "region": "Utrecht",
+          "execution_time_ms": 0.006399999620043673,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.007499998901039362,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.0075000007200287655,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "region": "Limburg",
+          "execution_time_ms": 0.0032999996619764715,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "export_user",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.006099999154685065,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "region": "Utrecht",
+          "execution_time_ms": 0.0106999996205559,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.01340000017080456,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.011800000720540993,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "region": "Limburg",
+          "execution_time_ms": 0.0068999997893115506,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "system_admin",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.005900001269765198,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "region": "Utrecht",
+          "execution_time_ms": 0.005899999450775795,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.006100000973674469,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.007300001016119495,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "region": "Limburg",
+          "execution_time_ms": 0.00670000008540228,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "basic_member",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.008900000466383062,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "region": "Utrecht",
+          "execution_time_ms": 0.007900000127847306,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.008700000762473792,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.046299999667098746,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "region": "Limburg",
+          "execution_time_ms": 0.008299999535665847,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "incomplete_user",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.005699999746866524,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "region": "Utrecht",
+          "execution_time_ms": 0.010300000212737359,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.006000000212225132,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.008499999239575118,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "region": "Limburg",
+          "execution_time_ms": 0.006299998858594336,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_permission",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.011100000847363845,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "region": "Utrecht",
+          "execution_time_ms": 0.01300000076298602,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "region": "Noord-Holland",
+          "execution_time_ms": 0.007900000127847306,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "region": "Groningen/Drenthe",
+          "execution_time_ms": 0.08800000068731606,
+          "can_access": false,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "region": "Limburg",
+          "execution_time_ms": 0.00960000033956021,
+          "can_access": true,
+          "meets_benchmark": true
+        },
+        {
+          "user_type": "multi_region",
+          "region": "Brabant/Zeeland",
+          "execution_time_ms": 0.09759999920788687,
+          "can_access": false,
+          "meets_benchmark": true
+        }
+      ],
+      "statistics": {
+        "avg_time_ms": 0.024541999991924968,
+        "max_time_ms": 0.1097999993362464,
+        "benchmark_ms": 25
+      },
+      "overall_pass": true
+    },
+    {
+      "test_name": "concurrent_user_performance",
+      "total_requests": 50,
+      "successful_requests": 50,
+      "failed_requests": 0,
+      "success_rate": 100.0,
+      "statistics": {
+        "total_time_ms": 17.8340999991633,
+        "avg_time_ms": 2.4220980000973213,
+        "max_time_ms": 5.27440000041679,
+        "min_time_ms": 0.23259999943547882,
+        "benchmark_ms": 200
+      },
+      "overall_pass": true
+    },
+    {
+      "test_name": "memory_stability",
+      "initial_memory_mb": 22.15625,
+      "final_memory_mb": 22.1640625,
+      "max_memory_mb": 22.16015625,
+      "memory_increase_mb": 0.0078125,
+      "iterations": 1000,
+      "memory_stable": true,
+      "overall_pass": true
+    }
+  ],
+  "summary": {
+    "total_tests": 5,
+    "passed_tests": 5,
+    "overall_pass": true,
+    "test_results": {
+      "authentication_validation": true,
+      "permission_checking": true,
+      "regional_filtering": true,
+      "concurrent_users": true,
+      "memory_stability": true
+    }
+  }
+}

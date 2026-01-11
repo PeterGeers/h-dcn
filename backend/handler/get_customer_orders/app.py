@@ -108,7 +108,7 @@ def lambda_handler(event, context):
         customer_id = event['pathParameters']['customer_id']
         
         # Check if user has administrative role to view any customer's orders
-        has_admin_role = any(role in user_roles for role in ['Members_CRUD_All', 'Webshop_Management'])
+        has_admin_role = any(role in user_roles for role in ['Members_CRUD', 'System_CRUD', 'Webshop_Management'])
         
         if not has_admin_role:
             # Regular users can only access orders if they match the customer_id
@@ -167,7 +167,7 @@ def lambda_handler(event, context):
             'access_type': access_type,
             'order_count': len(orders),
             'total_order_value': sum(float(order.get('total_amount', 0)) for order in orders if order.get('total_amount')),
-            'admin_roles': [role for role in user_roles if role in ['Members_CRUD_All', 'Webshop_Management']] if has_admin_role else []
+            'admin_roles': [role for role in user_roles if role in ['Members_CRUD', 'System_CRUD', 'Webshop_Management']] if has_admin_role else []
         })
         
         return create_success_response(orders)

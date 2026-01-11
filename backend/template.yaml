@@ -210,7 +210,6 @@ Resources:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
         # Email templates handled by Lambda Custom Message trigger
-        UnusedAccountValidityDays: 7
       
       # Lambda triggers for custom email templates
       LambdaConfig:
@@ -348,7 +347,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      Domain: !Sub "h-dcn-auth-${AWS::AccountId}"
+      Domain: !Sub "h-dcn-auth-new-${AWS::AccountId}"
 
   # H-DCN User Pool Groups (Roles)
   # Basic member role
@@ -361,21 +360,29 @@ Resources:
       Precedence: 100
 
   # Member management roles
-  MembersCRUDAllGroup:
+  MembersCRUDGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Members_CRUD_All
-      Description: "Full member management permissions - create, read, update, delete all member data"
+      GroupName: Members_CRUD
+      Description: "Full member management permissions - create, read, update, delete member data"
       Precedence: 10
 
-  MembersReadAllGroup:
+  MembersReadGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Members_Read_All
-      Description: "Read access to all member data"
+      GroupName: Members_Read
+      Description: "Read access to member data"
       Precedence: 20
+
+  MembersExportGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Members_Export
+      Description: "Permission to export member data"
+      Precedence: 18
 
   MembersStatusApproveGroup:
     Type: AWS::Cognito::UserPoolGroup
@@ -386,55 +393,160 @@ Resources:
       Precedence: 15
 
   # Event management roles
-  EventsReadAllGroup:
+  EventsReadGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Events_Read_All
-      Description: "Read access to all events"
+      GroupName: Events_Read
+      Description: "Read access to events"
       Precedence: 30
 
-  EventsCRUDAllGroup:
+  EventsCRUDGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Events_CRUD_All
+      GroupName: Events_CRUD
       Description: "Full event management permissions"
       Precedence: 25
 
-  # Product management roles
-  ProductsReadAllGroup:
+  EventsExportGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Products_Read_All
-      Description: "Read access to all products"
+      GroupName: Events_Export
+      Description: "Permission to export event data"
+      Precedence: 28
+
+  # Product management roles
+  ProductsReadGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Products_Read
+      Description: "Read access to products"
       Precedence: 40
 
-  ProductsCRUDAllGroup:
+  ProductsCRUDGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Products_CRUD_All
+      GroupName: Products_CRUD
       Description: "Full product management permissions"
       Precedence: 35
 
-  # Communication roles
-  CommunicationReadAllGroup:
+  ProductsExportGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Communication_Read_All
-      Description: "Read access to all communication data"
+      GroupName: Products_Export
+      Description: "Permission to export product data"
+      Precedence: 38
+
+  # Communication roles
+  CommunicationReadGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Communication_Read
+      Description: "Read access to communication data"
       Precedence: 50
 
-  CommunicationExportAllGroup:
+  CommunicationCRUDGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Communication_Export_All
+      GroupName: Communication_CRUD
+      Description: "Full communication management permissions"
+      Precedence: 42
+
+  CommunicationExportGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Communication_Export
       Description: "Permission to export communication data and create mailing lists"
       Precedence: 45
+
+  # Regional Groups (10 total) - NEW ADDITION
+  RegioNoordHollandGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Noord-Holland
+      Description: "Regional access for Noord-Holland"
+      Precedence: 60
+
+  RegioZuidHollandGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Zuid-Holland
+      Description: "Regional access for Zuid-Holland"
+      Precedence: 61
+
+  RegioFrieslandGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Friesland
+      Description: "Regional access for Friesland"
+      Precedence: 62
+
+  RegioUtrechtGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Utrecht
+      Description: "Regional access for Utrecht"
+      Precedence: 63
+
+  RegioOostGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Oost
+      Description: "Regional access for Oost"
+      Precedence: 64
+
+  RegioLimburgGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Limburg
+      Description: "Regional access for Limburg"
+      Precedence: 65
+
+  RegioGroningenDrentheGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Groningen/Drenthe
+      Description: "Regional access for Groningen/Drenthe"
+      Precedence: 66
+
+  RegioBrabantZeelandGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Brabant/Zeeland
+      Description: "Regional access for Brabant/Zeeland"
+      Precedence: 67
+
+  RegioDuitslandGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_Duitsland
+      Description: "Regional access for Duitsland"
+      Precedence: 68
+
+  RegioAllGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      UserPoolId: !Ref HDCNCognitoUserPool
+      GroupName: Regio_All
+      Description: "Access to all regions"
+      Precedence: 50
 
   # System administration roles
   SystemUserManagementGroup:
@@ -452,23 +564,6 @@ Resources:
       GroupName: System_Logs_Read
       Description: "Permission to read system logs and audit trails"
       Precedence: 55
-
-  # Additional communication and system roles for Webmaster
-  CommunicationCRUDAllGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: Communication_CRUD_All
-      Description: "Full communication management permissions - create, read, update, delete all communication data"
-      Precedence: 42
-
-  SystemCRUDAllGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      UserPoolId: !Ref HDCNCognitoUserPool
-      GroupName: System_CRUD_All
-      Description: "Full system administration permissions - complete system management access"
-      Precedence: 3
 
   # Lambda function for custom Cognito email messages
   CognitoCustomMessageFunction:
@@ -1360,7 +1455,28 @@ Resources:
             Path: /analytics/generate-parquet
             Method: post
 
-  # Parquet Download Function (for Members_Read_All users)
+  # Member Export Function (Simple JSON export - much better than parquet!)
+  ExportMembersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/export_members
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        ExportMembers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /members/export
+            Method: get
+
+  # Parquet Download Function (for Members_Read users)
   DownloadParquetFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1417,12 +1533,6 @@ Outputs:
     Value: !Ref HDCNLedenGroup
     Export:
       Name: !Sub "${AWS::StackName}-HDCNLedenGroup"
-
-  HDCNAdminRoles:
-    Description: "List of administrative role group names"
-    Value: !Sub "${MembersCRUDAllGroup},${SystemUserManagementGroup},${EventsCRUDAllGroup},${ProductsCRUDAllGroup}"
-    Export:
-      Name: !Sub "${AWS::StackName}-HDCNAdminRoles"
 
   # Analytics Data Folder Structure
   AnalyticsDataInfo:

@@ -119,7 +119,6 @@ describe('ParameterManagement Component Tests', () => {
       const adminRoles = [
         'Members_CRUD',
         'System_User_Management', 
-        'Webmaster',
         'Products_CRUD',
         'Events_CRUD'
       ];

@@ -25,7 +25,7 @@ Write-Host "`n📤 Test 1: Upload file..." -ForegroundColor Green
 try {
     $headers = @{
         "Content-Type"      = "application/json"
-        "X-Enhanced-Groups" = "hdcnAdmins"
+        "X-Enhanced-Groups" = "System_User_Management"
     }
     
     $response = Invoke-RestMethod -Uri $apiUrl -Method POST -Body $uploadBody -Headers $headers
@@ -47,7 +47,7 @@ Write-Host "`n📋 Test 2: List files..." -ForegroundColor Green
 try {
     $listUrl = "$apiUrl" + "?bucketName=my-hdcn-bucket&prefix=test-"
     $headers = @{
-        "X-Enhanced-Groups" = "hdcnAdmins"
+        "X-Enhanced-Groups" = "System_User_Management"
     }
     
     $response = Invoke-RestMethod -Uri $listUrl -Method GET -Headers $headers
@@ -74,7 +74,7 @@ try {
     
     $headers = @{
         "Content-Type"      = "application/json"
-        "X-Enhanced-Groups" = "hdcnAdmins"
+        "X-Enhanced-Groups" = "System_User_Management"
     }
     
     $response = Invoke-RestMethod -Uri $apiUrl -Method DELETE -Body $deleteBody -Headers $headers

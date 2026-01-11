@@ -162,26 +162,6 @@ NEW_ROLE_STRUCTURE_COMBINATIONS = {
 }
 
 # LEGACY TO NEW ROLE MAPPING
-# Maps old _All roles to equivalent new role combinations
-# NOTE: Legacy _All roles have been removed as part of role migration cleanup
-LEGACY_TO_NEW_ROLE_MAPPING = {
-    # Reference mappings for documentation purposes only
-    # 'Members_CRUD_All': ['Members_CRUD', 'Regio_All'],
-    # 'Members_Read_All': ['Members_Read', 'Members_Export', 'Regio_All'],
-    # 'Members_Export_All': ['Members_Export', 'Regio_All'],
-    # 'Events_CRUD_All': ['Events_CRUD', 'Regio_All'],
-    # 'Events_Read_All': ['Events_Read', 'Events_Export', 'Regio_All'],
-    # 'Events_Export_All': ['Events_Export', 'Regio_All'],
-    # 'Products_CRUD_All': ['Products_CRUD', 'Regio_All'],
-    # 'Products_Read_All': ['Products_Read', 'Products_Export', 'Regio_All'],
-    # 'Products_Export_All': ['Products_Export', 'Regio_All'],
-    # 'Communication_CRUD_All': ['Communication_CRUD', 'Regio_All'],
-    # 'Communication_Read_All': ['Communication_Read', 'Regio_All'],
-    # 'Communication_Export_All': ['Communication_Export', 'Regio_All'],
-    # NOTE: Legacy _All roles have been removed as part of role migration cleanup
-    # 'System_CRUD_All': ['System_CRUD']  # System roles don't need region
-}
-
 # ORGANIZATIONAL ROLE COMBINATIONS - Updated for new role structure
 # These represent common organizational positions and their role combinations
 # Aligned with frontend functionPermissions.ts organizational roles
@@ -607,53 +587,6 @@ def has_new_role_structure(user_roles):
         'region_roles': user_region_roles,
         'admin_roles': user_admin_roles,
         'legacy_roles': user_legacy_roles
-    }
-
-def convert_legacy_roles_to_new_structure(user_roles):
-    """
-    Convert legacy _All roles to equivalent new role combinations
-    
-    Args:
-        user_roles (list): List of user's current roles (may include legacy)
-        
-    Returns:
-        dict: {
-            'converted_roles': list,      # New role structure equivalent
-            'legacy_roles_found': list,   # Legacy roles that were converted
-            'unchanged_roles': list,      # Roles that didn't need conversion
-            'conversion_notes': list      # Notes about the conversion
-        }
-    """
-    converted_roles = []
-    legacy_roles_found = []
-    unchanged_roles = []
-    conversion_notes = []
-    
-    for role in user_roles:
-        if role in LEGACY_TO_NEW_ROLE_MAPPING:
-            # This is a legacy role - convert it
-            legacy_roles_found.append(role)
-            new_roles = LEGACY_TO_NEW_ROLE_MAPPING[role]
-            converted_roles.extend(new_roles)
-            conversion_notes.append(f"'{role}' -> {new_roles}")
-        else:
-            # This is already new structure or other role
-            unchanged_roles.append(role)
-            converted_roles.append(role)
-    
-    # Remove duplicates while preserving order
-    seen = set()
-    unique_converted_roles = []
-    for role in converted_roles:
-        if role not in seen:
-            seen.add(role)
-            unique_converted_roles.append(role)
-    
-    return {
-        'converted_roles': unique_converted_roles,
-        'legacy_roles_found': legacy_roles_found,
-        'unchanged_roles': unchanged_roles,
-        'conversion_notes': conversion_notes
     }
 
 def can_edit_field(roles, field_name, is_own_record=False):

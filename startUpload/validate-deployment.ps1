@@ -34,7 +34,8 @@ Write-Host "`n📋 Checking Prerequisites..." -ForegroundColor Cyan
 try {
     $nodeVersion = node --version
     Log-Success "Node.js installed: $nodeVersion"
-} catch {
+}
+catch {
     Add-Error "Node.js not found. Install Node.js 18+"
 }
 
@@ -42,7 +43,8 @@ try {
 try {
     $npmVersion = npm --version
     Log-Success "npm installed: $npmVersion"
-} catch {
+}
+catch {
     Add-Error "npm not found"
 }
 
@@ -50,7 +52,8 @@ try {
 try {
     $awsVersion = aws --version
     Log-Success "AWS CLI installed: $awsVersion"
-} catch {
+}
+catch {
     Add-Warning "AWS CLI not found. Deployment may fail"
 }
 
@@ -72,11 +75,13 @@ if (Test-Path $envFile) {
     foreach ($var in $requiredVars) {
         if ($envContent -match "^$var=.+") {
             Log-Success "$var configured"
-        } else {
+        }
+        else {
             Add-Error "$var missing or empty in .env"
         }
     }
-} else {
+}
+else {
     Add-Error ".env file missing in frontend directory"
 }
 
@@ -87,12 +92,14 @@ Set-Location frontend
 
 if (Test-Path "node_modules") {
     Log-Success "node_modules exists"
-} else {
+}
+else {
     Write-Host "Installing dependencies..." -ForegroundColor Yellow
     npm install
     if ($LASTEXITCODE -eq 0) {
         Log-Success "Dependencies installed"
-    } else {
+    }
+    else {
         Add-Error "Failed to install dependencies"
     }
 }
@@ -102,7 +109,8 @@ Write-Host "Checking for security vulnerabilities..." -ForegroundColor Yellow
 $auditResult = npm audit --audit-level=high 2>&1
 if ($LASTEXITCODE -eq 0) {
     Log-Success "No high/critical vulnerabilities found"
-} else {
+}
+else {
     Add-Warning "Security vulnerabilities detected. Run 'npm audit fix'"
 }
 
@@ -127,13 +135,16 @@ if (-not $SkipBuild) {
         $buildSize = (Get-ChildItem -Recurse build | Measure-Object -Property Length -Sum).Sum / 1MB
         if ($buildSize -lt 50) {
             Log-Success "Build size: $([math]::Round($buildSize, 2)) MB (Good)"
-        } else {
+        }
+        else {
             Add-Warning "Build size: $([math]::Round($buildSize, 2)) MB (Large - consider optimization)"
         }
-    } else {
+    }
+    else {
         Add-Error "Build failed"
     }
-} else {
+}
+else {
     Write-Host "⏭️ Skipping build test" -ForegroundColor Gray
 }
 
@@ -142,10 +153,10 @@ Write-Host "`n🔍 Code Quality Checks..." -ForegroundColor Cyan
 
 # Check for common issues in key files
 $keyFiles = @(
-    "src\App.js",
-    "src\pages\Dashboard.js",
-    "src\modules\members\MemberAdminPage.js",
-    "src\modules\webshop\WebshopPage.js"
+    "src\App.tsx",
+    "src\pages\Dashboard.tsx",
+    "src\modules\members\MemberAdminPage.tsx",
+    "src\modules\webshop\WebshopPage.tsx"
 )
 
 foreach ($file in $keyFiles) {
@@ -164,7 +175,8 @@ foreach ($file in $keyFiles) {
         }
         
         Log-Success "$file validated"
-    } else {
+    }
+    else {
         Add-Error "$file missing"
     }
 }
@@ -180,32 +192,88 @@ if ($gitStatus) {
         Write-Host "Uncommitted files:" -ForegroundColor Yellow
         git status --short
     }
-} else {
+}
+else {
     Log-Success "Git working directory clean"
 }
 
-# 7. AWS Connectivity Test
+# 8. Role Migration Validation
+Write-Host "`n🔄 Validating Role Migration..." -ForegroundColor Cyan
+
+# Check for deprecated role references in key files
+$deprecatedRoles = @("hdcnAdmins", "Members_CRUD_All", "Products_CRUD_All", "Events_CRUD_All", "Members_Read_All", "Products_Read_All", "Events_Read_All")
+$keyDeploymentFiles = @(
+    "test-s3-list.ps1",
+    "test-s3-api.ps1", 
+    "cleanup-s3-bucket.ps1"
+)
+
+foreach ($file in $keyDeploymentFiles) {
+    if (Test-Path $file) {
+        $content = Get-Content $file -Raw
+        $foundDeprecated = $false
+        
+        foreach ($role in $deprecatedRoles) {
+            if ($content -match $role) {
+                Add-Error "Deprecated role '$role' found in $file"
+                $foundDeprecated = $true
+            }
+        }
+        
+        if (-not $foundDeprecated) {
+            Log-Success "$file uses current role structure"
+        }
+    }
+}
+
+# Check that current roles are being used
+$currentRoles = @("System_User_Management", "Members_CRUD", "Members_Read", "Products_CRUD", "Products_Read")
+$foundCurrentRoles = $false
+
+foreach ($file in $keyDeploymentFiles) {
+    if (Test-Path $file) {
+        $content = Get-Content $file -Raw
+        foreach ($role in $currentRoles) {
+            if ($content -match $role) {
+                $foundCurrentRoles = $true
+                break
+            }
+        }
+    }
+}
+
+if ($foundCurrentRoles) {
+    Log-Success "Deployment scripts use current role structure"
+}
+else {
+    Add-Warning "No current role structure found in deployment scripts"
+}
+
+# 9. AWS Connectivity Test
 Write-Host "`n☁️ Testing AWS Connectivity..." -ForegroundColor Cyan
 
 try {
     $s3Test = aws s3 ls s3://hdcn-dashboard-frontend 2>&1
     if ($LASTEXITCODE -eq 0) {
         Log-Success "S3 bucket accessible"
-    } else {
+    }
+    else {
         Add-Warning "Cannot access S3 bucket. Check AWS credentials"
     }
-} catch {
+}
+catch {
     Add-Warning "AWS CLI test failed"
 }
 
-# 8. Final Report
+# 10. Final Report
 Write-Host "`n📊 Validation Summary" -ForegroundColor Cyan
 Write-Host "===================" -ForegroundColor Cyan
 
 if ($errors.Count -eq 0 -and $warnings.Count -eq 0) {
     Write-Host "🎉 ALL CHECKS PASSED! Ready for deployment." -ForegroundColor Green
     $exitCode = 0
-} elseif ($errors.Count -eq 0) {
+}
+elseif ($errors.Count -eq 0) {
     Write-Host "✅ No critical errors found." -ForegroundColor Green
     Write-Host "⚠️ $($warnings.Count) warning(s) detected:" -ForegroundColor Yellow
     foreach ($warning in $warnings) {
@@ -213,7 +281,8 @@ if ($errors.Count -eq 0 -and $warnings.Count -eq 0) {
     }
     Write-Host "`n💡 Deployment can proceed, but consider addressing warnings." -ForegroundColor Cyan
     $exitCode = 0
-} else {
+}
+else {
     Write-Host "❌ $($errors.Count) error(s) found:" -ForegroundColor Red
     foreach ($error in $errors) {
         Write-Host "   • $error" -ForegroundColor Red
@@ -232,7 +301,8 @@ Write-Host "`n🚀 Next Steps:" -ForegroundColor Cyan
 if ($exitCode -eq 0) {
     Write-Host "   1. Run: .\git-upload.ps1 -Message 'Pre-deployment validation passed'" -ForegroundColor White
     Write-Host "   2. Run: cd frontend && .\deploy.ps1" -ForegroundColor White
-} else {
+}
+else {
     Write-Host "   1. Fix the errors listed above" -ForegroundColor White
     Write-Host "   2. Re-run: .\validate-deployment.ps1" -ForegroundColor White
 }

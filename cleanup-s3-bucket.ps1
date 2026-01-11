@@ -5,7 +5,7 @@ Write-Host "🧹 Cleaning up my-hdcn-bucket..." -ForegroundColor Yellow
 
 $headers = @{
     "Content-Type"      = "application/json"
-    "X-Enhanced-Groups" = "hdcnAdmins"
+    "X-Enhanced-Groups" = "System_User_Management"
 }
 
 # Files and folders to remove (frontend build artifacts that don't belong in data bucket)
@@ -37,7 +37,7 @@ if ($confirm -ne "y" -and $confirm -ne "Y") {
 Write-Host "`n📋 Getting current bucket contents..." -ForegroundColor Green
 try {
     $listUrl = "$apiUrl" + "?bucketName=my-hdcn-bucket&recursive=true"
-    $response = Invoke-RestMethod -Uri $listUrl -Method GET -Headers @{"X-Enhanced-Groups" = "hdcnAdmins" }
+    $response = Invoke-RestMethod -Uri $listUrl -Method GET -Headers @{"X-Enhanced-Groups" = "System_User_Management" }
     
     Write-Host "📊 Current bucket contains $($response.counts.files) files" -ForegroundColor Cyan
 }
@@ -73,7 +73,7 @@ Write-Host "`n🗑️ Deleting static/ folder contents..." -ForegroundColor Yell
 try {
     # Get all files in static folder
     $listUrl = "$apiUrl" + "?bucketName=my-hdcn-bucket&prefix=static/&recursive=true"
-    $staticResponse = Invoke-RestMethod -Uri $listUrl -Method GET -Headers @{"X-Enhanced-Groups" = "hdcnAdmins" }
+    $staticResponse = Invoke-RestMethod -Uri $listUrl -Method GET -Headers @{"X-Enhanced-Groups" = "System_User_Management" }
     
     if ($staticResponse.files.Count -gt 0) {
         Write-Host "📊 Found $($staticResponse.files.Count) files in static/ folder" -ForegroundColor Cyan
@@ -107,7 +107,7 @@ catch {
 Write-Host "`n📋 Final bucket contents..." -ForegroundColor Green
 try {
     $listUrl = "$apiUrl" + "?bucketName=my-hdcn-bucket&recursive=false"
-    $finalResponse = Invoke-RestMethod -Uri $listUrl -Method GET -Headers @{"X-Enhanced-Groups" = "hdcnAdmins" }
+    $finalResponse = Invoke-RestMethod -Uri $listUrl -Method GET -Headers @{"X-Enhanced-Groups" = "System_User_Management" }
     
     Write-Host "✅ Cleanup completed!" -ForegroundColor Green
     Write-Host "📊 Bucket now contains:" -ForegroundColor Cyan

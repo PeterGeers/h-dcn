@@ -15,8 +15,8 @@ const mockFieldRegistry = {
     group: 'personal',
     order: 1,
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['System_CRUD', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+      edit: ['System_CRUD', 'Members_CRUD', 'System_User_Management']
     }
   },
   lidmaatschap: {
@@ -27,8 +27,8 @@ const mockFieldRegistry = {
     order: 1,
     enumOptions: ['Gewoon lid', 'Gezins lid', 'Erelid', 'Donateur'],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['System_CRUD', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+      edit: ['System_CRUD', 'Members_CRUD', 'System_User_Management']
     }
   }
 };
@@ -42,7 +42,7 @@ const mockTableContexts = {
       { fieldKey: 'lidmaatschap', visible: true, order: 2, width: 150 }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['System_CRUD', 'Members_Read', 'Members_CRUD', 'System_User_Management']
     }
   }
 };
@@ -61,14 +61,14 @@ const mockModalContexts = {
           { fieldKey: 'voornaam', visible: true, order: 1, span: 1 }
         ],
         permissions: {
-          view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-          edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management']
+          view: ['System_CRUD', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+          edit: ['System_CRUD', 'Members_CRUD', 'System_User_Management']
         }
       }
     ],
     permissions: {
-      view: ['System_CRUD_All', 'Members_Read_All', 'Members_CRUD_All', 'System_User_Management'],
-      edit: ['System_CRUD_All', 'Members_CRUD_All', 'System_User_Management']
+      view: ['System_CRUD', 'Members_Read', 'Members_CRUD', 'System_User_Management'],
+      edit: ['System_CRUD', 'Members_CRUD', 'System_User_Management']
     }
   }
 };
@@ -132,9 +132,9 @@ function validatePermissions() {
   console.log('\n🔍 Validating Permission System...');
   
   const validRoles = [
-    'System_CRUD_All',
-    'Members_CRUD_All', 
-    'Members_Read_All',
+    'System_CRUD',
+    'Members_CRUD', 
+    'Members_Read',
     'System_User_Management',
     'hdcnLeden'
   ];
@@ -146,8 +146,8 @@ function validatePermissions() {
     return requiredRoles.includes(userRole);
   }
   
-  const testRole = 'System_CRUD_All';
-  const testPermissions = ['System_CRUD_All', 'Members_CRUD_All'];
+  const testRole = 'System_CRUD';
+  const testPermissions = ['System_CRUD', 'Members_CRUD'];
   const hasAccess = hasPermission(testRole, testPermissions);
   
   console.log(`  ✓ Permission test: ${testRole} -> ${hasAccess ? 'GRANTED' : 'DENIED'}`);

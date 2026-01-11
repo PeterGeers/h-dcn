@@ -90,8 +90,8 @@ def extract_user_credentials(event):
                 # Try parsing as JSON first (array format)
                 enhanced_groups = json.loads(enhanced_groups_header)
                 if isinstance(enhanced_groups, list):
-                    # Return the mapped user email (webmaster@h-dcn.nl) instead of Google email for audit trail
-                    mapped_email = "webmaster@h-dcn.nl" if user_email.startswith("Google_") else user_email
+                    # Return the mapped user email (admin@h-dcn.nl) instead of Google email for audit trail
+                    mapped_email = "admin@h-dcn.nl" if user_email.startswith("Google_") else user_email
                     return mapped_email, enhanced_groups, None
                 else:
                     pass  # Fall back to JWT groups
@@ -100,8 +100,8 @@ def extract_user_credentials(event):
                 try:
                     enhanced_groups = [group.strip() for group in enhanced_groups_header.split(',') if group.strip()]
                     if enhanced_groups:
-                        # Return the mapped user email (webmaster@h-dcn.nl) instead of Google email for audit trail
-                        mapped_email = "webmaster@h-dcn.nl" if user_email.startswith("Google_") else user_email
+                        # Return the mapped user email (admin@h-dcn.nl) instead of Google email for audit trail
+                        mapped_email = "admin@h-dcn.nl" if user_email.startswith("Google_") else user_email
                         return mapped_email, enhanced_groups, None
                     else:
                         pass  # Fall back to JWT groups
@@ -146,7 +146,7 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
         # This eliminates the complex mapping layer and makes authorization clearer
         
         # Admin roles get full access
-        admin_roles = ['hdcnAdmins', 'Webmaster']
+        admin_roles = ['System_CRUD', 'System_User_Management']
         if any(role in user_roles for role in admin_roles):
             return True, None
         

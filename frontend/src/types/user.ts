@@ -20,12 +20,12 @@ export interface CognitoUser {
   };
 }
 
-// H-DCN Complete Organizational Structure - Updated for New Permission + Region Structure
+// H-DCN Complete Organizational Structure - Permission + Region Structure
 export type HDCNGroup =
   // Basic member role
   | "hdcnLeden"
 
-  // Permission-Based Roles (New System - No more _All roles)
+  // Permission-Based Roles (Current System - No more _All roles)
   // Member Management Roles
   | "Members_CRUD"             // Permission to create, read, update, delete member data
   | "Members_Read"             // Permission to read member data
@@ -51,7 +51,7 @@ export type HDCNGroup =
   | "System_User_Management"   // System user management permissions
   | "System_Logs_Read"         // Permission to read system logs and audit trails
 
-  // Regional Roles (New System - Permission + Region Structure)
+  // Regional Roles (Current System - Permission + Region Structure)
   | "Regio_All"                // Access to all regions (only _All role that still exists)
   | "Regio_Utrecht"            // Access to Utrecht region only
   | "Regio_Limburg"            // Access to Limburg region only
@@ -69,7 +69,7 @@ export type HDCNGroup =
   // Special Application Role
   | "verzoek_lid";             // Role for new user registration (no permissions except signup)
 
-// Legacy type for backward compatibility
+// Type for compatibility
 export type UserRole = HDCNGroup;
 
 // H-DCN Permission Levels
@@ -95,7 +95,7 @@ export interface HDCNMember extends User {
   membershipType: "individual" | "family" | "corporate";
 }
 
-// Utility functions for H-DCN roles - Updated for new permission + region structure
+// Utility functions for H-DCN roles - Updated for permission + region structure
 export const HDCNRoleUtils = {
   isPermissionRole: (role: HDCNGroup): boolean => 
     role.includes("_CRUD") || role.includes("_Read") || role.includes("_Export") || role.includes("_Status_Approve"),

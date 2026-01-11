@@ -40,7 +40,7 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
         
-        # UPDATED: Use new permission-based validation instead of Members_Read_All
+        # UPDATED: Use new permission-based validation instead of legacy role checking
         # Required permissions for reading member data
         required_permissions = ['members_read', 'members_list']
         

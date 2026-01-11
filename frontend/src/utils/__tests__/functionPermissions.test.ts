@@ -36,7 +36,7 @@ const mockUserWithNoRegion = {
   attributes: {}
 };
 
-describe('Enhanced Permission System', () => {
+describe('Permission System', () => {
   describe('getUserRoles', () => {
     test('should extract roles from groups array', () => {
       const roles = getUserRoles(mockUserWithMembersCRUD);

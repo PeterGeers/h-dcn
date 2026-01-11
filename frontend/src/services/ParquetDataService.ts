@@ -18,6 +18,9 @@ import { ApiService } from './apiService';
 import { computeCalculatedFieldsForArray } from '../utils/calculatedFields';
 import { Member } from '../types/index';
 import { webWorkerManager, WebWorkerManager } from './WebWorkerManager';
+
+// Temporarily disable web workers due to CloudFront MIME type issues
+webWorkerManager.updateConfig({ maxWorkers: 0 });
 import {
   ParquetFileInfo,
   ParquetFileStatus,
@@ -44,7 +47,7 @@ const DEFAULT_CONFIG: ParquetServiceConfig = {
     applyRegionalFiltering: true,
     enableCaching: true,
     cacheMaxAge: 5 * 60 * 1000, // 5 minutes
-    useWebWorkers: true // Enable Web Workers by default for better performance
+    useWebWorkers: false // Temporarily disable Web Workers due to CloudFront MIME type issue
   },
   cacheOptions: {
     maxAge: 5 * 60 * 1000, // 5 minutes
@@ -223,14 +226,18 @@ export class ParquetDataService {
       const hasRequiredPermission = userRoles.some(role => requiredPermissions.includes(role));
       
       if (!hasRequiredPermission) {
-        this.log(`Permission denied for user ${userEmail} with roles: ${userRoles.join(', ')}`);
+        const permissionRoles = userRoles.filter(r => !r.startsWith('Regio_'));
+        const regionRoles = userRoles.filter(r => r.startsWith('Regio_'));
+        this.log(`Permission denied for user ${userEmail} with permission roles: ${permissionRoles.join(', ')}, region roles: ${regionRoles.join(', ')}`);
         return {
           hasPermission: false,
           error: 'Insufficient permissions. Parquet data access requires Members_CRUD, Members_Read, Members_Export, or System_User_Management role with appropriate regional assignment.'
         };
       }
       
-      this.log(`Permission granted for user ${userEmail} with roles: ${userRoles.join(', ')}`);
+      const permissionRoles = userRoles.filter(r => !r.startsWith('Regio_'));
+      const regionRoles = userRoles.filter(r => r.startsWith('Regio_'));
+      this.log(`Permission granted for user ${userEmail} with permission roles: ${permissionRoles.join(', ')}, region roles: ${regionRoles.join(', ')}`);
       return { hasPermission: true };
       
     } catch (error) {
@@ -316,44 +323,66 @@ export class ParquetDataService {
     try {
       this.log(`Downloading parquet file: ${filename}`);
       
-      const response = await ApiService.get<ParquetDownloadResponse>(`/analytics/download-parquet/${filename}`);
+      // Make direct fetch request to handle both JSON and binary responses
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/analytics/download-parquet/${filename}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
       
-      if (!response.success) {
-        throw new Error(response.error || 'Download failed');
-      }
-
-      const downloadData = response.data;
-      if (!downloadData) {
-        throw new Error('No download data received');
-      }
-
-      if (downloadData.download_method === 'presigned_url' && downloadData.data?.download_url) {
-        // Handle pre-signed URL download for large files
-        this.log('Using pre-signed URL for large file download');
-        const fileResponse = await fetch(downloadData.data.download_url);
-        if (!fileResponse.ok) {
-          throw new Error(`Failed to download from pre-signed URL: ${fileResponse.statusText}`);
-        }
-        const arrayBuffer = await fileResponse.arrayBuffer();
-        return { success: true, data: arrayBuffer };
+      if (contentType.includes('application/json')) {
+        // Large file - JSON response with pre-signed URL or direct content
+        const jsonData = await response.json();
         
-      } else if (downloadData.download_method === 'direct_content' && downloadData.data?.content) {
-        // Handle direct content download for small files
-        this.log('Using direct content download');
-        const binaryString = atob(downloadData.data.content);
+        if (jsonData.download_method === 'presigned_url' && jsonData.data?.download_url) {
+          // Handle pre-signed URL download for large files
+          this.log('Using pre-signed URL for large file download');
+          const fileResponse = await fetch(jsonData.data.download_url);
+          if (!fileResponse.ok) {
+            throw new Error(`Failed to download from pre-signed URL: ${fileResponse.statusText}`);
+          }
+          const arrayBuffer = await fileResponse.arrayBuffer();
+          return { success: true, data: arrayBuffer };
+          
+        } else if (jsonData.download_method === 'direct_content' && jsonData.data?.content) {
+          // Handle direct content download for small files (base64 encoded in JSON)
+          this.log('Using direct content download from JSON');
+          const binaryString = atob(jsonData.data.content);
+          const arrayBuffer = new ArrayBuffer(binaryString.length);
+          const uint8Array = new Uint8Array(arrayBuffer);
+          for (let i = 0; i < binaryString.length; i++) {
+            uint8Array[i] = binaryString.charCodeAt(i);
+          }
+          return { success: true, data: arrayBuffer };
+        } else {
+          throw new Error('Invalid JSON response format');
+        }
+      } else {
+        // Small file - direct binary response (base64 encoded)
+        this.log('Handling direct binary response');
+        const text = await response.text();
+        
+        // The response body is base64 encoded binary data
+        const binaryString = atob(text);
         const arrayBuffer = new ArrayBuffer(binaryString.length);
         const uint8Array = new Uint8Array(arrayBuffer);
         for (let i = 0; i < binaryString.length; i++) {
           uint8Array[i] = binaryString.charCodeAt(i);
         }
         return { success: true, data: arrayBuffer };
-        
-      } else {
-        throw new Error('Invalid download response format');
       }
 
     } catch (error) {
-      this.logError(`Error downloading parquet file ${filename}`, error);
+      this.logError('Download error', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Download failed' 
@@ -501,7 +530,9 @@ export class ParquetDataService {
     }
 
     try {
-      this.log(`Applying regional filtering for user with roles: ${options.userRoles.join(', ')} (Web Workers: ${useWebWorkers})`);
+      const permissionRoles = options.userRoles.filter(r => !r.startsWith('Regio_'));
+      const regionRoles = options.userRoles.filter(r => r.startsWith('Regio_'));
+      this.log(`Applying regional filtering for user with permission roles: ${permissionRoles.join(', ')}, region roles: ${regionRoles.join(', ')} (Web Workers: ${useWebWorkers})`);
       
       // Use Web Workers for large datasets or when explicitly requested
       if (useWebWorkers && webWorkerManager.isAvailable() && members.length > 100) {
@@ -536,7 +567,7 @@ export class ParquetDataService {
       // Process regional roles
       if (regionalRoles.length > 0) {
         allowedRegions = regionalRoles.map(role => role.replace('Regio_', ''));
-        this.log(`Regional roles found: ${regionalRoles.join(', ')}`);
+        this.log(`Regional roles found: ${regionalRoles.join(', ')} -> allowed regions: ${allowedRegions.join(', ')}`);
       }
       
       if (allowedRegions.length === 0) {
@@ -582,7 +613,9 @@ export class ParquetDataService {
       
       // Security audit log for regional access
       if (filteredMembers.length < members.length) {
-        this.log(`SECURITY_AUDIT: Regional filtering applied for user ${options.userEmail} with roles [${options.userRoles.join(', ')}]. Filtered ${members.length - filteredMembers.length} members from unauthorized regions.`);
+        const permissionRoles = options.userRoles.filter(r => !r.startsWith('Regio_'));
+        const regionRoles = options.userRoles.filter(r => r.startsWith('Regio_'));
+        this.log(`SECURITY_AUDIT: Regional filtering applied for user ${options.userEmail} with permission roles [${permissionRoles.join(', ')}] and region roles [${regionRoles.join(', ')}]. Filtered ${members.length - filteredMembers.length} members from unauthorized regions.`);
       }
       
       return filteredMembers;

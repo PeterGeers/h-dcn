@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Frontend with GitLens Context",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/.bin/react-scripts",
+      "args": ["start"],
+      "cwd": "${workspaceFolder}/frontend",
+      "env": {
+        "NODE_ENV": "development",
+        "BROWSER": "none"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "preLaunchTask": "Check AuthLayer Sync"
+    },
+    {
+      "name": "Debug Backend Lambda Locally",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/handler/export_members/app.py",
+      "cwd": "${workspaceFolder}/backend/handler/export_members",
+      "env": {
+        "MEMBERS_TABLE_NAME": "Members",
+        "AWS_DEFAULT_REGION": "eu-west-1"
+      },
+      "console": "integratedTerminal",
+      "preLaunchTask": "Check AuthLayer Sync"
+    }
+  ]
+}

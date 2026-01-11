@@ -50,7 +50,7 @@ def lambda_handler(event, context):
             return auth_error
         
         # UPDATED: Check for products read permission with new role structure
-        # Users now have Products_CRUD + Regio_* or Products_Read + Regio_* instead of Products_Read_All
+        # Users now have Products_CRUD + Regio_* or Products_Read + Regio_* instead of legacy roles
         # The validate_permissions_with_regions function will:
         # 1. Check if user has Products_CRUD or Products_Read role (which grants products_read permission)
         # 2. Check if user has a region role (Regio_All, Regio_*, etc.)

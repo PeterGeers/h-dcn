@@ -46,7 +46,7 @@ def lambda_handler(event, context):
             return auth_error
         
         # UPDATED: Check for products create permission with new role structure
-        # Users now have Products_CRUD + Regio_* instead of Products_CRUD_All
+        # Users now have Products_CRUD + Regio_* instead of legacy roles
         # The validate_permissions_with_regions function will:
         # 1. Check if user has Products_CRUD role (which grants products_create permission)
         # 2. Check if user has a region role (Regio_All, Regio_*, etc.)

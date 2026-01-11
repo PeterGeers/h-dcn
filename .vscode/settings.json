@@ -1,4 +1,101 @@
 {
-    "typescript.autoClosingTags": false,
-    "html.autoClosingTags": false
+  // GitLens Configuration for H-DCN Project
+  // Optimized for tracking authentication, deployment, and configuration changes
+  
+  // === CORE GITLENS FEATURES ===
+  "gitlens.mode.active": "zen",
+  "gitlens.currentLine.enabled": true,
+  "gitlens.currentLine.pullRequests.enabled": false,
+  "gitlens.codeLens.enabled": true,
+  "gitlens.codeLens.authors.enabled": true,
+  "gitlens.codeLens.recentChange.enabled": true,
+  
+  // === FILE HISTORY & BLAME ===
+  "gitlens.blame.format": "${author|10} ${date|14-} ${message|50?}",
+  "gitlens.blame.highlight.enabled": true,
+  "gitlens.blame.avatars": true,
+  "gitlens.blame.compact": false,
+  
+  // === CRITICAL FILES MONITORING ===
+  // Highlight changes to authentication and deployment files
+  "gitlens.fileAnnotations.command": "blame",
+  "gitlens.hovers.enabled": true,
+  "gitlens.hovers.currentLine.over": "line",
+  "gitlens.hovers.annotations.enabled": true,
+  
+  // === REPOSITORY VIEW ===
+  "gitlens.views.repositories.enabled": true,
+  "gitlens.views.fileHistory.enabled": true,
+  "gitlens.views.lineHistory.enabled": true,
+  "gitlens.views.branches.enabled": true,
+  "gitlens.views.commits.enabled": true,
+  "gitlens.views.contributors.enabled": true,
+  
+  // === CHANGE DETECTION ===
+  "gitlens.statusBar.enabled": true,
+  "gitlens.statusBar.reduceFlicker": true,
+  "gitlens.changes.locations": ["gutter", "line", "overview"],
+  
+  // === COMMIT GRAPH ===
+  "gitlens.graph.layout": "editor",
+  "gitlens.graph.minimap.enabled": true,
+  "gitlens.graph.scrollRowPadding": 2,
+  
+  // === WORKSPACE SPECIFIC SETTINGS ===
+  // File associations for better tracking
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.yml": "yaml",
+    "samconfig.toml": "toml",
+    ".env*": "properties"
+  },
+  
+  // === CRITICAL FILE WATCHERS ===
+  // Watch for changes to files that need to stay in sync
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/.aws-sam/**": true,
+    "**/build/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true
+  },
+  
+  // === DIFF SETTINGS ===
+  "diffEditor.ignoreTrimWhitespace": false,
+  "diffEditor.renderSideBySide": true,
+  "diffEditor.wordWrap": "on",
+  
+  // === SEARCH SETTINGS FOR CRITICAL FILES ===
+  "search.exclude": {
+    "**/.aws-sam": true,
+    "**/build": true,
+    "**/.venv": true,
+    "**/node_modules": true,
+    "**/__pycache__": true
+  },
+  
+  // === PROBLEM MATCHERS ===
+  // Help identify when critical files are out of sync
+  "problems.decorations.enabled": true,
+  
+  // === TERMINAL INTEGRATION ===
+  "terminal.integrated.enableMultiLinePasteWarning": false,
+  
+  // === EDITOR SETTINGS FOR BETTER TRACKING ===
+  "editor.rulers": [80, 120],
+  "editor.renderWhitespace": "boundary",
+  "editor.showFoldingControls": "always",
+  
+  // === SPECIFIC TO YOUR PROJECT STRUCTURE ===
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js, ${capture}.d.ts, ${capture}.js.map",
+    "*.tsx": "${capture}.js, ${capture}.d.ts, ${capture}.js.map",
+    "*.py": "${capture}.pyc",
+    "template.yaml": "samconfig.toml, .aws-sam",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
+    ".env": ".env.*"
+  }
 }

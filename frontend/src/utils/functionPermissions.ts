@@ -20,7 +20,7 @@ interface User {
 
 /**
  * Extracts Cognito groups (roles) from a user's JWT token
- * Enhanced version that supports both legacy user objects and new JWT token structure
+ * Supports both user objects and JWT token structure
  * @param user - The user object containing the sign-in session or groups array
  * @returns Array of role strings from cognito:groups claim, or empty array if none found
  */
@@ -56,12 +56,12 @@ export function getUserRoles(user: User): string[] {
     }
   }
 
-  console.log('🔍 getUserRoles - No groups found, returning empty array');
+  console.log('🔍 getUserRoles - No groups found, returning empty array (role structure: permission + region)');
   return [];
 }
 
 /**
- * Enhanced role extraction that works with current authentication session
+ * Role extraction that works with current authentication session
  * This function directly queries the current authentication session for roles
  * @returns Promise with array of user roles from current session
  */
@@ -114,7 +114,7 @@ export function userHasAllRoles(user: User | null, roles: HDCNGroup[]): boolean 
 }
 
 /**
- * Enhanced permission checking for new permission + region role combinations
+ * Permission checking for permission + region role combinations
  * Checks if user has the required permission AND appropriate regional access
  * @param user - User object or null
  * @param requiredPermission - The permission type needed (e.g., 'members_read', 'events_crud')
@@ -260,8 +260,8 @@ export function userHasPermissionType(
 }
 
 /**
- * Enhanced role checking that validates permission + region combinations
- * This is the main function for checking new role structure access
+ * Role checking that validates permission + region combinations
+ * This is the main function for checking role structure access
  * @param user - User object or null
  * @param requiredPermissions - Array of required permissions (e.g., ['members_read', 'events_crud'])
  * @param targetRegion - Optional specific region to check access for
@@ -281,7 +281,7 @@ export function validatePermissionWithRegion(
 }
 
 // Role-to-permission mapping based on H-DCN organizational structure
-// Updated for new permission + region role combinations
+// Updated for permission + region role combinations
 export const ROLE_PERMISSIONS: PermissionConfig = {
   // Basic member role
   hdcnLeden: {
@@ -291,7 +291,7 @@ export const ROLE_PERMISSIONS: PermissionConfig = {
     products: { read: ['catalog'] }
   },
 
-  // Member management roles - Updated to new permission + region structure
+  // Member management roles - Updated to permission + region structure
   Members_CRUD: {
     members: { read: ['all'], write: ['all'] },
     events: { read: ['all'] },
@@ -316,7 +316,7 @@ export const ROLE_PERMISSIONS: PermissionConfig = {
     communication: { write: ['export'] }
   },
 
-  // Event management roles - Updated to new permission + region structure
+  // Event management roles - Updated to permission + region structure
   Events_Read: {
     events: { read: ['all'] }
   },
@@ -330,7 +330,7 @@ export const ROLE_PERMISSIONS: PermissionConfig = {
     communication: { write: ['export'] }
   },
 
-  // Product management roles - Updated to new permission + region structure
+  // Product management roles - Updated to permission + region structure
   Products_Read: {
     products: { read: ['all'] }
   },
@@ -343,7 +343,7 @@ export const ROLE_PERMISSIONS: PermissionConfig = {
     products: { read: ['all'], write: ['export'] }
   },
 
-  // Communication roles - Updated to new permission + region structure
+  // Communication roles - Updated to permission + region structure
   Communication_Read: {
     communication: { read: ['all'] }
   },
@@ -373,7 +373,7 @@ export const ROLE_PERMISSIONS: PermissionConfig = {
     communication: { read: ['all'] }
   },
 
-  // Individual regional roles - New permission + region structure
+  // Individual regional roles - Permission + region structure
   Regio_Utrecht: {
     members: { read: ['region_utrecht'] },
     events: { read: ['region_utrecht'] },
@@ -574,7 +574,7 @@ export class FunctionPermissionManager {
     
     return this.userGroups.some(userGroup => {
       return allowedPermissions.some(permission => {
-        // Handle legacy group-based permissions (backward compatibility)
+        // Handle group-based permissions
         if (userGroup === permission) return true;
         
         // Handle wildcard patterns like hdcnRegio_*
@@ -608,7 +608,7 @@ export class FunctionPermissionManager {
           case 'logs':
             return this.userGroups.includes('System_Logs_Read');
           
-          // Regional permissions - Updated for new role structure
+          // Regional permissions - Updated for role structure
           case 'region_utrecht':
             return context?.userRegion === 'utrecht' || this.userGroups.includes('Regio_Utrecht') || this.userGroups.includes('Regio_All');
           case 'region_limburg':
@@ -640,11 +640,15 @@ export class FunctionPermissionManager {
   static async create(user: User): Promise<FunctionPermissionManager> {
     const userGroups = getUserRoles(user);
     
-    // Use the updated ROLE_PERMISSIONS configuration that supports new role structure
+    // Use the updated ROLE_PERMISSIONS configuration that supports role structure
     const permissionManager = new FunctionPermissionManager(user, ROLE_PERMISSIONS);
     
-    console.log('🔧 Created permission manager for new role structure');
-    console.log('👤 User roles:', userGroups);
+    const permissionRoles = userGroups.filter(role => !role.startsWith('Regio_'));
+    const regionRoles = userGroups.filter(role => role.startsWith('Regio_'));
+    
+    console.log('🔧 Created permission manager for role structure');
+    console.log('👤 User permission roles:', permissionRoles);
+    console.log('🌍 User region roles:', regionRoles);
     
     return permissionManager;
   }
@@ -665,19 +669,23 @@ export class FunctionPermissionManager {
 }
 
 /**
- * Enhanced Function Permission Manager factory for new permission + region role structure
- * Creates a permission manager that properly handles the new role combinations
+ * Function Permission Manager factory for permission + region role structure
+ * Creates a permission manager that properly handles the role combinations
  * @param user - User object with roles
- * @returns FunctionPermissionManager configured for new role structure
+ * @returns FunctionPermissionManager configured for role structure
  */
 export async function createEnhancedPermissionManager(user: User): Promise<FunctionPermissionManager> {
   const userRoles = getUserRoles(user);
   
-  // Use the updated ROLE_PERMISSIONS configuration that supports new role structure
+  // Use the updated ROLE_PERMISSIONS configuration that supports role structure
   const permissionManager = new FunctionPermissionManager(user, ROLE_PERMISSIONS);
   
-  console.log('🔧 Created enhanced permission manager for new role structure');
-  console.log('👤 User roles:', userRoles);
+  const permissionRoles = userRoles.filter(role => !role.startsWith('Regio_'));
+  const regionRoles = userRoles.filter(role => role.startsWith('Regio_'));
+  
+  console.log('🔧 Created permission manager for role structure');
+  console.log('👤 User permission roles:', permissionRoles);
+  console.log('🌍 User region roles:', regionRoles);
   
   return permissionManager;
 }
@@ -720,7 +728,7 @@ export function checkUIPermission(
   return true;
 }
 
-// Default function permissions template for parameter table - Updated for new role structure
+// Default function permissions template for parameter table - Updated for role structure
 export const DEFAULT_FUNCTION_PERMISSIONS = {
   id: 'default',
   value: {

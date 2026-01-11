@@ -1,0 +1,48 @@
+# GitLens Configuration for H-DCN Project
+# This file helps GitLens understand your project structure and critical files
+
+# Critical files that need special attention
+[files]
+# Authentication layer files that must stay in sync
+auth_main = "backend/shared/auth_utils.py"
+auth_layer = "backend/layers/auth-layer/python/shared/auth_utils.py"
+
+# Deployment and configuration files
+sam_template = "backend/template.yaml"
+sam_config = "backend/samconfig.toml"
+frontend_env = "frontend/.env"
+
+# Deployment scripts
+backend_deploy = "scripts/deployment/backend-build-and-deploy-fast.ps1"
+frontend_deploy = "scripts/deployment/frontend-build-and-deploy-fast.ps1"
+
+[tracking]
+# Files to watch for changes
+critical_files = [
+  "backend/shared/auth_utils.py",
+  "backend/layers/auth-layer/python/shared/auth_utils.py",
+  "backend/template.yaml",
+  "backend/samconfig.toml",
+  "frontend/.env",
+  "scripts/deployment/*.ps1"
+]
+
+# Patterns to highlight in blame view
+important_patterns = [
+  "validate_permissions_with_regions",
+  "extract_user_credentials",
+  "AuthLayer",
+  "CORS",
+  "API_BASE_URL"
+]
+
+[ignore]
+# Directories to ignore in GitLens views
+exclude_dirs = [
+  ".aws-sam",
+  "build",
+  "node_modules",
+  ".venv",
+  "__pycache__",
+  ".git"
+]

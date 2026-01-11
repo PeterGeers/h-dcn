@@ -29,7 +29,7 @@ import {
 } from '@chakra-ui/react';
 import { DownloadIcon, ViewIcon, EditIcon } from '@chakra-ui/icons';
 import { Member } from '../../types/index';
-import { memberExportService } from '../../services/MemberExportService';
+import { MemberExportService } from '../../services/MemberExportService';
 import { 
   addressLabelService, 
   STANDARD_LABEL_FORMATS, 
@@ -150,7 +150,7 @@ const AddressLabelGenerator: React.FC<AddressLabelGeneratorProps> = ({
         'Regio': member.regio || ''
       }));
 
-      const result = await memberExportService.exportCustomColumns(
+      const result = await MemberExportService.exportCustomColumns(
         processedMembers,
         [
           { key: 'korte_naam', label: 'Naam', getValue: (m) => m.korte_naam || '' },

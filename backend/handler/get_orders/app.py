@@ -164,7 +164,7 @@ def lambda_handler(event, context):
             }
         
         # Check if user has administrative role to view all orders
-        has_admin_role = any(role in user_roles for role in ['Members_CRUD_All', 'Webshop_Management'])
+        has_admin_role = any(role in user_roles for role in ['Members_CRUD', 'System_CRUD', 'Webshop_Management'])
         
         if has_admin_role:
             # Admin users can see all orders
@@ -173,7 +173,7 @@ def lambda_handler(event, context):
             log_order_audit('ACCESS_ALL', 'ALL_ORDERS', user_email, user_roles, {
                 'access_type': 'admin',
                 'order_count': len(orders),
-                'admin_roles': [role for role in user_roles if role in ['Members_CRUD_All', 'Webshop_Management']]
+                'admin_roles': [role for role in user_roles if role in ['Members_CRUD', 'System_CRUD', 'Webshop_Management']]
             })
         else:
             # Regular users can only see their own orders

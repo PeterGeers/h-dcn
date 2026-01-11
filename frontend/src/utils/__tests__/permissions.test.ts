@@ -113,7 +113,6 @@ describe('Permission System', () => {
   describe('isAdministrator', () => {
     it('should return true for system admin roles', () => {
       expect(isAdministrator(['System_CRUD'])).toBe(true);
-      expect(isAdministrator(['Webmaster'])).toBe(true);
     });
 
     it('should return true for administrative roles', () => {

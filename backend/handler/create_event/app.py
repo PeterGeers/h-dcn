@@ -46,7 +46,7 @@ def lambda_handler(event, context):
             return auth_error
         
         # UPDATED: Check for events create permission with new role structure
-        # Users now have Events_CRUD + Regio_* instead of Events_CRUD_All
+        # Users now have Events_CRUD + Regio_* instead of legacy roles
         # The validate_permissions_with_regions function will:
         # 1. Check if user has Events_CRUD role (which grants events_create permission)
         # 2. Check if user has a region role (Regio_All, Regio_*, etc.)

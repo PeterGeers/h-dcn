@@ -1,16 +1,14 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
-
 /**
- * Filters cognito groups to only include valid new role structure roles
- * Removes any legacy roles that might still exist in JWT tokens
+ * Filters cognito groups to only include valid role structure roles
+ * Ensures only current permission + region role combinations are used
  */
 const filterValidRoles = (groups: string[]): string[] => {
   return groups.filter((role: string) => {
-    // Allow new permission-based roles (but NOT old _All versions)
+    // Allow permission-based roles (current system)
     if (role.includes('_CRUD') || role.includes('_Read') || role.includes('_Export') || role.includes('_Status_Approve')) {
-      // Reject old _All roles (except Regio_All which is valid)
+      // Note: Regio_All is the only _All role that still exists
       if (role.endsWith('_All') && role !== 'Regio_All') {
-        console.warn(`AuthHeaders: Filtering out legacy role: ${role}`);
+        console.warn(`AuthHeaders: Filtering out invalid role: ${role}`);
         return false;
       }
       return true;
@@ -31,124 +29,124 @@ const filterValidRoles = (groups: string[]): string[] => {
       return true;
     }
     
-    // Reject any other legacy roles (deprecated roles no longer supported)
-    console.warn(`AuthHeaders: Filtering out legacy role: ${role}`);
+    // Reject any other invalid roles
+    console.warn(`AuthHeaders: Filtering out invalid role: ${role}`);
     return false;
   });
 };
 
 export const getAuthHeaders = async (): Promise<Record<string, string>> => {
   try {
-    // First try to get enhanced user object with combined credentials
+    // Use the same method as GroupAccessGuard and other working components
+    console.log('[getAuthHeaders] Using user object from localStorage (same as GroupAccessGuard)');
+    
+    // Get the user object that contains the authentication data
     const storedUser = localStorage.getItem('hdcn_auth_user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      const token = user.signInUserSession?.accessToken?.jwtToken || user.signInUserSession?.idToken?.jwtToken;
-      const enhancedGroups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
-      
-      if (token) {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        };
-        
-        // Add enhanced groups as custom header if available (filtered for new role structure only)
-        if (enhancedGroups && Array.isArray(enhancedGroups)) {
-          const validGroups = filterValidRoles(enhancedGroups);
-          headers['X-Enhanced-Groups'] = JSON.stringify(validGroups);
+    if (!storedUser) {
+      throw new Error('No user data found in localStorage');
+    }
+    
+    const user = JSON.parse(storedUser);
+    console.log('[getAuthHeaders] User object keys:', Object.keys(user));
+    
+    // Get JWT token (same method as GroupAccessGuard)
+    const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+    if (!jwtToken) {
+      throw new Error('No JWT token found in user session');
+    }
+    
+    console.log('[getAuthHeaders] JWT token found');
+    
+    // Get groups (same method as GroupAccessGuard)
+    let userGroups: string[] = [];
+    
+    // First, try the standard Amplify location
+    const amplifyGroups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
+    if (amplifyGroups && Array.isArray(amplifyGroups)) {
+      userGroups = amplifyGroups;
+    } else {
+      // If not found, try to decode the JWT token directly (same as GroupAccessGuard)
+      try {
+        const parts = jwtToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          userGroups = payload['cognito:groups'] || [];
         }
-        
-        return headers;
+      } catch (error) {
+        console.error('[getAuthHeaders] Error decoding JWT token:', error);
       }
     }
     
-    // Fallback: try Amplify session (for backward compatibility)
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens?.idToken?.toString();
-      if (token) {
-        return {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        };
-      }
-    } catch (amplifyError) {
-      // Amplify session not available, try custom auth
+    console.log('[getAuthHeaders] User groups found:', userGroups);
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${jwtToken}`,
+      'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    // Add enhanced groups header
+    if (userGroups && userGroups.length > 0) {
+      const validGroups = filterValidRoles(userGroups);
+      console.log('[getAuthHeaders] Valid groups to send:', validGroups);
+      headers['X-Enhanced-Groups'] = JSON.stringify(validGroups);
+    } else {
+      console.warn('[getAuthHeaders] No user groups found');
     }
     
-    // Last resort: try custom authentication tokens from localStorage
-    const storedTokens = localStorage.getItem('hdcn_auth_tokens');
-    if (storedTokens) {
-      const tokens = JSON.parse(storedTokens);
-      const token = tokens.IdToken || tokens.AccessToken;
-      if (token) {
-        return {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        };
-      }
-    }
+    return headers;
     
-    throw new Error('No authentication token available');
   } catch (error) {
+    console.error('[getAuthHeaders] Error getting auth headers:', error);
     throw new Error('Authentication required');
   }
 };
 
 export const getAuthHeadersForGet = async (): Promise<Record<string, string>> => {
   try {
-    // First try to get enhanced user object with combined credentials
+    // Use the same method as the main getAuthHeaders function
     const storedUser = localStorage.getItem('hdcn_auth_user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      const token = user.signInUserSession?.accessToken?.jwtToken || user.signInUserSession?.idToken?.jwtToken;
-      const enhancedGroups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
-      
-      if (token) {
-        const headers: Record<string, string> = {
-          'Authorization': `Bearer ${token}`
-        };
-        
-        // Add enhanced groups as custom header if available (filtered for new role structure only)
-        if (enhancedGroups && Array.isArray(enhancedGroups)) {
-          const validGroups = filterValidRoles(enhancedGroups);
-          headers['X-Enhanced-Groups'] = JSON.stringify(validGroups);
+    if (!storedUser) {
+      throw new Error('No user data found in localStorage');
+    }
+    
+    const user = JSON.parse(storedUser);
+    const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+    if (!jwtToken) {
+      throw new Error('No JWT token found in user session');
+    }
+    
+    // Get groups (same method as GroupAccessGuard)
+    let userGroups: string[] = [];
+    const amplifyGroups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
+    if (amplifyGroups && Array.isArray(amplifyGroups)) {
+      userGroups = amplifyGroups;
+    } else {
+      try {
+        const parts = jwtToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          userGroups = payload['cognito:groups'] || [];
         }
-        
-        return headers;
+      } catch (error) {
+        console.error('[getAuthHeadersForGet] Error decoding JWT token:', error);
       }
     }
     
-    // Fallback: try Amplify session (for backward compatibility)
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens?.idToken?.toString();
-      if (token) {
-        return {
-          'Authorization': `Bearer ${token}`
-        };
-      }
-    } catch (amplifyError) {
-      // Amplify session not available, try custom auth
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${jwtToken}`
+    };
+    
+    // Add enhanced groups header
+    if (userGroups && userGroups.length > 0) {
+      const validGroups = filterValidRoles(userGroups);
+      headers['X-Enhanced-Groups'] = JSON.stringify(validGroups);
     }
     
-    // Last resort: try custom authentication tokens from localStorage
-    const storedTokens = localStorage.getItem('hdcn_auth_tokens');
-    if (storedTokens) {
-      const tokens = JSON.parse(storedTokens);
-      const token = tokens.IdToken || tokens.AccessToken;
-      if (token) {
-        return {
-          'Authorization': `Bearer ${token}`
-        };
-      }
-    }
+    return headers;
     
-    throw new Error('No authentication token available');
   } catch (error) {
+    console.error('[getAuthHeadersForGet] Error getting auth headers:', error);
     throw new Error('Authentication required');
   }
 };

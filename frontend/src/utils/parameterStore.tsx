@@ -452,7 +452,7 @@ class ParameterStore {
           },
           parameters: { 
             read: ['System_User_Management', 'System_User_Management', 'National_Chairman', 'National_Secretary'], 
-            write: ['System_User_Management', 'System_CRUD', 'Webmaster'] 
+            write: ['System_User_Management', 'System_CRUD'] 
           },
           memberships: { 
             read: ['System_User_Management', 'Members_CRUD'], 

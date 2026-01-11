@@ -94,7 +94,6 @@ function EventAdminPage({ user }: EventAdminPageProps) {
     role === 'Events_Read' ||
     role === 'Events_CRUD' ||
     role === 'Events_Export' ||
-    role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Chairman' ||
     role === 'National_Secretary' ||

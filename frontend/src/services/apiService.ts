@@ -5,6 +5,8 @@
  * from the passwordless authentication system.
  */
 
+import { getAuthHeaders } from '../utils/authHeaders';
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -39,22 +41,6 @@ export class ApiService {
       console.error('Error parsing stored user:', error);
       return null;
     }
-  }
-
-  /**
-   * Get authorization headers for API calls
-   */
-  private static getAuthHeaders(): Record<string, string> {
-    const tokens = this.getAuthTokens();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (tokens && tokens.AccessToken) {
-      headers['Authorization'] = `Bearer ${tokens.AccessToken}`;
-    }
-
-    return headers;
   }
 
   /**
@@ -141,10 +127,24 @@ export class ApiService {
     try {
       const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
       
+      // Get proper auth headers with X-Enhanced-Groups
+      let authHeaders: Record<string, string>;
+      try {
+        authHeaders = await getAuthHeaders();
+        console.log('[ApiService] Auth headers obtained:', Object.keys(authHeaders));
+      } catch (authError) {
+        console.error('[ApiService] Failed to get auth headers:', authError);
+        // Fallback to old method if new one fails
+        authHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getAuthTokens()?.AccessToken || ''}`,
+        };
+      }
+      
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...this.getAuthHeaders(),
+          ...authHeaders,
           ...options.headers,
         },
       });
@@ -177,6 +177,55 @@ export class ApiService {
    */
   static async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET' });
+  }
+
+  /**
+   * GET request for binary data (like parquet files)
+   */
+  static async getBinary(endpoint: string): Promise<ApiResponse<string>> {
+    try {
+      // Get proper auth headers with X-Enhanced-Groups
+      let authHeaders: Record<string, string>;
+      try {
+        authHeaders = await getAuthHeaders();
+        console.log('[ApiService] Binary auth headers obtained:', Object.keys(authHeaders));
+      } catch (authError) {
+        console.error('[ApiService] Failed to get binary auth headers:', authError);
+        // Fallback to old method if new one fails
+        authHeaders = {
+          'Authorization': `Bearer ${this.getAuthTokens()?.AccessToken || ''}`,
+        };
+      }
+      
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          ...authHeaders,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        return {
+          success: false,
+          error: `HTTP ${response.status}: ${errorData}`,
+        };
+      }
+
+      // For binary responses, get the response as text (base64)
+      const data = await response.text();
+
+      return {
+        success: true,
+        data: data,
+      };
+    } catch (error) {
+      console.error('API binary request failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
   }
 
   /**

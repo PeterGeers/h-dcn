@@ -73,7 +73,8 @@ def lambda_handler(event, context):
         
         # Validate payment ownership (only payment owner or admin can delete)
         payment_owner_email = existing_payment.get('user_email')
-        is_admin = any(role in user_roles for role in ['Members_CRUD_All', 'Webmaster'])
+        # UPDATED: Use new role structure - Members_CRUD or System_CRUD can delete any payment
+        is_admin = any(role in user_roles for role in ['Members_CRUD', 'System_CRUD', 'System_User_Management'])
         
         if not is_admin and (not payment_owner_email or payment_owner_email.lower() != user_email.lower()):
             print(f"SECURITY ALERT: User {user_email} attempted to delete payment {payment_id} owned by {payment_owner_email}")

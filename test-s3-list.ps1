@@ -4,7 +4,7 @@ $apiUrl = "https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/s3/files"
 Write-Host "🗂️ Testing S3 File Manager List Function..." -ForegroundColor Yellow
 
 $headers = @{
-    "X-Enhanced-Groups" = "hdcnAdmins"
+    "X-Enhanced-Groups" = "System_User_Management"
 }
 
 # Test 1: List all files recursively

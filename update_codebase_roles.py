@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Update all codebase references from old _All roles to new simplified role structure
+Update all codebase references from deprecated _All roles to current simplified role structure
 """
 
 import os
@@ -8,9 +8,9 @@ import re
 import glob
 from pathlib import Path
 
-# Define the role mappings from old to new
+# Define the role mappings from deprecated to current
 ROLE_MAPPINGS = {
-    # Old _All roles -> New simplified roles
+    # Deprecated _All roles -> Current simplified roles
     'Members_CRUD': 'Members_CRUD',
     'Members_Read': 'Members_Read', 
     'Events_CRUD': 'Events_CRUD',
@@ -53,9 +53,9 @@ def update_file_roles(file_path):
         original_content = content
         changes_made = []
         
-        # Replace each old role with new role
+        # Replace each deprecated role with current role
         for old_role, new_role in ROLE_MAPPINGS.items():
-            # Pattern to match the old role name (with word boundaries)
+            # Pattern to match the deprecated role name (with word boundaries)
             pattern = r'\b' + re.escape(old_role) + r'\b'
             
             if re.search(pattern, content):
@@ -77,7 +77,7 @@ def main():
     """Update all role references in the codebase"""
     print("🔄 Updating Codebase Role References")
     print("=" * 60)
-    print("Converting old _All roles to new simplified role structure")
+    print("Converting deprecated _All roles to current simplified role structure")
     print()
     
     # Find all Python files
@@ -139,11 +139,11 @@ def main():
     
     print()
     print("💡 NEXT STEPS:")
-    print("   1. Test updated code to ensure it works with new roles")
+    print("   1. Test updated code to ensure it works with current roles")
     print("   2. Update any remaining hardcoded role references")
-    print("   3. Verify users have the new roles assigned in Cognito")
+    print("   3. Verify users have the current roles assigned in Cognito")
     print("   4. Update frontend code if needed")
-    print("   5. Update documentation with new role structure")
+    print("   5. Update documentation with current role structure")
     
     return len(error_files) == 0
 

@@ -266,8 +266,7 @@ export function getAccessLevelSummary(roles: string[]): {
   
   // Check for system admin roles - using new role structure
   if (roles.some(role => 
-    role.includes('System_') || 
-    role.includes('Webmaster')
+    role.includes('System_')
   )) {
     return {
       level: 'system',

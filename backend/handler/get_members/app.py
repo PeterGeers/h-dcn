@@ -33,7 +33,7 @@ table = dynamodb.Table('Members')
 def lambda_handler(event, context):
     """
     Get members handler using new permission + region role structure
-    Replaces Members_Read_All references with permission-based validation
+    Replaces legacy role references with permission-based validation
     """
     try:
         # Handle OPTIONS request
@@ -45,7 +45,7 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
         
-        # UPDATED: Use new permission-based validation instead of Members_Read_All role checking
+        # UPDATED: Use new permission-based validation instead of legacy role checking
         # Required permissions: members_read (basic read access) or members_list (list all members)
         is_authorized, error_response, regional_info = validate_permissions_with_regions(
             user_roles, ['members_read', 'members_list'], user_email, {'operation': 'get_members'}

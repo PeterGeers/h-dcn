@@ -74,7 +74,7 @@ def extract_user_credentials_fallback(event):
 def validate_permissions_fallback(user_roles, required_permissions, user_email=None):
     """
     UPDATED permission validation using new role structure
-    Replaces old Members_CRUD_All references with new permission + region validation
+    Replaces legacy role references with new permission + region validation
     """
     try:
         # Convert single permission to list
@@ -125,12 +125,8 @@ def validate_permissions_fallback(user_roles, required_permissions, user_email=N
                     })
                 }
         
-        # LEGACY COMPATIBILITY: Check for old _All roles (being phased out)
-        # This includes the old Members_CRUD_All that was previously hardcoded
-        legacy_all_roles = [role for role in user_roles if role.endswith('_All') and not role.startswith('Regio_')]
-        if legacy_all_roles:
-            print(f"⚠️ Legacy _All role access for {user_email}: {legacy_all_roles} (migration recommended)")
-            return True, None
+        # REMOVED: Legacy compatibility code - no longer supporting old _All roles
+        # All users must use new role structure: Permission + Region
         
         # SPECIAL ROLES: Limited access roles
         special_roles = ['hdcnLeden', 'Verzoek Lid']
@@ -829,7 +825,7 @@ def lambda_handler(event, context):
             return auth_error
         
         # UPDATED: Use enhanced permission validation with new role structure
-        # This replaces the old Members_CRUD_All hardcoded role check
+        # This replaces the legacy role check
         is_authorized, error_response, regional_info = validate_permissions_with_regions(
             user_roles, 
             ['members_update', 'members_create'],  # Required permissions for member updates

@@ -1,0 +1,164 @@
+{
+  "$schema": "https://raw.githubusercontent.com/gitkraken/vscode-gitlens/main/schemas/gitlens.schema.json",
+  "version": "1.0",
+  
+  // H-DCN Project GitLens Configuration
+  // Focused on preventing sync issues and tracking critical changes
+  
+  "blame": {
+    "toggleMode": "window",
+    "format": "${author|15} ${date|14-} ${message|50?}",
+    "heatmap": {
+      "enabled": true,
+      "location": "right"
+    }
+  },
+  
+  "currentLine": {
+    "enabled": true,
+    "format": "${author} • ${date} • ${message}",
+    "scrollable": true
+  },
+  
+  "codeLens": {
+    "enabled": true,
+    "authors": {
+      "enabled": true,
+      "command": "gitlens.toggleFileBlame"
+    },
+    "recentChange": {
+      "enabled": true,
+      "command": "gitlens.showQuickCommitDetails"
+    },
+    "scopes": ["document"]
+  },
+  
+  "statusBar": {
+    "enabled": true,
+    "alignment": "right",
+    "format": "${author} • ${date}",
+    "command": "gitlens.showQuickCommitDetails"
+  },
+  
+  "views": {
+    "repositories": {
+      "enabled": true,
+      "autoRefresh": true,
+      "branches": {
+        "layout": "tree",
+        "showBranchComparison": "working"
+      },
+      "files": {
+        "layout": "tree",
+        "compact": false
+      }
+    },
+    "fileHistory": {
+      "enabled": true,
+      "avatars": true
+    },
+    "lineHistory": {
+      "enabled": true,
+      "avatars": true
+    },
+    "commits": {
+      "enabled": true,
+      "myCommitsOnly": false,
+      "showMergeCommits": true
+    },
+    "contributors": {
+      "enabled": true,
+      "showAllBranches": true,
+      "showStatistics": true
+    }
+  },
+  
+  "hovers": {
+    "enabled": true,
+    "annotations": {
+      "enabled": true,
+      "over": "line"
+    },
+    "currentLine": {
+      "enabled": true,
+      "over": "line"
+    },
+    "avatars": true,
+    "pullRequests": {
+      "enabled": false
+    }
+  },
+  
+  "changes": {
+    "locations": ["gutter", "line", "overview"],
+    "toggleMode": "window"
+  },
+  
+  "graph": {
+    "layout": "editor",
+    "showGhostRefsOnRowHover": true,
+    "pullRequests": {
+      "enabled": false
+    },
+    "avatars": true,
+    "dateFormat": "absolute",
+    "defaultItemLimit": 1000,
+    "pageItemLimit": 1000,
+    "searchItemLimit": 100,
+    "showUpstreamStatus": true
+  },
+  
+  "fileAnnotations": {
+    "command": "blame"
+  },
+  
+  "gitCommands": {
+    "closeOnFocusOut": true,
+    "search": {
+      "matchAll": false,
+      "matchCase": false,
+      "matchRegex": false,
+      "showResultsInSideBar": true
+    }
+  },
+  
+  "integrations": {
+    "enabled": true
+  },
+  
+  "liveshare": {
+    "allowGuestAccess": true
+  },
+  
+  "mode": {
+    "active": "zen",
+    "statusBar": {
+      "alignment": "right"
+    }
+  },
+  
+  "outputLevel": "errors",
+  
+  "partners": {},
+  
+  "plusFeatures": {
+    "enabled": true
+  },
+  
+  "showWelcomeOnInstall": false,
+  "showWhatsNewAfterUpgrades": false,
+  
+  "strings": {
+    "codeLens": {
+      "unsavedChanges": {
+        "recentChangeAndAuthors": "Unsaved changes (cannot determine recent change or authors)",
+        "recentChangeOnly": "Unsaved changes (cannot determine recent change)",
+        "authorsOnly": "Unsaved changes (cannot determine authors)"
+      }
+    }
+  },
+  
+  "telemetry": {
+    "enabled": false
+  }
+}

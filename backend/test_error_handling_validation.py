@@ -141,7 +141,7 @@ class ErrorHandlingValidator:
             body = json.loads(error_response['body'])
             self.log_test_result(
                 "Incomplete Role User gets region requirement error",
-                'Permission role requires region role' in body.get('error', ''),
+                'Permission requires region assignment' in body.get('error', ''),
                 f"Expected region requirement error, got: {body.get('error', '')}"
             )
             

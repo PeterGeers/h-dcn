@@ -239,41 +239,27 @@ class MemberParquetDataService {
     try {
       console.log('[MemberParquetDataService] Downloading parquet file');
       
-      const response = await ApiService.get('/analytics/download-parquet/latest');
+      const response = await ApiService.getBinary('/analytics/download-parquet/latest');
       
       if (!response.success) {
         throw new Error(response.error || 'Download failed');
       }
 
-      const downloadData = response.data;
-      if (!downloadData) {
-        throw new Error('No download data received');
+      // The response.data should be the base64 encoded content
+      const base64Content = response.data;
+      if (typeof base64Content !== 'string') {
+        throw new Error('Expected base64 string response');
       }
 
-      if (downloadData.download_method === 'presigned_url' && downloadData.data?.download_url) {
-        // Handle pre-signed URL download for large files
-        console.log('[MemberParquetDataService] Using pre-signed URL for download');
-        const fileResponse = await fetch(downloadData.data.download_url);
-        if (!fileResponse.ok) {
-          throw new Error(`Failed to download from pre-signed URL: ${fileResponse.statusText}`);
-        }
-        const arrayBuffer = await fileResponse.arrayBuffer();
-        return { success: true, data: arrayBuffer };
-        
-      } else if (downloadData.download_method === 'direct_content' && downloadData.data?.content) {
-        // Handle direct content download for small files
-        console.log('[MemberParquetDataService] Using direct content download');
-        const binaryString = atob(downloadData.data.content);
-        const arrayBuffer = new ArrayBuffer(binaryString.length);
-        const uint8Array = new Uint8Array(arrayBuffer);
-        for (let i = 0; i < binaryString.length; i++) {
-          uint8Array[i] = binaryString.charCodeAt(i);
-        }
-        return { success: true, data: arrayBuffer };
-        
-      } else {
-        throw new Error('Invalid download response format');
+      // Decode base64 to binary
+      const binaryString = atob(base64Content);
+      const arrayBuffer = new ArrayBuffer(binaryString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < binaryString.length; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
       }
+      
+      return { success: true, data: arrayBuffer };
 
     } catch (error) {
       console.error('[MemberParquetDataService] Download error:', error);

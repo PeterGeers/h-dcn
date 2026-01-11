@@ -6,7 +6,7 @@ Update role references in source files only (exclude build directories)
 import os
 import re
 
-# Define the role mappings from old to new
+# Define the role mappings from deprecated to current
 # NOTE: These deprecated _All roles have been removed from production
 # This script is for reference/migration purposes only
 ROLE_MAPPINGS = {
@@ -68,9 +68,9 @@ def update_file_roles(file_path):
         original_content = content
         changes_made = []
         
-        # Replace each old role with new role
+        # Replace each deprecated role with current role
         for old_role, new_role in ROLE_MAPPINGS.items():
-            # Pattern to match the old role name (with word boundaries)
+            # Pattern to match the deprecated role name (with word boundaries)
             pattern = r'\b' + re.escape(old_role) + r'\b'
             
             if re.search(pattern, content):
@@ -92,7 +92,7 @@ def main():
     """Update role references in source files"""
     print("🔄 Updating Source File Role References")
     print("=" * 60)
-    print("Converting old _All roles to new simplified role structure")
+    print("Converting deprecated _All roles to current simplified role structure")
     print()
     
     # Get all target files
@@ -167,7 +167,7 @@ def main():
     print("💡 NEXT STEPS:")
     print("   1. Test updated backend handlers")
     print("   2. Deploy updated functions to AWS")
-    print("   3. Verify authentication works with new roles")
+    print("   3. Verify authentication works with current roles")
     print("   4. Update any remaining test files if needed")
     
     return len(error_files) == 0

@@ -86,7 +86,7 @@ function ParameterManagement({ user }: ParameterManagementProps) {
                 <br /><br />
                 <strong>Je huidige rollen:</strong> {userRoles.length > 0 ? userRoles.join(', ') : 'Geen rollen toegewezen'}
                 <br /><br />
-                <strong>Vereiste rollen:</strong> System_User_Management, System_CRUD, Webmaster, Members_CRUD, National_Chairman, National_Secretary, hdcnWebmaster, of hdcnLedenadministratie
+                <strong>Vereiste rollen:</strong> System_User_Management, System_CRUD, Members_CRUD, National_Chairman, National_Secretary
                 <br /><br />
                 Neem contact op met een systeembeheerder als je denkt dat je toegang zou moeten hebben.
               </AlertDescription>

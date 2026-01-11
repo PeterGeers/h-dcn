@@ -1,8 +1,8 @@
 """
-Fallback authentication module that can be copied to individual handler directories
-This ensures consistent auth behavior even when shared modules aren't available
+Streamlined fallback authentication module
+Optimized for new role structure only (no legacy compatibility)
 
-Updated for new permission + region role structure
+Version: 3.0 - Streamlined for New Role Structure Only
 """
 
 import json
@@ -77,19 +77,9 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
         'System_CRUD', 'System_User_Management', 'System_Logs_Read'
     ]
     
-    # LEGACY COMPATIBILITY: Old admin roles (being phased out)
-    legacy_admin_roles = [
-        'hdcnAdmins', 'Webmaster', 'National_Chairman', 'National_Secretary'
-    ]
-    
     # Check for system admin access (new structure)
     if any(role in system_admin_roles for role in user_roles):
         print(f"✅ System admin access granted for {user_email}: {[r for r in user_roles if r in system_admin_roles]}")
-        return True, None
-    
-    # Check for legacy admin access (backward compatibility)
-    if any(role in legacy_admin_roles for role in user_roles):
-        print(f"✅ Legacy admin access granted for {user_email}: {[r for r in user_roles if r in legacy_admin_roles]}")
         return True, None
     
     # NEW ROLE STRUCTURE: Permission-based roles
@@ -124,11 +114,8 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
                 })
             }
     
-    # LEGACY COMPATIBILITY: Check for old _All roles (being phased out)
-    legacy_all_roles = [role for role in user_roles if role.endswith('_All')]
-    if legacy_all_roles:
-        print(f"⚠️ Legacy _All role access for {user_email}: {legacy_all_roles} (should be migrated)")
-        return True, None
+    # REMOVED: Legacy compatibility - no longer supporting old _All roles
+    # All users must use new role structure: Permission + Region
     
     # Special roles
     special_roles = ['hdcnLeden', 'verzoek_lid']
@@ -204,14 +191,8 @@ def determine_regional_access(user_roles, resource_context=None):
             'allowed_regions': ['all']
         }
     
-    # Legacy admin roles have full access
-    legacy_admin_roles = ['hdcnAdmins', 'Webmaster', 'National_Chairman', 'National_Secretary']
-    if any(role in legacy_admin_roles for role in user_roles):
-        return {
-            'access_type': 'legacy_admin',
-            'has_full_access': True,
-            'allowed_regions': ['all']
-        }
+    # REMOVED: Legacy admin roles - no longer supported
+    # All users must use new role structure: Permission + Region
     
     # Check for region roles
     region_roles = [role for role in user_roles if role.startswith('Regio_')]

@@ -1,0 +1,92 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Check AuthLayer Sync",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "$mainFile = 'backend/shared/auth_utils.py'; $layerFile = 'backend/layers/auth-layer/python/shared/auth_utils.py'; Write-Host 'Checking AuthLayer file synchronization...' -ForegroundColor Yellow; if ((Test-Path $mainFile) -and (Test-Path $layerFile)) { $mainHash = Get-FileHash $mainFile; $layerHash = Get-FileHash $layerFile; if ($mainHash.Hash -eq $layerHash.Hash) { Write-Host '✅ AuthLayer files are in sync' -ForegroundColor Green } else { Write-Host '⚠️  AuthLayer files are OUT OF SYNC!' -ForegroundColor Red; Write-Host 'Main file: ' $mainFile -ForegroundColor White; Write-Host 'Layer file: ' $layerFile -ForegroundColor White; Write-Host 'Run: copy backend\\shared\\auth_utils.py backend\\layers\\auth-layer\\python\\shared\\auth_utils.py' -ForegroundColor Cyan } } else { Write-Host '❌ One or both AuthLayer files are missing' -ForegroundColor Red }"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Sync AuthLayer Files",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Write-Host 'Syncing AuthLayer files...' -ForegroundColor Yellow; copy backend\\shared\\auth_utils.py backend\\layers\\auth-layer\\python\\shared\\auth_utils.py; Write-Host '✅ AuthLayer files synchronized' -ForegroundColor Green"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Git Status with Critical Files",
+      "type": "shell",
+      "command": "git",
+      "args": [
+        "status",
+        "--porcelain",
+        "backend/shared/auth_utils.py",
+        "backend/layers/auth-layer/python/shared/auth_utils.py",
+        "backend/template.yaml",
+        "frontend/.env",
+        "backend/samconfig.toml"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Show Recent Changes to Critical Files",
+      "type": "shell",
+      "command": "git",
+      "args": [
+        "log",
+        "--oneline",
+        "-10",
+        "--",
+        "backend/shared/auth_utils.py",
+        "backend/layers/auth-layer/python/shared/auth_utils.py",
+        "backend/template.yaml",
+        "scripts/deployment/"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

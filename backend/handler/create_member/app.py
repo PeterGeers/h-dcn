@@ -46,7 +46,7 @@ def lambda_handler(event, context):
             return auth_error
         
         # UPDATED: Check for members create permission with new role structure
-        # Users now have Members_CRUD + Regio_* instead of deprecated Members_CRUD_All
+        # Users now have Members_CRUD + Regio_* instead of legacy roles
         # The validate_permissions_with_regions function will:
         # 1. Check if user has Members_CRUD role (which grants members_create permission)
         # 2. Check if user has a region role (Regio_All, Regio_*, etc.)

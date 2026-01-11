@@ -37,7 +37,7 @@ import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { getUserRoles } from '../../utils/functionPermissions';
-import { useMemberParquetData } from './hooks/useMemberParquetData';
+import { useMemberExport } from '../../hooks/useMemberExport';
 
 interface MemberAdminPageProps {
   user: any;
@@ -67,21 +67,16 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     return 'hdcnLeden'; // Default fallback
   };
 
-  // Use parquet data service for member data (loads when Ledenadministratie opens)
+  // Use new simple member export service (much better than parquet!)
   const {
-    data: members,
+    members,
     loading,
-    error: parquetError,
-    recordCount,
-    fromCache,
-    loadData: reloadMembers,
-    refreshData: refreshMembers
-  } = useMemberParquetData(getUserRole(), userRegion, {
-    autoLoad: true, // Load data when Ledenadministratie opens
-    applyCalculatedFields: true,
-    applyRegionalFiltering: true,
-    enableCaching: true
-  });
+    error: exportError,
+    metadata,
+    exportMembers: reloadMembers,
+    hasPermission,
+    checkPermission
+  } = useMemberExport();
 
   // Check if user is viewing their own data
   const isOwnRecord = (member: Member) => {
@@ -109,6 +104,18 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     loadUserInfo();
   }, [user]);
 
+  // Check permissions and auto-load data
+  useEffect(() => {
+    checkPermission();
+  }, [checkPermission]);
+
+  // Auto-load data if user has permission
+  useEffect(() => {
+    if (hasPermission === true && !members && !loading) {
+      reloadMembers();
+    }
+  }, [hasPermission, members, loading, reloadMembers]);
+
   // Handle member view/edit - now uses same modal
   const handleMemberView = (member: Member) => {
     setSelectedMember(member);
@@ -134,8 +141,8 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         'bijwerken lid'
       );
 
-      // Refresh parquet data to reflect changes
-      await refreshMembers();
+      // Refresh member data to reflect changes
+      await reloadMembers();
       
       toast({
         title: 'Lid bijgewerkt',
@@ -179,9 +186,9 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.500" />
           <Text>Leden laden...</Text>
-          {fromCache && (
+          {metadata && (
             <Text fontSize="sm" color="gray.400">
-              Gegevens uit cache ({recordCount} leden)
+              {metadata.total_count} leden beschikbaar
             </Text>
           )}
         </VStack>
@@ -189,15 +196,45 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     );
   }
 
-  // Show error if parquet data failed to load
-  if (parquetError) {
+  // Show permission check loading
+  if (hasPermission === null) {
+    return (
+      <Box p={6}>
+        <VStack spacing={4}>
+          <Spinner size="lg" />
+          <Text>Checking permissions...</Text>
+        </VStack>
+      </Box>
+    );
+  }
+
+  // Show permission denied
+  if (hasPermission === false) {
+    return (
+      <Box p={6}>
+        <Alert status="warning">
+          <AlertIcon />
+          <VStack align="start" spacing={2}>
+            <Text fontWeight="bold">Access Denied</Text>
+            <Text>
+              You need Members_Read or Members_CRUD permissions to access member administration.
+            </Text>
+            {exportError && <Text fontSize="sm" color="gray.600">{exportError}</Text>}
+          </VStack>
+        </Alert>
+      </Box>
+    );
+  }
+
+  // Show error if member data failed to load
+  if (exportError) {
     return (
       <Box p={6}>
         <Alert status="error">
           <AlertIcon />
           <VStack align="start" spacing={1}>
             <Text fontWeight="semibold">Fout bij laden van ledengegevens</Text>
-            <Text fontSize="sm">{parquetError}</Text>
+            <Text fontSize="sm">{exportError}</Text>
             <Button size="sm" colorScheme="orange" onClick={reloadMembers}>
               Opnieuw proberen
             </Button>

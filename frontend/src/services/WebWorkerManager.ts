@@ -58,7 +58,10 @@ export class WebWorkerManager {
     };
 
     this.log('WebWorkerManager initialized', this.config);
-    this.initializeWorkers();
+    
+    // Temporarily disable worker initialization due to CloudFront MIME type issues
+    // this.initializeWorkers();
+    this.log('Web Workers temporarily disabled due to CloudFront MIME type issues');
   }
 
   /**
@@ -96,6 +99,12 @@ export class WebWorkerManager {
     // Check if Web Workers are supported
     if (typeof Worker === 'undefined') {
       this.logError('Web Workers are not supported in this environment');
+      return;
+    }
+
+    // Check if workers are disabled via config
+    if (this.config.maxWorkers === 0) {
+      this.log('Web Workers disabled (maxWorkers = 0)');
       return;
     }
 
