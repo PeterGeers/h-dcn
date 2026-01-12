@@ -30,7 +30,8 @@ function GroupAccessGuard({ user, children, signOut }: GroupAccessGuardProps) {
   // Routes that applicants (verzoek_lid) can access
   const applicantAllowedRoutes = [
     '/new-member-application',
-    '/application-submitted'
+    '/application-submitted',
+    '/my-account'  // Allow verzoek_lid users to access MyAccount for self-service application
   ];
   
   // Routes that users without any groups can access

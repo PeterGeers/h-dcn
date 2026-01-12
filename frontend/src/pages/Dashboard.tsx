@@ -39,23 +39,112 @@ function Dashboard({ user }: DashboardProps) {
         return;
       }
 
-      try {
-        const existingMember = await membershipService.getMemberByEmail(user.attributes.email);
-        
-        if (!existingMember) {
-          // User doesn't exist in member database, redirect to application
-          navigate('/new-member-application');
-          return;
+      // Extract user roles from Cognito token - try payload first, then decode JWT
+      let userGroups: string[] = [];
+      
+      // First try the payload
+      const payloadGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'];
+      if (payloadGroups && Array.isArray(payloadGroups)) {
+        userGroups = payloadGroups;
+      } else {
+        // If payload is empty, decode the JWT token directly
+        const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
+        if (jwtToken) {
+          try {
+            const parts = jwtToken.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              userGroups = payload['cognito:groups'] || [];
+            }
+          } catch (error) {
+            console.error('Error decoding JWT token in Dashboard:', error);
+          }
         }
-        
-        setMemberExists(true);
-      } catch (error) {
-        console.error('Error checking membership status:', error);
-        // On error, assume user exists and show dashboard
-        setMemberExists(true);
-      } finally {
-        setIsCheckingMembership(false);
       }
+
+      console.log('Dashboard - User groups:', userGroups);
+
+      // Check if user has valid member roles (not just verzoek_lid)
+      const hasValidMemberRole = userGroups.some(group => 
+        group === 'hdcnLeden' || 
+        group.includes('Members_') || 
+        group.includes('Events_') || 
+        group.includes('Products_') || 
+        group.includes('System_') || 
+        group.includes('Communication_') ||
+        group.includes('National_') ||
+        group.includes('Regional_') ||
+        group.includes('Webmaster') ||
+        group.includes('Regio_')
+      );
+
+      const isOnlyApplicant = userGroups.length === 1 && userGroups.includes('verzoek_lid');
+      const hasNoGroups = userGroups.length === 0;
+      const hasHdcnLedenRole = userGroups.includes('hdcnLeden');
+      const hasVerzoekLidRole = userGroups.includes('verzoek_lid');
+
+      console.log('Dashboard - hasValidMemberRole:', hasValidMemberRole);
+      console.log('Dashboard - isOnlyApplicant:', isOnlyApplicant);
+      console.log('Dashboard - hasNoGroups:', hasNoGroups);
+      console.log('Dashboard - hasHdcnLedenRole:', hasHdcnLedenRole);
+      console.log('Dashboard - hasVerzoekLidRole:', hasVerzoekLidRole);
+
+      // If user has valid member roles, allow access immediately
+      if (hasValidMemberRole) {
+        console.log('Dashboard - User has valid Cognito roles, allowing access');
+        setMemberExists(true);
+        setIsCheckingMembership(false);
+        return;
+      }
+
+      // Check if user has either verzoek_lid or hdcnLeden role for member lookup
+      if (hasHdcnLedenRole || hasVerzoekLidRole) {
+        console.log('Dashboard - User has valid role for member lookup, checking member database...');
+        
+        try {
+          const existingMember = await membershipService.getMemberByEmail(user.attributes.email);
+          
+          if (hasHdcnLedenRole && !existingMember) {
+            // hdcnLeden users should always have data in the members table
+            console.error('Dashboard - hdcnLeden user not found in database, this is unexpected');
+            // Still allow access but log the issue
+            setMemberExists(true);
+          } else if (hasVerzoekLidRole && !existingMember) {
+            // verzoek_lid users may not have data yet, redirect to application
+            console.log('Dashboard - verzoek_lid user not found in database, redirecting to application');
+            navigate('/new-member-application');
+            return;
+          } else {
+            // User found in database
+            console.log('Dashboard - User found in database, allowing access');
+            setMemberExists(true);
+          }
+        } catch (error) {
+          console.error('Error checking membership status:', error);
+          
+          if (hasHdcnLedenRole) {
+            // For hdcnLeden, assume they exist and show dashboard on error
+            console.log('Dashboard - API error for hdcnLeden user, allowing access anyway');
+            setMemberExists(true);
+          } else if (hasVerzoekLidRole) {
+            // For verzoek_lid, redirect to application on error
+            console.log('Dashboard - API error for verzoek_lid user, redirecting to application');
+            navigate('/new-member-application');
+            return;
+          }
+        }
+      } else if (hasNoGroups) {
+        // User has no groups at all, redirect to application
+        console.log('Dashboard - User has no groups, redirecting to application');
+        navigate('/new-member-application');
+        return;
+      } else {
+        // User has some other roles but not verzoek_lid or hdcnLeden
+        console.log('Dashboard - User has other roles but not member roles, allowing access anyway');
+        setMemberExists(true);
+      }
+
+      setIsCheckingMembership(false);
     };
 
     checkMembershipStatus();

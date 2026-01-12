@@ -11,8 +11,8 @@ Write-Host "🔍 Pre-deployment validation..." -ForegroundColor Yellow
 
 # Check 1: AuthLayer Synchronization
 Write-Host "  📋 Checking AuthLayer synchronization..." -ForegroundColor Cyan
-$mainFile = 'shared/auth_utils.py'
-$layerFile = 'layers/auth-layer/python/shared/auth_utils.py'
+$mainFile = 'backend/shared/auth_utils.py'
+$layerFile = 'backend/layers/auth-layer/python/shared/auth_utils.py'
 
 if ((Test-Path $mainFile) -and (Test-Path $layerFile)) {
     $mainHash = Get-FileHash $mainFile

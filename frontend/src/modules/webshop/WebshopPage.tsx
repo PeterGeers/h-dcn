@@ -11,6 +11,7 @@ import OrdersAdmin from './components/OrdersAdmin';
 import OrderSuccess from './components/OrderSuccess';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService, cartService, memberService, orderService } from './services/api';
+import { ApiService } from '../../services/apiService';
 
 interface User {
   attributes?: {
@@ -219,10 +220,9 @@ function WebshopPage({ user }: WebshopPageProps) {
         
         // Always try to get member by email first
         try {
-          const allMembersResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/members`);
-          if (allMembersResponse.ok) {
-            const allMembers = await allMembersResponse.json();
-            const memberByEmail = allMembers.find((m: any) => m.email === email);
+          const response = await ApiService.get("/members/me");
+          if (response.success && response.data) {
+            const memberByEmail = response.data;
             
             if (memberByEmail) {
               console.log('Member found by email:', memberByEmail);

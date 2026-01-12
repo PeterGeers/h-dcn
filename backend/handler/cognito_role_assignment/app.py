@@ -24,6 +24,14 @@ from datetime import datetime
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+def cors_headers():
+    """Standard CORS headers for all API responses"""
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
+    }
+
 # Initialize AWS clients
 cognito_client = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb')
@@ -61,6 +69,7 @@ def lambda_handler(event, context):
             logger.warning(f"Unhandled event type: {event}")
             return {
                 'statusCode': 400,
+                'headers': cors_headers(),
                 'body': json.dumps({'error': 'Unhandled event type'})
             }
         
@@ -68,6 +77,7 @@ def lambda_handler(event, context):
         logger.error(f"Error in role assignment handler: {str(e)}")
         return {
             'statusCode': 500,
+            'headers': cors_headers(),
             'body': json.dumps({'error': str(e)})
         }
 
@@ -123,6 +133,7 @@ def handle_dynamodb_stream(event):
     
     return {
         'statusCode': 200,
+        'headers': cors_headers(),
         'body': json.dumps({
             'processed_records': len(results),
             'results': results
@@ -151,6 +162,7 @@ def handle_status_change_event(event):
     if 'Item' not in response:
         return {
             'statusCode': 404,
+            'headers': cors_headers(),
             'body': json.dumps({'error': 'Member not found'})
         }
     
@@ -167,6 +179,7 @@ def handle_status_change_event(event):
     
     return {
         'statusCode': 200,
+        'headers': cors_headers(),
         'body': json.dumps(result)
     }
 
@@ -192,11 +205,13 @@ def handle_member_action_event(event):
     else:
         return {
             'statusCode': 400,
+            'headers': cors_headers(),
             'body': json.dumps({'error': f'Unknown action: {action}'})
         }
     
     return {
         'statusCode': 200,
+        'headers': cors_headers(),
         'body': json.dumps(result)
     }
 

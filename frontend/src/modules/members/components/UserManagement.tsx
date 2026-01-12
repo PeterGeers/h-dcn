@@ -44,6 +44,10 @@ function UserManagement({ user }: UserManagementProps) {
     loadData();
   }, []);
 
+  const getUserAttribute = (user: CognitoUser, attributeName: string) => {
+    return user.Attributes?.find(attr => attr.Name === attributeName)?.Value || '';
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -65,14 +69,16 @@ function UserManagement({ user }: UserManagementProps) {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.Username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.Attributes?.find(attr => attr.Name === 'email')?.Value?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getUserAttribute = (user: CognitoUser, attributeName: string) => {
-    return user.Attributes?.find(attr => attr.Name === attributeName)?.Value || '';
-  };
+  const filteredUsers = users
+    .filter(user =>
+      user.Username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.Attributes?.find(attr => attr.Name === 'email')?.Value?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      const emailA = getUserAttribute(a, 'email').toLowerCase();
+      const emailB = getUserAttribute(b, 'email').toLowerCase();
+      return emailA.localeCompare(emailB);
+    });
 
   const handleDeleteUser = async (username: string) => {
     if (!window.confirm(`Weet je zeker dat je gebruiker "${username}" wilt verwijderen?`)) return;
@@ -180,8 +186,8 @@ function UserManagement({ user }: UserManagementProps) {
         <Table variant="simple">
           <Thead bg="gray.700">
             <Tr>
-              <Th color="orange.300">Cognito ID</Th>
               <Th color="orange.300">Email</Th>
+              <Th color="orange.300">Naam</Th>
               <Th color="orange.300">Status</Th>
               <Th color="orange.300">Aangemaakt</Th>
               <Th color="orange.300">Acties</Th>
@@ -190,8 +196,10 @@ function UserManagement({ user }: UserManagementProps) {
           <Tbody>
             {filteredUsers.map((user) => (
               <Tr key={user.Username}>
-                <Td color="white">{user.Username}</Td>
                 <Td color="white">{getUserAttribute(user, 'email')}</Td>
+                <Td color="white">
+                  {getUserAttribute(user, 'given_name')} {getUserAttribute(user, 'family_name')}
+                </Td>
                 <Td>
                   <Badge colorScheme={user.Enabled ? 'green' : 'red'}>
                     {user.Enabled ? 'Actief' : 'Uitgeschakeld'}
@@ -223,17 +231,19 @@ function UserManagement({ user }: UserManagementProps) {
                         aria-label="Groep toevoegen"
                       />
                       <MenuList bg="gray.700">
-                        {groups.map((group) => (
-                          <MenuItem
-                            key={group.GroupName}
-                            onClick={() => handleAddToGroup(user.Username, group.GroupName)}
-                            bg="gray.700"
-                            color="white"
-                            _hover={{ bg: 'gray.600' }}
-                          >
-                            {group.GroupName}
-                          </MenuItem>
-                        ))}
+                        {groups
+                          .sort((a, b) => a.GroupName.localeCompare(b.GroupName))
+                          .map((group) => (
+                            <MenuItem
+                              key={group.GroupName}
+                              onClick={() => handleAddToGroup(user.Username, group.GroupName)}
+                              bg="gray.700"
+                              color="white"
+                              _hover={{ bg: 'gray.600' }}
+                            >
+                              {group.GroupName}
+                            </MenuItem>
+                          ))}
                       </MenuList>
                     </Menu>
                     <Button

@@ -151,17 +151,22 @@ const COMPUTE_FUNCTIONS: Record<string, (...args: any[]) => any> = {
 
   /**
    * Auto-generates next available member number
-   * Used for: lidnummer field
-   * Note: This is a placeholder implementation. In practice, this would need
-   * access to existing members to calculate the next available number.
-   * @returns Next member number (placeholder implementation returns 0)
+   * Used for: lidnummer field (only when creating new members)
+   * Note: This function is used during member creation to find the next available number
+   * @param existingMembers - Array of existing members to find highest number
+   * @returns Next available member number
    */
-  nextLidnummer: (): number => {
-    // This is a placeholder implementation
-    // In practice, this would need access to existing members to find the highest
-    // existing lidnummer and return highest + 1
-    console.warn('nextLidnummer function called - this requires access to existing member data');
-    return 0;
+  nextLidnummer: (existingMembers: Member[] = []): number => {
+    // Find the highest existing lidnummer
+    const existingNumbers = existingMembers
+      .map(member => Number(member.lidnummer))
+      .filter(num => !isNaN(num) && num > 0);
+    
+    if (existingNumbers.length === 0) {
+      return 1; // Start with 1 if no existing numbers
+    }
+    
+    return Math.max(...existingNumbers) + 1;
   }
 };
 

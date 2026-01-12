@@ -102,7 +102,9 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
         system_admin_roles = ['System_CRUD', 'System_User_Management', 'System_Logs_Read']
         if any(role in system_admin_roles for role in user_roles):
             print(f"✅ System admin access granted for {user_email}: {[r for r in user_roles if r in system_admin_roles]}")
-            return True, None# NEW ROLE STRUCTURE: Permission-based roles
+            return True, None
+        
+        # NEW ROLE STRUCTURE: Permission-based roles
         permission_roles = [
             'Members_CRUD', 'Members_Read', 'Members_Export',
             'Events_CRUD', 'Events_Read', 'Events_Export', 
@@ -132,9 +134,11 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
                         'user_roles': user_roles,
                         'missing': 'Region assignment (Regio_All, Regio_Noord-Holland, etc.)'
                     })
-                }# SPECIAL ROLES: Limited access roles
+                }
+        
+        # SPECIAL ROLES: Limited access roles
         special_roles = ['hdcnLeden', 'verzoek_lid']
-        if any(role in special_roles for user_roles):
+        if any(role in special_roles for role in user_roles):
             # For cart operations, hdcnLeden has webshop access
             if 'hdcnLeden' in user_roles and 'webshop_access' in required_permissions:
                 print(f"✅ Webshop access granted for hdcnLeden user {user_email}")
@@ -217,7 +221,9 @@ def determine_regional_access(user_roles, resource_context=None):
             'access_type': 'system_admin',
             'has_full_access': True,
             'allowed_regions': ['all']
-        }# Check for region roles
+        }
+        
+        # Check for region roles
     region_roles = [role for role in user_roles if role.startswith('Regio_')]
     
     if 'Regio_All' in region_roles:

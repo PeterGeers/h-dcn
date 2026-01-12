@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-01-12T17:14:52.262522",
+  "endpoint": "POST /members/me",
+  "api_base_url": "https://7fd6dxzhu7.execute-api.eu-west-1.amazonaws.com/prod",
+  "test_data": {
+    "voornaam": "Test",
+    "achternaam": "User",
+    "geboortedatum": "1990-01-01",
+    "geslacht": "M",
+    "telefoon": "0612345678",
+    "straat": "Test Street 123",
+    "postcode": "1234AB",
+    "woonplaats": "Amsterdam",
+    "lidmaatschap": "Gewoon lid",
+    "regio": "Noord-Holland",
+    "privacy": "Ja"
+  },
+  "response": {
+    "status_code": 401,
+    "cors_complete": true,
+    "cors_headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
+    },
+    "response_body": "{\"error\": \"Authorization header required\"}"
+  },
+  "assessment": {
+    "post_method_supported": true,
+    "cors_working": true,
+    "ready_for_auth_testing": true
+  }
+}

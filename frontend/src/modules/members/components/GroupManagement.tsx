@@ -56,6 +56,9 @@ function GroupManagement({ user }: GroupManagementProps) {
         }
       }
       
+      // Sort groups alphabetically by GroupName (ascending)
+      groupsWithCounts.sort((a, b) => a.GroupName.localeCompare(b.GroupName));
+      
       setGroups(groupsWithCounts);
     } catch (error: any) {
       toast({

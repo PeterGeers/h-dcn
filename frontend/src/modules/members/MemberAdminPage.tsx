@@ -37,13 +37,14 @@ import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { getUserRoles } from '../../utils/functionPermissions';
-import { useMemberExport } from '../../hooks/useMemberExport';
 
 interface MemberAdminPageProps {
   user: any;
 }
 
 function MemberAdminPage({ user }: MemberAdminPageProps) {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [userRegion, setUserRegion] = useState<string>('');
@@ -58,25 +59,14 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     onClose: onModalClose 
   } = useDisclosure();
 
-  // Get user role for field registry system
+  // Get user role for field registry system (prioritize member-specific roles)
   const getUserRole = (): HDCNGroup => {
-    if (userRoles.includes('System_User_Management')) return 'System_User_Management';
     if (userRoles.includes('Members_CRUD')) return 'Members_CRUD';
     if (userRoles.includes('Members_Read')) return 'Members_Read';
+    if (userRoles.includes('System_User_Management')) return 'System_User_Management';
     if (userRoles.includes('hdcnLeden')) return 'hdcnLeden';
     return 'hdcnLeden'; // Default fallback
   };
-
-  // Use new simple member export service (much better than parquet!)
-  const {
-    members,
-    loading,
-    error: exportError,
-    metadata,
-    exportMembers: reloadMembers,
-    hasPermission,
-    checkPermission
-  } = useMemberExport();
 
   // Check if user is viewing their own data
   const isOwnRecord = (member: Member) => {
@@ -104,17 +94,29 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     loadUserInfo();
   }, [user]);
 
-  // Check permissions and auto-load data
+  // Load members using DynamoDB service (CORRECT - this is what was working!)
   useEffect(() => {
-    checkPermission();
-  }, [checkPermission]);
+    const loadMembers = async () => {
+      try {
+        setLoading(true);
 
-  // Auto-load data if user has permission
-  useEffect(() => {
-    if (hasPermission === true && !members && !loading) {
-      reloadMembers();
+        const headers = await getAuthHeadersForGet();
+        const data = await apiCall<any>(
+          fetch(API_URLS.members(), { headers }),
+          'laden leden'
+        );
+        setMembers(Array.isArray(data) ? data : (data?.members || []));
+      } catch (error) {
+        handleError(error, 'Fout bij het laden van leden');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userRoles.length > 0) {
+      loadMembers();
     }
-  }, [hasPermission, members, loading, reloadMembers]);
+  }, [userRoles]); // Removed handleError from dependencies
 
   // Handle member view/edit - now uses same modal
   const handleMemberView = (member: Member) => {
@@ -128,7 +130,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     onModalOpen();
   };
 
-  // Handle member save (still uses API for CRUD operations)
+  // Handle member save (using direct API calls like the working version)
   const handleMemberSave = async (memberData: any) => {
     try {
       const headers = await getAuthHeaders();
@@ -142,7 +144,12 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       );
 
       // Refresh member data to reflect changes
-      await reloadMembers();
+      const refreshHeaders = await getAuthHeadersForGet();
+      const data = await apiCall<any>(
+        fetch(API_URLS.members(), { headers: refreshHeaders }),
+        'laden leden'
+      );
+      setMembers(Array.isArray(data) ? data : (data?.members || []));
       
       toast({
         title: 'Lid bijgewerkt',
@@ -186,60 +193,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.500" />
           <Text>Leden laden...</Text>
-          {metadata && (
-            <Text fontSize="sm" color="gray.400">
-              {metadata.total_count} leden beschikbaar
-            </Text>
-          )}
         </VStack>
-      </Box>
-    );
-  }
-
-  // Show permission check loading
-  if (hasPermission === null) {
-    return (
-      <Box p={6}>
-        <VStack spacing={4}>
-          <Spinner size="lg" />
-          <Text>Checking permissions...</Text>
-        </VStack>
-      </Box>
-    );
-  }
-
-  // Show permission denied
-  if (hasPermission === false) {
-    return (
-      <Box p={6}>
-        <Alert status="warning">
-          <AlertIcon />
-          <VStack align="start" spacing={2}>
-            <Text fontWeight="bold">Access Denied</Text>
-            <Text>
-              You need Members_Read or Members_CRUD permissions to access member administration.
-            </Text>
-            {exportError && <Text fontSize="sm" color="gray.600">{exportError}</Text>}
-          </VStack>
-        </Alert>
-      </Box>
-    );
-  }
-
-  // Show error if member data failed to load
-  if (exportError) {
-    return (
-      <Box p={6}>
-        <Alert status="error">
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontWeight="semibold">Fout bij laden van ledengegevens</Text>
-            <Text fontSize="sm">{exportError}</Text>
-            <Button size="sm" colorScheme="orange" onClick={reloadMembers}>
-              Opnieuw proberen
-            </Button>
-          </VStack>
-        </Alert>
       </Box>
     );
   }

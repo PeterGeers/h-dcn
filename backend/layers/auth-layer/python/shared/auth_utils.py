@@ -277,7 +277,8 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
             'Communication_Export': ['communication_export', 'communication_read'],
             'Members_Status_Approve': ['members_status_change'],
             'Webshop_Management': ['products_create', 'products_read', 'products_update', 'products_delete', 'orders_manage'],
-            'hdcnLeden': ['profile_read', 'profile_update_own', 'events_read', 'products_read', 'webshop_access']
+            'hdcnLeden': ['profile_read', 'profile_update_own', 'events_read', 'products_read', 'webshop_access', 'members_self_read'],
+            'verzoek_lid': ['members_self_read', 'members_self_create']  # Applicants can check their own status and create new applications
             # Note: Region roles (Regio_*) don't grant permissions by themselves
         }
         

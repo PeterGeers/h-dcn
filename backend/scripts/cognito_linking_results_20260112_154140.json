@@ -1,0 +1,1034 @@
+{
+  "timestamp": "20260112_154140",
+  "source_analysis_file": "cognito_member_analysis_20260112_153447.json",
+  "total_processed": 64,
+  "successful": 0,
+  "errors": 64,
+  "successful_links": [],
+  "failed_links": [
+    {
+      "user": {
+        "username": "0205f424-6021-7088-eab7-09669999cba4",
+        "email": "penningmeester.limburg@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:23.376000+01:00",
+        "last_modified_date": "2026-01-08T18:07:38.370000+01:00",
+        "matched_member_id": "4c91e96b-6bf2-485f-b3cf-fd22d6aceea6",
+        "member_name": "Penningmeester Regio Limburg",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.limburg@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "02456484-e0d1-70fe-28ca-0469dd045547",
+        "email": "activiteiten.duitsland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:40.974000+01:00",
+        "last_modified_date": "2026-01-08T18:08:18.692000+01:00",
+        "matched_member_id": "6b4bc2a9-a92a-4178-9bda-82ad09fde586",
+        "member_name": "activiteiten duitsland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user activiteiten.duitsland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "02651494-70b1-70fe-0580-093be958e914",
+        "email": "secretaris.noordbrabant-zeeland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:40.041000+01:00",
+        "last_modified_date": "2026-01-08T18:09:09.635000+01:00",
+        "matched_member_id": "976823d2-04d4-4f27-a627-4f7f734d7d96",
+        "member_name": "Secretaris Regio Noord Brabant Zeeland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.noordbrabant-zeeland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "02a544d4-90e1-708b-0a13-4459ae486ca8",
+        "email": "clubsjop@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:12.528000+01:00",
+        "last_modified_date": "2025-12-26T16:49:15.409000+01:00",
+        "matched_member_id": "24b4f7b1-b04b-4a89-b65f-b50ac230e40c",
+        "member_name": "club shop",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user clubsjop@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "121534d4-c041-70b7-a553-409554a7f40a",
+        "email": "secretaris.duitsland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:20.106000+01:00",
+        "last_modified_date": "2025-12-30T18:57:04.990000+01:00",
+        "matched_member_id": "267f67ad-88c8-4fa5-8deb-7dc8a7eaef07",
+        "member_name": "Secretaris Regio Duitsland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.duitsland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "1215b4f4-4001-7013-95ed-df257826fbde",
+        "email": "redacteur@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:25.303000+01:00",
+        "last_modified_date": "2025-12-27T13:38:28.734000+01:00",
+        "matched_member_id": "83e33026-9414-41ff-a34b-9c5d9aca411a",
+        "member_name": "Redactie H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user redacteur@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "1215e454-4061-702f-1652-2c2a8c7fea84",
+        "email": "vice-president@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:02.517000+01:00",
+        "last_modified_date": "2025-12-26T16:49:17.537000+01:00",
+        "matched_member_id": "67034fdc-c5ba-4b46-8564-9dbabdbdf688",
+        "member_name": "Vice President H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user vice-president@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "12252414-70f1-7043-e89a-85822366eb00",
+        "email": "nyp@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:26.409000+01:00",
+        "last_modified_date": "2025-12-26T16:49:18.202000+01:00",
+        "matched_member_id": "43f524a1-6700-4640-a2ba-d9da07522b9d",
+        "member_name": "Nieuwjaarsreceptie HDCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user nyp@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "12351494-1051-707f-5eef-992f5a5677d9",
+        "email": "web.friesland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:55.842000+01:00",
+        "last_modified_date": "2025-12-26T16:49:18.893000+01:00",
+        "matched_member_id": "13d5b961-9a88-4156-9d6a-ce62e48c9b2d",
+        "member_name": "Website Friesland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user web.friesland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "123564c4-7061-70c9-b1a9-3f63adb89c39",
+        "email": "penningmeester.zuid-holland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:47.203000+01:00",
+        "last_modified_date": "2025-12-26T16:49:19.537000+01:00",
+        "matched_member_id": "f12e7a40-c452-4fd3-bcc5-153c74c7a365",
+        "member_name": "Penningmeester Zuid-holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.zuid-holland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "1255d4e4-1041-704c-956d-53af9b17f36d",
+        "email": "ledenadministratie@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:08.081000+01:00",
+        "last_modified_date": "2025-12-30T20:36:32.992000+01:00",
+        "matched_member_id": "d6202617-c991-44f1-9bf7-a36911d43588",
+        "member_name": "ledenadministratie H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user ledenadministratie@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "1265e454-a0e1-704a-f976-9e6bd9bcc049",
+        "email": "hulpje.penningmeester@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:13.610000+01:00",
+        "last_modified_date": "2025-12-26T16:49:20.735000+01:00",
+        "matched_member_id": "f3fcbba7-c4de-4a90-8f8b-6acff90f903a",
+        "member_name": "Dick Bos",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user hulpje.penningmeester@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "12757484-2041-70b3-ba56-01558f85747e",
+        "email": "president@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:33.680000+01:00",
+        "last_modified_date": "2025-12-26T16:49:21.311000+01:00",
+        "matched_member_id": "f323ffdc-6444-40e2-a772-dd626a0fdcae",
+        "member_name": "Voorzitter H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user president@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "12757484-f091-701d-fae5-ecd3d973dd26",
+        "email": "secretaris.friesland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:28.566000+01:00",
+        "last_modified_date": "2025-12-26T16:49:21.970000+01:00",
+        "matched_member_id": "b2d46d0d-0701-4b6b-b02f-f41a8e39c351",
+        "member_name": "Secretaris Regio Friesland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.friesland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "12e524d4-60a1-7032-fe95-d8c32e79c9c1",
+        "email": "secretaris.limburg@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:41.897000+01:00",
+        "last_modified_date": "2025-12-26T16:49:22.543000+01:00",
+        "matched_member_id": "40979805-0938-49e5-a4b2-4712d608d206",
+        "member_name": "Secretaris Regio Limburg",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.limburg@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "220544c4-2081-7026-c1ff-9e301021c18f",
+        "email": "toercommissaris.groningen-drenthe@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:29.613000+01:00",
+        "last_modified_date": "2026-01-02T20:03:06.693000+01:00",
+        "matched_member_id": "4ba22ab3-f1b1-4e95-8587-e2bb84254fdd",
+        "member_name": "Toercommissaris Groningen Drenthe",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user toercommissaris.groningen-drenthe@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "2205d4b4-9041-7000-d9bd-549f8fd5eb57",
+        "email": "voorzitter.groningen-drenthe@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:43.679000+01:00",
+        "last_modified_date": "2025-12-26T16:49:23.829000+01:00",
+        "matched_member_id": "5527b1fb-8e1d-4757-a5a7-3e4382bf180f",
+        "member_name": "Voorzitter Regio Groningen-Drenthe",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.groningen-drenthe@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "2235c4e4-9011-7045-a9b6-e84cc6264c9f",
+        "email": "algemeen1.limburg@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:45.226000+01:00",
+        "last_modified_date": "2025-12-26T16:49:24.407000+01:00",
+        "matched_member_id": "e55980f5-65dc-4a02-a4a8-a57a541bb322",
+        "member_name": "Algemeen1 Limburg",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user algemeen1.limburg@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "22752464-20f1-7019-a75e-584cc0dcf428",
+        "email": "clubshop.limburg@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:39.937000+01:00",
+        "last_modified_date": "2025-12-26T16:49:25.053000+01:00",
+        "matched_member_id": "fcd0f5e7-a43d-49eb-900e-6028af84cf41",
+        "member_name": "Clubshop Limburg",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user clubshop.limburg@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "2275d404-b031-7054-40bd-309d3d48cc12",
+        "email": "voorzitter.brabant-zeeland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:58.060000+01:00",
+        "last_modified_date": "2025-12-26T16:49:25.650000+01:00",
+        "matched_member_id": "1c20410d-ff26-4d9a-9829-35f29f2a964a",
+        "member_name": "Voorzitter Regio Brabant Zeeland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.brabant-zeeland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "22a55404-d031-70e0-dcb9-f1a42ecd491e",
+        "email": "secretaris@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:00.369000+01:00",
+        "last_modified_date": "2025-12-26T16:49:26.234000+01:00",
+        "matched_member_id": "dd7ca587-c995-4882-8f2d-6fb122a2c32d",
+        "member_name": "Secretaris H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "22e5a4d4-9001-7077-1c5d-0fdf72a9e022",
+        "email": "acriviteiten.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:48.331000+01:00",
+        "last_modified_date": "2025-12-26T16:49:26.858000+01:00",
+        "matched_member_id": "3249e960-583c-4eff-8a59-3498ded2a4c6",
+        "member_name": "acriviteiten NoordHolland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user acriviteiten.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "32753424-b0b1-70c6-e9d1-57c26abdea1a",
+        "email": "media.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:34.605000+01:00",
+        "last_modified_date": "2025-12-26T16:49:28.085000+01:00",
+        "matched_member_id": "bba47292-81e0-49d7-83f5-6e6164c1231a",
+        "member_name": "Media Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user media.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "42a51434-d041-70ed-79bd-4d8e4c5aad1f",
+        "email": "voorzitter.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:47.271000+01:00",
+        "last_modified_date": "2025-12-26T16:49:28.712000+01:00",
+        "matched_member_id": "1c44dea9-3308-434a-a709-f57c0f996c27",
+        "member_name": "Voorzitter Regio Noordholland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "42c554f4-f001-7067-3f72-a3981cfa6dfd",
+        "email": "penningmeester.duitsland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:56.931000+01:00",
+        "last_modified_date": "2025-12-26T16:49:29.225000+01:00",
+        "matched_member_id": "00c67779-e66c-4ceb-bc0d-cefcd8dad3c1",
+        "member_name": "Penningmeester Regio Duitsland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.duitsland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "52153414-c0a1-7095-4283-f1dc7041151f",
+        "email": "voorzitter.zuid-holland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:46.339000+01:00",
+        "last_modified_date": "2025-12-26T16:49:29.820000+01:00",
+        "matched_member_id": "384de46d-8249-4322-94c4-697011f42016",
+        "member_name": "Voorzitter Regio Zuid-Holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.zuid-holland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "5255a404-5061-7019-be66-e5c2da9e7622",
+        "email": "penningmeester.friesland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:01.433000+01:00",
+        "last_modified_date": "2025-12-26T16:49:30.451000+01:00",
+        "matched_member_id": "5240868a-2b2d-477d-805a-b0888519baf2",
+        "member_name": "Penningmeester Regio Friesland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.friesland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "Google_112283382738141445724",
+        "email": "peter@pgeers.nl",
+        "current_member_id": null,
+        "status": "EXTERNAL_PROVIDER",
+        "user_create_date": "2025-12-29T08:14:20.203000+01:00",
+        "last_modified_date": "2026-01-04T14:37:58.596000+01:00",
+        "matched_member_id": "6bcc949f-49ab-4d8b-93e3-ba9f7ab3e579",
+        "member_name": "Peter Geers",
+        "member_lidnummer": "5351",
+        "member_status": "Actief",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user peter@pgeers.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "528594c4-f0e1-7076-cd65-c4f68a3972b8",
+        "email": "voorzitter.friesland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:49.282000+01:00",
+        "last_modified_date": "2025-12-26T16:49:31.076000+01:00",
+        "matched_member_id": "e04abff3-e9b8-40cb-8968-509bf93f2eec",
+        "member_name": "Voorzitter Regio Friesland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.friesland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "52d5d474-50c1-708f-06c4-cfdeaf69772b",
+        "email": "secretaris.groningen-drenthe@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:42.427000+01:00",
+        "last_modified_date": "2026-01-08T16:34:06.830000+01:00",
+        "matched_member_id": "c5c1b408-2612-41c2-8d15-e06ccb2e4d82",
+        "member_name": "Secretaris Regio Groningen Drenthe",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.groningen-drenthe@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "62155444-1081-700a-bb64-379dc2440cec",
+        "email": "algemeen1.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:05.869000+01:00",
+        "last_modified_date": "2025-12-26T16:49:32.255000+01:00",
+        "matched_member_id": "2d090705-9657-4a03-9f07-e1ded3a1a02a",
+        "member_name": "Algemeen1 Regio Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user algemeen1.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "62251404-d011-7041-4ae7-8a46497e4210",
+        "email": "algemeen.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:46.061000+01:00",
+        "last_modified_date": "2025-12-26T16:49:32.862000+01:00",
+        "matched_member_id": "c4adc496-aace-409d-913f-a1094ebb62a7",
+        "member_name": "Algemeen Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user algemeen.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "623524e4-70d1-7030-a4ed-a4e1d0ce1c2e",
+        "email": "secretaris.utrecht@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:50.363000+01:00",
+        "last_modified_date": "2025-12-26T16:49:33.491000+01:00",
+        "matched_member_id": "e8fb403a-fd7c-4511-98dc-c029c3386a70",
+        "member_name": "Secretaris Regio Utrecht",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.utrecht@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "Google_111511339030085111434",
+        "email": "webmaster@h-dcn.nl",
+        "current_member_id": null,
+        "status": "EXTERNAL_PROVIDER",
+        "user_create_date": "2025-12-29T14:45:54.723000+01:00",
+        "last_modified_date": "2026-01-06T11:21:39.458000+01:00",
+        "matched_member_id": "ce84c0b4-901c-4e8e-8557-e4fe052f0bfa",
+        "member_name": "Peter Geers",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user webmaster@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "62d5e434-30c1-705d-f5dc-f83fb24507c8",
+        "email": "voorzitter.utrecht@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:11.447000+01:00",
+        "last_modified_date": "2025-12-26T16:49:34.619000+01:00",
+        "matched_member_id": "8f149e8b-3b76-463c-9e04-93ffce22ddb8",
+        "member_name": "Voorzitter Regio utrecht",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.utrecht@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "62f524a4-5091-7088-5dd1-cb4dc2c188b0",
+        "email": "webmaster.zuid-holland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:42.980000+01:00",
+        "last_modified_date": "2025-12-26T16:49:35.167000+01:00",
+        "matched_member_id": "4fa02abf-3fa2-487f-a4ab-b019d78db6aa",
+        "member_name": "webmaster zuid-holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user webmaster.zuid-holland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "720504b4-e051-7066-c060-e9fd97070c9f",
+        "email": "penningmeester.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:22.255000+01:00",
+        "last_modified_date": "2025-12-26T16:49:35.865000+01:00",
+        "matched_member_id": "5f99d4f2-e696-4be3-9d8c-cff7baa313a3",
+        "member_name": "Penningmeester Regio Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "72a534a4-50c1-707d-211a-f131a2cc3c57",
+        "email": "toercommissaris.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:37.894000+01:00",
+        "last_modified_date": "2025-12-26T16:49:36.551000+01:00",
+        "matched_member_id": "60cbcd6a-e030-4b5e-a22a-a8fddd306c14",
+        "member_name": "Toercommissaris Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user toercommissaris.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "72a5c4a4-50d1-704f-370e-d2487b957aff",
+        "email": "webmaster@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:35.699000+01:00",
+        "last_modified_date": "2026-01-11T19:28:32.196000+01:00",
+        "matched_member_id": "ce84c0b4-901c-4e8e-8557-e4fe052f0bfa",
+        "member_name": "Peter Geers",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user webmaster@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "821514b4-c091-707a-55ae-a4b4c256fac2",
+        "email": "robstolkerring@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:53.587000+01:00",
+        "last_modified_date": "2025-12-26T16:49:38.193000+01:00",
+        "matched_member_id": "b3fa5eec-9c5a-4184-9c4a-e132c5eed4d6",
+        "member_name": "Veerle Stolker",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user robstolkerring@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "82b554e4-6001-709e-ea86-b1064c80c0bb",
+        "email": "voorzitter.limburg@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:09.181000+01:00",
+        "last_modified_date": "2025-12-26T16:49:38.841000+01:00",
+        "matched_member_id": "95005af6-f7ce-4900-a593-7b561d65aa83",
+        "member_name": "Voorzitter Regio Limburg",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.limburg@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "82b5f494-e0f1-707a-c50b-c2047bbcc84a",
+        "email": "penningmeester.groningen-drenthe@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:32.747000+01:00",
+        "last_modified_date": "2025-12-26T16:49:39.446000+01:00",
+        "matched_member_id": "492f9dfc-498a-46cc-86b9-3451292d83aa",
+        "member_name": "Penningmeester Regio Groningen Drenthe",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.groningen-drenthe@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "92853444-d091-70ed-24d8-1d6424c71a6d",
+        "email": "algemeen.limburg@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:24.240000+01:00",
+        "last_modified_date": "2025-12-26T16:49:40.696000+01:00",
+        "matched_member_id": "84585eca-b4ae-44fe-b338-83a58fd172ec",
+        "member_name": "Algemeen Limburg",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user algemeen.limburg@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "a2259464-00c1-70e3-aa9b-cea5dd787ccf",
+        "email": "voorzitter.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:44.140000+01:00",
+        "last_modified_date": "2025-12-26T16:49:41.283000+01:00",
+        "matched_member_id": "278905d7-2f2d-48c1-8d34-0b5a2feaae89",
+        "member_name": "Voorzitter Regio Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "a2655474-90a1-7084-37b9-7919748d4f61",
+        "email": "algemeen.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:51.351000+01:00",
+        "last_modified_date": "2025-12-26T16:49:41.908000+01:00",
+        "matched_member_id": "63ceb792-37e6-45fb-91e6-692e69dd4892",
+        "member_name": "Algemeen NH",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user algemeen.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "a26594e4-6071-70c5-83c5-d48de71f087a",
+        "email": "clubblad@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:27.544000+01:00",
+        "last_modified_date": "2026-01-11T19:13:14.827000+01:00",
+        "matched_member_id": "24e5391a-1ddf-4733-95b7-9d866c096888",
+        "member_name": "clubblad H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user clubblad@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "a2d5b404-7071-7082-de0f-e0a620c0d869",
+        "email": "toercommissaris.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:06.915000+01:00",
+        "last_modified_date": "2025-12-26T16:49:43.120000+01:00",
+        "matched_member_id": "7243c22a-8690-47b1-8f40-610e224cd58a",
+        "member_name": "Toer Commissaris",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user toercommissaris.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "b225c414-d0d1-7031-0b12-7e736d972f94",
+        "email": "tourcommissie.zuid-holland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:48.157000+01:00",
+        "last_modified_date": "2025-12-26T16:49:43.669000+01:00",
+        "matched_member_id": "cb344654-614a-457a-993c-1f4950dd3775",
+        "member_name": "Tourcommissie Zuid Holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user tourcommissie.zuid-holland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "b2456474-70d1-70e4-e1e6-9ccbb15908ea",
+        "email": "penningmeester.brabantzeeland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:54.648000+01:00",
+        "last_modified_date": "2025-12-26T16:49:44.226000+01:00",
+        "matched_member_id": "5df35e64-39ab-4a70-a8a2-e51cbcbc6913",
+        "member_name": "Penningmeester Regio Noord Brabant Zeeland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.brabantzeeland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "b265a4c4-8041-70f7-6899-3ba540b8ef7f",
+        "email": "penningmeester.utrecht@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:49.378000+01:00",
+        "last_modified_date": "2025-12-26T16:49:44.801000+01:00",
+        "matched_member_id": "689fee08-07fc-4537-9d35-10b532d88946",
+        "member_name": "Penningmeester Regio Utrecht",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.utrecht@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "b2859414-0081-70c7-6d9d-acdef95d822e",
+        "email": "vrijwilligers.utrecht@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:15.742000+01:00",
+        "last_modified_date": "2025-12-26T16:49:45.397000+01:00",
+        "matched_member_id": "d3ec1857-120f-4379-97d3-9fedd5e8dda2",
+        "member_name": "Vrijwilligers Utrecht",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user vrijwilligers.utrecht@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "b2c51434-7031-703b-c73a-bbcdeb605107",
+        "email": "voorzitter.duitsland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:16.829000+01:00",
+        "last_modified_date": "2025-12-26T16:49:46.036000+01:00",
+        "matched_member_id": "456a5d9a-f404-4ecf-8751-8c0dfe6bbefe",
+        "member_name": "Voorzitter Regio Duitsland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user voorzitter.duitsland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "b2e564b4-9031-7019-cc8a-cde4d98b7020",
+        "email": "toercommissie@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:04.574000+01:00",
+        "last_modified_date": "2025-12-26T16:49:46.632000+01:00",
+        "matched_member_id": "3a34f876-4ba4-4bc6-af27-5ca3c59d85fb",
+        "member_name": "Toer Commissie",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user toercommissie@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "c24584c4-5071-70e3-e44e-d3786b406450",
+        "email": "peter@pgeers.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:38.956000+01:00",
+        "last_modified_date": "2025-12-29T15:08:01.654000+01:00",
+        "matched_member_id": "6bcc949f-49ab-4d8b-93e3-ba9f7ab3e579",
+        "member_name": "Peter Geers",
+        "member_lidnummer": "5351",
+        "member_status": "Actief",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user peter@pgeers.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "c2f5d454-c0f1-7061-de49-3b8aa701007f",
+        "email": "vrijwilligers@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:30.582000+01:00",
+        "last_modified_date": "2025-12-26T16:49:49.310000+01:00",
+        "matched_member_id": "7fac37a8-fff8-45de-81b3-a7c71e975642",
+        "member_name": "Vrijwilligers H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user vrijwilligers@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "d24574d4-b0a1-70f0-a6b1-77caa6c0793e",
+        "email": "algemeen.duitsland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:17.846000+01:00",
+        "last_modified_date": "2025-12-26T16:49:49.905000+01:00",
+        "matched_member_id": "1de7f7c6-1de7-420d-a406-0bf64840ec7c",
+        "member_name": "Algemeen Regio Duitsland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user algemeen.duitsland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "e205f494-c001-70c8-e393-986a9dfe474f",
+        "email": "penningmeester.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:50.440000+01:00",
+        "last_modified_date": "2025-12-26T16:49:50.473000+01:00",
+        "matched_member_id": "e469847a-986e-4813-8268-2a9c050af2fa",
+        "member_name": "Penningmeester Regio Noord-Holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "e21574e4-4041-7065-12ba-06ef62f14e90",
+        "email": "avs.duitsland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:52.479000+01:00",
+        "last_modified_date": "2025-12-26T16:49:51.002000+01:00",
+        "matched_member_id": "a37d5754-71d7-47e7-a65f-6c86ccd598ea",
+        "member_name": "Angelique van Schaijk",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user avs.duitsland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "e295d4c4-00d1-7093-1405-ace629370b55",
+        "email": "penningmeester@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:10.272000+01:00",
+        "last_modified_date": "2025-12-26T16:49:51.605000+01:00",
+        "matched_member_id": "eb96e46e-8f52-486b-8b4a-53250c3d8207",
+        "member_name": "Penningmeester H-DCN",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user penningmeester@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "e2b5a4a4-3091-70e1-0bce-72ee71120982",
+        "email": "secretaris.zuid-holland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:21.102000+01:00",
+        "last_modified_date": "2025-12-26T16:49:52.229000+01:00",
+        "matched_member_id": "f627dabf-e50b-468d-be34-87a0aa96929c",
+        "member_name": "Annette van der Helm",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.zuid-holland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "e2c51454-90e1-7073-534e-8cb33ce23264",
+        "email": "secretaris.oost@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:31.602000+01:00",
+        "last_modified_date": "2025-12-26T16:49:52.845000+01:00",
+        "matched_member_id": "0959a2da-584a-412d-89ce-441aa6106b86",
+        "member_name": "Secretaris Regio Oost",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.oost@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "f2457434-00d1-70c0-c24f-5c305a925258",
+        "email": "secretaris.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:49:03.525000+01:00",
+        "last_modified_date": "2025-12-26T16:49:53.343000+01:00",
+        "matched_member_id": "20b69131-5471-4bbd-8af5-8ec18ee87177",
+        "member_name": "Secretaris Regio Noord-Holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user secretaris.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "f275d464-c041-70cf-cc55-d5d5ddd510d1",
+        "email": "merchandise.noordholland@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:44.975000+01:00",
+        "last_modified_date": "2025-12-26T16:49:54.445000+01:00",
+        "matched_member_id": "2eb081d1-bc7d-4b8b-97bb-e565e2dc6624",
+        "member_name": "Merchandise Noord-Holland",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user merchandise.noordholland@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    },
+    {
+      "user": {
+        "username": "f2d514e4-2021-70fc-55a8-37a57efc92ae",
+        "email": "toercommissaris.utrecht@h-dcn.nl",
+        "current_member_id": null,
+        "status": "CONFIRMED",
+        "user_create_date": "2025-12-25T18:48:41.305000+01:00",
+        "last_modified_date": "2025-12-26T16:49:55.010000+01:00",
+        "matched_member_id": "826ef855-1034-4639-9571-43ff4a244ae2",
+        "member_name": "Toercommissaris Regio Utrecht",
+        "member_lidnummer": "",
+        "member_status": "HdcnAccount",
+        "needs_linking": true
+      },
+      "error": "Invalid parameter for user toercommissaris.utrecht@h-dcn.nl: An error occurred (InvalidParameterException) when calling the AdminUpdateUserAttributes operation: user.custom:member_id: Attribute does not exist in the schema.\n"
+    }
+  ]
+}

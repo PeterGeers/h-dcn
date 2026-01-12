@@ -58,13 +58,13 @@ except ImportError as e:
     print(f"⚠️ Failed to import from AuthLayer: {e}")
     # Fallback authentication functions
     def extract_user_credentials(event):
-        return None, None, {'statusCode': 401, 'body': json.dumps({'error': 'Authentication not available'})}
+        return None, None, {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Authentication not available'})}
     def validate_permissions(roles, perms, email=None):
-        return False, {'statusCode': 403, 'body': json.dumps({'error': 'Authorization not available'})}
+        return False, {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Authorization not available'})}
     def create_success_response(data, status=200):
-        return {'statusCode': status, 'body': json.dumps(data)}
+        return {'statusCode': status, 'headers': cors_headers(), 'body': json.dumps(data)}
     def create_error_response(status, msg, details=None):
-        return {'statusCode': status, 'body': json.dumps({'error': msg})}
+        return {'statusCode': status, 'headers': cors_headers(), 'body': json.dumps({'error': msg})}
     def cors_headers():
         return {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"}
     def handle_options_request():

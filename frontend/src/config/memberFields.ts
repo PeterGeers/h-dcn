@@ -737,9 +737,7 @@ postcode: {
       { field: 'lidmaatschap', operator: 'equals', value: 'Gezins lid' },
       { field: 'lidmaatschap', operator: 'equals', value: 'Erelid' }
     ],
-    computed: true,
-    computeFunction: 'nextLidnummer',
-    helpText: 'Automatisch toegewezen lidnummer (hoogste bestaande nummer + 1)'
+    helpText: 'Lidnummer van het lid'
   },
 
   clubblad: {
@@ -854,7 +852,7 @@ postcode: {
     order: 1,
     permissions: createPermissionConfig('admin', 'none', false),
     computed: true,
-    computeFrom: 'ingangsdatum',
+    computeFrom: 'tijdstempel',
     computeFunction: 'year',
     helpText: 'Automatisch berekend uit Lid sinds datum'
   },
@@ -868,7 +866,7 @@ postcode: {
     order: 8,
     permissions: createPermissionConfig('member', 'none', false),
     computed: true,
-    computeFrom: 'ingangsdatum',
+    computeFrom: 'tijdstempel',
     computeFunction: 'yearsDifference',
     helpText: 'Automatisch berekend uit Lid sinds datum',
     suffix: 'jaar'

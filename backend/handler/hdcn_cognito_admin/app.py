@@ -175,7 +175,7 @@ def lambda_handler(event, context):
         headers = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Enhanced-Groups, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'
         }
         
         if method == 'OPTIONS':
@@ -227,11 +227,13 @@ def lambda_handler(event, context):
                 return import_users(event, headers)
                 
         elif path.startswith('/cognito/groups/') and path.endswith('/users'):
-            group_name = path.split('/')[3]
+            import urllib.parse
+            group_name = urllib.parse.unquote(path.split('/')[3])
             return get_users_in_group(group_name, headers)
             
         elif path.startswith('/cognito/groups/'):
-            group_name = path.split('/')[3]
+            import urllib.parse
+            group_name = urllib.parse.unquote(path.split('/')[3])
             if method == 'DELETE':
                 return delete_group(group_name, headers)
                 
@@ -605,12 +607,28 @@ def delete_user(username, headers):
     }
 
 def get_groups(headers):
-    response = cognito_client.list_groups(UserPoolId=USER_POOL_ID)
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps(response['Groups'], default=str)
-    }
+    # Use pagination to ensure we get all groups
+    all_groups = []
+    paginator = cognito_client.get_paginator('list_groups')
+    
+    try:
+        for page in paginator.paginate(UserPoolId=USER_POOL_ID):
+            all_groups.extend(page.get('Groups', []))
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps(all_groups, default=str)
+        }
+    except Exception as e:
+        print(f"Error listing groups with pagination: {str(e)}")
+        # Fallback to original method if pagination fails
+        response = cognito_client.list_groups(UserPoolId=USER_POOL_ID)
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps(response['Groups'], default=str)
+        }
 
 def create_group(event, headers):
     data = json.loads(event['body'])

@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-01-12T16:25:23.828286",
+  "endpoint": "/members/me",
+  "api_base_url": "https://7fd6dxzhu7.execute-api.eu-west-1.amazonaws.com/prod",
+  "get_request": {
+    "status_code": 401,
+    "cors_complete": true,
+    "cors_headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
+    },
+    "response_body": "{\"error\": \"Authorization header required\"}"
+  },
+  "options_request": {
+    "status_code": 200,
+    "cors_complete": true,
+    "cors_headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE,PATCH",
+      "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-enhanced-groups,x-requested-with"
+    }
+  },
+  "assessment": {
+    "endpoint_working": true,
+    "cors_working": true,
+    "ready_for_frontend": true
+  }
+}

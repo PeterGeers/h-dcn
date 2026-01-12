@@ -1,0 +1,57 @@
+{
+  "test_summary": {
+    "timestamp": "2026-01-12T16:16:55.771438",
+    "api_base_url": "https://7fd6dxzhu7.execute-api.eu-west-1.amazonaws.com/prod",
+    "test_user_email": "peter@pgeers.nl",
+    "total_tests": 6,
+    "passed_tests": 2,
+    "failed_tests": 4,
+    "cors_tests": 2,
+    "success_rate": 33.33333333333333,
+    "cors_rate": 33.33333333333333
+  },
+  "test_results": [
+    {
+      "timestamp": "2026-01-12T16:16:53.537276",
+      "test_name": "OPTIONS /carts",
+      "success": true,
+      "cors_headers_present": true,
+      "details": "Status: 200, CORS: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,PUT,DELETE,PATCH', 'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-enhanced-groups,x-requested-with'}"
+    },
+    {
+      "timestamp": "2026-01-12T16:16:54.572944",
+      "test_name": "Create Cart",
+      "success": false,
+      "cors_headers_present": false,
+      "details": "Status: 502, Response: {\"message\": \"Internal server error\"}, CORS: {'Access-Control-Allow-Origin': 'MISSING', 'Access-Control-Allow-Methods': 'MISSING', 'Access-Control-Allow-Headers': 'MISSING'}"
+    },
+    {
+      "timestamp": "2026-01-12T16:16:54.575947",
+      "test_name": "Get Cart",
+      "success": false,
+      "cors_headers_present": false,
+      "details": "No cart ID available for testing"
+    },
+    {
+      "timestamp": "2026-01-12T16:16:54.575947",
+      "test_name": "Update Cart",
+      "success": false,
+      "cors_headers_present": false,
+      "details": "No cart ID available for testing"
+    },
+    {
+      "timestamp": "2026-01-12T16:16:54.575947",
+      "test_name": "Clear Cart",
+      "success": false,
+      "cors_headers_present": false,
+      "details": "No cart ID available for testing"
+    },
+    {
+      "timestamp": "2026-01-12T16:16:55.768368",
+      "test_name": "Error Response CORS",
+      "success": true,
+      "cors_headers_present": true,
+      "details": "Status: 401, CORS: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Enhanced-Groups'} (Unauthorized, but CORS present)"
+    }
+  ]
+}

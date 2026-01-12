@@ -81,8 +81,8 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   onAddMember
 }) => {
   const [selectedContext, setSelectedContext] = useState('memberCompact'); // Changed to memberCompact
-  const [sortField, setSortField] = useState('achternaam');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState('lidnummer');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const filterBg = useColorModeValue('gray.50', 'gray.700');
@@ -101,6 +101,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   const filteredMembers = useMemo(() => {
     // First, process all members with calculated fields
     const processedMembers = computeCalculatedFieldsForArray(members);
+    
     let filtered = processedMembers;
 
     // Apply regional filtering if needed
@@ -142,13 +143,29 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
 
     // Apply sorting
     filtered.sort((a, b) => {
-      const aValue = a[sortField] || '';
-      const bValue = b[sortField] || '';
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      
+      // Handle numeric sorting for lidnummer
+      if (sortField === 'lidnummer') {
+        const aNum = Number(aValue) || 0;
+        const bNum = Number(bValue) || 0;
+        
+        if (sortDirection === 'asc') {
+          return aNum - bNum;
+        } else {
+          return bNum - aNum;
+        }
+      }
+      
+      // Handle string sorting for other fields
+      const aStr = (aValue || '').toString();
+      const bStr = (bValue || '').toString();
       
       if (sortDirection === 'asc') {
-        return aValue.toString().localeCompare(bValue.toString());
+        return aStr.localeCompare(bStr);
       } else {
-        return bValue.toString().localeCompare(aValue.toString());
+        return bStr.localeCompare(aStr);
       }
     });
 
@@ -157,15 +174,33 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
 
   // Get visible columns based on context and permissions
   const visibleColumns = useMemo(() => {
-    if (!tableContext) return [];
+    if (!tableContext) {
+      console.log('[DEBUG] No tableContext found for:', selectedContext);
+      return [];
+    }
     
-    return tableContext.columns
-      .filter(col => col.visible)
-      .filter(col => {
-        const field = MEMBER_FIELDS[col.fieldKey];
-        return field && canViewField(field, userRole, filteredMembers[0]);
-      })
-      .sort((a, b) => a.order - b.order);
+    console.log('[DEBUG] tableContext found:', tableContext.name);
+    console.log('[DEBUG] tableContext columns:', tableContext.columns.length);
+    
+    const visibleCols = tableContext.columns.filter(col => col.visible);
+    console.log('[DEBUG] visible columns before permission filter:', visibleCols.length);
+    
+    const permissionFilteredCols = visibleCols.filter(col => {
+      const field = MEMBER_FIELDS[col.fieldKey];
+      if (!field) {
+        console.log('[DEBUG] No field definition for:', col.fieldKey);
+        return false;
+      }
+      
+      const canView = canViewField(field, userRole, filteredMembers[0]);
+      if (!canView) {
+        console.log('[DEBUG] Cannot view field:', col.fieldKey, 'for role:', userRole);
+      }
+      return canView;
+    });
+    
+    console.log('[DEBUG] final visible columns:', permissionFilteredCols.length);
+    return permissionFilteredCols.sort((a, b) => a.order - b.order);
   }, [tableContext, userRole, filteredMembers]);
 
   const handleSort = (fieldKey: string) => {

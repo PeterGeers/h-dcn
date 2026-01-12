@@ -18,9 +18,6 @@ import { ApiService } from './apiService';
 import { computeCalculatedFieldsForArray } from '../utils/calculatedFields';
 import { Member } from '../types/index';
 import { webWorkerManager, WebWorkerManager } from './WebWorkerManager';
-
-// Temporarily disable web workers due to CloudFront MIME type issues
-webWorkerManager.updateConfig({ maxWorkers: 0 });
 import {
   ParquetFileInfo,
   ParquetFileStatus,
@@ -47,7 +44,7 @@ const DEFAULT_CONFIG: ParquetServiceConfig = {
     applyRegionalFiltering: true,
     enableCaching: true,
     cacheMaxAge: 5 * 60 * 1000, // 5 minutes
-    useWebWorkers: false // Temporarily disable Web Workers due to CloudFront MIME type issue
+    useWebWorkers: true // Re-enabled Web Workers after resolving CloudFront MIME type issue
   },
   cacheOptions: {
     maxAge: 5 * 60 * 1000, // 5 minutes

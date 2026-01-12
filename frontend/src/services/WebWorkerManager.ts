@@ -59,9 +59,8 @@ export class WebWorkerManager {
 
     this.log('WebWorkerManager initialized', this.config);
     
-    // Temporarily disable worker initialization due to CloudFront MIME type issues
-    // this.initializeWorkers();
-    this.log('Web Workers temporarily disabled due to CloudFront MIME type issues');
+    // Initialize workers now that CloudFront MIME type issues have been resolved
+    this.initializeWorkers();
   }
 
   /**

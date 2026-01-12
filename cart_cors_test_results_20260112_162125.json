@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-01-12T16:21:25.590032",
+  "api_base_url": "https://7fd6dxzhu7.execute-api.eu-west-1.amazonaws.com/prod",
+  "total_tests": 6,
+  "passed_tests": 4,
+  "success_rate": 66.66666666666666,
+  "test_results": [
+    {
+      "test": "OPTIONS /carts",
+      "cors_complete": true
+    },
+    {
+      "test": "POST /carts (no auth)",
+      "cors_complete": false
+    },
+    {
+      "test": "GET /carts/test-cart-id (no auth)",
+      "cors_complete": true
+    },
+    {
+      "test": "PUT /carts/test-cart-id/items (no auth)",
+      "cors_complete": true
+    },
+    {
+      "test": "DELETE /carts/test-cart-id (no auth)",
+      "cors_complete": true
+    },
+    {
+      "test": "GET /invalid-endpoint (404)",
+      "cors_complete": false
+    }
+  ]
+}

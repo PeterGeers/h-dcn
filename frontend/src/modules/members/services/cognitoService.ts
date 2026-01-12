@@ -137,7 +137,8 @@ class CognitoService {
   }
 
   async getUsersInGroup(groupName: string): Promise<any> {
-    const response = await this.makeRequest(`/cognito/groups/${groupName}/users`);
+    const encodedGroupName = encodeURIComponent(groupName);
+    const response = await this.makeRequest(`/cognito/groups/${encodedGroupName}/users`);
     return { Users: response };
   }
 

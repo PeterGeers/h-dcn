@@ -29,9 +29,10 @@ import {
   Spinner
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields, getFilteredEnumOptions } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
-import { membershipService } from '../utils/membershipService';
+import { ApiService } from '../services/apiService';
 
 interface NewMemberApplicationFormProps {
   userEmail: string; // From Cognito
@@ -53,17 +54,174 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
   const applicationContext = MEMBER_MODAL_CONTEXTS.memberRegistration;
   const userRole = 'verzoek_lid'; // New applicants have applicant role
 
+  // Helper function to determine if a field is required based on memberFields configuration
+  const isRequiredField = (fieldKey: string) => {
+    const field = MEMBER_FIELDS[fieldKey];
+    if (!field) return false;
+    
+    // Check if field is marked as required in the configuration
+    if (field.required === true) return true;
+    
+    // Check validation rules for required
+    if (field.validation) {
+      return field.validation.some(rule => rule.type === 'required');
+    }
+    
+    return false;
+  };
+
+  // Create validation schema based on memberFields configuration
+  const createValidationSchema = () => {
+    const schemaFields: Record<string, any> = {};
+    
+    // Get all fields from the memberRegistration context
+    applicationContext.sections.forEach(section => {
+      const visibleFields = getVisibleFields(section);
+      visibleFields.forEach(fieldConfig => {
+        const field = MEMBER_FIELDS[fieldConfig.fieldKey];
+        if (!field) return;
+        
+        const fieldKey = fieldConfig.fieldKey;
+        
+        // Skip fields that are not allowed for new applicants
+        const forbiddenFields = ['status', 'created_at', 'updated_at', 'korte_naam', 'leeftijd', 'verjaardag'];
+        if (forbiddenFields.includes(fieldKey)) return;
+        
+        // Skip email validation - it's pre-filled from Cognito
+        if (fieldKey === 'email') {
+          schemaFields[fieldKey] = Yup.string().email('Voer een geldig emailadres in');
+          return;
+        }
+        
+        let fieldSchema: any;
+        
+        // Create base schema based on data type
+        switch (field.dataType) {
+          case 'date':
+            fieldSchema = Yup.date();
+            // Add max date validation for birth date
+            if (fieldConfig.fieldKey === 'geboortedatum') {
+              fieldSchema = fieldSchema.max(new Date(), 'Geboortedatum kan niet in de toekomst liggen');
+            }
+            break;
+          case 'number':
+            fieldSchema = Yup.number();
+            break;
+          case 'enum':
+            const filteredOptions = getFilteredEnumOptions(field, userRole);
+            fieldSchema = Yup.string().oneOf(filteredOptions, `Selecteer een geldige ${field.label.toLowerCase()}`);
+            break;
+          default:
+            fieldSchema = Yup.string();
+        }
+        
+        // Apply validation rules from field configuration
+        if (field.validation) {
+          field.validation.forEach(rule => {
+            switch (rule.type) {
+              case 'required':
+                // Check if condition applies
+                if (!rule.condition) {
+                  fieldSchema = fieldSchema.required(rule.message || `${field.label} is verplicht`);
+                }
+                break;
+              case 'email':
+                if (field.dataType === 'string') {
+                  fieldSchema = fieldSchema.email(rule.message || 'Voer een geldig emailadres in');
+                }
+                break;
+              case 'min_length':
+                if (field.dataType === 'string') {
+                  fieldSchema = fieldSchema.min(rule.value, rule.message || `Minimaal ${rule.value} karakters`);
+                }
+                break;
+              case 'max_length':
+                if (field.dataType === 'string') {
+                  fieldSchema = fieldSchema.max(rule.value, rule.message || `Maximaal ${rule.value} karakters`);
+                }
+                break;
+              case 'iban':
+                if (field.dataType === 'string') {
+                  // Use exact same IBAN validation as MemberEditView for consistency
+                  fieldSchema = fieldSchema.test(
+                    'iban',
+                    rule.message || 'Ongeldig IBAN nummer',
+                    (value) => !value || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value)
+                  );
+                }
+                break;
+              case 'pattern':
+                if (field.dataType === 'string') {
+                  fieldSchema = fieldSchema.matches(new RegExp(rule.value), rule.message || 'Ongeldige format');
+                }
+                break;
+              case 'min':
+                if (field.dataType === 'number') {
+                  fieldSchema = fieldSchema.min(rule.value, rule.message || `Minimaal ${rule.value}`);
+                }
+                break;
+              case 'max':
+                if (field.dataType === 'number') {
+                  fieldSchema = fieldSchema.max(rule.value, rule.message || `Maximaal ${rule.value}`);
+                }
+                break;
+            }
+          });
+        }
+        
+        // Check if field is required
+        if (isRequiredField(fieldConfig.fieldKey)) {
+          const requiredMessage = field.validation?.find(r => r.type === 'required')?.message || `${field.label} is verplicht`;
+          fieldSchema = fieldSchema.required(requiredMessage);
+        }
+        
+        schemaFields[fieldConfig.fieldKey] = fieldSchema;
+      });
+    });
+    
+    // Override privacy validation - both 'Ja' and 'Nee' should be valid, but field is required
+    schemaFields.privacy = Yup.string()
+      .required('Privacy keuze is verplicht')
+      .oneOf(['Ja', 'Nee'], 'Selecteer Ja of Nee voor privacy');
+    
+    // Add conditional validation for minors
+    schemaFields.minderjarigNaam = Yup.string().when('geboortedatum', {
+      is: (birthDate: string) => {
+        if (!birthDate) return false;
+        const age = (new Date().getTime() - new Date(birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365);
+        return age < 18;
+      },
+      then: (schema) => schema.required('Naam ouder/voogd is verplicht voor minderjarigen'),
+      otherwise: (schema) => schema.notRequired()
+    });
+    
+    // Add conditional validation for IBAN when payment method is direct debit
+    schemaFields.bankrekeningnummer = Yup.string().when('betaalwijze', {
+      is: 'Incasso',
+      then: (schema) => schema.required('IBAN is verplicht bij automatische incasso'),
+      otherwise: (schema) => schema.notRequired()
+    });
+    
+    console.log('Validation schema fields:', Object.keys(schemaFields));
+    return Yup.object(schemaFields);
+  };
+
+  const validationSchema = createValidationSchema();
+
   // Check for existing application on component mount
   useEffect(() => {
     const checkExistingApplication = async () => {
       try {
-        // Try to get existing member data by email
-        const existingMember = await membershipService.getMemberByEmail(userEmail);
-        if (existingMember) {
-          setExistingApplication(existingMember);
+        // Try to get existing member data using /members/me endpoint
+        const response = await ApiService.get('/members/me');
+        if (response.success && response.data) {
+          setExistingApplication(response.data);
+          console.log('Existing member application found:', response.data);
+        } else {
+          console.log('No existing application found - this is normal for new applicants');
         }
       } catch (error) {
-        console.log('No existing application found (this is normal for new users)');
+        console.log('Error checking for existing application (this is normal for new users):', error);
       } finally {
         setIsLoadingExisting(false);
       }
@@ -73,30 +231,115 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
   }, [userEmail]);
 
   // Initial form values with email from Cognito and existing data if available
-  const initialValues = {
-    email: userEmail,
-    status: existingApplication?.status || 'Aangemeld',
-    created_at: existingApplication?.created_at || new Date().toISOString(),
-    // Set defaults for required fields, using existing data if available
-    lidmaatschap: existingApplication?.lidmaatschap || '',
-    regio: existingApplication?.regio || '',
-    clubblad: existingApplication?.clubblad || 'Digitaal',
-    nieuwsbrief: existingApplication?.nieuwsbrief || 'Ja',
-    privacy: existingApplication?.privacy || 'Nee',
-    betaalwijze: existingApplication?.betaalwijze || 'Incasso',
-    land: existingApplication?.land || 'Nederland',
-    nationaliteit: existingApplication?.nationaliteit || 'Nederlandse',
-    // Pre-populate all other fields from existing application
-    ...existingApplication
+  const getInitialValues = () => {
+    const initialValues: Record<string, any> = {
+      email: userEmail, // Always use the email from Cognito (but won't be sent to backend)
+      // Don't include status, created_at, updated_at - backend handles these
+    };
+    
+    // Set defaults from field configuration
+    applicationContext.sections.forEach(section => {
+      const visibleFields = getVisibleFields(section);
+      visibleFields.forEach(fieldConfig => {
+        const field = MEMBER_FIELDS[fieldConfig.fieldKey];
+        if (!field) return;
+        
+        const fieldKey = fieldConfig.fieldKey;
+        
+        // Skip system fields that backend handles
+        const systemFields = ['email', 'status', 'created_at', 'updated_at'];
+        if (systemFields.includes(fieldKey)) return;
+        
+        // Use existing application data if available, otherwise use field default or empty string
+        if (existingApplication && existingApplication[fieldKey] !== undefined) {
+          initialValues[fieldKey] = existingApplication[fieldKey];
+        } else if (field.defaultValue !== undefined) {
+          initialValues[fieldKey] = field.defaultValue;
+        } else {
+          // Set appropriate empty value based on data type
+          switch (field.dataType) {
+            case 'string':
+              initialValues[fieldKey] = '';
+              break;
+            case 'number':
+              initialValues[fieldKey] = '';
+              break;
+            case 'date':
+              initialValues[fieldKey] = '';
+              break;
+            case 'boolean':
+              initialValues[fieldKey] = false;
+              break;
+            case 'enum':
+              initialValues[fieldKey] = '';
+              break;
+            default:
+              initialValues[fieldKey] = '';
+          }
+        }
+      });
+    });
+    
+    // Ensure privacy is not defaulted to 'Ja' - require explicit consent
+    if (!existingApplication?.privacy) {
+      initialValues.privacy = '';
+    }
+    
+    // Add email back for display purposes only (won't be sent to backend)
+    initialValues.email = userEmail;
+    
+    console.log('Initial form values:', initialValues);
+    return initialValues;
   };
+
+  const initialValues = getInitialValues();
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
     try {
-      const submissionData = {
-        ...values,
-        updated_at: new Date().toISOString()
-      };
+      // Filter out forbidden fields for new applicants
+      const baseAllowedFields = [
+        // Required fields
+        'voornaam', 'achternaam', 'geboortedatum', 'geslacht', 'telefoon',
+        'straat', 'postcode', 'woonplaats', 'lidmaatschap', 'regio', 'privacy',
+        // Optional fields
+        'initialen', 'tussenvoegsel', 'minderjarigNaam', 'land', 'motormerk',
+        'motortype', 'bouwjaar', 'kenteken', 'wiewatwaar', 'clubblad',
+        'nieuwsbrief', 'betaalwijze', 'bankrekeningnummer'
+      ];
+      
+      // For updates (PUT), don't include email and status as they shouldn't change
+      // For new applications (POST), include email and status
+      const allowedFields = existingApplication 
+        ? baseAllowedFields  // PUT: exclude email and status
+        : [...baseAllowedFields, 'email', 'status']; // POST: include email and status
+      
+      console.log('Is update (existingApplication):', !!existingApplication);
+      console.log('Allowed fields for submission:', allowedFields);
+      
+      const submissionData: any = {};
+      
+      // Only include allowed fields that have values
+      allowedFields.forEach(fieldKey => {
+        const fieldValue = values[fieldKey];
+        if (fieldValue !== undefined && fieldValue !== '') {
+          submissionData[fieldKey] = fieldValue;
+          console.log(`Including field ${fieldKey}:`, fieldValue);
+        } else {
+          console.log(`Skipping field ${fieldKey}:`, fieldValue);
+        }
+      });
+      
+      // For new applications (POST), always include email and status
+      // For updates (PUT), don't include these as they shouldn't change
+      if (!existingApplication) {
+        submissionData.email = userEmail;
+        submissionData.status = 'Aangemeld';
+      }
+      
+      console.log('Filtered submission data:', submissionData);
+      console.log('Is update (existing application):', !!existingApplication);
+      console.log('Final submission keys:', Object.keys(submissionData));
 
       await onSubmit(submissionData);
       
@@ -128,13 +371,24 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
     const field = MEMBER_FIELDS[fieldKey];
     if (!field) return null;
 
+    // Skip fields that are not allowed for new applicants or are computed
+    const forbiddenFields = ['status', 'created_at', 'updated_at', 'korte_naam', 'leeftijd', 'verjaardag'];
+    if (forbiddenFields.includes(fieldKey)) return null;
+
     const canView = canViewField(field, userRole, values);
     const canEdit = canEditField(field, userRole, values);
     
     if (!canView) return null;
 
     // Handle computed fields and field mappings
-    let value = values[fieldKey] || field.defaultValue;
+    let value = values[fieldKey];
+    
+    // For email field, always use the userEmail from Cognito
+    if (fieldKey === 'email') {
+      value = userEmail;
+    } else if (field.defaultValue !== undefined && (value === '' || value === undefined || value === null)) {
+      value = field.defaultValue;
+    }
     
     // Special handling for ingangsdatum field which maps to tijdstempel
     if (fieldKey === 'ingangsdatum' && field.key === 'tijdstempel') {
@@ -165,29 +419,39 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
 
     const error = errors[fieldKey];
     const isTouched = touched[fieldKey];
+    const isRequired = isRequiredField(fieldKey);
 
     // Check conditional visibility
     if (field.showWhen) {
       const shouldShow = field.showWhen.some(condition => {
         if (condition.operator === 'equals') {
-          return values[condition.field] === condition.value;
+          const result = values[condition.field] === condition.value;
+          console.log(`Conditional visibility for ${fieldKey}: ${condition.field} === ${condition.value} = ${result} (actual: ${values[condition.field]})`);
+          return result;
         }
         if (condition.operator === 'age_less_than') {
           const birthDate = new Date(values[condition.field]);
           const age = new Date().getFullYear() - birthDate.getFullYear();
-          return age < condition.value;
+          const result = age < condition.value;
+          console.log(`Age condition for ${fieldKey}: age ${age} < ${condition.value} = ${result}`);
+          return result;
         }
         return true;
       });
-      if (!shouldShow) return null;
+      if (!shouldShow) {
+        console.log(`Field ${fieldKey} hidden due to conditional visibility`);
+        return null;
+      }
     }
 
     return (
       <Box key={fieldKey} mb={1}>
-        <FormControl isInvalid={!!(error && isTouched)} isRequired={false}>
+        <FormControl isInvalid={!!(error && isTouched)}>
           <FormLabel mb={0} color="gray.700" fontWeight="semibold" fontSize="sm">
             <Tooltip label={field.helpText}>
-              <Text cursor="help">{field.label}</Text>
+              <Text cursor="help">
+                {field.label}
+              </Text>
             </Tooltip>
           </FormLabel>
           
@@ -207,6 +471,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                     isDisabled={!canEdit}
                     size="sm"
                     fontSize="sm"
+                    placeholder={field.placeholder}
                   >
                     <option value="">Selecteer...</option>
                     {filteredOptions.map((option: any) => (
@@ -232,6 +497,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                     rows={3}
                     size="sm"
                     fontSize="sm"
+                    placeholder={field.placeholder}
                   />
                 );
               }
@@ -249,6 +515,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                   isDisabled={!canEdit || fieldKey === 'email'} // Email is always read-only
                   size="sm"
                   fontSize="sm"
+                  placeholder={field.placeholder}
                 />
               );
             }}
@@ -338,10 +605,15 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         {/* Form */}
         <Formik
           initialValues={initialValues}
+          validationSchema={validationSchema}
           onSubmit={handleSubmit}
           enableReinitialize
         >
-          {({ values, errors, touched, isValid, setFieldValue }) => (
+          {({ values, errors, touched, isValid, setFieldValue }) => {
+            // Debug logging to see validation state
+            console.log('Form validation state:', { isValid, errors, values });
+            
+            return (
             <Form>
               <VStack spacing={6} align="stretch">
                 {/* Render all sections */}
@@ -416,18 +688,32 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                           colorScheme="orange"
                           size="lg"
                           isLoading={isSubmitting}
+                          isDisabled={!isValid}
                           loadingText={existingApplication ? "Opslaan..." : "Aanmelden..."}
                           px={8}
                         >
                           {existingApplication ? "Wijzigingen Opslaan" : "Aanmelden"}
                         </Button>
                       </HStack>
+                      
+                      {/* Debug info */}
+                      {!isValid && (
+                        <Box mt={4} p={3} bg="red.50" borderRadius="md" border="1px" borderColor="red.200">
+                          <Text fontSize="sm" color="red.600" fontWeight="semibold">
+                            Validatie fouten:
+                          </Text>
+                          <Text fontSize="xs" color="red.500" mt={1}>
+                            {JSON.stringify(errors, null, 2)}
+                          </Text>
+                        </Box>
+                      )}
                     </VStack>
                   </CardBody>
                 </Card>
               </VStack>
             </Form>
-          )}
+            );
+          }}
         </Formik>
       </VStack>
     </Box>

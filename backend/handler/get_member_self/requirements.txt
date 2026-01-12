@@ -1,0 +1,2 @@
+# No additional requirements needed - uses boto3 (included in Lambda runtime)
+# and shared auth layer for authentication utilities

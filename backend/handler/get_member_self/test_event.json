@@ -1,0 +1,11 @@
+{
+  "httpMethod": "GET",
+  "path": "/members/me",
+  "headers": {
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBldGVyQHBnZWVycy5ubCIsImNvZ25pdG86Z3JvdXBzIjpbImhkY25MZWRlbiJdfQ.signature",
+    "Content-Type": "application/json"
+  },
+  "pathParameters": null,
+  "queryStringParameters": null,
+  "body": null
+}

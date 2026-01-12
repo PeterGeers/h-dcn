@@ -240,15 +240,17 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
               <FormLabel color="orange.300">Groepen</FormLabel>
               <CheckboxGroup value={userGroups} onChange={handleGroupChange}>
                 <Stack direction="row" wrap="wrap">
-                  {groups.map((group) => (
-                    <Checkbox
-                      key={group.GroupName}
-                      value={group.GroupName}
-                      colorScheme="orange"
-                    >
-                      {group.GroupName}
-                    </Checkbox>
-                  ))}
+                  {groups
+                    .sort((a, b) => a.GroupName.localeCompare(b.GroupName))
+                    .map((group) => (
+                      <Checkbox
+                        key={group.GroupName}
+                        value={group.GroupName}
+                        colorScheme="orange"
+                      >
+                        {group.GroupName}
+                      </Checkbox>
+                    ))}
                 </Stack>
               </CheckboxGroup>
             </FormControl>

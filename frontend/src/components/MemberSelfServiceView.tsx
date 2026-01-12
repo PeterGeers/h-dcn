@@ -41,7 +41,10 @@ interface MemberSelfServiceViewProps {
   onUpdate: (data: any) => Promise<void>;
 }
 
-const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({ member, onUpdate }) => {
+const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({ 
+  member, 
+  onUpdate
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -57,17 +60,42 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({ member, o
   // Debug: Log member data to see what fields are available
   // console.log('Member data in MemberSelfServiceView:', member);
 
-  // Get member view context and resolve fields for hdcnLeden role
-  const memberContext = MEMBER_MODAL_CONTEXTS.memberView;
-  const userRole = 'hdcnLeden';
+  // Determine if this is a new member application or existing member
+  const isNewMember = !member?.member_id || member?.status === 'Aangemeld';
+
+  // Get appropriate context and role based on whether this is a new member or existing member
+  const memberContext = isNewMember 
+    ? MEMBER_MODAL_CONTEXTS.memberRegistration 
+    : MEMBER_MODAL_CONTEXTS.memberView;
+  const userRole = isNewMember ? 'verzoek_lid' : 'hdcnLeden';
 
   const handleSave = async (values: any) => {
     setIsSubmitting(true);
     try {
-      await onUpdate({
-        ...values,
-        updated_at: new Date().toISOString()
+      // Filter out system fields that shouldn't be updated by users
+      const allowedFields = [
+        // Personal fields
+        'voornaam', 'achternaam', 'initialen', 'tussenvoegsel', 'geboortedatum', 
+        'geslacht', 'telefoon', 'straat', 'postcode', 'woonplaats', 'land',
+        'minderjarigNaam', 'privacy',
+        // Membership fields  
+        'lidmaatschap', 'regio', 'clubblad', 'nieuwsbrief', 'wiewatwaar',
+        // Motor fields
+        'motormerk', 'motortype', 'bouwjaar', 'kenteken',
+        // Financial fields
+        'betaalwijze', 'bankrekeningnummer'
+      ];
+      
+      const filteredValues: any = {};
+      allowedFields.forEach(fieldKey => {
+        if (values[fieldKey] !== undefined) {
+          filteredValues[fieldKey] = values[fieldKey];
+        }
       });
+      
+      console.log('MemberSelfServiceView - Filtered values for update:', filteredValues);
+      
+      await onUpdate(filteredValues);
       
       setHasChanges(false);
       toast({
