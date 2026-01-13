@@ -2,7 +2,7 @@
   "httpMethod": "GET",
   "path": "/members/me",
   "headers": {
-    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBldGVyQHBnZWVycy5ubCIsImNvZ25pdG86Z3JvdXBzIjpbImhkY25MZWRlbiJdfQ.signature",
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJjb2duaXRvOmdyb3VwcyI6WyJoZGNuTGVkZW4iXX0.test_signature",
     "Content-Type": "application/json"
   },
   "pathParameters": null,

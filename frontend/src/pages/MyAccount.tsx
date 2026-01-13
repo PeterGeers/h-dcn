@@ -21,6 +21,7 @@ import NewMemberApplicationForm from '../components/NewMemberApplicationForm';
 import { Member } from '../types';
 import { ApiService } from '../services/apiService';
 import { useErrorHandler } from '../utils/errorHandler';
+import { computeCalculatedFields } from '../utils/calculatedFields';
 
 interface User {
   attributes?: {
@@ -95,8 +96,10 @@ function MyAccount({ user }: MyAccountProps) {
         const response = await ApiService.get('/members/me');
         
         if (response.success && response.data) {
-          setMember(response.data);
-          console.log('Member data loaded successfully:', response.data);
+          // Compute calculated fields for the member data
+          const memberWithCalculatedFields = computeCalculatedFields(response.data);
+          setMember(memberWithCalculatedFields);
+          console.log('Member data loaded successfully:', memberWithCalculatedFields);
         } else {
           // No member record found - this is normal for verzoek_lid users
           console.log('No member record found - user may need to create application');
@@ -129,7 +132,9 @@ function MyAccount({ user }: MyAccountProps) {
       });
       
       if (response.success) {
-        setMember(response.data.member || response.data);
+        // Compute calculated fields for the updated member data
+        const updatedMemberWithCalculatedFields = computeCalculatedFields(response.data.member || response.data);
+        setMember(updatedMemberWithCalculatedFields);
         console.log('Member data updated successfully');
       } else {
         throw new Error(response.error || 'Failed to update member data');
@@ -158,7 +163,8 @@ function MyAccount({ user }: MyAccountProps) {
       }
       
       if (response.success) {
-        const updatedMember = response.data.member || response.data;
+        // Compute calculated fields for the member data
+        const updatedMember = computeCalculatedFields(response.data.member || response.data);
         setMember(updatedMember);
         setShowApplicationForm(false);
         console.log('Member application processed successfully:', response.data);

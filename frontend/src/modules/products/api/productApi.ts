@@ -1,4 +1,3 @@
-import axios, { AxiosResponse } from 'axios';
 import { Product } from '../../../types';
 import { ApiService } from '../../../services/apiService';
 
@@ -13,66 +12,72 @@ import { API_CONFIG } from '../../../config/api';
 
 const BASE: string = API_CONFIG.BASE_URL;
 
-// Helper function to create axios config with auth headers - now uses main ApiService
-const createAuthConfig = async (method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET') => {
+export const scanProducts = async () => {
   if (!ApiService.isAuthenticated()) {
     throw new Error('Authentication required');
   }
-  
-  return { 
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  };
+  return ApiService.get('/scan-product');
 };
 
-export const scanProducts = async (): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('GET');
-  return axios.get(`${BASE}/scan-product`, config);
+export const getProductById = async (id: string) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.get(`/get-product-byid/${id}`);
 };
 
-export const getProductById = async (id: string): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('GET');
-  return axios.get(`${BASE}/get-product-byid/${id}`, config);
+export const insertProduct = async (data: Product) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.post('/insert-product/', data);
 };
 
-export const insertProduct = async (data: Product): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('POST');
-  return axios.post(`${BASE}/insert-product/`, data, config);
+export const updateProduct = async (id: string, data: Product) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.put(`/update-product/${id}`, data);
 };
 
-export const updateProduct = async (id: string, data: Product): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('PUT');
-  return axios.put(`${BASE}/update-product/${id}`, data, config);
+export const deleteProduct = async (id: string) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.delete(`/delete-product/${id}`);
 };
 
-export const deleteProduct = async (id: string): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('DELETE');
-  return axios.delete(`${BASE}/delete-product/${id}`, config);
+export const getParameterByName = async (name: string) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.get(`/parameters/name/${name}`);
 };
 
-export const getParameterByName = async (name: string): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('GET');
-  return axios.get(`${BASE}/parameters/name/${name}`, config);
+export const getAllParameters = async () => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.get('/parameters');
 };
 
-export const getAllParameters = async (): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('GET');
-  return axios.get(`${BASE}/parameters`, config);
+export const createParameter = async (data: Parameter) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.post('/parameters', data);
 };
 
-export const createParameter = async (data: Parameter): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('POST');
-  return axios.post(`${BASE}/parameters`, data, config);
+export const updateParameter = async (id: string, data: Parameter) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.put(`/parameters/${id}`, data);
 };
 
-export const updateParameter = async (id: string, data: Parameter): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('PUT');
-  return axios.put(`${BASE}/parameters/${id}`, data, config);
-};
-
-export const deleteParameter = async (id: string): Promise<AxiosResponse<any>> => {
-  const config = await createAuthConfig('DELETE');
-  return axios.delete(`${BASE}/parameters/${id}`, config);
+export const deleteParameter = async (id: string) => {
+  if (!ApiService.isAuthenticated()) {
+    throw new Error('Authentication required');
+  }
+  return ApiService.delete(`/parameters/${id}`);
 };

@@ -1,8 +1,12 @@
 # Fast Build and Deploy Script with Progress and Timing
-# Enhanced with pre-deployment validation checks
+# Enhanced with pre-deployment validation checks and automatic fix versioning
 
 # Bypass "more" prompts for long outputs
 $env:AWS_PAGER = ""
+
+# Generate automatic timestamp-based fix version
+$FIX_VERSION = "FIX_" + (Get-Date).ToString("yyyyMMdd_HHmmss")
+Write-Host "🏷️  Generated Fix Version: $FIX_VERSION" -ForegroundColor Magenta
 
 # Start total timer
 $totalStartTime = Get-Date

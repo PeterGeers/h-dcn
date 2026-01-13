@@ -10,7 +10,7 @@ from datetime import datetime
 
 def extract_user_credentials(event):
     """
-    Extract user credentials from Lambda event with enhanced groups support
+    Extract user credentials from Lambda event with built-in smart fallback
     
     Args:
         event: Lambda event containing headers
@@ -21,17 +21,28 @@ def extract_user_credentials(event):
                If error: (None, None, error_response_dict)
     """
     try:
+        from datetime import datetime
+        FIX_VERSION = f"FIX_{datetime.now().strftime('%Y%m%d_%H%M%S')}"  # Auto-generated timestamp
+        print(f"[AUTH_DEBUG] extract_user_credentials called from SHARED auth utils - FIX: {FIX_VERSION}")
+        
         # Extract Authorization header
-        auth_header = event.get('headers', {}).get('Authorization')
+        headers = event.get('headers', {})
+        print(f"[AUTH_DEBUG] Available headers: {list(headers.keys())}")
+        
+        auth_header = headers.get('Authorization')
         if not auth_header:
+            print(f"❌ [AUTH_DEBUG] No Authorization header found")
             return None, None, {
                 'statusCode': 401,
                 'headers': cors_headers(),
                 'body': json.dumps({'error': 'Authorization header required'})
             }
         
+        print(f"🔍 [AUTH_DEBUG] Authorization header found")
+        
         # Validate Bearer token format
         if not auth_header.startswith('Bearer '):
+            print(f"❌ [AUTH_DEBUG] Invalid authorization header format")
             return None, None, {
                 'statusCode': 401,
                 'headers': cors_headers(),
@@ -40,15 +51,34 @@ def extract_user_credentials(event):
         
         # Extract JWT token
         jwt_token = auth_header.replace('Bearer ', '')
+        print(f"[AUTH_DEBUG] JWT token extracted (length: {len(jwt_token)})")
+        print(f"[AUTH_DEBUG] JWT token full: {jwt_token}")
+        
+        # Additional validation for common issues
+        if not jwt_token or jwt_token == 'undefined' or jwt_token == 'null':
+            print(f"[AUTH_DEBUG] JWT token is empty or invalid: '{jwt_token}'")
+            return None, None, {
+                'statusCode': 401,
+                'headers': cors_headers(),
+                'body': json.dumps({'error': 'Empty or invalid JWT token'})
+            }
         
         # Decode JWT token to get user info
         parts = jwt_token.split('.')
         if len(parts) != 3:
+            print(f"❌ [AUTH_DEBUG] Invalid JWT token format - parts: {len(parts)}")
+            print(f"❌ [AUTH_DEBUG] Token preview: {jwt_token[:100]}...")
+            print(f"❌ [AUTH_DEBUG] Token ending: ...{jwt_token[-50:]}")
+            print(f"❌ [AUTH_DEBUG] Parts breakdown:")
+            for i, part in enumerate(parts):
+                print(f"   Part {i}: {part[:50]}... (length: {len(part)})")
             return None, None, {
                 'statusCode': 401,
                 'headers': cors_headers(),
                 'body': json.dumps({'error': 'Invalid JWT token format'})
             }
+        
+        print(f"🔍 [AUTH_DEBUG] JWT token has correct format (3 parts)")
         
         # Decode payload (second part of JWT)
         payload_encoded = parts[1]
@@ -57,46 +87,70 @@ def extract_user_credentials(event):
         payload_decoded = base64.urlsafe_b64decode(payload_encoded)
         payload = json.loads(payload_decoded)
         
-        # Extract user email
-        user_email = payload.get('email') or payload.get('username')
+        print(f"🔍 [AUTH_DEBUG] JWT payload decoded successfully")
+        print(f"🔍 [AUTH_DEBUG] JWT payload keys: {list(payload.keys())}")
+        
+        # Extract user email - try multiple possible fields
+        user_email = (payload.get('email') or 
+                     payload.get('username') or 
+                     payload.get('cognito:username'))
         if not user_email:
+            print(f"[AUTH_DEBUG] No email/username found in JWT payload")
+            print(f"[AUTH_DEBUG] Available payload fields: {list(payload.keys())}")
             return None, None, {
                 'statusCode': 401,
                 'headers': cors_headers(),
                 'body': json.dumps({'error': 'User email not found in token'})
             }
         
+        print(f"🔍 [AUTH_DEBUG] User email extracted: {user_email}")
+        
         # Check for enhanced groups from frontend credential combination
-        enhanced_groups_header = event.get('headers', {}).get('X-Enhanced-Groups')
+        enhanced_groups_header = headers.get('X-Enhanced-Groups')
         if enhanced_groups_header:
             try:
                 enhanced_groups = json.loads(enhanced_groups_header)
                 if isinstance(enhanced_groups, list):
-                    print(f"🔍 Using enhanced groups from frontend: {enhanced_groups} for user {user_email}")
+                    print(f"✅ [AUTH_DEBUG] Using enhanced groups from frontend: {enhanced_groups} for user {user_email}")
                     return user_email, enhanced_groups, None
                 else:
-                    print(f"⚠️ Invalid enhanced groups format, falling back to JWT groups")
+                    print(f"⚠️ [AUTH_DEBUG] Invalid enhanced groups format, falling back to JWT groups")
             except json.JSONDecodeError:
-                print(f"⚠️ Failed to parse enhanced groups header, falling back to JWT groups")
+                print(f"⚠️ [AUTH_DEBUG] Failed to parse enhanced groups header, falling back to JWT groups")
         
         # Fallback to JWT token groups
         user_roles = payload.get('cognito:groups', [])
-        print(f"🔍 Using JWT token groups: {user_roles} for user {user_email}")
+        print(f"🔍 [AUTH_DEBUG] Using JWT token groups: {user_roles} for user {user_email}")
         
         return user_email, user_roles, None
         
     except Exception as e:
-        print(f"Error extracting user credentials: {str(e)}")
-        return None, None, {
-            'statusCode': 401,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Invalid authorization token'})
-        }
+        print(f"❌ [AUTH_DEBUG] Error extracting user credentials: {str(e)}")
+        import traceback
+        print(f"❌ [AUTH_DEBUG] Traceback: {traceback.format_exc()}")
+        
+        # Built-in smart fallback
+        try:
+            from shared.maintenance_fallback import log_auth_system_failure, create_maintenance_response
+            log_auth_system_failure(None, e)  # Log for developers
+            return None, None, create_maintenance_response()  # Return for users
+        except ImportError:
+            # Fallback if maintenance_fallback is not available
+            return None, None, {
+                'statusCode': 503,
+                'headers': cors_headers(),
+                'body': json.dumps({
+                    'error': 'Service Temporarily Unavailable',
+                    'message': 'Our authentication system is currently undergoing maintenance. Please try again in a few minutes.',
+                    'contact': 'webmaster@h-dcn.nl',
+                    'status': 'maintenance'
+                })
+            }
 
 
 def validate_permissions_with_regions(user_roles, required_permissions, user_email=None, resource_context=None):
     """
-    Streamlined permission validation for the new role structure
+    Streamlined permission validation with built-in smart fallback
     
     Args:
         user_roles (list): List of user's roles from credentials
@@ -149,11 +203,24 @@ def validate_permissions_with_regions(user_roles, required_permissions, user_ema
         
     except Exception as e:
         print(f"Error validating permissions with regions: {str(e)}")
-        return False, {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Error validating permissions'})
-        }, None
+        
+        # Built-in smart fallback
+        try:
+            from shared.maintenance_fallback import log_auth_system_failure, create_maintenance_response
+            log_auth_system_failure(None, e)  # Log for developers
+            return False, create_maintenance_response(), None  # Return for users
+        except ImportError:
+            # Fallback if maintenance_fallback is not available
+            return False, {
+                'statusCode': 503,
+                'headers': cors_headers(),
+                'body': json.dumps({
+                    'error': 'Service Temporarily Unavailable',
+                    'message': 'Our authentication system is currently undergoing maintenance. Please try again in a few minutes.',
+                    'contact': 'webmaster@h-dcn.nl',
+                    'status': 'maintenance'
+                })
+            }, None
 
 
 def determine_regional_access(user_roles, resource_context=None):
@@ -276,9 +343,18 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
             'Communication_Read': ['communication_read'],
             'Communication_Export': ['communication_export', 'communication_read'],
             'Members_Status_Approve': ['members_status_change'],
-            'Webshop_Management': ['products_create', 'products_read', 'products_update', 'products_delete', 'orders_manage'],
-            'hdcnLeden': ['profile_read', 'profile_update_own', 'events_read', 'products_read', 'webshop_access', 'members_self_read'],
-            'verzoek_lid': ['members_self_read', 'members_self_create']  # Applicants can check their own status and create new applications
+            'Webshop_Management': ['products_create', 'products_read', 'products_update', 'products_delete', 'orders_manage', 'webshop_access'],
+            'hdcnLeden': [
+                # Self-service member data
+                'profile_read', 'profile_update_own', 'members_self_read', 'members_self_update',
+                # Events access
+                'events_read', 'events_list',
+                # Webshop full access
+                'products_read', 'products_list', 'webshop_access',
+                'carts_create', 'carts_read', 'carts_update', 'carts_delete',
+                'orders_create', 'orders_read_own', 'payments_create', 'payments_read_own'
+            ],
+            'verzoek_lid': ['members_self_read', 'members_self_create', 'members_self_update']  # Applicants can only manage their application
             # Note: Region roles (Regio_*) don't grant permissions by themselves
         }
         
@@ -469,12 +545,13 @@ def log_role_structure_validation(user_email, user_roles, validation_result, val
 
 def cors_headers():
     """
-    Standard CORS headers for all API responses
+    Standard CORS headers for all API responses - matches template.yaml Global CORS configuration
     """
     return {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
+        "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE,PATCH",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with",
+        "Access-Control-Allow-Credentials": "false"
     }
 
 

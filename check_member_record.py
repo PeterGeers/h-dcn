@@ -1,99 +1,59 @@
 #!/usr/bin/env python3
 """
-Check if a member record exists for a specific email address
+Check member record for peter@pgeers.nl
 """
 
 import boto3
 import json
-from datetime import datetime
+from decimal import Decimal
 
-def check_member_record(email):
-    """Check if a member record exists for the given email"""
+def decimal_default(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError
+
+def check_member_record():
+    """Check member record in DynamoDB"""
+    
+    dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+    table = dynamodb.Table('Members')
+    
+    email = 'peter@pgeers.nl'
+    
+    print(f"Checking member record for: {email}")
     
     try:
-        # Initialize DynamoDB with correct region
-        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-        table = dynamodb.Table('Members')
-        
-        print(f"🔍 Checking for member record with email: {email}")
-        
-        # Try to query using email index if it exists
-        try:
-            response = table.query(
-                IndexName='email-index',
-                KeyConditionExpression='email = :email',
-                ExpressionAttributeValues={':email': email}
-            )
-            
-            if response['Items']:
-                member = response['Items'][0]
-                print(f"✅ Found member record via GSI:")
-                print_member_info(member)
-                return member
-            else:
-                print(f"⚠️ No member found via GSI, trying scan...")
-                
-        except Exception as gsi_error:
-            print(f"⚠️ GSI query failed: {str(gsi_error)}")
-            print(f"⚠️ Falling back to scan...")
-        
-        # Fallback to scan
+        # Scan for the member record by email
         response = table.scan(
             FilterExpression='email = :email',
             ExpressionAttributeValues={':email': email}
         )
         
-        if response['Items']:
-            member = response['Items'][0]
-            print(f"✅ Found member record via scan:")
-            print_member_info(member)
-            return member
-        else:
-            print(f"❌ No member record found for {email}")
-            return None
+        items = response.get('Items', [])
+        
+        if not items:
+            print("❌ No member record found")
+            return
+        
+        print(f"✅ Found {len(items)} member record(s):")
+        
+        for i, item in enumerate(items):
+            print(f"\n--- Record {i+1} ---")
+            print(json.dumps(item, indent=2, default=decimal_default))
             
+            # Check which fields are empty
+            empty_fields = []
+            for key, value in item.items():
+                if value == '' or value is None or (isinstance(value, (int, float)) and value == 0):
+                    empty_fields.append(key)
+            
+            if empty_fields:
+                print(f"\n⚠️  Empty/null fields: {empty_fields}")
+            else:
+                print("\n✅ All fields have values")
+    
     except Exception as e:
-        print(f"❌ Error checking member record: {str(e)}")
-        return None
-
-def print_member_info(member):
-    """Print formatted member information"""
-    
-    print(f"   Member ID: {member.get('member_id', 'N/A')}")
-    print(f"   Email: {member.get('email', 'N/A')}")
-    print(f"   Name: {member.get('voornaam', '')} {member.get('tussenvoegsel', '')} {member.get('achternaam', '')}".strip())
-    print(f"   Status: {member.get('status', 'N/A')}")
-    print(f"   Membership: {member.get('lidmaatschap', 'N/A')}")
-    print(f"   Region: {member.get('regio', 'N/A')}")
-    print(f"   Created: {member.get('created_at', 'N/A')}")
-    print(f"   Updated: {member.get('updated_at', 'N/A')}")
-    
-    # Show key fields for verification
-    key_fields = ['telefoon', 'straat', 'postcode', 'woonplaats', 'geboortedatum']
-    for field in key_fields:
-        if member.get(field):
-            print(f"   {field.capitalize()}: {member.get(field)}")
-
-def main():
-    """Main function"""
-    
-    email = "pjageers@gmail.com"
-    
-    print("=" * 60)
-    print("H-DCN Member Record Check")
-    print("=" * 60)
-    
-    member = check_member_record(email)
-    
-    if member:
-        print(f"\n📋 Summary:")
-        print(f"   Record exists: ✅ YES")
-        print(f"   Status: {member.get('status', 'Unknown')}")
-        print(f"   Application complete: {'✅ YES' if member.get('voornaam') and member.get('achternaam') else '❌ NO'}")
-    else:
-        print(f"\n📋 Summary:")
-        print(f"   Record exists: ❌ NO")
-        print(f"   User needs to create application via /members/me POST")
+        print(f"Error: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    check_member_record()

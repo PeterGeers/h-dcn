@@ -1,11 +1,32 @@
 import { useToast } from '@chakra-ui/react';
+import React from 'react';
 
 // Error types for consistent handling
 export interface ApiError {
   status: number;
   message: string;
   details?: string;
+  isMaintenanceMode?: boolean;
 }
+
+// Global maintenance screen state
+let maintenanceScreenCallback: ((show: boolean, error?: ApiError) => void) | null = null;
+
+export const setMaintenanceScreenCallback = (callback: (show: boolean, error?: ApiError) => void) => {
+  maintenanceScreenCallback = callback;
+};
+
+export const showMaintenanceScreen = (error: ApiError) => {
+  if (maintenanceScreenCallback) {
+    maintenanceScreenCallback(true, error);
+  }
+};
+
+export const hideMaintenanceScreen = () => {
+  if (maintenanceScreenCallback) {
+    maintenanceScreenCallback(false);
+  }
+};
 
 // Standard error messages
 export const ERROR_MESSAGES = {
@@ -14,6 +35,7 @@ export const ERROR_MESSAGES = {
   FORBIDDEN: 'Toegang geweigerd - onvoldoende rechten',
   NOT_FOUND: 'Gevraagde gegevens niet gevonden',
   SERVER_ERROR: 'Serverfout - probeer het later opnieuw',
+  MAINTENANCE: 'Het systeem is tijdelijk niet beschikbaar voor onderhoud',
   VALIDATION: 'Invoergegevens zijn niet correct',
   TIMEOUT: 'Verzoek duurde te lang - probeer opnieuw',
   UNKNOWN: 'Er is een onbekende fout opgetreden'
@@ -59,16 +81,19 @@ export const parseApiError = async (response: Response): Promise<ApiError> => {
       break;
     case 500:
     case 502:
-    case 503:
     case 504:
       message = ERROR_MESSAGES.SERVER_ERROR;
+      break;
+    case 503:
+      message = ERROR_MESSAGES.MAINTENANCE;
       break;
   }
 
   return {
     status: response.status,
     message,
-    details
+    details,
+    isMaintenanceMode: response.status === 503
   };
 };
 
@@ -88,6 +113,12 @@ export const useErrorHandler = () => {
   const toast = useToast();
 
   const handleError = (error: ApiError, context?: string) => {
+    // Handle 503 maintenance mode specially
+    if (error.status === 503 || error.isMaintenanceMode) {
+      showMaintenanceScreen(error);
+      return; // Don't show toast for maintenance mode
+    }
+
     const title = context ? `Fout bij ${context}` : 'Fout';
     
     toast({
@@ -127,6 +158,12 @@ export const apiCall = async <T>(
     
     if (!response.ok) {
       const error = await parseApiError(response);
+      
+      // Handle 503 maintenance mode globally
+      if (error.status === 503 || error.isMaintenanceMode) {
+        showMaintenanceScreen(error);
+      }
+      
       throw error;
     }
     
@@ -139,4 +176,22 @@ export const apiCall = async <T>(
     // Handle fetch errors
     throw handleFetchError(error);
   }
+};
+
+// Global error handler for API responses
+export const handleApiError = (error: any) => {
+  if (error.response?.status === 503) {
+    // Auth system maintenance
+    const apiError: ApiError = {
+      status: 503,
+      message: error.response.data?.message || ERROR_MESSAGES.MAINTENANCE,
+      details: error.response.data?.details || '',
+      isMaintenanceMode: true
+    };
+    showMaintenanceScreen(apiError);
+    return;
+  }
+  
+  // Handle other errors normally
+  console.error('API Error:', error);
 };

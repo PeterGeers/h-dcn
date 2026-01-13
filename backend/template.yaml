@@ -122,8 +122,9 @@ Globals:
     TracingEnabled: True
     Cors:
       AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-enhanced-groups'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with'"
       AllowOrigin: "'*'"
+      AllowCredentials: false
 
 Resources:
   
@@ -299,8 +300,9 @@ Resources:
       StageName: prod
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-enhanced-groups,x-requested-with'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with'"
         AllowOrigin: "'*'"
+        AllowCredentials: false
 
   # IAM Role for DynamoDB access (updated for GSI)
   DynamoDBRole:
@@ -458,6 +460,8 @@ Resources:
       CodeUri: handler/scan_product
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         ListProducts:
@@ -720,6 +724,8 @@ Resources:
       CodeUri: handler/hdcn_cognito_admin
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt CognitoAdminRole.Arn
       Environment:
         Variables:
@@ -835,6 +841,8 @@ Resources:
       CodeUri: handler/create_cart
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         CreateCart:
@@ -850,6 +858,8 @@ Resources:
       CodeUri: handler/get_cart
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetCart:
@@ -867,6 +877,8 @@ Resources:
       CodeUri: handler/clear_cart
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         ClearCart:
@@ -1006,6 +1018,8 @@ Resources:
       CodeUri: handler/update_cart_items
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdateCartItems:

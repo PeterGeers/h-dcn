@@ -12,17 +12,15 @@ try:
         create_success_response,
         log_successful_access
     )
-except ImportError:
-    # Fallback to local auth_fallback.py if shared module not available
-    from auth_fallback import (
-        extract_user_credentials,
-        validate_permissions_with_regions,
-        cors_headers,
-        handle_options_request,
-        create_error_response,
-        create_success_response,
-        log_successful_access
-    )
+    print("✅ Using shared auth layer")
+except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
+    print(f"❌ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("get_events")
+    # Exit early - the fallback handler will handle all requests
+    import sys
+    sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Events')

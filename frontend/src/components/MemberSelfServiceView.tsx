@@ -35,6 +35,7 @@ import { Formik, Form, Field } from 'formik';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields } from '../config/memberFields';
 import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
+import { computeCalculatedFields, getCalculatedFieldValue } from '../utils/calculatedFields';
 
 interface MemberSelfServiceViewProps {
   member: any;
@@ -135,76 +136,18 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
     
     if (!canView) return null;
 
-    // Handle computed fields and field mappings
+    // Handle computed fields using the shared utility
     let value = values[fieldKey] || member[fieldKey];
     
-    // Debug logging for all fields
-    // console.log(`Field ${fieldKey}: initial value = "${value}", field.key = "${field.key}"`);
+    if (field.computed) {
+      // Use the shared calculated fields utility
+      const memberWithCurrentValues = { ...member, ...values };
+      value = getCalculatedFieldValue(memberWithCurrentValues, fieldKey);
+    }
     
     // Special handling for ingangsdatum field which maps to tijdstempel
     if (fieldKey === 'ingangsdatum' && field.key === 'tijdstempel') {
       value = values['tijdstempel'] || member['tijdstempel'];
-      // console.log(`Field mapping for ${fieldKey}: mapped to tijdstempel = "${value}"`);
-    }
-    
-    if (field.computed && field.computeFrom && field.computeFunction) {
-      const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
-      let sourceValue = values[sourceField] || member[sourceField];
-      
-      // If computeFrom is 'ingangsdatum' but we need to get from 'tijdstempel'
-      if (sourceField === 'ingangsdatum') {
-        sourceValue = values['tijdstempel'] || member['tijdstempel'];
-      }
-      if (sourceValue && field.computeFunction === 'yearsDifference') {
-        let sourceDate;
-        
-        // Handle different date formats
-        if (typeof sourceValue === 'string') {
-          // Try to parse Dutch date format like "26 september 2009"
-          if (sourceValue.includes('september') || sourceValue.includes('januari') || sourceValue.includes('februari') || 
-              sourceValue.includes('maart') || sourceValue.includes('april') || sourceValue.includes('mei') ||
-              sourceValue.includes('juni') || sourceValue.includes('juli') || sourceValue.includes('augustus') ||
-              sourceValue.includes('oktober') || sourceValue.includes('november') || sourceValue.includes('december')) {
-            const monthMap = {
-              'januari': '01', 'februari': '02', 'maart': '03', 'april': '04',
-              'mei': '05', 'juni': '06', 'juli': '07', 'augustus': '08',
-              'september': '09', 'oktober': '10', 'november': '11', 'december': '12'
-            };
-            
-            const parts = sourceValue.split(' ');
-            if (parts.length === 3) {
-              const day = parts[0].padStart(2, '0');
-              const month = monthMap[parts[1].toLowerCase()];
-              const year = parts[2];
-              if (month) {
-                sourceDate = new Date(`${year}-${month}-${day}`);
-              }
-            }
-          } else {
-            // Try standard date parsing
-            sourceDate = new Date(sourceValue);
-          }
-        } else {
-          sourceDate = new Date(sourceValue);
-        }
-        
-        if (sourceDate && !isNaN(sourceDate.getTime())) {
-          const currentDate = new Date();
-          const yearsDiff = currentDate.getFullYear() - sourceDate.getFullYear();
-          const monthDiff = currentDate.getMonth() - sourceDate.getMonth();
-          value = monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < sourceDate.getDate()) 
-            ? yearsDiff - 1 
-            : yearsDiff;
-          // console.log(`Computed ${fieldKey}: sourceValue="${sourceValue}", sourceDate=${sourceDate}, years=${value}`);
-        } else {
-          // console.log(`Failed to parse date for ${fieldKey}: sourceValue="${sourceValue}"`);
-        }
-      } else if (sourceValue && field.computeFunction === 'year') {
-        const sourceDate = new Date(sourceValue);
-        if (!isNaN(sourceDate.getTime())) {
-          value = sourceDate.getFullYear();
-        }
-      }
     }
 
     const error = errors[fieldKey];

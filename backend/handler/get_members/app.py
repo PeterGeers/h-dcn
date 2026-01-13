@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Import from shared auth layer (REQUIRED)
 try:
-    from auth_utils import (
+    from shared.auth_utils import (
         extract_user_credentials,
         validate_permissions_with_regions,
         cors_headers,
@@ -13,19 +13,15 @@ try:
         create_success_response,
         log_successful_access
     )
-    print("Using shared auth layer")
-except ImportError:
-    # Fallback to local auth_fallback.py
-    from auth_fallback import (
-        extract_user_credentials,
-        validate_permissions_with_regions,
-        cors_headers,
-        handle_options_request,
-        create_error_response,
-        create_success_response,
-        log_successful_access
-    )
-    print("Using fallback auth - ensure auth_fallback.py is updated")
+    print("✅ Using shared auth layer")
+except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
+    print(f"❌ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("get_members")
+    # Exit early - the fallback handler will handle all requests
+    import sys
+    sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Members')

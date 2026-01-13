@@ -11,7 +11,7 @@ import boto3
 def test_user_groups_api():
     """Test the hdcn-cognito-admin/get-user-groups API endpoint"""
     
-    email = "peter@pgeers.nl"
+    email = "test@example.com"
     api_url = "https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/hdcn-cognito-admin/get-user-groups"
     
     print(f"🔍 Testing user groups API for: {email}")
@@ -91,7 +91,7 @@ def check_cognito_user_directly():
         # Get user by email
         response = cognito_client.list_users(
             UserPoolId=USER_POOL_ID,
-            Filter='email = "peter@pgeers.nl"'
+            Filter='email = "test@example.com"'
         )
         
         users = response.get('Users', [])
@@ -113,7 +113,7 @@ def check_cognito_user_directly():
             expected_api_response = {
                 "groups": groups,
                 "user": {
-                    "email": "peter@pgeers.nl",
+                    "email": "test@example.com",
                     "username": username
                 }
             }

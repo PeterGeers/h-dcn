@@ -33,6 +33,7 @@ import * as Yup from 'yup';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields, getFilteredEnumOptions } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { ApiService } from '../services/apiService';
+import { computeCalculatedFields, getCalculatedFieldValue } from '../utils/calculatedFields';
 
 interface NewMemberApplicationFormProps {
   userEmail: string; // From Cognito
@@ -62,9 +63,9 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
     // Check if field is marked as required in the configuration
     if (field.required === true) return true;
     
-    // Check validation rules for required
+    // Check validation rules for required (but skip conditional requirements)
     if (field.validation) {
-      return field.validation.some(rule => rule.type === 'required');
+      return field.validation.some(rule => rule.type === 'required' && !rule.condition);
     }
     
     return false;
@@ -86,6 +87,9 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         // Skip fields that are not allowed for new applicants
         const forbiddenFields = ['status', 'created_at', 'updated_at', 'korte_naam', 'leeftijd', 'verjaardag'];
         if (forbiddenFields.includes(fieldKey)) return;
+        
+        // Skip bankrekeningnummer - it has custom conditional validation below
+        if (fieldKey === 'bankrekeningnummer') return;
         
         // Skip email validation - it's pre-filled from Cognito
         if (fieldKey === 'email') {
@@ -195,10 +199,18 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
       otherwise: (schema) => schema.notRequired()
     });
     
-    // Add conditional validation for IBAN when payment method is direct debit
-    schemaFields.bankrekeningnummer = Yup.string().when('betaalwijze', {
-      is: 'Incasso',
-      then: (schema) => schema.required('IBAN is verplicht bij automatische incasso'),
+    // Add conditional validation for IBAN based on membership type (matching field configuration)
+    schemaFields.bankrekeningnummer = Yup.string().when('lidmaatschap', {
+      is: (lidmaatschap: string) => {
+        const requiredMembershipTypes = ['Gewoon lid', 'Gezins lid', 'Donateur', 'Gezins donateur', 'Sponsor'];
+        return requiredMembershipTypes.includes(lidmaatschap);
+      },
+      then: (schema) => schema.required('IBAN is verplicht voor dit lidmaatschapstype')
+        .test('iban', 'Voer een geldig IBAN nummer in', (value) => 
+          !value || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value)
+        )
+        .min(15, 'IBAN moet minimaal 15 karakters bevatten')
+        .max(34, 'IBAN mag maximaal 34 karakters bevatten'),
       otherwise: (schema) => schema.notRequired()
     });
     
@@ -371,8 +383,8 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
     const field = MEMBER_FIELDS[fieldKey];
     if (!field) return null;
 
-    // Skip fields that are not allowed for new applicants or are computed
-    const forbiddenFields = ['status', 'created_at', 'updated_at', 'korte_naam', 'leeftijd', 'verjaardag'];
+    // Skip fields that are not allowed for new applicants
+    const forbiddenFields = ['status', 'created_at', 'updated_at'];
     if (forbiddenFields.includes(fieldKey)) return null;
 
     const canView = canViewField(field, userRole, values);
@@ -395,26 +407,9 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
       value = values['tijdstempel'] || values[fieldKey];
     }
     
-    if (field.computed && field.computeFrom && field.computeFunction) {
-      const sourceField = Array.isArray(field.computeFrom) ? field.computeFrom[0] : field.computeFrom;
-      let sourceValue = values[sourceField];
-      
-      if (sourceValue && field.computeFunction === 'yearsDifference') {
-        const sourceDate = new Date(sourceValue);
-        if (!isNaN(sourceDate.getTime())) {
-          const currentDate = new Date();
-          const yearsDiff = currentDate.getFullYear() - sourceDate.getFullYear();
-          const monthDiff = currentDate.getMonth() - sourceDate.getMonth();
-          value = monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < sourceDate.getDate()) 
-            ? yearsDiff - 1 
-            : yearsDiff;
-        }
-      } else if (sourceValue && field.computeFunction === 'year') {
-        const sourceDate = new Date(sourceValue);
-        if (!isNaN(sourceDate.getTime())) {
-          value = sourceDate.getFullYear();
-        }
-      }
+    if (field.computed) {
+      // Use the shared calculated fields utility
+      value = getCalculatedFieldValue(values, fieldKey);
     }
 
     const error = errors[fieldKey];
@@ -512,7 +507,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                   borderColor="gray.300"
                   _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange.500" }}
                   _hover={{ borderColor: "orange.400" }}
-                  isDisabled={!canEdit || fieldKey === 'email'} // Email is always read-only
+                  isDisabled={!canEdit || fieldKey === 'email' || field.computed} // Email and computed fields are read-only
                   size="sm"
                   fontSize="sm"
                   placeholder={field.placeholder}

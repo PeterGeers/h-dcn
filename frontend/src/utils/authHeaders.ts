@@ -56,6 +56,8 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
     }
     
     console.log('[getAuthHeaders] JWT token found');
+    console.log('[getAuthHeaders] JWT token length:', jwtToken.length);
+    console.log('[getAuthHeaders] JWT token preview:', jwtToken.substring(0, 50) + '...');
     
     // Get groups (same method as GroupAccessGuard)
     let userGroups: string[] = [];

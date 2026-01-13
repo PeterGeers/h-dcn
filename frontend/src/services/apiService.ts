@@ -6,6 +6,7 @@
  */
 
 import { getAuthHeaders } from '../utils/authHeaders';
+import { parseApiError, showMaintenanceScreen, ApiError } from '../utils/errorHandler';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -118,7 +119,7 @@ export class ApiService {
   }
 
   /**
-   * Make authenticated API request
+   * Make authenticated API request with global 503 error handling
    */
   static async request<T = any>(
     endpoint: string,
@@ -132,6 +133,7 @@ export class ApiService {
       try {
         authHeaders = await getAuthHeaders();
         console.log('[ApiService] Auth headers obtained:', Object.keys(authHeaders));
+        console.log('[ApiService] Auth headers values:', authHeaders);
       } catch (authError) {
         console.error('[ApiService] Failed to get auth headers:', authError);
         // Fallback to old method if new one fails
@@ -148,6 +150,17 @@ export class ApiService {
           ...options.headers,
         },
       });
+
+      // Handle 503 maintenance mode globally
+      if (response.status === 503) {
+        const error = await parseApiError(response);
+        showMaintenanceScreen(error);
+        return {
+          success: false,
+          error: error.message,
+          data: undefined,
+        };
+      }
 
       const data = await response.json();
 
@@ -180,7 +193,7 @@ export class ApiService {
   }
 
   /**
-   * GET request for binary data (like parquet files)
+   * GET request for binary data (like parquet files) with 503 handling
    */
   static async getBinary(endpoint: string): Promise<ApiResponse<string>> {
     try {
@@ -203,6 +216,16 @@ export class ApiService {
           ...authHeaders,
         },
       });
+
+      // Handle 503 maintenance mode globally
+      if (response.status === 503) {
+        const error = await parseApiError(response);
+        showMaintenanceScreen(error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
 
       if (!response.ok) {
         const errorData = await response.text();

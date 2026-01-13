@@ -29,6 +29,16 @@ try:
         handle_options_request,
         log_successful_access
     )
+    print("✅ Using shared auth layer")
+except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
+    print(f"❌ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("export_members")
+    # Exit early - the fallback handler will handle all requests
+    import sys
+    sys.exit(0)
+    )
     print("✅ Successfully imported authentication utilities from AuthLayer")
 except ImportError as e:
     print(f"⚠️ Failed to import from AuthLayer: {e}")

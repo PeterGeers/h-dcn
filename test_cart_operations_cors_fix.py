@@ -19,7 +19,7 @@ from datetime import datetime
 
 # Configuration
 API_BASE_URL = "https://7fd6dxzhu7.execute-api.eu-west-1.amazonaws.com/prod"
-TEST_USER_EMAIL = "peter@pgeers.nl"  # User mentioned in the root cause analysis
+TEST_USER_EMAIL = "test@example.com"  # Test user for testing
 
 class CartOperationTester:
     def __init__(self, api_base_url, test_user_email):

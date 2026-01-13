@@ -20,17 +20,30 @@ import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime
 
+# Import from shared auth layer (REQUIRED)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("✅ Using shared auth layer")
+except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
+    print(f"❌ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("cognito_role_assignment")
+    # Exit early - the fallback handler will handle all requests
+    import sys
+    sys.exit(0)
+
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-def cors_headers():
-    """Standard CORS headers for all API responses"""
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"
-    }
 
 # Initialize AWS clients
 cognito_client = boto3.client('cognito-idp')
@@ -53,13 +66,34 @@ def lambda_handler(event, context):
         dict: Response with status and details
     """
     try:
+        # Handle OPTIONS request
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options_request()
+        
+        # Check if this is a DynamoDB stream event (no auth needed for system triggers)
+        if 'Records' in event and event['Records'][0].get('eventSource') == 'aws:dynamodb':
+            logger.info("Processing DynamoDB stream event (no auth required)")
+            return handle_dynamodb_stream(event)
+        
+        # For direct API invocations, require authentication
+        user_email, user_roles, auth_error = extract_user_credentials(event)
+        if auth_error:
+            return auth_error
+        
+        # Validate permissions - only system admins can manage roles
+        is_authorized, error_response, regional_info = validate_permissions_with_regions(
+            user_roles, ['users_manage'], user_email, {'operation': 'cognito_role_assignment'}
+        )
+        if not is_authorized:
+            return error_response
+        
+        # Log successful access
+        log_successful_access(user_email, user_roles, 'cognito_role_assignment')
+        
         logger.info(f"Role assignment event: {json.dumps(event, default=str)}")
         
-        # Handle different event sources
-        if 'Records' in event:
-            # DynamoDB stream event
-            return handle_dynamodb_stream(event)
-        elif 'member_id' in event and 'status_change' in event:
+        # Handle different event types
+        if 'member_id' in event and 'status_change' in event:
             # Direct invocation for status change
             return handle_status_change_event(event)
         elif 'member_email' in event and 'action' in event:
@@ -67,19 +101,11 @@ def lambda_handler(event, context):
             return handle_member_action_event(event)
         else:
             logger.warning(f"Unhandled event type: {event}")
-            return {
-                'statusCode': 400,
-                'headers': cors_headers(),
-                'body': json.dumps({'error': 'Unhandled event type'})
-            }
+            return create_error_response(400, 'Unhandled event type')
         
     except Exception as e:
         logger.error(f"Error in role assignment handler: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': str(e)})
-        }
+        return create_error_response(500, str(e))
 
 def handle_dynamodb_stream(event):
     """
@@ -131,14 +157,10 @@ def handle_dynamodb_stream(event):
                 'record': record.get('dynamodb', {}).get('Keys', {})
             })
     
-    return {
-        'statusCode': 200,
-        'headers': cors_headers(),
-        'body': json.dumps({
-            'processed_records': len(results),
-            'results': results
-        })
-    }
+    return create_success_response({
+        'processed_records': len(results),
+        'results': results
+    })
 
 def handle_status_change_event(event):
     """
@@ -160,11 +182,7 @@ def handle_status_change_event(event):
     response = members_table.get_item(Key={'member_id': member_id})
     
     if 'Item' not in response:
-        return {
-            'statusCode': 404,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Member not found'})
-        }
+        return create_error_response(404, 'Member not found')
     
     member_data = response['Item']
     member_email = member_data.get('email')
@@ -177,11 +195,7 @@ def handle_status_change_event(event):
         member_data=member_data
     )
     
-    return {
-        'statusCode': 200,
-        'headers': cors_headers(),
-        'body': json.dumps(result)
-    }
+    return create_success_response(result)
 
 def handle_member_action_event(event):
     """
@@ -203,17 +217,9 @@ def handle_member_action_event(event):
     elif action == 'verify_role_assignment':
         result = verify_member_role_assignment(member_email)
     else:
-        return {
-            'statusCode': 400,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': f'Unknown action: {action}'})
-        }
+        return create_error_response(400, f'Unknown action: {action}')
     
-    return {
-        'statusCode': 200,
-        'headers': cors_headers(),
-        'body': json.dumps(result)
-    }
+    return create_success_response(result)
 
 def process_status_change(member_id, member_email, old_status, new_status, member_data):
     """

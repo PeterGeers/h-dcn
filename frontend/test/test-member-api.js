@@ -33,7 +33,7 @@ async function testMemberAPI() {
   try {
     // Test 3: Get member by email (if endpoint exists)
     console.log('\n--- Test 3: GET /members?email=test@example.com ---');
-    const response3 = await axios.get(`${API_BASE_URL}/members?email=peter@pgeers.nl`);
+    const response3 = await axios.get(`${API_BASE_URL}/members?email=test@example.com`);
     console.log('Status:', response3.status);
     console.log('Data:', response3.data);
   } catch (error3) {

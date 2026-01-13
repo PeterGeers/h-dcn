@@ -3,6 +3,28 @@ import boto3
 import os
 from datetime import datetime
 from botocore.exceptions import ClientError
+
+# Import from shared auth layer (REQUIRED)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("✅ Using shared auth layer")
+except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
+    print(f"❌ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("hdcn_cognito_admin")
+    # Exit early - the fallback handler will handle all requests
+    import sys
+    sys.exit(0)
+
 from role_permissions import (
     DEFAULT_ROLE_PERMISSIONS,
     get_combined_permissions,
@@ -163,23 +185,53 @@ def validate_role_assignment_permission(event, headers):
         }
 
 def lambda_handler(event, context):
-    method = event['httpMethod']
-    path = event['path']
-    
-    # Debug logging
-    print(f"Received request: {method} {path}")
-    print(f"Event: {json.dumps(event, default=str)}")
+    # Define CORS headers at the very beginning
+    headers = cors_headers()
     
     try:
-        # CORS headers
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Enhanced-Groups, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'
-        }
+        # Handle OPTIONS request
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options_request()
         
-        if method == 'OPTIONS':
-            return {'statusCode': 200, 'headers': headers}
+        method = event['httpMethod']
+        path = event['path']
+        
+        # Debug logging
+        print(f"Received request: {method} {path}")
+        print(f"Event: {json.dumps(event, default=str)}")
+        
+        # Define public endpoints that don't require authentication
+        public_endpoints = [
+            '/auth/passkey/authenticate/begin',
+            '/auth/passkey/authenticate/complete',
+            '/auth/passkey/register/begin',
+            '/auth/passkey/register/complete',
+            '/auth/signup',
+            '/cognito/auth/signup',
+            '/auth/verify-user'
+        ]
+        
+        # Check if this is a public endpoint
+        is_public_endpoint = any(path.startswith(endpoint) for endpoint in public_endpoints)
+        
+        # For non-public endpoints, validate authentication and permissions
+        user_email = None
+        user_roles = None
+        if not is_public_endpoint:
+            # Extract user credentials
+            user_email, user_roles, auth_error = extract_user_credentials(event)
+            if auth_error:
+                return auth_error
+            
+            # Validate permissions - only system admins can manage Cognito
+            is_authorized, error_response, regional_info = validate_permissions_with_regions(
+                user_roles, ['users_manage'], user_email, {'operation': 'hdcn_cognito_admin'}
+            )
+            if not is_authorized:
+                return error_response
+            
+            # Log successful access
+            log_successful_access(user_email, user_roles, 'hdcn_cognito_admin')
         
         # Route requests
         if path == '/cognito/users':
@@ -1609,37 +1661,60 @@ def complete_passkey_authentication(event, headers):
                 import jwt
                 import time
                 
-                # Token payload
-                payload = {
+                # Get user attributes for token payload
+                user_attributes = user_response.get('UserAttributes', [])
+                given_name = ''
+                family_name = ''
+                
+                for attr in user_attributes:
+                    if attr['Name'] == 'given_name':
+                        given_name = attr['Value']
+                    elif attr['Name'] == 'family_name':
+                        family_name = attr['Value']
+                
+                current_time = int(time.time())
+                
+                # Access token payload - matches Cognito structure
+                access_payload = {
                     'sub': email,
                     'email': email,
                     'email_verified': True,
                     'cognito:groups': groups,
-                    'auth_time': int(time.time()),
-                    'iat': int(time.time()),
-                    'exp': int(time.time()) + 3600,  # 1 hour expiration
+                    'auth_time': current_time,
+                    'iat': current_time,
+                    'exp': current_time + 3600,  # 1 hour expiration
                     'token_use': 'access',
                     'client_id': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
                     'username': email,
                     'auth_method': 'passkey'
                 }
                 
-                print(f"Generating JWT tokens for user: {email} with groups: {groups}")
-                
-                # Simple token signing (in production, use proper JWT signing)
-                access_token = jwt.encode(payload, 'passkey-secret', algorithm='HS256')
-                
-                # ID token payload
+                # ID token payload - matches Cognito structure
                 id_payload = {
-                    **payload,
+                    'sub': email,
+                    'email': email,
+                    'email_verified': True,
+                    'given_name': given_name,
+                    'family_name': family_name,
+                    'cognito:groups': groups,
+                    'auth_time': current_time,
+                    'iat': current_time,
+                    'exp': current_time + 3600,
                     'token_use': 'id',
-                    'aud': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh')
+                    'aud': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
+                    'username': email,
+                    'auth_method': 'passkey'
                 }
                 
+                print(f"Generating JWT tokens for user: {email} with groups: {groups}")
+                
+                # Generate tokens
+                access_token = jwt.encode(access_payload, 'passkey-secret', algorithm='HS256')
                 id_token = jwt.encode(id_payload, 'passkey-secret', algorithm='HS256')
                 
                 print(f"JWT tokens generated successfully for user: {email}")
                 
+                # Return response structure that matches frontend expectations
                 return {
                     'statusCode': 200,
                     'headers': headers,
@@ -1647,9 +1722,16 @@ def complete_passkey_authentication(event, headers):
                         'message': 'Authentication successful',
                         'authenticationResult': {
                             'AccessToken': access_token,
+                            'AccessTokenPayload': access_payload,  # Frontend expects this
                             'IdToken': id_token,
+                            'IdTokenPayload': id_payload,  # Frontend expects this
                             'TokenType': 'Bearer',
                             'ExpiresIn': 3600
+                        },
+                        'user': {
+                            'given_name': given_name,
+                            'family_name': family_name,
+                            'email': email
                         },
                         'verified': True,
                         'crossDevice': cross_device
