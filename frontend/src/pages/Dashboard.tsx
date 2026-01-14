@@ -395,26 +395,6 @@ function Dashboard({ user }: DashboardProps) {
             />
           </FunctionGuard>
           
-          {/* Parameters - Only for system administrators */}
-          <FunctionGuard 
-            user={user} 
-            functionName="parameters" 
-            action="read"
-            requiredRoles={['System_User_Management']}
-          >
-            <AppCard 
-              key="parameters"
-              app={{
-                id: 'parameters',
-                title: 'Parameter Beheer',
-                description: 'Beheer functionele variabelen',
-                icon: '⚙️',
-                path: '/parameters'
-              }}
-              onClick={() => navigate('/parameters')}
-            />
-          </FunctionGuard>
-          
           {/* Membership Management - Only for users with full member CRUD access */}
           <FunctionGuard 
             user={user} 

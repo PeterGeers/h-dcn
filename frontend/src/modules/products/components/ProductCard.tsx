@@ -57,6 +57,8 @@ const schema = Yup.object().shape({
   images: Yup.array().of(Yup.string()).nullable(),
 });
 
+import { PRODUCT_CATEGORIES } from '../config/productCategories';
+
 export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
@@ -65,29 +67,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
 
   useEffect(() => {
-    // Load product categories from S3 bucket parameters
-    const loadCategories = async () => {
-      try {
-        const s3Url = 'https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/parameters.json';
-        const timestamp = new Date().getTime();
-        const response = await fetch(`${s3Url}?t=${timestamp}`);
-        
-        if (response.ok) {
-          const parameters = await response.json();
-          // Use productgroepen from S3 parameters
-          const productGroups = parameters.productgroepen || {};
-          setCategoryStructure(productGroups);
-        } else {
-          // Fallback to empty structure
-          setCategoryStructure({});
-        }
-      } catch (error) {
-        console.error('Error loading product categories:', error);
-        setCategoryStructure({});
-      }
-    };
-    
-    loadCategories();
+    // Use hardcoded product categories
+    setCategoryStructure(PRODUCT_CATEGORIES);
   }, []);
 
   useEffect(() => {

@@ -33,7 +33,6 @@ interface AppProps {
 // Lazy load components
 const Dashboard = lazy(() => import('./pages/Dashboard')) as any;
 const MembershipForm = lazy(() => import('./pages/MembershipForm')) as any;
-const ParameterManagement = lazy(() => import('./pages/ParameterManagement')) as any;
 const WebshopPage = lazy(() => import('./modules/webshop/WebshopPage')) as any;
 const ProductManagementPage = lazy(() => import('./modules/products/ProductManagementPage')) as any;
 const AdvancedExportsPage = lazy(() => import('./modules/advanced-exports/AdvancedExportsPage')) as any;
@@ -109,7 +108,6 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/my-account" element={<MyAccount user={user} />} />
             <Route path="/new-member-application" element={<NewMemberApplication user={user} />} />
             <Route path="/application-submitted" element={<ApplicationSubmitted />} />
-            <Route path="/parameters" element={<ParameterManagement user={user} />} />
             <Route path="/webshop" element={<WebshopPage user={user} />} />
             <Route path="/products" element={<ProductManagementPage user={user} />} />
             <Route path="/advanced-exports" element={<AdvancedExportsPage user={user} />} />
