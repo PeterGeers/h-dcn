@@ -206,7 +206,10 @@ function MyAccount({ user }: MyAccountProps) {
 
   // Show application form for verzoek_lid users who want to create/edit their application
   // OR for verzoek_lid users with existing applications that are still pending (status: 'Aangemeld')
-  if (showApplicationForm || (isVerzoekLid && (!member || member.status === 'Aangemeld'))) {
+  // Check if member has actual application data (not just member_id and email)
+  const hasApplicationData = member && (member.voornaam || member.achternaam || member.straat);
+  
+  if (showApplicationForm || (isVerzoekLid && (!hasApplicationData || member?.status === 'Aangemeld'))) {
     return (
       <NewMemberApplicationForm
         userEmail={user?.attributes?.email || ''}
@@ -216,8 +219,8 @@ function MyAccount({ user }: MyAccountProps) {
     );
   }
 
-  // Show member data if it exists
-  if (member) {
+  // Show member data if it exists AND has actual application data
+  if (member && hasApplicationData) {
     return (
       <VStack spacing={6} align="stretch">
         {/* Show status for verzoek_lid users */}
