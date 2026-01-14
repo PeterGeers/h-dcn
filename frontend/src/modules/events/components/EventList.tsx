@@ -72,6 +72,15 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     return regionMap[regionName] || null;
   };
 
+  // Check if user has full event access (Events_CRUD, Events_Read, Events_Export, or Regio_All)
+  const hasFullEventAccess = userRoles.some(role => 
+    role === 'Events_CRUD' ||
+    role === 'Events_Read' ||
+    role === 'Events_Export' ||
+    role === 'Regio_All' ||
+    role === 'System_User_Management'
+  );
+
   const filteredEvents = events
     .filter(event => {
       // Basic search filter
@@ -80,11 +89,11 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
       
       if (!matchesSearch) return false;
       
+      // If user has full event access, show all events
+      if (hasFullEventAccess || permissionManager?.hasAccess('events', 'read')) return true;
+      
       // Apply regional filtering based on user roles
       const eventRegion = event.region || event.regio;
-      
-      // If user has full read access, show all events
-      if (permissionManager?.hasAccess('events', 'read')) return true;
       
       // If user has regional access, only show events from their region(s)
       if (eventRegion) {
