@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Import from shared auth layer (REQUIRED)
 try:
-    from auth_utils import (
+    from shared.auth_utils import (
         extract_user_credentials,
         validate_permissions_with_regions,
         cors_headers,
@@ -13,7 +13,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    print("Using shared auth layer")
+    print("✅ Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
