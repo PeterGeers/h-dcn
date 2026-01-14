@@ -83,17 +83,20 @@ function EventAdminPage({ user }: EventAdminPageProps) {
     loadEvents();
   };
 
+  const userRoles = getUserRoles(user);
+
   // Check if user has access to events module
   const canReadEvents = permissionManager?.hasAccess('events', 'read') || false;
   const canWriteEvents = permissionManager?.hasAccess('events', 'write') || false;
   const canViewFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'financial' }) || false;
-  const userRoles = getUserRoles(user);
 
   // Enhanced role-based access checks for events
   const hasEventsReadRole = userRoles.some(role => 
     role === 'Events_Read' ||
     role === 'Events_CRUD' ||
     role === 'Events_Export' ||
+    role === 'System_User_Management' ||
+    role === 'Regio_All' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Chairman' ||
     role === 'National_Secretary' ||
@@ -106,6 +109,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
 
   const hasEventsWriteRole = userRoles.some(role => 
     role === 'Events_CRUD' ||
+    role === 'System_User_Management' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role.includes('Regional_Chairman_')
@@ -113,6 +117,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
 
   const hasFinancialAccess = userRoles.some(role => 
     role === 'Events_CRUD' ||
+    role === 'System_User_Management' ||
     role === 'Webmaster' ||
     role === 'National_Chairman' ||
     role === 'National_Secretary' ||
@@ -123,6 +128,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   // Enhanced role-based functionality checks
   const hasEventsFullAccess = userRoles.some(role => 
     role === 'Events_CRUD' ||
+    role === 'System_User_Management' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner'
   );
@@ -130,6 +136,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   const hasEventsExportAccess = userRoles.some(role => 
     role === 'Events_CRUD' ||
     role === 'Events_Export' ||
+    role === 'System_User_Management' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Secretary' ||
@@ -140,6 +147,8 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   const hasEventsAnalyticsAccess = userRoles.some(role => 
     role === 'Events_CRUD' ||
     role === 'Events_Read' ||
+    role === 'System_User_Management' ||
+    role === 'Regio_All' ||
     role === 'Webmaster' ||
     role === 'Tour_Commissioner' ||
     role === 'National_Chairman' ||
