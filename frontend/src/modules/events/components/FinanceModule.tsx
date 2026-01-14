@@ -29,30 +29,39 @@ interface FinanceModuleProps {
   events: Event[];
   onEventUpdate: () => void;
   permissionManager?: FunctionPermissionManager | null;
+  user?: any;
 }
 
-function FinanceModule({ events, onEventUpdate, permissionManager }: FinanceModuleProps) {
+function FinanceModule({ events, onEventUpdate, permissionManager, user }: FinanceModuleProps) {
   const [statusFilter, setStatusFilter] = useState('all');
   
   // Debug: Log events data
   console.log('📊 FinanceModule - Events data:', events);
   console.log('📊 FinanceModule - Events count:', events.length);
 
-  const canViewFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'financial' }) || false;
-  const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || false;
+  // Get user roles for permission checks within the component
+  const userRoles = user ? getUserRoles(user) : [];
+  
+  // Check edit and export permissions for conditional rendering within the module
+  const hasEditFinancialRole = userRoles.some(role => 
+    role === 'Events_CRUD' ||
+    role === 'System_User_Management'
+  );
+  
+  const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || hasEditFinancialRole;
+  
+  const hasExportRole = userRoles.some(role => 
+    role === 'Events_CRUD' ||
+    role === 'Events_Export' ||
+    role === 'System_User_Management' ||
+    role === 'Communication_Export'
+  );
+  
   const canExportFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'export' }) || 
-                             permissionManager?.hasAccess('communication', 'write') || false;
+                             permissionManager?.hasAccess('communication', 'write') || 
+                             hasExportRole;
 
-  if (!canViewFinancials) {
-    return (
-      <VStack spacing={6} align="center">
-        <Alert status="warning" bg="orange.100" color="black">
-          <AlertIcon />
-          Je hebt geen toegang tot financiële gegevens. Neem contact op met een beheerder als je toegang nodig hebt.
-        </Alert>
-      </VStack>
-    );
-  }
+  // Access check is now handled by FunctionGuard wrapper - no need for duplicate check here
 
   const eventsWithFinance: ProcessedEvent[] = events.map(event => {
     const kosten = parseFloat(String(event.cost || event.kosten || 0));

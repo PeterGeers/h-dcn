@@ -4,7 +4,7 @@ import {
   Table, Thead, Tbody, Tr, Th, Td, Text, Progress, Alert, AlertIcon
 } from '@chakra-ui/react';
 import CSVExportButton from './CSVExportButton';
-import { FunctionPermissionManager } from '../../../utils/functionPermissions';
+import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 
 interface Event {
   event_id?: string;
@@ -24,6 +24,7 @@ interface Event {
 interface AnalyticsDashboardProps {
   events: Event[];
   permissionManager?: FunctionPermissionManager | null;
+  user?: any;
 }
 
 interface MonthlyData {
@@ -45,22 +46,30 @@ interface LocationStat extends MonthlyData {
   avgAttendance: number;
 }
 
-function AnalyticsDashboard({ events, permissionManager }: AnalyticsDashboardProps) {
-  const canViewAnalytics = permissionManager?.hasAccess('events', 'read') || false;
-  const canViewFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'financial' }) || false;
+function AnalyticsDashboard({ events, permissionManager, user }: AnalyticsDashboardProps) {
+  // Get user roles for permission checks within the component
+  const userRoles = user ? getUserRoles(user) : [];
+  
+  // Check financial and export access for conditional rendering within the dashboard
+  const hasFinancialRole = userRoles.some(role => 
+    role === 'Events_CRUD' ||
+    role === 'System_User_Management'
+  );
+  
+  const canViewFinancials = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'financial' }) || hasFinancialRole;
+  
+  const hasExportRole = userRoles.some(role => 
+    role === 'Events_CRUD' ||
+    role === 'Events_Export' ||
+    role === 'System_User_Management' ||
+    role === 'Communication_Export'
+  );
+  
   const canExportAnalytics = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'export' }) || 
-                            permissionManager?.hasAccess('communication', 'write') || false;
+                            permissionManager?.hasAccess('communication', 'write') || 
+                            hasExportRole;
 
-  if (!canViewAnalytics) {
-    return (
-      <VStack spacing={6} align="center">
-        <Alert status="warning" bg="orange.100" color="black">
-          <AlertIcon />
-          Je hebt geen toegang tot analytics. Neem contact op met een beheerder als je toegang nodig hebt.
-        </Alert>
-      </VStack>
-    );
-  }
+  // Access check is now handled by FunctionGuard wrapper - no need for duplicate check here
   const analytics = useMemo(() => {
     if (!events || events.length === 0) {
       return {

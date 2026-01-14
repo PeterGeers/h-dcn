@@ -10,6 +10,7 @@ import { getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { FunctionPermissionManager, getUserRoles } from '../../utils/functionPermissions';
+import { FunctionGuard } from '../../components/common/FunctionGuard';
 
 interface User {
   attributes?: {
@@ -293,23 +294,43 @@ function EventAdminPage({ user }: EventAdminPageProps) {
                 canWriteEvents={finalCanWriteEvents}
               />
             </TabPanel>
-            {finalCanViewFinancials && (
-              <TabPanel p={0} pt={6}>
+            <TabPanel p={0} pt={6}>
+              <FunctionGuard 
+                user={user} 
+                requiredRoles={['Events_CRUD', 'Events_Read', 'System_User_Management', 'Regio_All']}
+                fallback={
+                  <Alert status="warning" bg="orange.100" color="black">
+                    <AlertIcon />
+                    Je hebt geen toegang tot financiële gegevens.
+                  </Alert>
+                }
+              >
                 <FinanceModule 
                   events={events}
                   onEventUpdate={handleEventUpdate}
                   permissionManager={permissionManager}
+                  user={user}
                 />
-              </TabPanel>
-            )}
-            {finalCanViewAnalytics && (
-              <TabPanel p={0} pt={6}>
+              </FunctionGuard>
+            </TabPanel>
+            <TabPanel p={0} pt={6}>
+              <FunctionGuard 
+                user={user} 
+                requiredRoles={['Events_CRUD', 'Events_Read', 'Events_Export', 'System_User_Management', 'Regio_All']}
+                fallback={
+                  <Alert status="warning" bg="orange.100" color="black">
+                    <AlertIcon />
+                    Je hebt geen toegang tot analytics.
+                  </Alert>
+                }
+              >
                 <AnalyticsDashboard 
                   events={events} 
                   permissionManager={permissionManager}
+                  user={user}
                 />
-              </TabPanel>
-            )}
+              </FunctionGuard>
+            </TabPanel>
           </TabPanels>
         </Tabs>
       </VStack>
