@@ -80,6 +80,7 @@ def lambda_handler(event, context):
                     break
             
             # If no member_id exists, check if there's an existing member record by email
+            # This handles the case where a member record was created before Cognito sync
             if not member_id:
                 print(f"No member_id in Cognito for {user_email}, checking Members table...")
                 
@@ -90,7 +91,7 @@ def lambda_handler(event, context):
                 )
                 
                 if scan_response.get('Items'):
-                    # Found existing member record - use that member_id
+                    # Found existing member record - use that member_id and sync to Cognito
                     member_id = scan_response['Items'][0]['member_id']
                     print(f"Found existing member record with member_id: {member_id}")
                     
@@ -104,24 +105,14 @@ def lambda_handler(event, context):
                     )
                     print(f"Updated Cognito with member_id: {member_id}")
                 else:
-                    # No existing record - generate new member_id for verzoek_lid users
-                    if 'verzoek_lid' in user_roles:
-                        member_id = str(uuid.uuid4())
-                        print(f"Generated new member_id: {member_id} for verzoek_lid user")
-                        
-                        # Update Cognito with the new member_id
-                        cognito_client.admin_update_user_attributes(
-                            UserPoolId=user_pool_id,
-                            Username=cognito_user_id,
-                            UserAttributes=[
-                                {'Name': 'custom:member_id', 'Value': member_id}
-                            ]
-                        )
-                        print(f"Updated Cognito with new member_id: {member_id}")
-                    else:
-                        return create_error_response(400, 'Member ID not found in user profile. Please contact support.')
+                    # No member_id and no existing record
+                    # For verzoek_lid users doing GET, this is expected - they haven't applied yet
+                    # For POST requests, we'll generate the member_id when they submit
+                    print(f"No member_id found for {user_email} - user hasn't submitted application yet")
+                    member_id = None
             
-            print(f"Using member_id: {member_id} for Cognito user: {cognito_user_id}")
+            if member_id:
+                print(f"Using member_id: {member_id} for Cognito user: {cognito_user_id}")
             
         except Exception as e:
             print(f"Error getting member_id from Cognito: {str(e)}")
@@ -142,11 +133,16 @@ def lambda_handler(event, context):
         method = event['httpMethod']
         
         if method == 'GET':
+            # For GET requests, member_id can be None for new applicants
             return get_own_member_data(member_id, user_email)
         elif method == 'PUT':
+            # For PUT requests, member_id is required
+            if not member_id:
+                return create_error_response(400, 'No member record found. Please create an application first.')
             return update_own_member_data(event, member_id, user_email, user_roles)
         elif method == 'POST':
-            return create_own_member_data(event, member_id, user_email, user_roles)
+            # For POST requests, we'll generate member_id if it doesn't exist
+            return create_own_member_data(event, member_id, user_email, user_roles, cognito_user_id, user_pool_id)
         else:
             return create_error_response(405, f'Method {method} not allowed')
     
@@ -159,6 +155,14 @@ def get_own_member_data(member_id, user_email):
     Get the user's own member record by member_id
     """
     try:
+        # If no member_id, user hasn't submitted application yet
+        if not member_id:
+            return create_success_response({
+                'member': None,
+                'message': 'No member record found. You may need to complete your membership application.',
+                'email': user_email
+            })
+        
         # Get the member record directly by member_id (primary key)
         response = table.get_item(Key={'member_id': member_id})
         
@@ -265,35 +269,51 @@ def update_own_member_data(event, member_id, user_email, user_roles):
         print(f"Error updating member data: {str(e)}")
         return create_error_response(500, 'Failed to update member data')
 
-def create_own_member_data(event, member_id, user_email, user_roles):
+def create_own_member_data(event, member_id, user_email, user_roles, cognito_user_id, user_pool_id):
     """
     Create initial member record for verzoek_lid users
+    Generates member_id if not provided and updates Cognito
     """
     try:
         # Parse request body
         body = json.loads(event.get('body', '{}'))
         
+        # Generate member_id if not provided
+        if not member_id:
+            member_id = str(uuid.uuid4())
+            print(f"Generated new member_id: {member_id} for new application")
+            
+            # Update Cognito with the new member_id
+            try:
+                cognito_client = boto3.client('cognito-idp')
+                cognito_client.admin_update_user_attributes(
+                    UserPoolId=user_pool_id,
+                    Username=cognito_user_id,
+                    UserAttributes=[
+                        {'Name': 'custom:member_id', 'Value': member_id}
+                    ]
+                )
+                print(f"Updated Cognito with new member_id: {member_id}")
+            except Exception as cognito_error:
+                print(f"Warning: Failed to update Cognito with member_id: {str(cognito_error)}")
+                # Continue anyway - we can sync later
+        
         # Check if member record already exists
         response = table.get_item(Key={'member_id': member_id})
         
         if 'Item' in response:
-            return create_error_response(409, 'Member record already exists')
+            return create_error_response(409, 'Member record already exists. Use PUT to update.')
         
-        # Create new member record with the member_id from Cognito
+        # Create new member record with all submitted data
         timestamp = datetime.now().isoformat()
         
         member_data = {
-            'member_id': member_id,  # Use the member_id from Cognito as primary key
+            'member_id': member_id,
             'email': user_email,
-            'voornaam': body.get('voornaam', ''),
-            'achternaam': body.get('achternaam', ''),
-            'telefoon': body.get('telefoon', ''),
-            'adres': body.get('adres', ''),
-            'postcode': body.get('postcode', ''),
-            'woonplaats': body.get('woonplaats', ''),
-            'status': 'verzoek_lid',  # Initial status for new applications
+            'status': 'Aangemeld',  # Initial status for new applications
             'created': timestamp,
-            'lastModified': timestamp
+            'lastModified': timestamp,
+            **body  # Include all fields from the application form
         }
         
         # Save to database
@@ -301,6 +321,8 @@ def create_own_member_data(event, member_id, user_email, user_roles):
         
         # Log successful creation
         log_successful_access(user_email, user_roles, 'create_member_self')
+        
+        print(f"Created new member application for {user_email} with member_id: {member_id}")
         
         return create_success_response(convert_decimals(member_data))
     
