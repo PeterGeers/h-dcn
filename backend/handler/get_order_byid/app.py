@@ -14,18 +14,14 @@ try:
         log_successful_access
     )
     print("Using shared auth layer")
-except ImportError:
-    # Fallback to local auth_fallback.py (UPDATED FOR NEW ROLE STRUCTURE)
-    from auth_fallback import (
-        extract_user_credentials,
-        validate_permissions_with_regions,
-        cors_headers,
-        handle_options_request,
-        create_error_response,
-        create_success_response,
-        log_successful_access
-    )
-    print("Using fallback auth - ensure auth_fallback.py is updated")
+except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
+    print(f"⚠️ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("get_order_byid")
+    # Exit early - the fallback handler will handle all requests
+    import sys
+    sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Orders')

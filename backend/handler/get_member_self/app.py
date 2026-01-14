@@ -15,10 +15,10 @@ try:
         create_success_response,
         log_successful_access
     )
-    print("✅ Using shared auth layer")
+    print("Ô£à Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
-    print(f"❌ Shared auth unavailable: {str(e)}")
+    print(f"ÔØî Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("get_member_self")
     # Exit early - the fallback handler will handle all requests
@@ -175,7 +175,7 @@ def update_own_member_data(event, member_id, user_email, user_roles):
             'privacy', 'clubblad', 'nieuwsbrief', 'wiewatwaar',
             # Motorgegevens (motor section)
             'motormerk', 'motortype', 'bouwjaar', 'kenteken',
-            # Financiële Gegevens (financial section)
+            # Financi├½le Gegevens (financial section)
             'betaalwijze', 'bankrekeningnummer'
         ]
         

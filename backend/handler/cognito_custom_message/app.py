@@ -159,24 +159,24 @@ Uw herstelcode is: {code_parameter}
 Volg deze stappen om uw account te herstellen:
 
 **Stap 1: Verifieer uw identiteit**
-• Ga naar {RECOVERY_URL}
-• Voer uw e-mailadres ({email}) in
-• Voer de herstelcode hierboven in
+â€¢ Ga naar {RECOVERY_URL}
+â€¢ Voer uw e-mailadres ({email}) in
+â€¢ Voer de herstelcode hierboven in
 
 **Stap 2: Stel nieuwe authenticatie in**
-• Kies voor passkey authenticatie (aanbevolen)
-• Of gebruik e-mail verificatie als fallback
-• Geen wachtwoord nodig!
+â€¢ Kies voor passkey authenticatie (aanbevolen)
+â€¢ Of gebruik e-mail verificatie als fallback
+â€¢ Geen wachtwoord nodig!
 
 **Stap 3: Toegang hersteld**
-• Log direct in met uw nieuwe authenticatiemethode
-• Toegang tot al uw {ORGANIZATION_SHORT_NAME} functies
+â€¢ Log direct in met uw nieuwe authenticatiemethode
+â€¢ Toegang tot al uw {ORGANIZATION_SHORT_NAME} functies
 
 **Waarom passwordless?**
-• Veiliger dan wachtwoorden
-• Geen wachtwoorden om te vergeten
-• Sneller inloggen met biometrie
-• Bescherming tegen phishing
+â€¢ Veiliger dan wachtwoorden
+â€¢ Geen wachtwoorden om te vergeten
+â€¢ Sneller inloggen met biometrie
+â€¢ Bescherming tegen phishing
 
 Deze herstelcode is 1 uur geldig.
 
@@ -184,9 +184,9 @@ Deze herstelcode is 1 uur geldig.
 Als u dit herstelverzoek niet heeft ingediend, neem dan onmiddellijk contact op via {ORGANIZATION_EMAIL}. Uw account blijft veilig - deze code alleen is niet voldoende voor toegang.
 
 **Hulp nodig?**
-• Bezoek onze hulppagina: {HELP_URL}
-• E-mail ons: {ORGANIZATION_EMAIL}
-• Bel {SUPPORT_PHONE} voor directe hulp
+â€¢ Bezoek onze hulppagina: {HELP_URL}
+â€¢ E-mail ons: {ORGANIZATION_EMAIL}
+â€¢ Bel {SUPPORT_PHONE} voor directe hulp
 
 Met vriendelijke groet,
 Het {ORGANIZATION_SHORT_NAME} Team
@@ -234,15 +234,15 @@ def handle_verify_user_attribute(event, display_name, email):
     
     message = f"""Hallo {display_name},
 
-Welkom bij {ORGANIZATION_SHORT_NAME}! We hebben uw account aangemaakt en moeten uw e-mailadres verifiëren.
+Welkom bij {ORGANIZATION_SHORT_NAME}! We hebben uw account aangemaakt en moeten uw e-mailadres verifiÃ«ren.
 
 Uw verificatiecode is: {code_parameter}
 
 Voer deze code in om uw e-mailadres te bevestigen en volledige toegang te krijgen tot:
-• Uw persoonlijke lidmaatschapsgegevens
-• De {ORGANIZATION_SHORT_NAME} webshop
-• Evenementen en ritten
-• Contact met andere leden
+â€¢ Uw persoonlijke lidmaatschapsgegevens
+â€¢ De {ORGANIZATION_SHORT_NAME} webshop
+â€¢ Evenementen en ritten
+â€¢ Contact met andere leden
 
 Deze code is 24 uur geldig.
 
@@ -304,20 +304,20 @@ U of iemand anders heeft account recovery aangevraagd voor {email}
 **Herstel uw toegang in 3 eenvoudige stappen:**
 
 **Stap 1: Verifieer uw identiteit**
-• Ga naar {RECOVERY_URL}
-• Voer de herstelcode hierboven in
-• Bevestig uw e-mailadres
+â€¢ Ga naar {RECOVERY_URL}
+â€¢ Voer de herstelcode hierboven in
+â€¢ Bevestig uw e-mailadres
 
 **Stap 2: Kies uw nieuwe authenticatiemethode**
-• **Passkey (aanbevolen)**: Gebruik Face ID, vingerafdruk of Windows Hello
-• **E-mail verificatie**: Ontvang inlogcodes per e-mail
-• **Geen wachtwoord nodig!**
+â€¢ **Passkey (aanbevolen)**: Gebruik Face ID, vingerafdruk of Windows Hello
+â€¢ **E-mail verificatie**: Ontvang inlogcodes per e-mail
+â€¢ **Geen wachtwoord nodig!**
 
 **Stap 3: Direct toegang**
-• Log meteen in met uw nieuwe methode
-• Toegang tot uw lidmaatschapsgegevens
-• Gebruik van de {ORGANIZATION_SHORT_NAME} webshop
-• Deelname aan evenementen
+â€¢ Log meteen in met uw nieuwe methode
+â€¢ Toegang tot uw lidmaatschapsgegevens
+â€¢ Gebruik van de {ORGANIZATION_SHORT_NAME} webshop
+â€¢ Deelname aan evenementen
 
 **Voordelen van passwordless authenticatie:**
 - Veiliger dan wachtwoorden
@@ -331,9 +331,9 @@ Deze herstelcode is 1 uur geldig en kan maar een keer gebruikt worden.
 
 **Dit was u niet?**
 Als u geen account recovery heeft aangevraagd:
-• Negeer deze e-mail - uw account blijft veilig
-• Neem contact op via {ORGANIZATION_EMAIL} bij zorgen
-• Overweeg om uw e-mail account te controleren
+â€¢ Negeer deze e-mail - uw account blijft veilig
+â€¢ Neem contact op via {ORGANIZATION_EMAIL} bij zorgen
+â€¢ Overweeg om uw e-mail account te controleren
 
 **Hulp nodig?**
 E-mail: {ORGANIZATION_EMAIL}

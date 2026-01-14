@@ -12,10 +12,9 @@ try:
         create_success_response,
         log_successful_access
     )
-    print("✅ Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
-    print(f"❌ Shared auth unavailable: {str(e)}")
+    print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("get_events")
     # Exit early - the fallback handler will handle all requests

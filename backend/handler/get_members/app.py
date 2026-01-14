@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Import from shared auth layer (REQUIRED)
 try:
-    from shared.auth_utils import (
+    from auth_utils import (
         extract_user_credentials,
         validate_permissions_with_regions,
         cors_headers,
@@ -13,10 +13,10 @@ try:
         create_success_response,
         log_successful_access
     )
-    print("✅ Using shared auth layer")
+    print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
-    print(f"❌ Shared auth unavailable: {str(e)}")
+    print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("get_members")
     # Exit early - the fallback handler will handle all requests
@@ -29,7 +29,7 @@ table = dynamodb.Table('Members')
 def lambda_handler(event, context):
     """
     Get members handler using new permission + region role structure
-    Replaces legacy role references with permission-based validation
+    Replaces Members_Read_All references with permission-based validation
     """
     try:
         # Handle OPTIONS request
@@ -41,7 +41,7 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
         
-        # UPDATED: Use new permission-based validation instead of legacy role checking
+        # UPDATED: Use new permission-based validation instead of Members_Read_All role checking
         # Required permissions: members_read (basic read access) or members_list (list all members)
         is_authorized, error_response, regional_info = validate_permissions_with_regions(
             user_roles, ['members_read', 'members_list'], user_email, {'operation': 'get_members'}

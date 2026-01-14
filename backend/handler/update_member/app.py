@@ -13,7 +13,7 @@ def extract_user_credentials_fallback(event):
     """Extract user credentials with enhanced groups support"""
     try:
         # Debug: Print all headers to see what we're receiving
-        print(f"🔍 DEBUG: All headers received: {event.get('headers', {})}")
+        print(f"­ƒöì DEBUG: All headers received: {event.get('headers', {})}")
         
         auth_header = event.get('headers', {}).get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
@@ -47,20 +47,20 @@ def extract_user_credentials_fallback(event):
         
         # Check for enhanced groups from frontend
         enhanced_groups_header = event.get('headers', {}).get('X-Enhanced-Groups') or event.get('headers', {}).get('x-enhanced-groups')
-        print(f"🔍 DEBUG: Enhanced groups header value: {enhanced_groups_header}")
+        print(f"­ƒöì DEBUG: Enhanced groups header value: {enhanced_groups_header}")
         
         if enhanced_groups_header:
             try:
                 enhanced_groups = json.loads(enhanced_groups_header)
                 if isinstance(enhanced_groups, list):
-                    print(f"🔍 FALLBACK AUTH: Using enhanced groups: {enhanced_groups} for {user_email}")
+                    print(f"­ƒöì FALLBACK AUTH: Using enhanced groups: {enhanced_groups} for {user_email}")
                     return user_email, enhanced_groups, None
             except json.JSONDecodeError:
-                print(f"🔍 DEBUG: Failed to parse enhanced groups header")
+                print(f"­ƒöì DEBUG: Failed to parse enhanced groups header")
                 pass
         
         user_roles = payload.get('cognito:groups', [])
-        print(f"🔍 FALLBACK AUTH: Using JWT groups: {user_roles} for {user_email}")
+        print(f"­ƒöì FALLBACK AUTH: Using JWT groups: {user_roles} for {user_email}")
         return user_email, user_roles, None
         
     except Exception as e:
@@ -74,7 +74,7 @@ def extract_user_credentials_fallback(event):
 def validate_permissions_fallback(user_roles, required_permissions, user_email=None):
     """
     UPDATED permission validation using new role structure
-    Replaces legacy role references with new permission + region validation
+    Replaces old Members_CRUD_All references with new permission + region validation
     """
     try:
         # Convert single permission to list
@@ -84,13 +84,13 @@ def validate_permissions_fallback(user_roles, required_permissions, user_email=N
         # SYSTEM ADMIN ROLES (Full access, no region required)
         system_admin_roles = ['System_CRUD', 'System_User_Management', 'System_Logs_Read']
         if any(role in system_admin_roles for role in user_roles):
-            print(f"✅ System admin access granted for {user_email}: {[r for r in user_roles if r in system_admin_roles]}")
+            print(f"Ô£à System admin access granted for {user_email}: {[r for r in user_roles if r in system_admin_roles]}")
             return True, None
         
         # LEGACY ADMIN ROLES (Backward compatibility)
         legacy_admin_roles = ['National_Chairman', 'National_Secretary']
         if any(role in legacy_admin_roles for role in user_roles):
-            print(f"✅ Legacy admin access granted for {user_email}: {[r for r in user_roles if r in legacy_admin_roles]}")
+            print(f"Ô£à Legacy admin access granted for {user_email}: {[r for r in user_roles if r in legacy_admin_roles]}")
             return True, None
         
         # NEW ROLE STRUCTURE: Permission-based roles
@@ -109,11 +109,11 @@ def validate_permissions_fallback(user_roles, required_permissions, user_email=N
             region_roles = [role for role in user_roles if role.startswith('Regio_')]
             
             if region_roles:
-                print(f"✅ Permission + region access granted for {user_email}: permissions={user_permission_roles}, regions={region_roles}")
+                print(f"Ô£à Permission + region access granted for {user_email}: permissions={user_permission_roles}, regions={region_roles}")
                 return True, None
             else:
                 # User has permission role but no region role - incomplete new structure
-                print(f"❌ Incomplete role structure for {user_email}: has permissions {user_permission_roles} but no region role")
+                print(f"ÔØî Incomplete role structure for {user_email}: has permissions {user_permission_roles} but no region role")
                 return False, {
                     'statusCode': 403,
                     'headers': cors_headers(),
@@ -125,18 +125,22 @@ def validate_permissions_fallback(user_roles, required_permissions, user_email=N
                     })
                 }
         
-        # REMOVED: Legacy compatibility code - no longer supporting old _All roles
-        # All users must use new role structure: Permission + Region
+        # LEGACY COMPATIBILITY: Check for old _All roles (being phased out)
+        # This includes the old Members_CRUD_All that was previously hardcoded
+        legacy_all_roles = [role for role in user_roles if role.endswith('_All') and not role.startswith('Regio_')]
+        if legacy_all_roles:
+            print(f"ÔÜá´©Å Legacy _All role access for {user_email}: {legacy_all_roles} (migration recommended)")
+            return True, None
         
         # SPECIAL ROLES: Limited access roles
         special_roles = ['hdcnLeden', 'Verzoek Lid']
         if any(role in special_roles for role in user_roles):
             # These roles have limited access - allow for own record updates only
-            print(f"⚠️ Limited role access for {user_email}: {[r for r in user_roles if r in special_roles]} (own records only)")
+            print(f"ÔÜá´©Å Limited role access for {user_email}: {[r for r in user_roles if r in special_roles]} (own records only)")
             return True, None  # Let field-level validation handle the restrictions
         
         # No valid roles found
-        print(f"❌ No valid roles found for {user_email}: {user_roles}")
+        print(f"ÔØî No valid roles found for {user_email}: {user_roles}")
         return False, {
             'statusCode': 403,
             'headers': cors_headers(),
@@ -166,7 +170,7 @@ try:
         cors_headers,
         handle_options_request
     )
-    print("🔍 Successfully imported enhanced auth from shared layer")
+    print("­ƒöì Successfully imported enhanced auth from shared layer")
     
     # Use the enhanced validation system
     def extract_user_credentials_fallback(event):
@@ -183,7 +187,7 @@ try:
             return False, error_response, None
             
 except ImportError:
-    print("⚠️ Shared auth layer import failed, using enhanced fallback auth")
+    print("ÔÜá´©Å Shared auth layer import failed, using enhanced fallback auth")
     # Enhanced fallback implementations are defined below
     
     def create_success_response(data, status_code=200):
@@ -825,7 +829,7 @@ def lambda_handler(event, context):
             return auth_error
         
         # UPDATED: Use enhanced permission validation with new role structure
-        # This replaces the legacy role check
+        # This replaces the old Members_CRUD_All hardcoded role check
         is_authorized, error_response, regional_info = validate_permissions_with_regions(
             user_roles, 
             ['members_update', 'members_create'],  # Required permissions for member updates
@@ -835,15 +839,15 @@ def lambda_handler(event, context):
         if not is_authorized:
             return error_response
         
-        print(f"🔍 AUTH SUCCESS: User {user_email} with roles {user_roles} authorized for member update using new role structure")
+        print(f"­ƒöì AUTH SUCCESS: User {user_email} with roles {user_roles} authorized for member update using new role structure")
         
         # Get member ID and request body
         member_id = event['pathParameters']['id']
         body = json.loads(event['body'])
         
         # Debug: Log the exact request body to see what fields are being sent
-        print(f"🔍 DEBUG: Request body fields: {list(body.keys())}")
-        print(f"🔍 DEBUG: Full request body: {body}")
+        print(f"­ƒöì DEBUG: Request body fields: {list(body.keys())}")
+        print(f"­ƒöì DEBUG: Full request body: {body}")
         
         # Get member record for validation and logging (we'll need this for multiple purposes)
         member_response = table.get_item(Key={'member_id': member_id})
@@ -867,7 +871,7 @@ def lambda_handler(event, context):
         
         # Log successful regional access check
         if regional_info:
-            print(f"✅ Regional access granted for member update: User {user_email} "
+            print(f"Ô£à Regional access granted for member update: User {user_email} "
                   f"(access: {regional_info.get('access_type', 'unknown')}) updating member from region: {member_record.get('regio', 'Overig')}")
         
         # Validate field permissions
