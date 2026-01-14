@@ -79,10 +79,49 @@ def lambda_handler(event, context):
                     member_id = attr['Value']
                     break
             
+            # If no member_id exists, check if there's an existing member record by email
             if not member_id:
-                return create_error_response(400, 'Member ID not found in user profile. Please contact support.')
+                print(f"No member_id in Cognito for {user_email}, checking Members table...")
+                
+                # Scan for existing member record by email
+                scan_response = table.scan(
+                    FilterExpression='email = :email',
+                    ExpressionAttributeValues={':email': user_email}
+                )
+                
+                if scan_response.get('Items'):
+                    # Found existing member record - use that member_id
+                    member_id = scan_response['Items'][0]['member_id']
+                    print(f"Found existing member record with member_id: {member_id}")
+                    
+                    # Update Cognito with the member_id
+                    cognito_client.admin_update_user_attributes(
+                        UserPoolId=user_pool_id,
+                        Username=cognito_user_id,
+                        UserAttributes=[
+                            {'Name': 'custom:member_id', 'Value': member_id}
+                        ]
+                    )
+                    print(f"Updated Cognito with member_id: {member_id}")
+                else:
+                    # No existing record - generate new member_id for verzoek_lid users
+                    if 'verzoek_lid' in user_roles:
+                        member_id = str(uuid.uuid4())
+                        print(f"Generated new member_id: {member_id} for verzoek_lid user")
+                        
+                        # Update Cognito with the new member_id
+                        cognito_client.admin_update_user_attributes(
+                            UserPoolId=user_pool_id,
+                            Username=cognito_user_id,
+                            UserAttributes=[
+                                {'Name': 'custom:member_id', 'Value': member_id}
+                            ]
+                        )
+                        print(f"Updated Cognito with new member_id: {member_id}")
+                    else:
+                        return create_error_response(400, 'Member ID not found in user profile. Please contact support.')
             
-            print(f"Found member_id: {member_id} for Cognito user: {cognito_user_id}")
+            print(f"Using member_id: {member_id} for Cognito user: {cognito_user_id}")
             
         except Exception as e:
             print(f"Error getting member_id from Cognito: {str(e)}")
