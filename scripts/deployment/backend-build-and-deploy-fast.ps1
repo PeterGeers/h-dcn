@@ -38,6 +38,17 @@ else {
 
 # Check 2: Critical Files Status
 Write-Host "  📊 Checking critical files status..." -ForegroundColor Cyan
+
+# Run all validation checks
+Write-Host "  🔍 Running validation checks..." -ForegroundColor Cyan
+python scripts/validate_all.py
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "     ❌ Validation checks FAILED!" -ForegroundColor Red
+    Write-Host "     Fix validation errors before deploying" -ForegroundColor Red
+    exit 1
+}
+Write-Host "     ✅ All validation checks passed" -ForegroundColor Green
+
 $criticalFiles = @(
     'template.yaml',
     'samconfig.toml',

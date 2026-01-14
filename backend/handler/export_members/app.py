@@ -32,31 +32,12 @@ try:
     print("✅ Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
-    print(f"❌ Shared auth unavailable: {str(e)}")
+    print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("export_members")
     # Exit early - the fallback handler will handle all requests
     import sys
     sys.exit(0)
-    )
-    print("✅ Successfully imported authentication utilities from AuthLayer")
-except ImportError as e:
-    print(f"⚠️ Failed to import from AuthLayer: {e}")
-    # Fallback authentication functions
-    def extract_user_credentials(event):
-        return None, None, {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Authentication not available'})}
-    def validate_permissions_with_regions(roles, perms, email=None, resource_context=None):
-        return False, {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Authorization not available'})}, None
-    def create_success_response(data, status=200):
-        return {'statusCode': status, 'headers': cors_headers(), 'body': json.dumps(data)}
-    def create_error_response(status, msg, details=None):
-        return {'statusCode': status, 'headers': cors_headers(), 'body': json.dumps({'error': msg})}
-    def cors_headers():
-        return {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Enhanced-Groups"}
-    def handle_options_request():
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': ''}
-    def log_successful_access(email, roles, operation, context=None):
-        print(f"ACCESS: {email} ({roles}) - {operation}")
 
 # Configure logging
 logger = logging.getLogger()
@@ -223,7 +204,7 @@ def lambda_handler(event, context):
             logger.warning(f"Permission denied for user {user_email} with roles {user_roles}")
             return auth_error
         
-        logger.info(f"✅ Authentication successful: User {user_email} with roles {user_roles} authorized for member export")
+        logger.info(f"Ô£à Authentication successful: User {user_email} with roles {user_roles} authorized for member export")
         
         # Get all members from DynamoDB
         all_members = get_all_members()
@@ -243,7 +224,7 @@ def lambda_handler(event, context):
             }
         )
         
-        logger.info(f"📊 AUDIT: User {user_email} (roles: {user_roles}) exported {len(filtered_members)} members (no backend filtering)")
+        logger.info(f"­ƒôè AUDIT: User {user_email} (roles: {user_roles}) exported {len(filtered_members)} members (no backend filtering)")
         
         # Return member data as JSON
         return create_success_response({
