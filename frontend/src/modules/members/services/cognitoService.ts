@@ -7,6 +7,7 @@ import { CognitoIdentityProviderClient,
   AdminDisableUserCommand, AdminEnableUserCommand,
   DescribeUserPoolCommand
 } from '@aws-sdk/client-cognito-identity-provider';
+import { getAuthHeaders } from '../../../utils/authHeaders';
 
 interface RequestOptions {
   method?: string;
@@ -41,9 +42,13 @@ class CognitoService {
   }
 
   async makeRequest(endpoint: string, options: RequestOptions = {}): Promise<any> {
+    // Get auth headers
+    const authHeaders = await getAuthHeaders();
+    
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options.headers
       },
       ...options
