@@ -4,7 +4,7 @@ import {
   VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, useToast, Select,
   Alert, AlertIcon, Text
 } from '@chakra-ui/react';
-import { useParameters } from '../../../utils/parameterService';
+import { MEMBER_FIELDS } from '../../../config/memberFields';
 import { getAllowedRegions } from '../../../utils/regionalMapping';
 import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
@@ -47,7 +47,13 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
   });
   const [isLoading, setIsLoading] = useState(false);
   const { handleError, handleSuccess } = useErrorHandler();
-  const { parameters: regions, loading: regionsLoading } = useParameters('Regio');
+  
+  // Get regions from memberFields instead of parameters
+  const regioField = MEMBER_FIELDS['regio'];
+  const regions = regioField?.enumOptions?.map((value, index) => ({ 
+    id: String(index + 1), 
+    value 
+  })) || [];
 
   const userRoles = getUserRoles(user || {});
   const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || false;

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Box, VStack, Heading, Text, SimpleGrid, Alert, AlertIcon, Spinner, Center } from '@chakra-ui/react';
 import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
-import { initializeFunctionPermissions } from '../utils/initializeFunctionPermissions';
 import { membershipService } from '../utils/membershipService';
 
 interface User {
@@ -154,18 +153,6 @@ function Dashboard({ user }: DashboardProps) {
 
     checkMembershipStatus();
   }, [user, navigate]);
-  
-  // Initialize function permissions on first load (background task)
-  useEffect(() => {
-    const init = async () => {
-      try {
-        await initializeFunctionPermissions();
-      } catch (error) {
-        console.error('❌ Failed to initialize function permissions:', error);
-      }
-    };
-    init();
-  }, []);
 
   // Show loading while checking membership status
   if (isCheckingMembership) {
