@@ -277,7 +277,15 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '20px' }}>
-        <div style={{ width: '80px', height: '80px', background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>LOGO</div>
+        <img 
+          src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png" 
+          alt="H-DCN Logo"
+          style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#FF6B35', margin: '0 0 8px 0' }}>H-DCN Webshop</h1>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0' }}>Orderbevestiging</h2>
