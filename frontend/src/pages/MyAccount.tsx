@@ -96,11 +96,17 @@ function MyAccount({ user }: MyAccountProps) {
         const response = await ApiService.get('/members/me');
         
         if (response.success && response.data) {
-          // Backend returns { member: {...} } or { member: null }
-          const memberData = response.data.member || response.data;
+          // Backend returns member data directly when it exists
+          // Or { member: null, message: "...", email: "..." } when it doesn't
+          let memberData = response.data;
           
-          // Only set member if it's not null and has actual data
-          if (memberData && memberData !== null && typeof memberData === 'object' && Object.keys(memberData).length > 0) {
+          // Check if response has a 'member' property (null case)
+          if ('member' in response.data) {
+            memberData = response.data.member;
+          }
+          
+          // Only set member if it's not null and has actual member data
+          if (memberData && memberData !== null && typeof memberData === 'object' && memberData.member_id) {
             // Compute calculated fields for the member data
             const memberWithCalculatedFields = computeCalculatedFields(memberData);
             setMember(memberWithCalculatedFields);
