@@ -37,9 +37,6 @@ const filterValidRoles = (groups: string[]): string[] => {
 
 export const getAuthHeaders = async (): Promise<Record<string, string>> => {
   try {
-    // Use the same method as GroupAccessGuard and other working components
-    console.log('[getAuthHeaders] Using user object from localStorage (same as GroupAccessGuard)');
-    
     // Get the user object that contains the authentication data
     const storedUser = localStorage.getItem('hdcn_auth_user');
     if (!storedUser) {
@@ -47,19 +44,14 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
     }
     
     const user = JSON.parse(storedUser);
-    console.log('[getAuthHeaders] User object keys:', Object.keys(user));
     
-    // Get JWT token (same method as GroupAccessGuard)
+    // Get JWT token
     const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
     if (!jwtToken) {
       throw new Error('No JWT token found in user session');
     }
     
-    console.log('[getAuthHeaders] JWT token found');
-    console.log('[getAuthHeaders] JWT token length:', jwtToken.length);
-    console.log('[getAuthHeaders] JWT token preview:', jwtToken.substring(0, 50) + '...');
-    
-    // Get groups (same method as GroupAccessGuard)
+    // Get groups
     let userGroups: string[] = [];
     
     // First, try the standard Amplify location
@@ -67,7 +59,7 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
     if (amplifyGroups && Array.isArray(amplifyGroups)) {
       userGroups = amplifyGroups;
     } else {
-      // If not found, try to decode the JWT token directly (same as GroupAccessGuard)
+      // If not found, try to decode the JWT token directly
       try {
         const parts = jwtToken.split('.');
         if (parts.length === 3) {
@@ -79,8 +71,6 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
       }
     }
     
-    console.log('[getAuthHeaders] User groups found:', userGroups);
-    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${jwtToken}`,
@@ -90,7 +80,6 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
     // Add enhanced groups header
     if (userGroups && userGroups.length > 0) {
       const validGroups = filterValidRoles(userGroups);
-      console.log('[getAuthHeaders] Valid groups to send:', validGroups);
       headers['X-Enhanced-Groups'] = JSON.stringify(validGroups);
     } else {
       console.warn('[getAuthHeaders] No user groups found');

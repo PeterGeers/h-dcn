@@ -175,31 +175,20 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   // Get visible columns based on context and permissions
   const visibleColumns = useMemo(() => {
     if (!tableContext) {
-      console.log('[DEBUG] No tableContext found for:', selectedContext);
       return [];
     }
     
-    console.log('[DEBUG] tableContext found:', tableContext.name);
-    console.log('[DEBUG] tableContext columns:', tableContext.columns.length);
-    
     const visibleCols = tableContext.columns.filter(col => col.visible);
-    console.log('[DEBUG] visible columns before permission filter:', visibleCols.length);
     
     const permissionFilteredCols = visibleCols.filter(col => {
       const field = MEMBER_FIELDS[col.fieldKey];
       if (!field) {
-        console.log('[DEBUG] No field definition for:', col.fieldKey);
         return false;
       }
       
-      const canView = canViewField(field, userRole, filteredMembers[0]);
-      if (!canView) {
-        console.log('[DEBUG] Cannot view field:', col.fieldKey, 'for role:', userRole);
-      }
-      return canView;
+      return canViewField(field, userRole, filteredMembers[0]);
     });
     
-    console.log('[DEBUG] final visible columns:', permissionFilteredCols.length);
     return permissionFilteredCols.sort((a, b) => a.order - b.order);
   }, [tableContext, userRole, filteredMembers]);
 

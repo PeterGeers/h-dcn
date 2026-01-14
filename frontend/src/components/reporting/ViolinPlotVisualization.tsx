@@ -349,8 +349,8 @@ const ViolinPlotVisualization: React.FC<ViolinPlotVisualizationProps> = ({
         </HStack>
 
         {/* Chart */}
-        <Box height="400px" width="100%">
-          <ResponsiveContainer width="100%" height="100%">
+        <Box height="400px" width="100%" minHeight="400px">
+          <ResponsiveContainer width="100%" height="100%" minHeight={400}>
             {viewMode === 'violin' || viewMode === 'box' ? (
               <ComposedChart
                 data={chartData}
