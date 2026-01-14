@@ -199,3 +199,34 @@ if ($LASTEXITCODE -ne 0) {
 $smokeTestTime = (Get-Date) - $smokeTestStart
 Write-Host "✅ Smoke tests passed!" -ForegroundColor Green
 Write-Host "⏱️ Smoke test time: $([math]::Round($smokeTestTime.TotalSeconds, 1)) seconds" -ForegroundColor Cyan
+
+
+# Auto-commit deployed changes (only runs if deployment succeeded)
+Write-Host ""
+$gitStatus = git status --porcelain
+if ($gitStatus) {
+    Write-Host "📝 Auto-committing deployed changes..." -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Changed files:" -ForegroundColor Yellow
+    git status --short
+    Write-Host ""
+    
+    # Add all changes
+    git add .
+    
+    # Create commit with timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $commitMessage = "Frontend deployment - $timestamp"
+    git commit -m $commitMessage --no-verify
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ Changes committed successfully" -ForegroundColor Green
+        Write-Host "💡 Don't forget to push: git push" -ForegroundColor Cyan
+    }
+    else {
+        Write-Host "⚠️  Commit failed - please commit manually" -ForegroundColor Yellow
+    }
+}
+else {
+    Write-Host "✅ No uncommitted changes" -ForegroundColor Green
+}
