@@ -114,6 +114,11 @@ function Dashboard({ user }: DashboardProps) {
             console.log('Dashboard - verzoek_lid user not found in database, redirecting to application');
             navigate('/new-member-application');
             return;
+          } else if (hasVerzoekLidRole && existingMember) {
+            // verzoek_lid users WITH data should go directly to their application
+            console.log('Dashboard - verzoek_lid user with data, redirecting to my-account');
+            navigate('/my-account');
+            return;
           } else {
             // User found in database
             console.log('Dashboard - User found in database, allowing access');

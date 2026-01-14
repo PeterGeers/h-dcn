@@ -226,9 +226,10 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
       try {
         // Try to get existing member data using /members/me endpoint
         const response = await ApiService.get('/members/me');
-        if (response.success && response.data) {
-          setExistingApplication(response.data);
-          console.log('Existing member application found:', response.data);
+        if (response.success && response.data && response.data.member) {
+          // Only set existingApplication if member data actually exists
+          setExistingApplication(response.data.member);
+          console.log('Existing member application found:', response.data.member);
         } else {
           console.log('No existing application found - this is normal for new applicants');
         }

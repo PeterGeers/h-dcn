@@ -96,10 +96,20 @@ function MyAccount({ user }: MyAccountProps) {
         const response = await ApiService.get('/members/me');
         
         if (response.success && response.data) {
-          // Compute calculated fields for the member data
-          const memberWithCalculatedFields = computeCalculatedFields(response.data);
-          setMember(memberWithCalculatedFields);
-          console.log('Member data loaded successfully:', memberWithCalculatedFields);
+          // Backend returns { member: {...} } or { member: null }
+          const memberData = response.data.member || response.data;
+          
+          // Only set member if it's not null and has actual data
+          if (memberData && memberData !== null && typeof memberData === 'object' && Object.keys(memberData).length > 0) {
+            // Compute calculated fields for the member data
+            const memberWithCalculatedFields = computeCalculatedFields(memberData);
+            setMember(memberWithCalculatedFields);
+            console.log('Member data loaded successfully:', memberWithCalculatedFields);
+          } else {
+            // No member record found - this is normal for verzoek_lid users
+            console.log('No member record found - user may need to create application');
+            setMember(null);
+          }
         } else {
           // No member record found - this is normal for verzoek_lid users
           console.log('No member record found - user may need to create application');
