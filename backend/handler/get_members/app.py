@@ -26,6 +26,19 @@ except ImportError as e:
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Members')
 
+def convert_decimals(obj):
+    """
+    Convert DynamoDB Decimal types to regular numbers for JSON serialization
+    """
+    if isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    elif hasattr(obj, '__class__') and obj.__class__.__name__ == 'Decimal':
+        return float(obj)
+    else:
+        return obj
+
 def lambda_handler(event, context):
     """
     Get members handler using new permission + region role structure
@@ -70,6 +83,9 @@ def lambda_handler(event, context):
                 members = filtered_members
                 print(f"REGIONAL_FILTER: User {user_email} (regions: {allowed_regions}) "
                       f"filtered {len(response['Items'])} members to {len(members)} members")
+        
+        # Convert Decimal types to regular numbers for JSON serialization
+        members = convert_decimals(members)
         
         return create_success_response(members)
         
