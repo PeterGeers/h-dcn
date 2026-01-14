@@ -289,9 +289,18 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
           {isProcessing ? <Spinner size="sm" /> : `Betaal €${finalTotal.toFixed(2)}`}
         </Button>
         
-        <Text fontSize="sm" color="gray.300" textAlign="center">
-          Testmodus - Gebruik kaart 4242 4242 4242 4242
-        </Text>
+        <Box bg="blue.900" p={3} borderRadius="md" width="full">
+          <Text fontSize="sm" color="blue.200" fontWeight="bold" mb={2}>
+            🧪 Testmodus - Gebruik testgegevens:
+          </Text>
+          <VStack align="start" spacing={1} fontSize="xs" color="blue.100">
+            <Text>• Kaartnummer: 4242 4242 4242 4242</Text>
+            <Text>• Vervaldatum: Elke toekomstige datum (bijv. 12/34)</Text>
+            <Text>• CVC: Elke 3 cijfers (bijv. 123)</Text>
+            <Text>• Naam: Elke naam (bijv. Test Gebruiker)</Text>
+            <Text>• Postcode: Elk formaat (bijv. 1234AB)</Text>
+          </VStack>
+        </Box>
       </VStack>
     </form>
   );
