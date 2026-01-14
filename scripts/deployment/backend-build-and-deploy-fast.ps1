@@ -148,7 +148,7 @@ Write-Host ""
 
 Write-Host "🚀 Deploying backend..." -ForegroundColor Yellow
 $deployStart = Get-Date
-sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --resolve-image-repos
+sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --resolve-image-repos --force-upload
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Deploy failed!" -ForegroundColor Red
@@ -204,7 +204,30 @@ $totalTime = (Get-Date) - $startTime
 Write-Host "✅ Backend deployment completed successfully" -ForegroundColor Green
 Write-Host "⏱️ Total time: $($totalTime.TotalSeconds.ToString('F1')) seconds" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "🎉 Backend Deploy Complete!" -ForegroundColor Green
 
 # Return to root directory
 Set-Location ..
+
+# Run smoke tests against deployed backend
+Write-Host "🔥 Running post-deployment smoke tests..." -ForegroundColor Yellow
+Write-Host "Testing REAL deployed backend API..." -ForegroundColor Cyan
+
+$smokeTestStart = Get-Date
+node scripts/deployment/smoke-test-production.js
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Smoke tests FAILED!" -ForegroundColor Red
+    Write-Host "⚠️  Backend deployment completed but API has issues" -ForegroundColor Yellow
+    Write-Host "🔧 Check the test output above for details" -ForegroundColor Yellow
+    Write-Host "💡 Common issues:" -ForegroundColor Cyan
+    Write-Host "   - Lambda function errors (check CloudWatch logs)" -ForegroundColor White
+    Write-Host "   - API Gateway misconfiguration" -ForegroundColor White
+    Write-Host "   - Missing environment variables" -ForegroundColor White
+    exit 1
+}
+
+$smokeTestTime = (Get-Date) - $smokeTestStart
+Write-Host "✅ Smoke tests passed!" -ForegroundColor Green
+Write-Host "⏱️ Smoke test time: $([math]::Round($smokeTestTime.TotalSeconds, 1)) seconds" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "🎉 Backend Deploy Complete!" -ForegroundColor Green

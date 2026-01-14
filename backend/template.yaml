@@ -171,6 +171,8 @@ Resources:
       CodeUri: handler/cognito_custom_message
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt CognitoLambdaRole.Arn
       Environment:
         Variables:
@@ -192,6 +194,8 @@ Resources:
       CodeUri: handler/cognito_post_confirmation
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt CognitoLambdaRole.Arn
       Environment:
         Variables:
@@ -209,6 +213,8 @@ Resources:
       CodeUri: handler/cognito_post_authentication
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt CognitoLambdaRole.Arn
       Environment:
         Variables:
@@ -297,7 +303,7 @@ Resources:
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: prod
+      StageName: !Ref Environment
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with'"
@@ -365,6 +371,16 @@ Resources:
                 Condition:
                   StringLike:
                     "s3:prefix": "analytics/*"
+        - PolicyName: CognitoReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminListGroupsForUser
+                Resource:
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/eu-west-1_OAT3oPCIm"
 
   # IAM Role for Cognito Admin access
   CognitoAdminRole:
@@ -415,6 +431,8 @@ Resources:
       CodeUri: handler/insert_product
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         InsertProduct:
@@ -430,6 +448,8 @@ Resources:
       CodeUri: handler/delete_product
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         DeletePost:
@@ -445,6 +465,8 @@ Resources:
       CodeUri: handler/get_product_byid
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetPost:
@@ -495,6 +517,8 @@ Resources:
       CodeUri: handler/create_member
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         CreateMember:
@@ -510,6 +534,8 @@ Resources:
       CodeUri: handler/get_members
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetMembers:
@@ -525,6 +551,8 @@ Resources:
       CodeUri: handler/get_member_byid
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetMemberById:
@@ -586,6 +614,8 @@ Resources:
       CodeUri: handler/delete_member
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         DeleteMember:
@@ -602,6 +632,8 @@ Resources:
       CodeUri: handler/create_payment
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         CreatePayment:
@@ -617,6 +649,8 @@ Resources:
       CodeUri: handler/get_payments
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetPayments:
@@ -632,6 +666,8 @@ Resources:
       CodeUri: handler/get_payment_byid
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetPaymentById:
@@ -647,6 +683,8 @@ Resources:
       CodeUri: handler/update_payment
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdatePayment:
@@ -662,6 +700,8 @@ Resources:
       CodeUri: handler/delete_payment
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         DeletePayment:
@@ -677,6 +717,8 @@ Resources:
       CodeUri: handler/get_member_payments
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetMemberPayments:
@@ -693,6 +735,8 @@ Resources:
       CodeUri: handler/create_event
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         CreateEvent:
@@ -708,6 +752,8 @@ Resources:
       CodeUri: handler/get_events
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetEvents:
@@ -765,6 +811,8 @@ Resources:
       CodeUri: handler/get_memberships
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetMemberships:
@@ -780,6 +828,8 @@ Resources:
       CodeUri: handler/create_membership
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         CreateMembership:
@@ -795,6 +845,8 @@ Resources:
       CodeUri: handler/get_membership_byid
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetMembershipById:
@@ -810,6 +862,8 @@ Resources:
       CodeUri: handler/update_membership
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdateMembership:
@@ -825,6 +879,8 @@ Resources:
       CodeUri: handler/delete_membership
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         DeleteMembership:
@@ -895,6 +951,8 @@ Resources:
       CodeUri: handler/create_order
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         CreateOrder:
@@ -910,6 +968,8 @@ Resources:
       CodeUri: handler/get_orders
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetOrders:
@@ -925,6 +985,8 @@ Resources:
       CodeUri: handler/get_order_byid
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetOrderById:
@@ -940,6 +1002,8 @@ Resources:
       CodeUri: handler/update_order_status
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         UpdateOrderStatus:
@@ -955,6 +1019,8 @@ Resources:
       CodeUri: handler/get_customer_orders
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetCustomerOrders:
@@ -971,6 +1037,8 @@ Resources:
       CodeUri: handler/get_event_byid
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         GetEventById:
@@ -1003,6 +1071,8 @@ Resources:
       CodeUri: handler/delete_event
       Handler: app.lambda_handler
       Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
       Events:
         DeleteEvent:
@@ -1141,8 +1211,8 @@ Resources:
 
 Outputs:
   ApiBaseUrl:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
   
   CognitoUserPoolId:
     Description: "Cognito User Pool ID for H-DCN Authentication"

@@ -59,7 +59,7 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
   const toast = useToast();
 
   // Debug: Log member data to see what fields are available
-  // console.log('Member data in MemberSelfServiceView:', member);
+  console.log('Member data in MemberSelfServiceView:', member);
 
   // Determine if this is a new member application or existing member
   const isNewMember = !member?.member_id || member?.status === 'Aangemeld';
@@ -132,7 +132,8 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
 
     const canView = canViewField(field, userRole, member);
     // For self-service, check if field has selfService: true
-    const canSelfEdit = field.permissions?.selfService === true;
+    // Special case: email is tied to Cognito account and cannot be edited via self-service
+    const canSelfEdit = field.permissions?.selfService === true && fieldKey !== 'email';
     
     if (!canView) return null;
 

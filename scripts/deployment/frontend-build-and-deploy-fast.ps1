@@ -180,3 +180,22 @@ Write-Host "⏱️ Total time: $([math]::Round($totalDuration, 1)) seconds" -For
 Write-Host ""
 Write-Host "🎉 Frontend Build and Deploy Complete!" -ForegroundColor Green
 Write-Host "🌐 Site: https://de1irtdutlxqu.cloudfront.net" -ForegroundColor Cyan
+
+# Run smoke tests against deployed environment
+Write-Host ""
+Write-Host "🔥 Running post-deployment smoke tests..." -ForegroundColor Yellow
+Write-Host "Testing REAL deployed application..." -ForegroundColor Cyan
+
+$smokeTestStart = Get-Date
+node scripts/deployment/smoke-test-production.js
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Smoke tests FAILED!" -ForegroundColor Red
+    Write-Host "⚠️  Deployment completed but application has issues" -ForegroundColor Yellow
+    Write-Host "🔧 Check the test output above for details" -ForegroundColor Yellow
+    exit 1
+}
+
+$smokeTestTime = (Get-Date) - $smokeTestStart
+Write-Host "✅ Smoke tests passed!" -ForegroundColor Green
+Write-Host "⏱️ Smoke test time: $([math]::Round($smokeTestTime.TotalSeconds, 1)) seconds" -ForegroundColor Cyan

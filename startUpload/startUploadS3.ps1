@@ -11,17 +11,20 @@ Write-Host "=====================================" -ForegroundColor Green
 # Step 1: Run validation (unless skipped)
 if (-not $SkipValidation) {
     Write-Host "Step 1: Running validation..." -ForegroundColor Cyan
-.\validate-deployment.ps1
+    .\validate-deployment.ps1
     
     if ($LASTEXITCODE -ne 0 -and -not $Force) {
         Write-Host "Validation failed! Use -Force to deploy anyway." -ForegroundColor Red
         exit 1
-    } elseif ($LASTEXITCODE -ne 0) {
+    }
+    elseif ($LASTEXITCODE -ne 0) {
         Write-Host "Validation failed but continuing due to -Force flag..." -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Host "Validation passed!" -ForegroundColor Green
     }
-} else {
+}
+else {
     Write-Host "Skipping validation..." -ForegroundColor Gray
 }
 
@@ -40,6 +43,19 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "S3 deployment successful!" -ForegroundColor Green
 Set-Location ..\startUpload
 
+# Step 2.5: Run smoke tests
+Write-Host "Step 2.5: Running smoke tests..." -ForegroundColor Cyan
+node ..\scripts\deployment\smoke-test-production.js
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Smoke tests failed!" -ForegroundColor Red
+    Write-Host "Deployment completed but application has issues." -ForegroundColor Yellow
+    Write-Host "Fix issues before proceeding to Git upload." -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host "Smoke tests passed!" -ForegroundColor Green
+
 # Step 3: Upload to Git
 Write-Host "Step 3: Uploading to Git..." -ForegroundColor Cyan
 ..\git\git-upload.ps1 -Message $Message
@@ -54,5 +70,6 @@ Write-Host "Deployment Pipeline Complete!" -ForegroundColor Green
 Write-Host "================================" -ForegroundColor Green
 Write-Host "Validation: Passed" -ForegroundColor Green
 Write-Host "S3 Deployment: Success" -ForegroundColor Green
+Write-Host "Smoke Tests: Passed" -ForegroundColor Green
 Write-Host "Git Upload: Success" -ForegroundColor Green
 Write-Host "Your app is now live and backed up!" -ForegroundColor Cyan

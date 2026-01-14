@@ -61,15 +61,15 @@ def lambda_handler(event, context):
         
         print(f"Cognito user ID from JWT: {cognito_user_id}")
         
-        # Get member_id from Cognito user attributes using the Cognito user ID
+        # Get member_id from Cognito user attributes
         try:
             cognito_client = boto3.client('cognito-idp')
             user_pool_id = 'eu-west-1_OAT3oPCIm'
             
-            # Get user details from Cognito using the Cognito user ID
+            # Get user details from Cognito
             cognito_response = cognito_client.admin_get_user(
                 UserPoolId=user_pool_id,
-                Username=cognito_user_id  # Use the Cognito user ID instead of email
+                Username=cognito_user_id
             )
             
             # Extract member_id from user attributes
@@ -87,6 +87,7 @@ def lambda_handler(event, context):
         except Exception as e:
             print(f"Error getting member_id from Cognito: {str(e)}")
             return create_error_response(500, 'Failed to retrieve user information')
+        
         
         # Validate permissions - users need members_self_read permission
         # Both hdcnLeden and verzoek_lid should have this permission
@@ -138,11 +139,7 @@ def get_own_member_data(member_id, user_email):
         
         print(f"Found member record for {user_email}: {list(member_data.keys())}")
         
-        return create_success_response({
-            'member': member_data,
-            'email': user_email,
-            'member_id': member_id
-        })
+        return create_success_response(member_data)
     
     except Exception as e:
         print(f"Error getting member data: {str(e)}")
@@ -163,8 +160,24 @@ def update_own_member_data(event, member_id, user_email, user_roles):
             return create_error_response(404, 'Member record not found')
         
         # Build update expression for allowed fields
-        # Users can only update certain personal fields
-        allowed_fields = ['voornaam', 'achternaam', 'telefoon', 'adres', 'postcode', 'woonplaats']
+        # These fields match the selfService: true permissions in frontend/src/config/memberFields.ts
+        # Organized by section groups as defined in MEMBER_MODAL_CONTEXTS
+        # System fields like member_id, status, lidmaatschap, regio are protected (admin-only)
+        # Email is also protected as it's tied to the Cognito account
+        allowed_fields = [
+            # Persoonlijke Informatie (personal section)
+            'voornaam', 'achternaam', 'initialen', 'tussenvoegsel', 
+            'geboortedatum', 'geslacht', 'telefoon', 'minderjarigNaam',
+            # Note: 'email' is excluded - tied to Cognito account, not editable via self-service
+            # Adresgegevens (address section)
+            'straat', 'postcode', 'woonplaats', 'land',
+            # Lidmaatschap preferences (membership section - only preferences, not status/type/region)
+            'privacy', 'clubblad', 'nieuwsbrief', 'wiewatwaar',
+            # Motorgegevens (motor section)
+            'motormerk', 'motortype', 'bouwjaar', 'kenteken',
+            # Financiële Gegevens (financial section)
+            'betaalwijze', 'bankrekeningnummer'
+        ]
         
         update_expression = "SET "
         expression_attribute_values = {}
@@ -197,13 +210,17 @@ def update_own_member_data(event, member_id, user_email, user_roles):
             ExpressionAttributeValues=expression_attribute_values
         )
         
+        # Fetch the updated member record to return complete data
+        updated_response = table.get_item(Key={'member_id': member_id})
+        updated_member = updated_response.get('Item', {})
+        
+        # Convert any Decimal types to regular numbers for JSON serialization
+        updated_member_data = convert_decimals(updated_member)
+        
         # Log successful update
         log_successful_access(user_email, user_roles, 'update_member_self', {'fields_updated': list(body.keys())})
         
-        return create_success_response({
-            'message': 'Member data updated successfully',
-            'updated_fields': list(body.keys())
-        })
+        return create_success_response(updated_member_data)
     
     except Exception as e:
         print(f"Error updating member data: {str(e)}")
@@ -246,10 +263,7 @@ def create_own_member_data(event, member_id, user_email, user_roles):
         # Log successful creation
         log_successful_access(user_email, user_roles, 'create_member_self')
         
-        return create_success_response({
-            'message': 'Member application created successfully',
-            'member': convert_decimals(member_data)
-        })
+        return create_success_response(convert_decimals(member_data))
     
     except Exception as e:
         print(f"Error creating member data: {str(e)}")
