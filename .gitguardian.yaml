@@ -8,6 +8,15 @@ secret:
   
   # Ignore specific patterns that are false positives
   ignore_known_secrets: true
+  
+  # Ignore test files with example/test JWT tokens
+  ignored_paths:
+    - "test_*.py"
+    - "test_*.html"
+    - "**/tests/**"
+    - "**/__tests__/**"
+    - "decode_*.py"
+    - "trigger_*.py"
 
 # Exit codes
 exit_zero: false  # Return non-zero exit code when secrets are found
