@@ -1,5 +1,6 @@
 import json
 import boto3
+from decimal import Decimal
 
 # Import shared authentication utilities with fallback support
 try:
@@ -23,6 +24,21 @@ except ImportError as e:
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Events')
+
+def convert_decimals(obj):
+    """Convert Decimal objects to int or float for JSON serialization"""
+    if isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    elif isinstance(obj, Decimal):
+        # Convert to int if it's a whole number, otherwise float
+        if obj % 1 == 0:
+            return int(obj)
+        else:
+            return float(obj)
+    else:
+        return obj
 
 def lambda_handler(event, context):
     try:
@@ -49,6 +65,9 @@ def lambda_handler(event, context):
         # Get events from database
         response = table.scan()
         events = response['Items']
+        
+        # Convert Decimal objects to JSON-serializable types
+        events = convert_decimals(events)
         
         return create_success_response(events)
         
