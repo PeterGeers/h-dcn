@@ -281,35 +281,10 @@ def validate_status_change(user_roles, user_email, member_id, new_status, curren
                 })
             }, validation_details
         
-        # Validate status value (basic validation - could be enhanced with parameter store lookup)
-        valid_statuses = [
-            'active', 'inactive', 'suspended', 'pending', 'new_applicant', 
-            'approved', 'rejected', 'expired', 'cancelled'
-        ]
-        
-        if new_status and new_status not in valid_statuses:
-            validation_details['validation_result'] = 'DENIED'
-            validation_details['reason'] = f'Invalid status value: {new_status}'
-            
-            # Log the invalid status attempt
-            log_status_change_denial(
-                user_email=user_email,
-                user_roles=user_roles,
-                member_id=member_id,
-                attempted_status=new_status,
-                current_status=current_status,
-                reason=f'Invalid status value: {new_status}'
-            )
-            
-            return False, {
-                'statusCode': 400,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': f'Invalid status value: {new_status}',
-                    'field': 'status',
-                    'valid_statuses': valid_statuses
-                })
-            }, validation_details
+        # REMOVED: Enum value validation - trust frontend validation
+        # The frontend (memberFields.ts) is the source of truth for all enum values
+        # Backend should accept any value the frontend sends for enum fields
+        # This eliminates the need to maintain duplicate enum lists in backend and frontend
         
         # If we get here, validation passed
         validation_details['validation_result'] = 'APPROVED'
@@ -440,11 +415,11 @@ def determine_status_change_type(old_status, new_status):
     if not old_status:
         return 'initial_status_set'
     
-    # Define status change patterns
-    activation_statuses = ['active', 'approved']
-    deactivation_statuses = ['inactive', 'suspended', 'cancelled', 'expired']
-    approval_statuses = ['approved']
-    rejection_statuses = ['rejected']
+    # Define status change patterns (support both English and Dutch values)
+    activation_statuses = ['active', 'approved', 'Actief', 'HdcnAccount', 'Club', 'Sponsor']
+    deactivation_statuses = ['inactive', 'suspended', 'cancelled', 'expired', 'Opgezegd', 'Geschorst']
+    approval_statuses = ['approved', 'Actief']
+    rejection_statuses = ['rejected', 'Opgezegd']
     
     if old_status in ['pending', 'new_applicant'] and new_status in approval_statuses:
         return 'approval'
@@ -770,8 +745,8 @@ def trigger_role_assignment_if_needed(member_email, old_status, new_status):
         new_status (str): New status
     """
     try:
-        # Define status categories
-        approved_statuses = ['active', 'approved']
+        # Define status categories (support both English and Dutch values)
+        approved_statuses = ['active', 'approved', 'Actief', 'HdcnAccount', 'Club', 'Sponsor']
         
         # Check if role assignment change is needed
         old_should_have_role = old_status in approved_statuses if old_status else False
