@@ -21,7 +21,7 @@ def test_deployed_endpoint():
     # This is just to test the endpoint structure
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMjQ1ODRjNC01MDcxLTcwZTMtZTQ0ZS1kMzc4NmI0MDY0NTAiLCJlbWFpbCI6InBldGVyQHBnZWVycy5ubCIsImNvZ25pdG86Z3JvdXBzIjpbImhkY25MZWRlbiJdfQ.test',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJjb2duaXRvOmdyb3VwcyI6WyJoZGNuTGVkZW4iXX0.test_signature',
         'X-Requested-With': 'XMLHttpRequest',
         'X-Enhanced-Groups': '["hdcnLeden"]'
     }
