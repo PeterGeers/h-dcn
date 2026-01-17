@@ -125,8 +125,7 @@ venv.bak/
 .mypy_cache/
 
 # Project specific
-*.md
-config.md
+# *.md - COMMENTED OUT to allow spec documentation (Requirements.md, design.md, etc.)
 
 # Secrets and credentials (NEVER commit these!)
 .secrets
