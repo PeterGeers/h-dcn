@@ -81,11 +81,21 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         const roles = getUserRoles(user);
         setUserRoles(roles);
         
-        // Get user region if they have regional restrictions
-        if (roles.includes('Members_Read') && user?.attributes?.email) {
-          // In a real implementation, you'd fetch the user's region from the API
-          // For now, we'll use a placeholder
-          setUserRegion('Noord-Holland'); // This should come from user profile
+        // Extract region from user's Regio_* roles
+        const regionRole = roles.find(role => role.startsWith('Regio_') && role !== 'Regio_All');
+        if (regionRole) {
+          // Extract region name from role (e.g., "Regio_Utrecht" -> "Utrecht")
+          const region = regionRole.replace('Regio_', '');
+          setUserRegion(region);
+          console.log(`[MemberAdminPage] User region set to: ${region}`);
+        } else if (roles.includes('Regio_All')) {
+          // User has national access
+          setUserRegion('All');
+          console.log('[MemberAdminPage] User has national access (Regio_All)');
+        } else {
+          // No regional role found
+          setUserRegion('');
+          console.log('[MemberAdminPage] No regional role found');
         }
       } catch (error) {
         console.error('Error loading user info:', error);
