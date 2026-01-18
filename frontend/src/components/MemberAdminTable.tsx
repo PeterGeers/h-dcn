@@ -704,7 +704,9 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                       const field = MEMBER_FIELDS[column.fieldKey];
                       if (!field) return null;
                       
-                      const value = member[column.fieldKey];
+                      // Use field.key to access the actual database field name
+                      // (e.g., 'ingangsdatum' field definition has key: 'tijdstempel')
+                      const value = member[field.key];
                       
                       return (
                         <Td 
