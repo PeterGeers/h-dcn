@@ -545,6 +545,28 @@ Resources:
             Path: /members
             Method: get
 
+  GetMembersFilteredFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_members_filtered
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30  # Increased timeout for DynamoDB scan and filtering
+      MemorySize: 512  # Increased memory for processing large member datasets
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        GetMembersFiltered:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /api/members
+            Method: get
+
   GetMemberByIdFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1143,29 +1165,6 @@ Resources:
   # S3 Lifecycle Configuration for Analytics Data in existing bucket
   # Note: Using existing my-hdcn-bucket with analytics/ folder structure
 
-  # Member Parquet Generation Function (Docker Container)
-  GenerateMemberParquetFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/hdcn-parquet-generator:latest"
-      Timeout: 300  # 5 minutes for processing large datasets
-      MemorySize: 1024  # More memory for pandas/pyarrow processing
-      Role: !GetAtt DynamoDBRole.Arn
-      Environment:
-        Variables:
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          S3_BUCKET_NAME: "my-hdcn-bucket"
-          S3_PREFIX: "analytics/parquet/members/"
-          PYTHONPATH: /var/task
-      Events:
-        GenerateParquet:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /analytics/generate-parquet
-            Method: post
-
   # Member Export Function (Simple JSON export - much better than parquet!)
   ExportMembersFunction:
     Type: AWS::Serverless::Function
@@ -1187,28 +1186,6 @@ Resources:
             Path: /members/export
             Method: get
 
-  # Parquet Download Function (for Members_Read users)
-  DownloadParquetFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/download_parquet
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
-      Environment:
-        Variables:
-          S3_BUCKET_NAME: "my-hdcn-bucket"
-          S3_PREFIX: "analytics/parquet/members/"
-      Events:
-        DownloadParquet:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /analytics/download-parquet/{filename}
-            Method: get
-
 Outputs:
   ApiBaseUrl:
     Description: "API Gateway endpoint URL"
@@ -1225,12 +1202,6 @@ Outputs:
     Value: !Ref ExistingUserPoolClientId
     Export:
       Name: !Sub "${AWS::StackName}-CognitoUserPoolClientId"
-
-  GenerateMemberParquetFunctionName:
-    Description: "Name of the GenerateMemberParquetFunction for container updates"
-    Value: !Ref GenerateMemberParquetFunction
-    Export:
-      Name: !Sub "${AWS::StackName}-GenerateMemberParquetFunctionName"
   
   CognitoUserPoolDomain:
     Description: "Cognito User Pool Domain for hosted UI"

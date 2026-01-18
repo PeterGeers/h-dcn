@@ -1,5 +1,9 @@
 # Requirements Document: Member Reporting Performance
 
+> **⚠️ DEVELOPMENT SPECIFICATION**
+>
+> This document describes requirements for a NEW system to be developed. These features are NOT yet implemented in production. The current production system uses S3 Parquet files for member reporting.
+
 ## Introduction
 
 This document specifies requirements for improving the performance of member reporting and analysis functionality. The system currently experiences performance issues when loading and filtering large member datasets.
@@ -141,17 +145,15 @@ All current reporting and analysis functions should now use the memory cache
 
 ### Requirement 1: Backend Regional Data API
 
-**User Story:** As a regional user, I want to receive only active member data for my region, so that I can work with a smaller, faster dataset of relevant members.
+**User Story:** As a regional user, I want to receive only member data for my region, so that I can work with a smaller, faster dataset of relevant members.
 
-**Design Note:** Regional users (Regio_Utrecht, Regio_Zuid-Holland, etc.) only receive members with active statuses to focus on current members. Regio_All users receive all members including historical records for comprehensive reporting.
-
-**Implementation Note:** The status field enumOptions in `frontend/src/config/memberFields.ts` defines all possible status values. The backend filtering logic uses a subset of these values for regional users.
+**Design Note:** Regional users (Regio_Utrecht, Regio_Zuid-Holland, etc.) receive only members from their assigned region. Regio_All users receive all members from all regions for comprehensive reporting.
 
 #### Acceptance Criteria
 
 1. WHEN a user requests member data, THE system SHALL extract regional parameters from the JWT_Token
-2. WHERE the JWT_Token contains Regio_All permission, THE system SHALL return all member data regardless of status
-3. WHERE the JWT_Token contains a specific Regio_xxxx parameter, THE system SHALL return only members from that region with status "Actief", "Opgezegd", "wachtRegio", "Aangemeld", or "Geschorst"
+2. WHERE the JWT_Token contains Regio_All permission, THE system SHALL return all member data from all regions
+3. WHERE the JWT_Token contains a specific Regio_xxxx parameter, THE system SHALL return only members where the regio field matches that region
 4. WHEN regional filtering is applied, THE system SHALL complete the filter operation within 1 second
 5. THE system SHALL return data in JSON format optimized for frontend consumption
 

@@ -1,0 +1,3 @@
+# No additional dependencies required
+# Uses boto3 (included in Lambda runtime)
+# Uses shared auth layer for authentication utilities

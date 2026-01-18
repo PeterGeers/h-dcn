@@ -1,5 +1,9 @@
 # Design Document: Member Reporting Performance
 
+> **⚠️ DEVELOPMENT SPECIFICATION**
+>
+> This document describes the design for a NEW system to be developed. These features are NOT yet implemented in production. The current production system uses S3 Parquet files for member reporting. This design will replace that system.
+
 ## Overview
 
 This design implements a simplified regional filtering system to improve member reporting performance. The system replaces the current S3 Parquet approach with a backend regional filtering API that sends only relevant data to users based on their JWT permissions. Browser session storage provides automatic caching during user sessions, eliminating the need for complex backend cache management.
@@ -270,8 +274,8 @@ def filter_members_by_region(members, regional_info):
     """
     Filter members based on user's regional permissions
 
-    Regional users only see active/relevant members (Actief, Opgezegd, wachtRegio, Aangemeld, Geschorst)
-    Regio_All users see all members including historical records
+    Regional users only see members from their assigned region
+    Regio_All users see all members from all regions
 
     Args:
         members: List of all member dictionaries
@@ -286,12 +290,10 @@ def filter_members_by_region(members, regional_info):
     if region == 'All':
         return members
 
-    # Regional users get only their region's members with active statuses
-    ACTIVE_STATUSES = ['Actief', 'Opgezegd', 'wachtRegio', 'Aangemeld', 'Geschorst']
-
+    # Regional users get only their region's members
     return [
         m for m in members
-        if m.get('regio') == region and m.get('status') in ACTIVE_STATUSES
+        if m.get('regio') == region
     ]
 ```
 
@@ -804,7 +806,7 @@ try {
 
 ```python
 def test_filter_members_by_region_all():
-    """Test that Regio_All users get all members regardless of status"""
+    """Test that Regio_All users get all members from all regions"""
     members = [
         {'lidnummer': '1', 'regio': 'Utrecht', 'status': 'Actief'},
         {'lidnummer': '2', 'regio': 'Zuid-Holland', 'status': 'Inactief'},
@@ -814,43 +816,39 @@ def test_filter_members_by_region_all():
 
     result = filter_members_by_region(members, regional_info)
 
-    assert len(result) == 3  # All members returned, including Inactief and Verwijderd
+    assert len(result) == 3  # All members returned
 
 def test_filter_members_by_region_specific():
-    """Test that regional users get only their region with active statuses"""
+    """Test that regional users get only members from their region"""
     members = [
         {'lidnummer': '1', 'regio': 'Utrecht', 'status': 'Actief'},
         {'lidnummer': '2', 'regio': 'Zuid-Holland', 'status': 'Actief'},
         {'lidnummer': '3', 'regio': 'Utrecht', 'status': 'Opgezegd'},
-        {'lidnummer': '4', 'regio': 'Utrecht', 'status': 'Inactief'},  # Should be filtered out
+        {'lidnummer': '4', 'regio': 'Utrecht', 'status': 'Inactief'},
         {'lidnummer': '5', 'regio': 'Utrecht', 'status': 'wachtRegio'}
     ]
     regional_info = {'region': 'Utrecht'}
 
     result = filter_members_by_region(members, regional_info)
 
-    assert len(result) == 3  # Only Utrecht members with active statuses
+    assert len(result) == 4  # All Utrecht members regardless of status
     assert all(m['regio'] == 'Utrecht' for m in result)
-    assert all(m['status'] in ['Actief', 'Opgezegd', 'wachtRegio', 'Aangemeld', 'Geschorst'] for m in result)
-    assert '4' not in [m['lidnummer'] for m in result]  # Inactief member excluded
+    assert '2' not in [m['lidnummer'] for m in result]  # Zuid-Holland member excluded
 
-def test_filter_members_active_statuses():
-    """Test that all active statuses are included for regional users"""
+def test_filter_members_all_statuses_included():
+    """Test that all statuses are included for regional users"""
     members = [
         {'lidnummer': '1', 'regio': 'Utrecht', 'status': 'Actief'},
         {'lidnummer': '2', 'regio': 'Utrecht', 'status': 'Opgezegd'},
-        {'lidnummer': '3', 'regio': 'Utrecht', 'status': 'wachtRegio'},
-        {'lidnummer': '4', 'regio': 'Utrecht', 'status': 'Aangemeld'},
+        {'lidnummer': '3', 'regio': 'Utrecht', 'status': 'Inactief'},
+        {'lidnummer': '4', 'regio': 'Utrecht', 'status': 'Verwijderd'},
         {'lidnummer': '5', 'regio': 'Utrecht', 'status': 'Geschorst'}
     ]
     regional_info = {'region': 'Utrecht'}
 
     result = filter_members_by_region(members, regional_info)
 
-    assert len(result) == 5  # All active statuses included
-
-    assert len(result) == 2
-    assert all(m['regio'] == 'Utrecht' for m in result)
+    assert len(result) == 5  # All statuses included
 
 def test_authentication_required():
     """Test that requests without JWT are rejected"""
@@ -1106,44 +1104,63 @@ if isinstance(value, Decimal):
    - Remove `useParquetData.ts` hook
    - Update member reporting page to use new `MemberDataService`
 
-**Rollback Plan**:
-
-- Keep Parquet Lambda functions deployed but unused for 1 week
-- Monitor new system for issues
-- If critical issues arise, can quickly re-enable Parquet system
-- After 1 week of stable operation, proceed with cleanup
-
 ## Deployment Plan
 
-**Phase 1: Deploy New Regional API** (Week 1)
+> **Note**: This deployment plan is for developing a new system that will replace the existing S3 Parquet system currently in production.
 
-1. Deploy new Lambda function: `get_members_filtered`
-2. Add API Gateway endpoint: `GET /api/members`
+**Phase 1: Development Environment Setup** (Week 1)
+
+1. Deploy new Lambda function: `get_members_filtered` to development
+2. Add API Gateway endpoint: `GET /api/members` in development
 3. Test with Postman/curl
 4. Verify regional filtering works correctly
+5. Run unit tests and integration tests
 
-**Phase 2: Update Frontend** (Week 2)
+**Phase 2: Frontend Development** (Week 2)
 
 1. Add `MemberDataService.ts`
 2. Update `MemberList` component
 3. Add refresh button for CRUD users
 4. Test in development environment
-5. Deploy to staging
+5. Verify session storage caching works
 
-**Phase 3: Production Rollout** (Week 3)
+**Phase 3: Integration Testing** (Week 3)
 
-1. Deploy frontend to production
-2. Monitor performance and errors
-3. Gather user feedback
-4. Keep Parquet system running (fallback)
+1. End-to-end testing in development
+2. Performance testing (load times, filter response)
+3. Security testing (regional isolation)
+4. User acceptance testing with key stakeholders
+5. Fix any issues found
 
-**Phase 4: Cleanup** (Week 4)
+**Phase 4: Production Deployment** (Week 4)
 
-1. Verify new system is stable
-2. Remove Parquet Lambda functions
-3. Remove Parquet API endpoints
-4. Clean up S3 files
-5. Update documentation
+1. Deploy backend Lambda to production
+2. Deploy frontend to production
+3. Monitor performance and errors
+4. Gather user feedback
+5. Verify new system works correctly
+
+**Phase 5: Remove Old Parquet System** (Week 5)
+
+> **Important**: Only proceed with this phase after confirming the new system is stable in production.
+
+1. Remove Parquet Lambda functions from production:
+   - `backend/handler/generate_member_parquet/`
+   - `backend/handler/download_parquet/`
+2. Remove Parquet API Gateway endpoints:
+   - `POST /analytics/generate-parquet`
+   - `GET /analytics/download-parquet/{filename}`
+3. Clean up S3 storage:
+   - Delete `s3://my-hdcn-bucket/analytics/parquet/members/`
+4. Update CloudFormation/SAM template:
+   - Remove `GenerateMemberParquetFunction` resource
+   - Remove `DownloadParquetFunction` resource
+   - Remove associated IAM roles and policies
+5. Remove Parquet-related frontend code:
+   - Remove Parquet UI buttons
+   - Remove `ParquetDataService.ts`
+   - Remove `useParquetData.ts` hook
+6. Update documentation to reflect the new system
 
 ## Success Metrics
 

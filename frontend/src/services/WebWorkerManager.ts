@@ -7,11 +7,37 @@
  */
 
 import { Member } from '../types/index';
-import { ParquetWorkerMessage, ParquetWorkerResponse, ParquetProcessingStats } from '../types/ParquetTypes';
 
 // ============================================================================
 // TYPES
 // ============================================================================
+
+export interface WorkerMessage {
+  type: 'PROCESS_DATA' | 'APPLY_CALCULATED_FIELDS' | 'APPLY_REGIONAL_FILTER';
+  payload: {
+    data: any[];
+    options?: any;
+  };
+  requestId: string;
+}
+
+export interface WorkerResponse {
+  type: 'SUCCESS' | 'ERROR' | 'PROGRESS';
+  payload: {
+    data?: Member[];
+    stats?: ProcessingStats;
+    error?: string;
+    progress?: number;
+  };
+  requestId: string;
+}
+
+export interface ProcessingStats {
+  totalRecords: number;
+  processedRecords: number;
+  processingTime: number;
+  memoryUsed?: number;
+}
 
 export interface WebWorkerTask<T = any> {
   id: string;
@@ -25,7 +51,7 @@ export interface WebWorkerTask<T = any> {
 
 export interface WebWorkerResult {
   data: Member[];
-  stats?: ParquetProcessingStats;
+  stats?: ProcessingStats;
 }
 
 export interface WebWorkerConfig {
@@ -140,7 +166,7 @@ export class WebWorkerManager {
   /**
    * Handle messages from workers
    */
-  private handleWorkerMessage(worker: Worker, event: MessageEvent<ParquetWorkerResponse>): void {
+  private handleWorkerMessage(worker: Worker, event: MessageEvent<WorkerResponse>): void {
     const { type, payload, requestId } = event.data;
     const task = this.activeTasks.get(requestId);
 
@@ -306,7 +332,7 @@ export class WebWorkerManager {
     this.workerTaskMap.set(worker, task.id);
 
     // Send message to worker
-    const message: ParquetWorkerMessage = {
+    const message: WorkerMessage = {
       type: task.type,
       payload: {
         data: task.data,

@@ -1,1 +1,0 @@
-# Shared authentication layer for H-DCN Lambda functions
