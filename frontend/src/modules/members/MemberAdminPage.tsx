@@ -101,8 +101,9 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       try {
         setLoading(true);
         
-        // Use NEW MemberDataService which calls /api/members with regional filtering
-        const data = await MemberDataService.fetchMembers();
+        // FORCE REFRESH to bypass cache - this ensures we always get fresh data
+        console.log('[MemberAdminPage] Forcing fresh data fetch (bypassing cache)');
+        const data = await MemberDataService.fetchMembers(true); // Force refresh = true
         
         console.log('[MemberAdminPage] Raw data from MemberDataService:', data);
         console.log('[MemberAdminPage] Data type:', typeof data);
