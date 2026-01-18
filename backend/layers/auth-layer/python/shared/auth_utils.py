@@ -1,6 +1,7 @@
 """
 Shared authentication and authorization utilities for Lambda handlers
 Provides consistent credential validation across all backend functions
+Version: 2.1.1 - Fixed regional access for users with both hdcnLeden and regional roles (2026-01-18)
 """
 
 import json
