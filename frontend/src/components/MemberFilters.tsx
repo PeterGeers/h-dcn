@@ -145,13 +145,13 @@ export const MemberFilters: React.FC<MemberFiltersProps> = ({
    * Triggers onChange callback with updated filters
    */
   const updateFilter = useCallback((key: keyof MemberFilters, value: any) => {
-    const newFilters = { ...filters };
+    const newFilters: MemberFilters = { ...filters };
     
     // Remove filter if value is empty
     if (value === '' || value === undefined) {
       delete newFilters[key];
     } else {
-      newFilters[key] = value;
+      (newFilters as any)[key] = value;
     }
     
     setFilters(newFilters);

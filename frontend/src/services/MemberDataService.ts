@@ -22,6 +22,7 @@ import { Member } from '../types/index';
 export interface MemberDataResponse {
   success: boolean;
   data: Member[];
+  error?: string;
   metadata: {
     total_count: number;
     region: string;
