@@ -21,6 +21,11 @@ All Parquet-related code and resources have been removed from the codebase:
 3. ✅ Cleaned up S3 storage:
    - Deleted all files in `s3://my-hdcn-bucket/analytics/parquet/members/`
 
+4. ✅ Deleted ECR repository:
+   - Deleted `hdcn-parquet-generator` ECR repository
+   - Removed all 28 Docker images (freed up storage)
+   - Repository URI: `344561557829.dkr.ecr.eu-west-1.amazonaws.com/hdcn-parquet-generator`
+
 ### Frontend Changes
 
 1. ✅ Deleted Parquet service files:

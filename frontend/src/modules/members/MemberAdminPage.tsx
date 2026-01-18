@@ -37,6 +37,7 @@ import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { getUserRoles } from '../../utils/functionPermissions';
+import { MemberDataService } from '../../services/MemberDataService';
 
 interface MemberAdminPageProps {
   user: any;
@@ -94,18 +95,17 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     loadUserInfo();
   }, [user]);
 
-  // Load members using DynamoDB service (CORRECT - this is what was working!)
+  // Load members using NEW MemberDataService with regional filtering
   useEffect(() => {
     const loadMembers = async () => {
       try {
         setLoading(true);
-
-        const headers = await getAuthHeadersForGet();
-        const data = await apiCall<any>(
-          fetch(API_URLS.members(), { headers }),
-          'laden leden'
-        );
-        setMembers(Array.isArray(data) ? data : (data?.members || []));
+        
+        // Use NEW MemberDataService which calls /api/members with regional filtering
+        const data = await MemberDataService.fetchMembers();
+        setMembers(data);
+        
+        console.log(`[MemberAdminPage] Loaded ${data.length} members with regional filtering`);
       } catch (error) {
         handleError(error, 'Fout bij het laden van leden');
       } finally {
@@ -143,13 +143,9 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         'bijwerken lid'
       );
 
-      // Refresh member data to reflect changes
-      const refreshHeaders = await getAuthHeadersForGet();
-      const data = await apiCall<any>(
-        fetch(API_URLS.members(), { headers: refreshHeaders }),
-        'laden leden'
-      );
-      setMembers(Array.isArray(data) ? data : (data?.members || []));
+      // Refresh member data using NEW MemberDataService with regional filtering
+      const data = await MemberDataService.refreshMembers();
+      setMembers(data);
       
       toast({
         title: 'Lid bijgewerkt',
