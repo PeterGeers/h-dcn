@@ -180,27 +180,31 @@ def validate_permissions_with_regions(user_roles, required_permissions, user_ema
             return False, error_response, None
         
         # 3. Validate region requirements (simplified logic)
-        # Basic member roles (hdcnLeden, verzoek_lid) don't need region roles
+        # Check for regional roles FIRST
+        region_roles = [role for role in user_roles if role.startswith('Regio_')]
+        
+        # If user has regional roles, use regional access (even if they also have hdcnLeden)
+        if region_roles:
+            regional_info = determine_regional_access(user_roles, resource_context)
+            print(f"[AUTH_DEBUG] User has regional roles: {region_roles}, regional_info: {regional_info}")
+            return True, None, regional_info
+        
+        # Basic member roles (hdcnLeden, verzoek_lid) without regional roles
         if any(role in ['hdcnLeden', 'verzoek_lid'] for role in user_roles):
+            print(f"[AUTH_DEBUG] User has basic member role without regional roles")
             return True, None, {'has_full_access': False, 'allowed_regions': [], 'access_type': 'basic_member'}
         
         # All other permission roles require region assignment
-        region_roles = [role for role in user_roles if role.startswith('Regio_')]
-        if not region_roles:
-            return False, {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: Permission requires region assignment',
-                    'required_structure': 'Permission (e.g., Members_CRUD) + Region (e.g., Regio_All)',
-                    'user_roles': user_roles,
-                    'missing': 'Region assignment'
-                })
-            }, None
-        
-        # 4. Determine regional access (streamlined)
-        regional_info = determine_regional_access(user_roles, resource_context)
-        return True, None, regional_info
+        return False, {
+            'statusCode': 403,
+            'headers': cors_headers(),
+            'body': json.dumps({
+                'error': 'Access denied: Permission requires region assignment',
+                'required_structure': 'Permission (e.g., Members_CRUD) + Region (e.g., Regio_All)',
+                'user_roles': user_roles,
+                'missing': 'Region assignment'
+            })
+        }, None
         
     except Exception as e:
         print(f"Error validating permissions with regions: {str(e)}")
