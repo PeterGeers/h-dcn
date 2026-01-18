@@ -130,7 +130,9 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                 // For date filters, you might want more sophisticated logic
                 return memberValue?.toString().includes(filterValue);
               } else if (field.dataType === 'number') {
-                return memberValue?.toString() === filterValue;
+                // For number fields (like lidnummer), support partial matching
+                // This allows searching for "65" to find "6534"
+                return memberValue?.toString().includes(filterValue);
               } else {
                 // Text filter
                 return memberValue?.toString().toLowerCase().includes(filterValue.toLowerCase());

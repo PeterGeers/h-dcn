@@ -1,178 +1,151 @@
-# Regional Filtering Fix - Member Admin Page
+# Regional Filtering Bug Fix - Complete
 
 **Date**: 2026-01-18  
-**Issue**: Users seeing all members instead of regionally-filtered members  
-**Status**: ✅ FIXED
+**Status**: ✅ RESOLVED  
+**User**: Peter Geers (peter@pgeers.nl)
 
-## Problem Description
+## Problem Summary
 
-User Peter Geers (Regio_Utrecht) was seeing ALL 1229 members instead of only the 106 Utrecht members he should have access to.
+User Peter Geers has `Regio_Utrecht` group in Cognito but was seeing 0 members instead of 106 Utrecht members in the member list.
 
-### Root Cause
+## Root Causes Identified
 
-The `/members` page (MemberAdminPage component) was calling the **OLD** `/members` endpoint which returns ALL members without regional filtering, instead of the **NEW** `/api/members` endpoint which implements backend regional filtering.
+### 1. Backend Auth Layer Bug (FIXED)
 
-**Network Analysis**:
+**Location**: `backend/layers/auth-layer/python/shared/auth_utils.py` lines 185-186
 
-- OLD endpoint being called: `https://qsdq51d2r3.execute-api.eu-west-1.amazonaws.com/dev/members`
-- NEW endpoint should be: `https://qsdq51d2r3.execute-api.eu-west-1.amazonaws.com/dev/api/members`
+**Problem**: When a user had BOTH `hdcnLeden` AND regional roles (like `Regio_Utrecht`), the auth layer returned early with empty `allowed_regions` without checking for regional roles.
 
-## Technical Details
+**Buggy Code**:
 
-### Before Fix
-
-**File**: `frontend/src/modules/members/MemberAdminPage.tsx`
-
-```typescript
-// OLD CODE - Using API_URLS.members() which calls /members
-const loadMembers = async () => {
-  try {
-    setLoading(true);
-    const headers = await getAuthHeadersForGet();
-    const data = await apiCall<any>(
-      fetch(API_URLS.members(), { headers }), // ❌ Calls /members (no filtering)
-      "laden leden",
-    );
-    setMembers(Array.isArray(data) ? data : data?.members || []);
-  } catch (error) {
-    handleError(error, "Fout bij het laden van leden");
-  } finally {
-    setLoading(false);
-  }
-};
+```python
+# Basic member roles (hdcnLeden, verzoek_lid) don't need region roles
+if any(role in ['hdcnLeden', 'verzoek_lid'] for role in user_roles):
+    return True, None, {'has_full_access': False, 'allowed_regions': [], 'access_type': 'basic_member'}
 ```
 
-### After Fix
+**Fix Applied**:
 
-```typescript
-// NEW CODE - Using MemberDataService which calls /api/members
-import { MemberDataService } from "../../services/MemberDataService";
+```python
+# Check for regional roles FIRST
+region_roles = [role for role in user_roles if role.startswith('Regio_')]
 
-const loadMembers = async () => {
-  try {
-    setLoading(true);
+# If user has regional roles, use regional access (even if they also have hdcnLeden)
+if region_roles:
+    regional_info = determine_regional_access(user_roles, resource_context)
+    print(f"[AUTH_DEBUG] User has regional roles: {region_roles}, regional_info: {regional_info}")
+    return True, None, regional_info
 
-    // Use NEW MemberDataService which calls /api/members with regional filtering
-    const data = await MemberDataService.fetchMembers(); // ✅ Calls /api/members (with filtering)
-    setMembers(data);
-
-    console.log(
-      `[MemberAdminPage] Loaded ${data.length} members with regional filtering`,
-    );
-  } catch (error) {
-    handleError(error, "Fout bij het laden van leden");
-  } finally {
-    setLoading(false);
-  }
-};
+# Basic member roles (hdcnLeden, verzoek_lid) without regional roles
+if any(role in ['hdcnLeden', 'verzoek_lid'] for role in user_roles):
+    print(f"[AUTH_DEBUG] User has basic member role without regional roles")
+    return True, None, {'has_full_access': False, 'allowed_regions': [], 'access_type': 'basic_member'}
 ```
 
-## Changes Made
+### 2. Frontend Region Extraction Bug (FIXED)
 
-### 1. Updated MemberAdminPage.tsx
+**Location**: `frontend/src/modules/members/MemberAdminPage.tsx` line 88
 
-**Import Added**:
+**Problem**: The frontend was hardcoded to set `userRegion` to "Noord-Holland" instead of extracting it from the user's roles.
+
+**Buggy Code**:
 
 ```typescript
-import { MemberDataService } from "../../services/MemberDataService";
+// In a real implementation, you'd fetch the user's region from the API
+// For now, we'll use a placeholder
+setUserRegion("Noord-Holland"); // This should come from user profile
 ```
 
-**Load Members Function**:
+**Fix Applied**:
 
-- Replaced `fetch(API_URLS.members())` with `MemberDataService.fetchMembers()`
-- This ensures the component uses `/api/members` endpoint with regional filtering
-
-**Refresh Members Function**:
-
-- Replaced manual fetch with `MemberDataService.refreshMembers()`
-- Maintains consistency with the new service
-
-### 2. Benefits of Using MemberDataService
-
-1. **Regional Filtering**: Backend filters members by user's region BEFORE sending to frontend
-2. **Session Storage Caching**: Faster subsequent loads (no repeated API calls)
-3. **Calculated Fields**: Automatically computes korte_naam, leeftijd, verjaardag, jaren_lid, aanmeldingsjaar
-4. **Error Handling**: Comprehensive error handling with user-friendly messages
-5. **Consistent API**: Single source of truth for member data fetching
+```typescript
+// Extract region from user's Regio_* roles
+const regionRole = roles.find(
+  (role) => role.startsWith("Regio_") && role !== "Regio_All",
+);
+if (regionRole) {
+  // Extract region name from role (e.g., "Regio_Utrecht" -> "Utrecht")
+  const region = regionRole.replace("Regio_", "");
+  setUserRegion(region);
+  console.log(`[MemberAdminPage] User region set to: ${region}`);
+} else if (roles.includes("Regio_All")) {
+  // User has national access
+  setUserRegion("All");
+  console.log("[MemberAdminPage] User has national access (Regio_All)");
+} else {
+  // No regional role found
+  setUserRegion("");
+  console.log("[MemberAdminPage] No regional role found");
+}
+```
 
 ## Verification
 
-### Expected Behavior After Fix
+### Backend Logs (CloudWatch)
 
-**For Peter Geers (Regio_Utrecht)**:
+```
+✅ [AUTH_DEBUG] User has regional roles: ['Regio_Utrecht'], regional_info: {'has_full_access': False, 'allowed_regions': ['Utrecht'], 'access_type': 'regional'}
+✅ [FILTER] Filtered 1229 members to 106 members for regions: ['Utrecht']
+✅ [HANDLER] Success: Returning 106 members to user peter@pgeers.nl
+```
 
-- Should see: **106 Utrecht members**
-- Should NOT see: Members from other regions (Noord-Holland, Zuid-Holland, etc.)
+### Frontend Result
 
-**For Regio_All users**:
+- User sees: **"106 van 106 leden"** (106 of 106 members)
+- All Utrecht members are displayed correctly
+- Regional filtering works as expected
 
-- Should see: **ALL 1229 members** (no filtering)
+## Deployments
 
-### Testing Steps
+1. **Backend Deployment** (13:58 UTC)
+   - New auth layer version: `AuthLayer6587e9c6b1` (version 15)
+   - All Lambda functions updated to use new layer
+   - Commit: `eddb58b`
 
-1. Login as Peter Geers (peter@pgeers.nl)
-2. Navigate to `/members` page
-3. Check member count badge
-4. Verify only Utrecht members are displayed
-5. Check browser console for log: `[MemberAdminPage] Loaded 106 members with regional filtering`
-6. Check Network tab: Should call `/api/members` NOT `/members`
+2. **Frontend Deployment** (14:05 UTC)
+   - Updated `MemberAdminPage.tsx` with region extraction logic
+   - CloudFront cache invalidated
+   - Commit: `471d939`
 
-## Backend Endpoints
+## Impact
 
-### OLD Endpoint (No Filtering)
+- ✅ Users with both `hdcnLeden` and regional roles now see correct regional data
+- ✅ Backend correctly identifies regional access from `Regio_*` roles
+- ✅ Frontend correctly extracts region from user roles
+- ✅ No impact on users with only `hdcnLeden` or only regional roles
+- ✅ No impact on users with `Regio_All` (national access)
 
-- **Path**: `/members`
-- **Handler**: `backend/handler/get_members/app.py`
-- **Behavior**: Returns ALL members (with some regional filtering logic but not working correctly)
-- **Status**: ⚠️ Still exists for backward compatibility
+## Testing Performed
 
-### NEW Endpoint (With Filtering)
+1. **Backend Testing**:
+   - Verified auth layer returns correct `allowed_regions` for Peter's roles
+   - Verified backend filters 1229 members to 106 Utrecht members
+   - Verified response includes correct metadata
 
-- **Path**: `/api/members`
-- **Handler**: `backend/handler/get_members_filtered/app.py`
-- **Behavior**: Filters members by user's regional permissions BEFORE sending
-- **Status**: ✅ Active and working correctly
+2. **Frontend Testing**:
+   - Verified frontend extracts "Utrecht" from `Regio_Utrecht` role
+   - Verified MemberAdminTable receives correct `userRegion` prop
+   - Verified 106 Utrecht members are displayed
 
-## Deployment
-
-**Deployment Script**: `scripts/deployment/frontend-build-and-deploy-fast.ps1`
-
-**Deployment Time**: 48.3 seconds
-
-- Build: 33.1 seconds
-- Deploy: 14.6 seconds
-- Smoke tests: 1.4 seconds
-
-**Smoke Test Results**: ✅ All 4 tests passed
-
-**CloudFront URL**: https://de1irtdutlxqu.cloudfront.net
+3. **User Acceptance**:
+   - User confirmed: "Top the data from Utrecht is loaded as expected"
 
 ## Related Files
 
-### Frontend
+- `backend/layers/auth-layer/python/shared/auth_utils.py` (auth layer fix)
+- `backend/shared/auth_utils.py` (sync copy of auth layer)
+- `frontend/src/modules/members/MemberAdminPage.tsx` (region extraction fix)
+- `backend/handler/get_members_filtered/app.py` (backend handler)
+- `frontend/src/components/MemberAdminTable.tsx` (frontend table component)
 
-- `frontend/src/modules/members/MemberAdminPage.tsx` - Fixed to use MemberDataService
-- `frontend/src/services/MemberDataService.ts` - Service that calls /api/members
-- `frontend/src/components/MemberList.tsx` - Example component using MemberDataService
-- `frontend/src/config/api.ts` - API endpoint configuration
+## Lessons Learned
 
-### Backend
+1. **Check for regional roles BEFORE checking for basic member roles** in auth validation
+2. **Never hardcode user attributes** - always extract from actual user data
+3. **Frontend and backend must agree** on how regional access is determined
+4. **Comprehensive logging** in auth layer helped identify the issue quickly
+5. **CloudWatch logs are essential** for debugging Lambda issues
 
-- `backend/handler/get_members_filtered/app.py` - NEW handler with regional filtering
-- `backend/handler/get_members/app.py` - OLD handler (still exists)
+## Status
 
-## Future Improvements
-
-1. **Deprecate OLD Endpoint**: Consider removing `/members` endpoint once all components are migrated
-2. **Update Other Components**: Check if any other components are still using the old endpoint
-3. **Add Regional Indicator**: Show user's region in the UI header
-4. **Add Refresh Button**: Allow users to manually refresh data (already in MemberList component)
-
-## Related Spec Tasks
-
-This fix addresses issues discovered during:
-
-- **Task 15**: Remove old Parquet system from production
-- **Task 14**: Update member reporting page to use new service
-
-The regional filtering was working in the NEW components but the main `/members` page was still using the OLD API endpoint.
+✅ **RESOLVED** - Regional filtering now works correctly for all user role combinations.
