@@ -103,10 +103,17 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
         
         // Use NEW MemberDataService which calls /api/members with regional filtering
         const data = await MemberDataService.fetchMembers();
+        
+        console.log('[MemberAdminPage] Raw data from MemberDataService:', data);
+        console.log('[MemberAdminPage] Data type:', typeof data);
+        console.log('[MemberAdminPage] Is array:', Array.isArray(data));
+        console.log('[MemberAdminPage] Data length:', data?.length);
+        
         setMembers(data);
         
         console.log(`[MemberAdminPage] Loaded ${data.length} members with regional filtering`);
       } catch (error) {
+        console.error('[MemberAdminPage] Error loading members:', error);
         handleError(error, 'Fout bij het laden van leden');
       } finally {
         setLoading(false);
