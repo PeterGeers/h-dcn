@@ -148,8 +148,11 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
       const aValue = a[sortField];
       const bValue = b[sortField];
       
-      // Handle numeric sorting for lidnummer
-      if (sortField === 'lidnummer') {
+      // Get field definition to check data type
+      const field = MEMBER_FIELDS[sortField];
+      
+      // Handle numeric sorting for number fields (lidnummer, jaren_lid, etc.)
+      if (field && field.dataType === 'number') {
         const aNum = Number(aValue) || 0;
         const bNum = Number(bValue) || 0;
         
@@ -157,6 +160,18 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           return aNum - bNum;
         } else {
           return bNum - aNum;
+        }
+      }
+      
+      // Handle date sorting
+      if (field && field.dataType === 'date') {
+        const aDate = aValue ? new Date(aValue).getTime() : 0;
+        const bDate = bValue ? new Date(bValue).getTime() : 0;
+        
+        if (sortDirection === 'asc') {
+          return aDate - bDate;
+        } else {
+          return bDate - aDate;
         }
       }
       
