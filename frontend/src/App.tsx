@@ -128,7 +128,7 @@ function App() {
     <MaintenanceProvider>
       <CustomAuthenticator>
         {({ signOut, user }) => (
-          <Router>
+          <Router basename="/h-dcn">
             <Routes>
               {/* OAuth Callback Route - MUST be before GroupAccessGuard */}
               <Route path="/auth/callback" element={

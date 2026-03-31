@@ -9,18 +9,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: frontend-deploy
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Build & Deploy Frontend
+  build:
+    name: Build Frontend
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: Checkout code
@@ -66,20 +66,23 @@ jobs:
         env:
           GENERATE_SOURCEMAP: 'false'
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp frontend/build/index.html frontend/build/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.REACT_APP_AWS_REGION }}
+          path: frontend/build
 
-      - name: Deploy to S3
-        run: aws s3 sync frontend/build/ s3://${{ vars.REACT_APP_S3_BUCKET }}/ --delete
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-      - name: Invalidate CloudFront cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
-
-      - name: Smoke tests
-        run: node scripts/deployment/smoke-test-production.js
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
