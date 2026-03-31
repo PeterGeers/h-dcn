@@ -274,6 +274,7 @@ export class DataProcessingService {
 
   /**
    * Calculate aggregations on the dataset
+   * Optimized: single-pass type checking and filtered value computation
    */
   public calculateAggregations(
     data: Member[], 
@@ -289,20 +290,38 @@ export class DataProcessingService {
         count: values.length
       };
 
-      if (operations.includes('sum') && values.every(v => typeof v === 'number')) {
-        result.sum = values.reduce((sum, val) => sum + val, 0);
+      // Single-pass: compute numeric values and all-positive check
+      const needsNumeric = operations.some(op => ['sum', 'average', 'min', 'max'].includes(op));
+      let allNumeric = true;
+      let numericValues: number[] = [];
+      
+      if (needsNumeric) {
+        for (const v of values) {
+          if (typeof v !== 'number') {
+            allNumeric = false;
+            break;
+          }
+          numericValues.push(v);
+        }
+        if (!allNumeric) {
+          numericValues = values.filter(v => typeof v === 'number') as number[];
+        }
       }
 
-      if (operations.includes('average') && values.every(v => typeof v === 'number')) {
+      if (operations.includes('sum') && allNumeric) {
+        result.sum = numericValues.reduce((sum, val) => sum + val, 0);
+      }
+
+      if (operations.includes('average') && allNumeric) {
         result.average = result.sum! / values.length;
       }
 
-      if (operations.includes('min')) {
-        result.min = Math.min(...values.filter(v => typeof v === 'number'));
+      if (operations.includes('min') && numericValues.length > 0) {
+        result.min = Math.min(...numericValues);
       }
 
-      if (operations.includes('max')) {
-        result.max = Math.max(...values.filter(v => typeof v === 'number'));
+      if (operations.includes('max') && numericValues.length > 0) {
+        result.max = Math.max(...numericValues);
       }
 
       if (operations.includes('unique')) {
@@ -310,22 +329,22 @@ export class DataProcessingService {
       }
 
       if (operations.includes('groupBy') && groupByField) {
-        const groups: Record<string, any> = {};
-        data.forEach(item => {
+        const groups: Record<string, any[]> = {};
+        for (const item of data) {
           const groupKey = String(this.getNestedValue(item, groupByField));
           if (!groups[groupKey]) {
             groups[groupKey] = [];
           }
           groups[groupKey].push(this.getNestedValue(item, field));
-        });
+        }
         
-        result.groupBy = Object.entries(groups).reduce((acc, [key, groupValues]) => {
-          acc[key] = {
+        result.groupBy = {};
+        for (const [key, groupValues] of Object.entries(groups)) {
+          result.groupBy![key] = {
             count: groupValues.length,
             values: groupValues
           };
-          return acc;
-        }, {} as Record<string, any>);
+        }
       }
 
       results[field] = result;
