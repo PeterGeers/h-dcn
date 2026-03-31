@@ -218,23 +218,36 @@ export class DataProcessingService {
 
   /**
    * Apply multi-column sorting (modifies array in-place since caller makes defensive copy)
+   * Optimized: pre-extracts sort values to avoid repeated getNestedValue calls
    */
   public applySorting(data: Member[], sorts: SortCriteria[]): Member[] {
-    // Sort in-place - caller has already created defensive copy
-    return data.sort((a, b) => {
-      for (const sort of sorts) {
-        let comparison: number;
+    if (sorts.length === 0) return data;
+    
+    // Pre-extract sort keys for each item to avoid repeated getNestedValue calls
+    // Each item gets an array of [extractedValue, sortCriteria][]
+    const itemsWithKeys = data.map(item => {
+      const keys = sorts.map(sort => ({
+        value: sort.customSortFn ? item : this.getNestedValue(item, sort.field),
+        sort
+      }));
+      return { item, keys };
+    });
+    
+    // Sort using pre-extracted keys
+    itemsWithKeys.sort((a, b) => {
+      for (let i = 0; i < sorts.length; i++) {
+        const sort = sorts[i];
+        const aKey = a.keys[i];
+        const bKey = b.keys[i];
         
+        let comparison: number;
         if (sort.customSortFn) {
           comparison = sort.customSortFn(
-            this.getNestedValue(a, sort.field),
-            this.getNestedValue(b, sort.field)
+            this.getNestedValue(a.item, sort.field),
+            this.getNestedValue(b.item, sort.field)
           );
         } else {
-          comparison = this.compareValues(
-            this.getNestedValue(a, sort.field),
-            this.getNestedValue(b, sort.field)
-          );
+          comparison = this.compareValues(aKey.value, bKey.value);
         }
 
         if (comparison !== 0) {
@@ -243,6 +256,13 @@ export class DataProcessingService {
       }
       return 0;
     });
+    
+    // Copy sorted items back to original array
+    for (let i = 0; i < data.length; i++) {
+      data[i] = itemsWithKeys[i].item;
+    }
+    
+    return data;
   }
 
   /**
