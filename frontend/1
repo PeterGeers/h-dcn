@@ -1,0 +1,59 @@
+
+> hdcn-dashboard@1.0.0 test:data-processing:performance
+> react-scripts test --testPathPattern=DataProcessingService.performance --watchAll=false --verbose
+
+  console.error
+    [WebWorkerManager] Web Workers are not supported in this environment
+
+    [0m [90m 111 |[39m
+     [90m 112 |[39m   [36mprivate[39m logError(message[33m:[39m string[33m,[39m error[33m?[39m[33m:[39m any)[33m:[39m [36mvoid[39m {
+    [31m[1m>[22m[39m[90m 113 |[39m     console[33m.[39merror([32m`[WebWorkerManager] ${message}`[39m[33m,[39m error [33m||[39m [32m''[39m)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 114 |[39m   }
+     [90m 115 |[39m
+     [90m 116 |[39m   [90m// ============================================================================[39m[0m
+
+      at WebWorkerManager.logError (src/services/WebWorkerManager.ts:113:13)
+      at WebWorkerManager.initializeWorkers (src/services/WebWorkerManager.ts:126:12)
+      at new WebWorkerManager (src/services/WebWorkerManager.ts:89:10)
+      at Function.getInstance (src/services/WebWorkerManager.ts:97:35)
+      at Object.<anonymous> (src/services/WebWorkerManager.ts:488:50)
+      at Object.<anonymous> (src/services/DataProcessingService.ts:14:1)
+      at Object.<anonymous> (src/services/__tests__/DataProcessingService.performance.test.ts:6:1)
+      at TestScheduler.scheduleTests (node_modules/@jest/core/build/TestScheduler.js:333:13)
+      at runJest (node_modules/@jest/core/build/runJest.js:404:19)
+      at _run10000 (node_modules/@jest/core/build/cli/index.js:320:7)
+      at runCLI (node_modules/@jest/core/build/cli/index.js:173:3)
+
+PASS src/services/__tests__/DataProcessingService.performance.test.ts
+  DataProcessingService Performance Tests
+    Filtering Performance
+      √ should filter small dataset quickly (<10ms) (2 ms)
+      √ should filter medium dataset efficiently (<50ms) (1 ms)
+      √ should handle large dataset with reasonable performance (<200ms) (3 ms)
+    Sorting Performance
+      √ should sort medium dataset quickly (<30ms) (11 ms)
+      √ should sort large dataset with acceptable performance (<100ms) (36 ms)
+    Search Performance
+      √ should search medium dataset efficiently (<40ms) (2 ms)
+      √ should handle fuzzy search on large dataset (<150ms) (142 ms)
+    Combined Operations Performance
+      √ should handle complex operations on medium dataset (<80ms) (2 ms)
+    Aggregation Performance
+      √ should calculate aggregations on large dataset efficiently (<100ms) (3 ms)
+    Caching Performance
+      √ should significantly improve performance with caching (1 ms)
+      √ should handle cache eviction properly (1 ms)
+    Memory Usage
+      √ should not cause memory leaks with repeated operations (1 ms)
+    Batch Processing
+      √ should use batch processing for very large datasets (38 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        1.483 s
+Ran all test suites matching /DataProcessingService.performance/i.
+METRIC avg_performance_ms=18
+METRIC fuzzy_search_ms=142
+METRIC sort_large_ms=36

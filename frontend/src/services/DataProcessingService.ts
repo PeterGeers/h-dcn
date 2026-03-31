@@ -449,31 +449,129 @@ export class DataProcessingService {
     if (pattern.length === 0) return true;
     if (text.length === 0) return false;
 
-    const distance = this.levenshteinDistance(text, pattern);
+    // Use optimized version with early termination for threshold < 1
+    if (threshold < 1.0) {
+      return this.fuzzyMatchOptimized(text, pattern, threshold);
+    }
+
+    // For exact match (threshold = 1), use simple comparison
+    return text === pattern;
+  }
+
+  private levenshteinDistance(str1: string, str2: string): number {
+    // Ensure str1 is the shorter string for space optimization
+    if (str1.length > str2.length) {
+      [str1, str2] = [str2, str1];
+    }
+    
+    const len1 = str1.length;
+    const len2 = str2.length;
+    
+    // Edge cases
+    if (len1 === 0) return len2;
+    if (len2 === 0) return len1;
+    
+    // Use only two rows instead of full matrix - O(min(n,m)) space
+    let prevRow = new Array(len1 + 1);
+    let currRow = new Array(len1 + 1);
+    
+    // Initialize first row
+    for (let i = 0; i <= len1; i++) {
+      prevRow[i] = i;
+    }
+    
+    // Fill the matrix row by row
+    for (let j = 1; j <= len2; j++) {
+      currRow[0] = j;
+      
+      for (let i = 1; i <= len1; i++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        currRow[i] = Math.min(
+          prevRow[i] + 1,      // deletion
+          currRow[i - 1] + 1,  // insertion
+          prevRow[i - 1] + cost // substitution
+        );
+      }
+      
+      // Swap rows for next iteration
+      [prevRow, currRow] = [currRow, prevRow];
+    }
+    
+    return prevRow[len1];
+  }
+  
+  /**
+   * Optimized fuzzy match with early termination
+   */
+  private fuzzyMatchOptimized(text: string, pattern: string, threshold: number): boolean {
+    if (text === pattern) return true;
+    if (pattern.length === 0) return true;
+    if (text.length === 0) return false;
+    
+    // Quick reject: if length difference is too large, impossible to match
     const maxLength = Math.max(text.length, pattern.length);
+    const minLength = Math.min(text.length, pattern.length);
+    const maxAllowedDistance = Math.floor((1 - threshold) * maxLength);
+    
+    if (maxLength - minLength > maxAllowedDistance) {
+      return false;
+    }
+    
+    // Use optimized Levenshtein with early termination
+    const distance = this.levenshteinDistanceEarly(text, pattern, maxAllowedDistance);
     const similarity = 1 - (distance / maxLength);
     
     return similarity >= threshold;
   }
-
-  private levenshteinDistance(str1: string, str2: string): number {
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-    
-    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-    
-    for (let j = 1; j <= str2.length; j++) {
-      for (let i = 1; i <= str1.length; i++) {
-        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + indicator
-        );
-      }
+  
+  private levenshteinDistanceEarly(str1: string, str2: string, maxDistance: number): number {
+    // Ensure str1 is shorter
+    if (str1.length > str2.length) {
+      [str1, str2] = [str2, str1];
     }
     
-    return matrix[str2.length][str1.length];
+    const len1 = str1.length;
+    const len2 = str2.length;
+    
+    if (len1 === 0) return len2;
+    if (len2 === 0) return len1;
+    
+    // If impossible to be within maxDistance, return early
+    if (len2 - len1 > maxDistance) {
+      return maxDistance + 1;
+    }
+    
+    // Use two rows with early termination check
+    let prevRow = new Array(len1 + 1);
+    let currRow = new Array(len1 + 1);
+    
+    for (let i = 0; i <= len1; i++) {
+      prevRow[i] = i;
+    }
+    
+    for (let j = 1; j <= len2; j++) {
+      currRow[0] = j;
+      let minInRow = j;
+      
+      for (let i = 1; i <= len1; i++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        currRow[i] = Math.min(
+          prevRow[i] + 1,
+          currRow[i - 1] + 1,
+          prevRow[i - 1] + cost
+        );
+        minInRow = Math.min(minInRow, currRow[i]);
+      }
+      
+      // Early termination: if minimum in row exceeds maxDistance, give up
+      if (minInRow > maxDistance) {
+        return maxDistance + 1;
+      }
+      
+      [prevRow, currRow] = [currRow, prevRow];
+    }
+    
+    return prevRow[len1];
   }
 
   private formatValueForExport(value: any, options: any): string {
