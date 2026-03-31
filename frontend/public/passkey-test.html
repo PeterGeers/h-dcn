@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-DCN Passkey Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #ff6b35;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #e55a2b;
+        }
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        .result {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #ff6b35;
+        }
+        .success {
+            border-left-color: #4caf50;
+        }
+        .error {
+            border-left-color: #f44336;
+        }
+        .info {
+            border-left-color: #2196f3;
+        }
+        pre {
+            background-color: #000;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .status.supported {
+            background-color: #4caf50;
+        }
+        .status.not-supported {
+            background-color: #f44336;
+        }
+        .status.partial {
+            background-color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>H-DCN Passkey Test Suite</h1>
+    <p>Test WebAuthn/Passkey functionality on this desktop browser</p>
+
+    <div class="container">
+        <h2>Browser Support Check</h2>
+        <div id="browser-support"></div>
+    </div>
+
+    <div class="container">
+        <h2>Passkey Tests</h2>
+        <button onclick="testPasskeyRegistration()">Test Passkey Registration</button>
+        <button onclick="testPasskeyAuthentication()">Test Passkey Authentication</button>
+        <button onclick="testCrossDeviceAuth()">Test Cross-Device Authentication</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        let testResults = [];
+
+        // Check browser support on page load
+        window.addEventListener('load', checkBrowserSupport);
+
+        function checkBrowserSupport() {
+            const supportDiv = document.getElementById('browser-support');
+            
+            const webAuthnSupported = !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create && navigator.credentials.get);
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            let html = `
+                <div class="result info">
+                    <span class="status ${webAuthnSupported ? 'supported' : 'not-supported'}">
+                        ${webAuthnSupported ? 'SUPPORTED' : 'NOT SUPPORTED'}
+                    </span>
+                    WebAuthn API: ${webAuthnSupported ? 'Available' : 'Not Available'}
+                </div>
+                <div class="result info">
+                    <span class="status ${isMobile ? 'supported' : 'partial'}">
+                        ${isMobile ? 'MOBILE' : 'DESKTOP'}
+                    </span>
+                    Device Type: ${isMobile ? 'Mobile Device' : 'Desktop/Laptop'}
+                </div>
+            `;
+
+            if (webAuthnSupported) {
+                // Check for platform authenticator
+                PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+                    .then(available => {
+                        html += `
+                            <div class="result info">
+                                <span class="status ${available ? 'supported' : 'partial'}">
+                                    ${available ? 'AVAILABLE' : 'NOT AVAILABLE'}
+                                </span>
+                                Platform Authenticator: ${available ? 'Available (biometrics/PIN)' : 'Not Available (external authenticator needed)'}
+                            </div>
+                        `;
+                        
+                        if (isMobile) {
+                            html += `
+                                <div class="result info">
+                                    <strong>Mobile Device Detected:</strong><br>
+                                    • iOS: Use Safari 14+ or Chrome<br>
+                                    • Android: Use Chrome 67+ or Edge<br>
+                                    • Passkeys typically use screen lock (fingerprint, face, PIN)
+                                </div>
+                            `;
+                        }
+                        
+                        supportDiv.innerHTML = html;
+                    })
+                    .catch(error => {
+                        html += `
+                            <div class="result error">
+                                <span class="status not-supported">ERROR</span>
+                                Platform Authenticator Check Failed: ${error.message}
+                            </div>
+                        `;
+                        supportDiv.innerHTML = html;
+                    });
+            } else {
+                html += `
+                    <div class="result error">
+                        <strong>WebAuthn not supported in this browser.</strong><br>
+                        ${isMobile 
+                            ? 'Mobile: Use Safari 14+ (iOS) or Chrome 67+ (Android)'
+                            : 'Desktop: Use Chrome 67+, Edge 18+, Firefox 60+, or Safari 14+'
+                        }
+                    </div>
+                `;
+                supportDiv.innerHTML = html;
+            }
+
+            // Browser info
+            html += `
+                <div class="result info">
+                    <strong>Browser:</strong> ${navigator.userAgent}
+                </div>
+            `;
+            supportDiv.innerHTML = html;
+        }
+
+        function addResult(testName, data, success) {
+            const result = {
+                name: testName,
+                data: data,
+                success: success,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            testResults.push(result);
+            displayResults();
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            
+            if (testResults.length === 0) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="container"><h2>Test Results</h2>';
+            
+            testResults.forEach((result, index) => {
+                const statusClass = result.success ? 'success' : 'error';
+                html += `
+                    <div class="result ${statusClass}">
+                        <div>
+                            <span class="status ${result.success ? 'supported' : 'not-supported'}">
+                                ${result.success ? 'PASS' : 'FAIL'}
+                            </span>
+                            <strong>${result.name}</strong>
+                            <span style="float: right; font-size: 12px; color: #ccc;">${result.timestamp}</span>
+                        </div>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testPasskeyRegistration() {
+            if (!window.PublicKeyCredential) {
+                addResult('Passkey Registration Test', { error: 'WebAuthn not supported' }, false);
+                return;
+            }
+
+            try {
+                addResult('Starting Passkey Registration', { email: 'test@h-dcn.nl' }, true);
+
+                // Generate challenge
+                const challenge = new Uint8Array(32);
+                crypto.getRandomValues(challenge);
+
+                // Create registration options with mobile-friendly settings
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: {
+                        name: "H-DCN Test",
+                        id: window.location.hostname,
+                    },
+                    user: {
+                        id: new TextEncoder().encode('test@h-dcn.nl'),
+                        name: 'test@h-dcn.nl',
+                        displayName: 'Test User',
+                    },
+                    pubKeyCredParams: [
+                        { type: 'public-key', alg: -7 },  // ES256
+                        { type: 'public-key', alg: -257 } // RS256
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: isMobile ? 'platform' : 'platform', // Prefer platform on both
+                        userVerification: 'preferred',
+                        requireResidentKey: false,
+                    },
+                    timeout: isMobile ? 120000 : 60000, // Longer timeout on mobile
+                    attestation: 'none'
+                };
+
+                addResult('Registration Options Created', {
+                    rp: publicKeyCredentialCreationOptions.rp,
+                    user: { name: publicKeyCredentialCreationOptions.user.name },
+                    authenticatorSelection: publicKeyCredentialCreationOptions.authenticatorSelection,
+                    deviceType: isMobile ? 'Mobile' : 'Desktop',
+                    timeout: publicKeyCredentialCreationOptions.timeout
+                }, true);
+
+                // Create the credential
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+
+                if (credential && credential.type === 'public-key') {
+                    addResult('Passkey Registration Successful', {
+                        id: credential.id,
+                        type: credential.type,
+                        rawId: credential.rawId ? 'Present' : 'Missing'
+                    }, true);
+
+                    // Test credential conversion
+                    const response = credential.response;
+                    if (response instanceof AuthenticatorAttestationResponse) {
+                        addResult('Credential Response Valid', {
+                            attestationObject: response.attestationObject ? 'Present' : 'Missing',
+                            clientDataJSON: response.clientDataJSON ? 'Present' : 'Missing'
+                        }, true);
+                    }
+                } else {
+                    addResult('Passkey Registration Failed', { error: 'Invalid credential returned' }, false);
+                }
+
+            } catch (error) {
+                addResult('Passkey Registration Failed', {
+                    error: error.message,
+                    name: error.name,
+                    code: error.code
+                }, false);
+            }
+        }
+
+        async function testPasskeyAuthentication() {
+            if (!window.PublicKeyCredential) {
+                addResult('Passkey Authentication Test', { error: 'WebAuthn not supported' }, false);
+                return;
+            }
+
+            try {
+                addResult('Starting Passkey Authentication', { email: 'test@h-dcn.nl' }, true);
+
+                // Generate challenge
+                const challenge = new Uint8Array(32);
+                crypto.getRandomValues(challenge);
+
+                // Create authentication options
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [], // Empty for resident key
+                    userVerification: 'preferred',
+                    timeout: 60000
+                };
+
+                addResult('Authentication Options Created', {
+                    userVerification: publicKeyCredentialRequestOptions.userVerification,
+                    allowCredentials: 'Empty (resident key)'
+                }, true);
+
+                // Get the credential
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                if (credential && credential.type === 'public-key') {
+                    addResult('Passkey Authentication Successful', {
+                        id: credential.id,
+                        type: credential.type,
+                        rawId: credential.rawId ? 'Present' : 'Missing'
+                    }, true);
+
+                    // Test credential response
+                    const response = credential.response;
+                    if (response instanceof AuthenticatorAssertionResponse) {
+                        addResult('Authentication Response Valid', {
+                            authenticatorData: response.authenticatorData ? 'Present' : 'Missing',
+                            clientDataJSON: response.clientDataJSON ? 'Present' : 'Missing',
+                            signature: response.signature ? 'Present' : 'Missing'
+                        }, true);
+                    }
+                } else {
+                    addResult('Passkey Authentication Failed', { error: 'Invalid credential returned' }, false);
+                }
+
+            } catch (error) {
+                addResult('Passkey Authentication Failed', {
+                    error: error.message,
+                    name: error.name,
+                    code: error.code
+                }, false);
+            }
+        }
+
+        async function testCrossDeviceAuth() {
+            if (!window.PublicKeyCredential) {
+                addResult('Cross-Device Authentication Test', { error: 'WebAuthn not supported' }, false);
+                return;
+            }
+
+            try {
+                addResult('Starting Cross-Device Authentication', { email: 'test@h-dcn.nl' }, true);
+
+                // Generate challenge
+                const challenge = new Uint8Array(32);
+                crypto.getRandomValues(challenge);
+
+                // Create cross-device authentication options
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [], // Empty for cross-device (resident key)
+                    userVerification: 'preferred',
+                    timeout: 300000 // 5 minutes for cross-device
+                };
+
+                addResult('Cross-Device Options Created', {
+                    userVerification: publicKeyCredentialRequestOptions.userVerification,
+                    allowCredentials: 'Empty (enables cross-device)',
+                    timeout: '5 minutes',
+                    note: 'This may show QR code or other cross-device UI'
+                }, true);
+
+                // Get the credential (this may show cross-device UI)
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                if (credential && credential.type === 'public-key') {
+                    addResult('Cross-Device Authentication Successful', {
+                        id: credential.id,
+                        type: credential.type,
+                        rawId: credential.rawId ? 'Present' : 'Missing',
+                        crossDevice: true
+                    }, true);
+
+                    // Test credential response
+                    const response = credential.response;
+                    if (response instanceof AuthenticatorAssertionResponse) {
+                        addResult('Cross-Device Response Valid', {
+                            authenticatorData: response.authenticatorData ? 'Present' : 'Missing',
+                            clientDataJSON: response.clientDataJSON ? 'Present' : 'Missing',
+                            signature: response.signature ? 'Present' : 'Missing',
+                            userHandle: response.userHandle ? 'Present' : 'Not Present'
+                        }, true);
+                    }
+                } else {
+                    addResult('Cross-Device Authentication Failed', { error: 'Invalid credential returned' }, false);
+                }
+
+            } catch (error) {
+                addResult('Cross-Device Authentication Failed', {
+                    error: error.message,
+                    name: error.name,
+                    code: error.code,
+                    note: 'This is expected if no cross-device authenticator is available'
+                }, false);
+            }
+        }
+    </script>
+</body>
+</html>
+
+        function clearResults() {
+            testResults = [];
+            displayResults();
+        }

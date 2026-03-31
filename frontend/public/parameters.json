@@ -1,0 +1,131 @@
+{
+  "regio": [
+    { "id": "1", "value": "Noord-Holland" },
+    { "id": "2", "value": "Zuid-Holland" },
+    { "id": "3", "value": "Friesland" },
+    { "id": "4", "value": "Utrecht" },
+    { "id": "5", "value": "Oost" },
+    { "id": "6", "value": "Limburg" },
+    { "id": "7", "value": "Groningen/Drente" },
+    { "id": "8", "value": "Noord-Brabant/Zeeland" },
+    { "id": "9", "value": "Duitsland" }
+  ],
+  "lidmaatschap": [
+    "Gewoon lid",
+    "Gezins lid",
+    "Gezins donateur zonder motor",
+    "Donateur zonder motor",
+    "Erelid"
+  ],
+  "statuslidmaatschap": [
+    "Nieuwe aanmelding",
+    "Wacht op betaling",
+    "Actief",
+    "Heeft opgezegd",
+    "Wacht op regio",
+    "Wacht op Ledenadministratie"
+  ],
+  "motormerk": [
+    "Harley-Davidson",
+    "Indian",
+    "Buell",
+    "Eigenbouw"
+  ],
+  "clubblad": [
+    "Papier",
+    "Digitaal",
+    "Geen"
+  ],
+  "wiewatwaar": [
+    "Eerder lid van de H-DCN",
+    "Facebook",
+    "Familie",
+    "Harleydag",
+    "Instagram",
+    "Lid van de H-DCN",
+    "Internet",
+    "Openingsrit",
+    "Vrienden",
+    "Website H-DCN",
+    "The Young Ones",
+    "Bigtwin Bike Expo"
+  ],
+  "productgroepen": {
+    "Heren": [
+      "T-shirts",
+      "Long Sleeve",
+      "Hoodies"
+    ],
+    "Dames": [
+      "T-shirts", 
+      "Long Sleeve",
+      "Hoodies"
+    ],
+    "Diversen": [
+      "Pins",
+      "Stickers", 
+      "Badges",
+      "Bordjes"
+    ],
+    "Unisex": [
+      "Long Sleeves"
+    ]
+  },
+  "leveropties": [
+    { "name": "Verzenden per koerier", "cost": "5.0" },
+    { "name": "Ophalen op afspraak", "cost": "1.0" },
+    { "name": "Ophalen bij ALV", "cost": "0" }
+  ],
+  "geslacht": [
+    "Man",
+    "Vrouw",
+    "X"
+  ],
+  "function_permissions": [
+    {
+      "id": "default",
+      "value": {
+        "members": {
+          "read": ["Members_Read", "Members_CRUD", "Members_Export"],
+          "write": ["Members_CRUD"]
+        },
+        "events": {
+          "read": ["Events_Read", "Events_CRUD"],
+          "write": ["Events_CRUD"]
+        },
+        "products": {
+          "read": ["Products_Read", "Products_CRUD", "Webshop_Management"],
+          "write": ["Products_CRUD", "Webshop_Management"]
+        },
+        "orders": {
+          "read": ["Webshop_Management"],
+          "write": ["Webshop_Management"]
+        },
+        "webshop": {
+          "read": ["hdcnLeden"],
+          "write": ["hdcnLeden"]
+        },
+        "parameters": {
+          "read": ["System_User_Management"],
+          "write": ["System_User_Management"]
+        },
+        "memberships": {
+          "read": ["Members_Read", "Members_CRUD"],
+          "write": ["Members_CRUD"]
+        },
+        "system": {
+          "read": ["System_User_Management", "System_Logs_Read"],
+          "write": ["System_User_Management"]
+        },
+        "communication": {
+          "read": ["Communication_Read", "Communication_CRUD"],
+          "write": ["Communication_CRUD"]
+        },
+        "exports": {
+          "read": ["Members_Export", "Products_Export", "Events_Export", "Communication_Export"],
+          "write": ["Members_Export", "Products_Export", "Events_Export", "Communication_Export"]
+        }
+      }
+    }
+  ]
+}

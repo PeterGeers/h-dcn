@@ -1,0 +1,9 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="80" fill="#1a1a1a"/>
+  <text x="100" y="45" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#f56500">
+    H-DCN
+  </text>
+  <text x="100" y="65" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#f56500">
+    Dashboard Portal
+  </text>
+</svg>

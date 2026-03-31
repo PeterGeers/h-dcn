@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Callback Test</title>
+</head>
+<body>
+    <h1>OAuth Callback Test</h1>
+    <div id="results">
+        <p><strong>URL:</strong> <span id="url"></span></p>
+        <p><strong>Pathname:</strong> <span id="pathname"></span></p>
+        <p><strong>Hash:</strong> <span id="hash"></span></p>
+        <p><strong>Access Token Found:</strong> <span id="token-found"></span></p>
+        <p><strong>ID Token Found:</strong> <span id="id-token-found"></span></p>
+    </div>
+    
+    <div id="token-info" style="margin-top: 20px; padding: 10px; background: #f0f0f0;">
+        <h3>Token Processing</h3>
+        <div id="processing-log"></div>
+    </div>
+    
+    <script>
+        function log(message) {
+            console.log(message);
+            const logDiv = document.getElementById('processing-log');
+            logDiv.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        log('🔥 OAuth test page loaded');
+        
+        document.getElementById('url').textContent = window.location.href;
+        document.getElementById('pathname').textContent = window.location.pathname;
+        document.getElementById('hash').textContent = window.location.hash;
+        
+        // Parse URL fragment for tokens
+        const urlFragment = window.location.hash.substring(1);
+        log('URL fragment: ' + urlFragment);
+        
+        const urlParams = new URLSearchParams(urlFragment);
+        const accessToken = urlParams.get('access_token');
+        const idToken = urlParams.get('id_token');
+        
+        document.getElementById('token-found').textContent = accessToken ? 'YES' : 'NO';
+        document.getElementById('id-token-found').textContent = idToken ? 'YES' : 'NO';
+        
+        if (accessToken) {
+            log('✅ Access token found');
+            log('Access token length: ' + accessToken.length);
+        }
+        
+        if (idToken) {
+            log('✅ ID token found');
+            log('ID token length: ' + idToken.length);
+            
+            try {
+                // Decode ID token
+                const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
+                log('✅ ID token decoded successfully');
+                log('Email: ' + idTokenPayload.email);
+                log('Name: ' + idTokenPayload.given_name + ' ' + idTokenPayload.family_name);
+                
+                // Check if H-DCN email
+                if (idTokenPayload.email && idTokenPayload.email.endsWith('@h-dcn.nl')) {
+                    log('✅ Valid H-DCN staff email');
+                } else {
+                    log('❌ Not an H-DCN staff email');
+                }
+            } catch (error) {
+                log('❌ Error decoding ID token: ' + error.message);
+            }
+        }
+        
+        log('OAuth callback processing complete');
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Page</title>
+</head>
+<body>
+    <h1>Debug Information</h1>
+    <div id="info">
+        <p><strong>Current URL:</strong> <span id="url"></span></p>
+        <p><strong>Pathname:</strong> <span id="pathname"></span></p>
+        <p><strong>Hash:</strong> <span id="hash"></span></p>
+        <p><strong>Search:</strong> <span id="search"></span></p>
+        <p><strong>User Agent:</strong> <span id="useragent"></span></p>
+    </div>
+    
+    <script>
+        document.getElementById('url').textContent = window.location.href;
+        document.getElementById('pathname').textContent = window.location.pathname;
+        document.getElementById('hash').textContent = window.location.hash;
+        document.getElementById('search').textContent = window.location.search;
+        document.getElementById('useragent').textContent = navigator.userAgent;
+        
+        console.log('Debug page loaded');
+        console.log('URL:', window.location.href);
+        console.log('Pathname:', window.location.pathname);
+        console.log('Hash:', window.location.hash);
+    </script>
+</body>
+</html>
