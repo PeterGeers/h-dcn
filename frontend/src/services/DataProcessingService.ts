@@ -204,10 +204,11 @@ export class DataProcessingService {
   }
 
   /**
-   * Apply multi-column sorting
+   * Apply multi-column sorting (modifies array in-place since caller makes defensive copy)
    */
   public applySorting(data: Member[], sorts: SortCriteria[]): Member[] {
-    return [...data].sort((a, b) => {
+    // Sort in-place - caller has already created defensive copy
+    return data.sort((a, b) => {
       for (const sort of sorts) {
         let comparison: number;
         
