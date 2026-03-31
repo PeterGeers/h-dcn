@@ -1,4 +1,4 @@
-# Fast Build and Deploy Script with Progress and Timing
+﻿# Fast Build and Deploy Script with Progress and Timing
 # Enhanced with pre-deployment validation checks and automatic fix versioning
 
 # Bypass "more" prompts for long outputs

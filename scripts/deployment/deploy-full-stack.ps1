@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 # Full Stack Deployment Script
 # Deploys backend, frontend, and runs smoke tests
 

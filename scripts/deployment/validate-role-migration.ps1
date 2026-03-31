@@ -1,4 +1,4 @@
-# Role Migration Validation Script
+﻿# Role Migration Validation Script
 # Validates that deployment scripts work with new role structure only
 
 param(

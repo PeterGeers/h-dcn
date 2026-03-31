@@ -1,4 +1,4 @@
-# Shared Validation Functions for H-DCN Deployment Scripts
+﻿# Shared Validation Functions for H-DCN Deployment Scripts
 # GitLens-inspired pre-deployment checks
 
 function Test-AuthLayerSync {

@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 # Comprehensive Deployment Validation Script
 # GitLens-inspired checks for H-DCN project
 
