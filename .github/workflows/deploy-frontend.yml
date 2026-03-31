@@ -1,0 +1,85 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: frontend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret scan (ggshield)
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Generate .env
+        working-directory: frontend
+        run: |
+          cat <<EOF > .env
+          REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
+          REACT_APP_AWS_REGION=${{ vars.REACT_APP_AWS_REGION }}
+          REACT_APP_S3_BUCKET=${{ vars.REACT_APP_S3_BUCKET }}
+          REACT_APP_IMAGES_BUCKET=${{ vars.REACT_APP_IMAGES_BUCKET }}
+          REACT_APP_USER_POOL_ID=${{ secrets.REACT_APP_USER_POOL_ID }}
+          REACT_APP_USER_POOL_WEB_CLIENT_ID=${{ secrets.REACT_APP_USER_POOL_WEB_CLIENT_ID }}
+          REACT_APP_STRIPE_PUBLIC_KEY=${{ secrets.REACT_APP_STRIPE_PUBLIC_KEY }}
+          REACT_APP_CACHE_VERSION=${{ vars.REACT_APP_CACHE_VERSION }}
+          REACT_APP_LOGO_BUCKET_URL=${{ vars.REACT_APP_LOGO_BUCKET_URL }}
+          REACT_APP_IMAGES_BASE_URL=${{ vars.REACT_APP_IMAGES_BASE_URL }}
+          EOF
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          GENERATE_SOURCEMAP: 'false'
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.REACT_APP_AWS_REGION }}
+
+      - name: Deploy to S3
+        run: aws s3 sync frontend/build/ s3://${{ vars.REACT_APP_S3_BUCKET }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Smoke tests
+        run: node scripts/deployment/smoke-test-production.js
