@@ -3,43 +3,64 @@ import boto3
 import uuid
 from datetime import datetime
 
-def cors_headers():
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
+# Import from shared auth layer (REQUIRED)
+try:
+    from shared.auth_utils import (
+        extract_user_credentials,
+        validate_permissions_with_regions,
+        cors_headers,
+        handle_options_request,
+        create_error_response,
+        create_success_response,
+        log_successful_access
+    )
+    print("Using shared auth layer")
+except ImportError as e:
+    print(f"⚠️ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("create_membership")
+    import sys
+    sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Memberships')
 
 def lambda_handler(event, context):
-    if event['httpMethod'] == 'OPTIONS':
-        return {'statusCode': 200, 'headers': cors_headers()}
-    
     try:
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options_request()
+
+        user_email, user_roles, auth_error = extract_user_credentials(event)
+        if auth_error:
+            return auth_error
+
+        required_permissions = ['memberships_create']
+        is_authorized, error_response, regional_info = validate_permissions_with_regions(
+            user_roles, required_permissions, user_email, None
+        )
+        if not is_authorized:
+            return error_response
+
+        log_successful_access(user_email, user_roles, 'create_membership')
+
         data = json.loads(event['body'])
-        
+
         membership_id = str(uuid.uuid4())
         timestamp = datetime.utcnow().isoformat()
-        
+
         item = {
             'membership_type_id': membership_id,
             'created_at': timestamp,
             'updated_at': timestamp,
             **data
         }
-        
+
         table.put_item(Item=item)
-        
-        return {
-            'statusCode': 201,
-            'headers': cors_headers(),
-            'body': json.dumps(item, default=str)
-        }
+
+        return create_success_response(item, 201)
+
+    except json.JSONDecodeError:
+        return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': str(e)})
-        }
+        print(f"Error in create_membership: {str(e)}")
+        return create_error_response(500, 'Internal server error')
