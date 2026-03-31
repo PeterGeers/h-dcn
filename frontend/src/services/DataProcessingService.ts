@@ -148,32 +148,45 @@ export class DataProcessingService {
 
   /**
    * Apply multiple filters with AND logic
+   * Optimized: pre-computes normalized filter values
    */
   public applyFilters(data: Member[], filters: FilterCriteria[]): Member[] {
+    // Pre-compute normalized filter values to avoid repeated toLowerCase calls
+    const normalizedFilters = filters.map(filter => ({
+      ...filter,
+      _normalizedValue: filter.value !== undefined && filter.value !== null 
+        ? String(filter.value).toLowerCase() 
+        : undefined,
+      _normalizedSecondValue: filter.secondValue !== undefined && filter.secondValue !== null
+        ? String(filter.secondValue).toLowerCase()
+        : undefined
+    }));
+
     return data.filter(item => {
-      return filters.every(filter => this.evaluateFilter(item, filter));
+      return normalizedFilters.every(filter => this.evaluateFilter(item, filter));
     });
   }
 
   /**
    * Evaluate a single filter against a data item
+   * Uses pre-normalized values from normalizedFilters
    */
-  private evaluateFilter(item: Member, filter: FilterCriteria): boolean {
+  private evaluateFilter(item: Member, filter: FilterCriteria & { _normalizedValue?: string; _normalizedSecondValue?: string }): boolean {
     const fieldValue = this.getNestedValue(item, filter.field);
-    const { operator, value, secondValue } = filter;
+    const { operator, value, secondValue, _normalizedValue, _normalizedSecondValue } = filter;
 
     switch (operator) {
       case 'equals':
         return fieldValue === value;
       
       case 'contains':
-        return String(fieldValue).toLowerCase().includes(String(value).toLowerCase());
+        return String(fieldValue).toLowerCase().includes(_normalizedValue!);
       
       case 'startsWith':
-        return String(fieldValue).toLowerCase().startsWith(String(value).toLowerCase());
+        return String(fieldValue).toLowerCase().startsWith(_normalizedValue!);
       
       case 'endsWith':
-        return String(fieldValue).toLowerCase().endsWith(String(value).toLowerCase());
+        return String(fieldValue).toLowerCase().endsWith(_normalizedValue!);
       
       case 'greaterThan':
         return this.compareValues(fieldValue, value) > 0;
@@ -234,6 +247,7 @@ export class DataProcessingService {
 
   /**
    * Apply search with fuzzy matching support
+   * Optimized: pre-normalizes query and uses explicit loop over some()
    */
   public applySearch(data: Member[], query: string, options: SearchOptions): Member[] {
     if (!query.trim()) return data;
