@@ -21,15 +21,31 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
   console.log('🔥 Window hash:', window.location.hash);
 
   useEffect(() => {
+    // Prevent double execution (React strict mode / re-renders)
+    let cancelled = false;
+    const alreadyProcessed = sessionStorage.getItem('oauth_code_processed');
+
     const handleCallback = async () => {
+      const urlParams = new URLSearchParams(location.search);
+      const code = urlParams.get('code');
+
+      // If this code was already processed, skip
+      if (alreadyProcessed === code) {
+        console.log('🔥 OAuth code already processed, skipping');
+        return;
+      }
+
       try {
         console.log('🔥 OAuthCallback - Authorization Code Flow');
         console.log('🔥 Current URL:', window.location.href);
         console.log('🔥 Search params:', location.search);
 
+        // Mark this code as being processed
+        if (code) {
+          sessionStorage.setItem('oauth_code_processed', code);
+        }
+
         // Extract authorization code from URL query parameters (not fragment)
-        const urlParams = new URLSearchParams(location.search);
-        const code = urlParams.get('code');
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
 
@@ -191,6 +207,9 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
         // Call success handler
         onAuthSuccess(user);
 
+        // Clear the processed flag for future logins
+        sessionStorage.removeItem('oauth_code_processed');
+
         // Force a page reload to ensure fresh state
         setTimeout(() => {
           window.location.href = '/';
@@ -212,6 +231,10 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
     };
 
     handleCallback();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [location, navigate, onAuthSuccess, onAuthError]);
 
   return (
