@@ -156,10 +156,15 @@ export class GoogleAuthService {
 
 // Default configuration for H-DCN
 export const createGoogleAuthService = (): GoogleAuthService => {
+  const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
+  if (!cognitoDomain) {
+    throw new Error('REACT_APP_COGNITO_DOMAIN environment variable is not configured');
+  }
+
   const config: GoogleAuthConfig = {
-    userPoolId: process.env.REACT_APP_COGNITO_USER_POOL_ID || 'eu-west-1_OAT3oPCIm',
-    clientId: process.env.REACT_APP_COGNITO_CLIENT_ID || '7p5t7sjl2s1rcu1emn85h20qeh',
-    domain: process.env.REACT_APP_COGNITO_DOMAIN || 'h-dcn-auth-344561557829.auth.eu-west-1.amazoncognito.com',
+    userPoolId: process.env.REACT_APP_USER_POOL_ID || '',
+    clientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID || '',
+    domain: cognitoDomain,
     redirectUri: `${window.location.origin}/auth/callback`
   };
 

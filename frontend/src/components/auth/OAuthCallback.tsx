@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { API_CONFIG } from '../../config/api';
 
 interface OAuthCallbackProps {
   onAuthSuccess: (authData: any) => void;
@@ -62,14 +63,18 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
         setStatus('Exchanging code for tokens...');
 
         // Exchange authorization code for tokens
-        const tokenResponse = await fetch('https://h-dcn-auth-344561557829.auth.eu-west-1.amazoncognito.com/oauth2/token', {
+        const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
+        if (!cognitoDomain) {
+          throw new Error('REACT_APP_COGNITO_DOMAIN environment variable is not configured');
+        }
+        const tokenResponse = await fetch(`https://${cognitoDomain}/oauth2/token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: new URLSearchParams({
             grant_type: 'authorization_code',
-            client_id: '6unl8mg5tbv5r727vc39d847vn',
+            client_id: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID || '',
             code: code,
             redirect_uri: `${window.location.origin}/auth/callback`
           })
@@ -120,7 +125,7 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
         
         try {
           // Try to fetch user permissions from the backend
-          const response = await fetch(`${window.location.origin.replace('https://de1irtdutlxqu.cloudfront.net', 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod')}/hdcn-cognito-admin/get-user-groups`, {
+          const response = await fetch(`${API_CONFIG.BASE_URL}/hdcn-cognito-admin/get-user-groups`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

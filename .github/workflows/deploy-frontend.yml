@@ -9,17 +9,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
   id-token: write
+  contents: read
 
 concurrency:
   group: frontend-deploy
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build Frontend
+  build-and-deploy:
+    name: Build and Deploy Frontend
     runs-on: ubuntu-latest
 
     steps:
@@ -54,6 +53,7 @@ jobs:
           REACT_APP_IMAGES_BUCKET=${{ vars.REACT_APP_IMAGES_BUCKET }}
           REACT_APP_USER_POOL_ID=${{ secrets.REACT_APP_USER_POOL_ID }}
           REACT_APP_USER_POOL_WEB_CLIENT_ID=${{ secrets.REACT_APP_USER_POOL_WEB_CLIENT_ID }}
+          REACT_APP_COGNITO_DOMAIN=${{ vars.REACT_APP_COGNITO_DOMAIN }}
           REACT_APP_STRIPE_PUBLIC_KEY=${{ secrets.REACT_APP_STRIPE_PUBLIC_KEY }}
           REACT_APP_CACHE_VERSION=${{ vars.REACT_APP_CACHE_VERSION }}
           REACT_APP_LOGO_BUCKET_URL=${{ vars.REACT_APP_LOGO_BUCKET_URL }}
@@ -66,23 +66,17 @@ jobs:
         env:
           GENERATE_SOURCEMAP: 'false'
 
-      - name: Copy index.html to 404.html for SPA routing
-        run: cp frontend/build/index.html frontend/build/404.html
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          path: frontend/build
+          role-to-assume: arn:aws:iam::506221081911:role/NonprofitDeployRole
+          aws-region: eu-west-1
 
-  deploy:
-    name: Deploy to GitHub Pages
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      - name: Deploy to S3
+        run: aws s3 sync frontend/build/ s3://${{ vars.FRONTEND_BUCKET_NAME }}/ --delete
 
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"

@@ -1,5 +1,4 @@
 import React from 'react';
-import { createGoogleAuthService, GoogleAuthService } from '../../services/googleAuthService';
 
 interface GoogleSignInButtonProps {
   onError?: (error: string) => void;
@@ -15,15 +14,23 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const handleGoogleSignIn = () => {
     try {
       // Direct redirect to Cognito Hosted UI with Google provider
+      const clientId = process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID;
+      if (!clientId) {
+        throw new Error('REACT_APP_USER_POOL_WEB_CLIENT_ID environment variable is not configured');
+      }
+
       const params = new URLSearchParams({
         response_type: 'code',  // Use authorization_code flow (more secure)
-        client_id: '6unl8mg5tbv5r727vc39d847vn',  // Correct Client ID
+        client_id: clientId,
         redirect_uri: `${window.location.origin}/auth/callback`,
         scope: 'openid email profile',
         identity_provider: 'Google'
       });
 
-      const cognitoDomain = 'h-dcn-auth-344561557829.auth.eu-west-1.amazoncognito.com';
+      const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
+      if (!cognitoDomain) {
+        throw new Error('REACT_APP_COGNITO_DOMAIN environment variable is not configured');
+      }
       const authUrl = `https://${cognitoDomain}/oauth2/authorize?${params.toString()}`;
       
       window.location.href = authUrl;
