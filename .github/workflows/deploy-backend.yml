@@ -50,7 +50,7 @@ jobs:
 
       - name: SAM Build
         working-directory: backend
-        run: sam build --use-container
+        run: sam build
 
       - name: SAM Deploy
         working-directory: backend
