@@ -59,6 +59,7 @@ jobs:
             --stack-name h-dcn \
             --region eu-west-1 \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --resolve-s3 \
             --resolve-image-repos \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
