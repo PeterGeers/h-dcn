@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.11
 
 # Install system dependencies required by WeasyPrint
-RUN dnf install -y \
+RUN yum install -y \
     pango \
     pango-devel \
     gdk-pixbuf2 \
@@ -9,7 +9,7 @@ RUN dnf install -y \
     cairo-gobject \
     gobject-introspection \
     libffi-devel \
-    && dnf clean all
+    && yum clean all
 
 # Copy shared auth layer into the image (Lambda Layers not supported with container images)
 COPY layers/auth-layer/python/ ${LAMBDA_TASK_ROOT}/
