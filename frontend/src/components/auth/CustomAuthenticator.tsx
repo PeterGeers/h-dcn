@@ -112,15 +112,28 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
     try {
       // Use Amplify v6 signIn with email - Cognito handles WebAuthn natively
-      const { signIn } = await import('aws-amplify/auth');
+      const { signIn, confirmSignIn } = await import('aws-amplify/auth');
       
-      const signInResult = await signIn({
-        username: signInData.email,
-        options: {
-          authFlowType: 'USER_AUTH',
-          preferredChallenge: 'WEB_AUTHN',
-        },
-      });
+      let signInResult;
+      try {
+        signInResult = await signIn({
+          username: signInData.email,
+          options: {
+            authFlowType: 'USER_AUTH',
+            preferredChallenge: 'WEB_AUTHN',
+          },
+        });
+      } catch (webAuthnErr: any) {
+        console.log('WebAuthn sign-in failed, falling back to email OTP:', webAuthnErr.message);
+        // WebAuthn failed (no credential, cancelled, not supported) — try email OTP
+        signInResult = await signIn({
+          username: signInData.email,
+          options: {
+            authFlowType: 'USER_AUTH',
+            preferredChallenge: 'EMAIL_OTP',
+          },
+        });
+      }
 
       if (signInResult.isSignedIn) {
         // Authentication successful
@@ -150,13 +163,62 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         setAuthState('authenticated');
         return;
       } else if (signInResult.nextStep) {
-        // Handle additional steps (e.g., confirm sign up, MFA)
         const step = signInResult.nextStep.signInStep;
-        if (step === 'CONFIRM_SIGN_UP') {
-          setError('Je account moet nog bevestigd worden. Controleer je e-mail.');
+        if (step === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
+          // Email OTP sent — prompt user for the code
+          setError('');
+          const code = prompt('Voer de verificatiecode in die naar je e-mail is gestuurd:');
+          if (code) {
+            const confirmResult = await confirmSignIn({ challengeResponse: code });
+            if (confirmResult.isSignedIn) {
+              const { fetchAuthSession, getCurrentUser } = await import('aws-amplify/auth');
+              const currentUser = await getCurrentUser();
+              const session = await fetchAuthSession();
+              const user = {
+                username: currentUser.username,
+                attributes: { email: signInData.email },
+                signInUserSession: {
+                  accessToken: { jwtToken: session.tokens?.accessToken?.toString() || '', payload: {} },
+                  idToken: { jwtToken: session.tokens?.idToken?.toString() || '', payload: {} },
+                }
+              };
+              localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+              setUser(user);
+              setAuthState('authenticated');
+              return;
+            }
+          } else {
+            setError('Verificatiecode is vereist om in te loggen.');
+          }
         } else if (step === 'CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION') {
-          // WebAuthn not available for this user, try email OTP
-          setError('Passkey niet beschikbaar. Gebruik de email verificatiecode optie.');
+          // Multiple factors available — select EMAIL_OTP
+          const confirmResult = await confirmSignIn({ challengeResponse: 'EMAIL_OTP' });
+          if (confirmResult.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
+            const code = prompt('Voer de verificatiecode in die naar je e-mail is gestuurd:');
+            if (code) {
+              const finalResult = await confirmSignIn({ challengeResponse: code });
+              if (finalResult.isSignedIn) {
+                const { fetchAuthSession, getCurrentUser } = await import('aws-amplify/auth');
+                const currentUser = await getCurrentUser();
+                const session = await fetchAuthSession();
+                const user = {
+                  username: currentUser.username,
+                  attributes: { email: signInData.email },
+                  signInUserSession: {
+                    accessToken: { jwtToken: session.tokens?.accessToken?.toString() || '', payload: {} },
+                    idToken: { jwtToken: session.tokens?.idToken?.toString() || '', payload: {} },
+                  }
+                };
+                localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+                setUser(user);
+                setAuthState('authenticated');
+                return;
+              }
+            }
+          }
+          setError('Inloggen mislukt. Probeer opnieuw.');
+        } else if (step === 'CONFIRM_SIGN_UP') {
+          setError('Je account moet nog bevestigd worden. Controleer je e-mail.');
         } else {
           setError(`Extra stap vereist: ${step}`);
         }
