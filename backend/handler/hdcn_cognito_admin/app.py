@@ -37,7 +37,7 @@ from role_permissions import (
 
 # Initialize Cognito client
 cognito_client = boto3.client('cognito-idp')
-USER_POOL_ID = os.environ.get('COGNITO_USER_POOL_ID', 'eu-west-1_OAT3oPCIm')
+USER_POOL_ID = os.environ.get('COGNITO_USER_POOL_ID', 'eu-west-1_fcUkvwjH5')
 
 def validate_role_assignment_rules(user_id, role, requesting_user):
     """

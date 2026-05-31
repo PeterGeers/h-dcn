@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 import base64
 import uuid
@@ -64,7 +65,7 @@ def lambda_handler(event, context):
         # Get member_id from Cognito user attributes
         try:
             cognito_client = boto3.client('cognito-idp')
-            user_pool_id = 'eu-west-1_OAT3oPCIm'
+            user_pool_id = os.environ.get('COGNITO_USER_POOL_ID', 'eu-west-1_fcUkvwjH5')
             
             # Get user details from Cognito
             cognito_response = cognito_client.admin_get_user(
@@ -74,10 +75,17 @@ def lambda_handler(event, context):
             
             # Extract member_id from user attributes
             member_id = None
+            real_email = None
             for attr in cognito_response.get('UserAttributes', []):
                 if attr['Name'] == 'custom:member_id':
                     member_id = attr['Value']
-                    break
+                if attr['Name'] == 'email':
+                    real_email = attr['Value']
+            
+            # Use the real email from Cognito if available
+            if real_email:
+                user_email = real_email
+                print(f"Using real email from Cognito: {user_email}")
             
             # If no member_id exists, check if there's an existing member record by email
             # This handles the case where a member record was created before Cognito sync

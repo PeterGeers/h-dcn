@@ -50,7 +50,7 @@ cognito_client = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb')
 
 # Get configuration from environment variables
-USER_POOL_ID = os.environ.get('USER_POOL_ID', 'eu-west-1_OAT3oPCIm')
+USER_POOL_ID = os.environ.get('USER_POOL_ID', 'eu-west-1_fcUkvwjH5')
 MEMBERS_TABLE_NAME = os.environ.get('MEMBERS_TABLE_NAME', 'Members')
 DEFAULT_MEMBER_GROUP = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
 
