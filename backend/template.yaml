@@ -8,9 +8,6 @@ Description: >
 # parameters only. DO NOT add them as CloudFormation resources without
 # DeletionPolicy: Retain — a previous deploy deleted production data this way.
 
-  Sample SAM Template for python-crud-api-test
-  # Updated to remove Cognito function temporarily
-
 
 Parameters:
   # EXISTING USER POOL - DO NOT CREATE NEW ONES!
