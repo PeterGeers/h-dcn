@@ -112,7 +112,14 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
     try {
       // Use Amplify v6 signIn with email - Cognito handles WebAuthn natively
-      const { signIn, confirmSignIn } = await import('aws-amplify/auth');
+      const { signIn, confirmSignIn, signOut } = await import('aws-amplify/auth');
+      
+      // Clear any stale session before attempting sign-in
+      try {
+        await signOut();
+      } catch {
+        // Ignore - no session to clear
+      }
       
       let signInResult;
       try {
