@@ -23,10 +23,8 @@ import {
 } from '@chakra-ui/react';
 import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
-import { CrossDeviceAuth } from './CrossDeviceAuth';
 import { MobilePasskeyDebug } from './MobilePasskeyDebug';
 import GoogleSignInButton from './GoogleSignInButton';
-import { WebAuthnService } from '../../services/webAuthnService';
 
 interface CustomAuthenticatorProps {
   children: (props: { signOut: () => void; user: any }) => React.ReactNode;
@@ -34,7 +32,7 @@ interface CustomAuthenticatorProps {
 
 export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const [user, setUser] = useState<any>(null);
-  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'crossDevice' | 'debug' | 'authenticated'>('loading');
+  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'debug' | 'authenticated'>('loading');
   const [signInData, setSignInData] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -113,191 +111,71 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     setError('');
 
     try {
-      // Check if WebAuthn is supported and user has passkey
-      if (WebAuthnService.isSupported()) {
-        try {
-          // Try passkey authentication first
-          const authOptions = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/authenticate/begin?t=${Date.now()}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+      // Use Amplify v6 signIn with email - Cognito handles WebAuthn natively
+      const { signIn } = await import('aws-amplify/auth');
+      
+      const signInResult = await signIn({
+        username: signInData.email,
+        options: {
+          authFlowType: 'USER_AUTH',
+          preferredChallenge: 'WEB_AUTHN',
+        },
+      });
+
+      if (signInResult.isSignedIn) {
+        // Authentication successful
+        const { fetchAuthSession, getCurrentUser } = await import('aws-amplify/auth');
+        const currentUser = await getCurrentUser();
+        const session = await fetchAuthSession();
+        
+        const user = {
+          username: currentUser.username,
+          attributes: {
+            email: signInData.email,
+          },
+          signInUserSession: {
+            accessToken: {
+              jwtToken: session.tokens?.accessToken?.toString() || '',
+              payload: {}
             },
-            body: JSON.stringify({
-              email: signInData.email,
-              crossDevice: WebAuthnService.isMobileDevice(), // Enable cross-device for mobile
-            }),
-          });
-
-          if (authOptions.ok) {
-            const options = await authOptions.json();
-            
-            // Check if this is a "user not found" response that should redirect to setup
-            if (options.code === 'USER_NOT_FOUND' && options.action === 'SETUP_PASSKEY') {
-              // New user - redirect to passkey setup
-              setNewUserEmail(signInData.email);
-              setAuthState('passkeySetup');
-              return;
-            }
-            
-            // Frontend always provides the correct RP ID for current domain
-            // Don't rely on backend RP ID since it may not match the actual domain
-            
-            // Attempt passkey authentication
-            const credential = await WebAuthnService.authenticateWithPasskey({
-              challenge: options.challenge,
-              allowCredentials: options.allowCredentials, // Service will handle ArrayBuffer conversion
-              userVerification: options.userVerification || 'preferred',
-              timeout: options.timeout || (WebAuthnService.isMobileDevice() ? 300000 : 60000), // 5 min mobile, 1 min desktop
-            });
-            const credentialJSON = WebAuthnService.credentialToJSON(credential);
-
-            // Complete authentication with backend
-            const authResult = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/authenticate/complete`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: signInData.email,
-                credential: credentialJSON,
-              }),
-            });
-
-            if (authResult.ok) {
-              const authData = await authResult.json();
-              
-              // Debug: Log the actual response structure
-              console.log('Backend response:', JSON.stringify(authData, null, 2));
-              
-              // Passkey authentication successful - backend returns authenticationResult
-              if (authData.authenticationResult && authData.authenticationResult.AccessToken) {
-                // Store tokens and create user object compatible with Amplify
-                const tokens = authData.authenticationResult;
-                const user = {
-                  username: signInData.email,
-                  attributes: {
-                    email: signInData.email,
-                    given_name: authData.user?.given_name || '',
-                    family_name: authData.user?.family_name || ''
-                  },
-                  signInUserSession: {
-                    accessToken: {
-                      jwtToken: tokens.AccessToken,
-                      payload: tokens.AccessTokenPayload || {}
-                    },
-                    idToken: {
-                      jwtToken: tokens.IdToken,
-                      payload: tokens.IdTokenPayload || {}
-                    },
-                    refreshToken: {
-                      token: tokens.RefreshToken
-                    }
-                  }
-                };
-                
-                // Store authentication data
-                localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-                localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
-                
-                setUser(user);
-                setAuthState('authenticated');
-                return;
-              } else {
-                throw new Error('Authentication successful but no tokens received');
-              }
-            } else {
-              const errorData = await authResult.json();
-              throw new Error(errorData.message || 'Passkey authentication failed');
-            }
-          } else {
-            // User doesn't have a passkey registered, check if user exists
-            const errorData = await authOptions.json();
-            if (errorData.code === 'NO_PASSKEY_REGISTERED') {
-              // Check if this is a completely new user (no account) vs existing user without passkey
-              if (errorData.userExists === false) {
-                // New user - show registration form inline
-                setShowRegistrationForm(true);
-                setError('');
-                return;
-              } else {
-                // Existing user without passkey - can proceed to passkey setup
-                setNewUserEmail(signInData.email);
-                setAuthState('passkeySetup');
-                return;
-              }
-            } else {
-              throw new Error(errorData.message || 'Failed to initiate passkey authentication');
-            }
+            idToken: {
+              jwtToken: session.tokens?.idToken?.toString() || '',
+              payload: {}
+            },
           }
-        } catch (passkeyError: any) {
-          console.log('Passkey authentication failed:', passkeyError);
-          
-          // Check if this is a "no passkey" error
-          if (passkeyError.name === 'NotAllowedError' || passkeyError.message?.includes('no credentials')) {
-            // This could be a new user or existing user without passkey
-            // Try to check user existence via a separate API call
-            try {
-              const userCheckResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/user/exists`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email: signInData.email }),
-              });
-              
-              if (userCheckResponse.ok) {
-                const userCheckData = await userCheckResponse.json();
-                if (userCheckData.exists === false) {
-                  // New user - show registration form inline
-                  setShowRegistrationForm(true);
-                  setError('');
-                  return;
-                } else {
-                  // Existing user without passkey - can proceed to setup
-                  setNewUserEmail(signInData.email);
-                  setAuthState('passkeySetup');
-                  return;
-                }
-              }
-            } catch (userCheckError) {
-              console.log('User existence check failed, proceeding with passkey setup');
-            }
-            
-            // Fallback: assume existing user and offer passkey setup
-            setNewUserEmail(signInData.email);
-            setAuthState('passkeySetup');
-            return;
-          }
-          
-          // For mobile devices, provide more specific guidance
-          if (WebAuthnService.isMobileDevice()) {
-            if (passkeyError.name === 'NotAllowedError') {
-              setError('Passkey authenticatie geannuleerd. Probeer opnieuw en gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN.');
-            } else if (passkeyError.message?.includes('timeout')) {
-              setError('Passkey authenticatie time-out. Probeer opnieuw en reageer sneller op de biometrische prompt.');
-            } else {
-              setError(passkeyError.message || 'Passkey authenticatie mislukt op mobiel apparaat');
-            }
-          } else {
-            // For other errors, show the error message
-            setError(passkeyError.message || 'Passkey authenticatie mislukt');
-          }
+        };
+        
+        localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
+        setUser(user);
+        setAuthState('authenticated');
+        return;
+      } else if (signInResult.nextStep) {
+        // Handle additional steps (e.g., confirm sign up, MFA)
+        const step = signInResult.nextStep.signInStep;
+        if (step === 'CONFIRM_SIGN_UP') {
+          setError('Je account moet nog bevestigd worden. Controleer je e-mail.');
+        } else if (step === 'CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION') {
+          // WebAuthn not available for this user, try email OTP
+          setError('Passkey niet beschikbaar. Gebruik de email verificatiecode optie.');
+        } else {
+          setError(`Extra stap vereist: ${step}`);
         }
-      } else {
-        // WebAuthn not supported
-        setError('Passkey authenticatie wordt niet ondersteund door deze browser');
       }
-
-      // If we get here, passkey auth failed - offer alternatives
-      if (WebAuthnService.shouldOfferCrossDeviceAuth()) {
-        setError(prev => prev + '. Probeer cross-device authenticatie of gebruik account recovery via email.');
-      } else {
-        setError(prev => prev + '. Gebruik account recovery via email hieronder.');
-      }
-
     } catch (err: any) {
       console.error('Sign in error:', err);
-      setError('Inloggen mislukt. Probeer opnieuw of neem contact op met de beheerder.');
+      
+      if (err.name === 'UserNotFoundException' || err.message?.includes('User does not exist')) {
+        // New user - show registration
+        setShowRegistrationForm(true);
+        setError('');
+        return;
+      } else if (err.name === 'NotAuthorizedException') {
+        setError('Inloggen mislukt. Controleer je gegevens.');
+      } else if (err.name === 'NotAllowedError') {
+        setError('Passkey authenticatie geannuleerd. Probeer opnieuw.');
+      } else {
+        setError(err.message || 'Inloggen mislukt. Probeer opnieuw.');
+      }
     } finally {
       setLoading(false);
     }
@@ -379,54 +257,6 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     }
   };
 
-  const handleCrossDeviceAuth = () => {
-    if (!signInData.email) {
-      setError('Voer eerst je e-mailadres in voor cross-device authenticatie');
-      return;
-    }
-    setAuthState('crossDevice');
-    setError(''); // Clear any existing errors
-  };
-
-  const handleCrossDeviceSuccess = (authData: any) => {
-    // Cross-device authentication successful, set user with tokens
-    if (authData.authenticationResult && authData.authenticationResult.AccessToken) {
-      const tokens = authData.authenticationResult;
-      const user = {
-        username: authData.user?.email || signInData.email,
-        attributes: {
-          email: authData.user?.email || signInData.email,
-          given_name: authData.user?.given_name || '',
-          family_name: authData.user?.family_name || ''
-        },
-        signInUserSession: {
-          accessToken: {
-            jwtToken: tokens.AccessToken,
-            payload: tokens.AccessTokenPayload || {}
-          },
-          idToken: {
-            jwtToken: tokens.IdToken,
-            payload: tokens.IdTokenPayload || {}
-          },
-          refreshToken: {
-            token: tokens.RefreshToken
-          }
-        }
-      };
-      
-      // Store authentication data
-      localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
-      
-      setUser(user);
-      setAuthState('authenticated');
-    } else {
-      setError('Authentication successful but no tokens received');
-      setAuthState('signIn');
-    }
-    setError(''); // Clear any errors
-  };
-
   const handlePasskeySetupSkip = () => {
     // User skipped passkey setup, proceed to authentication
     checkAuthState();
@@ -488,26 +318,6 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           onSkip={handlePasskeySetupSkip}
           onError={(error) => {
             console.error('Passkey setup error:', error);
-            setError(error);
-            setAuthState('signIn');
-          }}
-        />
-      </Box>
-    );
-  }
-
-  if (authState === 'crossDevice') {
-    return (
-      <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
-        <CrossDeviceAuth
-          userEmail={signInData.email}
-          onSuccess={handleCrossDeviceSuccess}
-          onCancel={() => {
-            setAuthState('signIn');
-            setError('');
-          }}
-          onError={(error) => {
-            console.error('Cross-device auth error:', error);
             setError(error);
             setAuthState('signIn');
           }}
@@ -716,20 +526,6 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                         >
                           Nieuwe Passkey Instellen
                         </Button>
-
-                        {WebAuthnService.shouldOfferCrossDeviceAuth() && (
-                          <Button
-                            colorScheme="purple"
-                            variant="ghost"
-                            size="sm"
-                            width="full"
-                            type="button"
-                            onClick={handleCrossDeviceAuth}
-                            isDisabled={loading}
-                          >
-                            Cross-Device Authenticatie
-                          </Button>
-                        )}
 
                         {/* Debug button - only show in development or for staff */}
                         {(process.env.NODE_ENV === 'development' || signInData.email.includes('@h-dcn.nl')) && (
