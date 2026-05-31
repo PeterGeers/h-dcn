@@ -46,19 +46,18 @@ jobs:
       - name: Generate .env
         working-directory: frontend
         run: |
-          cat <<EOF > .env
-          REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
-          REACT_APP_AWS_REGION=${{ vars.REACT_APP_AWS_REGION }}
-          REACT_APP_S3_BUCKET=${{ vars.REACT_APP_S3_BUCKET }}
-          REACT_APP_IMAGES_BUCKET=${{ vars.REACT_APP_IMAGES_BUCKET }}
-          REACT_APP_USER_POOL_ID=${{ secrets.REACT_APP_USER_POOL_ID }}
-          REACT_APP_USER_POOL_WEB_CLIENT_ID=${{ secrets.REACT_APP_USER_POOL_WEB_CLIENT_ID }}
-          REACT_APP_COGNITO_DOMAIN=${{ vars.REACT_APP_COGNITO_DOMAIN }}
-          REACT_APP_STRIPE_PUBLIC_KEY=${{ secrets.REACT_APP_STRIPE_PUBLIC_KEY }}
-          REACT_APP_CACHE_VERSION=${{ vars.REACT_APP_CACHE_VERSION }}
-          REACT_APP_LOGO_BUCKET_URL=${{ vars.REACT_APP_LOGO_BUCKET_URL }}
-          REACT_APP_IMAGES_BASE_URL=${{ vars.REACT_APP_IMAGES_BASE_URL }}
-          EOF
+          echo "REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}" > .env
+          echo "REACT_APP_AWS_REGION=${{ vars.REACT_APP_AWS_REGION }}" >> .env
+          echo "REACT_APP_S3_BUCKET=${{ vars.REACT_APP_S3_BUCKET }}" >> .env
+          echo "REACT_APP_IMAGES_BUCKET=${{ vars.REACT_APP_IMAGES_BUCKET }}" >> .env
+          echo "REACT_APP_USER_POOL_ID=${{ secrets.REACT_APP_USER_POOL_ID }}" >> .env
+          echo "REACT_APP_USER_POOL_WEB_CLIENT_ID=${{ secrets.REACT_APP_USER_POOL_WEB_CLIENT_ID }}" >> .env
+          echo "REACT_APP_COGNITO_DOMAIN=${{ vars.REACT_APP_COGNITO_DOMAIN }}" >> .env
+          echo "REACT_APP_STRIPE_PUBLIC_KEY=${{ secrets.REACT_APP_STRIPE_PUBLIC_KEY }}" >> .env
+          echo "REACT_APP_CACHE_VERSION=${{ vars.REACT_APP_CACHE_VERSION }}" >> .env
+          echo "REACT_APP_LOGO_BUCKET_URL=${{ vars.REACT_APP_LOGO_BUCKET_URL }}" >> .env
+          echo "REACT_APP_IMAGES_BASE_URL=${{ vars.REACT_APP_IMAGES_BASE_URL }}" >> .env
+          cat .env
 
       - name: Build
         working-directory: frontend
