@@ -7,16 +7,18 @@ import {
   Alert,
   AlertIcon,
   Heading,
-  Icon,
   Progress,
   List,
   ListItem,
   ListIcon,
   useToast,
+  Input,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
 import { CheckIcon, WarningIcon } from '@chakra-ui/icons';
-import { WebAuthnService } from '../../services/webAuthnService';
-import { getWebAuthnRPID } from '../../utils/webauthnConfig';
+import { associateWebAuthnCredential } from 'aws-amplify/auth';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 interface PasskeySetupProps {
   userEmail: string;
@@ -32,58 +34,90 @@ interface BrowserCompatibility {
   browserName: string;
   isMobile: boolean;
   isSupported: boolean;
-  recommendedAttachment: 'platform' | 'cross-platform' | undefined;
 }
+
+type SetupStep = 'check' | 'verify-email' | 'setup' | 'migration' | 'register' | 'complete';
 
 export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery = false }: PasskeySetupProps) {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'check' | 'setup' | 'register' | 'complete'>('check');
+  const [step, setStep] = useState<SetupStep>('check');
   const [error, setError] = useState('');
   const [compatibility, setCompatibility] = useState<BrowserCompatibility | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [needsMigration, setNeedsMigration] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
     checkBrowserCompatibility();
+    checkEmailVerification();
+    checkMigrationStatus();
   }, []);
 
   const checkBrowserCompatibility = async () => {
-    const webAuthnSupported = WebAuthnService.isSupported();
-    const platformAuthenticator = await WebAuthnService.isPlatformAuthenticatorAvailable();
-    const browserInfo = WebAuthnService.getBrowserInfo();
+    const webAuthnSupported = window.PublicKeyCredential !== undefined;
+    let platformAuthenticator = false;
     
-    // Detect browser name from user agent
-    const userAgent = browserInfo.userAgent.toLowerCase();
+    if (webAuthnSupported) {
+      try {
+        platformAuthenticator = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      } catch {
+        platformAuthenticator = false;
+      }
+    }
+
+    const userAgent = navigator.userAgent.toLowerCase();
     let browserName = 'Onbekend';
-    
     if (userAgent.includes('chrome')) browserName = 'Chrome';
     else if (userAgent.includes('firefox')) browserName = 'Firefox';
     else if (userAgent.includes('safari')) browserName = 'Safari';
     else if (userAgent.includes('edge')) browserName = 'Edge';
 
-    const isMobile = browserInfo.isMobile;
-    
-    // Mobile devices generally have better WebAuthn support
+    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
     const isSupported = webAuthnSupported && (
-      platformAuthenticator || 
-      isMobile || 
-      browserName === 'Chrome' || 
-      browserName === 'Edge' ||
-      browserName === 'Safari'
+      platformAuthenticator || isMobile || 
+      browserName === 'Chrome' || browserName === 'Edge' || browserName === 'Safari'
     );
 
-    setCompatibility({
-      webAuthnSupported,
-      platformAuthenticator,
-      browserName,
-      isMobile,
-      isSupported,
-      recommendedAttachment: browserInfo.recommendedAttachment,
-    });
+    setCompatibility({ webAuthnSupported, platformAuthenticator, browserName, isMobile, isSupported });
 
     if (isSupported) {
       setStep('setup');
-    } else {
-      setStep('check');
+    }
+  };
+
+  const checkEmailVerification = async () => {
+    try {
+      const attributes = await fetchUserAttributes();
+      const verified = attributes.email_verified === 'true';
+      setEmailVerified(verified);
+      if (!verified) {
+        setStep('verify-email');
+      }
+    } catch (err) {
+      // If we can't fetch attributes, assume not verified
+      setEmailVerified(false);
+      setStep('verify-email');
+    }
+  };
+
+  const checkMigrationStatus = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/auth/passkey/migrate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail }),
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.needsMigration) {
+          setNeedsMigration(true);
+        }
+      }
+    } catch {
+      // Migration check is best-effort
     }
   };
 
@@ -93,73 +127,20 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
       return;
     }
 
+    if (!emailVerified) {
+      setError('E-mailverificatie is vereist voordat je een passkey kunt aanmaken');
+      setStep('verify-email');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      // Step 1: Get registration options from the server
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/register/begin?t=${Date.now()}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Kon passkey registratie niet starten');
-      }
-
-      const registrationOptions = await response.json();
-
       setStep('register');
 
-      // Step 2: Create the passkey using WebAuthn
-      const credential = await WebAuthnService.registerPasskey({
-        challenge: registrationOptions.challenge,
-        rp: registrationOptions.rp || {
-          // Fallback to client-side RP if server doesn't provide it (for backward compatibility)
-          name: 'H-DCN Portal',
-          id: getWebAuthnRPID(),
-        },
-        user: registrationOptions.user || {
-          // Fallback to email if server doesn't provide user info
-          id: userEmail,
-          name: userEmail,
-          displayName: userEmail,
-        },
-        pubKeyCredParams: [
-          { type: 'public-key', alg: -7 }, // ES256
-          { type: 'public-key', alg: -257 }, // RS256
-        ],
-        authenticatorSelection: {
-          authenticatorAttachment: compatibility?.recommendedAttachment || (WebAuthnService.isMobileDevice() ? 'platform' : 'platform'),
-          userVerification: 'preferred',
-          requireResidentKey: false,
-        },
-        timeout: WebAuthnService.isMobileDevice() ? 120000 : 60000, // 2 minutes for mobile, 1 minute for desktop
-        attestation: 'none',
-      });
-
-      // Step 3: Send the credential to the server for verification
-      const credentialJSON = WebAuthnService.credentialToJSON(credential);
-      
-      const verificationResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/passkey/register/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          credential: credentialJSON,
-        }),
-      });
-
-      if (!verificationResponse.ok) {
-        throw new Error('Passkey registratie verificatie mislukt');
-      }
+      // Use Cognito native WebAuthn via Amplify v6
+      await associateWebAuthnCredential();
 
       setStep('complete');
       
@@ -172,23 +153,79 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
       });
 
       setTimeout(() => {
-        if (isRecovery) {
-          onSuccess(credentialJSON);
-        } else {
-          onSuccess();
-        }
+        onSuccess();
       }, 2000);
 
     } catch (err: any) {
       console.error('Passkey registration error:', err);
-      const errorMessage = err.message || 'Passkey registratie mislukt';
+      
+      // Provide specific, actionable error messages
+      let errorMessage = 'Passkey registratie mislukt';
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Passkey niet ondersteund op dit apparaat of de actie is geannuleerd';
+      } else if (err.message?.includes('email') || err.message?.includes('verified')) {
+        errorMessage = 'E-mailverificatie is vereist. Verifieer eerst je e-mailadres.';
+        setStep('verify-email');
+      } else if (err.message?.includes('not supported')) {
+        errorMessage = 'Passkeys worden niet ondersteund op dit apparaat of in deze browser';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
       if (onError) onError(errorMessage);
-      setStep('setup');
+      if (step === 'register') setStep('setup');
     } finally {
       setLoading(false);
     }
   };
+
+  const renderEmailVerification = () => (
+    <VStack spacing={6}>
+      <Box textAlign="center">
+        <Heading color="orange.400" size="md">E-mail Verificatie Vereist</Heading>
+        <Text color="gray.400" mt={2}>
+          Je moet eerst je e-mailadres verifiëren voordat je een passkey kunt aanmaken.
+        </Text>
+      </Box>
+
+      <Alert status="warning" bg="yellow.900" borderColor="yellow.500" border="1px solid">
+        <AlertIcon color="yellow.300" />
+        <Box>
+          <Text color="yellow.100" fontWeight="bold">E-mail niet geverifieerd</Text>
+          <Text color="yellow.200" fontSize="sm" mt={1}>
+            Controleer je inbox ({userEmail}) voor een verificatiecode en bevestig je e-mailadres.
+          </Text>
+        </Box>
+      </Alert>
+
+      <VStack spacing={3} w="full">
+        {onSkip && (
+          <Button
+            variant="ghost"
+            colorScheme="gray"
+            size="md"
+            onClick={onSkip}
+          >
+            Overslaan
+          </Button>
+        )}
+      </VStack>
+    </VStack>
+  );
+
+  const renderMigrationNotice = () => (
+    <Alert status="info" bg="blue.900" borderColor="blue.500" border="1px solid" mb={4}>
+      <AlertIcon color="blue.300" />
+      <Box>
+        <Text color="blue.100" fontWeight="bold">Passkey opnieuw instellen</Text>
+        <Text color="blue.200" fontSize="sm" mt={1}>
+          Je had eerder een passkey ingesteld met het oude systeem. 
+          Registreer een nieuwe passkey om weer passwordless in te loggen.
+        </Text>
+      </Box>
+    </Alert>
+  );
 
   const renderCompatibilityCheck = () => (
     <VStack spacing={6}>
@@ -214,16 +251,6 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
               <ListIcon as={CheckIcon} />
               Browser: {compatibility.browserName}
             </ListItem>
-            <ListItem color={compatibility.isMobile ? 'green.300' : 'blue.300'}>
-              <ListIcon as={CheckIcon} />
-              Apparaat: {compatibility.isMobile ? 'Mobiel' : 'Desktop'}
-            </ListItem>
-            {compatibility.recommendedAttachment && (
-              <ListItem color="orange.300">
-                <ListIcon as={CheckIcon} />
-                Aanbevolen: {compatibility.recommendedAttachment === 'platform' ? 'Ingebouwde authenticatie' : 'Externe authenticatie'}
-              </ListItem>
-            )}
           </List>
 
           {!compatibility.isSupported && (
@@ -232,49 +259,19 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
               <Box>
                 <Text color="yellow.100" fontWeight="bold">Passkeys niet volledig ondersteund</Text>
                 <Text color="yellow.200" fontSize="sm" mt={1}>
-                  {compatibility.isMobile 
-                    ? 'Voor mobiele apparaten: gebruik Safari op iOS 14+ of Chrome op Android 7+.'
-                    : 'Voor de beste ervaring gebruik Chrome, Edge, of Safari op een apparaat met biometrische authenticatie.'
-                  }
+                  Gebruik Chrome, Edge, of Safari op een apparaat met biometrische authenticatie.
                 </Text>
               </Box>
-            </Alert>
-          )}
-
-          {compatibility.isSupported && (
-            <Alert status="success" mt={4} bg="green.900" borderColor="green.500" border="1px solid">
-              <AlertIcon color="green.300" />
-              <Text color="green.100">
-                Je apparaat ondersteunt passkeys! Je kunt doorgaan met de setup.
-              </Text>
             </Alert>
           )}
         </Box>
       )}
 
-      <VStack spacing={3} w="full">
-        {compatibility?.isSupported && (
-          <Button
-            colorScheme="orange"
-            size="lg"
-            width="full"
-            onClick={() => setStep('setup')}
-          >
-            Doorgaan met Passkey Setup
-          </Button>
-        )}
-        
-        {onSkip && (
-          <Button
-            variant="ghost"
-            colorScheme="gray"
-            size="md"
-            onClick={onSkip}
-          >
-            Overslaan (Email Recovery Gebruiken)
-          </Button>
-        )}
-      </VStack>
+      {onSkip && (
+        <Button variant="ghost" colorScheme="gray" size="md" onClick={onSkip}>
+          Overslaan (Email Recovery Gebruiken)
+        </Button>
+      )}
     </VStack>
   );
 
@@ -287,6 +284,8 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
         </Text>
       </Box>
 
+      {needsMigration && renderMigrationNotice()}
+
       <Box w="full">
         <Text color="gray.300" mb={4} fontWeight="bold">Wat gebeurt er nu:</Text>
         <List spacing={2}>
@@ -296,21 +295,12 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
           </ListItem>
           <ListItem color="gray.300">
             <ListIcon as={CheckIcon} color="orange.400" />
-            {compatibility?.isMobile 
-              ? 'Gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN'
-              : 'Gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN'
-            }
+            Gebruik je vingerafdruk, gezichtsherkenning, of apparaat-PIN
           </ListItem>
           <ListItem color="gray.300">
             <ListIcon as={CheckIcon} color="orange.400" />
             Je passkey wordt veilig opgeslagen op dit apparaat
           </ListItem>
-          {compatibility?.isMobile && (
-            <ListItem color="gray.300">
-              <ListIcon as={CheckIcon} color="orange.400" />
-              Op mobiele apparaten werkt dit meestal met je schermvergrendeling
-            </ListItem>
-          )}
         </List>
       </Box>
 
@@ -401,6 +391,7 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
   return (
     <Box maxW="md" mx="auto" p={6}>
       {step === 'check' && renderCompatibilityCheck()}
+      {step === 'verify-email' && renderEmailVerification()}
       {step === 'setup' && renderSetupInstructions()}
       {step === 'register' && renderRegistrationProgress()}
       {step === 'complete' && renderComplete()}

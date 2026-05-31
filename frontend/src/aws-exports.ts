@@ -7,7 +7,7 @@
  * - Email recovery flows without passwords
  * - Custom authentication flow bypassing Amplify Auth
  * 
- * Updated for Cognito User Pool: eu-west-1_VtKQHhXGN
+ * Updated for Cognito User Pool: eu-west-1_fcUkvwjH5
  * Region: eu-west-1
  */
 
@@ -32,8 +32,8 @@ const awsconfig: AWSConfig = {
   
   // Cognito User Pool Configuration (for reference only - not used by Amplify Auth)
   aws_cognito_region: process.env.REACT_APP_AWS_REGION || 'eu-west-1',
-  aws_user_pools_id: process.env.REACT_APP_USER_POOL_ID || 'eu-west-1_VtKQHhXGN',
-  aws_user_pools_web_client_id: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID || '7p5t7sjl2s1rcu1emn85h20qeh',
+  aws_user_pools_id: process.env.REACT_APP_USER_POOL_ID || 'eu-west-1_fcUkvwjH5',
+  aws_user_pools_web_client_id: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID || '6jhvk853b0lfg9q1m861qs0cug',
   
   // API Configuration
   API: {

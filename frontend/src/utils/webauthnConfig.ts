@@ -1,15 +1,12 @@
 /**
  * WebAuthn Configuration Utilities
- * Handles domain-specific WebAuthn RP ID configuration
+ * 
+ * NOTE: Passkey registration and authentication are now handled by Cognito's
+ * native WebAuthn support. The RP ID is configured server-side on the Cognito
+ * User Pool (h-dcn.nl) and does not need client-side configuration.
+ * 
+ * These utility functions are kept for UI display purposes only.
  */
-
-export function getWebAuthnRPID(): string {
-  const hostname = window.location.hostname;
-  
-  // For CloudFront domains, we need to use the actual domain, not a mapped one
-  // WebAuthn requires the RP ID to exactly match the domain the user is on
-  return hostname;
-}
 
 export function isTestEnvironment(): boolean {
   const hostname = window.location.hostname;

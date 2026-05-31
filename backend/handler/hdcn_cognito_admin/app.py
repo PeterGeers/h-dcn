@@ -202,10 +202,11 @@ def lambda_handler(event, context):
         
         # Define public endpoints that don't require authentication
         public_endpoints = [
-            '/auth/passkey/authenticate/begin',
-            '/auth/passkey/authenticate/complete',
-            '/auth/passkey/register/begin',
-            '/auth/passkey/register/complete',
+            '/auth/passkey/register/begin',      # Deprecated - returns 410
+            '/auth/passkey/register/complete',    # Deprecated - returns 410
+            '/auth/passkey/authenticate/begin',   # Deprecated - returns 410
+            '/auth/passkey/authenticate/complete', # Deprecated - returns 410
+            '/auth/passkey/migrate',
             '/auth/signup',
             '/cognito/auth/signup',
             '/auth/verify-user'
@@ -309,20 +310,61 @@ def lambda_handler(event, context):
                 }
         
         elif path == '/auth/passkey/register/begin':
+            # DEPRECATED: Passkey registration is now handled client-side via
+            # Amplify v6 associateWebAuthnCredential() using Cognito native WebAuthn
             if method == 'POST':
-                return begin_passkey_registration(event, headers)
+                return {
+                    'statusCode': 410,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'error': 'This endpoint is deprecated. Passkey registration is now handled client-side via Cognito native WebAuthn.',
+                        'code': 'ENDPOINT_DEPRECATED',
+                        'migration': 'Use Amplify v6 associateWebAuthnCredential() instead.'
+                    })
+                }
         
         elif path == '/auth/passkey/register/complete':
+            # DEPRECATED: See above
             if method == 'POST':
-                return complete_passkey_registration(event, headers)
+                return {
+                    'statusCode': 410,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'error': 'This endpoint is deprecated. Passkey registration is now handled client-side via Cognito native WebAuthn.',
+                        'code': 'ENDPOINT_DEPRECATED',
+                        'migration': 'Use Amplify v6 associateWebAuthnCredential() instead.'
+                    })
+                }
         
         elif path == '/auth/passkey/authenticate/begin':
+            # DEPRECATED: Passkey authentication is now handled via Cognito native WebAuthn
             if method == 'POST':
-                return begin_passkey_authentication(event, headers)
+                return {
+                    'statusCode': 410,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'error': 'This endpoint is deprecated. Passkey authentication is now handled via Cognito native WebAuthn.',
+                        'code': 'ENDPOINT_DEPRECATED',
+                        'migration': 'Use Amplify v6 signIn with preferredChallenge: "WEB_AUTHN" instead.'
+                    })
+                }
         
         elif path == '/auth/passkey/authenticate/complete':
+            # DEPRECATED: See above
             if method == 'POST':
-                return complete_passkey_authentication(event, headers)
+                return {
+                    'statusCode': 410,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'error': 'This endpoint is deprecated. Passkey authentication is now handled via Cognito native WebAuthn.',
+                        'code': 'ENDPOINT_DEPRECATED',
+                        'migration': 'Use Amplify v6 signIn with preferredChallenge: "WEB_AUTHN" instead.'
+                    })
+                }
+        
+        elif path == '/auth/passkey/migrate':
+            if method == 'POST':
+                return passkey_migration_check(event, headers)
         
         elif path == '/auth/login':
             if method == 'GET':
@@ -1258,9 +1300,24 @@ def passwordless_signup(event, headers):
             })
         }
 
-def begin_passkey_registration(event, headers):
+# --- Passkey Registration & Authentication ---
+# NOTE: Passkey registration and authentication are now handled client-side
+# via Amplify v6 using Cognito's native WebAuthn support.
+# - Registration: associateWebAuthnCredential()
+# - Authentication: signIn() with preferredChallenge: "WEB_AUTHN"
+# The old DIY endpoints (/auth/passkey/register/*, /auth/passkey/authenticate/*)
+# now return HTTP 410 Gone with migration guidance.
+
+
+def passkey_migration_check(event, headers):
     """
-    Begin passkey registration process - generate challenge and options
+    POST /auth/passkey/migrate
+    
+    Detects users with old custom:passkey_cred_ids attribute from the
+    previous DIY passkey implementation and returns re-enrollment guidance.
+    
+    Users with old credentials need to re-register their passkeys using
+    Cognito's native WebAuthn flow (via Amplify v6 associateWebAuthnCredential).
     """
     try:
         data = json.loads(event['body'])
@@ -1273,357 +1330,6 @@ def begin_passkey_registration(event, headers):
                 'body': json.dumps({'error': 'Email is required'})
             }
         
-        # Check if user exists in Cognito (allow new users for registration)
-        user_exists = True
-        try:
-            user_response = cognito_client.admin_get_user(
-                UserPoolId=USER_POOL_ID,
-                Username=email
-            )
-        except cognito_client.exceptions.UserNotFoundException:
-            # User doesn't exist yet - this is fine for new user registration
-            user_exists = False
-            print(f"New user passkey registration for: {email}")
-        
-        # Generate a challenge for WebAuthn registration
-        # In a production environment, you would use a proper WebAuthn library
-        # For now, we'll generate a simple challenge and store it temporarily
-        import secrets
-        import base64
-        
-        challenge = secrets.token_bytes(32)
-        challenge_b64 = base64.urlsafe_b64encode(challenge).decode('utf-8').rstrip('=')
-        
-        # Store challenge temporarily (in production, use DynamoDB or Redis)
-        # For now, we'll return it and expect the client to send it back
-        
-        # Determine RP ID based on environment
-        # Use the actual domain from the request for consistency
-        rp_id = 'portal.h-dcn.nl'  # Default production domain
-        
-        # For test environments, we need to be more flexible
-        # This should match the domain the request is coming from
-        origin = event.get('headers', {}).get('origin', '')
-        host = event.get('headers', {}).get('host', '')
-        
-        if 'testportal' in origin or 'cloudfront.net' in origin:
-            # Extract hostname from origin
-            from urllib.parse import urlparse
-            parsed = urlparse(origin)
-            rp_id = parsed.hostname
-        elif 'cloudfront.net' in host:
-            # If no origin but host is CloudFront, use host
-            rp_id = host
-        elif 'localhost' in origin:
-            rp_id = 'localhost'
-        
-        registration_options = {
-            'challenge': challenge_b64,
-            'rp': {
-                'name': 'H-DCN Portal',
-                'id': rp_id
-            },
-            'user': {
-                'id': email,
-                'name': email,
-                'displayName': email
-            },
-            'pubKeyCredParams': [
-                {'type': 'public-key', 'alg': -7},   # ES256
-                {'type': 'public-key', 'alg': -257}  # RS256
-            ],
-            'authenticatorSelection': {
-                'userVerification': 'preferred',
-                'requireResidentKey': False
-                # Removed 'authenticatorAttachment' to allow both platform and cross-platform authenticators
-            },
-            'timeout': 60000,
-            'attestation': 'none'
-        }
-        
-        return {
-            'statusCode': 200,
-            'headers': headers,
-            'body': json.dumps(registration_options)
-        }
-        
-    except Exception as e:
-        print(f"Error in begin_passkey_registration: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': headers,
-            'body': json.dumps({'error': 'Failed to begin passkey registration'})
-        }
-
-def complete_passkey_registration(event, headers):
-    """
-    Complete passkey registration - verify and store the credential
-    """
-    try:
-        data = json.loads(event['body'])
-        email = data.get('email')
-        credential = data.get('credential')
-        
-        if not email or not credential:
-            return {
-                'statusCode': 400,
-                'headers': headers,
-                'body': json.dumps({'error': 'Email and credential are required'})
-            }
-        
-        # Check if user exists in Cognito, create if they don't
-        user_exists = True
-        try:
-            user_response = cognito_client.admin_get_user(
-                UserPoolId=USER_POOL_ID,
-                Username=email
-            )
-        except cognito_client.exceptions.UserNotFoundException:
-            # User doesn't exist - create them as part of passkey registration
-            user_exists = False
-            print(f"Creating new user during passkey registration: {email}")
-            
-            try:
-                # Create user in Cognito with email verified
-                user_response = cognito_client.admin_create_user(
-                    UserPoolId=USER_POOL_ID,
-                    Username=email,
-                    UserAttributes=[
-                        {'Name': 'email', 'Value': email},
-                        {'Name': 'email_verified', 'Value': 'true'}
-                    ],
-                    MessageAction='SUPPRESS'  # Don't send welcome email
-                )
-                
-                # Add user to basic member group
-                try:
-                    cognito_client.admin_add_user_to_group(
-                        UserPoolId=USER_POOL_ID,
-                        Username=email,
-                        GroupName='verzoek_lid'
-                    )
-                except Exception as group_error:
-                    print(f"Warning: Could not add user to verzoek_lid group: {str(group_error)}")
-                
-            except Exception as create_error:
-                print(f"Error creating user: {str(create_error)}")
-                return {
-                    'statusCode': 500,
-                    'headers': headers,
-                    'body': json.dumps({'error': 'Failed to create user account'})
-                }
-        
-        # In a production environment, you would:
-        # 1. Verify the credential signature
-        # 2. Validate the challenge
-        # 3. Store the credential public key
-        # 4. Associate it with the user account
-        
-        # Extract credential ID for storage
-        credential_id = credential.get('id', '')
-        if not credential_id:
-            return {
-                'statusCode': 400,
-                'headers': headers,
-                'body': json.dumps({'error': 'Invalid credential - missing ID'})
-            }
-        
-        try:
-            # Get existing credential IDs
-            if user_exists:
-                # Existing user - get attributes from admin_get_user response
-                user_attributes = user_response.get('UserAttributes', [])
-            else:
-                # New user - get attributes from admin_create_user response
-                user_attributes = user_response.get('User', {}).get('Attributes', [])
-            
-            existing_credentials = []
-            
-            for attr in user_attributes:
-                if attr['Name'] == 'custom:passkey_cred_ids':
-                    # Parse existing credential IDs (stored as JSON array)
-                    try:
-                        existing_credentials = json.loads(attr['Value'])
-                    except:
-                        existing_credentials = []
-                    break
-            
-            # Add new credential ID to the list
-            if credential_id not in existing_credentials:
-                existing_credentials.append(credential_id)
-            
-            # Update user attributes with multiple credential IDs
-            cognito_client.admin_update_user_attributes(
-                UserPoolId=USER_POOL_ID,
-                Username=email,
-                UserAttributes=[
-                    {
-                        'Name': 'custom:passkey_registered',
-                        'Value': 'true'
-                    },
-                    {
-                        'Name': 'custom:passkey_date',
-                        'Value': datetime.now().isoformat()
-                    },
-                    {
-                        'Name': 'custom:passkey_cred_ids',
-                        'Value': json.dumps(existing_credentials)
-                    }
-                ]
-            )
-            
-            # In production, store the credential in a secure database
-            # credential_id = credential['id']
-            # public_key = credential['response']['attestationObject']
-            # Store these securely associated with the user
-            
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({
-                    'message': 'Passkey registered successfully',
-                    'verified': True
-                })
-            }
-            
-        except Exception as update_error:
-            print(f"Error updating user attributes: {str(update_error)}")
-            return {
-                'statusCode': 500,
-                'headers': headers,
-                'body': json.dumps({'error': 'Failed to complete passkey registration'})
-            }
-        
-    except Exception as e:
-        print(f"Error in complete_passkey_registration: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': headers,
-            'body': json.dumps({'error': 'Failed to complete passkey registration'})
-        }
-
-def begin_passkey_authentication(event, headers):
-    """
-    Begin passkey authentication process - generate challenge
-    """
-    try:
-        data = json.loads(event['body'])
-        email = data.get('email')
-        cross_device = data.get('crossDevice', False)
-        
-        if not email:
-            return {
-                'statusCode': 400,
-                'headers': headers,
-                'body': json.dumps({'error': 'Email is required'})
-            }
-        
-        # Verify user exists and has passkey registered
-        try:
-            user_response = cognito_client.admin_get_user(
-                UserPoolId=USER_POOL_ID,
-                Username=email
-            )
-            
-            # Check if user has passkey registered and get credential IDs
-            user_attributes = user_response.get('UserAttributes', [])
-            passkey_registered = False
-            credential_ids = []
-            
-            for attr in user_attributes:
-                if attr['Name'] == 'custom:passkey_registered' and attr['Value'] == 'true':
-                    passkey_registered = True
-                elif attr['Name'] == 'custom:passkey_cred_ids':
-                    try:
-                        credential_ids = json.loads(attr['Value'])
-                    except:
-                        credential_ids = []
-                elif attr['Name'] == 'custom:passkey_credential_id':
-                    # Legacy single credential ID support
-                    if attr['Value'] and attr['Value'] not in credential_ids:
-                        credential_ids.append(attr['Value'])
-            
-            if not passkey_registered:
-                return {
-                    'statusCode': 400,
-                    'headers': headers,
-                    'body': json.dumps({
-                        'error': 'No passkey registered for this user',
-                        'code': 'NO_PASSKEY_REGISTERED',
-                        'message': 'User exists but has no passkey registered. Please set up a passkey first.'
-                    })
-                }
-                
-        except cognito_client.exceptions.UserNotFoundException:
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({
-                    'error': 'User not found',
-                    'code': 'USER_NOT_FOUND',
-                    'message': 'User does not exist. Please set up a new passkey.',
-                    'action': 'SETUP_PASSKEY'
-                })
-            }
-        
-        # Generate authentication challenge
-        import secrets
-        import base64
-        
-        challenge = secrets.token_bytes(32)
-        challenge_b64 = base64.urlsafe_b64encode(challenge).decode('utf-8').rstrip('=')
-        
-        # Build allowCredentials array
-        allow_credentials = []
-        if credential_ids:
-            # Always populate allowCredentials if we have stored credential IDs
-            # This helps the authenticator find the right credentials
-            allow_credentials = [{
-                'type': 'public-key',
-                'id': cred_id
-            } for cred_id in credential_ids]
-        # If no stored credentials, leave empty to allow any credential (cross-device flow)
-        
-        authentication_options = {
-            'challenge': challenge_b64,
-            'timeout': 300000 if cross_device else 60000,  # 5 minutes for cross-device, 1 minute for same-device
-            'userVerification': 'preferred',
-            'allowCredentials': allow_credentials,
-            'crossDevice': cross_device
-        }
-        
-        return {
-            'statusCode': 200,
-            'headers': headers,
-            'body': json.dumps(authentication_options)
-        }
-        
-    except Exception as e:
-        print(f"Error in begin_passkey_authentication: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': headers,
-            'body': json.dumps({'error': 'Failed to begin passkey authentication'})
-        }
-
-def complete_passkey_authentication(event, headers):
-    """
-    Complete passkey authentication - verify credential and return tokens
-    """
-    try:
-        data = json.loads(event['body'])
-        email = data.get('email')
-        credential = data.get('credential')
-        cross_device = data.get('crossDevice', False)
-        
-        if not email or not credential:
-            return {
-                'statusCode': 400,
-                'headers': headers,
-                'body': json.dumps({'error': 'Email and credential are required'})
-            }
-        
-        # Verify user exists and has passkey registered
         try:
             user_response = cognito_client.admin_get_user(
                 UserPoolId=USER_POOL_ID,
@@ -1636,136 +1342,52 @@ def complete_passkey_authentication(event, headers):
                 'body': json.dumps({'error': 'User not found'})
             }
         
-        # In production, you would:
-        # 1. Verify the credential signature against stored public key
-        # 2. Validate the challenge
-        # 3. Check the authenticator data
+        # Check for old DIY passkey attributes
+        user_attributes = user_response.get('UserAttributes', [])
+        has_old_passkey = False
+        old_cred_ids = []
         
-        # For now, simulate successful authentication
-        # and generate custom JWT tokens for passkey authentication
+        for attr in user_attributes:
+            if attr['Name'] == 'custom:passkey_registered' and attr['Value'] == 'true':
+                has_old_passkey = True
+            elif attr['Name'] == 'custom:passkey_cred_ids':
+                try:
+                    old_cred_ids = json.loads(attr['Value'])
+                except (json.JSONDecodeError, TypeError):
+                    old_cred_ids = []
         
-        try:
-            # Log cross-device authentication for audit purposes
-            if cross_device:
-                print(f"Cross-device authentication successful for user: {email}")
-            
-            # Get user groups for token
-            user_groups_response = cognito_client.admin_list_groups_for_user(
-                UserPoolId=USER_POOL_ID,
-                Username=email
-            )
-            groups = [group['GroupName'] for group in user_groups_response.get('Groups', [])]
-            
-            # Generate custom tokens for passkey authentication
-            try:
-                import jwt
-                import time
-                
-                # Get user attributes for token payload
-                user_attributes = user_response.get('UserAttributes', [])
-                given_name = ''
-                family_name = ''
-                
-                for attr in user_attributes:
-                    if attr['Name'] == 'given_name':
-                        given_name = attr['Value']
-                    elif attr['Name'] == 'family_name':
-                        family_name = attr['Value']
-                
-                current_time = int(time.time())
-                
-                # Access token payload - matches Cognito structure
-                access_payload = {
-                    'sub': email,
-                    'email': email,
-                    'email_verified': True,
-                    'cognito:groups': groups,
-                    'auth_time': current_time,
-                    'iat': current_time,
-                    'exp': current_time + 3600,  # 1 hour expiration
-                    'token_use': 'access',
-                    'client_id': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
-                    'username': email,
-                    'auth_method': 'passkey'
-                }
-                
-                # ID token payload - matches Cognito structure
-                id_payload = {
-                    'sub': email,
-                    'email': email,
-                    'email_verified': True,
-                    'given_name': given_name,
-                    'family_name': family_name,
-                    'cognito:groups': groups,
-                    'auth_time': current_time,
-                    'iat': current_time,
-                    'exp': current_time + 3600,
-                    'token_use': 'id',
-                    'aud': os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '7p5t7sjl2s1rcu1emn85h20qeh'),
-                    'username': email,
-                    'auth_method': 'passkey'
-                }
-                
-                print(f"Generating JWT tokens for user: {email} with groups: {groups}")
-                
-                # Generate tokens
-                access_token = jwt.encode(access_payload, 'passkey-secret', algorithm='HS256')
-                id_token = jwt.encode(id_payload, 'passkey-secret', algorithm='HS256')
-                
-                print(f"JWT tokens generated successfully for user: {email}")
-                
-                # Return response structure that matches frontend expectations
-                return {
-                    'statusCode': 200,
-                    'headers': headers,
-                    'body': json.dumps({
-                        'message': 'Authentication successful',
-                        'authenticationResult': {
-                            'AccessToken': access_token,
-                            'AccessTokenPayload': access_payload,  # Frontend expects this
-                            'IdToken': id_token,
-                            'IdTokenPayload': id_payload,  # Frontend expects this
-                            'TokenType': 'Bearer',
-                            'ExpiresIn': 3600
-                        },
-                        'user': {
-                            'given_name': given_name,
-                            'family_name': family_name,
-                            'email': email
-                        },
-                        'verified': True,
-                        'crossDevice': cross_device
-                    })
-                }
-                
-            except ImportError as import_error:
-                print(f"JWT import error: {str(import_error)}")
-                raise import_error
-            except Exception as jwt_error:
-                print(f"JWT generation error: {str(jwt_error)}")
-                raise jwt_error
-            
-        except Exception as auth_error:
-            print(f"Error during token generation: {str(auth_error)}")
-            # Fallback: return success for passkey verification
+        if has_old_passkey:
             return {
                 'statusCode': 200,
                 'headers': headers,
                 'body': json.dumps({
-                    'message': f'Passkey authentication successful{" (cross-device)" if cross_device else ""}',
-                    'verified': True,
-                    'email': email,
-                    'crossDevice': cross_device
+                    'needsMigration': True,
+                    'message': 'Your passkey was registered with an older system. '
+                               'Please re-register your passkey to continue using passwordless login.',
+                    'oldCredentialCount': len(old_cred_ids),
+                    'action': 'RE_ENROLL',
+                    'instructions': 'Use the "Register new passkey" button to set up a new passkey '
+                                    'via the updated system. Your old passkey will no longer work.'
+                })
+            }
+        else:
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': json.dumps({
+                    'needsMigration': False,
+                    'message': 'No migration needed. You can register a new passkey.'
                 })
             }
         
     except Exception as e:
-        print(f"Error in complete_passkey_authentication: {str(e)}")
+        print(f"Error in passkey_migration_check: {str(e)}")
         return {
             'statusCode': 500,
             'headers': headers,
-            'body': json.dumps({'error': 'Failed to complete passkey authentication'})
+            'body': json.dumps({'error': 'Failed to check passkey migration status'})
         }
+
 
 def get_auth_login(event, headers):
     """

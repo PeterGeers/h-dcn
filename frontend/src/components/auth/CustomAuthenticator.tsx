@@ -27,7 +27,6 @@ import { CrossDeviceAuth } from './CrossDeviceAuth';
 import { MobilePasskeyDebug } from './MobilePasskeyDebug';
 import GoogleSignInButton from './GoogleSignInButton';
 import { WebAuthnService } from '../../services/webAuthnService';
-import { getWebAuthnRPID } from '../../utils/webauthnConfig';
 
 interface CustomAuthenticatorProps {
   children: (props: { signOut: () => void; user: any }) => React.ReactNode;
