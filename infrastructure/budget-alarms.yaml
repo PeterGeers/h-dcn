@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Budget alarms and cost controls for the h-dcn nonprofit account.
+  Configures an €80/month budget with alerts at 50%, 80%, and 100% thresholds,
+  plus a zero-spend alarm for unexpected service charges.
+
+Parameters:
+  AdministratorEmail:
+    Type: String
+    Description: Email address to receive budget alert notifications
+    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    ConstraintDescription: Must be a valid email address
+
+  MonthlyBudgetAmount:
+    Type: Number
+    Default: 80
+    Description: Monthly budget threshold in EUR
+
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+    Description: Deployment environment
+
+Resources:
+  # SNS Topic for budget alert notifications
+  BudgetAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: h-dcn-budget-alerts
+      DisplayName: h-dcn Budget Alerts
+      Tags:
+        - Key: Project
+          Value: h-dcn
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: cloudformation
+        - Key: Owner
+          Value: peter
+
+  # Email subscription for the SNS topic
+  BudgetAlertsEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref BudgetAlertsTopic
+      Protocol: email
+      Endpoint: !Ref AdministratorEmail
+
+  # SNS Topic Policy to allow AWS Budgets to publish
+  BudgetAlertsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref BudgetAlertsTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowBudgetsToPublish
+            Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: SNS:Publish
+            Resource: !Ref BudgetAlertsTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+  # Monthly budget with €80 threshold and alerts at 50%, 80%, 100%
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: h-dcn-monthly-budget
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref MonthlyBudgetAmount
+          Unit: EUR
+      NotificationsWithSubscribers:
+        # 50% threshold alert (€40)
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 50
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertsTopic
+        # 80% threshold alert (€64)
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertsTopic
+        # 100% threshold alert (€80)
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertsTopic
+
+  # Zero-spend alarm: triggers when any cost is incurred above $0
+  # This catches unexpected charges from services that should be covered by free tier or credits
+  ZeroSpendBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: h-dcn-zero-spend-alarm
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 0.01
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertsTopic
+
+Outputs:
+  BudgetAlertsTopicArn:
+    Description: ARN of the SNS topic for budget alerts
+    Value: !Ref BudgetAlertsTopic
+    Export:
+      Name: h-dcn-budget-alerts-topic-arn
+
+  MonthlyBudgetName:
+    Description: Name of the monthly budget
+    Value: !Ref MonthlyBudget
+
+  ZeroSpendBudgetName:
+    Description: Name of the zero-spend alarm budget
+    Value: !Ref ZeroSpendBudget

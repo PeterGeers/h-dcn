@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Python Syntax Check",
+  "description": "Runs Python syntax check when backend handler files are saved",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "backend/handler/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "python -m py_compile ${file}",
+    "timeout": 10
+  }
+}

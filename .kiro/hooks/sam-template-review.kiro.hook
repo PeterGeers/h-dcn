@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "SAM Template Review",
+  "description": "Asks the agent to review SAM template changes for potential issues with IAM, API Gateway, or Lambda config",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "backend/template.yaml"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the SAM template changes for potential issues with IAM permissions, API Gateway config, or Lambda settings. Flag anything that could break the deployment."
+  }
+}

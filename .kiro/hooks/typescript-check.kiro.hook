@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "TypeScript Check",
+  "description": "Runs TypeScript type-check when frontend source files are saved",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "frontend/src/**/*.ts",
+      "frontend/src/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd frontend && npx tsc --noEmit --pretty",
+    "timeout": 30
+  }
+}

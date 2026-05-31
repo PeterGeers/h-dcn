@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  IAM group and policies for the personal account (344561557829).
+  Creates a "Developers" group with AssumeRole permissions for all three
+  nonprofit account roles, and adds the "peter" user to the group.
+  
+  IMPORTANT: Deploy this template to the PERSONAL account (344561557829),
+  NOT the nonprofit account.
+
+Parameters:
+  NonprofitAccountId:
+    Type: String
+    Default: '506221081911'
+    Description: AWS Account ID of the nonprofit account
+
+Resources:
+  # =============================================================================
+  # Developers IAM Group
+  # =============================================================================
+  DevelopersGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: Developers
+
+  # =============================================================================
+  # AssumeRole Policy - allows assuming all three nonprofit roles
+  # =============================================================================
+  AssumeNonprofitRolesPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AssumeNonprofitRoles
+      Groups:
+        - !Ref DevelopersGroup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sts:AssumeRole'
+            Resource:
+              - !Sub 'arn:aws:iam::${NonprofitAccountId}:role/NonprofitDevRole'
+              - !Sub 'arn:aws:iam::${NonprofitAccountId}:role/NonprofitDeployRole'
+              - !Sub 'arn:aws:iam::${NonprofitAccountId}:role/NonprofitAdminRole'
+
+  # =============================================================================
+  # Add "peter" user to the Developers group
+  # =============================================================================
+  PeterGroupMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref DevelopersGroup
+      Users:
+        - peter
+
+Outputs:
+  DevelopersGroupArn:
+    Description: ARN of the Developers IAM group
+    Value: !GetAtt DevelopersGroup.Arn
+    Export:
+      Name: DevelopersGroupArn
+
+  AssumeNonprofitRolesPolicyName:
+    Description: Name of the policy allowing AssumeRole on nonprofit roles
+    Value: AssumeNonprofitRoles
