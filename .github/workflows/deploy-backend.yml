@@ -1,0 +1,75 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Backend (SAM)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret scan (ggshield)
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::506221081911:role/NonprofitDeployRole
+          aws-region: eu-west-1
+
+      - name: SAM Build
+        working-directory: backend
+        run: sam build --use-container
+
+      - name: SAM Deploy
+        working-directory: backend
+        run: |
+          sam deploy \
+            --stack-name h-dcn \
+            --region eu-west-1 \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --resolve-image-repos \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              Environment=prod \
+              Table=Producten \
+              Region=eu-west-1 \
+              MembersTable=Members \
+              PaymentsTable=Payments \
+              EventsTable=Events \
+              MembershipsTable=Memberships \
+              CartsTable=Carts \
+              OrdersTable=Orders \
+              ParametersTable=Parameters

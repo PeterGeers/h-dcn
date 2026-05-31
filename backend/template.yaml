@@ -322,6 +322,8 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Environment
+      BinaryMediaTypes:
+        - application/pdf
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with'"
@@ -1069,6 +1071,67 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /orders/customer/{customer_id}
             Method: get
+
+  # Order PDF Generation Function
+  GenerateOrderPdfFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerTag: generate-order-pdf
+      DockerContext: .
+      Dockerfile: handler/generate_order_pdf/Dockerfile
+    Properties:
+      PackageType: Image
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt PdfGeneratorRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+          S3_BUCKET: "my-hdcn-bucket"
+          LOGO_S3_KEY: "imagesWebsite/hdcnFavico.png"
+      Events:
+        GenerateOrderPdf:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{order_id}/pdf
+            Method: get
+
+  # IAM Role for PDF Generator Lambda (DynamoDB + S3 read access)
+  PdfGeneratorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBOrdersRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
+        - PolicyName: S3LogoRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - "arn:aws:s3:::my-hdcn-bucket/imagesWebsite/*"
 
   # Event Management Functions
   GetEventByIdFunction:
