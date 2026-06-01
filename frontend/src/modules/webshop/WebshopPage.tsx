@@ -652,9 +652,13 @@ function WebshopPage({ user }: WebshopPageProps) {
               };
               
               try {
-                await orderService.createOrder(orderData);
+                const response = await orderService.createOrder(orderData);
                 console.log('Order saved successfully:', orderId);
                 console.log('Order data with member info:', orderData);
+                // Use the backend-generated order_id (UUID) for PDF download
+                if (response.success && response.data?.order_id) {
+                  orderData.orderId = response.data.order_id;
+                }
               } catch (error) {
                 console.error('Backend order failed:', error);
                 const localOrders = JSON.parse(localStorage.getItem('hdcn_orders') || '[]');
