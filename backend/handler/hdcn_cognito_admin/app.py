@@ -593,13 +593,24 @@ def create_user(event, headers):
         for key, value in data.get('attributes', {}).items():
             user_attributes.append({'Name': key, 'Value': value})
         
-        # Create user in Cognito
+        # Create user in Cognito (passwordless - no temp password needed)
         response = cognito_client.admin_create_user(
             UserPoolId=USER_POOL_ID,
             Username=data['username'],
             UserAttributes=user_attributes,
-            TemporaryPassword=data.get('tempPassword', os.environ.get('DEFAULT_TEMP_PASSWORD', 'TempPass123!')),
             MessageAction='SUPPRESS'
+        )
+        
+        # Immediately confirm the user by setting a random password
+        # This moves status from FORCE_CHANGE_PASSWORD to CONFIRMED
+        # The password is never used - authentication is via passkey/OTP/Google
+        import secrets
+        random_password = secrets.token_urlsafe(32) + '!A1a'
+        cognito_client.admin_set_user_password(
+            UserPoolId=USER_POOL_ID,
+            Username=data['username'],
+            Password=random_password,
+            Permanent=True
         )
         
         # Add user to groups if specified
@@ -1112,8 +1123,17 @@ def import_users(event, headers):
                         UserPoolId=USER_POOL_ID,
                         Username=username,
                         UserAttributes=user_attributes,
-                        TemporaryPassword=user_data.get('tempPassword', os.environ.get('DEFAULT_TEMP_PASSWORD', 'TempPass123!')),
                         MessageAction='SUPPRESS'
+                    )
+                    
+                    # Immediately confirm the user (passwordless - no temp password needed)
+                    import secrets
+                    random_password = secrets.token_urlsafe(32) + '!A1a'
+                    cognito_client.admin_set_user_password(
+                        UserPoolId=USER_POOL_ID,
+                        Username=username,
+                        Password=random_password,
+                        Permanent=True
                     )
                     
                     # Add to groups if specified
@@ -1248,13 +1268,24 @@ def passwordless_signup(event, headers):
         ]
         
         # Create user without password (for passwordless authentication)
-        # Use standard user creation which will trigger email verification
+        # Use MessageAction='SUPPRESS' to avoid sending a temporary password email
         response = cognito_client.admin_create_user(
             UserPoolId=USER_POOL_ID,
             Username=email,
             UserAttributes=user_attributes,
-            DesiredDeliveryMediums=['EMAIL'],
-            # Don't suppress message - let Cognito send verification email
+            MessageAction='SUPPRESS',  # Don't send temp password email - we use passwordless auth
+        )
+        
+        # Immediately confirm the user by setting a random password
+        # This moves status from FORCE_CHANGE_PASSWORD to CONFIRMED
+        # The password is never used - authentication is via passkey/OTP/Google
+        import secrets
+        random_password = secrets.token_urlsafe(32) + '!A1a'  # Meets Cognito password policy
+        cognito_client.admin_set_user_password(
+            UserPoolId=USER_POOL_ID,
+            Username=email,
+            Password=random_password,
+            Permanent=True
         )
         
         # Automatically assign basic member role (if group exists)
