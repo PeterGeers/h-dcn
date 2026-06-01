@@ -67,14 +67,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     setShowResendCode(false);
 
     try {
-      const { signIn, signOut: amplifySignOut } = await import('aws-amplify/auth');
-
-      // Clear stale session
-      try {
-        await amplifySignOut();
-      } catch {
-        // Ignore
-      }
+      const { signIn } = await import('aws-amplify/auth');
 
       // Re-initiate sign-in with EMAIL_OTP to send a new code
       const signInResult = await signIn({
@@ -139,14 +132,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
     try {
       // Use Amplify v6 signIn with email - Cognito handles WebAuthn natively
-      const { signIn, confirmSignIn, signOut: amplifySignOut } = await import('aws-amplify/auth');
-
-      // Clear any stale session before attempting sign-in
-      try {
-        await amplifySignOut();
-      } catch {
-        // Ignore - no session to clear
-      }
+      const { signIn, confirmSignIn } = await import('aws-amplify/auth');
 
       let signInResult;
       try {
