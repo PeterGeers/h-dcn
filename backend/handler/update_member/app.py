@@ -891,6 +891,13 @@ def lambda_handler(event, context):
         
         table.update_item(**update_params)
         
+        # Trigger role assignment if status changed
+        if 'status' in body:
+            current_status = member_record.get('status')
+            new_status = body['status']
+            if current_status != new_status:
+                trigger_role_assignment_if_needed(member_email, current_status, new_status)
+        
         # Log successful update for audit purposes with enhanced information
         log_successful_field_update(
             user_email=user_email,

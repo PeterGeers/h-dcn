@@ -307,8 +307,8 @@ def determine_role_changes(old_status, new_status):
     """
     changes = []
     
-    # Define status categories
-    approved_statuses = ['active', 'approved']
+    # Define status categories (support both English and Dutch values)
+    approved_statuses = ['active', 'approved', 'Actief', 'HdcnAccount', 'Club', 'Sponsor']
     unapproved_statuses = ['new_applicant', 'pending', 'rejected', 'suspended', 'inactive']
     
     # Determine if member should have default role
@@ -321,6 +321,12 @@ def determine_role_changes(old_status, new_status):
             'action': 'add_role',
             'role': DEFAULT_MEMBER_GROUP,
             'reason': f'Member approved (status: {old_status} -> {new_status})'
+        })
+        # Remove applicant role when member is approved
+        changes.append({
+            'action': 'remove_role',
+            'role': 'verzoek_lid',
+            'reason': f'Member approved - no longer applicant (status: {old_status} -> {new_status})'
         })
     
     # Remove role if no longer approved
