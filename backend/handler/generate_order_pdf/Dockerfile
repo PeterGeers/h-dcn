@@ -11,7 +11,14 @@ RUN dnf install -y \
     libffi-devel \
     harfbuzz \
     fribidi \
+    fontconfig \
     && dnf clean all
+
+# Fix fontconfig cache directory for Lambda (read-only filesystem)
+RUN mkdir -p /tmp/fontconfig-cache && \
+    echo '<?xml version="1.0"?>' > /etc/fonts/local.conf && \
+    echo '<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">' >> /etc/fonts/local.conf && \
+    echo '<fontconfig><cachedir>/tmp/fontconfig-cache</cachedir></fontconfig>' >> /etc/fonts/local.conf
 
 # Copy shared auth layer into the image (Lambda Layers not supported with container images)
 COPY layers/auth-layer/python/ ${LAMBDA_TASK_ROOT}/
