@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "name": "GGShield Secret Scan",
-  "description": "Runs ggshield secret scan on staged files before any git commit to prevent secrets from being committed, even when using --no-verify.",
+  "description": "Syncs auth layer and runs ggshield secret scan on staged files before any git commit to prevent secrets from being committed.",
   "version": "1",
   "when": {
     "type": "preToolUse",
@@ -11,6 +11,6 @@
   },
   "then": {
     "type": "runCommand",
-    "command": "ggshield secret scan pre-commit"
+    "command": "powershell -NoProfile -Command \"$src='backend/shared/auth_utils.py'; $dst='backend/layers/auth-layer/python/shared/auth_utils.py'; if((Test-Path $src) -and (Test-Path $dst)){if((Get-FileHash $src).Hash -ne (Get-FileHash $dst).Hash){Copy-Item $src $dst; git add $dst; Write-Host 'Auth layer synced'}}; ggshield secret scan pre-commit\""
   }
 }

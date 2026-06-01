@@ -28,8 +28,8 @@
 - **Platform**: GitHub Actions
 - **Backend deploy**: `sam build --use-container` → `sam deploy` to CloudFormation stack `h-dcn`
 - **Frontend deploy**: `npm run build` → S3 sync → CloudFront invalidation
-- **Security scanning**: GitGuardian (ggshield) — CI `commit-range` scan + local pre-commit hook
-- **Pre-commit hook**: `pre-commit-hook.sh` (POSIX sh) — syncs auth layer + runs `ggshield secret scan pre-commit`
+- **Security scanning**: GitGuardian (ggshield) — CI `commit-range` scan + Kiro preToolUse hook for local commits
+- **Pre-commit**: Kiro hook (`.kiro/hooks/ggshield-pre-commit.kiro.hook`) — syncs auth layer + runs `ggshield secret scan pre-commit`
 - **Trigger**: Push to `main` branch (path-filtered)
 
 ## DynamoDB Tables
@@ -41,15 +41,9 @@
 ### Git
 
 ```bash
-# Always use --no-verify when committing (pre-commit shell hook requires WSL/bash which is not available in Kiro's environment)
-# Secret scanning is handled by the Kiro hook (ggshield-pre-commit) which runs ggshield before every git commit
+# Always use --no-verify when committing (shell hook can't run in Kiro's environment)
+# Secret scanning + auth layer sync is handled by the Kiro preToolUse hook (ggshield-pre-commit)
 git commit --no-verify -m "message"
-
-# Install pre-commit hook for terminal usage (from project root)
-sh install-hooks.sh
-
-# Validate POSIX compliance of hook scripts
-sh validate-hooks.sh
 ```
 
 ### Backend
