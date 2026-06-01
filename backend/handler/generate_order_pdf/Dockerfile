@@ -1,7 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.11
 
 # Install system dependencies required by WeasyPrint
-RUN yum install -y \
+# The python:3.11 image is based on Amazon Linux 2023 which uses dnf
+# and provides Pango 1.50+ (required by WeasyPrint 53+)
+RUN dnf install -y \
     pango \
     pango-devel \
     gdk-pixbuf2 \
@@ -9,7 +11,9 @@ RUN yum install -y \
     cairo-gobject \
     gobject-introspection \
     libffi-devel \
-    && yum clean all
+    harfbuzz \
+    fribidi \
+    && dnf clean all
 
 # Copy shared auth layer into the image (Lambda Layers not supported with container images)
 COPY layers/auth-layer/python/ ${LAMBDA_TASK_ROOT}/
