@@ -124,7 +124,7 @@ Globals:
     TracingEnabled: True
     Cors:
       AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with'"
       AllowOrigin: "'*'"
       AllowCredentials: false
 
@@ -328,7 +328,7 @@ Resources:
         - application/pdf
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,x-requested-with'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with'"
         AllowOrigin: "'*'"
         AllowCredentials: false
 
