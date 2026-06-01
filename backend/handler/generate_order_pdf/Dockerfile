@@ -1,11 +1,9 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
 
 # Install system dependencies required by WeasyPrint
-# The python:3.11 image is based on Amazon Linux 2023 which uses dnf
-# and provides Pango 1.50+ (required by WeasyPrint 53+)
+# Python 3.12 image is based on Amazon Linux 2023 (dnf, Pango 1.50+)
 RUN dnf install -y \
     pango \
-    pango-devel \
     gdk-pixbuf2 \
     cairo \
     cairo-gobject \
