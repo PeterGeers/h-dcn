@@ -38,10 +38,14 @@
 
 ## Common Commands
 
-### Git Hooks
+### Git
 
 ```bash
-# Install pre-commit hook (from project root)
+# Always use --no-verify when committing (pre-commit shell hook requires WSL/bash which is not available in Kiro's environment)
+# Secret scanning is handled by the Kiro hook (ggshield-pre-commit) which runs ggshield before every git commit
+git commit --no-verify -m "message"
+
+# Install pre-commit hook for terminal usage (from project root)
 sh install-hooks.sh
 
 # Validate POSIX compliance of hook scripts
