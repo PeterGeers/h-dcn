@@ -622,6 +622,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               console.log('Current member ID:', currentMemberId);
               
               const orderData = {
+                cart_id: cartId,
                 customer_id: currentMemberId || memberInfo?.member_id,
                 customer_info: memberInfo || {
                   member_id: currentMemberId,
@@ -652,11 +653,13 @@ function WebshopPage({ user }: WebshopPageProps) {
               
               try {
                 const response = await orderService.createOrder(orderData);
-                console.log('Order saved successfully:', orderId);
-                console.log('Order data with member info:', orderData);
+                console.log('Order API response:', JSON.stringify(response));
                 // Use the backend-generated order_id (UUID) for PDF download
                 if (response.success && response.data?.order_id) {
                   orderData.orderId = response.data.order_id;
+                  console.log('Order created with backend ID:', response.data.order_id);
+                } else {
+                  console.error('Order creation failed:', response.error);
                 }
               } catch (error) {
                 console.error('Backend order failed:', error);
