@@ -398,14 +398,25 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
             <Button
               onClick={async () => {
                 try {
-                  const { associateWebAuthnCredential } = await import('aws-amplify/auth');
+                  const { associateWebAuthnCredential, listWebAuthnCredentials, deleteWebAuthnCredential } = await import('aws-amplify/auth');
+                  
+                  // Remove any existing passkeys first so registration always works
+                  try {
+                    const { credentials } = await listWebAuthnCredentials();
+                    for (const cred of credentials) {
+                      await deleteWebAuthnCredential({ credentialId: cred.credentialId });
+                    }
+                  } catch {
+                    // No existing credentials or list failed — continue with registration
+                  }
+                  
                   await associateWebAuthnCredential();
-                  alert('Passkey succesvol geregistreerd! Je kunt nu inloggen met je passkey.');
+                  alert('Passkey succesvol ingesteld! Je kunt nu inloggen met je passkey.');
                 } catch (err: any) {
                   if (err.name === 'NotAllowedError') {
-                    alert('Passkey registratie geannuleerd.');
+                    alert('Passkey instellen geannuleerd.');
                   } else {
-                    alert('Passkey registratie mislukt: ' + (err.message || 'Onbekende fout'));
+                    alert('Passkey instellen mislukt: ' + (err.message || 'Onbekende fout'));
                   }
                 }
               }}
