@@ -5,16 +5,27 @@ version: 2
 secret:
   # Show all policy breaks, not just secrets
   show_secrets: false
-  
+
   # Ignore specific patterns that are false positives
   ignore_known_secrets: true
-  
-  # Ignore test files with example/test JWT tokens
+
+  # Ignored paths - excludes generated files, dependencies, and test files
   ignored_paths:
+    # Lock files
+    - "**/package-lock.json"
+    - "**/yarn.lock"
+    - "**/pnpm-lock.yaml"
+    # Virtual environments
+    - ".venv/**"
+    - "**/.venv/**"
+    # Node modules
+    - "**/node_modules/**"
+    # Test files
     - "test_*.py"
     - "test_*.html"
     - "**/tests/**"
     - "**/__tests__/**"
+    # Utility scripts
     - "decode_*.py"
     - "trigger_*.py"
 

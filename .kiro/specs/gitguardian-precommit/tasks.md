@@ -6,8 +6,8 @@ This implementation creates a Windows-compatible pre-commit hook for GitGuardian
 
 ## Tasks
 
-- [ ] 1. Update GitGuardian configuration
-  - [ ] 1.1 Update `.gitguardian.yaml` with complete exclusion patterns
+- [x] 1. Update GitGuardian configuration
+  - [x] 1.1 Update `.gitguardian.yaml` with complete exclusion patterns
     - Add lock file exclusions: `**/package-lock.json`, `**/yarn.lock`, `**/pnpm-lock.yaml`
     - Add `.venv/**` and `**/.venv/**` directory exclusions
     - Add `**/node_modules/**` directory exclusion
@@ -16,15 +16,15 @@ This implementation creates a Windows-compatible pre-commit hook for GitGuardian
     - Ensure `exit_zero: false` is preserved
     - _Requirements: 2.1, 2.2, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 2. Create POSIX-compliant pre-commit hook script
-  - [ ] 2.1 Create the pre-commit hook script at project root as `pre-commit-hook.sh`
+- [x] 2. Create POSIX-compliant pre-commit hook script
+  - [x] 2.1 Create the pre-commit hook script at project root as `pre-commit-hook.sh`
     - Use `#!/bin/sh` shebang (no bash)
     - Use only POSIX shell constructs: `[ ... ]` tests, `$(...)` command substitution, `command -v` for tool detection
     - Avoid bash-isms: no `[[ ]]`, no arrays, no `local` keyword, no `which`
     - Include clear comments explaining each section
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-  - [ ] 2.2 Implement auth layer synchronization logic
+  - [x] 2.2 Implement auth layer synchronization logic
     - Compare `backend/shared/auth_utils.py` with `backend/layers/auth-layer/python/shared/auth_utils.py` using `cmp -s`
     - If files differ, copy source to layer location with `cp`
     - Stage the updated layer file with `git add`
@@ -32,7 +32,7 @@ This implementation creates a Windows-compatible pre-commit hook for GitGuardian
     - Suppress `cmp` stderr with `2>/dev/null`
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 2.3 Implement ggshield secret scan execution and exit code handling
+  - [x] 2.3 Implement ggshield secret scan execution and exit code handling
     - Check ggshield availability with `command -v ggshield`
     - If available, run `ggshield secret scan pre-commit`
     - Capture and propagate ggshield exit code
@@ -41,23 +41,23 @@ This implementation creates a Windows-compatible pre-commit hook for GitGuardian
     - If ggshield not installed, print warning and exit 0
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 3. Checkpoint - Verify POSIX compliance
+- [x] 3. Checkpoint - Verify POSIX compliance
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Create installation and validation artifacts
-  - [ ] 4.1 Create a hook installation script `install-hooks.sh`
+- [x] 4. Create installation and validation artifacts
+  - [x] 4.1 Create a hook installation script `install-hooks.sh`
     - Copy `pre-commit-hook.sh` to `.git/hooks/pre-commit`
     - Set executable permissions (`chmod +x`)
     - Print confirmation message
     - Use POSIX-compliant shell syntax
     - _Requirements: 1.1, 1.4_
 
-  - [ ]\* 4.2 Write a ShellCheck validation script
+  - [x] 4.2 Write a ShellCheck validation script
     - Create a script or CI step that runs `shellcheck --shell=sh pre-commit-hook.sh`
     - Verify zero errors and zero warnings
     - _Requirements: 1.2, 1.3_
 
-- [ ] 5. Final checkpoint - Ensure all artifacts are complete
+- [x] 5. Final checkpoint - Ensure all artifacts are complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -28,7 +28,8 @@
 - **Platform**: GitHub Actions
 - **Backend deploy**: `sam build --use-container` → `sam deploy` to CloudFormation stack `h-dcn`
 - **Frontend deploy**: `npm run build` → S3 sync → CloudFront invalidation
-- **Security scanning**: GitGuardian (ggshield)
+- **Security scanning**: GitGuardian (ggshield) — CI `commit-range` scan + local pre-commit hook
+- **Pre-commit hook**: `pre-commit-hook.sh` (POSIX sh) — syncs auth layer + runs `ggshield secret scan pre-commit`
 - **Trigger**: Push to `main` branch (path-filtered)
 
 ## DynamoDB Tables
@@ -36,6 +37,16 @@
 - Producten, Members, Payments, Events, Memberships, Carts, Orders
 
 ## Common Commands
+
+### Git Hooks
+
+```bash
+# Install pre-commit hook (from project root)
+sh install-hooks.sh
+
+# Validate POSIX compliance of hook scripts
+sh validate-hooks.sh
+```
 
 ### Backend
 
