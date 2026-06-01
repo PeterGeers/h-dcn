@@ -622,7 +622,6 @@ function WebshopPage({ user }: WebshopPageProps) {
               console.log('Current member ID:', currentMemberId);
               
               const orderData = {
-                order_id: currentMemberId || memberInfo?.member_id,
                 customer_id: currentMemberId || memberInfo?.member_id,
                 customer_info: memberInfo || {
                   member_id: currentMemberId,

@@ -210,6 +210,10 @@ def lambda_handler(event, context):
             return cart_error
         
         order_id = str(uuid.uuid4())
+        
+        # Remove order_id from body if present to prevent overwriting the generated UUID
+        body.pop('order_id', None)
+        
         order = {
             'order_id': order_id,
             'user_email': user_email,  # Link order to authenticated user
