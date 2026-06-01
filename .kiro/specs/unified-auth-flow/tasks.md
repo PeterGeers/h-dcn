@@ -169,4 +169,3 @@ Route Google SSO through Amplify v6's `signInWithRedirect` so both login paths (
     { "id": 8, "tasks": ["9.1", "9.2", "9.3"] }
   ]
 }
-```

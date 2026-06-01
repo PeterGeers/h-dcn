@@ -1,4 +1,6 @@
 # H-DCN Todo List
+Bugs found
+- Download webshop pdf mislukt. Download mislukt, De bestelling is niet gevonden
 
 - Prepare for demo
 -- different functions by user type,
