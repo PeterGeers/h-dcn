@@ -126,10 +126,10 @@ function AppContent({ signOut, user }: AppProps) {
 function App() {
   return (
     <MaintenanceProvider>
-      <CustomAuthenticator>
-        {({ signOut, user }) => (
-          <Router basename="/">
-            <AuthProvider>
+      <AuthProvider>
+        <CustomAuthenticator>
+          {({ signOut, user }) => (
+            <Router basename="/">
               <Routes>
                 {/* Test route to verify routing works */}
                 <Route path="/test-route" element={
@@ -147,10 +147,10 @@ function App() {
                   </GroupAccessGuard>
                 } />
               </Routes>
-            </AuthProvider>
-          </Router>
-        )}
-      </CustomAuthenticator>
+            </Router>
+          )}
+        </CustomAuthenticator>
+      </AuthProvider>
     </MaintenanceProvider>
   );
 }
