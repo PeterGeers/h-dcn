@@ -1,67 +1,47 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, VStack, Heading, Text, SimpleGrid, Alert, AlertIcon, Spinner, Center } from '@chakra-ui/react';
+import { Box, VStack, Heading, Text, SimpleGrid, Spinner, Center } from '@chakra-ui/react';
 import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { membershipService } from '../utils/membershipService';
+import { useAuth } from '../context/AuthProvider';
 
-interface User {
-  attributes?: {
-    given_name?: string;
-    family_name?: string;
-    email?: string;
-  };
-  signInUserSession?: {
-    accessToken?: {
-      payload: {
-        'cognito:groups'?: string[];
-      };
-      jwtToken?: string;
-    };
-  };
-}
-
-interface DashboardProps {
-  user: User;
-}
-
-function Dashboard({ user }: DashboardProps) {
+function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isCheckingMembership, setIsCheckingMembership] = useState(true);
   const [memberExists, setMemberExists] = useState<boolean | null>(null);
-  
+
+  // Get groups directly from auth context (R4.2 - groups from access token payload)
+  const userGroups = user?.groups ?? [];
+
+  // Build a compatibility shim for FunctionGuard which still expects the legacy user shape
+  const functionGuardUser = useMemo(() => {
+    if (!user) return null;
+    return {
+      signInUserSession: {
+        accessToken: {
+          payload: {
+            'cognito:groups': user.groups,
+          },
+          jwtToken: user.accessToken,
+        },
+      },
+      attributes: {
+        email: user.email,
+        given_name: user.givenName,
+        family_name: user.familyName,
+      },
+    };
+  }, [user]);
+
   // Check if user exists as member and redirect to application if not
   useEffect(() => {
     const checkMembershipStatus = async () => {
-      if (!user?.attributes?.email) {
+      if (!user?.email) {
         setIsCheckingMembership(false);
         return;
       }
-
-      // Extract user roles from Cognito token - try payload first, then decode JWT
-      let userGroups: string[] = [];
-      
-      // First try the payload
-      const payloadGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'];
-      if (payloadGroups && Array.isArray(payloadGroups)) {
-        userGroups = payloadGroups;
-      } else {
-        // If payload is empty, decode the JWT token directly
-        const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
-        if (jwtToken) {
-          try {
-            const parts = jwtToken.split('.');
-            if (parts.length === 3) {
-              const payload = JSON.parse(atob(parts[1]));
-              userGroups = payload['cognito:groups'] || [];
-            }
-          } catch (error) {
-            console.error('Error decoding JWT token in Dashboard:', error);
-          }
-        }
-      }
-
-      console.log('Dashboard - User groups:', userGroups);
 
       // Check if user has valid member roles (not just verzoek_lid)
       const hasValidMemberRole = userGroups.some(group => 
@@ -82,15 +62,8 @@ function Dashboard({ user }: DashboardProps) {
       const hasHdcnLedenRole = userGroups.includes('hdcnLeden');
       const hasVerzoekLidRole = userGroups.includes('verzoek_lid');
 
-      console.log('Dashboard - hasValidMemberRole:', hasValidMemberRole);
-      console.log('Dashboard - isOnlyApplicant:', isOnlyApplicant);
-      console.log('Dashboard - hasNoGroups:', hasNoGroups);
-      console.log('Dashboard - hasHdcnLedenRole:', hasHdcnLedenRole);
-      console.log('Dashboard - hasVerzoekLidRole:', hasVerzoekLidRole);
-
       // If user has valid member roles, allow access immediately
       if (hasValidMemberRole) {
-        console.log('Dashboard - User has valid Cognito roles, allowing access');
         setMemberExists(true);
         setIsCheckingMembership(false);
         return;
@@ -98,10 +71,8 @@ function Dashboard({ user }: DashboardProps) {
 
       // Check if user has either verzoek_lid or hdcnLeden role for member lookup
       if (hasHdcnLedenRole || hasVerzoekLidRole) {
-        console.log('Dashboard - User has valid role for member lookup, checking member database...');
-        
         try {
-          const existingMember = await membershipService.getMemberByEmail(user.attributes.email);
+          const existingMember = await membershipService.getMemberByEmail(user.email);
           
           if (hasHdcnLedenRole && !existingMember) {
             // hdcnLeden users should always have data in the members table
@@ -110,17 +81,14 @@ function Dashboard({ user }: DashboardProps) {
             setMemberExists(true);
           } else if (hasVerzoekLidRole && !existingMember) {
             // verzoek_lid users may not have data yet, redirect to application
-            console.log('Dashboard - verzoek_lid user not found in database, redirecting to application');
             navigate('/new-member-application');
             return;
           } else if (hasVerzoekLidRole && existingMember) {
             // verzoek_lid users WITH data should go directly to their application
-            console.log('Dashboard - verzoek_lid user with data, redirecting to my-account');
             navigate('/my-account');
             return;
           } else {
             // User found in database
-            console.log('Dashboard - User found in database, allowing access');
             setMemberExists(true);
           }
         } catch (error) {
@@ -128,23 +96,19 @@ function Dashboard({ user }: DashboardProps) {
           
           if (hasHdcnLedenRole) {
             // For hdcnLeden, assume they exist and show dashboard on error
-            console.log('Dashboard - API error for hdcnLeden user, allowing access anyway');
             setMemberExists(true);
           } else if (hasVerzoekLidRole) {
             // For verzoek_lid, redirect to application on error
-            console.log('Dashboard - API error for verzoek_lid user, redirecting to application');
             navigate('/new-member-application');
             return;
           }
         }
       } else if (hasNoGroups) {
         // User has no groups at all, redirect to application
-        console.log('Dashboard - User has no groups, redirecting to application');
         navigate('/new-member-application');
         return;
       } else {
         // User has some other roles but not verzoek_lid or hdcnLeden
-        console.log('Dashboard - User has other roles but not member roles, allowing access anyway');
         setMemberExists(true);
       }
 
@@ -152,7 +116,7 @@ function Dashboard({ user }: DashboardProps) {
     };
 
     checkMembershipStatus();
-  }, [user, navigate]);
+  }, [user, userGroups, navigate]);
 
   // Show loading while checking membership status
   if (isCheckingMembership) {
@@ -177,30 +141,8 @@ function Dashboard({ user }: DashboardProps) {
       </Center>
     );
   }
-  
-  // Extract user roles from Cognito token - try payload first, then decode JWT
-  let userGroups: string[] = [];
-  
-  // First try the payload
-  const payloadGroups = user.signInUserSession?.accessToken?.payload['cognito:groups'];
-  if (payloadGroups && Array.isArray(payloadGroups)) {
-    userGroups = payloadGroups;
-  } else {
-    // If payload is empty, decode the JWT token directly
-    const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
-    if (jwtToken) {
-      try {
-        const parts = jwtToken.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          userGroups = payload['cognito:groups'] || [];
-        }
-      } catch (error) {
-        console.error('Error decoding JWT token in Dashboard:', error);
-      }
-    }
-  }
-  
+
+  // Derive permission flags from groups (R4.2 - no manual JWT decoding)
   const isBasicMember = userGroups.includes('hdcnLeden');
   const hasAdminRoles = userGroups.some(group => 
     group.includes('Members_') || 
@@ -224,7 +166,7 @@ function Dashboard({ user }: DashboardProps) {
             size={{ base: 'lg', md: 'xl' }}
             px={{ base: 2, md: 0 }}
           >
-            Welkom, {user?.attributes?.given_name || 'Gebruiker'} {user?.attributes?.family_name || ''}!
+            Welkom, {user?.givenName || 'Gebruiker'} {user?.familyName || ''}!
           </Heading>
           <Text 
             color="gray.600"
@@ -282,7 +224,7 @@ function Dashboard({ user }: DashboardProps) {
           
           {/* Webshop - Only for members with hdcnLeden role or higher */}
           <FunctionGuard 
-            user={user} 
+            user={functionGuardUser} 
             functionName="webshop" 
             action="read"
             requiredRoles={['hdcnLeden']}
@@ -304,7 +246,7 @@ function Dashboard({ user }: DashboardProps) {
           
           {/* Members Admin - Only for users with member management roles */}
           <FunctionGuard 
-            user={user} 
+            user={functionGuardUser} 
             functionName="members" 
             action="read"
             requiredRoles={['Members_Read', 'Members_CRUD', 'System_User_Management']}
@@ -324,7 +266,7 @@ function Dashboard({ user }: DashboardProps) {
           
           {/* Events Admin - Only for users with event management roles */}
           <FunctionGuard 
-            user={user} 
+            user={functionGuardUser} 
             functionName="events" 
             action="read"
             requiredRoles={['Events_Read', 'Events_CRUD', 'System_User_Management']}
@@ -344,7 +286,7 @@ function Dashboard({ user }: DashboardProps) {
           
           {/* Products Admin - Only for users with product management roles */}
           <FunctionGuard 
-            user={user} 
+            user={functionGuardUser} 
             functionName="products" 
             action="read"
             requiredRoles={['Products_Read', 'Products_CRUD', 'Webshop_Management', 'System_User_Management']}
@@ -364,7 +306,7 @@ function Dashboard({ user }: DashboardProps) {
           
           {/* Advanced Exports - Only for users with advanced product management roles */}
           <FunctionGuard 
-            user={user} 
+            user={functionGuardUser} 
             functionName="advanced-exports" 
             action="read"
             requiredRoles={['Products_CRUD', 'Webshop_Management', 'System_User_Management']}
@@ -384,7 +326,7 @@ function Dashboard({ user }: DashboardProps) {
           
           {/* Membership Management - Only for users with full member CRUD access */}
           <FunctionGuard 
-            user={user} 
+            user={functionGuardUser} 
             functionName="memberships" 
             action="read"
             requiredRoles={['Members_CRUD', 'System_User_Management']}

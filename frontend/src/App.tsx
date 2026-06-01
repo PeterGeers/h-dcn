@@ -7,7 +7,7 @@ import { Spinner, Center } from '@chakra-ui/react';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
-import OAuthCallback from './components/auth/OAuthCallback';
+import { AuthProvider } from './context/AuthProvider';
 import MaintenanceProvider from './components/MaintenanceProvider';
 
 interface User {
@@ -103,7 +103,7 @@ function AppContent({ signOut, user }: AppProps) {
           </Center>
         }>
           <Routes>
-            <Route path="/" element={<Dashboard user={user} />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/membership" element={<MembershipForm user={user} />} />
             <Route path="/my-account" element={<MyAccount user={user} />} />
             <Route path="/new-member-application" element={<NewMemberApplication user={user} />} />
@@ -129,37 +129,25 @@ function App() {
       <CustomAuthenticator>
         {({ signOut, user }) => (
           <Router basename="/">
-            <Routes>
-              {/* OAuth Callback Route - MUST be before GroupAccessGuard */}
-              <Route path="/auth/callback" element={
-                <OAuthCallback 
-                  onAuthSuccess={(authUser) => {
-                    console.log('✅ OAuth authentication successful:', authUser);
-                    // The component will handle navigation to main app
-                  }}
-                  onAuthError={(error) => {
-                    console.error('❌ OAuth authentication failed:', error);
-                    // The component will handle error display and navigation
-                  }}
-                />
-              } />
-              
-              {/* Test route to verify routing works */}
-              <Route path="/test-route" element={
-                <div style={{ padding: '20px', backgroundColor: 'white', color: 'black' }}>
-                  <h1>Test Route Works!</h1>
-                  <p>Current URL: {window.location.href}</p>
-                  <p>Hash: {window.location.hash}</p>
-                </div>
-              } />
-              
-              {/* All other routes require group access guard */}
-              <Route path="/*" element={
-                <GroupAccessGuard user={user} signOut={signOut}>
-                  <AppContent signOut={signOut} user={user} />
-                </GroupAccessGuard>
-              } />
-            </Routes>
+            <AuthProvider>
+              <Routes>
+                {/* Test route to verify routing works */}
+                <Route path="/test-route" element={
+                  <div style={{ padding: '20px', backgroundColor: 'white', color: 'black' }}>
+                    <h1>Test Route Works!</h1>
+                    <p>Current URL: {window.location.href}</p>
+                    <p>Hash: {window.location.hash}</p>
+                  </div>
+                } />
+                
+                {/* All other routes require group access guard */}
+                <Route path="/*" element={
+                  <GroupAccessGuard>
+                    <AppContent signOut={signOut} user={user} />
+                  </GroupAccessGuard>
+                } />
+              </Routes>
+            </AuthProvider>
           </Router>
         )}
       </CustomAuthenticator>

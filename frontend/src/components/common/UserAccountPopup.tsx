@@ -394,6 +394,29 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
 
             <Divider />
 
+            {/* Passkey Registration Button */}
+            <Button
+              onClick={async () => {
+                try {
+                  const { associateWebAuthnCredential } = await import('aws-amplify/auth');
+                  await associateWebAuthnCredential();
+                  alert('Passkey succesvol geregistreerd! Je kunt nu inloggen met je passkey.');
+                } catch (err: any) {
+                  if (err.name === 'NotAllowedError') {
+                    alert('Passkey registratie geannuleerd.');
+                  } else {
+                    alert('Passkey registratie mislukt: ' + (err.message || 'Onbekende fout'));
+                  }
+                }
+              }}
+              colorScheme="purple"
+              variant="outline"
+              size="sm"
+              w="full"
+            >
+              🔑 Passkey Instellen
+            </Button>
+
             {/* Logout Button */}
             <Button 
               onClick={signOut} 

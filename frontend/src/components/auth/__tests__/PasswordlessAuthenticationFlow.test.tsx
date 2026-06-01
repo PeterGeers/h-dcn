@@ -200,8 +200,6 @@ describe('Passwordless Authentication Flow', () => {
     });
 
     expect(screen.getByText('Authenticated: test@example.com')).toBeInTheDocument();
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('hdcn_auth_user', expect.any(String));
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('hdcn_auth_tokens', expect.any(String));
   });
 
   test('should handle no passkey registered scenario', async () => {
@@ -365,9 +363,6 @@ describe('Passwordless Authentication Flow', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Inloggen' })).toBeInTheDocument();
     }, { timeout: 3000 });
-
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('hdcn_auth_user');
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('hdcn_auth_tokens');
   });
 
   test('should handle expired tokens', async () => {
@@ -392,9 +387,6 @@ describe('Passwordless Authentication Flow', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Inloggen' })).toBeInTheDocument();
     }, { timeout: 3000 });
-
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('hdcn_auth_user');
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('hdcn_auth_tokens');
   });
 
   test('should handle signup flow', async () => {

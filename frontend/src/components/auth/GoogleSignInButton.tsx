@@ -1,4 +1,5 @@
 import React from 'react';
+import { signInWithRedirect } from 'aws-amplify/auth';
 
 interface GoogleSignInButtonProps {
   onError?: (error: string) => void;
@@ -11,29 +12,9 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   disabled = false,
   className = ''
 }) => {
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     try {
-      // Direct redirect to Cognito Hosted UI with Google provider
-      const clientId = process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID;
-      if (!clientId) {
-        throw new Error('REACT_APP_USER_POOL_WEB_CLIENT_ID environment variable is not configured');
-      }
-
-      const params = new URLSearchParams({
-        response_type: 'code',  // Use authorization_code flow (more secure)
-        client_id: clientId,
-        redirect_uri: `${window.location.origin}/auth/callback`,
-        scope: 'openid email profile',
-        identity_provider: 'Google'
-      });
-
-      const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
-      if (!cognitoDomain) {
-        throw new Error('REACT_APP_COGNITO_DOMAIN environment variable is not configured');
-      }
-      const authUrl = `https://${cognitoDomain}/oauth2/authorize?${params.toString()}`;
-      
-      window.location.href = authUrl;
+      await signInWithRedirect({ provider: 'Google' });
     } catch (error) {
       console.error('Google Sign-In error:', error);
       onError?.(error instanceof Error ? error.message : 'Failed to initiate Google Sign-In');

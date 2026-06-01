@@ -59,7 +59,6 @@ jest.mock('../services/apiService', () => ({
     isAuthenticated: jest.fn(),
     getCurrentUserEmail: jest.fn(),
     getCurrentUserRoles: jest.fn(),
-    clearAuth: jest.fn(),
   },
 }));
 
@@ -202,9 +201,9 @@ describe('User Experience Error Handling Integration', () => {
     });
 
     // Set up default mocks
-    mockApiService.isAuthenticated.mockReturnValue(true);
-    mockApiService.getCurrentUserEmail.mockReturnValue('test@example.com');
-    mockApiService.getCurrentUserRoles.mockReturnValue(['hdcnLeden']);
+    mockApiService.isAuthenticated.mockResolvedValue(true);
+    mockApiService.getCurrentUserEmail.mockResolvedValue('test@example.com');
+    mockApiService.getCurrentUserRoles.mockResolvedValue(['hdcnLeden']);
     
     mockGetAuthHeaders.mockResolvedValue({
       'Authorization': 'Bearer test-token',

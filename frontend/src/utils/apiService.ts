@@ -38,7 +38,7 @@ const safeFetch = async (url: string, options: RequestInit = {}): Promise<Respon
   }
   
   // Check authentication using main ApiService
-  if (!MainApiService.isAuthenticated()) {
+  if (!(await MainApiService.isAuthenticated())) {
     throw new Error('Authentication required');
   }
   

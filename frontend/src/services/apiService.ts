@@ -1,10 +1,13 @@
 /**
  * API Service for H-DCN Application
  * 
- * This service handles authenticated API calls using stored JWT tokens
- * from the passwordless authentication system.
+ * This service handles authenticated API calls using Amplify v6 session management.
+ * All auth state comes from fetchAuthSession() — no localStorage.
+ *
+ * Requirements: R4.1, R4.3, R6.3, R6.4, R6.5
  */
 
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { getAuthHeaders } from '../utils/authHeaders';
 import { parseApiError, showMaintenanceScreen, ApiError } from '../utils/errorHandler';
 
@@ -19,103 +22,41 @@ export class ApiService {
   private static baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod';
 
   /**
-   * Get stored authentication tokens
+   * Check if user has a valid Amplify session.
+   * Uses fetchAuthSession() — no localStorage.
    */
-  private static getAuthTokens(): any {
+  static async isAuthenticated(): Promise<boolean> {
     try {
-      const storedTokens = localStorage.getItem('hdcn_auth_tokens');
-      return storedTokens ? JSON.parse(storedTokens) : null;
-    } catch (error) {
-      console.error('Error parsing stored tokens:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get stored user data
-   */
-  private static getAuthUser(): any {
-    try {
-      const storedUser = localStorage.getItem('hdcn_auth_user');
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error('Error parsing stored user:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Check if user is authenticated
-   */
-  static isAuthenticated(): boolean {
-    const tokens = this.getAuthTokens();
-    if (!tokens || !tokens.AccessToken) {
+      const session = await fetchAuthSession();
+      return !!session.tokens?.accessToken;
+    } catch {
       return false;
     }
-
-    // Check token expiration
-    if (tokens.AccessTokenPayload && tokens.AccessTokenPayload.exp) {
-      const expirationTime = tokens.AccessTokenPayload.exp * 1000;
-      const currentTime = Date.now();
-      return currentTime < expirationTime;
-    }
-
-    return true;
   }
 
   /**
-   * Get current user's email
+   * Get current user's email from the Amplify session ID token.
    */
-  static getCurrentUserEmail(): string | null {
-    const user = this.getAuthUser();
-    return user?.attributes?.email || null;
+  static async getCurrentUserEmail(): Promise<string | null> {
+    try {
+      const session = await fetchAuthSession();
+      return (session.tokens?.idToken?.payload?.email as string) || null;
+    } catch {
+      return null;
+    }
   }
 
   /**
-   * Get current user's roles from JWT token
-   * Only returns roles that are part of the new role structure (no legacy roles)
+   * Get current user's roles (cognito:groups) from the Amplify session access token.
    */
-  static getCurrentUserRoles(): string[] {
-    const tokens = this.getAuthTokens();
-    if (tokens && tokens.AccessTokenPayload && tokens.AccessTokenPayload['cognito:groups']) {
-      const cognitoGroups = tokens.AccessTokenPayload['cognito:groups'];
-      
-      // Filter out any legacy roles that might still exist in JWT tokens
-      // Only allow roles that are part of the new permission + region structure
-      const validRoles = cognitoGroups.filter((role: string) => {
-        // Allow new permission-based roles (but NOT old _All versions)
-        if (role.includes('_CRUD') || role.includes('_Read') || role.includes('_Export') || role.includes('_Status_Approve')) {
-          // Reject old _All roles (except Regio_All which is valid)
-          if (role.endsWith('_All') && role !== 'Regio_All') {
-            console.warn(`ApiService: Filtering out legacy role: ${role}`);
-            return false;
-          }
-          return true;
-        }
-        
-        // Allow regional roles
-        if (role.startsWith('Regio_')) {
-          return true;
-        }
-        
-        // Allow system roles
-        if (role.startsWith('System_')) {
-          return true;
-        }
-        
-        // Allow specific valid roles
-        if (['hdcnLeden', 'Webshop_Management', 'verzoek_lid'].includes(role)) {
-          return true;
-        }
-        
-        // Reject any other legacy roles (deprecated roles no longer supported)
-        console.warn(`ApiService: Filtering out legacy role: ${role}`);
-        return false;
-      });
-      
-      return validRoles;
+  static async getCurrentUserRoles(): Promise<string[]> {
+    try {
+      const session = await fetchAuthSession();
+      const groups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[] | undefined) ?? [];
+      return groups;
+    } catch {
+      return [];
     }
-    return [];
   }
 
   /**
@@ -128,20 +69,7 @@ export class ApiService {
     try {
       const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
       
-      // Get proper auth headers with X-Enhanced-Groups
-      let authHeaders: Record<string, string>;
-      try {
-        authHeaders = await getAuthHeaders();
-        console.log('[ApiService] Auth headers obtained:', Object.keys(authHeaders));
-        console.log('[ApiService] Auth headers values:', authHeaders);
-      } catch (authError) {
-        console.error('[ApiService] Failed to get auth headers:', authError);
-        // Fallback to old method if new one fails
-        authHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthTokens()?.AccessToken || ''}`,
-        };
-      }
+      const authHeaders = await getAuthHeaders();
       
       const response = await fetch(url, {
         ...options,
@@ -197,18 +125,7 @@ export class ApiService {
    */
   static async getBinary(endpoint: string): Promise<ApiResponse<string>> {
     try {
-      // Get proper auth headers with X-Enhanced-Groups
-      let authHeaders: Record<string, string>;
-      try {
-        authHeaders = await getAuthHeaders();
-        console.log('[ApiService] Binary auth headers obtained:', Object.keys(authHeaders));
-      } catch (authError) {
-        console.error('[ApiService] Failed to get binary auth headers:', authError);
-        // Fallback to old method if new one fails
-        authHeaders = {
-          'Authorization': `Bearer ${this.getAuthTokens()?.AccessToken || ''}`,
-        };
-      }
+      const authHeaders = await getAuthHeaders();
       
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'GET',
@@ -276,13 +193,5 @@ export class ApiService {
    */
   static async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
-  }
-
-  /**
-   * Clear authentication data (for logout)
-   */
-  static clearAuth(): void {
-    localStorage.removeItem('hdcn_auth_user');
-    localStorage.removeItem('hdcn_auth_tokens');
   }
 }

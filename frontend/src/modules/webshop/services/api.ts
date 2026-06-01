@@ -29,7 +29,7 @@ if (!validateApiUrl(API_BASE_URL)) {
 
 export const productService = {
   scanProducts: async () => {
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.get('/scan-product/');
@@ -38,7 +38,7 @@ export const productService = {
 
 export const cartService = {
   createCart: async (data: CartData) => {
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.post('/carts', data);
@@ -51,7 +51,7 @@ export const cartService = {
     if (!sanitizedCartId || sanitizedCartId !== cartId) {
       throw new Error('Cart ID contains invalid characters');
     }
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.get(`/carts/${sanitizedCartId}`);
@@ -64,7 +64,7 @@ export const cartService = {
     if (!sanitizedCartId || sanitizedCartId !== cartId) {
       throw new Error('Cart ID contains invalid characters');
     }
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.put(`/carts/${sanitizedCartId}/items`, cartData);
@@ -77,7 +77,7 @@ export const cartService = {
     if (!sanitizedCartId || sanitizedCartId !== cartId) {
       throw new Error('Cart ID contains invalid characters');
     }
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.delete(`/carts/${sanitizedCartId}`);
@@ -86,7 +86,7 @@ export const cartService = {
 
 export const orderService = {
   createOrder: async (data: OrderData) => {
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.post('/orders', data);
@@ -102,7 +102,7 @@ export const memberService = {
     if (!sanitizedMemberId || sanitizedMemberId !== memberId) {
       throw new Error('Member ID contains invalid characters');
     }
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
     return ApiService.get(`/members/${sanitizedMemberId}`);

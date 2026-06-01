@@ -3,430 +3,221 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-// Mock Chakra UI components to avoid dependency issues
+// Mock Chakra UI components
 jest.mock('@chakra-ui/react', () => ({
-  Box: ({ children, ...props }: any) => <div data-testid="box" {...props}>{children}</div>,
-  Button: ({ children, onClick, isDisabled, ...props }: any) => (
-    <button onClick={onClick} disabled={isDisabled} {...props}>{children}</button>
+  Box: (props) => <div {...props}>{props.children}</div>,
+  Button: (props) => (
+    <button onClick={props.onClick} disabled={props.isDisabled || props.isLoading} type={props.type} data-testid={props['data-testid']}>
+      {props.isLoading ? props.loadingText : props.children}
+    </button>
   ),
-  FormControl: ({ children }: any) => <div>{children}</div>,
-  FormLabel: ({ children }: any) => <label>{children}</label>,
-  Input: ({ onChange, value, placeholder, ...props }: any) => (
-    <input onChange={onChange} value={value} placeholder={placeholder} {...props} />
+  FormControl: (props) => <div>{props.children}</div>,
+  Input: (props) => (
+    <input onChange={props.onChange} value={props.value} placeholder={props.placeholder} name={props.name} type={props.type} />
   ),
-  VStack: ({ children }: any) => <div>{children}</div>,
-  Text: ({ children }: any) => <span>{children}</span>,
-  Alert: ({ children }: any) => <div role="alert">{children}</div>,
+  VStack: (props) => <div>{props.children}</div>,
+  HStack: (props) => <div>{props.children}</div>,
+  Text: (props) => <span>{props.children}</span>,
+  Alert: (props) => <div role="alert" data-status={props.status}>{props.children}</div>,
   AlertIcon: () => <span>!</span>,
-  Heading: ({ children }: any) => <h1>{children}</h1>,
-  Tabs: ({ children }: any) => <div>{children}</div>,
-  TabList: ({ children }: any) => <div>{children}</div>,
-  TabPanels: ({ children }: any) => <div>{children}</div>,
-  Tab: ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>,
-  TabPanel: ({ children }: any) => <div>{children}</div>,
-  Image: ({ alt }: any) => <img alt={alt} />,
-  Flex: ({ children }: any) => <div>{children}</div>,
-  Spacer: () => <div />,
+  Heading: (props) => <h1>{props.children}</h1>,
+  Image: (props) => <img alt={props.alt} />,
+  IconButton: (props) => (
+    <button aria-label={props['aria-label']} onClick={props.onClick} />
+  ),
+  Popover: (props) => <div>{props.children}</div>,
+  PopoverTrigger: (props) => <div>{props.children}</div>,
+  PopoverContent: (props) => <div>{props.children}</div>,
+  PopoverArrow: () => null,
+  PopoverCloseButton: () => null,
+  PopoverHeader: (props) => <div>{props.children}</div>,
+  PopoverBody: (props) => <div>{props.children}</div>,
 }));
 
-// Mock the auth components
+// Mock child components
 jest.mock('../PasswordlessSignUp', () => ({
-  PasswordlessSignUp: ({ onSuccess, onError }: any) => (
-    <div>
-      <h2>Nieuw Account Aanmaken</h2>
-      <button onClick={() => onSuccess('test@example.com')}>Sign Up</button>
-    </div>
-  ),
+  PasswordlessSignUp: () => <div data-testid="passwordless-signup">PasswordlessSignUp</div>,
 }));
 
 jest.mock('../PasskeySetup', () => ({
-  PasskeySetup: ({ userEmail, onSuccess, onSkip, onError }: any) => (
-    <div>
-      <h2>Passkey Instellen</h2>
-      <p>Stel een passkey in voor veilig en gemakkelijk inloggen</p>
-      <button onClick={() => onSuccess()}>Setup Passkey</button>
-      {onSkip && <button onClick={onSkip}>Skip</button>}
-    </div>
-  ),
+  PasskeySetup: () => <div data-testid="passkey-setup">PasskeySetup</div>,
 }));
 
-jest.mock('../CrossDeviceAuth', () => ({
-  CrossDeviceAuth: ({ userEmail, onSuccess, onCancel, onError }: any) => (
-    <div>
-      <h2>Inloggen met Ander Apparaat</h2>
-      <p>Gebruik een passkey die je op een ander apparaat hebt ingesteld</p>
-      <button onClick={() => onSuccess({})}>Authenticate</button>
-      <button onClick={onCancel}>Cancel</button>
-    </div>
-  ),
+jest.mock('../MobilePasskeyDebug', () => ({
+  MobilePasskeyDebug: () => <div data-testid="mobile-passkey-debug">MobilePasskeyDebug</div>,
 }));
 
-jest.mock('../EmailRecovery', () => ({
-  EmailRecovery: ({ onSuccess, onCancel, onError }: any) => (
-    <div>
-      <h2>Account Recovery</h2>
-      <p>Enter your email address to receive recovery instructions</p>
-      <button onClick={() => onSuccess()}>Recover</button>
-      <button onClick={onCancel}>Cancel</button>
-    </div>
-  ),
+jest.mock('../GoogleSignInButton', () => ({
+  __esModule: true,
+  default: () => <div data-testid="google-signin-button">GoogleSignInButton</div>,
+}));
+
+// Mock useAuth hook
+const mockSignOut = jest.fn();
+jest.mock('../../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    isAuthenticated: false,
+    error: null,
+    signOut: mockSignOut,
+  }),
+}));
+
+// Mock aws-amplify/auth — the component uses dynamic imports
+const mockSignIn = jest.fn();
+const mockConfirmSignIn = jest.fn();
+const mockAmplifySignOut = jest.fn();
+
+jest.mock('aws-amplify/auth', () => ({
+  signIn: (...args) => mockSignIn(...args),
+  confirmSignIn: (...args) => mockConfirmSignIn(...args),
+  signOut: (...args) => mockAmplifySignOut(...args),
 }));
 
 import { CustomAuthenticator } from '../CustomAuthenticator';
-import { WebAuthnService } from '../../../services/webAuthnService';
 
-// Mock AWS Amplify
-jest.mock('aws-amplify/auth', () => ({
-  getCurrentUser: jest.fn(),
-  signIn: jest.fn(),
-  signOut: jest.fn(),
-}));
+describe('CustomAuthenticator - Auth Flows', () => {
+  const mockChildren = jest.fn().mockReturnValue(<div>Authenticated</div>);
 
-// Mock WebAuthnService
-jest.mock('../../../services/webAuthnService', () => ({
-  WebAuthnService: {
-    isSupported: jest.fn(),
-    shouldOfferCrossDeviceAuth: jest.fn(),
-    authenticateWithPasskey: jest.fn(),
-    credentialToJSON: jest.fn(),
-  },
-}));
-
-// Mock fetch
-global.fetch = jest.fn();
-
-const mockChildren = jest.fn();
-
-describe('CustomAuthenticator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockChildren.mockReturnValue(<div>Authenticated Content</div>);
-    (WebAuthnService.isSupported as jest.Mock).mockReturnValue(true);
-    (WebAuthnService.shouldOfferCrossDeviceAuth as jest.Mock).mockReturnValue(true);
+    mockAmplifySignOut.mockResolvedValue(undefined);
+    // Mock window.prompt for OTP code entry
+    jest.spyOn(window, 'prompt').mockReturnValue(null);
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
-  describe('Passwordless Authentication Flow', () => {
-    test('renders sign-in form with passwordless options', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByText('H-DCN Portal')).toBeInTheDocument();
-        expect(screen.getByText('Inloggen')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-        expect(screen.getByText('Inloggen met Passkey')).toBeInTheDocument();
-        expect(screen.getByText('Passkey Instellen')).toBeInTheDocument();
-        expect(screen.getByText('Cross-Device Authenticatie')).toBeInTheDocument();
-        expect(screen.getByText('Account Herstellen via Email')).toBeInTheDocument();
-      });
-    });
-
-    test('successful passkey authentication flow', async () => {
-      const { getCurrentUser, signIn } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValueOnce(new Error('Not authenticated'));
-      getCurrentUser.mockResolvedValueOnce({ username: 'test@example.com' });
-      signIn.mockResolvedValue({ username: 'test@example.com' });
-
-      // Mock successful passkey authentication
-      (fetch as jest.Mock)
+  /**
+   * Validates: Requirements R9.3
+   * WebAuthn failure triggers automatic OTP fallback — no error shown to user.
+   */
+  describe('WebAuthn fallback to EMAIL_OTP (R9.3)', () => {
+    it('falls back to EMAIL_OTP when WebAuthn sign-in fails', async () => {
+      // First call (WEB_AUTHN) throws — simulating passkey failure
+      mockSignIn
+        .mockRejectedValueOnce(new Error('WebAuthn not available'))
+        // Second call (EMAIL_OTP fallback) succeeds with OTP challenge
         .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ challenge: 'test-challenge' }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ success: true }),
+          isSignedIn: false,
+          nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
         });
 
-      (WebAuthnService.authenticateWithPasskey as jest.Mock).mockResolvedValue({
-        id: 'test-credential-id',
-        response: {},
-      });
-
-      (WebAuthnService.credentialToJSON as jest.Mock).mockReturnValue({
-        id: 'test-credential-id',
-        response: {},
-      });
+      // User enters OTP code
+      jest.spyOn(window, 'prompt').mockReturnValue('123456');
+      mockConfirmSignIn.mockResolvedValue({ isSignedIn: true });
 
       render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
-
-      // Enter email and submit
-      const emailInput = screen.getByPlaceholderText('Voer je e-mailadres in');
-      await userEvent.type(emailInput, 'test@example.com');
-
-      const signInButton = screen.getByText('Inloggen met Passkey');
-      fireEvent.click(signInButton);
-
-      // Should eventually show authenticated content
-      await waitFor(() => {
-        expect(mockChildren).toHaveBeenCalledWith({
-          signOut: expect.any(Function),
-          user: { username: 'test@example.com' },
-        });
-      });
-    });
-
-    test('redirects to passkey setup when no passkey is registered', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      // Mock no passkey registered response
-      (fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        json: () => Promise.resolve({ code: 'NO_PASSKEY_REGISTERED' }),
-      });
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
-
-      // Enter email and submit
-      const emailInput = screen.getByPlaceholderText('Voer je e-mailadres in');
-      await userEvent.type(emailInput, 'test@example.com');
-
-      const signInButton = screen.getByText('Inloggen met Passkey');
-      fireEvent.click(signInButton);
-
-      // Should redirect to passkey setup
-      await waitFor(() => {
-        expect(screen.getByText('Passkey Instellen')).toBeInTheDocument();
-        expect(screen.getByText('Stel een passkey in voor veilig en gemakkelijk inloggen')).toBeInTheDocument();
-      });
-    });
-
-    test('shows passkey setup when "Passkey Instellen" button is clicked', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
 
       // Enter email
       const emailInput = screen.getByPlaceholderText('Voer je e-mailadres in');
       await userEvent.type(emailInput, 'test@example.com');
 
-      // Click passkey setup button
-      const passkeySetupButton = screen.getByText('Passkey Instellen');
-      fireEvent.click(passkeySetupButton);
+      // Submit form
+      const submitButton = screen.getByRole('button', { name: /inloggen met passkey/i });
+      fireEvent.click(submitButton);
 
-      // Should show passkey setup component
       await waitFor(() => {
-        expect(screen.getByText('Passkey Instellen')).toBeInTheDocument();
-        expect(screen.getByText('Stel een passkey in voor veilig en gemakkelijk inloggen')).toBeInTheDocument();
-      });
-    });
+        // signIn should have been called twice: first WEB_AUTHN, then EMAIL_OTP
+        expect(mockSignIn).toHaveBeenCalledTimes(2);
 
-    test('shows cross-device authentication when button is clicked', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
+        // First call: WEB_AUTHN attempt
+        expect(mockSignIn).toHaveBeenNthCalledWith(1, {
+          username: 'test@example.com',
+          options: {
+            authFlowType: 'USER_AUTH',
+            preferredChallenge: 'WEB_AUTHN',
+          },
+        });
+
+        // Second call: EMAIL_OTP fallback
+        expect(mockSignIn).toHaveBeenNthCalledWith(2, {
+          username: 'test@example.com',
+          options: {
+            authFlowType: 'USER_AUTH',
+            preferredChallenge: 'EMAIL_OTP',
+          },
+        });
+      });
+
+      // No error should be shown to the user — fallback is silent
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Validates: Requirements R9.2
+   * Expired OTP code shows "Code verlopen" message and a "Nieuwe code versturen" button.
+   */
+  describe('Expired OTP shows resend option (R9.2)', () => {
+    it('shows resend button when OTP code is expired', async () => {
+      // signIn succeeds with OTP challenge
+      mockSignIn.mockResolvedValue({
+        isSignedIn: false,
+        nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
+      });
+
+      // User enters a code
+      jest.spyOn(window, 'prompt').mockReturnValue('expired-code');
+
+      // confirmSignIn throws ExpiredCodeException
+      const expiredError = new Error('Code has expired');
+      expiredError.name = 'ExpiredCodeException';
+      mockConfirmSignIn.mockRejectedValue(expiredError);
 
       render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
 
       // Enter email
       const emailInput = screen.getByPlaceholderText('Voer je e-mailadres in');
       await userEvent.type(emailInput, 'test@example.com');
 
-      // Click cross-device auth button
-      const crossDeviceButton = screen.getByText('Cross-Device Authenticatie');
-      fireEvent.click(crossDeviceButton);
+      // Submit form
+      const submitButton = screen.getByRole('button', { name: /inloggen met passkey/i });
+      fireEvent.click(submitButton);
 
-      // Should show cross-device auth component
+      // Wait for the error message and resend button to appear
       await waitFor(() => {
-        expect(screen.getByText('Inloggen met Ander Apparaat')).toBeInTheDocument();
-        expect(screen.getByText('Gebruik een passkey die je op een ander apparaat hebt ingesteld')).toBeInTheDocument();
+        expect(screen.getByText(/Code verlopen/i)).toBeInTheDocument();
       });
-    });
 
-    test('shows email recovery when button is clicked', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
+      // Resend button should be visible
+      expect(screen.getByText('Nieuwe code versturen')).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Validates: Requirements R9.5
+   * Network error during sign-in shows a retry-friendly message.
+   */
+  describe('Network error shows retry message (R9.5)', () => {
+    it('shows network error message when signIn throws NetworkError', async () => {
+      // signOut mock (called before signIn to clear stale session)
+      mockAmplifySignOut.mockResolvedValue(undefined);
+
+      // Both signIn calls fail with network error (WEB_AUTHN attempt + fallback both fail)
+      const networkError = new Error('Network request failed');
+      networkError.name = 'NetworkError';
+      mockSignIn.mockRejectedValue(networkError);
 
       render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
 
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
-
-      // Click email recovery button
-      const emailRecoveryButton = screen.getByText('Account Herstellen via Email');
-      fireEvent.click(emailRecoveryButton);
-
-      // Should show email recovery component
-      await waitFor(() => {
-        expect(screen.getByText('Account Recovery')).toBeInTheDocument();
-        expect(screen.getByText('Enter your email address to receive recovery instructions')).toBeInTheDocument();
-      });
-    });
-
-    test('requires email for passkey setup', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByText('Passkey Instellen')).toBeInTheDocument();
-      });
-
-      // Click passkey setup button without entering email
-      const passkeySetupButton = screen.getByText('Passkey Instellen');
-      fireEvent.click(passkeySetupButton);
-
-      // Should show error message
-      await waitFor(() => {
-        expect(screen.getByText('Voer eerst je e-mailadres in')).toBeInTheDocument();
-      });
-    });
-
-    test('requires email for cross-device authentication', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByText('Cross-Device Authenticatie')).toBeInTheDocument();
-      });
-
-      // Click cross-device auth button without entering email
-      const crossDeviceButton = screen.getByText('Cross-Device Authenticatie');
-      fireEvent.click(crossDeviceButton);
-
-      // Should show error message
-      await waitFor(() => {
-        expect(screen.getByText('Voer eerst je e-mailadres in voor cross-device authenticatie')).toBeInTheDocument();
-      });
-    });
-
-    test('handles passkey authentication errors gracefully', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      // Mock passkey authentication failure
-      (fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ challenge: 'test-challenge' }),
-      });
-
-      (WebAuthnService.authenticateWithPasskey as jest.Mock).mockRejectedValue(
-        new Error('Passkey authentication failed')
-      );
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
-
-      // Enter email and submit
+      // Enter email
       const emailInput = screen.getByPlaceholderText('Voer je e-mailadres in');
       await userEvent.type(emailInput, 'test@example.com');
 
-      const signInButton = screen.getByText('Inloggen met Passkey');
-      fireEvent.click(signInButton);
+      // Submit form
+      const submitButton = screen.getByRole('button', { name: /inloggen met passkey/i });
+      fireEvent.click(submitButton);
 
-      // Should show error message
+      // Wait for the network error message
       await waitFor(() => {
-        expect(screen.getByText(/Passkey authenticatie niet beschikbaar/)).toBeInTheDocument();
+        expect(
+          screen.getByText('Netwerkfout. Controleer je verbinding en probeer opnieuw.')
+        ).toBeInTheDocument();
       });
-    });
-
-    test('shows registration tab and allows user registration', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByText('Registreren')).toBeInTheDocument();
-      });
-
-      // Click registration tab
-      const registerTab = screen.getByText('Registreren');
-      fireEvent.click(registerTab);
-
-      // Should show registration form
-      await waitFor(() => {
-        expect(screen.getByText('Nieuw Account Aanmaken')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Authentication State Management', () => {
-    test('shows authenticated content when user is already signed in', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockResolvedValue({ username: 'test@example.com' });
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(mockChildren).toHaveBeenCalledWith({
-          signOut: expect.any(Function),
-          user: { username: 'test@example.com' },
-        });
-      });
-    });
-
-    test('handles sign out correctly', async () => {
-      const { getCurrentUser, signOut } = require('aws-amplify/auth');
-      getCurrentUser.mockResolvedValue({ username: 'test@example.com' });
-      signOut.mockResolvedValue(undefined);
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(mockChildren).toHaveBeenCalled();
-      });
-
-      // Get the signOut function from the mock call
-      const signOutFn = mockChildren.mock.calls[0][0].signOut;
-      
-      // Call signOut
-      await signOutFn();
-
-      // Should call AWS signOut
-      expect(signOut).toHaveBeenCalled();
-    });
-  });
-
-  describe('WebAuthn Support Detection', () => {
-    test('adapts UI when WebAuthn is not supported', async () => {
-      const { getCurrentUser } = require('aws-amplify/auth');
-      getCurrentUser.mockRejectedValue(new Error('Not authenticated'));
-      (WebAuthnService.isSupported as jest.Mock).mockReturnValue(false);
-      (WebAuthnService.shouldOfferCrossDeviceAuth as jest.Mock).mockReturnValue(false);
-
-      render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Voer je e-mailadres in')).toBeInTheDocument();
-      });
-
-      // Should still show basic authentication options
-      expect(screen.getByText('Inloggen met Passkey')).toBeInTheDocument();
-      expect(screen.getByText('Account Herstellen via Email')).toBeInTheDocument();
-      
-      // Cross-device auth should not be available
-      expect(screen.queryByText('Cross-Device Authenticatie')).not.toBeInTheDocument();
     });
   });
 });

@@ -9,6 +9,9 @@ import { ApiService } from '../apiService';
 
 // Mock dependencies
 jest.mock('../../utils/authHeaders');
+jest.mock('aws-amplify/auth', () => ({
+  fetchAuthSession: jest.fn(),
+}));
 jest.mock('../../utils/errorHandler', () => ({
   parseApiError: jest.fn(),
   showMaintenanceScreen: jest.fn(),
@@ -44,17 +47,6 @@ describe('ApiService Error Handling', () => {
     
     // Set up default environment
     process.env.REACT_APP_API_BASE_URL = 'https://test-api.example.com';
-    
-    // Mock localStorage
-    const mockLocalStorage = {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    };
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
   });
 
   describe('503 Maintenance Mode Handling', () => {
@@ -156,36 +148,16 @@ describe('ApiService Error Handling', () => {
 
   describe('Authentication Error Handling', () => {
     test('should handle auth header generation failure', async () => {
-      // Mock auth headers failure
-      mockGetAuthHeaders.mockRejectedValue(new Error('No user data found in localStorage'));
-
-      // Mock successful response (to test fallback auth)
-      const mockResponse = {
-        status: 200,
-        ok: true,
-        json: () => Promise.resolve({ data: 'success' })
-      } as Response;
-
-      mockFetch.mockResolvedValue(mockResponse);
-
-      // Mock localStorage to return null (no auth data)
-      (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
+      // Mock auth headers failure - now this propagates as an error
+      mockGetAuthHeaders.mockRejectedValue(new Error('Not authenticated'));
 
       const result = await ApiService.get('/test-endpoint');
 
-      // Should fall back to old auth method and still make request
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/test-endpoint'), // Just check the endpoint part
-        expect.objectContaining({
-          method: 'GET',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ', // Empty token due to no localStorage data
-          })
-        })
-      );
-
-      expect(result.success).toBe(true);
+      // Should return error since there's no localStorage fallback
+      expect(result).toEqual({
+        success: false,
+        error: 'Not authenticated'
+      });
     });
 
     test('should handle 401 unauthorized responses', async () => {
@@ -406,43 +378,33 @@ describe('ApiService Error Handling', () => {
   });
 
   describe('Authentication State Management', () => {
-    test('should check authentication status correctly', () => {
-      // Mock valid tokens
-      (window.localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify({
-        AccessToken: 'valid-token',
-        AccessTokenPayload: {
-          exp: Math.floor(Date.now() / 1000) + 3600 // Expires in 1 hour
+    test('should detect valid session as authenticated', async () => {
+      // Mock fetchAuthSession to return valid tokens
+      const { fetchAuthSession } = require('aws-amplify/auth');
+      fetchAuthSession.mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => 'valid-token',
+            payload: { exp: Math.floor(Date.now() / 1000) + 3600 }
+          }
         }
-      }));
+      });
 
-      expect(ApiService.isAuthenticated()).toBe(true);
+      expect(await ApiService.isAuthenticated()).toBe(true);
     });
 
-    test('should detect expired tokens', () => {
-      // Mock expired tokens
-      (window.localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify({
-        AccessToken: 'expired-token',
-        AccessTokenPayload: {
-          exp: Math.floor(Date.now() / 1000) - 3600 // Expired 1 hour ago
-        }
-      }));
+    test('should detect missing session as not authenticated', async () => {
+      const { fetchAuthSession } = require('aws-amplify/auth');
+      fetchAuthSession.mockResolvedValue({ tokens: undefined });
 
-      expect(ApiService.isAuthenticated()).toBe(false);
+      expect(await ApiService.isAuthenticated()).toBe(false);
     });
 
-    test('should handle missing tokens', () => {
-      (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
+    test('should handle session fetch failure as not authenticated', async () => {
+      const { fetchAuthSession } = require('aws-amplify/auth');
+      fetchAuthSession.mockRejectedValue(new Error('No session'));
 
-      expect(ApiService.isAuthenticated()).toBe(false);
-    });
-
-    test('should clear authentication data on logout', () => {
-      const mockRemoveItem = window.localStorage.removeItem as jest.Mock;
-
-      ApiService.clearAuth();
-
-      expect(mockRemoveItem).toHaveBeenCalledWith('hdcn_auth_user');
-      expect(mockRemoveItem).toHaveBeenCalledWith('hdcn_auth_tokens');
+      expect(await ApiService.isAuthenticated()).toBe(false);
     });
   });
 });

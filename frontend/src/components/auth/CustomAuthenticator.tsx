@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
   FormControl,
-  FormLabel,
   Input,
   VStack,
   Text,
@@ -25,83 +24,110 @@ import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
 import { MobilePasskeyDebug } from './MobilePasskeyDebug';
 import GoogleSignInButton from './GoogleSignInButton';
+import { useAuth } from '../../hooks/useAuth';
 
 interface CustomAuthenticatorProps {
   children: (props: { signOut: () => void; user: any }) => React.ReactNode;
 }
 
 export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
-  const [user, setUser] = useState<any>(null);
-  const [authState, setAuthState] = useState<'loading' | 'signIn' | 'signUp' | 'passkeySetup' | 'debug' | 'authenticated'>('loading');
+  const { user: authUser, isLoading, isAuthenticated, error: authError, signOut } = useAuth();
+
+  const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'passkeySetup' | 'debug'>('signIn');
   const [signInData, setSignInData] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showResendCode, setShowResendCode] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
-  // Check if current route should bypass authentication
-  const shouldBypassAuth = () => {
-    const path = window.location.pathname;
-    const bypassRoutes = ['/auth/callback', '/test-route'];
-    return bypassRoutes.includes(path);
+  const isNetworkError = (err: any): boolean => {
+    return (
+      err.name === 'NetworkError' ||
+      err.message?.toLowerCase().includes('network') ||
+      err.message?.toLowerCase().includes('failed to fetch') ||
+      err.message?.toLowerCase().includes('net::') ||
+      err.code === 'ERR_NETWORK' ||
+      !navigator.onLine
+    );
   };
 
-  useEffect(() => {
-    // If route should bypass auth, skip auth check
-    if (shouldBypassAuth()) {
-      setAuthState('authenticated');
-      setUser({ bypass: true }); // Dummy user for bypass routes
-      return;
-    }
-    
-    checkAuthState();
-  }, []);
+  const isCodeExpiredError = (err: any): boolean => {
+    return (
+      err.name === 'CodeExpiredException' ||
+      err.name === 'ExpiredCodeException' ||
+      err.message?.toLowerCase().includes('expired') ||
+      err.message?.toLowerCase().includes('code has expired')
+    );
+  };
 
-  const checkAuthState = async () => {
+  const handleResendCode = async () => {
+    setLoading(true);
+    setError('');
+    setShowResendCode(false);
+
     try {
-      
-      // Check if we have stored authentication tokens
-      const storedUser = localStorage.getItem('hdcn_auth_user');
-      const storedTokens = localStorage.getItem('hdcn_auth_tokens');
-      
-      if (storedUser && storedTokens) {
-        const user = JSON.parse(storedUser);
-        const tokens = JSON.parse(storedTokens);
-        
-        // Verify token is still valid by checking expiration
-        if (tokens.AccessTokenPayload && tokens.AccessTokenPayload.exp) {
-          const expirationTime = tokens.AccessTokenPayload.exp * 1000; // Convert to milliseconds
-          const currentTime = Date.now();
-          
-          if (currentTime < expirationTime) {
-            // Token is still valid
-            console.log('✅ checkAuthState - Setting user as authenticated');
-            setUser(user);
-            setAuthState('authenticated');
-            return;
-          } else {
-            // Token expired, clear storage
-            console.log('❌ checkAuthState - Token expired, clearing storage');
-            localStorage.removeItem('hdcn_auth_user');
-            localStorage.removeItem('hdcn_auth_tokens');
-          }
-        } else {
-          // No expiration info, assume token is valid (OAuth tokens might not have exp in payload)
-          setUser(user);
-          setAuthState('authenticated');
-          return;
+      const { signIn, signOut: amplifySignOut } = await import('aws-amplify/auth');
+
+      // Clear stale session
+      try {
+        await amplifySignOut();
+      } catch {
+        // Ignore
+      }
+
+      // Re-initiate sign-in with EMAIL_OTP to send a new code
+      const signInResult = await signIn({
+        username: signInData.email,
+        options: {
+          authFlowType: 'USER_AUTH',
+          preferredChallenge: 'EMAIL_OTP',
+        },
+      });
+
+      if (signInResult.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
+        await handleOtpCodeEntry();
+      } else if (signInResult.nextStep?.signInStep === 'CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION') {
+        const { confirmSignIn } = await import('aws-amplify/auth');
+        const confirmResult = await confirmSignIn({ challengeResponse: 'EMAIL_OTP' });
+        if (confirmResult.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
+          await handleOtpCodeEntry();
         }
       }
-      
-      // No valid authentication found
-      console.log('❌ checkAuthState - No valid auth found, showing sign in');
-      setAuthState('signIn');
-    } catch (err) {
-      console.error('❌ checkAuthState - Error:', err);
-      // Clear any corrupted data
-      localStorage.removeItem('hdcn_auth_user');
-      localStorage.removeItem('hdcn_auth_tokens');
-      setAuthState('signIn');
+    } catch (err: any) {
+      console.error('Resend code error:', err);
+      if (isNetworkError(err)) {
+        setError('Netwerkfout. Controleer je verbinding en probeer opnieuw.');
+      } else {
+        setError('Nieuwe code versturen mislukt. Probeer opnieuw.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpCodeEntry = async () => {
+    const { confirmSignIn } = await import('aws-amplify/auth');
+    const code = prompt('Voer de verificatiecode in die naar je e-mail is gestuurd:');
+    if (code) {
+      try {
+        const confirmResult = await confirmSignIn({ challengeResponse: code });
+        if (confirmResult.isSignedIn) {
+          // Authentication successful — AuthProvider picks up via Hub 'signedIn' event
+          return;
+        }
+      } catch (confirmErr: any) {
+        if (isCodeExpiredError(confirmErr)) {
+          setError('Code verlopen. Vraag een nieuwe code aan.');
+          setShowResendCode(true);
+        } else if (isNetworkError(confirmErr)) {
+          setError('Netwerkfout. Controleer je verbinding en probeer opnieuw.');
+        } else {
+          setError('Verificatie mislukt. Probeer opnieuw.');
+        }
+      }
+    } else {
+      setError('Verificatiecode is vereist om in te loggen.');
     }
   };
 
@@ -109,18 +135,19 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setShowResendCode(false);
 
     try {
       // Use Amplify v6 signIn with email - Cognito handles WebAuthn natively
-      const { signIn, confirmSignIn, signOut } = await import('aws-amplify/auth');
-      
+      const { signIn, confirmSignIn, signOut: amplifySignOut } = await import('aws-amplify/auth');
+
       // Clear any stale session before attempting sign-in
       try {
-        await signOut();
+        await amplifySignOut();
       } catch {
         // Ignore - no session to clear
       }
-      
+
       let signInResult;
       try {
         signInResult = await signIn({
@@ -132,7 +159,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         });
       } catch (webAuthnErr: any) {
         console.log('WebAuthn sign-in failed, falling back to email OTP:', webAuthnErr.message);
-        // WebAuthn failed (no credential, cancelled, not supported) — try email OTP
+        // WebAuthn failed (no credential, cancelled, not supported) — automatic fallback to email OTP
         signInResult = await signIn({
           username: signInData.email,
           options: {
@@ -143,87 +170,22 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
       }
 
       if (signInResult.isSignedIn) {
-        // Authentication successful
-        const { fetchAuthSession, getCurrentUser } = await import('aws-amplify/auth');
-        const currentUser = await getCurrentUser();
-        const session = await fetchAuthSession();
-        
-        const user = {
-          username: currentUser.username,
-          attributes: {
-            email: signInData.email,
-          },
-          signInUserSession: {
-            accessToken: {
-              jwtToken: session.tokens?.accessToken?.toString() || '',
-              payload: {}
-            },
-            idToken: {
-              jwtToken: session.tokens?.idToken?.toString() || '',
-              payload: {}
-            },
-          }
-        };
-        
-        localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-        setUser(user);
-        setAuthState('authenticated');
+        // Authentication successful — AuthProvider picks up via Hub 'signedIn' event
         return;
       } else if (signInResult.nextStep) {
         const step = signInResult.nextStep.signInStep;
         if (step === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
           // Email OTP sent — prompt user for the code
           setError('');
-          const code = prompt('Voer de verificatiecode in die naar je e-mail is gestuurd:');
-          if (code) {
-            const confirmResult = await confirmSignIn({ challengeResponse: code });
-            if (confirmResult.isSignedIn) {
-              const { fetchAuthSession, getCurrentUser } = await import('aws-amplify/auth');
-              const currentUser = await getCurrentUser();
-              const session = await fetchAuthSession();
-              const user = {
-                username: currentUser.username,
-                attributes: { email: signInData.email },
-                signInUserSession: {
-                  accessToken: { jwtToken: session.tokens?.accessToken?.toString() || '', payload: {} },
-                  idToken: { jwtToken: session.tokens?.idToken?.toString() || '', payload: {} },
-                }
-              };
-              localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-              setUser(user);
-              setAuthState('authenticated');
-              return;
-            }
-          } else {
-            setError('Verificatiecode is vereist om in te loggen.');
-          }
+          await handleOtpCodeEntry();
         } else if (step === 'CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION') {
           // Multiple factors available — select EMAIL_OTP
           const confirmResult = await confirmSignIn({ challengeResponse: 'EMAIL_OTP' });
           if (confirmResult.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
-            const code = prompt('Voer de verificatiecode in die naar je e-mail is gestuurd:');
-            if (code) {
-              const finalResult = await confirmSignIn({ challengeResponse: code });
-              if (finalResult.isSignedIn) {
-                const { fetchAuthSession, getCurrentUser } = await import('aws-amplify/auth');
-                const currentUser = await getCurrentUser();
-                const session = await fetchAuthSession();
-                const user = {
-                  username: currentUser.username,
-                  attributes: { email: signInData.email },
-                  signInUserSession: {
-                    accessToken: { jwtToken: session.tokens?.accessToken?.toString() || '', payload: {} },
-                    idToken: { jwtToken: session.tokens?.idToken?.toString() || '', payload: {} },
-                  }
-                };
-                localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-                setUser(user);
-                setAuthState('authenticated');
-                return;
-              }
-            }
+            await handleOtpCodeEntry();
+          } else {
+            setError('Inloggen mislukt. Probeer opnieuw.');
           }
-          setError('Inloggen mislukt. Probeer opnieuw.');
         } else if (step === 'CONFIRM_SIGN_UP') {
           setError('Je account moet nog bevestigd worden. Controleer je e-mail.');
         } else {
@@ -232,12 +194,14 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
       }
     } catch (err: any) {
       console.error('Sign in error:', err);
-      
+
       if (err.name === 'UserNotFoundException' || err.message?.includes('User does not exist')) {
         // New user - show registration
         setShowRegistrationForm(true);
         setError('');
         return;
+      } else if (isNetworkError(err)) {
+        setError('Netwerkfout. Controleer je verbinding en probeer opnieuw.');
       } else if (err.name === 'NotAuthorizedException') {
         setError('Inloggen mislukt. Controleer je gegevens.');
       } else if (err.name === 'NotAllowedError') {
@@ -247,19 +211,6 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      // Clear stored authentication data
-      localStorage.removeItem('hdcn_auth_user');
-      localStorage.removeItem('hdcn_auth_tokens');
-      
-      setUser(null);
-      setAuthState('signIn');
-    } catch (err) {
-      console.error('Sign out error:', err);
     }
   };
 
@@ -275,74 +226,26 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     setNewUserEmail(email);
     // After successful signup, return to login interface
     setShowRegistrationForm(false);
-    setError(''); // Clear any errors
-    // The PasswordlessSignUp component will show its own success message
+    setError('');
   };
 
   const handleRegistrationCancel = () => {
     setShowRegistrationForm(false);
-    setError(''); // Clear any errors
+    setError('');
   };
 
-  const handlePasskeySetupSuccess = (authData?: any) => {
-    // After passkey setup, user might be authenticated or need to sign in
-    if (authData && authData.authenticationResult && authData.authenticationResult.AccessToken) {
-      // User is authenticated after passkey setup
-      const tokens = authData.authenticationResult;
-      const user = {
-        username: authData.user?.email || newUserEmail,
-        attributes: {
-          email: authData.user?.email || newUserEmail,
-          given_name: authData.user?.given_name || '',
-          family_name: authData.user?.family_name || ''
-        },
-        signInUserSession: {
-          accessToken: {
-            jwtToken: tokens.AccessToken,
-            payload: tokens.AccessTokenPayload || {}
-          },
-          idToken: {
-            jwtToken: tokens.IdToken,
-            payload: tokens.IdTokenPayload || {}
-          },
-          refreshToken: {
-            token: tokens.RefreshToken
-          }
-        }
-      };
-      
-      // Store authentication data
-      localStorage.setItem('hdcn_auth_user', JSON.stringify(user));
-      localStorage.setItem('hdcn_auth_tokens', JSON.stringify(tokens));
-      
-      setUser(user);
-      setAuthState('authenticated');
-    } else {
-      // Passkey setup complete, return to sign in
-      setAuthState('signIn');
-      setError(''); // Clear any errors
-      // Set the email for convenience
-      setSignInData({ email: newUserEmail });
-    }
+  const handlePasskeySetupSuccess = () => {
+    // Passkey setup complete — return to sign in so user can log in with their new passkey
+    setAuthState('signIn');
+    setError('');
+    setSignInData({ email: newUserEmail });
   };
 
   const handlePasskeySetupSkip = () => {
-    // User skipped passkey setup, proceed to authentication
-    checkAuthState();
-  };
-
-  const handleGoogleAuthSuccess = (authData: any) => {
-    console.log('🔥 handleGoogleAuthSuccess called with:', authData);
-    console.log('🔥 Auth data groups:', authData?.signInUserSession?.accessToken?.payload?.['cognito:groups']);
-    setUser(authData);
-    setAuthState('authenticated');
+    // User skipped passkey setup — return to sign in
+    setAuthState('signIn');
     setError('');
-    
-    // Force re-render by clearing and setting user again
-    setTimeout(() => {
-      console.log('🔥 Setting user state again to force re-render');
-      setUser(authData);
-    }, 100);
+    setSignInData({ email: newUserEmail });
   };
 
   const handleGoogleAuthError = (error: string) => {
@@ -366,7 +269,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     );
   }
 
-  if (authState === 'loading') {
+  if (isLoading) {
     return (
       <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
         <Text color="orange.400">Laden...</Text>
@@ -374,8 +277,25 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     );
   }
 
-  if (authState === 'authenticated' && user) {
-    return <>{children({ signOut: handleSignOut, user })}</>;
+  if (isAuthenticated && authUser) {
+    // Build a user object compatible with the existing children render prop
+    const legacyUser = {
+      username: authUser.sub,
+      attributes: {
+        email: authUser.email,
+        given_name: authUser.givenName,
+        family_name: authUser.familyName,
+      },
+      signInUserSession: {
+        accessToken: {
+          jwtToken: authUser.accessToken,
+          payload: {
+            'cognito:groups': authUser.groups,
+          },
+        },
+      },
+    };
+    return <>{children({ signOut, user: legacyUser })}</>;
   }
 
   if (authState === 'passkeySetup') {
@@ -399,10 +319,10 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
       <Box maxW="md" w="full" p={6}>
         <Box textAlign="center" mb={8}>
-          <Image 
-            src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png" 
-            alt="H-DCN Logo" 
-            mx="auto" 
+          <Image
+            src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png"
+            alt="H-DCN Logo"
+            mx="auto"
             mb={4}
             maxW="100px"
             maxH="100px"
@@ -419,13 +339,13 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             <Heading color="orange.400" size="lg">
               {showRegistrationForm ? 'Account Aanmaken' : 'Inloggen'}
             </Heading>
-            
+
             <Popover placement="bottom-end">
               <PopoverTrigger>
                 <IconButton
                   aria-label="Authenticatie informatie"
                   icon={
-                    <Image 
+                    <Image
                       src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/info-icon-orange.svg"
                       alt="Info"
                       w="20px"
@@ -454,7 +374,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                         Voer je e-mailadres in en kies je voorkeursmanier van inloggen
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
                         🔐 Passkey (aanbevolen)
@@ -463,7 +383,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                         Veilig inloggen met vingerafdruk, gezichtsherkenning, of apparaat-PIN
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
                         🌐 Google Account
@@ -472,7 +392,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                         Gebruik je bestaande Google account om snel in te loggen
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
                         ✨ Nieuwe gebruiker?
@@ -481,7 +401,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                         Het systeem detecteert automatisch of je een nieuw account nodig hebt
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
                         🔧 Problemen?
@@ -499,7 +419,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           {/* Conditional Content */}
           {showRegistrationForm ? (
             <VStack spacing={6}>
-              <PasswordlessSignUp 
+              <PasswordlessSignUp
                 onSuccess={handleSignUpSuccess}
                 onError={(error) => {
                   console.error('Sign up error:', error);
@@ -516,10 +436,25 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             </VStack>
           ) : (
             <VStack spacing={6}>
-              {error && (
+              {(error || authError) && (
                 <Alert status="error" bg="red.900" borderColor="red.500" border="1px solid">
                   <AlertIcon color="red.300" />
-                  <Text color="red.100">{error}</Text>
+                  <Box flex="1">
+                    <Text color="red.100">{error || authError}</Text>
+                    {showResendCode && (
+                      <Button
+                        size="sm"
+                        colorScheme="orange"
+                        variant="link"
+                        mt={2}
+                        onClick={handleResendCode}
+                        isLoading={loading}
+                        loadingText="Versturen..."
+                      >
+                        Nieuwe code versturen
+                      </Button>
+                    )}
+                  </Box>
                 </Alert>
               )}
 
@@ -571,15 +506,13 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                     disabled={loading}
                   />
 
-                  {/* Alternative Options */}
-
                   {/* Advanced Options - Only show if email is entered */}
                   {signInData.email && (
                     <Box width="full" pt={4} borderTop="1px solid" borderColor="gray.700">
                       <Text color="gray.500" fontSize="xs" textAlign="center" mb={3}>
                         Geavanceerde opties
                       </Text>
-                      
+
                       <VStack spacing={2}>
                         <Button
                           colorScheme="blue"

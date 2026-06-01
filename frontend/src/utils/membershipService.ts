@@ -66,13 +66,13 @@ export interface MembershipApplicationData {
 export const getMemberByEmail = async (email: string): Promise<any> => {
   try {
     // Check if user is authenticated and has valid roles
-    if (!ApiService.isAuthenticated()) {
+    if (!(await ApiService.isAuthenticated())) {
       console.log('User not authenticated, cannot check member status');
       return null;
     }
 
-    const currentUserEmail = ApiService.getCurrentUserEmail();
-    const userRoles = ApiService.getCurrentUserRoles();
+    const currentUserEmail = await ApiService.getCurrentUserEmail();
+    const userRoles = await ApiService.getCurrentUserRoles();
     
     // Validate that the user is checking their own email
     if (currentUserEmail !== email) {
@@ -115,7 +115,7 @@ export const getMemberByEmail = async (email: string): Promise<any> => {
     console.error('Error checking existing member:', error);
     
     // Get user roles for better error handling
-    const userRoles = ApiService.getCurrentUserRoles();
+    const userRoles = await ApiService.getCurrentUserRoles();
     
     // For verzoek_lid users, API errors might be expected (no record yet)
     if (userRoles.includes('verzoek_lid') && !userRoles.includes('hdcnLeden')) {

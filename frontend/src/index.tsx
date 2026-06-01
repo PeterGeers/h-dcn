@@ -8,20 +8,20 @@ import awsconfig from './aws-exports';
 import './index.css';
 
 /**
- * AWS Amplify configuration for passwordless Cognito authentication
+ * AWS Amplify v6 configuration for H-DCN unified authentication
  * 
  * Configuration supports:
- * - Passwordless authentication with WebAuthn/FIDO2 passkeys
- * - Email-based user registration and verification
- * - Email recovery flows without passwords
+ * - WebAuthn/FIDO2 passkey authentication
+ * - Email OTP fallback
+ * - Google SSO via OAuth (signInWithRedirect)
  * - ALLOW_USER_AUTH flow for enhanced authentication options
  * 
- * Uses aws-exports.js for centralized configuration management
- * @see aws-exports.js for detailed configuration
- * @see .env for environment variables
+ * The awsconfig (ResourcesConfig) includes Auth.Cognito with loginWith.oauth
+ * settings so Amplify handles the full OAuth redirect flow automatically.
+ * 
+ * @see aws-exports.ts for detailed configuration
+ * @see .env for environment variable overrides
  */
-
-// Configure Amplify with passwordless authentication support
 Amplify.configure(awsconfig);
 
 const rootElement = document.getElementById('root');

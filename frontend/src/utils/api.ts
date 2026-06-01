@@ -12,7 +12,7 @@ interface MemberData {
  * @deprecated Use main ApiService directly instead
  */
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  if (!ApiService.isAuthenticated()) {
+  if (!(await ApiService.isAuthenticated())) {
     throw new Error('Authentication required');
   }
   

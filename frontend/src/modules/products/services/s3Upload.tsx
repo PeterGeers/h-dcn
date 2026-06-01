@@ -1,7 +1,25 @@
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { Product as BaseProduct } from '../../../types';
 
 interface ProductWithImage extends BaseProduct {
   image?: string | string[];
+}
+
+/**
+ * Get auth token and groups from Amplify session.
+ * No localStorage — uses fetchAuthSession() as single source of truth.
+ *
+ * Requirements: R4.1, R4.3, R6.3
+ */
+async function getSessionAuth(): Promise<{ authToken: string; groups: string[] }> {
+  const session = await fetchAuthSession();
+  const token = session.tokens?.accessToken?.toString();
+  const groups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[] | undefined) ?? [];
+
+  return {
+    authToken: token || '',
+    groups,
+  };
 }
 
 export const uploadToS3 = async (
@@ -30,47 +48,20 @@ export const uploadToS3 = async (
     const uint8Array = new Uint8Array(fileBuffer);
     const base64String = btoa(String.fromCharCode(...uint8Array));
     
-    // Get enhanced groups from localStorage for authentication
-    const storedUser = localStorage.getItem('hdcn_auth_user');
-    let enhancedGroups = ['System_User_Management', 'Products_CRUD']; // fallback with multiple roles
-    let authToken = '';
-    
-    console.log('🔍 DEBUG: Raw stored user data:', storedUser);
-    
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        
-        // Extract JWT token for Authorization header
-        const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
-        if (jwtToken) {
-          authToken = jwtToken;
-        }
-        
-        const groups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
-        
-        if (groups && Array.isArray(groups)) {
-          enhancedGroups = groups;
-        }
-      } catch (error) {
-        // Use fallback groups on parse error
-      }
-    }
+    // Get auth from Amplify session
+    const { authToken, groups } = await getSessionAuth();
     
     // Upload via secure backend API
     const apiUrl = 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/s3/files';
     
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-Enhanced-Groups': JSON.stringify(enhancedGroups)
+      'X-Enhanced-Groups': JSON.stringify(groups)
     };
     
     // Add Authorization header if we have a token
     if (authToken) {
       requestHeaders['Authorization'] = `Bearer ${authToken}`;
-      console.log('✅ DEBUG: Added Authorization header');
-    } else {
-      console.log('⚠️ DEBUG: No auth token available - request may fail');
     }
     
     const requestBody = {
@@ -80,17 +71,6 @@ export const uploadToS3 = async (
       contentType: file.type,
       cacheControl: 'public, max-age=31536000' // Cache images for 1 year
     };
-    
-    console.log('🚀 DEBUG: Making API request to:', apiUrl);
-    console.log('🚀 DEBUG: Request headers:', requestHeaders);
-    console.log('🚀 DEBUG: Request body keys:', Object.keys(requestBody));
-    console.log('🚀 DEBUG: File info:', {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      targetBucket,
-      fileName
-    });
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -133,32 +113,15 @@ export const cleanupUnusedImages = async (
   const targetBucket = bucketName || 'my-hdcn-bucket';
   
   try {
-    // Get enhanced groups from localStorage for authentication
-    const storedUser = localStorage.getItem('hdcn_auth_user');
-    let enhancedGroups = ['System_User_Management']; // fallback
-    let authToken = '';
-    
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      
-      // Extract JWT token for Authorization header
-      const jwtToken = user.signInUserSession?.accessToken?.jwtToken;
-      if (jwtToken) {
-        authToken = jwtToken;
-      }
-      
-      const groups = user.signInUserSession?.accessToken?.payload?.['cognito:groups'];
-      if (groups && Array.isArray(groups)) {
-        enhancedGroups = groups;
-      }
-    }
+    // Get auth from Amplify session
+    const { authToken, groups } = await getSessionAuth();
     
     // List all files in product-images folder via secure API
     const apiUrl = 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod/s3/files';
     const listUrl = `${apiUrl}?bucketName=${targetBucket}&prefix=product-images/&recursive=true`;
     
     const listHeaders: Record<string, string> = {
-      'X-Enhanced-Groups': JSON.stringify(enhancedGroups)
+      'X-Enhanced-Groups': JSON.stringify(groups)
     };
     
     if (authToken) {
@@ -202,7 +165,7 @@ export const cleanupUnusedImages = async (
         try {
           const deleteHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
-            'X-Enhanced-Groups': JSON.stringify(enhancedGroups)
+            'X-Enhanced-Groups': JSON.stringify(groups)
           };
           
           if (authToken) {
