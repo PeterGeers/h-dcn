@@ -92,9 +92,15 @@ def extract_user_credentials(event):
         print(f"🔍 [AUTH_DEBUG] JWT payload keys: {list(payload.keys())}")
         
         # Extract user email - try multiple possible fields
-        user_email = (payload.get('email') or 
-                     payload.get('username') or 
-                     payload.get('cognito:username'))
+        # Priority: X-User-Email header (from ID token on frontend) > JWT email claim > username
+        user_email_header = headers.get('X-User-Email') or headers.get('x-user-email')
+        if user_email_header and '@' in user_email_header:
+            user_email = user_email_header
+            print(f"🔍 [AUTH_DEBUG] User email from X-User-Email header: {user_email}")
+        else:
+            user_email = (payload.get('email') or 
+                         payload.get('username') or 
+                         payload.get('cognito:username'))
         if not user_email:
             print(f"[AUTH_DEBUG] No email/username found in JWT payload")
             print(f"[AUTH_DEBUG] Available payload fields: {list(payload.keys())}")

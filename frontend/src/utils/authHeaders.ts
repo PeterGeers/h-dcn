@@ -53,11 +53,17 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
   if (!token) throw new Error('Not authenticated');
 
   const userGroups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[] | undefined) ?? [];
+  const userEmail = (session.tokens?.idToken?.payload?.email as string | undefined) ?? '';
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
+
+  // Add user email from ID token for backend identity resolution
+  if (userEmail) {
+    headers['X-User-Email'] = userEmail;
+  }
 
   // Add enhanced groups header for backend permission validation
   if (userGroups.length > 0) {
@@ -75,10 +81,16 @@ export const getAuthHeadersForGet = async (): Promise<Record<string, string>> =>
   if (!token) throw new Error('Not authenticated');
 
   const userGroups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[] | undefined) ?? [];
+  const userEmail = (session.tokens?.idToken?.payload?.email as string | undefined) ?? '';
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
   };
+
+  // Add user email from ID token for backend identity resolution
+  if (userEmail) {
+    headers['X-User-Email'] = userEmail;
+  }
 
   // Add enhanced groups header for backend permission validation
   if (userGroups.length > 0) {
