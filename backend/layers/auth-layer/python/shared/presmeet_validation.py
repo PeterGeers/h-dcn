@@ -431,6 +431,10 @@ def extract_club_id(user_roles: list) -> str | None:
     """
     Extract club_id from Cognito group list.
 
+    .. deprecated::
+        Use `shared.club_identity.get_club_id` instead. Club identity is now
+        stored on the Member record, not in Cognito groups.
+
     Looks for the first group matching the pattern 'club_*' and returns
     the part after the 'club_' prefix.
 
@@ -440,6 +444,13 @@ def extract_club_id(user_roles: list) -> str | None:
     Returns:
         str | None: The club_id (without 'club_' prefix) or None if not found.
     """
+    import warnings
+    warnings.warn(
+        "extract_club_id is deprecated; use shared.club_identity.get_club_id instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if not user_roles:
         return None
 

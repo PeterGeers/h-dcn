@@ -40,11 +40,6 @@ const filterValidRoles = (groups: string[]): string[] => {
       return true;
     }
 
-    // Allow club roles (PresMeet feature)
-    if (role.startsWith('club_')) {
-      return true;
-    }
-
     // Reject any other invalid roles
     console.warn(`AuthHeaders: Filtering out invalid role: ${role}`);
     return false;

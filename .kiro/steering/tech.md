@@ -36,6 +36,17 @@
 
 - Producten, Members, Payments, Events, Memberships, Carts, Orders
 
+## File Size Guidelines
+
+**Target: 500 lines | Maximum: 1000 lines**
+
+- Target 500 lines in new code and refactoring
+- Maximum 1000 lines — files exceeding this require refactoring
+- Exceptions: test files, generated files, configuration files with extensive mappings
+
+**Frontend**: split components, extract hooks, move utils. **Backend**: split modules, extract helpers, use service layer, separate blueprint files.
+
+
 ## Common Commands
 
 ### Git

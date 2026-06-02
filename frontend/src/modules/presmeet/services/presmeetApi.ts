@@ -17,6 +17,8 @@ import {
   ReportMetadata,
   ReportType,
   ReportData,
+  ClubRegistry,
+  AssignClubResponse,
 } from '../types/presmeet';
 
 export const presmeetService = {
@@ -114,5 +116,31 @@ export const presmeetService = {
    */
   recordPayment: (data: ManualPayment): Promise<ApiResponse<void>> => {
     return ApiService.post<void>('/presmeet/admin/payment', data);
+  },
+
+  // --- Onboarding endpoints ---
+
+  /**
+   * Get the club registry (available clubs for onboarding).
+   */
+  getClubRegistry: (): Promise<ApiResponse<ClubRegistry>> => {
+    return ApiService.get<ClubRegistry>('/presmeet/clubs');
+  },
+
+  /**
+   * Assign a club to the current authenticated user.
+   */
+  assignClub: (clubId: string): Promise<ApiResponse<AssignClubResponse>> => {
+    return ApiService.post<AssignClubResponse>('/presmeet/clubs/assign', { club_id: clubId });
+  },
+
+  /**
+   * Reassign a club to a different member (admin only).
+   */
+  reassignClub: (clubId: string, memberEmail: string): Promise<ApiResponse<AssignClubResponse>> => {
+    return ApiService.post<AssignClubResponse>('/presmeet/clubs/assign', {
+      club_id: clubId,
+      member_email: memberEmail,
+    });
   },
 };

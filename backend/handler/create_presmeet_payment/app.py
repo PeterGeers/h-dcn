@@ -18,7 +18,8 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.presmeet_validation import extract_club_id, calculate_outstanding_balance
+    from shared.club_identity import get_club_id, has_presmeet_access
+    from shared.presmeet_validation import calculate_outstanding_balance
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -78,8 +79,12 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'create_presmeet_payment')
 
-        # Extract club_id from Cognito groups
-        club_id = extract_club_id(user_roles)
+        # Gate: check Regio_Pressmeet access
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, 'PresMeet access required')
+
+        # Get club_id from Member record
+        club_id = get_club_id(user_email)
         if not club_id:
             return create_error_response(403, 'Missing club assignment')
 
@@ -206,6 +211,7 @@ def lambda_handler(event, context):
         payment_record = {
             'payment_id': payment_id,
             'source': 'presmeet',
+            'tenant': 'presmeet',
             'order_id': order_id,
             'club_id': club_id,
             'amount': outstanding,

@@ -242,6 +242,24 @@ function Dashboard() {
             />
           </FunctionGuard>
           
+          {/* Presidents' Meeting - Only for users with Regio_Pressmeet or Regio_All */}
+          <FunctionGuard 
+            user={functionGuardUser} 
+            requiredRoles={['Regio_Pressmeet', 'Regio_All']}
+          >
+            <AppCard 
+              key="presmeet"
+              app={{
+                id: 'presmeet',
+                title: "Presidents' Meeting",
+                description: 'Booking form for your club delegation',
+                icon: '🏍️',
+                path: '/presmeet'
+              }}
+              onClick={() => navigate('/presmeet')}
+            />
+          </FunctionGuard>
+          
           {/* Administrative modules - Only for users with specific admin roles */}
           
           {/* Members Admin - Only for users with member management roles */}

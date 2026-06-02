@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "updated_at": "2025-06-01T10:00:00Z",
+  "clubs": [
+    {
+      "club_id": "amsterdam",
+      "club_name": "HD Club Amsterdam",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/amsterdam.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "rotterdam",
+      "club_name": "HD Club Rotterdam",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/rotterdam.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "den-haag",
+      "club_name": "HD Club Den Haag",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/den-haag.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "utrecht",
+      "club_name": "HD Club Utrecht",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/utrecht.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "eindhoven",
+      "club_name": "HD Club Eindhoven",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/eindhoven.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "groningen",
+      "club_name": "HD Club Groningen",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/groningen.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "maastricht",
+      "club_name": "HD Club Maastricht",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/maastricht.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "arnhem",
+      "club_name": "HD Club Arnhem",
+      "logo_url": "https://cdn.h-dcn.nl/clubs/arnhem.png",
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    }
+  ]
+}

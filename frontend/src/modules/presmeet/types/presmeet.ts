@@ -39,6 +39,8 @@ export interface CartItem {
 export interface PresMeetBooking {
   order_id: string;
   club_id: string;
+  tenant: "presmeet";
+  source: "presmeet";
   status: OrderStatus;
   payment_status: PaymentStatus;
   items: CartItem[];
@@ -203,3 +205,26 @@ export interface ReportOrders {
 }
 
 export type ReportData = ReportOverview | ReportOrders | ReportMetadata;
+
+// --- Club Registry (Onboarding) ---
+
+export interface ClubRegistryEntry {
+  club_id: string;
+  club_name: string;
+  logo_url: string | null;
+  assigned_member_id: string | null;
+  assigned_contact: string | null;
+  assigned_at: string | null;
+}
+
+export interface ClubRegistry {
+  version: string;
+  updated_at: string;
+  clubs: ClubRegistryEntry[];
+}
+
+export interface AssignClubResponse {
+  message: string;
+  club_id: string;
+  member_id: string;
+}

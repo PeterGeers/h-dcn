@@ -1,7 +1,6 @@
 import json
 import os
 import boto3
-from decimal import Decimal
 from boto3.dynamodb.conditions import Attr
 
 # Import shared authentication utilities with fallback support
@@ -15,8 +14,8 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.club_identity import get_club_id, has_presmeet_access
     from shared.presmeet_validation import (
-        extract_club_id,
         validate_attributes,
         validate_product_type,
         DEFAULT_ATTRIBUTE_SCHEMAS,
@@ -93,8 +92,12 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'validate_presmeet_cart')
 
-        # Extract club_id from Cognito groups
-        club_id = extract_club_id(user_roles)
+        # v2 access gate: check Regio_Pressmeet access
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, 'PresMeet access required')
+
+        # Get club_id from Member record
+        club_id = get_club_id(user_email)
         if not club_id:
             return create_error_response(403, 'Missing club assignment')
 

@@ -1,4 +1,3 @@
-import json
 import os
 import boto3
 from decimal import Decimal
@@ -15,7 +14,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.presmeet_validation import extract_club_id
+    from shared.club_identity import get_club_id, has_presmeet_access, is_presmeet_admin
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -63,11 +62,15 @@ def lambda_handler(event, context):
         if not is_authorized:
             return error_response
 
+        # Gate: check Regio_Pressmeet access
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, 'PresMeet access required')
+
         # Log successful access
         log_successful_access(user_email, user_roles, 'get_presmeet_booking')
 
-        # Determine if user is admin (webmaster role)
-        is_admin = 'webmaster' in user_roles
+        # Determine if user is admin
+        is_admin = is_presmeet_admin(user_roles)
 
         # Determine which club_id to query
         query_params = event.get('queryStringParameters') or {}
@@ -76,21 +79,21 @@ def lambda_handler(event, context):
             # Admin can view any club's booking via query parameter
             club_id = query_params['club_id']
         else:
-            # Regular user: extract club_id from Cognito groups
-            club_id = extract_club_id(user_roles)
+            # Regular user: get club_id from Member record
+            club_id = get_club_id(user_email)
             if not club_id:
                 return create_error_response(403, 'Missing club assignment')
 
         # Query Orders table for PresMeet booking matching club_id
         scan_response = orders_table.scan(
-            FilterExpression=Attr('source').eq('presmeet') & Attr('club_id').eq(club_id)
+            FilterExpression=Attr('source').eq('presmeet') & Attr('tenant').eq('presmeet') & Attr('club_id').eq(club_id)
         )
         items = scan_response['Items']
 
         # Handle pagination for large result sets
         while 'LastEvaluatedKey' in scan_response:
             scan_response = orders_table.scan(
-                FilterExpression=Attr('source').eq('presmeet') & Attr('club_id').eq(club_id),
+                FilterExpression=Attr('source').eq('presmeet') & Attr('tenant').eq('presmeet') & Attr('club_id').eq(club_id),
                 ExclusiveStartKey=scan_response['LastEvaluatedKey']
             )
             items.extend(scan_response['Items'])

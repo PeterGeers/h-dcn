@@ -37,9 +37,11 @@ export interface UsePresMeetBookingReturn {
   isSaving: boolean;
   isSubmitting: boolean;
   error: string | null;
+  needsOnboarding: boolean;
 
   // Actions
   loadBooking: () => Promise<void>;
+  reloadAll: () => Promise<void>;
   saveBooking: (data: BookingFormData) => Promise<boolean>;
   submitBooking: () => Promise<boolean>;
   initiatePayment: () => Promise<PaymentSession | null>;
@@ -136,6 +138,7 @@ export function usePresMeetBooking(): UsePresMeetBookingReturn {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const productTypes = config?.product_types ?? [];
 
@@ -158,14 +161,22 @@ export function usePresMeetBooking(): UsePresMeetBookingReturn {
     try {
       const response = await presmeetService.getBooking();
       if (response.success && response.data) {
+        setNeedsOnboarding(false);
         setBooking(response.data);
         setFormData(extractFormDataFromBooking(response.data));
+      } else if (response.error?.includes('Missing club assignment')) {
+        // User has no club_id assigned — show onboarding flow
+        setNeedsOnboarding(true);
+        setBooking(null);
+        setFormData({ delegates: [], guests: [], transfers: [] });
       } else if (response.error?.includes('404') || response.error?.includes('not found')) {
         // No booking yet — that's fine
+        setNeedsOnboarding(false);
         setBooking(null);
         setFormData({ delegates: [], guests: [], transfers: [] });
       } else {
         // Don't treat 404 as error for initial load
+        setNeedsOnboarding(false);
         setBooking(null);
         setFormData({ delegates: [], guests: [], transfers: [] });
       }
@@ -186,6 +197,16 @@ export function usePresMeetBooking(): UsePresMeetBookingReturn {
       setIsLoading(false);
     };
     init();
+  }, [loadConfig, loadBooking]);
+
+  // Reload all state (used after onboarding completes)
+  const reloadAll = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    setNeedsOnboarding(false);
+    await loadConfig();
+    await loadBooking();
+    setIsLoading(false);
   }, [loadConfig, loadBooking]);
 
   // Save booking as draft
@@ -262,7 +283,9 @@ export function usePresMeetBooking(): UsePresMeetBookingReturn {
     isSaving,
     isSubmitting,
     error,
+    needsOnboarding,
     loadBooking,
+    reloadAll,
     saveBooking,
     submitBooking,
     initiatePayment,

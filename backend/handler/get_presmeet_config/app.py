@@ -1,4 +1,3 @@
-import json
 import os
 import boto3
 from decimal import Decimal
@@ -15,6 +14,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.club_identity import has_presmeet_access
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -63,19 +63,23 @@ def lambda_handler(event, context):
         if not is_authorized:
             return error_response
 
+        # PresMeet access gate - require Regio_Pressmeet or Regio_All
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, 'PresMeet access required')
+
         # Log successful access
         log_successful_access(user_email, user_roles, 'get_presmeet_config')
 
-        # Query Producten table for PresMeet config records (source = "presmeet_config")
+        # Query Producten table for PresMeet config records (source = "presmeet_config", tenant = "presmeet")
         config_response = producten_table.scan(
-            FilterExpression=Attr('source').eq('presmeet_config')
+            FilterExpression=Attr('source').eq('presmeet_config') & Attr('tenant').eq('presmeet')
         )
         config_items = config_response['Items']
 
         # Handle pagination for large result sets
         while 'LastEvaluatedKey' in config_response:
             config_response = producten_table.scan(
-                FilterExpression=Attr('source').eq('presmeet_config'),
+                FilterExpression=Attr('source').eq('presmeet_config') & Attr('tenant').eq('presmeet'),
                 ExclusiveStartKey=config_response['LastEvaluatedKey']
             )
             config_items.extend(config_response['Items'])

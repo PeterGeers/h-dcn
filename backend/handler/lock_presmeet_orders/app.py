@@ -9,13 +9,13 @@ from boto3.dynamodb.conditions import Attr
 try:
     from shared.auth_utils import (
         extract_user_credentials,
-        validate_permissions_with_regions,
         cors_headers,
         handle_options_request,
         create_error_response,
         create_success_response,
         log_successful_access,
     )
+    from shared.club_identity import is_presmeet_admin_write, has_presmeet_access
 
     _IMPORTS_AVAILABLE = True
 except ImportError as e:
@@ -49,19 +49,12 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Validate permissions - require events_read at minimum
-        required_permissions = ["events_read"]
-        is_authorized, error_response, regional_info = (
-            validate_permissions_with_regions(
-                user_roles, required_permissions, user_email, None
-            )
-        )
-        if not is_authorized:
-            return error_response
+        # Check PresMeet access
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, "PresMeet access required")
 
-        # Admin check - only webmaster can lock orders
-        is_admin = "webmaster" in user_roles
-        if not is_admin:
+        # Admin check - only admin with write access can lock orders
+        if not is_presmeet_admin_write(user_roles):
             return create_error_response(403, "Admin access required")
 
         # Log successful access
@@ -96,6 +89,9 @@ def lambda_handler(event, context):
                 if order.get("source") != "presmeet":
                     continue
 
+                if order.get("tenant") != "presmeet":
+                    continue
+
                 # Only lock orders in "submitted" status
                 if order.get("status") != "submitted":
                     continue
@@ -115,6 +111,7 @@ def lambda_handler(event, context):
             # Lock ALL: scan all PresMeet orders, lock all "submitted" ones
             scan_response = orders_table.scan(
                 FilterExpression=Attr("source").eq("presmeet")
+                & Attr("tenant").eq("presmeet")
                 & Attr("status").eq("submitted")
             )
             submitted_orders = scan_response["Items"]
@@ -123,6 +120,7 @@ def lambda_handler(event, context):
             while "LastEvaluatedKey" in scan_response:
                 scan_response = orders_table.scan(
                     FilterExpression=Attr("source").eq("presmeet")
+                    & Attr("tenant").eq("presmeet")
                     & Attr("status").eq("submitted"),
                     ExclusiveStartKey=scan_response["LastEvaluatedKey"],
                 )

@@ -3,11 +3,12 @@
  *
  * Features:
  * - Tab navigation: Booking, Overview, Admin
- * - Admin tab only visible to webmaster role (System_User_Management)
+ * - Admin tab visible to users with management role + region role (v2 logic)
  * - Uses usePresMeetBooking hook for state management
  * - Uses useAuth from AuthProvider context for user role detection
+ * - Shows OnboardingFlow if user has no club_id assigned
  *
- * Validates: Requirements 3.1, 3.4, 3.8, 7.7
+ * Validates: Requirements 5.1, 5.2, 5.3, 10.1, 10.2, 10.5
  */
 
 import React from 'react';
@@ -33,15 +34,22 @@ import { usePresMeetBooking } from './hooks/usePresMeetBooking';
 import BookingForm from './components/BookingForm';
 import BookingOverview from './components/BookingOverview';
 import AdminDashboard from './components/AdminDashboard';
+import OnboardingFlow from './components/OnboardingFlow';
 
 /**
- * Check if the user has admin/webmaster access for the PresMeet admin tab.
- * Admins are users with System_User_Management or Products_CRUD role.
+ * Check if the user has admin access for the PresMeet admin tab.
+ * Requires BOTH a management role AND a region role:
+ * - Management: Products_CRUD, Products_Read, or Webshop_Management
+ * - Region: Regio_Pressmeet or Regio_All
  */
 function isPresMeetAdmin(groups: string[]): boolean {
-  return groups.some(
-    (g) => g === 'System_User_Management' || g === 'Products_CRUD'
+  const hasManagementRole = groups.some((g) =>
+    ['Products_CRUD', 'Products_Read', 'Webshop_Management'].includes(g)
   );
+  const hasRegionRole = groups.some((g) =>
+    ['Regio_Pressmeet', 'Regio_All'].includes(g)
+  );
+  return hasManagementRole && hasRegionRole;
 }
 
 const PresMeetPage: React.FC = () => {
@@ -53,13 +61,20 @@ const PresMeetPage: React.FC = () => {
     productTypes,
     isLoading,
     error,
+    needsOnboarding,
     loadBooking,
+    reloadAll,
     saveBooking,
     submitBooking,
   } = usePresMeetBooking();
 
   const userGroups = user?.groups ?? [];
   const isAdmin = isPresMeetAdmin(userGroups);
+
+  // Handle onboarding completion: reload all state to show the booking form
+  const handleOnboardingComplete = async (_clubId: string) => {
+    await reloadAll();
+  };
 
   if (isLoading) {
     return (
@@ -69,7 +84,7 @@ const PresMeetPage: React.FC = () => {
     );
   }
 
-  if (error && !config) {
+  if (error && !config && !needsOnboarding) {
     return (
       <Container maxW="container.lg" py={6}>
         <Alert status="error" borderRadius="md">
@@ -79,6 +94,18 @@ const PresMeetPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Box>
         </Alert>
+      </Container>
+    );
+  }
+
+  // Show onboarding flow if user has no club_id assigned
+  if (needsOnboarding) {
+    return (
+      <Container maxW="container.xl" py={6}>
+        <Heading size="lg" color="orange.400" mb={6}>
+          Presidents' Meeting
+        </Heading>
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
       </Container>
     );
   }

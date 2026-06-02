@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -11,13 +10,13 @@ try:
     from shared.auth_utils import (
         extract_user_credentials,
         validate_permissions_with_regions,
-        cors_headers,
         handle_options_request,
         create_error_response,
         create_success_response,
         log_successful_access,
     )
-    from shared.presmeet_validation import extract_club_id, validate_order_submission
+    from shared.club_identity import get_club_id, has_presmeet_access
+    from shared.presmeet_validation import validate_order_submission
 
     _IMPORTS_AVAILABLE = True
 except ImportError as e:
@@ -81,8 +80,12 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, "submit_presmeet_booking")
 
-        # Extract club_id from Cognito groups
-        club_id = extract_club_id(user_roles)
+        # Gate: check Regio_Pressmeet access
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, "PresMeet access required")
+
+        # Get club_id from Member record
+        club_id = get_club_id(user_email)
         if not club_id:
             return create_error_response(403, "Missing club assignment")
 

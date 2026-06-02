@@ -237,9 +237,9 @@ class TestLambdaHandler:
             "pathParameters": None,
         }
 
-    def _mock_auth(self, user_email="user@club.nl", user_roles=None):
+    def _mock_auth(self, user_email="user@club.nl", user_roles=None, club_id="amsterdam"):
         if user_roles is None:
-            user_roles = ["hdcnLeden", "club_amsterdam"]
+            user_roles = ["hdcnLeden", "Regio_Pressmeet"]
         return (
             patch(
                 "handler.save_presmeet_booking.app.extract_user_credentials",
@@ -250,6 +250,14 @@ class TestLambdaHandler:
                 return_value=(True, None, {}),
             ),
             patch("handler.save_presmeet_booking.app.log_successful_access"),
+            patch(
+                "handler.save_presmeet_booking.app.has_presmeet_access",
+                return_value=("Regio_Pressmeet" in user_roles or "Regio_All" in user_roles),
+            ),
+            patch(
+                "handler.save_presmeet_booking.app.get_club_id",
+                return_value=club_id,
+            ),
         )
 
     def test_new_booking_creates_draft_order(self):
@@ -260,7 +268,7 @@ class TestLambdaHandler:
         }
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         assert response["statusCode"] == 200
@@ -268,6 +276,7 @@ class TestLambdaHandler:
         assert result["status"] == "draft"
         assert result["payment_status"] == "unpaid"
         assert result["source"] == "presmeet"
+        assert result["tenant"] == "presmeet"
         assert result["club_id"] == "amsterdam"
         assert result["created_by"] == "user@club.nl"
         assert len(result["items"]) == 1
@@ -297,7 +306,7 @@ class TestLambdaHandler:
         }
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         result = json.loads(response["body"])
@@ -328,7 +337,7 @@ class TestLambdaHandler:
         }
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         result = json.loads(response["body"])
@@ -360,7 +369,7 @@ class TestLambdaHandler:
         }
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         assert response["statusCode"] == 409
@@ -390,18 +399,28 @@ class TestLambdaHandler:
         # + guest party_ticket(99.50) + airport_transfer(2*5=10) = 284.00
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         result = json.loads(response["body"])
         assert result["total_amount"] == 284.0
 
     def test_no_club_assignment_returns_403(self):
-        """User without club group gets 403."""
+        """User without club_id on Member record gets 403."""
+        body = {"delegates": [], "guests": [], "transfers": []}
+
+        auth_patches = self._mock_auth(user_roles=["hdcnLeden", "Regio_Pressmeet"], club_id=None)
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
+            response = lambda_handler(self._make_event(body), None)
+
+        assert response["statusCode"] == 403
+
+    def test_no_presmeet_access_returns_403(self):
+        """User without Regio_Pressmeet gets 403 from access gate."""
         body = {"delegates": [], "guests": [], "transfers": []}
 
         auth_patches = self._mock_auth(user_roles=["hdcnLeden"])
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         assert response["statusCode"] == 403
@@ -412,7 +431,7 @@ class TestLambdaHandler:
         event["body"] = None
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(event, None)
 
         assert response["statusCode"] == 400
@@ -423,7 +442,7 @@ class TestLambdaHandler:
         event["body"] = "not json {"
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(event, None)
 
         assert response["statusCode"] == 400
@@ -444,7 +463,7 @@ class TestLambdaHandler:
         }
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3], auth_patches[4]:
             response = lambda_handler(self._make_event(body), None)
 
         assert response["statusCode"] == 400

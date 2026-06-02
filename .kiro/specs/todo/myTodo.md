@@ -1,6 +1,6 @@
 # H-DCN Todo List
 Bugs found
-- Download webshop pdf mislukt. Download mislukt, De bestelling is niet gevonden
+- Download webshop pdf mislukt.Orderbevestiging staat netjes op het scherm maar download lukt niet. For peter@pgeers.nl but also for webmaster@h-dcn.nl  No console messages
 
 - Prepare for demo
 -- different functions by user type,

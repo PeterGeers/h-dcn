@@ -1327,6 +1327,8 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
         - PolicyName: PresMeetS3ReportsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -1634,6 +1636,52 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /presmeet/admin/report
             Method: get
+
+  # --- PresMeet: Get Club Registry (Onboarding) ---
+  GetClubRegistryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_club_registry
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt PresMeetRole.Arn
+      Environment:
+        Variables:
+          REPORTS_BUCKET_NAME: !Ref S3ReportsBucket
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        GetClubRegistry:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /presmeet/clubs
+            Method: get
+
+  # --- PresMeet: Assign Club (Onboarding) ---
+  AssignClubFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/assign_club
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt PresMeetRole.Arn
+      Environment:
+        Variables:
+          REPORTS_BUCKET_NAME: !Ref S3ReportsBucket
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AssignClub:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /presmeet/clubs/assign
+            Method: post
 
 Outputs:
   ApiBaseUrl:

@@ -97,5 +97,6 @@
     "template.yaml": "samconfig.toml, .aws-sam",
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
     ".env": ".env.*"
-  }
+  },
+  "typescript.autoClosingTags": false
 }

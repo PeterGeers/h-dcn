@@ -1,27 +1,42 @@
-In the .kiro\specs\presmeet\wireframe  there is a description of a solution that in the base sells itenms for an event (The PresMeet)
-- tickets for a meeting
-- tickets for a party
-- airport pickup
-- airport drop off
-- hotel rooms
-- t-shirts (male and female with different sizes)
+⚠️ Issues Found
+1. Regio_Pressmeet not in HDCNGroup type definition
 
-The clients base are clubs associated to the fh-dce (h-dcn is just such a club)
+The TypeScript type HDCNGroup in 
+user.ts
+ doesn't include Regio_Pressmeet. You'll need to add it. Minor — but it needs to happen.
+Decision: Yes
+2. tenant field vs existing source field — overlap
 
-The idea is to implement this in the h-dcn project 
-- using the webshop with extended logic to handle item specifics
-- using authentication flow logging users to a predefined list of ca. 65 clubs
-- Allowing these users to shop in the webshop and note all relevant information to their order
-- Reporting status of what is in orders and carts to see what is already ordered and what is planned
-- Payment via Mollie or direct payment with an option to update the status to paid
+Current presmeet handlers already use source="presmeet" on Orders and source="presmeet_config" on Producten for the same purpose as the proposed tenant field. You have two choices:
 
-What about all orderabble items are products. Atttributes can be product type driven attrributes in json like role, name, pickup, etc..
+Replace source with tenant (breaking change, requires migration + handler updates)
+Keep both — source for internal presmeet logic (config vs order), tenant for multi-tenancy filtering
+I recommend keeping both: tenant for tenant isolation, source for record-type discrimination within presmeet. They serve different purposes.
+Decision: Yes
 
-I thinktourist tax is an item not needed abnd should be included in the hotel price and probably hotel rooms will be out of scope.
+3. Club identity extraction — v1 uses club_* Cognito groups
 
-## Status notes 
-Confirmed — none of the 20 remaining failures are PresMeet-related. They are all pre-existing issues in:
+The existing extract_club_id() function in presmeet_validation.py looks for club_* groups in Cognito. Requirement 2 says store club_id on the Member record instead. This is a good change, but the requirements don't mention a migration path for existing club reps who currently have club_* groups.
 
-Integration tests (API Gateway, auth performance, member reporting) — these require live AWS infrastructure
-test_get_members_filtered — a pre-existing unit test for a different handler
-test_passkey_bug_condition — from a different spec
+Suggestion: Add an acceptance criterion noting that club_* Cognito groups will be deprecated and removed after migration.
+Decision: Yes
+
+4. Permission level for PresMeet club users
+
+Current presmeet handlers require events_read permission (which hdcnLeden grants). The requirements say Club_Representatives authenticate with Regio_Pressmeet. But Regio_Pressmeet alone doesn't grant any permissions — it only scopes access regionally.
+
+The requirements need to clarify: Club_Representatives will also have hdcnLeden role (which grants events_read, webshop access, self-service). Regio_Pressmeet is the additional signal that enables the Booking_Form. This is implied but not explicit in the requirements.
+Decsion: Club reps get hdcnLeden + Regio_Pressmeet — existing APIs work unchanged since hdcnLeden already grants self-service, webshop, and events_read
+
+5. Dashboard navigation — no Booking_Form card shown
+
+The Dashboard.tsx uses FunctionGuard to control which cards appear. There's currently a /presmeet route but no FunctionGuard-based card for it on the Dashboard. Requirement 10 says show "three functions: self-service profile, webshop, and Booking_Form" — but doesn't specify how the Booking_Form card should be gated.
+
+Suggestion: The Booking_Form card should be gated by Regio_Pressmeet or Regio_All (using FunctionGuard with requiredRoles={['Regio_Pressmeet', 'Regio_All']}).
+
+Decision: Regio_Pressmeet is the sole gate for the Booking_Form — it's checked on the frontend (Dashboard card visibility via FunctionGuard) and on the backend (presmeet booking endpoints)
+
+6. get_presmeet_booking still checks for webmaster role
+
+The existing get_presmeet_booking handler has is_admin = 'webmaster' in user_roles for admin access. Requirement 5 says use Products_CRUD + Regio_Pressmeet instead. This is correct direction — just noting it as a handler that needs updating.
+Decision: Clarify please

@@ -20,7 +20,7 @@ try:
         create_success_response,
         log_successful_access,
     )
-    from shared.presmeet_validation import calculate_outstanding_balance
+    from shared.club_identity import is_presmeet_admin, has_presmeet_access
 
     _IMPORTS_AVAILABLE = True
 except ImportError as e:
@@ -279,9 +279,12 @@ def lambda_handler(event, context):
         if not is_authorized:
             return error_response
 
-        # Admin check - only webmaster can generate reports
-        is_admin = "webmaster" in user_roles
-        if not is_admin:
+        # Access gate - require PresMeet region role
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, "PresMeet access required")
+
+        # Admin check - only PresMeet admins can generate reports
+        if not is_presmeet_admin(user_roles):
             return create_error_response(403, "Admin access required")
 
         # Log successful access
@@ -293,12 +296,12 @@ def lambda_handler(event, context):
 
         # Scan Orders table for all PresMeet records
         orders = scan_all_items(
-            orders_table, Attr("source").eq("presmeet")
+            orders_table, Attr("source").eq("presmeet") & Attr("tenant").eq("presmeet")
         )
 
         # Scan Payments table for all PresMeet records
         payments = scan_all_items(
-            payments_table, Attr("source").eq("presmeet")
+            payments_table, Attr("source").eq("presmeet") & Attr("tenant").eq("presmeet")
         )
 
         # Compute aggregates

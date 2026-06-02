@@ -5,10 +5,12 @@ Tests correctness properties defined in the PresMeet design document.
 
 import sys
 import os
+import warnings
 
 # Add the auth layer to the path so we can import shared.presmeet_validation
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python'))
 
+import pytest
 from hypothesis import given, settings, assume, HealthCheck
 from hypothesis import strategies as st
 
@@ -30,6 +32,7 @@ non_club_group_strategy = st.text(min_size=1, max_size=50).filter(
 )
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 class TestProperty11ClubIdExtraction:
     """Feature: presmeet, Property 11: Club ID extraction from Cognito groups"""
 
@@ -2715,4 +2718,782 @@ class TestProperty18AdminAggregationCorrectness:
         assert result["summary"]["total_orders"] == len(orders), (
             f"total_orders: expected {len(orders)}, "
             f"got {result['summary']['total_orders']}"
+        )
+
+
+# ============================================================
+# Property 9: Outstanding balance calculation
+# ============================================================
+
+from shared.presmeet_validation import calculate_outstanding_balance as _calc_outstanding
+from decimal import Decimal as _Decimal9
+
+
+# --- Strategies for Property 9 ---
+
+# Strategy for a non-negative order total (Decimal between 0 and 99999)
+_p9_balance_total_strategy = st.decimals(
+    min_value=0,
+    max_value=99999,
+    places=2,
+    allow_nan=False,
+    allow_infinity=False,
+)
+
+# Strategy for a single payment record with amount and status='paid'
+_p9_payment_strategy = st.builds(
+    lambda amount: {"amount": amount, "status": "paid"},
+    amount=st.decimals(
+        min_value=0,
+        max_value=99999,
+        places=2,
+        allow_nan=False,
+        allow_infinity=False,
+    ),
+)
+
+# Strategy for a list of payment records
+_p9_payments_list_strategy = st.lists(_p9_payment_strategy, min_size=0, max_size=10)
+
+
+class TestProperty9OutstandingBalanceCalculation:
+    """Feature: presmeet, Property 9: Outstanding balance calculation"""
+
+    @given(
+        order_total=_p9_balance_total_strategy,
+        payments=_p9_payments_list_strategy,
+    )
+    @settings(max_examples=100)
+    def test_property9_outstanding_equals_max_zero_total_minus_payments(
+        self, order_total, payments
+    ):
+        """Feature: presmeet, Property 9: Outstanding balance calculation
+
+        For any non-negative order total and any list of payment amounts,
+        calculate_outstanding_balance SHALL return
+        max(0, order_total - sum(payment amounts)).
+
+        **Validates: Requirements 7.6**
+        """
+        total = _Decimal9(str(order_total))
+        paid_sum = sum(
+            _Decimal9(str(p["amount"])) for p in payments
+        )
+        expected = max(_Decimal9("0"), total - paid_sum)
+
+        result = _calc_outstanding(total, payments)
+
+        assert result == expected, (
+            f"Expected outstanding balance {expected} for total={total}, "
+            f"payments_sum={paid_sum}, got {result}"
+        )
+
+    @given(
+        order_total=_p9_balance_total_strategy,
+        payments=_p9_payments_list_strategy,
+    )
+    @settings(max_examples=100)
+    def test_property9_result_never_negative(self, order_total, payments):
+        """Feature: presmeet, Property 9: Outstanding balance calculation
+
+        For any order total and any list of payments, the outstanding balance
+        SHALL never be negative. The result is always >= 0.
+
+        **Validates: Requirements 7.6**
+        """
+        total = _Decimal9(str(order_total))
+        result = _calc_outstanding(total, payments)
+
+        assert result >= _Decimal9("0"), (
+            f"Outstanding balance should never be negative, got {result} "
+            f"for total={total}, payments={payments}"
+        )
+
+    @given(order_total=_p9_balance_total_strategy)
+    @settings(max_examples=100)
+    def test_property9_no_payments_outstanding_equals_total(self, order_total):
+        """Feature: presmeet, Property 9: Outstanding balance calculation
+
+        When there are no payments, the outstanding balance SHALL equal
+        the order total.
+
+        **Validates: Requirements 7.6**
+        """
+        total = _Decimal9(str(order_total))
+        result = _calc_outstanding(total, [])
+
+        assert result == total, (
+            f"With no payments, outstanding should equal total {total}, got {result}"
+        )
+
+    @given(
+        order_total=_p9_balance_total_strategy,
+        extra=st.decimals(
+            min_value=0,
+            max_value=99999,
+            places=2,
+            allow_nan=False,
+            allow_infinity=False,
+        ),
+    )
+    @settings(max_examples=100)
+    def test_property9_payments_exceed_total_outstanding_is_zero(
+        self, order_total, extra
+    ):
+        """Feature: presmeet, Property 9: Outstanding balance calculation
+
+        When the sum of payments exceeds the order total, the outstanding
+        balance SHALL be zero (never negative).
+
+        **Validates: Requirements 7.6**
+        """
+        total = _Decimal9(str(order_total))
+        # Create a payment that exceeds the total
+        overpayment = total + _Decimal9(str(extra))
+        payments = [{"amount": overpayment, "status": "paid"}]
+
+        result = _calc_outstanding(total, payments)
+
+        assert result == _Decimal9("0"), (
+            f"When payments ({overpayment}) exceed total ({total}), "
+            f"outstanding should be 0, got {result}"
+        )
+
+# ============================================================
+# Property 6 (Design): Schema validation accepts valid attributes
+# ============================================================
+
+
+def _valid_attributes_strategy_for_product_type(product_type):
+    """Generate a valid attributes dict that satisfies ALL schema constraints for the given product_type."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    field_strategies = {}
+
+    for field_name, field_schema in schema.items():
+        field_type = field_schema.get("type", "string")
+
+        if "enum" in field_schema:
+            field_strategies[field_name] = st.sampled_from(field_schema["enum"])
+        elif field_type == "string":
+            min_len = field_schema.get("min_length", 1)
+            max_len = field_schema.get("max_length", 100)
+            field_strategies[field_name] = st.text(
+                alphabet=st.characters(whitelist_categories=("L", "N", "Zs"), whitelist_characters="-./: "),
+                min_size=min_len,
+                max_size=max_len,
+            ).filter(lambda s, ml=min_len: len(s) >= ml)
+        elif field_type == "integer":
+            minimum = field_schema.get("minimum", 0)
+            maximum = field_schema.get("maximum", 100)
+            field_strategies[field_name] = st.integers(min_value=minimum, max_value=maximum)
+        else:
+            field_strategies[field_name] = st.text(min_size=1, max_size=10)
+
+    return st.fixed_dictionaries(field_strategies)
+
+
+class TestPropertyDesign6SchemaValidationAcceptsValidAttributes:
+    """Feature: presmeet, Property 6 (Design): Schema validation accepts valid attributes
+
+    For any product_type and for any attributes object that satisfies all constraints
+    defined in the schema, validate_attributes SHALL return an empty error list.
+
+    **Validates: Requirements 11.1, 4.5**
+    """
+
+    @given(data=st.data())
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property6_design_valid_meeting_ticket_attributes_accepted(self, data):
+        """Feature: presmeet, Property 6 (Design): Schema validation accepts valid attributes
+
+        For meeting_ticket: valid attributes (name: 1-100 chars, role: 1-100 chars)
+        SHALL produce an empty error list.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        product_type = "meeting_ticket"
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert errors == [], (
+            f"Expected no errors for valid {product_type} attributes {attributes}, "
+            f"got: {errors}"
+        )
+
+    @given(data=st.data())
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property6_design_valid_party_ticket_attributes_accepted(self, data):
+        """Feature: presmeet, Property 6 (Design): Schema validation accepts valid attributes
+
+        For party_ticket: valid attributes (name: 1-100 chars, person_type in enum)
+        SHALL produce an empty error list.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        product_type = "party_ticket"
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert errors == [], (
+            f"Expected no errors for valid {product_type} attributes {attributes}, "
+            f"got: {errors}"
+        )
+
+    @given(data=st.data())
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property6_design_valid_tshirt_attributes_accepted(self, data):
+        """Feature: presmeet, Property 6 (Design): Schema validation accepts valid attributes
+
+        For tshirt: valid attributes (name: 1-100 chars, gender in enum, size in enum)
+        SHALL produce an empty error list.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        product_type = "tshirt"
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert errors == [], (
+            f"Expected no errors for valid {product_type} attributes {attributes}, "
+            f"got: {errors}"
+        )
+
+    @given(data=st.data())
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property6_design_valid_airport_transfer_attributes_accepted(self, data):
+        """Feature: presmeet, Property 6 (Design): Schema validation accepts valid attributes
+
+        For airport_transfer: valid attributes (direction in enum, airport in enum,
+        flight: 2-10 chars, date: non-empty, time: non-empty, persons: 1-50)
+        SHALL produce an empty error list.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        product_type = "airport_transfer"
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert errors == [], (
+            f"Expected no errors for valid {product_type} attributes {attributes}, "
+            f"got: {errors}"
+        )
+
+    @given(
+        product_type=st.sampled_from(sorted(VALID_PRODUCT_TYPES)),
+        data=st.data(),
+    )
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property6_design_all_product_types_valid_attributes_accepted(self, product_type, data):
+        """Feature: presmeet, Property 6 (Design): Schema validation accepts valid attributes
+
+        For any product_type in the valid set, any attributes satisfying all schema
+        constraints SHALL produce an empty error list from validate_attributes.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert errors == [], (
+            f"Expected no errors for valid {product_type} attributes {attributes}, "
+            f"got: {errors}"
+        )
+
+
+# ============================================================
+# Property 7 (Design): Schema validation rejects invalid attributes
+# ============================================================
+
+
+def _invalid_attributes_missing_required(product_type):
+    """Generate attributes missing at least one required field."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    required_fields = [
+        field_name for field_name, field_schema in schema.items()
+        if field_schema.get("required", False)
+    ]
+
+    if not required_fields:
+        # No required fields; cannot generate missing-required violation
+        return st.nothing()
+
+    # Pick a non-empty subset of required fields to omit
+    return st.sets(
+        st.sampled_from(required_fields), min_size=1
+    ).flatmap(lambda omitted: _build_attrs_omitting(product_type, omitted))
+
+
+def _build_attrs_omitting(product_type, omitted_fields):
+    """Build attributes dict with specified fields omitted."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    field_strategies = {}
+
+    for field_name, field_schema in schema.items():
+        if field_name in omitted_fields:
+            continue
+        field_type = field_schema.get("type", "string")
+        if "enum" in field_schema:
+            field_strategies[field_name] = st.sampled_from(field_schema["enum"])
+        elif field_type == "string":
+            min_len = field_schema.get("min_length", 1)
+            max_len = field_schema.get("max_length", 100)
+            field_strategies[field_name] = st.text(
+                alphabet=st.characters(whitelist_categories=("L", "N", "Zs"), whitelist_characters="- "),
+                min_size=min_len,
+                max_size=min(max_len, 20),
+            ).filter(lambda s, ml=min_len: len(s) >= ml)
+        elif field_type == "integer":
+            minimum = field_schema.get("minimum", 0)
+            maximum = field_schema.get("maximum", 100)
+            field_strategies[field_name] = st.integers(min_value=minimum, max_value=maximum)
+        else:
+            field_strategies[field_name] = st.text(min_size=1, max_size=10)
+
+    return st.fixed_dictionaries(field_strategies)
+
+
+def _invalid_attributes_empty_string(product_type):
+    """Generate attributes with an empty string for a required string field with min_length >= 1."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    string_fields_with_min = [
+        field_name for field_name, field_schema in schema.items()
+        if field_schema.get("type") == "string"
+        and field_schema.get("min_length", 0) >= 1
+        and "enum" not in field_schema
+    ]
+
+    if not string_fields_with_min:
+        return st.nothing()
+
+    return st.sampled_from(string_fields_with_min).flatmap(
+        lambda bad_field: _build_attrs_with_empty_string(product_type, bad_field)
+    )
+
+
+def _build_attrs_with_empty_string(product_type, bad_field):
+    """Build valid attributes except one field is set to empty string."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    field_strategies = {}
+
+    for field_name, field_schema in schema.items():
+        if field_name == bad_field:
+            field_strategies[field_name] = st.just("")
+            continue
+        field_type = field_schema.get("type", "string")
+        if "enum" in field_schema:
+            field_strategies[field_name] = st.sampled_from(field_schema["enum"])
+        elif field_type == "string":
+            min_len = field_schema.get("min_length", 1)
+            max_len = field_schema.get("max_length", 100)
+            field_strategies[field_name] = st.text(
+                alphabet=st.characters(whitelist_categories=("L", "N", "Zs"), whitelist_characters="- "),
+                min_size=min_len,
+                max_size=min(max_len, 20),
+            ).filter(lambda s, ml=min_len: len(s) >= ml)
+        elif field_type == "integer":
+            minimum = field_schema.get("minimum", 0)
+            maximum = field_schema.get("maximum", 100)
+            field_strategies[field_name] = st.integers(min_value=minimum, max_value=maximum)
+        else:
+            field_strategies[field_name] = st.text(min_size=1, max_size=10)
+
+    return st.fixed_dictionaries(field_strategies)
+
+
+def _invalid_attributes_too_long_string(product_type):
+    """Generate attributes with a string field exceeding max_length."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    string_fields_with_max = [
+        field_name for field_name, field_schema in schema.items()
+        if field_schema.get("type") == "string"
+        and "max_length" in field_schema
+        and "enum" not in field_schema
+    ]
+
+    if not string_fields_with_max:
+        return st.nothing()
+
+    return st.sampled_from(string_fields_with_max).flatmap(
+        lambda bad_field: _build_attrs_with_too_long_string(product_type, bad_field)
+    )
+
+
+def _build_attrs_with_too_long_string(product_type, bad_field):
+    """Build valid attributes except one field exceeds max_length."""
+    schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+    field_strategies = {}
+
+    for field_name, field_schema in schema.items():
+        if field_name == bad_field:
+            max_len = field_schema["max_length"]
+            field_strategies[field_name] = st.text(
+                alphabet=st.characters(whitelist_categories=("L", "N")),
+                min_size=max_len + 1,
+                max_size=max_len + 50,
+            )
+            continue
+        field_type = field_schema.get("type", "string")
+        if "enum" in field_schema:
+            field_strategies[field_name] = st.sampled_from(field_schema["enum"])
+        elif field_type == "string":
+            min_len = field_schema.get("min_length", 1)
+            max_len = field_schema.get("max_length", 100)
+            field_strategies[field_name] = st.text(
+                alphabet=st.characters(whitelist_categories=("L", "N", "Zs"), whitelist_characters="- "),
+                min_size=min_len,
+                max_size=min(max_len, 20),
+            ).filter(lambda s, ml=min_len: len(s) >= ml)
+        elif field_type == "integer":
+            minimum = field_schema.get("minimum", 0)
+            maximum = field_schema.get("maximum", 100)
+            field_strategies[field_name] = st.integers(min_value=minimum, max_value=maximum)
+        else:
+            field_strategies[field_name] = st.text(min_size=1, max_size=10)
+
+    return st.fixed_dictionaries(field_strategies)
+
+
+class TestPropertyDesign7SchemaValidationRejectsInvalidAttributes:
+    """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+    For any product_type and for any attributes object that violates at least one
+    schema constraint, validate_attributes SHALL return a non-empty error list
+    where each error references the specific field and constraint that failed.
+
+    **Validates: Requirements 11.1, 4.5**
+    """
+
+    @given(
+        product_type=st.sampled_from(sorted(VALID_PRODUCT_TYPES)),
+        data=st.data(),
+    )
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property7_design_missing_required_field_rejected(self, product_type, data):
+        """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+        For any product_type, an attributes object missing at least one required field
+        SHALL produce a non-empty error list with the 'required' constraint.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        attributes = data.draw(_invalid_attributes_missing_required(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert len(errors) > 0, (
+            f"Expected errors for {product_type} with missing required fields, "
+            f"attributes: {attributes}, but got empty error list"
+        )
+        # At least one error should have constraint='required'
+        assert any(e.get("constraint") == "required" for e in errors), (
+            f"Expected at least one 'required' constraint error for {product_type}, "
+            f"got: {errors}"
+        )
+
+    @given(
+        product_type=st.sampled_from(["meeting_ticket", "party_ticket"]),
+        data=st.data(),
+    )
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property7_design_empty_string_for_required_field_rejected(self, product_type, data):
+        """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+        For product_types with string fields that have min_length >= 1, providing an
+        empty string SHALL produce a non-empty error list with the 'min_length' constraint.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        attributes = data.draw(_invalid_attributes_empty_string(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert len(errors) > 0, (
+            f"Expected errors for {product_type} with empty string field, "
+            f"attributes: {attributes}, but got empty error list"
+        )
+        # At least one error should reference min_length constraint
+        assert any(e.get("constraint") == "min_length" for e in errors), (
+            f"Expected at least one 'min_length' constraint error for {product_type}, "
+            f"got: {errors}"
+        )
+
+    @given(
+        product_type=st.sampled_from(["meeting_ticket", "party_ticket", "airport_transfer"]),
+        data=st.data(),
+    )
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property7_design_too_long_string_rejected(self, product_type, data):
+        """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+        For product_types with string fields that have max_length, providing a string
+        exceeding max_length SHALL produce a non-empty error list with 'max_length' constraint.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        attributes = data.draw(_invalid_attributes_too_long_string(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert len(errors) > 0, (
+            f"Expected errors for {product_type} with too-long string field, "
+            f"attributes: {attributes}, but got empty error list"
+        )
+        # At least one error should reference max_length constraint
+        assert any(e.get("constraint") == "max_length" for e in errors), (
+            f"Expected at least one 'max_length' constraint error for {product_type}, "
+            f"got: {errors}"
+        )
+
+    @given(data=st.data())
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property7_design_invalid_enum_value_rejected(self, data):
+        """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+        For product_types with enum fields, providing a value not in the allowed set
+        SHALL produce a non-empty error list with the 'enum' constraint.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        # party_ticket has person_type enum; tshirt has gender and size enums
+        product_type = data.draw(st.sampled_from(["party_ticket", "tshirt"]))
+        schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+
+        # Find enum fields
+        enum_fields = [
+            (fname, fschema) for fname, fschema in schema.items()
+            if "enum" in fschema
+        ]
+        assume(len(enum_fields) > 0)
+
+        bad_field_name, bad_field_schema = data.draw(st.sampled_from(enum_fields))
+        allowed_values = bad_field_schema["enum"]
+
+        # Generate valid attributes then override one enum field with an invalid value
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+        # Generate a string that is NOT in the enum
+        invalid_value = data.draw(
+            st.text(min_size=1, max_size=20).filter(lambda s: s not in allowed_values)
+        )
+        attributes[bad_field_name] = invalid_value
+
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert len(errors) > 0, (
+            f"Expected errors for {product_type} with invalid enum value "
+            f"'{invalid_value}' for field '{bad_field_name}', but got empty error list"
+        )
+        # At least one error should reference the enum constraint
+        assert any(e.get("constraint") == "enum" for e in errors), (
+            f"Expected at least one 'enum' constraint error, got: {errors}"
+        )
+
+    @given(data=st.data())
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property7_design_integer_out_of_range_rejected(self, data):
+        """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+        For airport_transfer's 'persons' field (integer, min 1, max 50), providing
+        a value outside the range SHALL produce a non-empty error list.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        product_type = "airport_transfer"
+        schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
+
+        # Generate valid attributes first
+        attributes = data.draw(_valid_attributes_strategy_for_product_type(product_type))
+
+        # Override persons with out-of-range value (either too low or too high)
+        invalid_persons = data.draw(st.one_of(
+            st.integers(max_value=0),        # Below minimum of 1
+            st.integers(min_value=51, max_value=200),  # Above maximum of 50
+        ))
+        attributes["persons"] = invalid_persons
+
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert len(errors) > 0, (
+            f"Expected errors for {product_type} with persons={invalid_persons} "
+            f"(out of range 1-50), but got empty error list"
+        )
+        # At least one error should reference minimum or maximum constraint
+        assert any(e.get("constraint") in ("minimum", "maximum") for e in errors), (
+            f"Expected at least one 'minimum' or 'maximum' constraint error, got: {errors}"
+        )
+
+    @given(
+        product_type=st.sampled_from(sorted(VALID_PRODUCT_TYPES)),
+        data=st.data(),
+    )
+    @settings(max_examples=100, suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
+    def test_property7_design_error_references_specific_field(self, product_type, data):
+        """Feature: presmeet, Property 7 (Design): Schema validation rejects invalid attributes
+
+        For any invalid attributes, each error in the returned list SHALL reference
+        a specific 'field' key identifying which field failed validation.
+
+        **Validates: Requirements 11.1, 4.5**
+        """
+        # Use missing required fields as a reliable way to generate errors
+        attributes = data.draw(_invalid_attributes_missing_required(product_type))
+        config = {"required_attributes": DEFAULT_ATTRIBUTE_SCHEMAS[product_type]}
+
+        errors = validate_attributes(product_type, attributes, config)
+        assert len(errors) > 0, (
+            f"Expected errors for {product_type} with missing fields"
+        )
+
+        # Each error must have a 'field' key that is a non-empty string
+        for error in errors:
+            assert "field" in error, f"Error missing 'field' key: {error}"
+            assert isinstance(error["field"], str), f"Error 'field' is not a string: {error}"
+            assert len(error["field"]) > 0, f"Error 'field' is empty: {error}"
+            assert "constraint" in error, f"Error missing 'constraint' key: {error}"
+
+
+# ============================================================
+# Property 8 (v2): Cart total calculation
+# ============================================================
+
+from shared.presmeet_validation import calculate_cart_total, PRICING
+
+
+# --- Strategies for Property 8 (v2) ---
+
+# Valid product types for cart items
+_p8v2_product_types = ["meeting_ticket", "party_ticket", "tshirt", "airport_transfer"]
+
+# Strategy for a non-transfer cart item
+_p8v2_non_transfer_item_strategy = st.builds(
+    lambda pt: {"product_type": pt, "attributes": {}},
+    pt=st.sampled_from(["meeting_ticket", "party_ticket", "tshirt"]),
+)
+
+# Strategy for an airport_transfer cart item with valid persons attribute
+_p8v2_transfer_item_strategy = st.builds(
+    lambda persons: {
+        "product_type": "airport_transfer",
+        "attributes": {"persons": persons},
+    },
+    persons=st.integers(min_value=1, max_value=50),
+)
+
+# Strategy for a single cart item (any valid type)
+_p8v2_cart_item_strategy = st.one_of(
+    _p8v2_non_transfer_item_strategy,
+    _p8v2_transfer_item_strategy,
+)
+
+# Strategy for a list of cart items
+_p8v2_cart_items_strategy = st.lists(_p8v2_cart_item_strategy, min_size=0, max_size=20)
+
+
+class TestProperty8v2CartTotalCalculation:
+    """Feature: presmeet, Property 8 (v2): Cart total calculation"""
+
+    @given(items=_p8v2_cart_items_strategy)
+    @settings(max_examples=200)
+    def test_property8v2_cart_total_matches_pricing_formula(self, items):
+        """Feature: presmeet, Property 8 (v2): Cart total calculation
+
+        For any list of cart items with valid product_types, calculate_cart_total
+        SHALL return a value equal to the sum of:
+        (count of meeting_ticket × €50.00) + (count of party_ticket × €99.50) +
+        (count of tshirt × €25.00) + (sum of each airport_transfer's persons × €5.00).
+
+        **Validates: Requirements 7.6**
+        """
+        # Calculate expected total using the pricing formula
+        expected = Decimal("0.00")
+        for item in items:
+            product_type = item.get("product_type")
+            if product_type == "airport_transfer":
+                persons = item.get("attributes", {}).get("persons", 1)
+                expected += PRICING["airport_transfer"] * Decimal(str(persons))
+            elif product_type in PRICING:
+                expected += PRICING[product_type]
+
+        actual = calculate_cart_total(items)
+        assert actual == expected, (
+            f"Cart total mismatch: expected {expected}, got {actual}. "
+            f"Items: {items}"
+        )
+
+    @given(items=_p8v2_cart_items_strategy)
+    @settings(max_examples=200)
+    def test_property8v2_cart_total_always_non_negative(self, items):
+        """Feature: presmeet, Property 8 (v2): Cart total calculation
+
+        The result of calculate_cart_total SHALL always be non-negative.
+
+        **Validates: Requirements 7.6**
+        """
+        total = calculate_cart_total(items)
+        assert total >= Decimal("0.00"), (
+            f"Cart total should never be negative, got {total}. Items: {items}"
+        )
+
+    def test_property8v2_empty_list_returns_zero(self):
+        """Feature: presmeet, Property 8 (v2): Cart total calculation
+
+        For an empty item list, calculate_cart_total SHALL return 0.
+
+        **Validates: Requirements 7.6**
+        """
+        result = calculate_cart_total([])
+        assert result == Decimal("0.00"), (
+            f"Empty list should return 0.00, got {result}"
+        )
+
+    @given(item=_p8v2_cart_item_strategy)
+    @settings(max_examples=100)
+    def test_property8v2_single_item_total(self, item):
+        """Feature: presmeet, Property 8 (v2): Cart total calculation
+
+        For a single item, the total SHALL equal the price for that item type.
+
+        **Validates: Requirements 7.6**
+        """
+        product_type = item["product_type"]
+
+        if product_type == "airport_transfer":
+            persons = item.get("attributes", {}).get("persons", 1)
+            expected = PRICING["airport_transfer"] * Decimal(str(persons))
+        else:
+            expected = PRICING[product_type]
+
+        actual = calculate_cart_total([item])
+        assert actual == expected, (
+            f"Single item total mismatch for {product_type}: "
+            f"expected {expected}, got {actual}"
+        )
+
+    @given(
+        items_a=_p8v2_cart_items_strategy,
+        items_b=_p8v2_cart_items_strategy,
+    )
+    @settings(max_examples=100)
+    def test_property8v2_total_is_additive(self, items_a, items_b):
+        """Feature: presmeet, Property 8 (v2): Cart total calculation
+
+        The total of combined items SHALL equal the sum of individual list totals
+        (additivity property).
+
+        **Validates: Requirements 7.6**
+        """
+        total_combined = calculate_cart_total(items_a + items_b)
+        total_a = calculate_cart_total(items_a)
+        total_b = calculate_cart_total(items_b)
+
+        assert total_combined == total_a + total_b, (
+            f"Additivity failed: total({len(items_a)} items) + total({len(items_b)} items) = "
+            f"{total_a} + {total_b} = {total_a + total_b}, "
+            f"but total(combined) = {total_combined}"
         )

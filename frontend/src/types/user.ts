@@ -62,6 +62,7 @@ export type HDCNGroup =
   | "Regio_Friesland"          // Access to Friesland region only
   | "Regio_Duitsland"          // Access to Duitsland region only
   | "Regio_Noord-Holland"      // Access to Noord-Holland region only
+  | "Regio_Pressmeet"          // Access to PresMeet booking module
 
   // Webshop Management
   | "Webshop_Management"       // Webshop management permissions - full control over webshop products and orders

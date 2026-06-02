@@ -11,13 +11,12 @@ from boto3.dynamodb.conditions import Attr
 try:
     from shared.auth_utils import (
         extract_user_credentials,
-        validate_permissions_with_regions,
-        cors_headers,
         handle_options_request,
         create_error_response,
         create_success_response,
         log_successful_access,
     )
+    from shared.club_identity import is_presmeet_admin_write, has_presmeet_access
     from shared.presmeet_validation import calculate_outstanding_balance
 
     _IMPORTS_AVAILABLE = True
@@ -53,19 +52,12 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Validate permissions - require events_read at minimum
-        required_permissions = ["events_read"]
-        is_authorized, error_response, regional_info = (
-            validate_permissions_with_regions(
-                user_roles, required_permissions, user_email, None
-            )
-        )
-        if not is_authorized:
-            return error_response
+        # Check PresMeet access
+        if not has_presmeet_access(user_roles):
+            return create_error_response(403, "PresMeet access required")
 
-        # Admin check - only webmaster can record manual payments
-        is_admin = "webmaster" in user_roles
-        if not is_admin:
+        # Admin check - only admin with write access can record manual payments
+        if not is_presmeet_admin_write(user_roles):
             return create_error_response(403, "Admin access required")
 
         # Log successful access
@@ -134,6 +126,7 @@ def lambda_handler(event, context):
         payment_record = {
             "payment_id": payment_id,
             "source": "presmeet",
+            "tenant": "presmeet",
             "order_id": order_id,
             "club_id": club_id,
             "amount": amount_decimal,
@@ -190,6 +183,7 @@ def lambda_handler(event, context):
         response_payment = {
             "payment_id": payment_id,
             "source": "presmeet",
+            "tenant": "presmeet",
             "order_id": order_id,
             "club_id": club_id,
             "amount": float(amount_decimal),
