@@ -92,13 +92,12 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
 
     const result: ProductGroup[] = [];
     for (const [productType, groupItems] of groupMap.entries()) {
-      // For airport_transfer, line total is sum of (persons × unit_price) per item
       const unitPrice = groupItems[0]?.unit_price ?? 0;
       let lineTotal: number;
 
       if (productType === 'airport_transfer') {
         lineTotal = groupItems.reduce(
-          (sum, i) => sum + (Number(i.attributes.persons) || 0) * i.unit_price,
+          (sum, i) => sum + (Number(i.attributes.persons) || 0) * (i.unit_price || 5),
           0
         );
       } else {
@@ -174,8 +173,8 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
                     <Td>{getItemLabel(item)}</Td>
                     <Td isNumeric>
                       {group.productType === 'airport_transfer'
-                        ? formatEur((Number(item.attributes.persons) || 0) * item.unit_price)
-                        : formatEur(item.unit_price)}
+                        ? formatEur((Number(item.attributes.persons) || 0) * (item.unit_price || 5))
+                        : formatEur(item.unit_price || 0)}
                     </Td>
                   </Tr>
                 ))}

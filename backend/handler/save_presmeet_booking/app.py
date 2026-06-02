@@ -79,6 +79,7 @@ def map_delegates_to_items(delegates):
                 "item_id": str(uuid.uuid4()),
                 "product_type": "meeting_ticket",
                 "attributes": {"name": name, "role": role},
+                "unit_price": Decimal("50.00"),
             }
         )
 
@@ -89,6 +90,7 @@ def map_delegates_to_items(delegates):
                     "item_id": str(uuid.uuid4()),
                     "product_type": "party_ticket",
                     "attributes": {"name": name, "person_type": "delegate"},
+                    "unit_price": Decimal("99.50"),
                 }
             )
 
@@ -104,6 +106,7 @@ def map_delegates_to_items(delegates):
                         "gender": tshirt.get("gender", ""),
                         "size": tshirt.get("size", ""),
                     },
+                    "unit_price": Decimal("25.00"),
                 }
             )
 
@@ -128,6 +131,7 @@ def map_guests_to_items(guests):
                 "item_id": str(uuid.uuid4()),
                 "product_type": "party_ticket",
                 "attributes": {"name": name, "person_type": "guest"},
+                "unit_price": Decimal("99.50"),
             }
         )
 
@@ -143,6 +147,7 @@ def map_guests_to_items(guests):
                         "gender": tshirt.get("gender", ""),
                         "size": tshirt.get("size", ""),
                     },
+                    "unit_price": Decimal("25.00"),
                 }
             )
 
@@ -170,6 +175,7 @@ def map_transfers_to_items(transfers):
                     "time": transfer.get("time", ""),
                     "persons": transfer.get("persons", 1),
                 },
+                "unit_price": Decimal("5.00"),
             }
         )
     return items
