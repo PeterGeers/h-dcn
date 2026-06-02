@@ -57,13 +57,19 @@ def lambda_handler(event, context):
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table(table_name)
 
-        response = table.scan(Limit=100)
+        response = table.scan(
+            Limit=100,
+            FilterExpression=boto3.dynamodb.conditions.Attr('source').not_exists() | 
+                           boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')
+        )
         items = response['Items']
         
         while 'LastEvaluatedKey' in response:
             response = table.scan(
                 ExclusiveStartKey=response['LastEvaluatedKey'],
-                Limit=100
+                Limit=100,
+                FilterExpression=boto3.dynamodb.conditions.Attr('source').not_exists() | 
+                               boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')
             )
             items.extend(response['Items'])
 
