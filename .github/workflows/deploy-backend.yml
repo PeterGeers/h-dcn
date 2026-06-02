@@ -80,4 +80,6 @@ jobs:
               MembershipsTable=Memberships \
               CartsTable=Carts \
               OrdersTable=Orders \
-              ParametersTable=Parameters
+              ParametersTable=Parameters \
+              ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
+              ExistingUserPoolClientId=6jhvk853b0lfg9q1m861qs0cug
