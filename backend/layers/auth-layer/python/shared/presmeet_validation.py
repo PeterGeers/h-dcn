@@ -197,7 +197,20 @@ def validate_attributes(product_type: str, attributes: dict, config: dict) -> li
                 })
                 continue
         elif field_type == "integer":
-            if not isinstance(value, int) or isinstance(value, bool):
+            # Accept int or Decimal (DynamoDB stores all numbers as Decimal)
+            if isinstance(value, Decimal):
+                # Convert Decimal to int if it's a whole number
+                if value == int(value):
+                    value = int(value)
+                    attributes[field_name] = value  # Update in place for downstream checks
+                else:
+                    errors.append({
+                        "field": field_name,
+                        "message": f"Field '{field_name}' must be an integer, got decimal with fractional part",
+                        "constraint": "type",
+                    })
+                    continue
+            elif not isinstance(value, int) or isinstance(value, bool):
                 errors.append({
                     "field": field_name,
                     "message": f"Field '{field_name}' must be an integer, got {type(value).__name__}",

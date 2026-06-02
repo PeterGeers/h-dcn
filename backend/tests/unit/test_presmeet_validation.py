@@ -9,7 +9,7 @@ import os
 # Add the auth layer to the path so we can import shared.presmeet_validation
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python'))
 
-from hypothesis import given, settings, assume
+from hypothesis import given, settings, assume, HealthCheck
 from hypothesis import strategies as st
 
 from shared.presmeet_validation import extract_club_id, validate_product_type
@@ -373,7 +373,7 @@ class TestProperty6MaxPerClubEnforcement:
     """Feature: presmeet, Property 6: Max-per-club enforcement"""
 
     @given(counts=_item_counts_strategy)
-    @settings(max_examples=100)
+    @settings(max_examples=100, suppress_health_check=[HealthCheck.filter_too_much])
     def test_property6_items_within_limits_accepted(self, counts):
         """Feature: presmeet, Property 6: Max-per-club enforcement
 
