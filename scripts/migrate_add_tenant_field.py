@@ -25,7 +25,7 @@ TABLES = ['Members', 'Producten', 'Orders', 'Carts', 'Payments']
 
 KEY_MAP = {
     'Members': 'member_id',
-    'Producten': 'product_id',
+    'Producten': 'id',
     'Orders': 'order_id',
     'Carts': 'cart_id',
     'Payments': 'payment_id',
@@ -79,6 +79,9 @@ def migrate_table(table_name: str, dynamodb, dry_run: bool = False) -> dict:
                 print(f"  [DRY-RUN] Would set tenant={tenant} on "
                       f"{key_name}={item.get(key_name, 'UNKNOWN')}")
             else:
+                if key_name not in item:
+                    print(f"  [SKIP] Record missing key '{key_name}': {list(item.keys())[:5]}")
+                    continue
                 table.update_item(
                     Key={key_name: item[key_name]},
                     UpdateExpression='SET tenant = :t',

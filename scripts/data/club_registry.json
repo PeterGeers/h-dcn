@@ -1,67 +1,669 @@
 {
   "version": "1.0",
-  "updated_at": "2025-06-01T10:00:00Z",
+  "updated_at": "2026-06-02T19:10:22.006811+00:00",
   "clubs": [
     {
-      "club_id": "amsterdam",
-      "club_name": "HD Club Amsterdam",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/amsterdam.png",
+      "club_id": "1",
+      "club_name": "Harley-Davidson Club Nederland",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "rotterdam",
-      "club_name": "HD Club Rotterdam",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/rotterdam.png",
+      "club_id": "2",
+      "club_name": "H-DC 't Centrum",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "den-haag",
-      "club_name": "HD Club Den Haag",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/den-haag.png",
+      "club_id": "3",
+      "club_name": "Harley-Davidson Club Brabant",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "utrecht",
-      "club_name": "HD Club Utrecht",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/utrecht.png",
+      "club_id": "4",
+      "club_name": "Harley-Davidson Club Limburg",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "eindhoven",
-      "club_name": "HD Club Eindhoven",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/eindhoven.png",
+      "club_id": "5",
+      "club_name": "Harley-Davidson Club Friesland",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "groningen",
-      "club_name": "HD Club Groningen",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/groningen.png",
+      "club_id": "6",
+      "club_name": "Harley-Davidson Club Gelderland",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "maastricht",
-      "club_name": "HD Club Maastricht",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/maastricht.png",
+      "club_id": "7",
+      "club_name": "Harley-Davidson Club Zeeland",
+      "country_code": "NL",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null
     },
     {
-      "club_id": "arnhem",
-      "club_name": "HD Club Arnhem",
-      "logo_url": "https://cdn.h-dcn.nl/clubs/arnhem.png",
+      "club_id": "8",
+      "club_name": "Harley-Davidson Club Belgium",
+      "country_code": "BE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "9",
+      "club_name": "Harley-Davidson Club Antwerpen",
+      "country_code": "BE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "10",
+      "club_name": "Harley-Davidson Club Vlaanderen",
+      "country_code": "BE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "11",
+      "club_name": "Harley-Davidson Club Luxembourg",
+      "country_code": "LU",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "12",
+      "club_name": "Harley-Davidson Club Berlin",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "13",
+      "club_name": "Harley-Davidson Club Hamburg",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "14",
+      "club_name": "Harley-Davidson Club Bayern",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "15",
+      "club_name": "Harley-Davidson Club Rhein-Main",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "16",
+      "club_name": "Harley-Davidson Club Nordrhein-Westfalen",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "17",
+      "club_name": "Harley-Davidson Club Sachsen",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "18",
+      "club_name": "Harley-Davidson Club Baden-Württemberg",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "19",
+      "club_name": "Harley-Davidson Club Niedersachsen",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "20",
+      "club_name": "Harley-Davidson Club Schleswig-Holstein",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "21",
+      "club_name": "Harley-Davidson Club Hessen",
+      "country_code": "DE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "22",
+      "club_name": "Harley-Davidson Club Paris",
+      "country_code": "FR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "23",
+      "club_name": "Harley-Davidson Club Côte d'Azur",
+      "country_code": "FR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "24",
+      "club_name": "Harley-Davidson Club Lyon",
+      "country_code": "FR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "25",
+      "club_name": "Harley-Davidson Club Alsace",
+      "country_code": "FR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "26",
+      "club_name": "Harley-Davidson Club Bretagne",
+      "country_code": "FR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "27",
+      "club_name": "Harley-Davidson Club Normandie",
+      "country_code": "FR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "28",
+      "club_name": "Harley-Davidson Club Wien",
+      "country_code": "AT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "29",
+      "club_name": "Harley-Davidson Club Salzburg",
+      "country_code": "AT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "30",
+      "club_name": "Harley-Davidson Club Tirol",
+      "country_code": "AT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "31",
+      "club_name": "Harley-Davidson Club Zürich",
+      "country_code": "CH",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "32",
+      "club_name": "Harley-Davidson Club Bern",
+      "country_code": "CH",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "33",
+      "club_name": "Harley-Davidson Club Genève",
+      "country_code": "CH",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "34",
+      "club_name": "Harley-Davidson Club København",
+      "country_code": "DK",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "35",
+      "club_name": "Harley-Davidson Club Jylland",
+      "country_code": "DK",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "36",
+      "club_name": "Harley-Davidson Club Stockholm",
+      "country_code": "SE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "37",
+      "club_name": "Harley-Davidson Club Göteborg",
+      "country_code": "SE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "38",
+      "club_name": "Harley-Davidson Club Malmö",
+      "country_code": "SE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "39",
+      "club_name": "Harley-Davidson Club Oslo",
+      "country_code": "NO",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "40",
+      "club_name": "Harley-Davidson Club Bergen",
+      "country_code": "NO",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "41",
+      "club_name": "Harley-Davidson Club Helsinki",
+      "country_code": "FI",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "42",
+      "club_name": "Harley-Davidson Club Tampere",
+      "country_code": "FI",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "43",
+      "club_name": "Harley-Davidson Club London",
+      "country_code": "GB",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "44",
+      "club_name": "Harley-Davidson Club Manchester",
+      "country_code": "GB",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "45",
+      "club_name": "Harley-Davidson Club Edinburgh",
+      "country_code": "GB",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "46",
+      "club_name": "Harley-Davidson Club Dublin",
+      "country_code": "IE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "47",
+      "club_name": "Harley-Davidson Club Milano",
+      "country_code": "IT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "48",
+      "club_name": "Harley-Davidson Club Roma",
+      "country_code": "IT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "49",
+      "club_name": "Harley-Davidson Club Toscana",
+      "country_code": "IT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "50",
+      "club_name": "Harley-Davidson Club Napoli",
+      "country_code": "IT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "51",
+      "club_name": "Harley-Davidson Club Madrid",
+      "country_code": "ES",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "52",
+      "club_name": "Harley-Davidson Club Barcelona",
+      "country_code": "ES",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "53",
+      "club_name": "Harley-Davidson Club Andalucía",
+      "country_code": "ES",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "54",
+      "club_name": "Harley-Davidson Club Lisboa",
+      "country_code": "PT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "55",
+      "club_name": "Harley-Davidson Club Porto",
+      "country_code": "PT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "56",
+      "club_name": "Harley-Davidson Club Warszawa",
+      "country_code": "PL",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "57",
+      "club_name": "Harley-Davidson Club Kraków",
+      "country_code": "PL",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "58",
+      "club_name": "Harley-Davidson Club Praha",
+      "country_code": "CZ",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "59",
+      "club_name": "Harley-Davidson Club Brno",
+      "country_code": "CZ",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "60",
+      "club_name": "Harley-Davidson Club Bratislava",
+      "country_code": "SK",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "61",
+      "club_name": "Harley-Davidson Club Budapest",
+      "country_code": "HU",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "62",
+      "club_name": "Harley-Davidson Club Ljubljana",
+      "country_code": "SI",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "63",
+      "club_name": "Harley-Davidson Club Zagreb",
+      "country_code": "HR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "64",
+      "club_name": "Harley-Davidson Club Beograd",
+      "country_code": "RS",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "65",
+      "club_name": "Harley-Davidson Club Bucureşti",
+      "country_code": "RO",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "66",
+      "club_name": "Harley-Davidson Club Sofia",
+      "country_code": "BG",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "67",
+      "club_name": "Harley-Davidson Club Athina",
+      "country_code": "GR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "68",
+      "club_name": "Harley-Davidson Club Thessaloniki",
+      "country_code": "GR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "69",
+      "club_name": "Harley-Davidson Club Istanbul",
+      "country_code": "TR",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "70",
+      "club_name": "Harley-Davidson Club Tallinn",
+      "country_code": "EE",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "71",
+      "club_name": "Harley-Davidson Club Rīga",
+      "country_code": "LV",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "72",
+      "club_name": "Harley-Davidson Club Vilnius",
+      "country_code": "LT",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "73",
+      "club_name": "Harley-Davidson Club Reykjavík",
+      "country_code": "IS",
+      "logo_url": null,
+      "assigned_member_id": null,
+      "assigned_contact": null,
+      "assigned_at": null
+    },
+    {
+      "club_id": "74",
+      "club_name": "Harley-Davidson Club Malta",
+      "country_code": "MT",
+      "logo_url": null,
       "assigned_member_id": null,
       "assigned_contact": null,
       "assigned_at": null

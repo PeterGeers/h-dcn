@@ -74,9 +74,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         isClosable: true,
       });
       onComplete(club.club_id);
-    } else if (response.data?.assigned_contact || response.error?.includes('already assigned')) {
+    } else if ((response as any).data?.assigned_contact || response.error?.includes('already assigned')) {
       // 409 conflict — club already assigned
-      const contact = response.data?.assigned_contact || 'the current representative';
+      const contact = (response as any).data?.assigned_contact || 'the current representative';
       setConflictInfo({
         clubName: club.club_name,
         contact: typeof contact === 'string' ? contact : 'Contact admin',
