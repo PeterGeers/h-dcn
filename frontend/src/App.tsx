@@ -44,6 +44,7 @@ const PasskeyTest = lazy(() => import('./components/auth/PasskeyTest')) as any;
 const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCompatibilityTest')) as any;
 const NewMemberApplication = lazy(() => import('./pages/NewMemberApplication')) as any;
 const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) as any;
+const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as any;
 
 function NavigationHeader({ signOut, user }: AppProps) {
   const navigate = useNavigate();
@@ -114,6 +115,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/members" element={<MemberAdminPage user={user} />} />
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
+            <Route path="/presmeet" element={<PresMeetPage />} />
             <Route path="/test/passkey" element={<PasskeyTest />} />
             <Route path="/test/browser-compatibility" element={<BrowserCompatibilityTest />} />
           </Routes>

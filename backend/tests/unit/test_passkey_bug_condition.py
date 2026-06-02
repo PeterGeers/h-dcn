@@ -160,11 +160,18 @@ class TestPoolIdConsistency:
         """
         content = read_file_content(AWS_EXPORTS_PATH)
 
-        # Find the aws_user_pools_id fallback value
+        # Find the userPoolId fallback value (Amplify v6 format)
+        # Pattern: userPoolId: process.env.REACT_APP_USER_POOL_ID || 'eu-west-1_...'
         match = re.search(
-            r"aws_user_pools_id:.*?\|\|\s*['\"]([^'\"]+)['\"]",
+            r"userPoolId:.*?\|\|\s*['\"]([^'\"]+)['\"]",
             content,
         )
+        if not match:
+            # Also try legacy Amplify v5 format: aws_user_pools_id: ... || '...'
+            match = re.search(
+                r"aws_user_pools_id:.*?\|\|\s*['\"]([^'\"]+)['\"]",
+                content,
+            )
         assert match is not None, (
             "Could not find aws_user_pools_id fallback in aws-exports.ts"
         )
@@ -340,9 +347,14 @@ class TestPoolIdConsistencyProperty:
         elif source == "aws_exports":
             content = read_file_content(AWS_EXPORTS_PATH)
             match = re.search(
-                r"aws_user_pools_id:.*?\|\|\s*['\"]([^'\"]+)['\"]",
+                r"userPoolId:.*?\|\|\s*['\"]([^'\"]+)['\"]",
                 content,
             )
+            if not match:
+                match = re.search(
+                    r"aws_user_pools_id:.*?\|\|\s*['\"]([^'\"]+)['\"]",
+                    content,
+                )
             assert match is not None, "aws_user_pools_id fallback not found"
             actual = match.group(1)
 
