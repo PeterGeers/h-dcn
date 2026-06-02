@@ -21,6 +21,7 @@ TABLE_NAME = "Producten"
 
 CONFIG_RECORDS = [
     {
+        "id": "config_presmeet_meeting_ticket",
         "product_id": "config_presmeet_meeting_ticket",
         "product_type": "meeting_ticket",
         "source": "presmeet_config",
@@ -43,6 +44,7 @@ CONFIG_RECORDS = [
         },
     },
     {
+        "id": "config_presmeet_party_ticket",
         "product_id": "config_presmeet_party_ticket",
         "product_type": "party_ticket",
         "source": "presmeet_config",
@@ -64,6 +66,7 @@ CONFIG_RECORDS = [
         },
     },
     {
+        "id": "config_presmeet_tshirt",
         "product_id": "config_presmeet_tshirt",
         "product_type": "tshirt",
         "source": "presmeet_config",
@@ -90,6 +93,7 @@ CONFIG_RECORDS = [
         },
     },
     {
+        "id": "config_presmeet_airport_transfer",
         "product_id": "config_presmeet_airport_transfer",
         "product_type": "airport_transfer",
         "source": "presmeet_config",
