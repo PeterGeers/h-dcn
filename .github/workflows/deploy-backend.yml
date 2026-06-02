@@ -8,6 +8,12 @@ on:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
+    inputs:
+      stack_name:
+        description: 'CloudFormation stack name (default: h-dcn)'
+        required: false
+        default: 'h-dcn'
+        type: string
 
 permissions:
   id-token: write
@@ -57,7 +63,7 @@ jobs:
         working-directory: backend
         run: |
           sam deploy \
-            --stack-name h-dcn \
+            --stack-name ${{ inputs.stack_name || 'h-dcn' }} \
             --region eu-west-1 \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --resolve-s3 \
