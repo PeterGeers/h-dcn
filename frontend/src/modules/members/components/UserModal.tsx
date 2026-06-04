@@ -97,10 +97,10 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!formData.username || !formData.email) {
+    if (!formData.email) {
       toast({
         title: 'Vereiste velden',
-        description: 'Gebruikersnaam en email zijn verplicht',
+        description: 'Email is verplicht',
         status: 'error',
         duration: 3000,
       });
@@ -138,18 +138,18 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
           }
         }
       } else {
-        // Create new user - passwordless authentication
+        // Create new user - email is the Cognito username
         const attributes = {
           given_name: formData.given_name,
           family_name: formData.family_name,
           phone_number: formData.phone_number
         };
 
-        await cognitoService.createUser(formData.username, formData.email, attributes);
+        await cognitoService.createUser(formData.email, formData.email, attributes);
 
         // Add to groups
         for (const groupName of userGroups) {
-          await cognitoService.addUserToGroup(formData.username, groupName);
+          await cognitoService.addUserToGroup(formData.email, groupName);
         }
       }
 
@@ -183,16 +183,17 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
         <ModalBody>
           <VStack spacing={4}>
             <SimpleGrid columns={2} spacing={4} w="full">
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Gebruikersnaam</FormLabel>
-                <Input
-                  value={formData.username}
-                  onChange={(e) => handleChange('username', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                  isDisabled={!!user}
-                />
-              </FormControl>
+              {user && (
+                <FormControl>
+                  <FormLabel color="orange.300">Gebruikersnaam</FormLabel>
+                  <Input
+                    value={formData.username}
+                    bg="gray.700"
+                    borderColor="orange.400"
+                    isDisabled
+                  />
+                </FormControl>
+              )}
               
               <FormControl isRequired>
                 <FormLabel color="orange.300">Email</FormLabel>
@@ -202,6 +203,7 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
                   onChange={(e) => handleChange('email', e.target.value)}
                   bg="gray.700"
                   borderColor="orange.400"
+                  isDisabled={!!user}
                 />
               </FormControl>
 
