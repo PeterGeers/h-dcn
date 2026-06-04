@@ -239,7 +239,7 @@ def lambda_handler(event, context):
             if method == 'GET':
                 return get_users(headers)
             elif method == 'POST':
-                return create_user(event, headers)
+                return create_user(event, headers, user_email)
                 
         elif path.startswith('/cognito/users/') and path.endswith('/groups'):
             username = path.split('/')[3]
@@ -497,81 +497,19 @@ def verify_user_exists(event, headers):
             'body': json.dumps({'error': 'Internal server error'})
         }
 
-def create_user(event, headers):
+def create_user(event, headers, requesting_user_email=None):
     """
-    Create a new user with role assignment validation
+    Create a new user with role assignment validation.
+    Permission is already validated by the routing layer (users_manage permission).
     """
     try:
-        # Extract Authorization header for permission check
-        auth_header = event.get('headers', {}).get('Authorization')
-        if not auth_header:
-            return {
-                'statusCode': 401,
-                'headers': headers,
-                'body': json.dumps({'error': 'Authorization header required'})
-            }
-        
-        # Validate requesting user has permission to create users and assign roles
-        requesting_user = None
-        if auth_header.startswith('Bearer '):
-            jwt_token = auth_header.replace('Bearer ', '')
-            
-            try:
-                import base64
-                import json as json_lib
-                
-                # Decode JWT token to get requesting user
-                parts = jwt_token.split('.')
-                if len(parts) == 3:
-                    payload_encoded = parts[1]
-                    payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-                    payload_decoded = base64.urlsafe_b64decode(payload_encoded)
-                    payload = json_lib.loads(payload_decoded)
-                    requesting_user = payload.get('username') or payload.get('email')
-                    
-            except Exception as token_error:
-                print(f"Error decoding requesting user token: {str(token_error)}")
-                return {
-                    'statusCode': 401,
-                    'headers': headers,
-                    'body': json.dumps({'error': 'Invalid authorization token'})
-                }
-        
+        # Use the already-validated requesting user from routing layer
+        requesting_user = requesting_user_email
         if not requesting_user:
             return {
                 'statusCode': 401,
                 'headers': headers,
                 'body': json.dumps({'error': 'Could not identify requesting user'})
-            }
-        
-        # Check if requesting user has permission to create users and assign roles
-        try:
-            requesting_user_groups = cognito_client.admin_list_groups_for_user(
-                UserPoolId=USER_POOL_ID,
-                Username=requesting_user
-            )
-            
-            requesting_user_roles = [group['GroupName'] for group in requesting_user_groups.get('Groups', [])]
-            
-            # Only users with System_User_Management can create users and assign roles
-            can_manage_users = 'System_User_Management' in requesting_user_roles
-            
-            if not can_manage_users:
-                return {
-                    'statusCode': 403,
-                    'headers': headers,
-                    'body': json.dumps({
-                        'error': 'Insufficient permissions to create users and assign roles',
-                        'required_roles': ['System_User_Management']
-                    })
-                }
-                
-        except Exception as perm_error:
-            print(f"Error checking requesting user permissions: {str(perm_error)}")
-            return {
-                'statusCode': 500,
-                'headers': headers,
-                'body': json.dumps({'error': 'Failed to verify permissions'})
             }
         
         # Parse request body
