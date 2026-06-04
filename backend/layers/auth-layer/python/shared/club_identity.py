@@ -15,19 +15,17 @@ members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 def get_club_id(user_email: str) -> str | None:
     """
     Look up club_id from the Member record matching the given email.
-    Only returns club_id for members with status='presmeet'.
+    Returns club_id for any member who has one assigned (regardless of status),
+    since Regio_Pressmeet Cognito group already gates access.
 
     Args:
         user_email: The authenticated user's email address.
 
     Returns:
-        str | None: The club_id or None if not found / not a presmeet member.
+        str | None: The club_id or None if not found / not assigned.
     """
     response = members_table.scan(
-        FilterExpression=(
-            Attr('email').eq(user_email) &
-            Attr('status').eq('presmeet')
-        ),
+        FilterExpression=Attr('email').eq(user_email),
         ProjectionExpression='club_id, member_id'
     )
     items = response.get('Items', [])
