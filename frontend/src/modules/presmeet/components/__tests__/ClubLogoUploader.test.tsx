@@ -33,12 +33,7 @@ jest.mock('@chakra-ui/react', () => ({
   ),
   Tooltip: ({ children }: any) => <>{children}</>,
   Spinner: () => <span data-testid="spinner" />,
-  Icon: ({ as, ...props }: any) => <span data-testid="placeholder-icon" {...props} />,
   useToast: () => mockToast,
-}));
-
-jest.mock('react-icons/fi', () => ({
-  FiCamera: () => <span data-testid="fi-camera" />,
 }));
 
 // Mock presmeetService

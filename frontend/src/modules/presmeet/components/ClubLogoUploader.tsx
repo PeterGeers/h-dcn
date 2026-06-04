@@ -16,9 +16,7 @@ import {
   Tooltip,
   Spinner,
   useToast,
-  Icon,
 } from '@chakra-ui/react';
-import { FiCamera } from 'react-icons/fi';
 import { presmeetService } from '../services/presmeetApi';
 
 // --- Constants ---
@@ -174,7 +172,21 @@ const ClubLogoUploader: React.FC<ClubLogoUploaderProps> = ({ clubId, isAdmin }) 
             alignItems="center"
             justifyContent="center"
           >
-            <Icon as={FiCamera} boxSize={5} color="gray.400" />
+            <Box
+              as="svg"
+              viewBox="0 0 24 24"
+              boxSize={5}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              color="gray.400"
+              data-testid="placeholder-icon"
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </Box>
           </Box>
         ) : (
           <Image
