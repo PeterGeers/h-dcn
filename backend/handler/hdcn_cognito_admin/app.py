@@ -515,12 +515,15 @@ def create_user(event, headers, requesting_user_email=None):
         # Parse request body
         data = json.loads(event['body'])
         
-        if not data.get('username') or not data.get('email'):
+        if not data.get('email'):
             return {
                 'statusCode': 400,
                 'headers': headers,
-                'body': json.dumps({'error': 'Username and email are required'})
+                'body': json.dumps({'error': 'Email is required'})
             }
+        
+        # Cognito pool requires email as username
+        cognito_username = data['email']
         
         user_attributes = [
             {'Name': 'email', 'Value': data['email']},
@@ -529,12 +532,13 @@ def create_user(event, headers, requesting_user_email=None):
         
         # Add additional attributes
         for key, value in data.get('attributes', {}).items():
-            user_attributes.append({'Name': key, 'Value': value})
+            if value:  # Only add non-empty attributes
+                user_attributes.append({'Name': key, 'Value': value})
         
         # Create user in Cognito (passwordless - no temp password needed)
         response = cognito_client.admin_create_user(
             UserPoolId=USER_POOL_ID,
-            Username=data['username'],
+            Username=cognito_username,
             UserAttributes=user_attributes,
             MessageAction='SUPPRESS'
         )
@@ -546,7 +550,7 @@ def create_user(event, headers, requesting_user_email=None):
         random_password = secrets.token_urlsafe(32) + '!A1a'
         cognito_client.admin_set_user_password(
             UserPoolId=USER_POOL_ID,
-            Username=data['username'],
+            Username=cognito_username,
             Password=random_password,
             Permanent=True
         )
@@ -577,11 +581,11 @@ def create_user(event, headers, requesting_user_email=None):
                 try:
                     cognito_client.admin_add_user_to_group(
                         UserPoolId=USER_POOL_ID,
-                        Username=data['username'],
+                        Username=cognito_username,
                         GroupName=group_name
                     )
                 except Exception as group_error:
-                    error_msg = f"Could not add user {data['username']} to group {group_name}: {str(group_error)}"
+                    error_msg = f"Could not add user {cognito_username} to group {group_name}: {str(group_error)}"
                     print(f"Warning: {error_msg}")
                     group_errors.append(error_msg)
         
@@ -590,7 +594,7 @@ def create_user(event, headers, requesting_user_email=None):
             'headers': headers,
             'body': json.dumps({
                 'message': 'User created successfully',
-                'username': data['username'],
+                'username': cognito_username,
                 'groups': group_list,
                 'group_errors': group_errors,
                 'created_by': requesting_user,
