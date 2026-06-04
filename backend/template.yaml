@@ -1358,6 +1358,15 @@ Resources:
                   - cognito-idp:AdminListGroupsForUser
                 Resource:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
+        - PolicyName: PresMeetLogoUploadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
 
   # --- PresMeet: Get Config ---
   GetPresMeetConfigFunction:
@@ -1681,6 +1690,31 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /presmeet/clubs/assign
+            Method: post
+
+  # --- PresMeet: Upload Club Logo ---
+  UploadClubLogoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/upload_club_logo
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 256
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt PresMeetRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          FRONTEND_BUCKET_NAME: "h-dcn-frontend-506221081911"
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        UploadClubLogo:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /presmeet/logo
             Method: post
 
 Outputs:
