@@ -864,3 +864,351 @@ class TestProperty6ValidPdfGeneration:
         assert len(decoded_body) > 0, (
             f"Expected non-zero body length, got 0 for order_id={order_id}"
         )
+
+
+# ============================================================================
+# NEW PROPERTY TESTS: Frontend-matching layout properties
+# ============================================================================
+
+# Import the new helper functions
+from app import (
+    build_css, build_header_html, build_addresses_html,
+    build_products_table_html, build_totals_html, _resolve_customer_name,
+)
+
+
+# Strategy for customer_info with name fallback variations
+_customer_info_with_name = st.fixed_dictionaries({
+    'name': _safe_text,
+    'straat': _safe_text,
+    'postcode': st.from_regex(r'[1-9][0-9]{3} [A-Z]{2}', fullmatch=True),
+    'woonplaats': _safe_text,
+}, optional={
+    'email': st.emails(),
+    'phone': st.from_regex(r'06-[0-9]{8}', fullmatch=True),
+})
+
+_customer_info_without_name = st.fixed_dictionaries({
+    'voornaam': _safe_text,
+    'achternaam': _safe_text,
+    'straat': _safe_text,
+    'postcode': st.from_regex(r'[1-9][0-9]{3} [A-Z]{2}', fullmatch=True),
+    'woonplaats': _safe_text,
+})
+
+_any_customer_info = st.one_of(_customer_info_with_name, _customer_info_without_name)
+
+# Strategy for shipping_address
+_shipping_address = st.one_of(
+    st.none(),
+    st.fixed_dictionaries({
+        'name': _safe_text,
+        'straat': _safe_text,
+        'postcode': st.from_regex(r'[1-9][0-9]{3} [A-Z]{2}', fullmatch=True),
+        'woonplaats': _safe_text,
+    }),
+)
+
+
+class TestPropertyOrangeBranding:
+    """Property 2: Orange branding and absence of old color scheme.
+
+    For any valid order dict, the output of render_order_html() contains
+    #FF6B35 and does NOT contain #2c3e50.
+
+    **Validates: Requirements 1.1, 1.2**
+    """
+
+    @given(order=_order_record, logo=_logo_data_uri)
+    @settings(max_examples=50)
+    def test_orange_branding_present_old_scheme_absent(self, order, logo):
+        """Output contains #FF6B35 and NOT #2c3e50."""
+        html = render_order_html(order, logo)
+
+        assert '#FF6B35' in html, "Orange branding #FF6B35 missing from output"
+        assert '#2c3e50' not in html, "Old dark blue #2c3e50 still present in output"
+
+
+class TestPropertyTwoColumnAddressLayout:
+    """Property 3: Two-column address layout.
+
+    For any order with customer_info, the output HTML contains both
+    "Factuuradres" and "Verzendadres".
+
+    **Validates: Requirements 3.1**
+    """
+
+    @given(order=_order_record, logo=_logo_data_uri)
+    @settings(max_examples=50)
+    def test_both_address_sections_present(self, order, logo):
+        """Output contains both Factuuradres and Verzendadres."""
+        html = render_order_html(order, logo)
+
+        assert 'Factuuradres' in html, "Factuuradres section missing"
+        assert 'Verzendadres' in html, "Verzendadres section missing"
+
+
+class TestPropertyTableHeaderStyling:
+    """Property 4: Table header styling and alignment.
+
+    For any order with at least one item, the output HTML contains #F9FAFB
+    as table header background and right-aligned numeric columns.
+
+    **Validates: Requirements 4.1, 4.3**
+    """
+
+    @given(order=_order_record, logo=_logo_data_uri)
+    @settings(max_examples=50)
+    def test_light_grey_header_and_right_alignment(self, order, logo):
+        """Table header uses #F9FAFB and numeric columns are right-aligned."""
+        assume(len(order.get('items', [])) > 0)
+
+        html = render_order_html(order, logo)
+
+        assert '#F9FAFB' in html, "Light grey header color #F9FAFB missing"
+        assert 'text-align: right' in html, "Right alignment for numeric columns missing"
+        assert 'class="right"' in html, "Right-aligned td/th class missing"
+
+
+class TestPropertyTotaalBetaald:
+    """Property 5: Totaal betaald presentation.
+
+    For any order, the output HTML contains "Totaal betaald" with font-size
+    18px and font-weight bold.
+
+    **Validates: Requirements 5.1**
+    """
+
+    @given(order=_order_record, logo=_logo_data_uri)
+    @settings(max_examples=50)
+    def test_totaal_betaald_styled_correctly(self, order, logo):
+        """'Totaal betaald' appears with 18px bold styling."""
+        html = render_order_html(order, logo)
+
+        assert 'Totaal betaald' in html, "'Totaal betaald' text missing"
+        # The CSS class totals-final has font-size: 18px and font-weight: bold
+        assert 'totals-final' in html, "totals-final CSS class missing"
+        css = build_css()
+        assert '18px' in css, "18px font-size missing from CSS"
+        assert 'font-weight: bold' in css, "font-weight: bold missing from CSS"
+
+
+class TestPropertyDeliverySectionPosition:
+    """Property 6: Delivery section position.
+
+    For any order with a delivery_option, the delivery section HTML appears
+    BEFORE the products table HTML in the output string.
+
+    **Validates: Requirements 6.1**
+    """
+
+    @given(
+        order=_order_record.filter(lambda o: 'delivery_option' in o and o['delivery_option'] is not None),
+        logo=_logo_data_uri,
+    )
+    @settings(max_examples=50)
+    def test_delivery_before_products_table(self, order, logo):
+        """Delivery section appears before the products table."""
+        html = render_order_html(order, logo)
+
+        delivery_label = order['delivery_option']['label']
+        assert delivery_label in html, f"Delivery label '{delivery_label}' not in output"
+
+        delivery_pos = html.index(delivery_label)
+        products_pos = html.index('Bestelde producten')
+        assert delivery_pos < products_pos, (
+            f"Delivery section (pos {delivery_pos}) not before products table (pos {products_pos})"
+        )
+
+
+class TestPropertyAmountFormatting:
+    """Property 7: Amount formatting with euro symbol and two decimals.
+
+    For every amount in the order, the formatted output uses €X.XX format.
+
+    **Validates: Requirements 5.2**
+    """
+
+    @given(order=_order_record, logo=_logo_data_uri)
+    @settings(max_examples=50)
+    def test_all_amounts_use_euro_format(self, order, logo):
+        """All monetary amounts are formatted as €X.XX."""
+        html = render_order_html(order, logo)
+
+        # Subtotal and total must appear formatted
+        assert format_euro(order['subtotal_amount']) in html, (
+            f"Subtotal {format_euro(order['subtotal_amount'])} not found"
+        )
+        assert format_euro(order['total_amount']) in html, (
+            f"Total {format_euro(order['total_amount'])} not found"
+        )
+
+        # Delivery cost if present
+        if 'delivery_cost' in order and order['delivery_cost']:
+            assert format_euro(order['delivery_cost']) in html, (
+                f"Delivery cost {format_euro(order['delivery_cost'])} not found"
+            )
+
+        # Item prices
+        for item in order['items']:
+            assert format_euro(item['price']) in html, (
+                f"Item price {format_euro(item['price'])} not found"
+            )
+
+
+class TestPropertyCustomerNameResolution:
+    """Property 8: Customer name resolution.
+
+    For orders with customer_info containing a 'name' field, that name appears
+    in the output. For orders with voornaam+achternaam, the combined name appears.
+
+    **Validates: Requirements 8.1, 8.2**
+    """
+
+    @given(customer_info=_customer_info_with_name)
+    @settings(max_examples=50)
+    def test_name_field_used_when_present(self, customer_info):
+        """When 'name' field is present, it appears in the output."""
+        order = {
+            'order_id': 'ORD-TEST001',
+            'items': [],
+            'customer_info': customer_info,
+        }
+        html = render_order_html(order)
+
+        assert customer_info['name'] in html, (
+            f"Customer name '{customer_info['name']}' not found in output"
+        )
+
+    @given(customer_info=_customer_info_without_name)
+    @settings(max_examples=50)
+    def test_voornaam_achternaam_combined_when_no_name(self, customer_info):
+        """When no 'name' field, voornaam+achternaam are combined."""
+        order = {
+            'order_id': 'ORD-TEST002',
+            'items': [],
+            'customer_info': customer_info,
+        }
+        html = render_order_html(order)
+
+        expected_name = f"{customer_info['voornaam']} {customer_info['achternaam']}"
+        assert expected_name in html, (
+            f"Combined name '{expected_name}' not found in output"
+        )
+
+    def test_niet_beschikbaar_when_no_name_info(self):
+        """When no name fields at all, 'Niet beschikbaar' is shown."""
+        order = {
+            'order_id': 'ORD-TEST003',
+            'items': [],
+            'customer_info': {'straat': 'Teststraat 1'},
+        }
+        html = render_order_html(order)
+
+        assert 'Niet beschikbaar' in html
+
+
+class TestPropertyWeasyPrintCompatibility:
+    """Property 9: WeasyPrint CSS compatibility.
+
+    For any generated HTML, the output does not contain 'display: flex' for
+    layout structures and does contain an @page directive with A4 size.
+
+    **Validates: Requirements 7.1, 7.3**
+    """
+
+    @given(order=_order_record, logo=_logo_data_uri)
+    @settings(max_examples=50)
+    def test_no_flex_layout_and_has_a4_page(self, order, logo):
+        """No display:flex in output, @page with A4 is present."""
+        html = render_order_html(order, logo)
+
+        assert 'display: flex' not in html, "display: flex found (WeasyPrint incompatible)"
+        assert 'display:flex' not in html, "display:flex found (WeasyPrint incompatible)"
+        assert '@page' in html, "@page directive missing"
+        assert 'A4' in html, "A4 page size missing"
+        assert '20mm' in html, "20mm margin missing"
+
+
+class TestEdgeCases:
+    """Unit tests for edge cases.
+
+    **Validates: Requirements 8.3, 9.2, 9.3**
+    """
+
+    def test_empty_order_no_items_no_customer(self):
+        """Minimal order with no items and no customer_info renders."""
+        order = {'order_id': 'ORD-EMPTY', 'items': []}
+        html = render_order_html(order)
+
+        assert '<!DOCTYPE html>' in html
+        assert 'ORD-EMPTY' in html
+        assert 'Niet beschikbaar' in html
+
+    def test_order_without_logo(self):
+        """Order without logo_data_uri doesn't include img tag."""
+        order = {'order_id': 'ORD-NOLOGO', 'items': [{'name': 'Test', 'quantity': 1, 'price': 10}]}
+        html = render_order_html(order, None)
+
+        assert '<img' not in html
+
+    def test_item_with_naam_instead_of_name(self):
+        """Item with 'naam' field (Dutch) renders correctly."""
+        order = {
+            'order_id': 'ORD-NAAM',
+            'items': [{'naam': 'Nederlands Product', 'quantity': 3, 'price': 12.50}],
+            'customer_info': {'name': 'Test User'},
+        }
+        html = render_order_html(order)
+
+        assert 'Nederlands Product' in html
+
+    def test_item_without_selected_option(self):
+        """Item without selectedOption shows '-' in the option column."""
+        order = {
+            'order_id': 'ORD-NOOPT',
+            'items': [{'name': 'Simple Product', 'quantity': 1, 'price': 20.00}],
+            'customer_info': {'name': 'Test'},
+        }
+        html = render_order_html(order)
+
+        # The '-' should appear in a table cell
+        assert '<td>-</td>' in html
+
+    def test_customer_name_fallback_voornaam_achternaam(self):
+        """Customer without 'name' but with voornaam+achternaam shows combined name."""
+        order = {
+            'order_id': 'ORD-FALLBACK',
+            'items': [],
+            'customer_info': {'voornaam': 'Pieter', 'achternaam': 'Bakker'},
+        }
+        html = render_order_html(order)
+
+        assert 'Pieter Bakker' in html
+
+    def test_shipping_address_used_when_present(self):
+        """When shipping_address is provided, it appears in the Verzendadres section."""
+        order = {
+            'order_id': 'ORD-SHIP',
+            'items': [],
+            'customer_info': {'name': 'Billing Name', 'straat': 'Billing St 1'},
+            'shipping_address': {'name': 'Shipping Name', 'straat': 'Shipping St 2'},
+        }
+        html = render_order_html(order)
+
+        assert 'Billing Name' in html
+        assert 'Shipping Name' in html
+        assert 'Shipping St 2' in html
+
+    def test_no_delivery_option_hides_delivery_section(self):
+        """Order without delivery_option does not show delivery section content."""
+        order = {
+            'order_id': 'ORD-NODELIV',
+            'items': [{'name': 'Product', 'quantity': 1, 'price': 10}],
+            'customer_info': {'name': 'Test'},
+        }
+        html = render_order_html(order)
+
+        # The delivery content (title text "Levering" as an HTML element) should not appear
+        assert '<div class="delivery">' not in html
+        assert '>Levering<' not in html

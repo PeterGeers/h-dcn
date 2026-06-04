@@ -141,57 +141,309 @@ def format_dutch_date(iso_timestamp: str) -> str:
         return iso_timestamp or ""
 
 
-def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
-    """Render order data into an HTML string suitable for PDF generation.
+def build_css() -> str:
+    """Build CSS styling that matches the frontend OrderConfirmation layout.
 
-    Builds a complete HTML document with A4-appropriate CSS styling,
-    populated with order data including header, customer info, product table,
-    delivery info, and totals.
-
-    Args:
-        order: Order record dict from DynamoDB.
-        logo_data_uri: Base64 data URI for the logo image, or None to omit.
-
-    Returns:
-        Complete HTML string ready for WeasyPrint rendering.
+    Uses inline-block for two-column layouts (WeasyPrint-compatible, no flexbox).
+    Orange branding (#FF6B35) for H-DCN title, light grey table headers (#F9FAFB).
     """
-    order_id = order.get('order_id', '')
-    timestamp = order.get('timestamp', '')
-    formatted_date = format_dutch_date(timestamp)
+    return """
+        @page { size: A4; margin: 20mm; }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #000;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
 
-    # Customer info
-    customer_info = order.get('customer_info', {})
-    customer_name = customer_info.get('name', '')
-    customer_straat = customer_info.get('straat', '')
-    customer_postcode = customer_info.get('postcode', '')
-    customer_woonplaats = customer_info.get('woonplaats', '')
-    customer_email = customer_info.get('email')
-    customer_phone = customer_info.get('phone')
+        /* Header with logo and title */
+        .header {
+            margin-bottom: 24px;
+        }
+        .header-inner {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            vertical-align: middle;
+            margin-right: 20px;
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FF6B35;
+            margin: 0 0 8px 0;
+        }
+        .header-subtitle {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+        }
 
-    # Items
-    items = order.get('items', [])
+        /* Order meta info */
+        .order-meta {
+            margin-bottom: 24px;
+        }
+        .meta-row {
+            margin-bottom: 8px;
+        }
+        .meta-label {
+            font-weight: bold;
+        }
+        .status-paid {
+            color: #22C55E;
+            font-weight: bold;
+        }
 
-    # Delivery
-    delivery_option = order.get('delivery_option')
-    delivery_cost = order.get('delivery_cost')
+        /* Separator lines */
+        .separator {
+            border: none;
+            border-top: 1px solid #E5E7EB;
+            margin: 24px 0;
+        }
 
-    # Totals
-    subtotal_amount = order.get('subtotal_amount', '0.00')
-    total_amount = order.get('total_amount', '0.00')
+        /* Two-column address layout */
+        .addresses {
+            margin-bottom: 24px;
+        }
+        .address-col {
+            display: inline-block;
+            width: 48%;
+            vertical-align: top;
+        }
+        .address-col-spacer {
+            display: inline-block;
+            width: 3%;
+        }
+        .address-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .address-line {
+            margin: 0 0 4px 0;
+        }
 
-    # Build logo HTML
+        /* Delivery section */
+        .delivery {
+            margin-bottom: 24px;
+        }
+        .delivery-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .delivery-row {
+            margin-bottom: 8px;
+        }
+        .delivery-label {
+            display: inline-block;
+        }
+        .delivery-cost {
+            float: right;
+        }
+
+        /* Products table */
+        .products-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+        th {
+            background-color: #F9FAFB;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #E5E7EB;
+            font-weight: bold;
+        }
+        th.right {
+            text-align: right;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        td.right {
+            text-align: right;
+        }
+
+        /* Totals section */
+        .totals {
+            margin-bottom: 24px;
+        }
+        .totals-row {
+            margin-bottom: 8px;
+        }
+        .totals-label {
+            display: inline-block;
+        }
+        .totals-value {
+            float: right;
+        }
+        .totals-separator {
+            border: none;
+            border-top: 1px solid #E5E7EB;
+            margin: 8px 0;
+        }
+        .totals-final {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .totals-final .totals-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+    """
+
+
+def _resolve_customer_name(customer_info: dict) -> str:
+    """Resolve customer name with fallback logic.
+
+    Priority: name > voornaam+achternaam > 'Niet beschikbaar'
+    """
+    name = customer_info.get('name', '')
+    if name:
+        return name
+    voornaam = customer_info.get('voornaam', '')
+    achternaam = customer_info.get('achternaam', '')
+    combined = f"{voornaam} {achternaam}".strip()
+    if combined:
+        return combined
+    return 'Niet beschikbaar'
+
+
+def build_header_html(logo_data_uri: Optional[str], order_id: str,
+                      formatted_date: str, customer_name: str) -> str:
+    """Build the header section with logo, title, and order metadata.
+
+    Matches the frontend layout: logo left, title "H-DCN Webshop" in orange,
+    subtitle "Orderbevestiging", then order meta block below.
+    """
     logo_html = ''
     if logo_data_uri is not None:
         logo_html = f'<img src="{logo_data_uri}" alt="H-DCN Logo" class="logo" />'
 
-    # Build customer email/phone lines
-    customer_extra_html = ''
-    if customer_email:
-        customer_extra_html += f'<p>{customer_email}</p>\n'
-    if customer_phone:
-        customer_extra_html += f'<p>{customer_phone}</p>\n'
+    return f'''    <div class="header">
+        {logo_html}<div class="header-inner">
+            <div class="header-title">H-DCN Webshop</div>
+            <div class="header-subtitle">Orderbevestiging</div>
+        </div>
+    </div>
 
-    # Build product rows
+    <div class="order-meta">
+        <div class="meta-row">
+            <span class="meta-label">Ordernummer:</span>
+            <span style="float: right;">{order_id}</span>
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">Datum:</span>
+            <span style="float: right;">{formatted_date}</span>
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">Klant:</span>
+            <span style="float: right;">{customer_name}</span>
+        </div>
+        <div class="meta-row">
+            <span class="meta-label">Status:</span>
+            <span class="status-paid" style="float: right;">Betaald</span>
+        </div>
+    </div>'''
+
+
+def build_addresses_html(customer_info: dict, shipping_address: Optional[dict]) -> str:
+    """Build two-column address layout with billing and shipping addresses.
+
+    Uses inline-block for WeasyPrint compatibility (no flexbox).
+    Falls back to customer_info for shipping address if not provided.
+    """
+    # Billing address (Factuuradres)
+    billing_name = _resolve_customer_name(customer_info)
+    billing_straat = customer_info.get('straat', '')
+    billing_postcode = customer_info.get('postcode', '')
+    billing_woonplaats = customer_info.get('woonplaats', '')
+    billing_email = customer_info.get('email', '')
+    billing_phone = customer_info.get('phone', '')
+
+    billing_lines = f'<p class="address-line">{billing_name}</p>\n'
+    if billing_straat:
+        billing_lines += f'        <p class="address-line">{billing_straat}</p>\n'
+    postcode_plaats = f"{billing_postcode} {billing_woonplaats}".strip()
+    if postcode_plaats:
+        billing_lines += f'        <p class="address-line">{postcode_plaats}</p>\n'
+    if billing_email:
+        billing_lines += f'        <p class="address-line">{billing_email}</p>\n'
+    if billing_phone:
+        billing_lines += f'        <p class="address-line">{billing_phone}</p>\n'
+
+    if not customer_info:
+        billing_lines = '<p class="address-line">Geen adresgegevens beschikbaar</p>\n'
+
+    # Shipping address (Verzendadres) - fallback to customer_info
+    ship = shipping_address if shipping_address else customer_info
+    if ship:
+        ship_name = ship.get('name', '') or _resolve_customer_name(ship)
+        ship_straat = ship.get('straat', '')
+        ship_postcode = ship.get('postcode', '')
+        ship_woonplaats = ship.get('woonplaats', '')
+
+        shipping_lines = f'<p class="address-line">{ship_name}</p>\n'
+        if ship_straat:
+            shipping_lines += f'        <p class="address-line">{ship_straat}</p>\n'
+        ship_postcode_plaats = f"{ship_postcode} {ship_woonplaats}".strip()
+        if ship_postcode_plaats:
+            shipping_lines += f'        <p class="address-line">{ship_postcode_plaats}</p>\n'
+    else:
+        shipping_lines = '<p class="address-line">Geen adresgegevens beschikbaar</p>\n'
+
+    return f'''    <hr class="separator" />
+
+    <div class="addresses">
+        <div class="address-col">
+            <div class="address-title">Factuuradres</div>
+            {billing_lines.strip()}
+        </div><div class="address-col-spacer"></div><div class="address-col">
+            <div class="address-title">Verzendadres</div>
+            {shipping_lines.strip()}
+        </div>
+    </div>
+
+    <hr class="separator" />'''
+
+
+def build_products_table_html(items: list, delivery_option: Optional[dict],
+                              delivery_cost: Optional[str]) -> str:
+    """Build product table with optional delivery section above it.
+
+    Table has light grey header (#F9FAFB), right-aligned numeric columns.
+    Delivery section appears ABOVE the products table when present.
+    """
+    # Delivery section (above the table)
+    delivery_html = ''
+    if delivery_option:
+        delivery_label = delivery_option.get('label', 'Verzending')
+        delivery_cost_val = delivery_cost if delivery_cost else '0.00'
+        delivery_html = f'''    <div class="delivery">
+        <div class="delivery-title">Levering</div>
+        <div class="delivery-row">
+            <span class="delivery-label">{delivery_label}</span>
+            <span class="delivery-cost">{format_euro(delivery_cost_val)}</span>
+        </div>
+    </div>
+
+    <hr class="separator" />
+
+'''
+
+    # Product rows
     product_rows_html = ''
     for item in items:
         item_name = item.get('name') or item.get('naam', '')
@@ -202,189 +454,107 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
         product_rows_html += f'''            <tr>
                 <td>{item_name}</td>
                 <td>{selected_option}</td>
-                <td>{quantity}</td>
-                <td>{format_euro(price)}</td>
-                <td>{format_euro(line_total)}</td>
+                <td class="right">{quantity}</td>
+                <td class="right">{format_euro(price)}</td>
+                <td class="right">{format_euro(line_total)}</td>
             </tr>
 '''
 
-    # Build delivery row (if present)
-    delivery_row_html = ''
-    if delivery_option:
-        delivery_label = delivery_option.get('label', 'Verzending')
-        delivery_cost_val = delivery_cost if delivery_cost else '0.00'
-        delivery_row_html = f'''            <tr class="delivery-row">
-                <td colspan="4">{delivery_label}</td>
-                <td>{format_euro(delivery_cost_val)}</td>
+    return f'''{delivery_html}    <div class="products-title">Bestelde producten</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Optie</th>
+                <th class="right">Aantal</th>
+                <th class="right">Prijs</th>
+                <th class="right">Totaal</th>
             </tr>
-'''
+        </thead>
+        <tbody>
+{product_rows_html}        </tbody>
+    </table>'''
 
-    # Build totals section
-    totals_html = f'''        <div class="totals">
-            <div class="totals-row">
-                <span>Subtotaal</span>
-                <span>{format_euro(subtotal_amount)}</span>
-            </div>
+
+def build_totals_html(subtotal_amount: str, delivery_cost: Optional[str],
+                      total_amount: str) -> str:
+    """Build totals section with subtotal, optional shipping, and bold final total.
+
+    Final total displayed as "Totaal betaald:" in 18px bold, matching the frontend.
+    """
+    html = f'''    <div class="totals">
+        <div class="totals-row">
+            <span class="totals-label">Subtotaal:</span>
+            <span class="totals-value">{format_euro(subtotal_amount)}</span>
+        </div>
 '''
-    if delivery_option and delivery_cost:
-        totals_html += f'''            <div class="totals-row">
-                <span>Verzendkosten</span>
-                <span>{format_euro(delivery_cost)}</span>
-            </div>
+    if delivery_cost:
+        html += f'''        <div class="totals-row">
+            <span class="totals-label">Verzendkosten:</span>
+            <span class="totals-value">{format_euro(delivery_cost)}</span>
+        </div>
 '''
-    totals_html += f'''            <div class="totals-row total">
-                <span>Totaal</span>
-                <span>{format_euro(total_amount)}</span>
-            </div>
-        </div>'''
+    html += f'''        <hr class="totals-separator" />
+        <div class="totals-row totals-final">
+            <span class="totals-label">Totaal betaald:</span>
+            <span class="totals-value">{format_euro(total_amount)}</span>
+        </div>
+    </div>'''
+
+    return html
+
+
+def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
+    """Render order data into an HTML string matching the frontend layout.
+
+    Builds a complete HTML document with A4-appropriate CSS styling,
+    using orange branding (#FF6B35), two-column address layout,
+    light grey table headers, and WeasyPrint-compatible CSS.
+
+    Args:
+        order: Order record dict from DynamoDB.
+        logo_data_uri: Base64 data URI for the logo image, or None to omit.
+
+    Returns:
+        Complete HTML string ready for WeasyPrint rendering.
+    """
+    # Extract data from order
+    order_id = order.get('order_id', '')
+    timestamp = order.get('timestamp', '')
+    formatted_date = format_dutch_date(timestamp)
+    customer_info = order.get('customer_info', {})
+    shipping_address = order.get('shipping_address')
+    items = order.get('items', [])
+    delivery_option = order.get('delivery_option')
+    delivery_cost = order.get('delivery_cost')
+    subtotal_amount = order.get('subtotal_amount', '0.00')
+    total_amount = order.get('total_amount', '0.00')
+
+    customer_name = _resolve_customer_name(customer_info)
+
+    # Build HTML sections
+    css = build_css()
+    header_html = build_header_html(logo_data_uri, order_id, formatted_date, customer_name)
+    addresses_html = build_addresses_html(customer_info, shipping_address)
+    products_html = build_products_table_html(items, delivery_option, delivery_cost)
+    totals_html = build_totals_html(subtotal_amount, delivery_cost, total_amount)
 
     html = f'''<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8" />
     <title>Orderbevestiging {order_id}</title>
-    <style>
-        @page {{
-            size: A4;
-            margin: 20mm;
-        }}
-        body {{
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 12px;
-            color: #333;
-            line-height: 1.5;
-            margin: 0;
-            padding: 0;
-        }}
-        .header {{
-            display: flex;
-            align-items: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 15px;
-        }}
-        .logo {{
-            max-height: 60px;
-            margin-right: 20px;
-        }}
-        .header-title {{
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-        }}
-        .order-meta {{
-            margin-bottom: 25px;
-            background-color: #f8f9fa;
-            padding: 12px 15px;
-            border-radius: 4px;
-        }}
-        .order-meta p {{
-            margin: 4px 0;
-        }}
-        .customer-info {{
-            margin-bottom: 25px;
-        }}
-        .customer-info h3 {{
-            font-size: 14px;
-            color: #2c3e50;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 5px;
-        }}
-        .customer-info p {{
-            margin: 3px 0;
-        }}
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
-        }}
-        th {{
-            background-color: #2c3e50;
-            color: white;
-            padding: 10px 8px;
-            text-align: left;
-            font-size: 11px;
-            text-transform: uppercase;
-        }}
-        td {{
-            padding: 8px;
-            border-bottom: 1px solid #dee2e6;
-        }}
-        tr:nth-child(even) {{
-            background-color: #f8f9fa;
-        }}
-        .delivery-row {{
-            font-style: italic;
-            background-color: #fff3cd;
-        }}
-        .totals {{
-            width: 300px;
-            margin-left: auto;
-            margin-bottom: 30px;
-        }}
-        .totals-row {{
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid #dee2e6;
-        }}
-        .totals-row.total {{
-            font-weight: bold;
-            font-size: 14px;
-            border-bottom: 2px solid #2c3e50;
-            border-top: 2px solid #2c3e50;
-            padding: 10px 0;
-        }}
-        .footer {{
-            margin-top: 40px;
-            text-align: center;
-            font-size: 11px;
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
-            padding-top: 15px;
-        }}
+    <style>{css}
     </style>
 </head>
 <body>
-    <div class="header">
-        {logo_html}
-        <div class="header-title">H-DCN Webshop / Orderbevestiging</div>
-    </div>
+{header_html}
 
-    <div class="order-meta">
-        <p><strong>Ordernummer:</strong> {order_id}</p>
-        <p><strong>Datum:</strong> {formatted_date}</p>
-        <p><strong>Status:</strong> Betaald</p>
-    </div>
+{addresses_html}
 
-    <div class="customer-info">
-        <h3>Klantgegevens</h3>
-        <p>{customer_name}</p>
-        <p>{customer_straat}</p>
-        <p>{customer_postcode} {customer_woonplaats}</p>
-        {customer_extra_html}
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Optie</th>
-                <th>Aantal</th>
-                <th>Prijs</th>
-                <th>Totaal</th>
-            </tr>
-        </thead>
-        <tbody>
-{product_rows_html}{delivery_row_html}        </tbody>
-    </table>
+{products_html}
 
 {totals_html}
-
-    <div class="footer">
-        <p>Bedankt voor uw bestelling bij H-DCN Webshop!</p>
-    </div>
 </body>
 </html>'''
 
