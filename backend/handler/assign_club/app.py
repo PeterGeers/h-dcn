@@ -106,9 +106,9 @@ def lambda_handler(event, context):
                 {'assigned_contact': club_entry.get('assigned_contact', 'Contact admin')}
             )
 
-        # Find member record
+        # Find member record - accept any member with Regio_Pressmeet access
         response = members_table.scan(
-            FilterExpression=Attr('email').eq(member_email) & Attr('status').eq('presmeet')
+            FilterExpression=Attr('email').eq(member_email)
         )
         members = response.get('Items', [])
         if not members:
@@ -122,7 +122,7 @@ def lambda_handler(event, context):
         if assigned and is_admin:
             # Clear club_id from previous member(s) who had this club
             prev_response = members_table.scan(
-                FilterExpression=Attr('club_id').eq(club_id) & Attr('status').eq('presmeet')
+                FilterExpression=Attr('club_id').eq(club_id)
             )
             for prev_member in prev_response.get('Items', []):
                 members_table.update_item(
