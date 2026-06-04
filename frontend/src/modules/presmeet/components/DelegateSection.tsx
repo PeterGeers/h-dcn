@@ -202,6 +202,9 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
                           handleTshirtChange(index, 'gender', e.target.value)
                         }
                         isDisabled={isDisabled}
+                        bg="gray.700"
+                        color="white"
+                        sx={{ option: { bg: '#2D3748', color: 'white' } }}
                       >
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -223,6 +226,9 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
                           handleTshirtChange(index, 'size', e.target.value)
                         }
                         isDisabled={isDisabled}
+                        bg="gray.700"
+                        color="white"
+                        sx={{ option: { bg: '#2D3748', color: 'white' } }}
                       >
                         {TSHIRT_SIZES.map((size) => (
                           <option key={size} value={size}>

@@ -137,6 +137,9 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                         handleChange(index, 'direction', e.target.value)
                       }
                       isDisabled={isDisabled}
+                      bg="gray.700"
+                      color="white"
+                      sx={{ option: { bg: '#2D3748', color: 'white' } }}
                     >
                       {DIRECTIONS.map((d) => (
                         <option key={d.value} value={d.value}>
@@ -161,6 +164,9 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                         handleChange(index, 'airport', e.target.value)
                       }
                       isDisabled={isDisabled}
+                      bg="gray.700"
+                      color="white"
+                      sx={{ option: { bg: '#2D3748', color: 'white' } }}
                     >
                       {AIRPORTS.map((a) => (
                         <option key={a.value} value={a.value}>
