@@ -183,18 +183,6 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
         <ModalBody>
           <VStack spacing={4}>
             <SimpleGrid columns={2} spacing={4} w="full">
-              {user && (
-                <FormControl>
-                  <FormLabel color="orange.300">Gebruikersnaam</FormLabel>
-                  <Input
-                    value={formData.username}
-                    bg="gray.700"
-                    borderColor="orange.400"
-                    isDisabled
-                  />
-                </FormControl>
-              )}
-              
               <FormControl isRequired>
                 <FormLabel color="orange.300">Email</FormLabel>
                 <Input
