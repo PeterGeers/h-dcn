@@ -28,6 +28,7 @@ import {
   AlertTitle,
   AlertDescription,
   Text,
+  Flex,
 } from '@chakra-ui/react';
 import { useAuth } from '../../context/AuthProvider';
 import { usePresMeetBooking } from './hooks/usePresMeetBooking';
@@ -35,6 +36,7 @@ import BookingForm from './components/BookingForm';
 import BookingOverview from './components/BookingOverview';
 import AdminDashboard from './components/AdminDashboard';
 import OnboardingFlow from './components/OnboardingFlow';
+import ClubLogoUploader from './components/ClubLogoUploader';
 
 /**
  * Check if the user has admin access for the PresMeet admin tab.
@@ -50,6 +52,16 @@ function isPresMeetAdmin(groups: string[]): boolean {
     ['Regio_Pressmeet', 'Regio_All'].includes(g)
   );
   return hasManagementRole && hasRegionRole;
+}
+
+/**
+ * Check if user has logo upload admin rights.
+ * Only requires Products_CRUD or Webshop_Management role (no region needed).
+ */
+function isLogoUploadAdmin(groups: string[]): boolean {
+  return groups.some((g) =>
+    ['Products_CRUD', 'Webshop_Management'].includes(g)
+  );
 }
 
 const PresMeetPage: React.FC = () => {
@@ -70,6 +82,8 @@ const PresMeetPage: React.FC = () => {
 
   const userGroups = user?.groups ?? [];
   const isAdmin = isPresMeetAdmin(userGroups);
+  const isLogoAdmin = isLogoUploadAdmin(userGroups);
+  const clubId = booking?.club_id;
 
   // Handle onboarding completion: reload all state to show the booking form
   const handleOnboardingComplete = async (_clubId: string) => {
@@ -112,9 +126,14 @@ const PresMeetPage: React.FC = () => {
 
   return (
     <Container maxW="container.xl" py={6}>
-      <Heading size="lg" color="orange.400" mb={6}>
-        Presidents' Meeting Booking
-      </Heading>
+      <Flex align="center" gap={3} mb={6}>
+        {clubId && (
+          <ClubLogoUploader clubId={clubId} isAdmin={isLogoAdmin} />
+        )}
+        <Heading size="lg" color="orange.400">
+          Presidents' Meeting Booking
+        </Heading>
+      </Flex>
 
       {error && (
         <Alert status="warning" mb={4} borderRadius="md">

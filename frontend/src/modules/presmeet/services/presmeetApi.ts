@@ -143,4 +143,24 @@ export const presmeetService = {
       member_email: memberEmail,
     });
   },
+
+  // --- Logo upload endpoint ---
+
+  /**
+   * Upload a club logo image. The backend resizes it to 200×200 PNG.
+   * @param imageData Base64-encoded image data
+   * @param clubId The club to upload the logo for
+   * @param contentType MIME type of the image (e.g. image/png, image/jpeg)
+   */
+  uploadClubLogo: (
+    imageData: string,
+    clubId: string,
+    contentType: string
+  ): Promise<ApiResponse<{ logo_url: string }>> => {
+    return ApiService.post<{ logo_url: string }>('/presmeet/logo', {
+      image_data: imageData,
+      club_id: clubId,
+      content_type: contentType,
+    });
+  },
 };

@@ -42,12 +42,16 @@ jest.mock('../components/BookingForm', () => () => <div data-testid="booking-for
 jest.mock('../components/BookingOverview', () => () => <div data-testid="booking-overview">BookingOverview</div>);
 jest.mock('../components/AdminDashboard', () => () => <div data-testid="admin-dashboard">AdminDashboard</div>);
 jest.mock('../components/OnboardingFlow', () => () => <div data-testid="onboarding-flow">OnboardingFlow</div>);
+jest.mock('../components/ClubLogoUploader', () => ({ clubId, isAdmin }: any) => (
+  <div data-testid="club-logo-uploader" data-club-id={clubId} data-is-admin={isAdmin}>ClubLogo</div>
+));
 
 // Mock Chakra UI components to render testable HTML
 jest.mock('@chakra-ui/react', () => ({
   Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   Container: ({ children }: any) => <div>{children}</div>,
   Heading: ({ children }: any) => <h1>{children}</h1>,
+  Flex: ({ children }: any) => <div data-testid="flex-heading">{children}</div>,
   Tabs: ({ children }: any) => <div>{children}</div>,
   TabList: ({ children }: any) => <div role="tablist">{children}</div>,
   TabPanels: ({ children }: any) => <div>{children}</div>,
