@@ -67,11 +67,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
     setError(null);
     try {
       const data = await getAdminProducts(tenant || undefined);
-      // Normalize: ensure each product has a variants array
+      // Normalize: ensure each product has a variants array and numeric price
       const normalized = (data || []).map((p: any) => ({
         ...p,
         variants: p.variants ?? [],
-        price: p.price ?? p.prijs ?? 0,
+        price: parseFloat(p.price ?? p.prijs ?? '0') || 0,
       }));
       setProducts(normalized);
     } catch (err: any) {
