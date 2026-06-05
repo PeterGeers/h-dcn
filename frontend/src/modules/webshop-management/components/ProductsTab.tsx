@@ -44,7 +44,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
 
   return (
     <Box>
-      <ProductManagementPage user={productPageUser} />
+      <ProductManagementPage user={productPageUser} tenant={tenant || undefined} />
     </Box>
   );
 };
