@@ -2,6 +2,7 @@ import json
 import os
 import boto3
 import boto3.dynamodb.conditions
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -77,7 +78,11 @@ def lambda_handler(event, context):
             response = table.scan(**scan_kwargs)
             orders.extend(response.get('Items', []))
 
-        return create_success_response({'orders': orders, 'total_count': len(orders)})
+        return {
+            'statusCode': 200,
+            'headers': cors_headers(),
+            'body': json.dumps({'orders': orders, 'total_count': len(orders)}, default=str)
+        }
 
     except Exception as e:
         print(f"Error retrieving admin orders: {str(e)}")

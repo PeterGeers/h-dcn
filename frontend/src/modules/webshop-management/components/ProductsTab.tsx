@@ -71,7 +71,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
       const normalized = (data || []).map((p: any) => ({
         ...p,
         variants: p.variants ?? [],
+        name: p.name || p.naam || 'Naamloos',
         price: parseFloat(p.price ?? p.prijs ?? '0') || 0,
+        active: p.active ?? true,
+        product_type: p.product_type || p.groep || '',
+        tenant: p.tenant || '',
       }));
       setProducts(normalized);
     } catch (err: any) {

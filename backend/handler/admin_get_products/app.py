@@ -76,7 +76,11 @@ def lambda_handler(event, context):
                 )
             products.extend(response.get('Items', []))
 
-        return create_success_response({'products': products, 'total_count': len(products)})
+        return {
+            'statusCode': 200,
+            'headers': cors_headers(),
+            'body': json.dumps({'products': products, 'total_count': len(products)}, default=str)
+        }
 
     except Exception as e:
         print(f"Error retrieving admin products: {str(e)}")

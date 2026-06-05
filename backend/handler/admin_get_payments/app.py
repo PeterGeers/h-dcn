@@ -94,11 +94,15 @@ def lambda_handler(event, context):
                 'status': order.get('status')
             })
 
-        return create_success_response({
-            'aggregates': aggregates,
-            'order_payments': order_payments,
-            'total_count': len(order_payments)
-        })
+        return {
+            'statusCode': 200,
+            'headers': cors_headers(),
+            'body': json.dumps({
+                'aggregates': aggregates,
+                'order_payments': order_payments,
+                'total_count': len(order_payments)
+            }, default=str)
+        }
 
     except Exception as e:
         print(f"Error retrieving payment data: {str(e)}")
