@@ -49,7 +49,7 @@ function getPaymentStatusBadge(status: 'paid' | 'partial' | 'unpaid') {
 }
 
 function formatCurrency(amount: number): string {
-  return `€ ${amount.toFixed(2)}`;
+  return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {

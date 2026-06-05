@@ -47,7 +47,7 @@ interface ReportsTabProps {
 }
 
 function formatCurrency(amount: number): string {
-  return `€ ${amount.toFixed(2)}`;
+  return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
 function formatTimestamp(isoString: string): string {
