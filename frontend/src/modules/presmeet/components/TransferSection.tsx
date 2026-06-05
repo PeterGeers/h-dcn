@@ -26,6 +26,7 @@ import {
   NumberDecrementStepper,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import {
   TransferFormData,
   TransferDirection,
@@ -44,17 +45,6 @@ interface TransferSectionProps {
   isDisabled?: boolean;
 }
 
-const AIRPORTS: { value: Airport; label: string }[] = [
-  { value: 'AMS', label: 'Amsterdam Schiphol (AMS)' },
-  { value: 'RTM', label: 'Rotterdam The Hague (RTM)' },
-  { value: 'EIN', label: 'Eindhoven (EIN)' },
-];
-
-const DIRECTIONS: { value: TransferDirection; label: string }[] = [
-  { value: 'pickup', label: 'Pickup (Airport → Venue)' },
-  { value: 'dropoff', label: 'Dropoff (Venue → Airport)' },
-];
-
 const TransferSection: React.FC<TransferSectionProps> = ({
   transfers,
   onChange,
@@ -64,6 +54,19 @@ const TransferSection: React.FC<TransferSectionProps> = ({
   errors,
   isDisabled = false,
 }) => {
+  const { t } = useTranslation('presmeet');
+
+  const AIRPORTS: { value: Airport; label: string }[] = [
+    { value: 'AMS', label: t('transfers.airport_ams') },
+    { value: 'RTM', label: t('transfers.airport_rtm') },
+    { value: 'EIN', label: t('transfers.airport_ein') },
+  ];
+
+  const DIRECTIONS: { value: TransferDirection; label: string }[] = [
+    { value: 'pickup', label: t('transfers.direction_pickup') },
+    { value: 'dropoff', label: t('transfers.direction_dropoff') },
+  ];
+
   const canAdd = transfers.length < maxTransfers;
 
   const handleAdd = () => {
@@ -95,7 +98,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
   return (
     <Box>
       <HStack justify="space-between" mb={4}>
-        <Heading size="md">Airport Transfers</Heading>
+        <Heading size="md">{t('transfers.title')}</Heading>
         <Text fontSize="sm" color="gray.400">
           {transfers.length} / {maxTransfers}
         </Text>
@@ -113,14 +116,14 @@ const TransferSection: React.FC<TransferSectionProps> = ({
               borderRadius="md"
             >
               <HStack justify="space-between" mb={3}>
-                <Text fontWeight="bold">Transfer {index + 1}</Text>
+                <Text fontWeight="bold">{t('transfers.transfer_n', { n: index + 1 })}</Text>
                 <IconButton
                   icon={<DeleteIcon />}
                   size="sm"
                   colorScheme="red"
                   variant="ghost"
                   onClick={() => handleRemove(index)}
-                  aria-label={`Remove transfer ${index + 1}`}
+                  aria-label={t('transfers.remove_transfer', { n: index + 1 })}
                   isDisabled={isDisabled}
                 />
               </HStack>
@@ -130,7 +133,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <FormControl
                     isInvalid={!!getFieldError(errors, `${prefix}.direction`)}
                   >
-                    <FormLabel>Direction</FormLabel>
+                    <FormLabel>{t('transfers.direction')}</FormLabel>
                     <Select
                       value={transfer.direction}
                       onChange={(e) =>
@@ -157,7 +160,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <FormControl
                     isInvalid={!!getFieldError(errors, `${prefix}.airport`)}
                   >
-                    <FormLabel>Airport</FormLabel>
+                    <FormLabel>{t('transfers.airport')}</FormLabel>
                     <Select
                       value={transfer.airport}
                       onChange={(e) =>
@@ -185,11 +188,11 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                 <FormControl
                   isInvalid={!!getFieldError(errors, `${prefix}.flight`)}
                 >
-                  <FormLabel>Flight Number</FormLabel>
+                  <FormLabel>{t('transfers.flight_number')}</FormLabel>
                   <Input
                     value={transfer.flight}
                     onChange={(e) => handleChange(index, 'flight', e.target.value)}
-                    placeholder="e.g. KL1234"
+                    placeholder={t('transfers.placeholder_flight')}
                     maxLength={10}
                     isDisabled={isDisabled}
                   />
@@ -204,7 +207,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <FormControl
                     isInvalid={!!getFieldError(errors, `${prefix}.date`)}
                   >
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>{t('transfers.date')}</FormLabel>
                     <Input
                       type="date"
                       value={transfer.date}
@@ -223,7 +226,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <FormControl
                     isInvalid={!!getFieldError(errors, `${prefix}.time`)}
                   >
-                    <FormLabel>Time</FormLabel>
+                    <FormLabel>{t('transfers.time')}</FormLabel>
                     <Input
                       type="time"
                       value={transfer.time}
@@ -240,7 +243,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <FormControl
                     isInvalid={!!getFieldError(errors, `${prefix}.persons`)}
                   >
-                    <FormLabel>Persons</FormLabel>
+                    <FormLabel>{t('transfers.persons')}</FormLabel>
                     <NumberInput
                       value={transfer.persons}
                       min={1}
@@ -276,7 +279,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
           colorScheme="orange"
           size="sm"
         >
-          Add Transfer{!canAdd ? ` (max ${maxTransfers} reached)` : ''}
+          {t('transfers.add_transfer')}{!canAdd ? ` ${t('transfers.max_reached', { count: maxTransfers })}` : ''}
         </Button>
       </VStack>
     </Box>

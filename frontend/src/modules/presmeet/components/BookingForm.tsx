@@ -23,6 +23,7 @@ import {
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import {
   ProductTypeConfig,
   BookingFormData,
@@ -106,6 +107,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   onSaved,
   onSubmitted,
 }) => {
+  const { t } = useTranslation('presmeet');
   const toast = useToast();
 
   const [formData, setFormData] = useState<BookingFormData>(
@@ -196,7 +198,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (formData.delegates.length < minDelegates) {
       allErrors.push({
         field: 'delegates',
-        message: `At least ${minDelegates} delegate is required`,
+        message: t('booking_form.min_delegates', { count: minDelegates }),
         constraint: 'min_per_club',
       });
     }
@@ -205,7 +207,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (currentTshirtCount > maxTshirts) {
       allErrors.push({
         field: 'tshirts',
-        message: `Maximum ${maxTshirts} t-shirts allowed`,
+        message: t('booking_form.max_tshirts', { count: maxTshirts }),
         constraint: 'max_per_club',
       });
     }
@@ -223,24 +225,24 @@ const BookingForm: React.FC<BookingFormProps> = ({
       const response = await presmeetService.saveBooking(formData);
       if (response.success) {
         toast({
-          title: 'Draft saved',
-          description: 'Your booking has been saved as a draft.',
+          title: t('booking_form.draft_saved'),
+          description: t('booking_form.draft_saved_desc'),
           status: 'success',
           duration: 3000,
         });
         onSaved?.();
       } else {
         toast({
-          title: 'Save failed',
-          description: response.error || 'Could not save draft.',
+          title: t('booking_form.save_failed'),
+          description: response.error || t('booking_form.save_failed_desc'),
           status: 'error',
           duration: 5000,
         });
       }
     } catch (err) {
       toast({
-        title: 'Save failed',
-        description: 'A network error occurred.',
+        title: t('booking_form.save_failed'),
+        description: t('booking_form.network_error'),
         status: 'error',
         duration: 5000,
       });
@@ -256,8 +258,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     const isValid = validateAll();
     if (!isValid) {
       toast({
-        title: 'Validation errors',
-        description: 'Please fix the highlighted errors before submitting.',
+        title: t('booking_form.validation_errors'),
+        description: t('booking_form.validation_errors_desc'),
         status: 'warning',
         duration: 4000,
       });
@@ -270,8 +272,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
       const saveResponse = await presmeetService.saveBooking(formData);
       if (!saveResponse.success) {
         toast({
-          title: 'Save failed',
-          description: saveResponse.error || 'Could not save before submitting.',
+          title: t('booking_form.save_failed'),
+          description: saveResponse.error || t('booking_form.save_failed_desc'),
           status: 'error',
           duration: 5000,
         });
@@ -281,8 +283,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
       const submitResponse = await presmeetService.submitBooking();
       if (submitResponse.success) {
         toast({
-          title: 'Booking submitted',
-          description: 'Your booking has been submitted successfully.',
+          title: t('booking_form.booking_submitted'),
+          description: t('booking_form.booking_submitted_desc'),
           status: 'success',
           duration: 4000,
         });
@@ -290,16 +292,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
         onSubmitted?.();
       } else {
         toast({
-          title: 'Submission failed',
-          description: submitResponse.error || 'Could not submit booking.',
+          title: t('booking_form.submission_failed'),
+          description: submitResponse.error || t('booking_form.submission_failed_desc'),
           status: 'error',
           duration: 5000,
         });
       }
     } catch (err) {
       toast({
-        title: 'Submission failed',
-        description: 'A network error occurred.',
+        title: t('booking_form.submission_failed'),
+        description: t('booking_form.network_error'),
         status: 'error',
         duration: 5000,
       });
@@ -319,7 +321,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         {isLocked && (
           <Alert status="warning" borderRadius="md">
             <AlertIcon />
-            This booking is locked and cannot be modified.
+            {t('booking_form.booking_locked')}
           </Alert>
         )}
 
@@ -374,13 +376,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
         {/* Estimated Total */}
         <Box p={4} borderWidth={1} borderColor="gray.600" borderRadius="md">
           <HStack justify="space-between">
-            <Heading size="sm">Estimated Total</Heading>
+            <Heading size="sm">{t('booking_form.estimated_total')}</Heading>
             <Text fontSize="lg" fontWeight="bold">
               €{estimatedTotal.toFixed(2)}
             </Text>
           </HStack>
           <Text fontSize="xs" color="gray.400" mt={1}>
-            {formData.delegates.length} delegate(s) · {currentPartyCount} party ticket(s) · {currentTshirtCount} t-shirt(s) · {formData.transfers.length} transfer(s)
+            {t('booking_form.summary', {
+              delegates: formData.delegates.length,
+              party: currentPartyCount,
+              tshirts: currentTshirtCount,
+              transfers: formData.transfers.length,
+            })}
           </Text>
         </Box>
 
@@ -393,7 +400,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             isLoading={isSaving}
             isDisabled={isLocked || isSubmitting}
           >
-            Save Draft
+            {t('booking_form.save_draft')}
           </Button>
           <Button
             colorScheme="orange"
@@ -401,7 +408,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             isLoading={isSubmitting}
             isDisabled={isLocked || isSaving}
           >
-            Submit Booking
+            {t('booking_form.submit_booking')}
           </Button>
         </HStack>
       </VStack>

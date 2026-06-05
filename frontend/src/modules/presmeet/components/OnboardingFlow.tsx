@@ -16,6 +16,7 @@ import {
   useToast,
   Center,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { ClubRegistryEntry, ClubRegistry } from '../types/presmeet';
 import { presmeetService } from '../services/presmeetApi';
 
@@ -24,6 +25,7 @@ export interface OnboardingFlowProps {
 }
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
+  const { t } = useTranslation('presmeet');
   const toast = useToast();
 
   // State
@@ -67,8 +69,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
     if (response.success && response.data) {
       toast({
-        title: 'Club assigned',
-        description: `You are now registered as the representative for ${club.club_name}.`,
+        title: t('onboarding.club_assigned'),
+        description: t('onboarding.club_assigned_desc', { clubName: club.club_name }),
         status: 'success',
         duration: 4000,
         isClosable: true,
@@ -83,8 +85,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       });
     } else {
       toast({
-        title: 'Assignment failed',
-        description: response.error || 'An unexpected error occurred. Please try again.',
+        title: t('onboarding.assignment_failed'),
+        description: response.error || t('onboarding.assignment_failed_desc'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -105,7 +107,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       <Center py={12}>
         <VStack spacing={4}>
           <Spinner size="xl" color="blue.500" />
-          <Text color="gray.600">Loading available clubs...</Text>
+          <Text color="gray.600">{t('onboarding.loading_clubs')}</Text>
         </VStack>
       </Center>
     );
@@ -117,7 +119,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       <Alert status="error" borderRadius="md">
         <AlertIcon />
         <Box>
-          <AlertTitle>Failed to load clubs</AlertTitle>
+          <AlertTitle>{t('onboarding.load_failed')}</AlertTitle>
           <AlertDescription>{fetchError}</AlertDescription>
         </Box>
       </Alert>
@@ -130,20 +132,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       <Box maxW="lg" mx="auto" py={8}>
         <Alert status="warning" borderRadius="md" flexDirection="column" textAlign="center" py={6}>
           <AlertIcon boxSize="40px" mr={0} mb={4} />
-          <AlertTitle mb={2}>Club Already Assigned</AlertTitle>
+          <AlertTitle mb={2}>{t('onboarding.club_already_assigned')}</AlertTitle>
           <AlertDescription mb={4}>
             <Text mb={2}>
-              <strong>{conflictInfo.clubName}</strong> already has a registered representative.
+              {t('onboarding.already_assigned_desc', { clubName: conflictInfo.clubName })}
             </Text>
             <Text mb={2}>
-              Current contact: <strong>{conflictInfo.contact}</strong>
+              {t('onboarding.current_contact')}: <strong>{conflictInfo.contact}</strong>
             </Text>
             <Text fontSize="sm" color="gray.600">
-              If you believe this is incorrect, please contact the PresMeet administrator to reassign the club.
+              {t('onboarding.contact_admin')}
             </Text>
           </AlertDescription>
           <Button size="sm" onClick={handleDismissConflict}>
-            Choose a different club
+            {t('onboarding.choose_different')}
           </Button>
         </Alert>
       </Box>
@@ -158,17 +160,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       <VStack spacing={6} align="stretch">
         <Box textAlign="center">
           <Heading size="lg" mb={2}>
-            Select Your Club
+            {t('onboarding.select_club')}
           </Heading>
           <Text color="gray.600">
-            Choose the club you represent for the Presidents' Meeting.
+            {t('onboarding.select_club_desc')}
           </Text>
         </Box>
 
         {clubs.length === 0 ? (
           <Alert status="info" borderRadius="md">
             <AlertIcon />
-            No clubs are currently available. Please contact the administrator.
+            {t('onboarding.no_clubs')}
           </Alert>
         ) : (
           <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
@@ -210,7 +212,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
                             justifyContent="center"
                           >
                             <Text fontSize="xs" color="gray.500">
-                              No logo
+                              {t('onboarding.no_logo')}
                             </Text>
                           </Box>
                         }
@@ -225,7 +227,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
                         justifyContent="center"
                       >
                         <Text fontSize="xs" color="gray.500">
-                          No logo
+                          {t('onboarding.no_logo')}
                         </Text>
                       </Box>
                     )}
@@ -236,7 +238,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
                     {isAssigned && (
                       <Text fontSize="xs" color="orange.600">
-                        Already assigned
+                        {t('onboarding.already_assigned')}
                       </Text>
                     )}
 
@@ -244,7 +246,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
                       <HStack spacing={2}>
                         <Spinner size="xs" />
                         <Text fontSize="xs" color="blue.600">
-                          Assigning...
+                          {t('onboarding.assigning')}
                         </Text>
                       </HStack>
                     )}

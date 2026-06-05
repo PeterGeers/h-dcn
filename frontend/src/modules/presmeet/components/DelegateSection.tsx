@@ -23,6 +23,7 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import {
   DelegateFormData,
   Gender,
@@ -48,6 +49,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
   errors,
   isDisabled = false,
 }) => {
+  const { t } = useTranslation('presmeet');
   const canAdd = delegates.length < maxDelegates;
 
   const handleAdd = () => {
@@ -101,7 +103,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
   return (
     <Box>
       <HStack justify="space-between" mb={4}>
-        <Heading size="md">Delegates</Heading>
+        <Heading size="md">{t('delegates.title')}</Heading>
         <Text fontSize="sm" color="gray.400">
           {delegates.length} / {maxDelegates}
         </Text>
@@ -119,25 +121,25 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
               borderRadius="md"
             >
               <HStack justify="space-between" mb={3}>
-                <Text fontWeight="bold">Delegate {index + 1}</Text>
+                <Text fontWeight="bold">{t('delegates.delegate_n', { n: index + 1 })}</Text>
                 <IconButton
                   icon={<DeleteIcon />}
                   size="sm"
                   colorScheme="red"
                   variant="ghost"
                   onClick={() => handleRemove(index)}
-                  aria-label={`Remove delegate ${index + 1}`}
+                  aria-label={t('delegates.remove_delegate', { n: index + 1 })}
                   isDisabled={isDisabled}
                 />
               </HStack>
 
               <VStack spacing={3} align="stretch">
                 <FormControl isInvalid={!!getFieldError(errors, `${prefix}.name`)}>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('delegates.name')}</FormLabel>
                   <Input
                     value={delegate.name}
                     onChange={(e) => handleChange(index, 'name', e.target.value)}
-                    placeholder="Full name"
+                    placeholder={t('delegates.placeholder_name')}
                     isDisabled={isDisabled}
                   />
                   {getFieldError(errors, `${prefix}.name`) && (
@@ -148,11 +150,11 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
                 </FormControl>
 
                 <FormControl isInvalid={!!getFieldError(errors, `${prefix}.role`)}>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>{t('delegates.role')}</FormLabel>
                   <Input
                     value={delegate.role}
                     onChange={(e) => handleChange(index, 'role', e.target.value)}
-                    placeholder="e.g. President, Secretary"
+                    placeholder={t('delegates.placeholder_role')}
                     isDisabled={isDisabled}
                   />
                   {getFieldError(errors, `${prefix}.role`) && (
@@ -164,7 +166,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
 
                 <FormControl>
                   <HStack justify="space-between">
-                    <FormLabel mb={0}>Attend party</FormLabel>
+                    <FormLabel mb={0}>{t('delegates.attend_party')}</FormLabel>
                     <Switch
                       isChecked={delegate.attend_party}
                       onChange={(e) =>
@@ -180,7 +182,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
 
                 <FormControl>
                   <HStack justify="space-between">
-                    <FormLabel mb={0}>Order t-shirt</FormLabel>
+                    <FormLabel mb={0}>{t('delegates.order_tshirt')}</FormLabel>
                     <Switch
                       isChecked={!!delegate.tshirt}
                       onChange={(e) => handleTshirtToggle(index, e.target.checked)}
@@ -195,7 +197,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
                     <FormControl
                       isInvalid={!!getFieldError(errors, `${prefix}.tshirt.gender`)}
                     >
-                      <FormLabel>Gender</FormLabel>
+                      <FormLabel>{t('delegates.gender')}</FormLabel>
                       <Select
                         value={delegate.tshirt.gender}
                         onChange={(e) =>
@@ -206,8 +208,8 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
                         color="white"
                         sx={{ option: { bg: '#2D3748', color: 'white' } }}
                       >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
+                        <option value="male">{t('delegates.male')}</option>
+                        <option value="female">{t('delegates.female')}</option>
                       </Select>
                       {getFieldError(errors, `${prefix}.tshirt.gender`) && (
                         <Text color="red.300" fontSize="sm" mt={1}>
@@ -219,7 +221,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
                     <FormControl
                       isInvalid={!!getFieldError(errors, `${prefix}.tshirt.size`)}
                     >
-                      <FormLabel>Size</FormLabel>
+                      <FormLabel>{t('delegates.size')}</FormLabel>
                       <Select
                         value={delegate.tshirt.size}
                         onChange={(e) =>
@@ -257,7 +259,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
           colorScheme="orange"
           size="sm"
         >
-          Add Delegate{!canAdd && ` (max ${maxDelegates} reached)`}
+          {t('delegates.add_delegate')}{!canAdd && ` ${t('delegates.max_reached', { count: maxDelegates })}`}
         </Button>
       </VStack>
     </Box>

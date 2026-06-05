@@ -25,12 +25,12 @@ The Admin Product Management feature restructures the existing PresMeet admin fu
 
 #### Acceptance Criteria
 
-1. THE Admin_Portal SHALL display a "Webshop Beheer" Dashboard_Card on the main `/dashboard` page for users with the `Webshop_Management` role
-2. WHEN a user with the `Webshop_Management` role clicks the "Webshop Beheer" Dashboard_Card, THE Admin_Portal SHALL navigate to the `/webshop_management` route
+1. THE Admin*Portal SHALL display a "Webshop Beheer" Dashboard_Card on the main `/dashboard` page for users with any Products*\* role (`Products_CRUD`, `Products_Read`, or `Products_Export`)
+2. WHEN a user with a qualifying Products\_\* role clicks the "Webshop Beheer" Dashboard_Card, THE Admin_Portal SHALL navigate to the `/webshop_management` route
 3. THE Admin_Portal SHALL render the webshop management section at the `/webshop_management` route with tab or sub-navigation for Products, Orders, Payments, and Reports
 4. THE Admin_Portal SHALL integrate the existing `/products` page (ProductManagementPage) as the Products sub-section within `/webshop_management`, making `/webshop_management` the parent navigation hub
-5. WHEN a user without the `Webshop_Management` role navigates to `/webshop_management`, THE Admin_Portal SHALL deny access and display a 403 forbidden message
-6. THE Admin_Portal SHALL use the existing FunctionGuard component with `requiredRoles={['Webshop_Management']}` to control visibility of the Dashboard_Card
+5. WHEN a user without any Products\_\* role navigates to `/webshop_management`, THE Admin_Portal SHALL deny access and display a 403 forbidden message
+6. THE Admin_Portal SHALL use the existing FunctionGuard component with `requiredRoles={['Products_CRUD', 'Products_Read', 'Products_Export']}` to control visibility of the Dashboard_Card
 7. THE Admin_Portal SHALL render the webshop management section independently of the PresMeet onboarding flow, requiring no club selection or club_id assignment for admin users
 
 ### Requirement 2: Product Configuration Management
@@ -101,29 +101,34 @@ The Admin Product Management feature restructures the existing PresMeet admin fu
 
 ### Requirement 6: Reporting and Analytics
 
-**User Story:** As a webshop administrator, I want financial and non-financial reports on order data across all tenants, so that I can monitor business progress with the ability to drill down by tenant.
+**User Story:** As a webshop administrator, I want financial and non-financial reports on order data across all tenants, stored in S3 for both online display and local download, so that I can monitor business progress and process data offline.
 
 #### Acceptance Criteria
 
-1. THE Report_Generator SHALL display a summary overview showing total orders, total revenue, total paid, and total outstanding, filterable by tenant
-2. WHEN tenant filter is set to "presmeet", THE Report_Generator SHALL display PresMeet-specific metrics: total counts per product_type split by order status (draft, submitted, locked)
-3. WHEN tenant filter is set to "h-dcn", THE Report_Generator SHALL display regular webshop metrics: total orders, items sold, and revenue by product
-4. WHEN a Webshop_Admin clicks "Refresh Data", THE Report_Generator SHALL regenerate report data and reload the display
-5. THE Report_Generator SHALL provide a downloadable CSV export of orders matching the current tenant filter, containing customer/club name, order status, and for each item: product_type, quantity, unit price, and all attribute values
-6. THE Report_Generator SHALL display the report generation timestamp
-7. WHEN a CSV download fails, THE Report_Generator SHALL display an error toast notification with the failure reason
+1. WHEN a user with Products_CRUD clicks "Refresh Data", THE Report_Generator SHALL generate a report snapshot, store it as a JSON file in S3, and reload the display from the stored snapshot
+2. THE Report_Generator SHALL read report data from the S3-stored snapshot for online display, rather than querying DynamoDB on every page load
+3. THE Report_Generator SHALL display a summary overview from the stored snapshot showing total orders, total revenue, total paid, and total outstanding, filterable by tenant
+4. WHEN tenant filter is set to "presmeet", THE Report_Generator SHALL display PresMeet-specific metrics: total counts per product_type split by order status (draft, submitted, locked)
+5. WHEN tenant filter is set to "h-dcn", THE Report_Generator SHALL display regular webshop metrics: total orders, items sold, and revenue by product
+6. WHEN a user downloads the report, THE Report_Generator SHALL offer the choice of CSV or JSON format, generating the file on-the-fly from the stored JSON snapshot, respecting the active tenant filter. The CSV SHALL contain a flat structure (customer/club name, order status, product_type, quantity, unit price, attribute values). The JSON SHALL preserve the full nested structure (orders with items and payment history).
+7. THE Report_Generator SHALL display the report generation timestamp on the stored snapshot so the user knows how current the data is
+8. WHEN a report generation or download fails, THE Report_Generator SHALL display an error toast notification with the failure reason
 
 ### Requirement 7: Role-Based Access Control
 
-**User Story:** As a system administrator, I want the webshop management section protected by the existing Cognito role system, so that only authorized users can access administrative functionality.
+**User Story:** As a system administrator, I want the webshop management section protected by the existing Cognito role system using the Products\_\* role family, so that access is consistent with the read/CRUD/export model used across the portal.
 
 #### Acceptance Criteria
 
-1. THE Admin_Portal SHALL require the `Webshop_Management` Cognito group membership to access any functionality within the `/webshop_management` route
-2. WHEN an authenticated user without the `Webshop_Management` role requests any admin API endpoint (`/presmeet/admin/*`), THE Admin_Portal SHALL return a 403 error response
-3. THE Admin_Portal SHALL NOT require any region-specific role (Regio_Pressmeet or Regio_All) for accessing the webshop management section, unlike the current PresMeet admin tab which requires both management and region roles
-4. THE Admin_Portal SHALL validate the user's access token on each API request to the admin endpoints using the existing `validate_permissions_with_regions` function from the auth layer
-5. IF the user's session expires while using the webshop management section, THEN THE Admin_Portal SHALL redirect the user to the login page
+1. THE Admin_Portal SHALL require at least one of `Products_CRUD`, `Products_Read`, or `Products_Export` Cognito group membership to access the `/webshop_management` route
+2. WHEN a user has `Products_Read` only, THE Admin_Portal SHALL allow viewing all sections (products, orders, payments, reports) but SHALL disable all create, update, delete, lock/unlock, and manual payment actions
+3. WHEN a user has `Products_CRUD`, THE Admin_Portal SHALL grant full access to all functionality: product management, variant management, order lock/unlock, manual payment recording, and reporting
+4. WHEN a user has `Products_Export`, THE Admin_Portal SHALL allow downloading CSV exports from the Reports tab (can be combined with Read or CRUD)
+5. THE Admin_Portal SHALL treat the existing `Webshop_Management` role as equivalent to `Products_CRUD` for backward compatibility until it is fully deprecated
+6. THE Admin_Portal SHALL NOT require any region-specific role (Regio_Pressmeet or Regio_All) for accessing the webshop management section
+7. THE Admin_Portal SHALL validate the user's access token on each API request using the existing `validate_permissions_with_regions` function from the auth layer
+8. IF the user's session expires while using the webshop management section, THEN THE Admin_Portal SHALL redirect the user to the login page
+9. WHEN an authenticated user without any qualifying Products\_\* role navigates to `/webshop_management`, THE Admin_Portal SHALL deny access and display a 403 forbidden message
 
 ### Requirement 8: Separation from PresMeet Booking Flow
 

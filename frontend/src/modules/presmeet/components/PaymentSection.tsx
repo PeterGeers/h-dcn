@@ -16,6 +16,7 @@ import {
   Heading,
   useToast,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import {
   OrderStatus,
   PaymentStatus,
@@ -64,6 +65,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   totalPaid,
   payments = [],
 }) => {
+  const { t } = useTranslation('presmeet');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
@@ -79,8 +81,8 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
         window.location.href = response.data.checkout_url;
       } else {
         toast({
-          title: 'Payment Error',
-          description: response.error || 'Could not initiate payment. Please try again.',
+          title: t('payment.payment_error'),
+          description: response.error || t('payment.payment_error_desc'),
           status: 'error',
           duration: 5000,
           isClosable: true,
@@ -88,8 +90,8 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
       }
     } catch {
       toast({
-        title: 'Payment Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: t('payment.payment_error'),
+        description: t('payment.unexpected_error'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -102,7 +104,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   return (
     <Box>
       <HStack mb={4} justify="space-between">
-        <Heading size="md">Payment</Heading>
+        <Heading size="md">{t('payment.title')}</Heading>
         <Badge
           colorScheme={PAYMENT_STATUS_COLOR[paymentStatus]}
           fontSize="sm"
@@ -118,17 +120,17 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
         <Box borderWidth="1px" borderRadius="md" p={4}>
           <VStack spacing={2} align="stretch">
             <HStack justify="space-between">
-              <Text>Total Amount</Text>
+              <Text>{t('payment.total_amount')}</Text>
               <Text fontWeight="medium">{formatEur(totalAmount)}</Text>
             </HStack>
             <HStack justify="space-between">
-              <Text>Total Paid</Text>
+              <Text>{t('payment.total_paid')}</Text>
               <Text fontWeight="medium" color="green.500">
                 {formatEur(totalPaid)}
               </Text>
             </HStack>
             <HStack justify="space-between" pt={2} borderTopWidth="1px">
-              <Text fontWeight="bold">Remaining Balance</Text>
+              <Text fontWeight="bold">{t('payment.remaining_balance')}</Text>
               <Text fontWeight="bold" color={remainingBalance > 0 ? 'red.500' : 'green.500'}>
                 {formatEur(remainingBalance)}
               </Text>
@@ -139,7 +141,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
         {/* Pay Now button */}
         {!isFullyPaid && (
           <Tooltip
-            label="Order must be submitted before payment"
+            label={t('payment.submit_before_pay')}
             isDisabled={!isDraft}
             hasArrow
           >
@@ -150,10 +152,10 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                 width="full"
                 isDisabled={isDraft}
                 isLoading={isLoading}
-                loadingText="Redirecting..."
+                loadingText={t('payment.redirecting')}
                 onClick={handlePayNow}
               >
-                Pay Now ({formatEur(remainingBalance)})
+                {t('payment.pay_now', { amount: formatEur(remainingBalance) })}
               </Button>
             </Box>
           </Tooltip>
@@ -161,7 +163,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
         {isFullyPaid && (
           <Text color="green.500" fontWeight="medium" textAlign="center">
-            ✓ Fully paid
+            {t('payment.fully_paid')}
           </Text>
         )}
 
@@ -169,15 +171,15 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
         {payments.length > 0 && (
           <Box>
             <Text fontWeight="bold" mb={2}>
-              Payment History
+              {t('payment.payment_history')}
             </Text>
             <Table size="sm" variant="simple">
               <Thead>
                 <Tr>
-                  <Th>Date</Th>
-                  <Th>Description</Th>
-                  <Th>Status</Th>
-                  <Th isNumeric>Amount</Th>
+                  <Th>{t('payment.col_date')}</Th>
+                  <Th>{t('payment.col_description')}</Th>
+                  <Th>{t('payment.col_status')}</Th>
+                  <Th isNumeric>{t('payment.col_amount')}</Th>
                 </Tr>
               </Thead>
               <Tbody>

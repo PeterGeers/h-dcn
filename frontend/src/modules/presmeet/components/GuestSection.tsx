@@ -23,6 +23,7 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import {
   GuestFormData,
   Gender,
@@ -52,6 +53,8 @@ const GuestSection: React.FC<GuestSectionProps> = ({
   errors,
   isDisabled = false,
 }) => {
+  const { t } = useTranslation('presmeet');
+
   // Guests always get a party ticket, so party limit applies
   const remainingPartySlots = maxPartyTotal - currentPartyCount;
   const canAdd = guests.length < maxGuests && remainingPartySlots > 0;
@@ -102,17 +105,17 @@ const GuestSection: React.FC<GuestSectionProps> = ({
   };
 
   const getDisabledReason = (): string | null => {
-    if (guests.length >= maxGuests) return `Max ${maxGuests} guests reached`;
-    if (remainingPartySlots <= 0) return `Max ${maxPartyTotal} party tickets reached`;
+    if (guests.length >= maxGuests) return t('guests.max_guests_reached', { count: maxGuests });
+    if (remainingPartySlots <= 0) return t('guests.max_party_reached', { count: maxPartyTotal });
     return null;
   };
 
   return (
     <Box>
       <HStack justify="space-between" mb={4}>
-        <Heading size="md">Guests</Heading>
+        <Heading size="md">{t('guests.title')}</Heading>
         <Text fontSize="sm" color="gray.400">
-          {guests.length} guest{guests.length !== 1 ? 's' : ''} | Party tickets: {currentPartyCount} / {maxPartyTotal}
+          {t('guests.count', { count: guests.length })} | {t('guests.party_tickets', { current: currentPartyCount, max: maxPartyTotal })}
         </Text>
       </HStack>
 
@@ -128,25 +131,25 @@ const GuestSection: React.FC<GuestSectionProps> = ({
               borderRadius="md"
             >
               <HStack justify="space-between" mb={3}>
-                <Text fontWeight="bold">Guest {index + 1}</Text>
+                <Text fontWeight="bold">{t('guests.guest_n', { n: index + 1 })}</Text>
                 <IconButton
                   icon={<DeleteIcon />}
                   size="sm"
                   colorScheme="red"
                   variant="ghost"
                   onClick={() => handleRemove(index)}
-                  aria-label={`Remove guest ${index + 1}`}
+                  aria-label={t('guests.remove_guest', { n: index + 1 })}
                   isDisabled={isDisabled}
                 />
               </HStack>
 
               <VStack spacing={3} align="stretch">
                 <FormControl isInvalid={!!getFieldError(errors, `${prefix}.name`)}>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('guests.name')}</FormLabel>
                   <Input
                     value={guest.name}
                     onChange={(e) => handleNameChange(index, e.target.value)}
-                    placeholder="Full name"
+                    placeholder={t('guests.placeholder_name')}
                     isDisabled={isDisabled}
                   />
                   {getFieldError(errors, `${prefix}.name`) && (
@@ -160,7 +163,7 @@ const GuestSection: React.FC<GuestSectionProps> = ({
 
                 <FormControl>
                   <HStack justify="space-between">
-                    <FormLabel mb={0}>Order t-shirt</FormLabel>
+                    <FormLabel mb={0}>{t('guests.order_tshirt')}</FormLabel>
                     <Switch
                       isChecked={!!guest.tshirt}
                       onChange={(e) => handleTshirtToggle(index, e.target.checked)}
@@ -175,7 +178,7 @@ const GuestSection: React.FC<GuestSectionProps> = ({
                     <FormControl
                       isInvalid={!!getFieldError(errors, `${prefix}.tshirt.gender`)}
                     >
-                      <FormLabel>Gender</FormLabel>
+                      <FormLabel>{t('guests.gender')}</FormLabel>
                       <Select
                         value={guest.tshirt.gender}
                         onChange={(e) =>
@@ -186,8 +189,8 @@ const GuestSection: React.FC<GuestSectionProps> = ({
                         color="white"
                         sx={{ option: { bg: '#2D3748', color: 'white' } }}
                       >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
+                        <option value="male">{t('guests.male')}</option>
+                        <option value="female">{t('guests.female')}</option>
                       </Select>
                       {getFieldError(errors, `${prefix}.tshirt.gender`) && (
                         <Text color="red.300" fontSize="sm" mt={1}>
@@ -199,7 +202,7 @@ const GuestSection: React.FC<GuestSectionProps> = ({
                     <FormControl
                       isInvalid={!!getFieldError(errors, `${prefix}.tshirt.size`)}
                     >
-                      <FormLabel>Size</FormLabel>
+                      <FormLabel>{t('guests.size')}</FormLabel>
                       <Select
                         value={guest.tshirt.size}
                         onChange={(e) =>
@@ -237,7 +240,7 @@ const GuestSection: React.FC<GuestSectionProps> = ({
           colorScheme="orange"
           size="sm"
         >
-          Add Guest{getDisabledReason() ? ` (${getDisabledReason()})` : ''}
+          {t('guests.add_guest')}{getDisabledReason() ? ` (${getDisabledReason()})` : ''}
         </Button>
       </VStack>
     </Box>

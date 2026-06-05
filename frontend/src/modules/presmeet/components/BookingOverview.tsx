@@ -16,6 +16,7 @@ import {
   AlertIcon,
   Heading,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import {
   CartItem,
   OrderStatus,
@@ -23,13 +24,6 @@ import {
 } from '../types/presmeet';
 
 // --- Helpers ---
-
-const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
-  meeting_ticket: 'Meeting Ticket',
-  party_ticket: 'Party Ticket',
-  tshirt: 'T-Shirt',
-  airport_transfer: 'Airport Transfer',
-};
 
 const STATUS_COLOR: Record<OrderStatus, string> = {
   draft: 'yellow',
@@ -80,6 +74,8 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
   status,
   totalPaid = 0,
 }) => {
+  const { t } = useTranslation('presmeet');
+
   // Group items by product_type
   const groups: ProductGroup[] = React.useMemo(() => {
     const groupMap = new Map<ProductType, CartItem[]>();
@@ -119,20 +115,27 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
   const grandTotal = groups.reduce((sum, g) => sum + g.lineTotal, 0);
   const remainingBalance = Math.max(0, grandTotal - totalPaid);
 
+  const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
+    meeting_ticket: t('product_types.meeting_ticket'),
+    party_ticket: t('product_types.party_ticket'),
+    tshirt: t('product_types.tshirt'),
+    airport_transfer: t('product_types.airport_transfer'),
+  };
+
   // Empty state
   if (items.length === 0) {
     return (
       <Box>
         <HStack mb={4} justify="space-between">
-          <Heading size="md">Booking Overview</Heading>
+          <Heading size="md">{t('overview.title')}</Heading>
           <Badge colorScheme={STATUS_COLOR[status]}>{status}</Badge>
         </HStack>
         <Alert status="info" borderRadius="md">
           <AlertIcon />
-          No items have been added to your booking yet.
+          {t('overview.no_items')}
         </Alert>
         <HStack mt={4} justify="space-between">
-          <Text fontWeight="bold">Grand Total:</Text>
+          <Text fontWeight="bold">{t('overview.grand_total')}:</Text>
           <Text fontWeight="bold">{formatEur(0)}</Text>
         </HStack>
       </Box>
@@ -142,7 +145,7 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
   return (
     <Box>
       <HStack mb={4} justify="space-between">
-        <Heading size="md">Booking Overview</Heading>
+        <Heading size="md">{t('overview.title')}</Heading>
         <Badge colorScheme={STATUS_COLOR[status]} fontSize="sm" px={2} py={1}>
           {status}
         </Badge>
@@ -156,15 +159,15 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
                 {PRODUCT_TYPE_LABELS[group.productType]}
               </Text>
               <Text fontSize="sm" color="gray.600">
-                {group.quantity} item{group.quantity !== 1 ? 's' : ''} × {formatEur(group.unitPrice)} = {formatEur(group.lineTotal)}
+                {t('overview.items_count', { count: group.quantity })} × {formatEur(group.unitPrice)} = {formatEur(group.lineTotal)}
               </Text>
             </HStack>
 
             <Table size="sm" variant="simple">
               <Thead>
                 <Tr>
-                  <Th>Item</Th>
-                  <Th isNumeric>Price</Th>
+                  <Th>{t('overview.item')}</Th>
+                  <Th isNumeric>{t('overview.price')}</Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -187,15 +190,15 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
         <Table size="sm" variant="simple">
           <Tfoot>
             <Tr>
-              <Th>Grand Total</Th>
+              <Th>{t('overview.grand_total')}</Th>
               <Th isNumeric fontSize="md">{formatEur(grandTotal)}</Th>
             </Tr>
             <Tr>
-              <Td>Total Paid</Td>
+              <Td>{t('overview.total_paid')}</Td>
               <Td isNumeric>{formatEur(totalPaid)}</Td>
             </Tr>
             <Tr>
-              <Td fontWeight="bold">Remaining Balance</Td>
+              <Td fontWeight="bold">{t('overview.remaining_balance')}</Td>
               <Td isNumeric fontWeight="bold">{formatEur(remainingBalance)}</Td>
             </Tr>
           </Tfoot>

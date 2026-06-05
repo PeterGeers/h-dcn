@@ -30,6 +30,7 @@ import {
   Text,
   Flex,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthProvider';
 import { usePresMeetBooking } from './hooks/usePresMeetBooking';
 import BookingForm from './components/BookingForm';
@@ -65,6 +66,7 @@ function isLogoUploadAdmin(groups: string[]): boolean {
 }
 
 const PresMeetPage: React.FC = () => {
+  const { t } = useTranslation('presmeet');
   const { user } = useAuth();
   const {
     config,
@@ -104,7 +106,7 @@ const PresMeetPage: React.FC = () => {
         <Alert status="error" borderRadius="md">
           <AlertIcon />
           <Box>
-            <AlertTitle>Error loading PresMeet</AlertTitle>
+            <AlertTitle>{t('page.error_loading')}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Box>
         </Alert>
@@ -117,7 +119,7 @@ const PresMeetPage: React.FC = () => {
     return (
       <Container maxW="container.xl" py={6}>
         <Heading size="lg" color="orange.400" mb={6}>
-          Presidents' Meeting
+          {t('page.title')}
         </Heading>
         <OnboardingFlow onComplete={handleOnboardingComplete} />
       </Container>
@@ -131,7 +133,7 @@ const PresMeetPage: React.FC = () => {
           <ClubLogoUploader clubId={clubId} isAdmin={isLogoAdmin} />
         )}
         <Heading size="lg" color="orange.400">
-          Presidents' Meeting Booking
+          {t('page.title_booking')}
         </Heading>
       </Flex>
 
@@ -144,9 +146,9 @@ const PresMeetPage: React.FC = () => {
 
       <Tabs colorScheme="orange" variant="enclosed">
         <TabList>
-          <Tab>Booking</Tab>
-          <Tab>Overview</Tab>
-          {isAdmin && <Tab>Admin</Tab>}
+          <Tab>{t('page.tab_booking')}</Tab>
+          <Tab>{t('page.tab_overview')}</Tab>
+          {isAdmin && <Tab>{t('page.tab_admin')}</Tab>}
         </TabList>
 
         <TabPanels>
