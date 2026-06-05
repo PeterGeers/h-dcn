@@ -65,8 +65,10 @@ export const getAdminProducts = async (
 ): Promise<AdminProduct[]> => {
   const params: Record<string, string> = {};
   if (tenant) params.tenant = tenant;
-  const response = await adminClient.get<AdminProduct[]>('/admin/products', { params });
-  return response.data;
+  const response = await adminClient.get('/admin/products', { params });
+  // Backend returns {products: [...], total_count: N}
+  const data = response.data;
+  return data.products ?? data ?? [];
 };
 
 export const createAdminProduct = async (
@@ -148,8 +150,10 @@ export const getAdminOrders = async (
   const params: Record<string, string> = {};
   if (tenant) params.tenant = tenant;
   if (status) params.status = status;
-  const response = await adminClient.get<AdminOrdersResponse>('/admin/orders', { params });
-  return response.data;
+  const response = await adminClient.get('/admin/orders', { params });
+  // Backend returns {orders: [...], total_count: N}
+  const data = response.data;
+  return { orders: data.orders ?? [], total_count: data.total_count ?? 0 };
 };
 
 export const updateOrderStatus = async (
@@ -178,10 +182,11 @@ export const unlockOrder = async (orderId: string): Promise<void> => {
 
 export const getAdminPayments = async (
   tenant?: string
-): Promise<PaymentRecord[]> => {
+): Promise<any> => {
   const params: Record<string, string> = {};
   if (tenant) params.tenant = tenant;
-  const response = await adminClient.get<PaymentRecord[]>('/admin/payments', { params });
+  const response = await adminClient.get('/admin/payments', { params });
+  // Backend returns {aggregates: {...}, order_payments: [...], total_count: N}
   return response.data;
 };
 

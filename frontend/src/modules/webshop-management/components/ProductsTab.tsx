@@ -46,7 +46,7 @@ export interface ProductsTabProps {
  * Checks if a product has only the Default_Variant (empty variant_attributes).
  */
 function isDefaultVariantProduct(product: AdminProduct): boolean {
-  if (product.variants.length !== 1) return false;
+  if (!product.variants || product.variants.length !== 1) return false;
   const variant = product.variants[0];
   return (
     Object.keys(variant.variant_attributes || {}).length === 0
@@ -174,7 +174,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
                 <Tr _hover={{ bg: 'gray.700' }}>
                   {/* Expand toggle */}
                   <Td>
-                    {!isDefault && product.variants.length > 0 && (
+                    {!isDefault && (product.variants?.length ?? 0) > 0 && (
                       <IconButton
                         aria-label="Varianten tonen"
                         icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
@@ -289,7 +289,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
                 </Tr>
 
                 {/* Variant sub-table (Task 15.2) */}
-                {!isDefault && product.variants.length > 0 && (
+                {!isDefault && (product.variants?.length ?? 0) > 0 && (
                   <Tr>
                     <Td colSpan={10} p={0} border="none">
                       <Collapse in={isExpanded} animateOpacity>

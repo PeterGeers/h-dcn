@@ -70,7 +70,7 @@ export function useAdminPayments(tenant: string): UseAdminPaymentsReturn {
       // Adapt based on actual API response shape
       const response = data as any;
 
-      if (response.aggregates && response.orders) {
+      if (response.aggregates && response.order_payments) {
         // Structured response from backend
         setAggregates({
           totalCharged: response.aggregates.total_charged ?? 0,
@@ -78,7 +78,7 @@ export function useAdminPayments(tenant: string): UseAdminPaymentsReturn {
           totalOutstanding: response.aggregates.total_outstanding ?? 0,
         });
 
-        const summaries: OrderPaymentSummary[] = (response.orders || []).map((order: any) => ({
+        const summaries: OrderPaymentSummary[] = (response.order_payments || []).map((order: any) => ({
           order_id: order.order_id,
           tenant: order.tenant || '',
           customer: order.customer_name || '',

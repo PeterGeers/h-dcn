@@ -305,24 +305,6 @@ function Dashboard() {
           </FunctionGuard>
           
           {/* Products Admin - Only for users with product management roles */}
-          <FunctionGuard 
-            user={functionGuardUser} 
-            functionName="products" 
-            action="read"
-            requiredRoles={['Products_Read', 'Products_CRUD', 'Webshop_Management', 'System_User_Management']}
-          >
-            <AppCard 
-              key="products"
-              app={{
-                id: 'products',
-                title: 'Product Management',
-                description: 'Beheer webshop producten',
-                icon: '📦',
-                path: '/products'
-              }}
-              onClick={() => navigate('/products')}
-            />
-          </FunctionGuard>
           
           {/* Webshop Beheer - Only for users with Products_* roles */}
           <FunctionGuard 
