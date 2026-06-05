@@ -36,12 +36,14 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
  * Replaces underscores with spaces and capitalizes the first letter.
  */
 export function formatStatus(status: string): string {
+  if (!status) return '—';
   return status
     .replace(/_/g, ' ')
     .replace(/^\w/, (c) => c.toUpperCase());
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  if (!status) return null;
   const colorScheme = STATUS_COLOR_MAP[status] || 'gray';
 
   return (

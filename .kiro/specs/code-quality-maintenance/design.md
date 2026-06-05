@@ -16,7 +16,7 @@ The tool is designed to:
 1. **Python CLI over shell scripts**: Python enables AST-based analysis (critical for dead code detection), cross-platform execution, and reuse of the existing pytest infrastructure for testing the scanner itself.
 2. **Single package, multiple modules**: Each checker is an independent module with a shared interface, enabling selective execution and parallel development.
 3. **Git-based analysis**: Documentation freshness and test alignment both rely on `git log` for timestamp comparison, avoiding external dependency on coverage tools.
-4. **No external linting tools dependency**: The scanner uses Python's `ast` module and TypeScript-aware regex parsing rather than requiring `pylint`, `vulture`, or `eslint` as runtime dependencies. This keeps the tool lightweight and avoids version conflicts.
+4. **External tools for dead code detection only**: The scanner uses **vulture** (MIT license, `pip install vulture`) for Python dead code detection and **knip** (ISC license, `npm install knip`) for TypeScript/TSX unused exports. These battle-tested tools provide superior accuracy over custom AST/regex analysis — vulture handles decorators, metaclasses, and dynamic attributes; knip uses the actual TypeScript compiler and handles re-exports, barrel files, and dynamic imports. The remaining checkers (file length, docs freshness, test alignment) and the unified reporting/CI layer remain custom-built.
 
 ## Architecture
 
@@ -58,6 +58,14 @@ graph TB
     TAC --> Git
     TAC --> FileDiscovery
     DCD --> Suppression
+
+    subgraph "External Tools"
+        Vulture[vulture<br/>Python dead code]
+        Knip[knip<br/>TS unused exports]
+    end
+
+    DCD --> Vulture
+    DCD --> Knip
     DOC --> Suppression
     FLE --> Suppression
 ```
@@ -113,7 +121,7 @@ quality_scanner/
 │   ├── __init__.py
 │   ├── base.py          # Abstract base class for checkers
 │   ├── file_length.py   # File Length Enforcer
-│   ├── dead_code.py     # Dead Code Detector (Python AST + TS regex)
+│   ├── dead_code.py     # Dead Code Detector (vulture + knip wrapper)
 │   ├── docs_freshness.py # Documentation Freshness Checker
 │   └── test_alignment.py # Test Alignment Checker
 └── tests/
@@ -128,6 +136,20 @@ quality_scanner/
     ├── test_reporter.py
     └── test_properties.py  # Property-based tests
 ```
+
+### External Dependencies
+
+| Dependency   | Version | License | Purpose                                   |
+| ------------ | ------- | ------- | ----------------------------------------- |
+| `vulture`    | >=2.11  | MIT     | Python dead code detection                |
+| `knip`       | >=5.0   | ISC     | TypeScript unused exports/files detection |
+| `PyYAML`     | >=6.0   | MIT     | Configuration file parsing                |
+| `hypothesis` | >=6.0   | MPL-2.0 | Property-based testing                    |
+
+**Installation**:
+
+- `vulture` is installed as a Python dependency (`pip install vulture`)
+- `knip` is installed as a Node.js dev dependency in the frontend (`npm install -D knip`)
 
 ### Core Interfaces
 
@@ -228,44 +250,117 @@ class FileLengthChecker(BaseChecker):
 # checkers/dead_code.py
 class DeadCodeChecker(BaseChecker):
     """
-    Detects unused symbols via static analysis.
+    Detects unused symbols by wrapping external analysis tools.
 
-    Python: Uses ast module to build a symbol table and reference graph.
-    TypeScript: Uses regex-based export/import analysis.
+    Python: Runs vulture as a subprocess, parses its output.
+    TypeScript: Runs knip as a subprocess, parses its JSON output.
+
+    Converts all results into the unified Finding model.
     """
 
     def check(self, config: ScanConfig, files: list[str]) -> list[Finding]:
-        # 1. Parse SAM template.yaml to get handler entry points
-        # 2. Build symbol definition table (function defs, class defs, imports)
-        # 3. Build reference table (all name usages across all files)
-        # 4. Exclude: lambda_handler functions, React default exports,
-        #    __all__ members, SAM-referenced handlers
-        # 5. Any defined symbol not in reference table = unused
-        # 6. Mark dynamic import/reflection references as "uncertain"
+        # 1. Generate vulture whitelist from SAM template + inline suppressions
+        # 2. Run vulture on Python paths, parse output into findings
+        # 3. Run knip on TypeScript paths with configured project, parse JSON output
+        # 4. Convert tool output to Finding objects
+        # 5. Mark dynamic import/reflection references as "uncertain"
+        ...
+
+    def _run_vulture(self, paths: list[str], whitelist_path: Path) -> list[Finding]:
+        """Run vulture subprocess and parse its output into Finding objects."""
+        # vulture output format: "{file}:{line}: unused {type} '{name}' (confidence: {pct}%)"
+        ...
+
+    def _run_knip(self, project_root: Path) -> list[Finding]:
+        """Run knip subprocess with --reporter json and parse output."""
+        ...
+
+    def _generate_vulture_whitelist(self, config: ScanConfig) -> Path:
+        """Generate a temporary whitelist file for vulture."""
+        # Includes: lambda_handler entries from SAM template,
+        # __all__ members, inline suppression targets
+        ...
+
+    def _generate_knip_config(self, config: ScanConfig) -> Path:
+        """Generate knip.json config excluding React default exports."""
         ...
 ```
 
-**Python analysis approach**:
+**Python analysis approach (vulture)**:
 
-1. Parse each `.py` file with `ast.parse()`
-2. Walk AST to collect `FunctionDef`, `ClassDef`, `Import`, `ImportFrom` nodes → symbol definitions
-3. Walk AST to collect all `Name` and `Attribute` nodes → references
-4. Cross-reference: a symbol is unused if defined but never referenced in any other file within scope
-5. Special handling for `__all__` lists (mark all listed names as referenced)
+1. Parse SAM `template.yaml` to identify all Lambda handler entry points
+2. Generate a vulture whitelist file containing:
+   - All `lambda_handler` functions in SAM-referenced handler `app.py` files
+   - Symbols listed in `__all__` declarations
+   - Symbols preceded by `# quality-ignore: dead-code` inline suppression comments
+3. Run `vulture <paths> <whitelist_file> --min-confidence 80` as a subprocess
+4. Parse vulture's line-based output (format: `{file}:{line}: unused {type} '{name}' (confidence: {pct}%)`)
+5. Convert each line into a `Finding` object with appropriate category, severity, and symbol name
+6. Findings with confidence < 100% are marked as "uncertain" (covers dynamic imports, reflection)
 
-**TypeScript analysis approach**:
+**Vulture whitelist generation**:
 
-1. Regex-based extraction of `export function`, `export const`, `export class`, `export default`
-2. Scan all `.ts`/`.tsx` files for `import { X }` and `import X from` statements
-3. Cross-reference exported symbols against import statements
-4. Default exports in component files are excluded (React convention)
+```python
+def _generate_vulture_whitelist(self, config: ScanConfig) -> Path:
+    """
+    Create a temporary .py whitelist file for vulture.
+    Vulture whitelists are Python files that 'use' symbols to mark them as not-dead.
+    """
+    whitelist_lines = []
 
-**SAM template parsing**:
+    # From SAM template: mark lambda_handler in each handler app.py
+    for handler_path in self._get_sam_handler_paths(config):
+        whitelist_lines.append(f"lambda_handler  # noqa")
+
+    # From inline suppressions: scan for # quality-ignore: dead-code
+    for suppressed_symbol in self._find_suppressed_symbols(config):
+        whitelist_lines.append(f"{suppressed_symbol}  # noqa")
+
+    # Write to temp file
+    whitelist_path = Path(tempfile.mktemp(suffix=".py"))
+    whitelist_path.write_text("\n".join(whitelist_lines))
+    return whitelist_path
+```
+
+**TypeScript analysis approach (knip)**:
+
+1. Generate a `knip.json` configuration file that:
+   - Sets `entry` patterns to include component files and barrel exports
+   - Excludes test files from dead code sources (but counts test imports as references)
+   - Configures `ignoreDependencies` for React default exports
+2. Run `npx knip --reporter json --no-exit-code` as a subprocess from the frontend directory
+3. Parse knip's JSON output which categorizes findings as `unused exports`, `unused files`, `unused dependencies`, etc.
+4. Convert each finding into a `Finding` object, mapping knip categories to the scanner's finding types
+5. Filter out React component default exports (configured via knip's `ignore` patterns)
+
+**Knip configuration generation**:
+
+```python
+def _generate_knip_config(self, config: ScanConfig) -> Path:
+    """Generate knip.json for TypeScript dead code detection."""
+    knip_config = {
+        "entry": ["src/index.tsx", "src/modules/**/index.ts"],
+        "project": ["src/**/*.{ts,tsx}"],
+        "ignore": [
+            "src/**/*.test.{ts,tsx}",
+            "src/**/*.spec.{ts,tsx}",
+            "src/**/__tests__/**"
+        ],
+        "ignoreDependencies": [],
+        # React default exports are entry points, not dead code
+        "react": {"entry": ["src/**/*.tsx"]}
+    }
+    config_path = Path(tempfile.mktemp(suffix=".json"))
+    config_path.write_text(json.dumps(knip_config, indent=2))
+    return config_path
+```
+
+**SAM template parsing** (for vulture whitelist generation):
 
 - Parse `backend/template.yaml` as YAML
 - Find all resources of type `AWS::Serverless::Function`
 - Extract `CodeUri` + `Handler` properties (e.g., `handler/create_member` + `app.lambda_handler`)
-- Mark `lambda_handler` in those specific `app.py` files as referenced
+- Add `lambda_handler` references to the vulture whitelist file for those specific paths
 
 ### Documentation Freshness Checker
 
@@ -346,7 +441,12 @@ DEFAULTS = {
         "backend_pattern": "test_{handler_name}.py",
         "frontend_pattern": "{Component}.test.tsx"
     },
-    "dead_code": {"sam_template": "backend/template.yaml"}
+    "dead_code": {
+        "sam_template": "backend/template.yaml",
+        "vulture_min_confidence": 80,
+        "python_paths": ["backend/handler/", "backend/layers/"],
+        "typescript_paths": ["frontend/src/"]
+    }
 }
 
 def load_config(config_path: Path = None) -> ScanConfig:
@@ -477,9 +577,11 @@ file_length:
 
 dead_code:
   sam_template: backend/template.yaml
-  paths:
+  vulture_min_confidence: 80 # Only report findings with >= this confidence %
+  python_paths:
     - backend/handler/
     - backend/layers/
+  typescript_paths:
     - frontend/src/
 
 docs_freshness:
@@ -573,13 +675,13 @@ _For any_ scan result, the exit code SHALL be 0 if and only if zero findings hav
 
 ### Property 5: Unused symbol detection
 
-_For any_ symbol (function, class, variable, import, component) defined in a source file within the analysis scope, the Dead Code Detector SHALL report it as unused if and only if no other symbol in scope references it (excluding self-references within the symbol's own definition).
+_For any_ symbol (function, class, variable, import, component) defined in a source file within the analysis scope, the Dead Code Detector SHALL report it as unused if and only if the underlying tool (vulture for Python, knip for TypeScript) identifies it as unused and it is not excluded by whitelist or configuration rules.
 
 **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.9**
 
 ### Property 6: Symbol exclusion from dead code analysis
 
-_For any_ symbol that is a `lambda_handler` function in a SAM-referenced handler, a member of a Python `__all__` list, or a React component default export, the Dead Code Detector SHALL never report it as unused regardless of its reference count.
+_For any_ symbol that is a `lambda_handler` function in a SAM-referenced handler, a member of a Python `__all__` list, or a React component default export, the Dead Code Detector SHALL exclude it via tool configuration (vulture whitelist entries or knip ignore patterns) and SHALL never report it as unused regardless of its reference count.
 
 **Validates: Requirements 2.5, 2.6, 2.11, 2.13**
 
@@ -684,8 +786,16 @@ _For any_ baseline entry that does not match any finding in the current scan, th
 
 ### AST Parse Errors
 
-- **Python syntax error in source file**: Log warning with file path, skip that file for dead code analysis, continue
-- **TypeScript parse failure**: Log warning, skip file, continue
+- **Python syntax error in source file**: Vulture handles this internally (skips unparseable files); the scanner logs a warning if vulture reports a syntax error
+- **TypeScript parse failure**: Knip uses the TypeScript compiler and reports these in its output; the scanner converts them to warnings
+
+### External Tool Errors
+
+- **Vulture not installed**: Log error with install instructions (`pip install vulture`), skip Python dead code analysis, continue with other checks
+- **Knip not installed**: Log error with install instructions (`npm install -D knip`), skip TypeScript dead code analysis, continue with other checks
+- **Vulture subprocess failure** (non-zero exit for reasons other than findings): Log stderr, skip Python dead code analysis, continue
+- **Knip subprocess failure** (non-zero exit for reasons other than findings): Log stderr, skip TypeScript dead code analysis, continue
+- **Vulture whitelist write failure**: Log warning, run vulture without whitelist (may produce extra findings for handler entry points)
 
 ### Baseline Errors
 
@@ -721,15 +831,22 @@ Property tests will cover:
 
 Unit tests cover specific examples, integration points, and edge cases:
 
+- Vulture output parsing (converting line-based output to Finding objects)
+- Knip JSON output parsing (converting structured output to Finding objects)
+- Vulture whitelist generation (SAM template → whitelist file content)
+- Knip config generation (scan config → knip.json)
 - SAM template parsing (extracting handler references from YAML)
 - Public interface diff detection (AST comparison of function signatures)
 - GitHub Actions annotation format correctness
 - Config file loading from disk (YAML parsing)
 - Baseline file generation and serialization
 - CLI argument parsing
-- Error handling paths (invalid files, permission issues, git failures)
-- Dynamic import / reflection detection ("uncertain" classification)
+- Error handling paths (invalid files, permission issues, git failures, missing tools)
+- Subprocess failure handling (vulture/knip not installed, non-zero exit codes)
+- Inline suppression → whitelist entry conversion
 - Empty result reporting (zero findings confirmation message)
+
+**Subprocess mocking**: Dead code detector tests use `unittest.mock.patch` on `subprocess.run` to inject known vulture/knip output, avoiding runtime dependency on the tools during testing.
 
 ### Integration Tests
 
@@ -769,8 +886,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: Install Quality Scanner
         run: pip install -e quality_scanner/
+      - name: Install knip (TypeScript dead code detection)
+        run: npm install -D knip typescript
+        working-directory: frontend
       - name: Run Quality Scanner
         run: python -m quality_scanner --ci --format both
       - name: Upload report artifact
@@ -786,3 +909,5 @@ jobs:
 ```
 
 The `--ci` flag enables GitHub Actions annotation output. The `needs: quality-check` dependency ensures deploy is blocked when errors are found.
+
+**Note**: `vulture` is declared as a dependency in `quality_scanner/setup.py` (or `pyproject.toml`) and installed automatically with the scanner package. `knip` requires Node.js and is installed separately in CI.
