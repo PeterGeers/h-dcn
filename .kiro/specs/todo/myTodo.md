@@ -1,17 +1,10 @@
 # H-DCN Todo List
 Presmeet v3 A few items 
  1. Create a pdf of the booking overview that can be downloaded by the user 
- 2. In the overview the cost of the parties missing 
+ 2. In the overview the cost of the parties are missing for meeting attendants
  2.2 The order details are missing from the overview
  3. The start page of the presmeet when Not having an account should have a search button to find club 
  4. The start page should have the presmeet logo and fh-dce logo as start that starts rather big and size down to small logos at the top 
-
-Multi-language support for major european languages to start with
-NL, GB, FR, DE, SE, DK, DN, IT, ES
-
-WEBSHOP generic backoffice workflow multi tenant see .kiro\specs\Webshop\Workflow
-
-
 
 
 
@@ -57,16 +50,7 @@ Opties
 
 
 
-
-📊 Backend API Consistency Analysis
-🎯 Immediate Recommendations:
-Implement Missing Endpoints - Complete webshop, payments, orders functionality
-
-Done: Standardize Authentication - Add getAuthHeaders() to all API calls
-Done: Centralize API Configuration - Use environment variables consistently
-Done: Standardize Error Handling - Create consistent error handling patterns
-Done: The inconsistent authentication is the root cause of the 500 errors you're experiencing. Most API calls need the Authorization header added.
----
+--
 
 ## 💰 Factuurinboekingen en Onkostendeclaraties
 
