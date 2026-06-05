@@ -79,7 +79,11 @@ def lambda_handler(event, context):
 
         print(f"Products scanned by {user_email} with roles {user_roles} - returned {len(items)} items")
 
-        return create_success_response(items)
+        return {
+            'statusCode': 200,
+            'headers': cors_headers(),
+            'body': json.dumps(items, default=str)
+        }
     
     except ClientError as e:
         print(f"DynamoDB error in scan_product: {str(e)}")
