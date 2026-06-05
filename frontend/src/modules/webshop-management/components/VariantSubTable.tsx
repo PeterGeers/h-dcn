@@ -217,7 +217,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
                 >
                   {variant.price != null
                     ? `€${variant.price.toFixed(2)}`
-                    : `€${product.price.toFixed(2)} (ouder)`}
+                    : `€${(product.price ?? 0).toFixed(2)} (ouder)`}
                 </Text>
               )}
             </Td>

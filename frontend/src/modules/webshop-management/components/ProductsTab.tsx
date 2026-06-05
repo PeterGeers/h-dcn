@@ -67,7 +67,13 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
     setError(null);
     try {
       const data = await getAdminProducts(tenant || undefined);
-      setProducts(data);
+      // Normalize: ensure each product has a variants array
+      const normalized = (data || []).map((p: any) => ({
+        ...p,
+        variants: p.variants ?? [],
+        price: p.price ?? p.prijs ?? 0,
+      }));
+      setProducts(normalized);
     } catch (err: any) {
       setError(err?.message || 'Fout bij het ophalen van producten');
     } finally {
@@ -210,7 +216,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
                   </Td>
 
                   {/* Price */}
-                  <Td isNumeric>€{product.price.toFixed(2)}</Td>
+                  <Td isNumeric>€{(product.price ?? 0).toFixed(2)}</Td>
 
                   {/* Active status */}
                   <Td>
