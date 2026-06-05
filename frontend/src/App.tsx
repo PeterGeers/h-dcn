@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
+import { LanguageSelector } from './components/common/LanguageSelector';
+import { useIsAdminRoute, useAdminLocaleOverride } from './hooks/useAdminLocale';
 import { AuthProvider } from './context/AuthProvider';
 import MaintenanceProvider from './components/MaintenanceProvider';
 
@@ -52,6 +54,10 @@ function NavigationHeader({ signOut, user }: AppProps) {
   const location = useLocation();
   const isHome = location.pathname === '/';
   const { t } = useTranslation('common');
+  const isAdminRoute = useIsAdminRoute();
+
+  // Apply admin locale override (switches to Dutch on admin routes, restores on member routes)
+  useAdminLocaleOverride();
 
   return (
     <Flex 
@@ -85,6 +91,9 @@ function NavigationHeader({ signOut, user }: AppProps) {
             {t('nav.dashboard')}
           </Button>
         )}
+
+        {/* Language selector - hidden on admin routes per Requirement 9.5 */}
+        {!isAdminRoute && <LanguageSelector />}
         
         {/* User Account Popup - Shows email address and role information */}
         <UserAccountPopup user={user} signOut={signOut} />
