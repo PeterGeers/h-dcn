@@ -25,7 +25,9 @@
     "filter": "Filteren",
     "export": "Exporteren",
     "add": "Toevoegen",
-    "refresh": "Vernieuwen"
+    "refresh": "Vernieuwen",
+    "open": "Openen",
+    "open": "Openen"
   },
   "labels": {
     "loading": "Laden...",

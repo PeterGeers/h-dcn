@@ -15,10 +15,16 @@
     "actions": "Acties"
   },
   "card": {
-    "add_to_cart": "In winkelwagen",
+    "add_to_cart": "Toevoegen aan winkelwagen",
+    "add_to_cart_short": "Toevoegen",
     "select_option": "Kies een optie",
     "quantity": "Aantal",
-    "price_label": "Prijs:"
+    "price_label": "Prijs:",
+    "no_image": "Geen afbeelding beschikbaar",
+    "back": "Terug"
+  },
+  "card_modal": {
+    "select_option_desc": "Kies een maat/optie voor dit product"
   },
   "categories": {
     "clothing": "Kleding",

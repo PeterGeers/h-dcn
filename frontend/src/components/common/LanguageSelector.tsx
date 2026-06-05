@@ -82,23 +82,23 @@ export function LanguageSelector() {
       <MenuButton
         as={Button}
         variant="ghost"
+        colorScheme="orange"
         size="sm"
         rightIcon={<ChevronDownIcon />}
         aria-label="Select language"
         fontWeight="normal"
-        _hover={{ bg: 'gray.100' }}
       >
         <HStack spacing={1}>
           <Text as="span" fontSize="md" aria-hidden="true">
             {LOCALE_FLAGS[activeLocale] ?? LOCALE_FLAGS.nl}
           </Text>
-          <Text as="span" fontSize="sm">
+          <Text as="span" fontSize="sm" color="orange.400">
             {LOCALE_NAMES[activeLocale] ?? LOCALE_NAMES.nl}
           </Text>
         </HStack>
       </MenuButton>
 
-      <MenuList zIndex={1500} minW="180px">
+      <MenuList zIndex={1500} minW="180px" bg="gray.800" borderColor="orange.400">
         {SUPPORTED_LOCALES.map((locale) => {
           const isActive = locale === activeLocale;
           return (
@@ -106,10 +106,13 @@ export function LanguageSelector() {
               key={locale}
               onClick={() => handleLanguageChange(locale)}
               fontWeight={isActive ? 'bold' : 'normal'}
+              bg="gray.800"
+              color="white"
+              _hover={{ bg: 'gray.700' }}
               aria-current={isActive ? 'true' : undefined}
               icon={
                 isActive ? (
-                  <CheckIcon boxSize={3} color="green.500" />
+                  <CheckIcon boxSize={3} color="green.400" />
                 ) : undefined
               }
             >

@@ -1,0 +1,43 @@
+{
+  "title": "Produkter",
+  "filter": {
+    "all": "Alla produkter",
+    "group": "Grupp",
+    "subgroup": "Undergrupp",
+    "search_placeholder": "Sök produkter..."
+  },
+  "table": {
+    "name": "Namn",
+    "group": "Grupp",
+    "subgroup": "Undergrupp",
+    "price": "Pris",
+    "options": "Alternativ",
+    "actions": "Åtgärder"
+  },
+  "card": {
+    "add_to_cart": "Lägg i kundvagn",
+    "add_to_cart_short": "Lägg till",
+    "select_option": "Välj ett alternativ",
+    "quantity": "Antal",
+    "price_label": "Pris:",
+    "no_image": "Ingen bild tillgänglig",
+    "back": "Tillbaka"
+  },
+  "card_modal": {
+    "select_option_desc": "Välj en storlek/alternativ för denna produkt"
+  },
+  "categories": {
+    "clothing": "Kläder",
+    "accessories": "Tillbehör",
+    "tshirts": "T-shirts",
+    "hoodies": "Hoodies",
+    "headwear": "Huvudbonader"
+  },
+  "management": {
+    "title": "Produkthantering",
+    "add_product": "Lägg till produkt",
+    "edit_product": "Redigera produkt",
+    "delete_product": "Ta bort produkt",
+    "delete_confirm": "Är du säker på att du vill ta bort denna produkt?"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "greeting": {
+    "welcome": "Välkommen, {{name}}!",
+    "member_intro": "Som H-DCN medlem har du tillgång till dina personuppgifter och webbshopen:",
+    "admin_intro": "Välj en applikation att starta:",
+    "guest_intro": "Registrera dig för att bli medlem i H-DCN:",
+    "admin_access_hint": "För åtkomst till administrationsfunktioner, kontakta administrationen."
+  },
+  "loading": {
+    "checking_membership": "Kontrollerar medlemskap...",
+    "redirecting": "Omdirigerar till ansökningsformuläret..."
+  },
+  "cards": {
+    "my_account_title": "Mina uppgifter",
+    "my_account_desc": "Visa och redigera dina personuppgifter",
+    "membership_title": "Registrera som medlem",
+    "membership_desc": "Bli medlem i H-DCN med vårt nya ansökningsformulär",
+    "webshop_title": "Webbshop",
+    "webshop_desc": "Beställ och visa dina beställningar",
+    "presmeet_title": "Presidents' Meeting",
+    "presmeet_desc": "Bokningsformulär för din klubbdelegation"
+  }
+}

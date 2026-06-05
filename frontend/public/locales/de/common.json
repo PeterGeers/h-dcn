@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "H-DCN Portal",
+    "dashboard": "Dashboard",
+    "back_to_dashboard": "Zurück zum Dashboard",
+    "logout": "Abmelden"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Niederlande",
+    "privacy": "Datenschutz",
+    "contact": "Kontakt"
+  },
+  "buttons": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "submit": "Absenden",
+    "confirm": "Bestätigen",
+    "retry": "Erneut versuchen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "export": "Exportieren",
+    "add": "Hinzufügen",
+    "refresh": "Aktualisieren",
+    "open": "Öffnen"
+  },
+  "labels": {
+    "loading": "Laden...",
+    "no_data": "Keine Daten gefunden",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "warning": "Warnung",
+    "info": "Information",
+    "required": "Pflichtfeld",
+    "optional": "Optional",
+    "status": "Status",
+    "date": "Datum",
+    "name": "Name",
+    "email": "E-Mail-Adresse",
+    "phone": "Telefon",
+    "unknown": "Unbekannt",
+    "user": "Benutzer",
+    "select": "Auswählen..."
+  },
+  "errors": {
+    "generic": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+    "network": "Netzwerkfehler. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "not_found": "Nicht gefunden",
+    "no_access": "Kein Zugang",
+    "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an."
+  },
+  "notifications": {
+    "save_success": "Daten erfolgreich gespeichert",
+    "save_error": "Fehler beim Speichern. Bitte versuchen Sie es erneut.",
+    "delete_success": "Erfolgreich gelöscht",
+    "delete_error": "Fehler beim Löschen"
+  },
+  "account": {
+    "info_title": "Kontoinformationen",
+    "access_level": "Zugangsstufe",
+    "roles_tab": "Rollen",
+    "permissions_tab": "Berechtigungen",
+    "no_roles": "Keine Rollen zugewiesen",
+    "no_permissions": "Keine Berechtigungen zugewiesen",
+    "setup_passkey": "Passkey einrichten",
+    "passkey_success": "Passkey erfolgreich eingerichtet! Sie können sich jetzt mit Ihrem Passkey anmelden.",
+    "passkey_cancelled": "Passkey-Einrichtung abgebrochen.",
+    "passkey_failed": "Passkey-Einrichtung fehlgeschlagen: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Spracheinstellung gespeichert",
+    "preference_save_failed": "Spracheinstellung konnte nicht gespeichert werden"
+  }
+}

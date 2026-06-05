@@ -1,0 +1,43 @@
+{
+  "title": "Prodotti",
+  "filter": {
+    "all": "Tutti i prodotti",
+    "group": "Gruppo",
+    "subgroup": "Sottogruppo",
+    "search_placeholder": "Cerca prodotti..."
+  },
+  "table": {
+    "name": "Nome",
+    "group": "Gruppo",
+    "subgroup": "Sottogruppo",
+    "price": "Prezzo",
+    "options": "Opzioni",
+    "actions": "Azioni"
+  },
+  "card": {
+    "add_to_cart": "Aggiungi al carrello",
+    "add_to_cart_short": "Aggiungi",
+    "select_option": "Scegli un'opzione",
+    "quantity": "Quantità",
+    "price_label": "Prezzo:",
+    "no_image": "Nessuna immagine disponibile",
+    "back": "Indietro"
+  },
+  "card_modal": {
+    "select_option_desc": "Scegli una taglia/opzione per questo prodotto"
+  },
+  "categories": {
+    "clothing": "Abbigliamento",
+    "accessories": "Accessori",
+    "tshirts": "T-shirt",
+    "hoodies": "Felpe con cappuccio",
+    "headwear": "Copricapo"
+  },
+  "management": {
+    "title": "Gestione prodotti",
+    "add_product": "Aggiungi prodotto",
+    "edit_product": "Modifica prodotto",
+    "delete_product": "Elimina prodotto",
+    "delete_confirm": "Sei sicuro di voler eliminare questo prodotto?"
+  }
+}

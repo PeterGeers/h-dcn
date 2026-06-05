@@ -1,0 +1,23 @@
+{
+  "greeting": {
+    "welcome": "Welcome, {{name}}!",
+    "member_intro": "As an H-DCN member you have access to your personal details and the webshop:",
+    "admin_intro": "Choose an application to start:",
+    "guest_intro": "Register to become a member of H-DCN:",
+    "admin_access_hint": "For access to management features, contact the administration."
+  },
+  "loading": {
+    "checking_membership": "Checking membership...",
+    "redirecting": "Redirecting to application form..."
+  },
+  "cards": {
+    "my_account_title": "My Details",
+    "my_account_desc": "View and edit your personal details",
+    "membership_title": "Register as Member",
+    "membership_desc": "Become a member of H-DCN with our new application form",
+    "webshop_title": "Webshop",
+    "webshop_desc": "Order and view your orders",
+    "presmeet_title": "Presidents' Meeting",
+    "presmeet_desc": "Booking form for your club delegation"
+  }
+}

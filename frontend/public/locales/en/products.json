@@ -1,0 +1,43 @@
+{
+  "title": "Products",
+  "filter": {
+    "all": "All products",
+    "group": "Group",
+    "subgroup": "Subgroup",
+    "search_placeholder": "Search products..."
+  },
+  "table": {
+    "name": "Name",
+    "group": "Group",
+    "subgroup": "Subgroup",
+    "price": "Price",
+    "options": "Options",
+    "actions": "Actions"
+  },
+  "card": {
+    "add_to_cart": "Add to cart",
+    "add_to_cart_short": "Add",
+    "select_option": "Choose an option",
+    "quantity": "Quantity",
+    "price_label": "Price:",
+    "no_image": "No image available",
+    "back": "Back"
+  },
+  "card_modal": {
+    "select_option_desc": "Choose a size/option for this product"
+  },
+  "categories": {
+    "clothing": "Clothing",
+    "accessories": "Accessories",
+    "tshirts": "T-shirts",
+    "hoodies": "Hoodies",
+    "headwear": "Headwear"
+  },
+  "management": {
+    "title": "Product Management",
+    "add_product": "Add Product",
+    "edit_product": "Edit Product",
+    "delete_product": "Delete Product",
+    "delete_confirm": "Are you sure you want to delete this product?"
+  }
+}

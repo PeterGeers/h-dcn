@@ -1,0 +1,23 @@
+{
+  "greeting": {
+    "welcome": "Velkommen, {{name}}!",
+    "member_intro": "Som H-DCN medlem har du adgang til dine personlige oplysninger og webshoppen:",
+    "admin_intro": "Vælg en applikation for at starte:",
+    "guest_intro": "Tilmeld dig for at blive medlem af H-DCN:",
+    "admin_access_hint": "For adgang til administrationsfunktioner, kontakt administrationen."
+  },
+  "loading": {
+    "checking_membership": "Kontrollerer medlemskab...",
+    "redirecting": "Omdirigerer til ansøgningsformularen..."
+  },
+  "cards": {
+    "my_account_title": "Mine oplysninger",
+    "my_account_desc": "Se og rediger dine personlige oplysninger",
+    "membership_title": "Tilmeld som medlem",
+    "membership_desc": "Bliv medlem af H-DCN med vores nye ansøgningsformular",
+    "webshop_title": "Webshop",
+    "webshop_desc": "Bestil og se dine bestillinger",
+    "presmeet_title": "Presidents' Meeting",
+    "presmeet_desc": "Bookingformular for din klubdelegation"
+  }
+}

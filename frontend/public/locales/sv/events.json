@@ -1,0 +1,38 @@
+{
+  "title": "Evenemang",
+  "loading": {
+    "permissions": "Laddar behörigheter...",
+    "events": "Laddar evenemang..."
+  },
+  "tabs": {
+    "events": "Evenemang",
+    "finance": "Ekonomi",
+    "analytics": "Analys"
+  },
+  "access": {
+    "no_access": "Du har inte åtkomst till evenemangsadministrationen. Kontakta en administratör om du behöver åtkomst.",
+    "no_financial_access": "Du har inte åtkomst till finansiella data.",
+    "no_analytics_access": "Du har inte åtkomst till analys.",
+    "current_roles": "Nuvarande roller: {{roles}}",
+    "no_roles": "Inga roller tilldelade",
+    "required_roles": "Erforderliga roller: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman eller andra evenemangsrelaterade roller"
+  },
+  "communication": {
+    "title": "Evenemangskommunikation & Export",
+    "export_participants": "Exportera deltagarlistor",
+    "newsletter_content": "Nyhetsbrevinnehåll"
+  },
+  "overview": {
+    "title": "Evenemangsöversikt & Rapportering",
+    "event_overview": "Evenemangsöversikt",
+    "regional_summary": "Regional sammanfattning"
+  },
+  "fields": {
+    "name": "Namn",
+    "date": "Datum",
+    "location": "Plats",
+    "participants": "Deltagare",
+    "revenue": "Intäkter",
+    "costs": "Kostnader"
+  }
+}

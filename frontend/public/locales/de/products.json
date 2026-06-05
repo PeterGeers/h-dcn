@@ -1,0 +1,43 @@
+{
+  "title": "Produkte",
+  "filter": {
+    "all": "Alle Produkte",
+    "group": "Gruppe",
+    "subgroup": "Untergruppe",
+    "search_placeholder": "Produkte suchen..."
+  },
+  "table": {
+    "name": "Name",
+    "group": "Gruppe",
+    "subgroup": "Untergruppe",
+    "price": "Preis",
+    "options": "Optionen",
+    "actions": "Aktionen"
+  },
+  "card": {
+    "add_to_cart": "In den Warenkorb",
+    "add_to_cart_short": "Hinzufügen",
+    "select_option": "Wählen Sie eine Option",
+    "quantity": "Menge",
+    "price_label": "Preis:",
+    "no_image": "Kein Bild verfügbar",
+    "back": "Zurück"
+  },
+  "card_modal": {
+    "select_option_desc": "Wählen Sie eine Größe/Option für dieses Produkt"
+  },
+  "categories": {
+    "clothing": "Kleidung",
+    "accessories": "Zubehör",
+    "tshirts": "T-Shirts",
+    "hoodies": "Hoodies",
+    "headwear": "Kopfbedeckungen"
+  },
+  "management": {
+    "title": "Produktverwaltung",
+    "add_product": "Produkt hinzufügen",
+    "edit_product": "Produkt bearbeiten",
+    "delete_product": "Produkt löschen",
+    "delete_confirm": "Sind Sie sicher, dass Sie dieses Produkt löschen möchten?"
+  }
+}

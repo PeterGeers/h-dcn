@@ -227,7 +227,9 @@ def update_own_member_data(event, member_id, user_email, user_roles):
             # Motorgegevens (motor section)
             'motormerk', 'motortype', 'bouwjaar', 'kenteken',
             # Financi├½le Gegevens (financial section)
-            'betaalwijze', 'bankrekeningnummer'
+            'betaalwijze', 'bankrekeningnummer',
+            # i18n preference
+            'preferred_language'
         ]
         
         update_expression = "SET "

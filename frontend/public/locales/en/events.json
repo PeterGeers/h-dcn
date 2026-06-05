@@ -1,0 +1,38 @@
+{
+  "title": "Events",
+  "loading": {
+    "permissions": "Loading permissions...",
+    "events": "Loading events..."
+  },
+  "tabs": {
+    "events": "Events",
+    "finance": "Finance",
+    "analytics": "Analytics"
+  },
+  "access": {
+    "no_access": "You do not have access to event administration. Contact an administrator if you need access.",
+    "no_financial_access": "You do not have access to financial data.",
+    "no_analytics_access": "You do not have access to analytics.",
+    "current_roles": "Current roles: {{roles}}",
+    "no_roles": "No roles assigned",
+    "required_roles": "Required roles: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, or other event-related roles"
+  },
+  "communication": {
+    "title": "Event Communication & Export",
+    "export_participants": "Export Participant Lists",
+    "newsletter_content": "Newsletter Content"
+  },
+  "overview": {
+    "title": "Event Overview & Reporting",
+    "event_overview": "Event Overview",
+    "regional_summary": "Regional Summary"
+  },
+  "fields": {
+    "name": "Name",
+    "date": "Date",
+    "location": "Location",
+    "participants": "Participants",
+    "revenue": "Revenue",
+    "costs": "Costs"
+  }
+}
