@@ -59,10 +59,10 @@ def lambda_handler(event, context):
 
         response = table.scan(
             Limit=100,
-            FilterExpression=(boto3.dynamodb.conditions.Attr('source').not_exists() | 
-                           boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')) &
-                           (boto3.dynamodb.conditions.Attr('is_parent').not_exists() |
-                           boto3.dynamodb.conditions.Attr('is_parent').ne(False))
+            FilterExpression=(boto3.dynamodb.conditions.Attr('is_parent').not_exists() |
+                           boto3.dynamodb.conditions.Attr('is_parent').ne(False)) &
+                           (boto3.dynamodb.conditions.Attr('source').not_exists() |
+                           boto3.dynamodb.conditions.Attr('source').ne('migration'))
         )
         items = response['Items']
         
@@ -70,10 +70,10 @@ def lambda_handler(event, context):
             response = table.scan(
                 ExclusiveStartKey=response['LastEvaluatedKey'],
                 Limit=100,
-                FilterExpression=(boto3.dynamodb.conditions.Attr('source').not_exists() | 
-                               boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')) &
-                               (boto3.dynamodb.conditions.Attr('is_parent').not_exists() |
-                               boto3.dynamodb.conditions.Attr('is_parent').ne(False))
+                FilterExpression=(boto3.dynamodb.conditions.Attr('is_parent').not_exists() |
+                               boto3.dynamodb.conditions.Attr('is_parent').ne(False)) &
+                               (boto3.dynamodb.conditions.Attr('source').not_exists() |
+                               boto3.dynamodb.conditions.Attr('source').ne('migration'))
             )
             items.extend(response['Items'])
 
