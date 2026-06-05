@@ -120,6 +120,16 @@ Parameters:
     Default: "h-dcn-reports"
     Description: "S3 bucket name for PresMeet report storage"
 
+  StockMovementsTableName:
+    Type: String
+    Default: "StockMovements"
+    Description: "DynamoDB table name for stock movements tracking"
+
+  ReportsBucketName:
+    Type: String
+    Default: "h-dcn-webshop-reports"
+    Description: "S3 bucket name for webshop admin report storage"
+
 Globals:
   Function:
     Timeout: 10
@@ -1726,6 +1736,460 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /presmeet/logo
             Method: post
+
+  # ============================================================
+  # Admin Webshop Management Lambda Functions and IAM Role
+  # ============================================================
+
+  # IAM Role for Admin Webshop functions (DynamoDB + S3 reports + Cognito read)
+  AdminWebshopRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: AdminWebshopDynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StockMovementsTableName}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StockMovementsTableName}/index/*"
+        - PolicyName: AdminWebshopS3ReportsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${ReportsBucketName}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${ReportsBucketName}"
+        - PolicyName: AdminWebshopCognitoReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminListGroupsForUser
+                Resource:
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
+
+  # --- Admin: Get Products ---
+  AdminGetProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_get_products
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminGetProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products
+            Method: get
+
+  # --- Admin: Create Product ---
+  AdminCreateProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_create_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminCreateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products
+            Method: post
+
+  # --- Admin: Update Product ---
+  AdminUpdateProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_update_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminUpdateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}
+            Method: put
+
+  # --- Admin: Create Variant ---
+  AdminCreateVariantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_create_variant
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminCreateVariant:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants
+            Method: post
+
+  # --- Admin: Update Variant ---
+  AdminUpdateVariantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_update_variant
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminUpdateVariant:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants/{vid}
+            Method: put
+
+  # --- Admin: Bulk Create Variants ---
+  AdminBulkCreateVariantsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_bulk_create_variants
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminBulkCreateVariants:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants/bulk
+            Method: post
+
+  # --- Admin: Add Stock ---
+  AdminAddStockFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_add_stock
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          STOCK_MOVEMENTS_TABLE_NAME: !Ref StockMovementsTableName
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminAddStock:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants/{vid}/stock
+            Method: post
+
+  # --- Admin: Get Stock Movements ---
+  AdminGetStockMovementsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_get_stock_movements
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          STOCK_MOVEMENTS_TABLE_NAME: !Ref StockMovementsTableName
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminGetStockMovements:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants/{vid}/movements
+            Method: get
+
+  # --- Admin: Get Orders ---
+  AdminGetOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_get_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminGetOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders
+            Method: get
+
+  # --- Admin: Update Order Status ---
+  AdminUpdateOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_update_order_status
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          STOCK_MOVEMENTS_TABLE_NAME: !Ref StockMovementsTableName
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminUpdateOrderStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders/{id}/status
+            Method: put
+
+  # --- Admin: Lock Orders ---
+  AdminLockOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_lock_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminLockOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders/lock
+            Method: post
+
+  # --- Admin: Unlock Order ---
+  AdminUnlockOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_unlock_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminUnlockOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders/{id}/unlock
+            Method: post
+
+  # --- Admin: Get Payments ---
+  AdminGetPaymentsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_get_payments
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminGetPayments:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/payments
+            Method: get
+
+  # --- Admin: Record Payment ---
+  AdminRecordPaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_record_payment
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminRecordPayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/payments
+            Method: post
+
+  # --- Admin: Generate Report ---
+  AdminGenerateReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_generate_report
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 256
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          STOCK_MOVEMENTS_TABLE_NAME: !Ref StockMovementsTableName
+          REPORTS_BUCKET_NAME: !Ref ReportsBucketName
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminGenerateReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/reports/generate
+            Method: post
+
+  # --- Admin: Get Report ---
+  AdminGetReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_get_report
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          REPORTS_BUCKET_NAME: !Ref ReportsBucketName
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminGetReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/reports
+            Method: get
+
+  # --- Admin: Export Report ---
+  AdminExportReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_export_report
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          STOCK_MOVEMENTS_TABLE_NAME: !Ref StockMovementsTableName
+          REPORTS_BUCKET_NAME: !Ref ReportsBucketName
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminExportReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/reports/export
+            Method: get
 
 Outputs:
   ApiBaseUrl:

@@ -6,11 +6,12 @@ import { Suspense, lazy, useEffect } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
+import { FunctionGuard } from './components/common/FunctionGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
 import { LanguageSelector } from './components/common/LanguageSelector';
 import { useIsAdminRoute, useAdminLocaleOverride } from './hooks/useAdminLocale';
-import { AuthProvider } from './context/AuthProvider';
+import { AuthProvider, useAuth } from './context/AuthProvider';
 import MaintenanceProvider from './components/MaintenanceProvider';
 
 interface User {
@@ -48,6 +49,54 @@ const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCom
 const NewMemberApplication = lazy(() => import('./pages/NewMemberApplication')) as any;
 const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) as any;
 const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as any;
+const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
+
+/**
+ * Route guard for /webshop_management.
+ * Uses FunctionGuard with Products_* roles. Shows 403 if user lacks access.
+ * Renders independently of PresMeet onboarding flow (no club_id or OnboardingFlow).
+ *
+ * Validates: Requirements 1.5, 1.6, 1.7, 7.1, 7.9, 8.1, 8.2
+ */
+function WebshopManagementGuard() {
+  const { user } = useAuth();
+
+  const functionGuardUser = React.useMemo(() => {
+    if (!user) return null;
+    return {
+      signInUserSession: {
+        accessToken: {
+          payload: {
+            'cognito:groups': user.groups,
+          },
+          jwtToken: user.accessToken,
+        },
+      },
+      attributes: {
+        email: user.email,
+        given_name: user.givenName,
+        family_name: user.familyName,
+      },
+    };
+  }, [user]);
+
+  return (
+    <FunctionGuard
+      user={functionGuardUser}
+      requiredRoles={['Products_CRUD', 'Products_Read', 'Products_Export']}
+      fallback={
+        <Box p={8} textAlign="center">
+          <Heading size="lg" color="red.400" mb={4}>403 — Geen toegang</Heading>
+          <Text color="gray.300">
+            Je hebt niet de vereiste rechten om Webshop Beheer te openen.
+          </Text>
+        </Box>
+      }
+    >
+      <WebshopManagementPage />
+    </FunctionGuard>
+  );
+}
 
 function NavigationHeader({ signOut, user }: AppProps) {
   const navigate = useNavigate();
@@ -127,6 +176,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
             <Route path="/presmeet" element={<PresMeetPage />} />
+            <Route path="/webshop_management" element={<WebshopManagementGuard />} />
             <Route path="/test/passkey" element={<PasskeyTest />} />
             <Route path="/test/browser-compatibility" element={<BrowserCompatibilityTest />} />
           </Routes>

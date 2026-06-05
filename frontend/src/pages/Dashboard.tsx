@@ -324,6 +324,24 @@ function Dashboard() {
             />
           </FunctionGuard>
           
+          {/* Webshop Beheer - Only for users with Products_* roles */}
+          <FunctionGuard 
+            user={functionGuardUser} 
+            requiredRoles={['Products_CRUD', 'Products_Read', 'Products_Export']}
+          >
+            <AppCard 
+              key="webshop-management"
+              app={{
+                id: 'webshop-management',
+                title: 'Webshop Beheer',
+                description: 'Producten, bestellingen, betalingen en rapporten',
+                icon: '🏪',
+                path: '/webshop_management'
+              }}
+              onClick={() => navigate('/webshop_management')}
+            />
+          </FunctionGuard>
+          
           {/* Advanced Exports - Only for users with advanced product management roles */}
           <FunctionGuard 
             user={functionGuardUser} 

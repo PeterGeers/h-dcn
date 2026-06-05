@@ -16,6 +16,9 @@ The Admin Product Management feature restructures the existing PresMeet admin fu
 - **Dashboard_Card**: A navigation tile on the main `/dashboard` page that routes to a specific admin function, guarded by role-based access control
 - **FunctionGuard**: The existing React component that conditionally renders UI elements based on Cognito group membership
 - **Product_Type_Config**: A configuration record defining rules per product type (max_per_club, min_per_club, pricing, required_attributes schema)
+- **Allow_Oversell**: A boolean flag on each variant record (defaults to `false`) that controls whether sales may proceed when the variant's stock reaches zero or would go negative. Each variant can have its own `allow_oversell` setting independently
+- **Default_Variant**: A single variant record with empty `variant_attributes` (`{}`) that is automatically created for simple products (products without attribute combinations). This ensures all stock is tracked at the variant level uniformly
+- **Stock_Movement**: A record tracking a change in variant stock — either inbound (purchase/receipt of goods) or outbound (sale fulfillment). Each movement records the quantity, cost, supplier (for inbound), and the user who recorded it.
 
 ## Requirements
 
@@ -39,11 +42,11 @@ The Admin Product Management feature restructures the existing PresMeet admin fu
 
 #### Acceptance Criteria
 
-1. THE Product_Manager SHALL store each product as a single record in the Producten table containing both catalog fields (name, price, description, active status) and configuration fields (max_per_club, min_per_club, required_attributes schema, product_type) in one unified record
+1. THE Product_Manager SHALL store each product as a single record in the Producten table containing catalog fields (name, price, description, active status) and configuration fields (max_per_club, min_per_club, required_attributes schema, product_type) in one unified record. Stock management fields (stock, sold_count, allow_oversell) SHALL reside exclusively on variant records, never on the parent product record
 2. THE Product_Manager SHALL display a list of all products from the Producten table, showing product name, tenant, product_type (if applicable), price, and active status
 3. THE Product_Manager SHALL provide a tenant filter dropdown that allows filtering the product list by tenant value (e.g., "presmeet", "h-dcn", or "all")
-4. WHEN a Webshop_Admin selects a product, THE Product_Manager SHALL display a detail/edit view showing all fields: catalog data (name, price, description, active) and configuration rules (max_per_club, min_per_club, required_attributes) in a single form
-5. WHEN a Webshop_Admin creates a new product, THE Product_Manager SHALL create a single record with both catalog and configuration fields, assigning a tenant and optionally a product_type
+4. WHEN a Webshop_Admin selects a product, THE Product_Manager SHALL display a detail/edit view showing all fields: catalog data (name, price, description, active), configuration rules (max_per_club, min_per_club, required_attributes), and a variants sub-section listing all variants with their stock, sold_count, allow_oversell flag, and variant attributes in a single form
+5. WHEN a Webshop_Admin creates a new product, THE Product_Manager SHALL create a product record with catalog fields and configuration fields, assigning a tenant and optionally a product_type. THE Product_Manager SHALL also create a Default_Variant record (with empty `variant_attributes`, stock defaulting to 0, sold_count defaulting to 0, and allow_oversell defaulting to false) automatically, ensuring stock is always tracked at the variant level
 6. WHEN a Webshop_Admin updates any field on a product (price, limits, attribute schema), THE Product_Manager SHALL persist the change to the single product record and the system SHALL use the updated values immediately without code deployment
 7. IF a product has a `required_attributes` schema defined, THEN THE Product_Manager SHALL validate that `min_per_club` does not exceed `max_per_club` before saving
 8. IF a Webshop_Admin attempts to save a product with an invalid `required_attributes` schema (malformed JSON, conflicting constraints), THEN THE Product_Manager SHALL display validation errors identifying the issue
@@ -51,39 +54,54 @@ The Admin Product Management feature restructures the existing PresMeet admin fu
 10. THE Product_Manager SHALL display the tenant value as a label/badge on each product row to distinguish the source
 11. THE system SHALL eliminate the current separation between "config records" (source: presmeet_config) and "product records" — each product SHALL be one self-contained record with all its rules and catalog data together
 
-### Requirement 3: Product Variants (Parent/Child Model)
+### Requirement 3: Stock Management and Product Variants
 
-**User Story:** As a webshop administrator, I want products to support variants (e.g., t-shirt sizes and genders), so that each variant is independently trackable for stock and sales while sharing the parent product's configuration and pricing rules.
+**User Story:** As a webshop administrator, I want all products to track stock exclusively at the variant level — every product has at least one variant — so that inventory management is uniform. I also want products to support multiple variants (e.g., t-shirt sizes and genders) where each variant is independently trackable for stock and sales while sharing the parent product's configuration and pricing rules. Additionally, I want an `allow_oversell` flag per variant to control whether sales can proceed when that variant's stock reaches zero or would go negative.
 
 #### Acceptance Criteria
 
-1. THE Product_Manager SHALL support a parent/child relationship where a parent product defines shared configuration (product_type, tenant, required_attributes, max_per_club, min_per_club, base price) and child variant records represent specific combinations (e.g., Male-S, Male-M, Female-L)
-2. THE Product_Manager SHALL store variant records in the Producten table with a `parent_id` field referencing the parent product's `product_id`
-3. EACH variant record SHALL contain: variant-specific attribute values (e.g., gender: "male", size: "XL"), stock quantity, sales count, and optionally an overriding price (falling back to the parent's price if not set)
-4. WHEN a Webshop_Admin views a parent product, THE Product_Manager SHALL display all its variants in a sub-table showing the variant attribute values, current stock, total sold, and price
-5. WHEN a Webshop_Admin creates a new variant for a product, THE Product_Manager SHALL validate that the variant's attribute values conform to the parent's `required_attributes` enum definitions (e.g., size must be one of S, M, L, XL, XXL, 3XL, 4XL)
-6. WHEN a cart item is created, THE system SHALL link it to the specific variant record (not the parent), decrementing stock on that variant
-7. THE Product_Manager SHALL allow a Webshop_Admin to update stock levels on individual variants
-8. THE Product_Manager SHALL display aggregated totals per parent product (total stock across all variants, total sold across all variants) alongside the per-variant breakdown
-9. WHEN a Webshop_Admin bulk-creates variants, THE Product_Manager SHALL generate variant records for all valid attribute combinations defined in the parent's `required_attributes` enums (e.g., all gender × size combinations for t-shirts)
-10. IF a variant's stock reaches zero, THE Product_Manager SHALL mark the variant as out-of-stock but SHALL NOT prevent admin from viewing or editing it
+1. THE Product_Manager SHALL enforce that every product has at least one variant record. Simple products (without attribute combinations such as badges or pins) SHALL have a single Default_Variant with empty `variant_attributes` (`{}`). Stock SHALL always be tracked at the variant level; the parent product record SHALL NOT store stock or sold_count fields
+2. THE Product_Manager SHALL support a parent/child relationship where a parent product defines shared configuration (product_type, tenant, required_attributes, max_per_club, min_per_club, base price) and child variant records represent specific combinations (e.g., Male-S, Male-M, Female-L) or a single Default_Variant for simple products
+3. THE Product_Manager SHALL store variant records in the Producten table with a `parent_id` field referencing the parent product's `product_id`
+4. EACH variant record SHALL contain: variant-specific attribute values (e.g., gender: "male", size: "XL", or `{}` for Default_Variant), stock quantity, sold_count, the `allow_oversell` boolean flag (defaulting to false), and optionally an overriding price (falling back to the parent's price if not set)
+5. WHEN a Webshop_Admin views a parent product, THE Product_Manager SHALL display all its variants in a sub-table showing the variant attribute values, current stock, total sold, allow_oversell flag, and price
+6. WHEN a Webshop_Admin creates a new variant for a product, THE Product_Manager SHALL validate that the variant's attribute values conform to the parent's `required_attributes` enum definitions (e.g., size must be one of S, M, L, XL, XXL, 3XL, 4XL)
+7. WHEN a Webshop_Admin adds attribute-based variants to a product that currently has only a Default_Variant, THE Product_Manager SHALL remove the Default_Variant after the new variants are created, preserving the principle that a product either has one Default_Variant or one-or-more attribute-based variants
+8. WHEN a cart item is created for any product, THE system SHALL link it to the specific variant record and decrement stock on that variant. The parent product record is never directly referenced for stock operations
+9. THE Product_Manager SHALL allow a Webshop_Admin to update stock levels and the `allow_oversell` flag on individual variants
+10. THE Product_Manager SHALL display aggregated totals per parent product (total stock across all variants, total sold across all variants) alongside the per-variant breakdown
+11. WHEN a Webshop_Admin bulk-creates variants, THE Product_Manager SHALL generate variant records for all valid attribute combinations defined in the parent's `required_attributes` enums (e.g., all gender × size combinations for t-shirts), removing any existing Default_Variant in the process
+12. IF a variant's stock reaches zero AND that variant's `allow_oversell` is false, THE system SHALL prevent adding that variant to the cart and display an out-of-stock indication
+13. EACH variant record SHALL have its own `allow_oversell` boolean flag, defaulting to `false`. This flag is set independently per variant, not inherited from the parent product
+14. WHEN a variant's `allow_oversell` is set to `true`, THE system SHALL allow cart additions and order placement to proceed for that variant even when its calculated stock would go negative
+15. WHEN a variant's `allow_oversell` is set to `false` (default), THE system SHALL prevent adding that variant to the cart when its stock is zero or when the requested quantity would cause its stock to go negative
+16. THE Product_Manager SHALL allow a Webshop_Admin to view and edit the `allow_oversell` flag on each variant independently in the product detail/edit form
+17. IF a variant's stock reaches zero AND its `allow_oversell` is false, THE Product_Manager SHALL mark the variant as out-of-stock but SHALL NOT prevent admin from viewing or editing it
+18. WHEN a product has a single Default_Variant, THE Product_Manager SHALL display stock management fields (stock, sold_count, allow_oversell) inline on the product detail view without requiring the admin to navigate into a separate variants sub-table
 
 ### Requirement 4: Order Management
 
-**User Story:** As a webshop administrator, I want to view and manage all orders from a central location with tenant-based filtering, so that I can track order status across all sources (webshop, presmeet, future tenants) from one interface.
+**User Story:** As a webshop administrator, I want to view and manage all orders from a central location with tenant-based filtering, including a full order lifecycle with defined states, so that I can track order progress across all sources from one interface.
 
 #### Acceptance Criteria
 
-1. THE Order_Manager SHALL display a table of all orders from the Orders table, showing order ID, tenant, customer/club name, order status, payment status, total amount, amount paid, outstanding balance, creation date, and submission date
-2. THE Order_Manager SHALL provide a tenant filter dropdown that allows filtering the order list by tenant value (e.g., "presmeet", "h-dcn", or "all")
-3. THE Order_Manager SHALL default the tenant filter to "all" showing orders from all tenants
-4. WHEN a Webshop_Admin selects an order row, THE Order_Manager SHALL display full order details including all line items with their product_type, attributes, quantity, and unit price, plus the complete payment history
-5. WHEN a Webshop_Admin clicks "Lock" on an order with status "submitted", THE Order_Manager SHALL transition the order status to "locked" and refresh the order list
-6. WHEN a Webshop_Admin clicks "Unlock" on an order with status "locked", THE Order_Manager SHALL transition the order status back to "submitted" and refresh the order list
-7. WHEN a Webshop_Admin clicks "Lock ALL", THE Order_Manager SHALL transition all orders matching the current tenant filter that are in "submitted" status to "locked" status
-8. THE Order_Manager SHALL display a status badge for each order using distinct colors: gray for draft, blue for submitted, green for locked
-9. THE Order_Manager SHALL display the tenant value as a label/badge on each order row to distinguish the source
-10. IF a lock or unlock operation fails, THEN THE Order_Manager SHALL display an error toast notification with the failure reason and leave the order status unchanged
+1. THE Order_Manager SHALL support the following order states: `draft`, `submitted`, `locked`, `order_received`, `payment_pending`, `payment_failed`, `paid`, `picked`, `packed`, `shipped`, `delivered`, `return_requested`, `return_received`, `completed`
+2. THE Order_Manager SHALL enforce valid state transitions: draft → submitted → locked → order_received → payment_pending or paid → picked → packed → shipped → delivered → return_requested → return_received → completed. Payment_failed is a terminal state. Payment_pending can transition to paid or payment_failed. An admin SHALL be able to skip intermediate states by jumping forward multiple steps in one action (e.g., directly from order_received to paid, or from paid to shipped), provided the target state is reachable from the current state in the defined sequence.
+3. THE Order_Manager SHALL display a table of all orders from the Orders table, showing order ID, tenant, customer/club name, order status, payment status, total amount, amount paid, outstanding balance, creation date, and submission date
+4. THE Order_Manager SHALL provide a tenant filter dropdown that allows filtering the order list by tenant value (e.g., "presmeet", "h-dcn", or "all")
+5. THE Order_Manager SHALL default the tenant filter to "all" showing orders from all tenants
+6. WHEN a user with Products_CRUD selects an order row, THE Order_Manager SHALL display full order details including all line items with their product_type, attributes, quantity, and unit price, plus the complete payment history and state transition history
+7. THE Order_Manager SHALL allow a user with Products_CRUD to manually advance an order to the next valid state via a status transition button
+8. WHEN a user with Products_CRUD clicks "Lock" on an order with status "submitted", THE Order_Manager SHALL transition the order status to "locked" and refresh the order list
+9. WHEN a user with Products_CRUD clicks "Unlock" on an order with status "locked", THE Order_Manager SHALL transition the order status back to "submitted" and refresh the order list
+10. WHEN a user with Products_CRUD clicks "Lock ALL", THE Order_Manager SHALL transition all orders matching the current tenant filter that are in "submitted" status to "locked" status
+11. THE Order_Manager SHALL display a status badge for each order using distinct colors per state (e.g., gray=draft, blue=submitted, green=locked/paid, orange=shipped, red=payment_failed)
+12. THE Order_Manager SHALL display the tenant value as a label/badge on each order row to distinguish the source
+13. THE Order_Manager SHALL record each state transition with a timestamp and the user who triggered it, stored on the order record as a `status_history` array
+14. IF a state transition fails or is invalid, THEN THE Order_Manager SHALL display an error toast notification with the failure reason and leave the order status unchanged
+15. WHEN an order transitions to "paid", THE Order_Manager SHALL reserve stock on the associated variant records — decrementing `stock` and incrementing `sold_count` on each line item's variant by exactly the line item's quantity. Stock is always reserved at the variant level, including for products with a single Default_Variant
+16. THE Order_Manager SHALL display the tenant value as a label/badge on each order row to distinguish the source
+17. IF a lock or unlock operation fails, THEN THE Order_Manager SHALL display an error toast notification with the failure reason and leave the order status unchanged
 
 ### Requirement 5: Payment Tracking
 
@@ -142,3 +160,19 @@ The Admin Product Management feature restructures the existing PresMeet admin fu
 4. IF no tenant filter is specified, THE Admin_Portal SHALL return data from all tenants
 5. THE Admin_Portal SHALL treat the existing PresMeet admin endpoints (`/presmeet/admin/*`) as the PresMeet-tenant-specific implementation that the generic endpoints delegate to when `tenant=presmeet`
 6. WHEN a new tenant is introduced in the future, THE Admin_Portal SHALL support it by adding the tenant value to the filter options without requiring changes to the order management, payment, or reporting UI logic
+
+### Requirement 9: Stock Movements
+
+**User Story:** As a webshop administrator, I want to record inbound stock movements (purchase orders) per variant with purchase price and supplier information, so that I can track inventory additions, calculate actual stock from movement history, and analyze purchase costs.
+
+#### Acceptance Criteria
+
+1. THE Product_Manager SHALL provide a "Voeg voorraad toe" (Add stock) action on each variant, accessible to users with Products_CRUD role
+2. WHEN a Webshop_Admin adds stock to a variant, THE system SHALL require input of: quantity (positive integer), purchase price per unit (€0.01 - €999,999.99), supplier name (required, max 100 characters), and optional reference/note (max 255 characters)
+3. WHEN a valid inbound stock movement is submitted, THE system SHALL create a stock movement record with type "inbound", the variant_id, the tenant (matching the variant's tenant), the quantity, purchase_price_per_unit, total_cost (quantity × purchase_price_per_unit), supplier_name, recorded_by (email of the logged-in user), reference, and timestamp
+4. WHEN a valid inbound stock movement is recorded, THE system SHALL increment the variant's `stock` field by the submitted quantity
+5. WHEN an order transitions to "paid", THE system SHALL automatically create stock movement records with type "sale" for each line item, recording the variant_id, tenant, quantity (as negative or a separate field), and a reference to the order_id
+6. THE Product_Manager SHALL display stock movement history per variant, showing date, type (inbound/sale), quantity, purchase price (for inbound), supplier (for inbound), reference, and recorded_by
+7. THE Report_Generator SHALL include purchase cost data in reports: total purchase cost by tenant, weighted average cost per variant (total inbound cost ÷ total inbound quantity), and gross margin (selling price − weighted average cost)
+8. THE system SHALL store stock movement records with a `tenant` field, and the stock movements SHALL be filterable by tenant in both the admin UI and reports
+9. IF an inbound stock movement submission fails, THEN THE system SHALL display an error toast with the failure reason and preserve the form inputs
