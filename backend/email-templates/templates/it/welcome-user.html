@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Account creato</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Benvenuto in {{ORGANIZATION_SHORT_NAME}}, {{DISPLAY_NAME}}!</h2>
+        
+        <p>È stato creato un account per te nel portale membri {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Le tue credenziali di accesso:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Indirizzo e-mail:</strong> {{EMAIL}}</li>
+                <li><strong>Password temporanea:</strong> {{TEMP_PASSWORD}}</li>
+            </ul>
+        </div>
+        
+        <h3>Segui questi passaggi per attivare il tuo account:</h3>
+        <ol>
+            <li>Vai su <a href="{{ORGANIZATION_WEBSITE}}/login">{{ORGANIZATION_WEBSITE}}/login</a></li>
+            <li>Accedi con il tuo indirizzo e-mail e la password temporanea</li>
+            <li>Configura un nuovo metodo di autenticazione (passkey consigliato)</li>
+            <li>Verifica il tuo indirizzo e-mail se richiesto</li>
+        </ol>
+        
+        <h3>Dopo l'attivazione avrai accesso a:</h3>
+        <ul>
+            <li>I tuoi dati personali di adesione</li>
+            <li>Il webshop {{ORGANIZATION_SHORT_NAME}}</li>
+            <li>Eventi e uscite</li>
+            <li>Contatto con altri membri</li>
+        </ul>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Importante:</strong> La password temporanea scade tra 7 giorni.
+        </div>
+        
+        <p>Hai domande? Contattaci all'indirizzo <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Cordiali saluti,<br>
+        Il team {{ORGANIZATION_SHORT_NAME}}</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Sito web: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

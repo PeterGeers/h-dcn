@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Solicitud de membresía recibida</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Gracias por tu solicitud, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Hemos recibido con éxito tu solicitud de membresía para {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Detalles de tu solicitud:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Nombre:</strong> {{FULL_NAME}}</li>
+                <li><strong>Dirección de correo electrónico:</strong> {{EMAIL}}</li>
+                <li><strong>Tipo de membresía:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Región:</strong> {{REGION}}</li>
+                <li><strong>Fecha de solicitud:</strong> {{APPLICATION_DATE}}</li>
+                {{#MOTOR_INFO}}
+                <li><strong>Motocicleta:</strong> {{MOTOR_INFO}}</li>
+                {{/MOTOR_INFO}}
+            </ul>
+        </div>
+        
+        <h3>¿Qué sucede ahora?</h3>
+        <ol>
+            <li><strong>Revisión:</strong> Tu solicitud será revisada por la administración regional</li>
+            <li><strong>Confirmación:</strong> Recibirás un correo electrónico con el resultado en un plazo de 5 a 10 días hábiles</li>
+            <li><strong>Aprobación:</strong> Tras la aprobación, recibirás tu número de miembro y acceso a todas las instalaciones</li>
+        </ol>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #155724;">✓ Tu solicitud está completa</h4>
+            <p style="margin-bottom: 0;">Toda la información necesaria ha sido recibida. No se requiere ninguna acción adicional de tu parte.</p>
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>📧 Importante:</strong> Revisa tu correo electrónico regularmente (incluido spam/no deseado) para actualizaciones sobre tu solicitud.
+        </div>
+        
+        <h3>Contacto & Soporte</h3>
+        <p>Si tienes preguntas sobre tu solicitud, contacta con:</p>
+        <ul>
+            <li><strong>Administración de miembros:</strong> <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></li>
+            <li><strong>Sitio web:</strong> <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a></li>
+            <li><strong>Consultas generales:</strong> <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></li>
+        </ul>
+        
+        <p>Atentamente,<br>
+        El equipo de administración de miembros de {{ORGANIZATION_SHORT_NAME}}</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Sitio web: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            Correo electrónico: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a><br>
+            <br>
+            <em>Este correo electrónico fue generado automáticamente. Tus datos se tratan de forma confidencial de acuerdo con nuestra política de privacidad.</em>
+        </footer>
+    </div>
+</body>
+</html>

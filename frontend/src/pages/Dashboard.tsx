@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, VStack, Heading, Text, SimpleGrid, Spinner, Center } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { membershipService } from '../utils/membershipService';
@@ -9,6 +10,7 @@ import { useAuth } from '../context/AuthProvider';
 function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation('dashboard');
   const [isCheckingMembership, setIsCheckingMembership] = useState(true);
   const [memberExists, setMemberExists] = useState<boolean | null>(null);
 
@@ -124,7 +126,7 @@ function Dashboard() {
       <Center h="400px">
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.400" thickness="4px" />
-          <Text color="gray.300">Lidmaatschap controleren...</Text>
+          <Text color="gray.300">{t('loading.checking_membership')}</Text>
         </VStack>
       </Center>
     );
@@ -136,7 +138,7 @@ function Dashboard() {
       <Center h="400px">
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.400" thickness="4px" />
-          <Text color="gray.300">Doorverwijzen naar aanmeldingsformulier...</Text>
+          <Text color="gray.300">{t('loading.redirecting')}</Text>
         </VStack>
       </Center>
     );
@@ -166,7 +168,7 @@ function Dashboard() {
             size={{ base: 'lg', md: 'xl' }}
             px={{ base: 2, md: 0 }}
           >
-            Welkom, {user?.givenName || 'Gebruiker'} {user?.familyName || ''}!
+            {t('greeting.welcome', { name: `${user?.givenName || t('labels.user', { ns: 'common' })} ${user?.familyName || ''}`.trim() })}
           </Heading>
           <Text 
             color="gray.600"
@@ -175,9 +177,9 @@ function Dashboard() {
           >
             {isLid ? (
               isBasicMember && !hasAdminRoles ? 
-                'Als H-DCN lid heb je toegang tot je persoonlijke gegevens en de webshop:' :
-                'Kies een applicatie om te starten:'
-            ) : 'Meld je aan om lid te worden van de H-DCN:'}
+                t('greeting.member_intro') :
+                t('greeting.admin_intro')
+            ) : t('greeting.guest_intro')}
           </Text>
           {isBasicMember && !hasAdminRoles && (
             <Text 
@@ -186,7 +188,7 @@ function Dashboard() {
               px={{ base: 2, md: 0 }}
               mt={2}
             >
-              Voor toegang tot beheerfuncties neem contact op met de administratie.
+              {t('greeting.admin_access_hint')}
             </Text>
           )}
         </Box>
@@ -198,8 +200,8 @@ function Dashboard() {
               key="my-account"
               app={{
                 id: 'my-account',
-                title: 'Mijn Gegevens',
-                description: 'Bekijk en bewerk uw persoonlijke gegevens',
+                title: t('cards.my_account_title'),
+                description: t('cards.my_account_desc'),
                 icon: '👤',
                 path: '/my-account'
               }}
@@ -213,8 +215,8 @@ function Dashboard() {
               key="membership"
               app={{
                 id: 'membership',
-                title: 'Aanmelden als Lid',
-                description: 'Word lid van de H-DCN met ons nieuwe aanmeldingsformulier',
+                title: t('cards.membership_title'),
+                description: t('cards.membership_desc'),
                 icon: '📝',
                 path: '/membership'
               }}
@@ -233,8 +235,8 @@ function Dashboard() {
               key="webshop"
               app={{
                 id: 'webshop',
-                title: 'Webshop',
-                description: 'Bestellen en bestellingen bekijken',
+                title: t('cards.webshop_title'),
+                description: t('cards.webshop_desc'),
                 icon: '🛒',
                 path: '/webshop'
               }}
@@ -251,8 +253,8 @@ function Dashboard() {
               key="presmeet"
               app={{
                 id: 'presmeet',
-                title: "Presidents' Meeting",
-                description: 'Booking form for your club delegation',
+                title: t('cards.presmeet_title'),
+                description: t('cards.presmeet_desc'),
                 icon: '🏍️',
                 path: '/presmeet'
               }}

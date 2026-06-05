@@ -1,10 +1,14 @@
 """
-Email Template Service for S3-based template management
+Email Template Service for S3-based template management with locale support
 """
 import json
 import boto3
 import os
 from typing import Dict, Any
+
+# Default locale for fallback
+DEFAULT_LOCALE = 'nl'
+
 
 class EmailTemplateService:
     def __init__(self):
@@ -36,27 +40,56 @@ class EmailTemplateService:
                 }
         return self._variables_cache
     
-    def get_template(self, template_name: str) -> str:
-        """Load template from S3"""
-        cache_key = template_name
+    def get_template(self, template_name: str, locale: str = DEFAULT_LOCALE) -> str:
+        """
+        Load template from S3 with locale support.
+        
+        Tries locale-specific path first: templates/{locale}/{template_name}.html
+        Falls back to Dutch: templates/nl/{template_name}.html
+        Falls back to legacy path: templates/{template_name}.html
+        """
+        cache_key = f"{locale}/{template_name}"
         
         if cache_key not in self._template_cache:
-            try:
-                response = self.s3_client.get_object(
-                    Bucket=self.bucket_name,
-                    Key=f'templates/{template_name}.html'
-                )
-                self._template_cache[cache_key] = response['Body'].read().decode('utf-8')
-            except Exception as e:
-                print(f"Error loading template {template_name} from S3: {e}")
-                # Return fallback template
-                self._template_cache[cache_key] = self._get_fallback_template(template_name)
+            template_html = None
+            
+            # Try locale-specific template
+            if locale and locale != DEFAULT_LOCALE:
+                template_html = self._load_s3_template(f'templates/{locale}/{template_name}.html')
+            
+            # Fallback to Dutch locale directory
+            if not template_html:
+                template_html = self._load_s3_template(f'templates/{DEFAULT_LOCALE}/{template_name}.html')
+            
+            # Fallback to legacy flat path (backward compatibility)
+            if not template_html:
+                template_html = self._load_s3_template(f'templates/{template_name}.html')
+            
+            # Final fallback to hardcoded template
+            if not template_html:
+                template_html = self._get_fallback_template(template_name)
+            
+            self._template_cache[cache_key] = template_html
         
         return self._template_cache[cache_key]
     
-    def render_template(self, template_name: str, context: Dict[str, Any]) -> tuple[str, str]:
-        """Render template with variables and context"""
-        template_html = self.get_template(template_name)
+    def _load_s3_template(self, key: str) -> str | None:
+        """Attempt to load a template from S3. Returns None if not found."""
+        try:
+            response = self.s3_client.get_object(
+                Bucket=self.bucket_name,
+                Key=key
+            )
+            return response['Body'].read().decode('utf-8')
+        except self.s3_client.exceptions.NoSuchKey:
+            return None
+        except Exception as e:
+            print(f"Error loading template {key} from S3: {e}")
+            return None
+    
+    def render_template(self, template_name: str, context: Dict[str, Any], locale: str = DEFAULT_LOCALE) -> tuple[str, str]:
+        """Render template with variables and context, using locale-specific template"""
+        template_html = self.get_template(template_name, locale=locale)
         variables = self.get_variables()
         
         # Combine variables and context

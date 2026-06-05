@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Cuenta creada</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Bienvenido a {{ORGANIZATION_SHORT_NAME}}, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Se ha creado una cuenta para ti en el portal de miembros de {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Tus credenciales de acceso:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Dirección de correo electrónico:</strong> {{EMAIL}}</li>
+                <li><strong>Contraseña temporal:</strong> {{TEMP_PASSWORD}}</li>
+            </ul>
+        </div>
+        
+        <h3>Sigue estos pasos para activar tu cuenta:</h3>
+        <ol>
+            <li>Ve a <a href="{{ORGANIZATION_WEBSITE}}/login">{{ORGANIZATION_WEBSITE}}/login</a></li>
+            <li>Inicia sesión con tu dirección de correo electrónico y la contraseña temporal</li>
+            <li>Configura un nuevo método de autenticación (passkey recomendado)</li>
+            <li>Verifica tu dirección de correo electrónico si se te solicita</li>
+        </ol>
+        
+        <h3>Después de la activación tendrás acceso a:</h3>
+        <ul>
+            <li>Tus datos personales de membresía</li>
+            <li>La tienda en línea de {{ORGANIZATION_SHORT_NAME}}</li>
+            <li>Eventos y salidas</li>
+            <li>Contacto con otros miembros</li>
+        </ul>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Importante:</strong> La contraseña temporal caduca en 7 días.
+        </div>
+        
+        <p>¿Tienes preguntas? Contáctanos en <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Atentamente,<br>
+        El equipo de {{ORGANIZATION_SHORT_NAME}}</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Sitio web: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            Correo electrónico: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

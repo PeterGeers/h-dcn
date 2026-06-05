@@ -9,6 +9,43 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'confirmation.title': 'Orderbevestiging',
+        'confirmation.download_pdf': 'Download PDF',
+        'confirmation.downloading': 'Downloaden...',
+        'confirmation.download_failed': 'Download mislukt',
+        'confirmation.download_error_desc': 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.',
+        'confirmation.order_number': 'Ordernummer',
+        'confirmation.date': 'Datum',
+        'confirmation.customer': 'Klant',
+        'confirmation.status': 'Status',
+        'confirmation.status_paid': 'Betaald',
+        'confirmation.not_available': 'Niet beschikbaar',
+        'confirmation.billing_address': 'Factuuradres',
+        'confirmation.shipping_address': 'Verzendadres',
+        'confirmation.name_not_available': 'Naam niet beschikbaar',
+        'confirmation.address_not_available': 'Adres niet beschikbaar',
+        'confirmation.postal_not_available': 'Postcode/plaats niet beschikbaar',
+        'confirmation.no_address': 'Geen adresgegevens beschikbaar',
+        'confirmation.ordered_products': 'Bestelde producten',
+        'confirmation.col_product': 'Product',
+        'confirmation.col_option': 'Optie',
+        'confirmation.col_quantity': 'Aantal',
+        'confirmation.col_price': 'Prijs',
+        'confirmation.col_total': 'Totaal',
+        'confirmation.subtotal': 'Subtotaal',
+        'confirmation.total_paid': 'Totaal betaald',
+      };
+      return translations[key] || key;
+    },
+    i18n: { language: 'nl', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock Chakra UI components
 const mockToast = jest.fn();
 jest.mock('@chakra-ui/react', () => ({

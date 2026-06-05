@@ -1,0 +1,38 @@
+{
+  "title": "Evenementen",
+  "loading": {
+    "permissions": "Machtigingen laden...",
+    "events": "Evenementen laden..."
+  },
+  "tabs": {
+    "events": "Evenementen",
+    "finance": "Financiën",
+    "analytics": "Analytics"
+  },
+  "access": {
+    "no_access": "Je hebt geen toegang tot de evenementenadministratie. Neem contact op met een beheerder als je toegang nodig hebt.",
+    "no_financial_access": "Je hebt geen toegang tot financiële gegevens.",
+    "no_analytics_access": "Je hebt geen toegang tot analytics.",
+    "current_roles": "Huidige rollen: {{roles}}",
+    "no_roles": "Geen rollen toegewezen",
+    "required_roles": "Vereiste rollen: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, of andere event-gerelateerde rollen"
+  },
+  "communication": {
+    "title": "Evenement Communicatie & Export",
+    "export_participants": "Export Deelnemerslijsten",
+    "newsletter_content": "Nieuwsbrief Content"
+  },
+  "overview": {
+    "title": "Evenement Overzicht & Rapportage",
+    "event_overview": "Evenement Overzicht",
+    "regional_summary": "Regionale Samenvatting"
+  },
+  "fields": {
+    "name": "Naam",
+    "date": "Datum",
+    "location": "Locatie",
+    "participants": "Deelnemers",
+    "revenue": "Inkomsten",
+    "costs": "Kosten"
+  }
+}

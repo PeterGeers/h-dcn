@@ -98,5 +98,6 @@
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml",
     ".env": ".env.*"
   },
-  "typescript.autoClosingTags": false
+  "typescript.autoClosingTags": false,
+  "html.autoClosingTags": false
 }

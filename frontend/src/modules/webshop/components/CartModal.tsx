@@ -20,6 +20,7 @@ import {
   NumberDecrementStepper
 } from '@chakra-ui/react';
 import { DeleteIcon, CheckIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 
 interface CartItem {
   product_id: string;
@@ -51,6 +52,7 @@ const CartModal: React.FC<CartModalProps> = ({
   onUpdateQuantity, 
   onSaveCart 
 }) => {
+  const { t } = useTranslation('webshop');
   const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -58,11 +60,11 @@ const CartModal: React.FC<CartModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
       <ModalContent bg="black" color="white" borderWidth="3px" borderColor="orange.500">
-        <ModalHeader color="white">Winkelwagen</ModalHeader>
+        <ModalHeader color="white">{t('cart.title')}</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           {cartItems.length === 0 ? (
-            <Text color="white">Uw winkelwagen is leeg</Text>
+            <Text color="white">{t('cart.empty')}</Text>
           ) : (
             <VStack spacing={4} align="stretch">
               {cartItems.map((item, index) => (
@@ -72,7 +74,7 @@ const CartModal: React.FC<CartModalProps> = ({
                       <Text fontWeight="medium" color="white">{item.name || item.naam}</Text>
                       {item.selectedOption && (
                         <Text fontSize="sm" color="gray.300">
-                          Optie: {item.selectedOption}
+                          {t('cart.option_label')}: {item.selectedOption}
                         </Text>
                       )}
                       <HStack spacing={3}>
@@ -110,11 +112,11 @@ const CartModal: React.FC<CartModalProps> = ({
               
               <VStack spacing={2}>
                 <HStack justify="space-between" width="full">
-                  <Text fontSize="sm" color="white">Aantal items:</Text>
+                  <Text fontSize="sm" color="white">{t('cart.item_total_label')}:</Text>
                   <Text fontSize="sm" color="white">{itemCount}</Text>
                 </HStack>
                 <HStack justify="space-between" width="full">
-                  <Text fontSize="lg" fontWeight="bold" color="white">Totaal:</Text>
+                  <Text fontSize="lg" fontWeight="bold" color="white">{t('cart.total_label')}:</Text>
                   <Text fontSize="lg" fontWeight="bold" color="white">€{totalAmount.toFixed(2)}</Text>
                 </HStack>
               </VStack>
@@ -129,7 +131,7 @@ const CartModal: React.FC<CartModalProps> = ({
                   size="lg"
                   leftIcon={<CheckIcon />}
                 >
-                  Afrekenen
+                  {t('checkout.title')}
                 </Button>
                 <Button
                   variant="outline"
@@ -139,14 +141,14 @@ const CartModal: React.FC<CartModalProps> = ({
                   onClick={onSaveCart}
                   width="full"
                 >
-                  Winkelwagen bewaren
+                  {t('cart.save')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={onClearCart}
                   width="full"
                 >
-                  Winkelwagen legen
+                  {t('cart.clear')}
                 </Button>
               </VStack>
             </VStack>

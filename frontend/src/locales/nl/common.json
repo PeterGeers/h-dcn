@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "H-DCN Portal",
+    "dashboard": "Dashboard",
+    "back_to_dashboard": "Terug naar Dashboard",
+    "logout": "Uitloggen"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Nederland",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+  "buttons": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "close": "Sluiten",
+    "back": "Terug",
+    "next": "Volgende",
+    "submit": "Indienen",
+    "confirm": "Bevestigen",
+    "retry": "Opnieuw proberen",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "export": "Exporteren",
+    "add": "Toevoegen",
+    "refresh": "Vernieuwen",
+    "open": "Openen"
+  },
+  "labels": {
+    "loading": "Laden...",
+    "no_data": "Geen gegevens gevonden",
+    "error": "Fout",
+    "success": "Succes",
+    "warning": "Waarschuwing",
+    "info": "Informatie",
+    "required": "Verplicht",
+    "optional": "Optioneel",
+    "status": "Status",
+    "date": "Datum",
+    "name": "Naam",
+    "email": "E-mailadres",
+    "phone": "Telefoon",
+    "unknown": "Onbekend",
+    "user": "Gebruiker",
+    "select": "Selecteer..."
+  },
+  "errors": {
+    "generic": "Er is een fout opgetreden. Probeer het later opnieuw.",
+    "network": "Netwerkfout. Controleer je verbinding en probeer opnieuw.",
+    "not_found": "Niet gevonden",
+    "no_access": "Geen toegang",
+    "session_expired": "Sessie verlopen. Log opnieuw in."
+  },
+  "notifications": {
+    "save_success": "Gegevens succesvol opgeslagen",
+    "save_error": "Fout bij opslaan. Probeer het opnieuw.",
+    "delete_success": "Succesvol verwijderd",
+    "delete_error": "Fout bij verwijderen"
+  },
+  "account": {
+    "info_title": "Account Informatie",
+    "access_level": "Toegangsniveau",
+    "roles_tab": "Rollen",
+    "permissions_tab": "Bevoegdheden",
+    "no_roles": "Geen rollen toegewezen",
+    "no_permissions": "Geen bevoegdheden toegewezen",
+    "setup_passkey": "Passkey Instellen",
+    "passkey_success": "Passkey succesvol ingesteld! Je kunt nu inloggen met je passkey.",
+    "passkey_cancelled": "Passkey instellen geannuleerd.",
+    "passkey_failed": "Passkey instellen mislukt: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Taalvoorkeur opgeslagen",
+    "preference_save_failed": "Taalvoorkeur kon niet worden opgeslagen"
+  }
+}

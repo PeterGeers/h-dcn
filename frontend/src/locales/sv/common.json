@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "H-DCN Portal",
+    "dashboard": "Instrumentpanel",
+    "back_to_dashboard": "Tillbaka till instrumentpanelen",
+    "logout": "Logga ut"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Nederländerna",
+    "privacy": "Integritet",
+    "contact": "Kontakt"
+  },
+  "buttons": {
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "close": "Stäng",
+    "back": "Tillbaka",
+    "next": "Nästa",
+    "submit": "Skicka",
+    "confirm": "Bekräfta",
+    "retry": "Försök igen",
+    "search": "Sök",
+    "filter": "Filtrera",
+    "export": "Exportera",
+    "add": "Lägg till",
+    "refresh": "Uppdatera",
+    "open": "Öppna"
+  },
+  "labels": {
+    "loading": "Laddar...",
+    "no_data": "Inga data hittades",
+    "error": "Fel",
+    "success": "Lyckades",
+    "warning": "Varning",
+    "info": "Information",
+    "required": "Obligatoriskt",
+    "optional": "Valfritt",
+    "status": "Status",
+    "date": "Datum",
+    "name": "Namn",
+    "email": "E-postadress",
+    "phone": "Telefon",
+    "unknown": "Okänd",
+    "user": "Användare",
+    "select": "Välj..."
+  },
+  "errors": {
+    "generic": "Ett fel uppstod. Försök igen senare.",
+    "network": "Nätverksfel. Kontrollera din anslutning och försök igen.",
+    "not_found": "Hittades inte",
+    "no_access": "Ingen åtkomst",
+    "session_expired": "Sessionen har gått ut. Logga in igen."
+  },
+  "notifications": {
+    "save_success": "Data sparades",
+    "save_error": "Fel vid sparande. Försök igen.",
+    "delete_success": "Borttaget",
+    "delete_error": "Fel vid borttagning"
+  },
+  "account": {
+    "info_title": "Kontoinformation",
+    "access_level": "Åtkomstnivå",
+    "roles_tab": "Roller",
+    "permissions_tab": "Behörigheter",
+    "no_roles": "Inga roller tilldelade",
+    "no_permissions": "Inga behörigheter tilldelade",
+    "setup_passkey": "Konfigurera Passkey",
+    "passkey_success": "Passkey konfigurerad! Du kan nu logga in med din passkey.",
+    "passkey_cancelled": "Passkey-konfiguration avbruten.",
+    "passkey_failed": "Passkey-konfiguration misslyckades: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Språkinställning sparad",
+    "preference_save_failed": "Språkinställning kunde inte sparas"
+  }
+}

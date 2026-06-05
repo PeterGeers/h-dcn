@@ -11,6 +11,7 @@ import {
   AlertIcon,
   Heading
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 
 interface PasswordlessSignUpProps {
   onSuccess?: (email: string) => void;
@@ -26,6 +27,7 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const { t, i18n } = useTranslation('auth');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -52,23 +54,21 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
           email: formData.email,
           given_name: formData.given_name,
           family_name: formData.family_name,
+          locale: i18n.language,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(
-          'Account succesvol aangemaakt! Controleer je e-mail voor verificatie-instructies. ' +
-          'Na e-mailverificatie kun je het "Inloggen" tabblad gebruiken om een passkey in te stellen.'
-        );
+        setMessage(t('signup.success'));
         if (onSuccess) onSuccess(formData.email);
       } else {
         // Handle specific backend errors
-        let errorMessage = data.error || 'Er is een fout opgetreden bij het aanmaken van je account';
+        let errorMessage = data.error || t('signup.generic_error');
         
         if (response.status === 409) {
-          errorMessage = 'Er bestaat al een account met dit e-mailadres. Probeer in te loggen of gebruik account recovery.';
+          errorMessage = t('signup.existing_account');
         }
         
         setError(errorMessage);
@@ -78,7 +78,7 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
       console.error('Sign up error:', err);
       
       // Handle network and other errors
-      let errorMessage = 'Er is een fout opgetreden bij het aanmaken van je account. Controleer je internetverbinding en probeer opnieuw.';
+      let errorMessage = t('signup.network_error');
       
       if (err.message) {
         errorMessage = err.message;
@@ -95,12 +95,12 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
     <Box maxW="md" mx="auto" p={6}>
       <VStack spacing={6}>
         <Box textAlign="center">
-          <Heading color="orange.400" size="md">Account Aanmaken</Heading>
+          <Heading color="orange.400" size="md">{t('signup.title')}</Heading>
           <Text color="gray.400" mt={2}>
-            Maak een nieuw account aan met je voor- en achternaam.
+            {t('signup.description')}
           </Text>
           <Text color="orange.300" mt={1} fontSize="sm">
-            Na registratie ontvang je een verificatie-e-mail. Daarna kun je inloggen met een passkey.
+            {t('signup.passkey_hint')}
           </Text>
         </Box>
 
@@ -121,13 +121,13 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <VStack spacing={4}>
             <FormControl isRequired>
-              <FormLabel color="gray.300">E-mailadres</FormLabel>
+              <FormLabel color="gray.300">{t('signup.email_label')}</FormLabel>
               <Input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="Voer je e-mailadres in"
+                placeholder={t('login.email_placeholder')}
                 bg="gray.700"
                 border="1px solid"
                 borderColor="gray.600"
@@ -138,13 +138,13 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
             </FormControl>
 
             <FormControl isRequired>
-              <FormLabel color="gray.300">Voornaam</FormLabel>
+              <FormLabel color="gray.300">{t('signup.first_name_label')}</FormLabel>
               <Input
                 type="text"
                 name="given_name"
                 value={formData.given_name}
                 onChange={handleInputChange}
-                placeholder="Voer je voornaam in"
+                placeholder={t('signup.first_name_placeholder')}
                 bg="gray.700"
                 border="1px solid"
                 borderColor="gray.600"
@@ -155,13 +155,13 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
             </FormControl>
 
             <FormControl isRequired>
-              <FormLabel color="gray.300">Achternaam</FormLabel>
+              <FormLabel color="gray.300">{t('signup.last_name_label')}</FormLabel>
               <Input
                 type="text"
                 name="family_name"
                 value={formData.family_name}
                 onChange={handleInputChange}
-                placeholder="Voer je achternaam in"
+                placeholder={t('signup.last_name_placeholder')}
                 bg="gray.700"
                 border="1px solid"
                 borderColor="gray.600"
@@ -177,19 +177,19 @@ export function PasswordlessSignUp({ onSuccess, onError }: PasswordlessSignUpPro
               size="lg"
               width="full"
               isLoading={loading}
-              loadingText="Account aanmaken..."
+              loadingText={t('signup.loading')}
             >
-              Account Aanmaken
+              {t('signup.submit_button')}
             </Button>
           </VStack>
         </form>
 
         <Box textAlign="center">
           <Text color="gray.400" fontSize="sm">
-            Na registratie ontvang je een verificatie-e-mail. Gebruik daarna het "Inloggen" tabblad.
+            {t('signup.after_registration')}
           </Text>
           <Text color="orange.300" fontSize="xs" mt={1}>
-            Heb je al een account? Gebruik het "Inloggen" tabblad.
+            {t('signup.already_have_account')}
           </Text>
         </Box>
       </VStack>

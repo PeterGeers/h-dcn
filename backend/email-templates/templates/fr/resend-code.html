@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Code de vérification</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Code de vérification pour {{ORGANIZATION_SHORT_NAME}}</h2>
+        
+        <p>Bonjour {{DISPLAY_NAME}},</p>
+        
+        <p>Vous avez demandé un nouveau code de vérification pour votre compte {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #e8f5e8; border: 2px solid #4caf50; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+            <h3 style="margin: 0; color: #2e7d32;">Votre code de vérification :</h3>
+            <div style="font-size: 24px; font-weight: bold; color: #1b5e20; margin: 10px 0; letter-spacing: 3px;">
+                {{CODE}}
+            </div>
+        </div>
+        
+        <p>Entrez ce code pour confirmer votre adresse e-mail et accéder au portail des membres {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⏰ Important :</strong> Ce code est valable 24 heures.
+        </div>
+        
+        <p>Vous n'avez pas demandé ce code ? Ignorez simplement cet e-mail.</p>
+        
+        <p>Vous avez des questions ? Contactez-nous à <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Cordialement,<br>
+        L'équipe {{ORGANIZATION_SHORT_NAME}}</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Site web : <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail : <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

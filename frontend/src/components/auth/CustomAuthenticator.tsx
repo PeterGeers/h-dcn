@@ -20,6 +20,7 @@ import {
   PopoverBody,
   HStack
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { PasswordlessSignUp } from './PasswordlessSignUp';
 import { PasskeySetup } from './PasskeySetup';
 import { MobilePasskeyDebug } from './MobilePasskeyDebug';
@@ -32,6 +33,7 @@ interface CustomAuthenticatorProps {
 
 export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const { user: authUser, isLoading, isAuthenticated, error: authError, signOut } = useAuth();
+  const { t, i18n } = useTranslation('auth');
 
   const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'passkeySetup' | 'debug'>('signIn');
   const [signInData, setSignInData] = useState({ email: '' });
@@ -75,6 +77,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         options: {
           authFlowType: 'USER_AUTH',
           preferredChallenge: 'EMAIL_OTP',
+          clientMetadata: { locale: i18n.language },
         },
       });
 
@@ -90,9 +93,9 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
     } catch (err: any) {
       console.error('Resend code error:', err);
       if (isNetworkError(err)) {
-        setError('Netwerkfout. Controleer je verbinding en probeer opnieuw.');
+        setError(t('errors.network'));
       } else {
-        setError('Nieuwe code versturen mislukt. Probeer opnieuw.');
+        setError(t('errors.resend_failed'));
       }
     } finally {
       setLoading(false);
@@ -101,7 +104,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
 
   const handleOtpCodeEntry = async () => {
     const { confirmSignIn } = await import('aws-amplify/auth');
-    const code = prompt('Voer de verificatiecode in die naar je e-mail is gestuurd:');
+    const code = prompt(t('verification.enter_code'));
     if (code) {
       try {
         const confirmResult = await confirmSignIn({ challengeResponse: code });
@@ -111,16 +114,16 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         }
       } catch (confirmErr: any) {
         if (isCodeExpiredError(confirmErr)) {
-          setError('Code verlopen. Vraag een nieuwe code aan.');
+          setError(t('errors.code_expired'));
           setShowResendCode(true);
         } else if (isNetworkError(confirmErr)) {
-          setError('Netwerkfout. Controleer je verbinding en probeer opnieuw.');
+          setError(t('errors.network'));
         } else {
-          setError('Verificatie mislukt. Probeer opnieuw.');
+          setError(t('errors.verification_failed'));
         }
       }
     } else {
-      setError('Verificatiecode is vereist om in te loggen.');
+      setError(t('errors.code_required'));
     }
   };
 
@@ -141,6 +144,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           options: {
             authFlowType: 'USER_AUTH',
             preferredChallenge: 'WEB_AUTHN',
+            clientMetadata: { locale: i18n.language },
           },
         });
       } catch (webAuthnErr: any) {
@@ -151,6 +155,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           options: {
             authFlowType: 'USER_AUTH',
             preferredChallenge: 'EMAIL_OTP',
+            clientMetadata: { locale: i18n.language },
           },
         });
       }
@@ -170,12 +175,12 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
           if (confirmResult.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE') {
             await handleOtpCodeEntry();
           } else {
-            setError('Inloggen mislukt. Probeer opnieuw.');
+            setError(t('errors.login_failed'));
           }
         } else if (step === 'CONFIRM_SIGN_UP') {
-          setError('Je account moet nog bevestigd worden. Controleer je e-mail.');
+          setError(t('errors.confirm_required'));
         } else {
-          setError(`Extra stap vereist: ${step}`);
+          setError(t('errors.step_required', { step }));
         }
       }
     } catch (err: any) {
@@ -187,13 +192,13 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
         setError('');
         return;
       } else if (isNetworkError(err)) {
-        setError('Netwerkfout. Controleer je verbinding en probeer opnieuw.');
+        setError(t('errors.network'));
       } else if (err.name === 'NotAuthorizedException') {
-        setError('Inloggen mislukt. Controleer je gegevens.');
+        setError(t('errors.credentials_invalid'));
       } else if (err.name === 'NotAllowedError') {
-        setError('Passkey authenticatie geannuleerd. Probeer opnieuw.');
+        setError(t('errors.passkey_cancelled'));
       } else {
-        setError(err.message || 'Inloggen mislukt. Probeer opnieuw.');
+        setError(err.message || t('errors.login_failed'));
       }
     } finally {
       setLoading(false);
@@ -235,7 +240,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   };
 
   const handleGoogleAuthError = (error: string) => {
-    setError(`Google SSO fout: ${error}`);
+    setError(t('errors.google_sso', { error }));
   };
 
   if (authState === 'debug') {
@@ -258,7 +263,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   if (isLoading) {
     return (
       <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
-        <Text color="orange.400">Laden...</Text>
+        <Text color="orange.400">{t('login.loading')}</Text>
       </Box>
     );
   }
@@ -316,20 +321,20 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             borderRadius="lg"
             shadow="md"
           />
-          <Text color="gray.400" fontSize="12px">Welkom bij het H-DCN Portaal</Text>
+          <Text color="gray.400" fontSize="12px">{t('login.welcome')}</Text>
         </Box>
 
         {/* Single Interface - No Tabs */}
         <Box>
           <HStack justify="space-between" align="center" mb={4}>
             <Heading color="orange.400" size="lg">
-              {showRegistrationForm ? 'Account Aanmaken' : 'Inloggen'}
+              {showRegistrationForm ? t('signup.title') : t('login.title')}
             </Heading>
 
             <Popover placement="bottom-end">
               <PopoverTrigger>
                 <IconButton
-                  aria-label="Authenticatie informatie"
+                  aria-label={t('info.title')}
                   icon={
                     <Image
                       src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/info-icon-orange.svg"
@@ -348,52 +353,52 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                 <PopoverArrow bg="gray.800" />
                 <PopoverCloseButton color="gray.400" />
                 <PopoverHeader color="orange.400" fontWeight="bold" fontSize="sm">
-                  Authenticatie Informatie
+                  {t('info.title')}
                 </PopoverHeader>
                 <PopoverBody>
                   <VStack align="start" spacing={3}>
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
-                        Inloggen kan met je e-mailadres
+                        {t('info.email_intro')}
                       </Text>
                       <Text color="gray.400" fontSize="xs">
-                        Voer je e-mailadres in en kies je voorkeursmanier van inloggen
+                        {t('info.email_desc')}
                       </Text>
                     </Box>
 
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
-                        🔐 Passkey (aanbevolen)
+                        🔐 {t('info.passkey_title')}
                       </Text>
                       <Text color="gray.400" fontSize="xs">
-                        Veilig inloggen met vingerafdruk, gezichtsherkenning, of apparaat-PIN
+                        {t('info.passkey_desc')}
                       </Text>
                     </Box>
 
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
-                        🌐 Google Account
+                        🌐 {t('info.google_title')}
                       </Text>
                       <Text color="gray.400" fontSize="xs">
-                        Gebruik je bestaande Google account om snel in te loggen
+                        {t('info.google_desc')}
                       </Text>
                     </Box>
 
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
-                        ✨ Nieuwe gebruiker?
+                        ✨ {t('info.new_user_title')}
                       </Text>
                       <Text color="gray.400" fontSize="xs">
-                        Het systeem detecteert automatisch of je een nieuw account nodig hebt
+                        {t('info.new_user_desc')}
                       </Text>
                     </Box>
 
                     <Box>
                       <Text color="gray.300" fontSize="sm" fontWeight="medium">
-                        🔧 Problemen?
+                        🔧 {t('info.help_title')}
                       </Text>
                       <Text color="gray.400" fontSize="xs">
-                        Stel een nieuwe passkey in of probeer Google inloggen
+                        {t('info.help_desc')}
                       </Text>
                     </Box>
                   </VStack>
@@ -417,7 +422,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                 size="sm"
                 onClick={handleRegistrationCancel}
               >
-                ← Terug naar inloggen
+                ← {t('signup.back_to_login')}
               </Button>
             </VStack>
           ) : (
@@ -435,9 +440,9 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                         mt={2}
                         onClick={handleResendCode}
                         isLoading={loading}
-                        loadingText="Versturen..."
+                        loadingText={t('verification.sending')}
                       >
-                        Nieuwe code versturen
+                        {t('verification.resend_code')}
                       </Button>
                     )}
                   </Box>
@@ -452,7 +457,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                       name="email"
                       value={signInData.email}
                       onChange={handleInputChange}
-                      placeholder="Voer je e-mailadres in"
+                      placeholder={t('login.email_placeholder')}
                       bg="gray.700"
                       border="1px solid"
                       borderColor="gray.600"
@@ -468,7 +473,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                     size="lg"
                     width="full"
                     isLoading={loading}
-                    loadingText="Inloggen..."
+                    loadingText={t('login.loading')}
                     leftIcon={<span>🔐</span>}
                     _hover={{ bg: 'orange.500', transform: 'translateY(-1px)' }}
                     _active={{ transform: 'translateY(0px)' }}
@@ -476,13 +481,13 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                     fontWeight="bold"
                     fontSize="md"
                   >
-                    Inloggen met Passkey
+                    {t('login.passkey_button')}
                   </Button>
 
                   {/* Divider */}
                   <Box width="full" textAlign="center" py={3}>
                     <Text color="gray.500" fontSize="sm" fontWeight="medium">
-                      of gebruik
+                      {t('login.or_use')}
                     </Text>
                   </Box>
 
@@ -496,7 +501,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                   {signInData.email && (
                     <Box width="full" pt={4} borderTop="1px solid" borderColor="gray.700">
                       <Text color="gray.500" fontSize="xs" textAlign="center" mb={3}>
-                        Geavanceerde opties
+                        {t('login.advanced_options')}
                       </Text>
 
                       <VStack spacing={2}>
@@ -512,7 +517,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                           }}
                           isDisabled={loading}
                         >
-                          Nieuwe Passkey Instellen
+                          {t('login.setup_new_passkey')}
                         </Button>
 
                         {/* Debug button - only show in development or for staff */}
@@ -526,7 +531,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                             onClick={() => setAuthState('debug')}
                             isDisabled={loading}
                           >
-                            🔧 Debug Passkey Problemen
+                            🔧 {t('login.debug_passkey')}
                           </Button>
                         )}
                       </VStack>

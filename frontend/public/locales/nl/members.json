@@ -1,0 +1,51 @@
+{
+  "self_service": {
+    "loading": "Uw gegevens laden...",
+    "no_data_error": "Geen gebruikersgegevens beschikbaar",
+    "load_error_title": "Fout bij laden gegevens",
+    "load_error": "Fout bij het laden van uw gegevens. Probeer het later opnieuw.",
+    "update_success": "Gegevens bijgewerkt",
+    "update_success_desc": "Uw gegevens zijn succesvol bijgewerkt.",
+    "update_error": "Fout bij opslaan",
+    "update_error_desc": "Er is een fout opgetreden. Probeer het opnieuw.",
+    "update_api_error": "Fout bij het bijwerken van uw gegevens"
+  },
+  "application": {
+    "status_title": "Aanvraag Status",
+    "status_label": "Status:",
+    "submitted_label": "Ingediend:",
+    "edit_data": "Gegevens Wijzigen",
+    "submit_button": "Lidmaatschapsaanvraag Indienen",
+    "welcome_title": "Welkom bij H-DCN!",
+    "welcome_message": "U bent ingelogd als aanvrager. U kunt nu uw lidmaatschapsaanvraag indienen."
+  },
+  "no_member": {
+    "title": "Geen lidgegevens gevonden",
+    "message": "U bent nog geen lid van de H-DCN.",
+    "apply_link": "Klik hier om lid te worden"
+  },
+  "form": {
+    "first_name": "Voornaam",
+    "last_name": "Achternaam",
+    "street": "Straat",
+    "postal_code": "Postcode",
+    "city": "Woonplaats",
+    "country": "Land",
+    "phone": "Telefoon",
+    "date_of_birth": "Geboortedatum",
+    "gender": "Geslacht",
+    "region": "Regio",
+    "membership_type": "Lidmaatschap",
+    "newsletter": "Nieuwsbrief",
+    "club_magazine": "Clubblad",
+    "payment_method": "Betaalwijze",
+    "bank_account": "Bankrekeningnummer"
+  },
+  "sections": {
+    "personal": "Persoonlijke gegevens",
+    "address": "Adresgegevens",
+    "membership": "Lidmaatschap",
+    "motor": "Motor",
+    "financial": "Financieel"
+  }
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Konto erstellt</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Willkommen bei {{ORGANIZATION_SHORT_NAME}}, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Ein Konto wurde für Sie im {{ORGANIZATION_SHORT_NAME}} Mitgliederportal erstellt.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Ihre Anmeldedaten:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>E-Mail-Adresse:</strong> {{EMAIL}}</li>
+                <li><strong>Temporäres Passwort:</strong> {{TEMP_PASSWORD}}</li>
+            </ul>
+        </div>
+        
+        <h3>Folgen Sie diesen Schritten, um Ihr Konto zu aktivieren:</h3>
+        <ol>
+            <li>Gehen Sie zu <a href="{{ORGANIZATION_WEBSITE}}/login">{{ORGANIZATION_WEBSITE}}/login</a></li>
+            <li>Melden Sie sich mit Ihrer E-Mail-Adresse und dem temporären Passwort an</li>
+            <li>Richten Sie eine neue Authentifizierungsmethode ein (Passkey empfohlen)</li>
+            <li>Bestätigen Sie Ihre E-Mail-Adresse falls aufgefordert</li>
+        </ol>
+        
+        <h3>Nach der Aktivierung haben Sie Zugang zu:</h3>
+        <ul>
+            <li>Ihren persönlichen Mitgliedschaftsdaten</li>
+            <li>Dem {{ORGANIZATION_SHORT_NAME}} Webshop</li>
+            <li>Veranstaltungen und Ausfahrten</li>
+            <li>Kontakt mit anderen Mitgliedern</li>
+        </ul>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Wichtig:</strong> Das temporäre Passwort läuft in 7 Tagen ab.
+        </div>
+        
+        <p>Haben Sie Fragen? Kontaktieren Sie uns unter <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Mit freundlichen Grüßen,<br>
+        Das {{ORGANIZATION_SHORT_NAME}} Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-Mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

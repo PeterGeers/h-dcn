@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Verificatiecode</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Verificatiecode voor {{ORGANIZATION_SHORT_NAME}}</h2>
+        
+        <p>Hallo {{DISPLAY_NAME}},</p>
+        
+        <p>U heeft een nieuwe verificatiecode aangevraagd voor uw {{ORGANIZATION_SHORT_NAME}} account.</p>
+        
+        <div style="background-color: #e8f5e8; border: 2px solid #4caf50; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+            <h3 style="margin: 0; color: #2e7d32;">Uw verificatiecode:</h3>
+            <div style="font-size: 24px; font-weight: bold; color: #1b5e20; margin: 10px 0; letter-spacing: 3px;">
+                {{CODE}}
+            </div>
+        </div>
+        
+        <p>Voer deze code in om uw e-mailadres te bevestigen en toegang te krijgen tot het {{ORGANIZATION_SHORT_NAME}} lidmaatschapsportaal.</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⏰ Belangrijk:</strong> Deze code is 24 uur geldig.
+        </div>
+        
+        <p>Heeft u deze code niet aangevraagd? Negeer dan deze e-mail.</p>
+        
+        <p>Heeft u vragen? Neem contact op via <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Met vriendelijke groet,<br>
+        Het {{ORGANIZATION_SHORT_NAME}} Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

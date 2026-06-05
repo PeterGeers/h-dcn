@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Membership Application Received</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Thank you for your application, {{DISPLAY_NAME}}!</h2>
+        
+        <p>We have successfully received your membership application for {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Your application details:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Name:</strong> {{FULL_NAME}}</li>
+                <li><strong>Email address:</strong> {{EMAIL}}</li>
+                <li><strong>Membership type:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Region:</strong> {{REGION}}</li>
+                <li><strong>Application date:</strong> {{APPLICATION_DATE}}</li>
+                {{#MOTOR_INFO}}
+                <li><strong>Motorcycle:</strong> {{MOTOR_INFO}}</li>
+                {{/MOTOR_INFO}}
+            </ul>
+        </div>
+        
+        <h3>What happens next?</h3>
+        <ol>
+            <li><strong>Review:</strong> Your application will be reviewed by the regional administration</li>
+            <li><strong>Confirmation:</strong> You will receive an email with the result within 5-10 working days</li>
+            <li><strong>Approval:</strong> Upon approval you will receive your member number and access to all facilities</li>
+        </ol>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #155724;">✓ Your application is complete</h4>
+            <p style="margin-bottom: 0;">All required information has been received. No further action is needed from you.</p>
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>📧 Important:</strong> Please check your email regularly (including spam/junk) for updates on your application.
+        </div>
+        
+        <h3>Contact & Support</h3>
+        <p>If you have questions about your application, please contact:</p>
+        <ul>
+            <li><strong>Member administration:</strong> <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></li>
+            <li><strong>Website:</strong> <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a></li>
+            <li><strong>General enquiries:</strong> <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></li>
+        </ul>
+        
+        <p>Kind regards,<br>
+        The {{ORGANIZATION_SHORT_NAME}} Member Administration Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            Email: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a><br>
+            <br>
+            <em>This email was automatically generated. Your data is treated confidentially in accordance with our privacy policy.</em>
+        </footer>
+    </div>
+</body>
+</html>

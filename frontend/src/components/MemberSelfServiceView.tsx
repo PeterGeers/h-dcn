@@ -31,6 +31,7 @@ import {
   Tooltip
 } from '@chakra-ui/react';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, EditIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { Formik, Form, Field } from 'formik';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields } from '../config/memberFields';
 import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
@@ -57,6 +58,7 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
     administrative: false
   });
   const toast = useToast();
+  const { t } = useTranslation('members');
 
   // Debug: Log member data to see what fields are available
   console.log('Member data in MemberSelfServiceView:', member);
@@ -100,16 +102,16 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
       
       setHasChanges(false);
       toast({
-        title: 'Gegevens bijgewerkt',
-        description: 'Uw gegevens zijn succesvol bijgewerkt.',
+        title: t('self_service.update_success'),
+        description: t('self_service.update_success_desc'),
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: 'Fout bij opslaan',
-        description: 'Er is een fout opgetreden. Probeer het opnieuw.',
+        title: t('self_service.update_error'),
+        description: t('self_service.update_error_desc'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -177,11 +179,11 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
         <FormControl isInvalid={!!(error && isTouched)}>
           <FormLabel mb={0} color="gray.700" fontWeight="semibold" fontSize="sm">
             {canSelfEdit ? (
-              <Tooltip label={field.helpText || "Dit veld kunt u zelf bewerken"}>
+              <Tooltip label={field.helpText || t('self_service.field_editable')}>
                 <Text cursor="help">{field.label}</Text>
               </Tooltip>
             ) : (
-              <Tooltip label={field.helpText || "Dit veld is alleen-lezen"}>
+              <Tooltip label={field.helpText || t('self_service.field_readonly')}>
                 <Text cursor="help">{field.label}</Text>
               </Tooltip>
             )}
@@ -210,7 +212,7 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
                 if (field.inputType === 'select' && field.enumOptions) {
                   return (
                     <Select {...commonProps} cursor="pointer" size="sm">
-                      <option value="">Selecteer...</option>
+                      <option value="">{t('labels.select', { ns: 'common' })}</option>
                       {field.enumOptions.map(option => (
                         <option key={option} value={option}>{option}</option>
                       ))}

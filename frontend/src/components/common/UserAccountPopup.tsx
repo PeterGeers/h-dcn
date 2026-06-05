@@ -29,6 +29,7 @@ import {
   ListIcon
 } from '@chakra-ui/react';
 import { CheckCircleIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import {
   getCombinedPermissions,
   getPermissionDescription,
@@ -153,6 +154,7 @@ const getRoleColor = (role: string): string => {
 };
 
 export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
+  const { t } = useTranslation('common');
   // Enhanced JWT token decoding to get user groups
   let userGroups: string[] = [];
   
@@ -187,10 +189,10 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
     }
   }
   
-  const userEmail = user.attributes?.email || 'Onbekend';
+  const userEmail = user.attributes?.email || t('labels.unknown');
   const userName = user.attributes?.given_name || user.attributes?.family_name ? 
     `${user.attributes.given_name || ''} ${user.attributes.family_name || ''}`.trim() : 
-    'Gebruiker';
+    t('labels.user');
 
   // Responsive placement for mobile vs desktop
   const placement = useBreakpointValue({ 
@@ -265,7 +267,7 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
       >
         <PopoverCloseButton />
         <PopoverHeader borderBottomColor="orange.200">
-          <Text fontWeight="bold" color="black">Account Informatie</Text>
+          <Text fontWeight="bold" color="black">{t('account.info_title')}</Text>
         </PopoverHeader>
         <PopoverBody>
           <VStack align="stretch" spacing={4}>
@@ -284,7 +286,7 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
             {/* Access Level Summary */}
             <Box>
               <Text fontWeight="semibold" color="black" fontSize="sm" mb={2}>
-                Toegangsniveau
+                {t('account.access_level')}
               </Text>
               <HStack spacing={2} align="center">
                 <Text fontSize="md">{accessLevel.icon}</Text>
@@ -308,15 +310,15 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
             {/* Tabs for Roles and Permissions */}
             <Tabs size="sm" variant="enclosed" colorScheme="orange">
               <TabList>
-                <Tab fontSize="xs">Rollen ({userGroups.length})</Tab>
-                <Tab fontSize="xs">Bevoegdheden ({userPermissions.length})</Tab>
+                <Tab fontSize="xs">{t('account.roles_tab')} ({userGroups.length})</Tab>
+                <Tab fontSize="xs">{t('account.permissions_tab')} ({userPermissions.length})</Tab>
               </TabList>
               <TabPanels>
                 {/* Roles Tab */}
                 <TabPanel px={0} py={3}>
                   {userGroups.length === 0 ? (
                     <Text color="gray.500" fontSize="xs">
-                      Geen rollen toegewezen
+                      {t('account.no_roles')}
                     </Text>
                   ) : (
                     <VStack align="stretch" spacing={3}>
@@ -358,7 +360,7 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
                 <TabPanel px={0} py={3}>
                   {userPermissions.length === 0 ? (
                     <Text color="gray.500" fontSize="xs">
-                      Geen bevoegdheden toegewezen
+                      {t('account.no_permissions')}
                     </Text>
                   ) : (
                     <Accordion allowMultiple size="sm">
@@ -411,12 +413,12 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
                   }
                   
                   await associateWebAuthnCredential();
-                  alert('Passkey succesvol ingesteld! Je kunt nu inloggen met je passkey.');
+                  alert(t('account.passkey_success'));
                 } catch (err: any) {
                   if (err.name === 'NotAllowedError') {
-                    alert('Passkey instellen geannuleerd.');
+                    alert(t('account.passkey_cancelled'));
                   } else {
-                    alert('Passkey instellen mislukt: ' + (err.message || 'Onbekende fout'));
+                    alert(t('account.passkey_failed', { error: err.message || t('labels.unknown') }));
                   }
                 }
               }}
@@ -425,7 +427,7 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
               size="sm"
               w="full"
             >
-              🔑 Passkey Instellen
+              🔑 {t('account.setup_passkey')}
             </Button>
 
             {/* Logout Button */}
@@ -435,7 +437,7 @@ export function UserAccountPopup({ user, signOut }: UserAccountPopupProps) {
               size="sm"
               w="full"
             >
-              Uitloggen
+              {t('nav.logout')}
             </Button>
           </VStack>
         </PopoverBody>

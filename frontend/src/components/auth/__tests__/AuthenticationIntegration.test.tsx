@@ -3,6 +3,65 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      const translations: Record<string, string> = {
+        'login.title': 'Inloggen',
+        'login.welcome': 'Welkom bij het H-DCN Portaal',
+        'login.email_placeholder': 'Voer je e-mailadres in',
+        'login.passkey_button': 'Inloggen met Passkey',
+        'login.google_button': 'Inloggen met Google',
+        'login.loading': 'Inloggen...',
+        'login.or_use': 'of gebruik',
+        'login.advanced_options': 'Geavanceerde opties',
+        'login.setup_new_passkey': 'Nieuwe Passkey Instellen',
+        'login.debug_passkey': 'Debug Passkey Problemen',
+        'errors.network': 'Netwerkfout. Controleer je verbinding en probeer opnieuw.',
+        'errors.code_expired': 'Code verlopen. Vraag een nieuwe code aan.',
+        'errors.verification_failed': 'Verificatie mislukt. Probeer opnieuw.',
+        'errors.code_required': 'Verificatiecode is vereist om in te loggen.',
+        'errors.login_failed': 'Inloggen mislukt. Probeer opnieuw.',
+        'errors.credentials_invalid': 'Inloggen mislukt. Controleer je gegevens.',
+        'errors.passkey_cancelled': 'Passkey authenticatie geannuleerd. Probeer opnieuw.',
+        'errors.confirm_required': 'Je account moet nog bevestigd worden. Controleer je e-mail.',
+        'errors.resend_failed': 'Nieuwe code versturen mislukt. Probeer opnieuw.',
+        'errors.google_sso': 'Google SSO fout: {{error}}',
+        'errors.step_required': 'Extra stap vereist: {{step}}',
+        'verification.enter_code': 'Voer de verificatiecode in die naar je e-mail is gestuurd:',
+        'verification.resend_code': 'Nieuwe code versturen',
+        'verification.sending': 'Versturen...',
+        'info.title': 'Authenticatie Informatie',
+        'info.passkey_title': 'Passkey (aanbevolen)',
+        'info.passkey_desc': 'Veilig inloggen met vingerafdruk, gezichtsherkenning, of apparaat-PIN',
+        'signup.title': 'Account Aanmaken',
+        'signup.description': 'Maak een nieuw account aan met je voor- en achternaam.',
+        'signup.email_label': 'E-mailadres',
+        'signup.first_name_label': 'Voornaam',
+        'signup.first_name_placeholder': 'Voer je voornaam in',
+        'signup.last_name_label': 'Achternaam',
+        'signup.last_name_placeholder': 'Voer je achternaam in',
+        'signup.submit_button': 'Account Aanmaken',
+        'signup.loading': 'Account aanmaken...',
+        'signup.success': 'Account succesvol aangemaakt! Controleer je e-mail voor verificatie-instructies.',
+        'signup.existing_account': 'Er bestaat al een account met dit e-mailadres.',
+        'signup.generic_error': 'Er is een fout opgetreden bij het aanmaken van je account',
+        'signup.network_error': 'Er is een fout opgetreden bij het aanmaken van je account. Controleer je internetverbinding en probeer opnieuw.',
+        'signup.back_to_login': 'Terug naar inloggen',
+      };
+      let value = translations[key] || key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          value = value.replace(`{{${k}}}`, v);
+        });
+      }
+      return value;
+    },
+    i18n: { language: 'nl', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock Chakra UI components to avoid dependency issues
 jest.mock('@chakra-ui/react', () => ({
   Box: ({ children, ...props }: any) => <div data-testid="box" {...props}>{children}</div>,

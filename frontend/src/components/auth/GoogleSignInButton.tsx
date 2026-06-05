@@ -1,5 +1,6 @@
 import React from 'react';
 import { signInWithRedirect } from 'aws-amplify/auth';
+import { useTranslation } from 'react-i18next';
 
 interface GoogleSignInButtonProps {
   onError?: (error: string) => void;
@@ -12,6 +13,8 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   disabled = false,
   className = ''
 }) => {
+  const { t } = useTranslation('auth');
+
   const handleGoogleSignIn = async () => {
     try {
       await signInWithRedirect({ provider: 'Google' });
@@ -87,7 +90,7 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         />
       </svg>
       
-      <span>Inloggen met Google</span>
+      <span>{t('login.google_button')}</span>
     </button>
   );
 };

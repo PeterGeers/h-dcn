@@ -170,6 +170,7 @@ try:
         cors_headers,
         handle_options_request
     )
+    from shared.i18n.locale_resolver import resolve_request_locale
     print("­ƒöì Successfully imported enhanced auth from shared layer")
     
     # Use the enhanced validation system
@@ -798,6 +799,9 @@ def lambda_handler(event, context):
                 'body': ''
             }
         
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
+        
         # Extract user credentials using enhanced auth system
         user_email, user_roles, auth_error = extract_user_credentials_fallback(event)
         if auth_error:
@@ -827,7 +831,8 @@ def lambda_handler(event, context):
         # Get member record for validation and logging (we'll need this for multiple purposes)
         member_response = table.get_item(Key={'member_id': member_id})
         if 'Item' not in member_response:
-            return create_error_response(404, 'Member record not found')
+            return create_error_response(404, 'Member record not found',
+                                         error_key='member_not_found', locale=locale)
         
         member_record = member_response['Item']
         member_email = member_record.get('email', '')
@@ -842,7 +847,8 @@ def lambda_handler(event, context):
                 print(f"REGIONAL_ACCESS_DENIED: User {user_email} (regions: {allowed_regions}) "
                       f"attempted to update member from region: {member_region}")
                 return create_error_response(403, 
-                    f'Access denied: You can only update members from regions: {", ".join(allowed_regions)}')
+                    f'Access denied: You can only update members from regions: {", ".join(allowed_regions)}',
+                    error_key='forbidden', locale=locale)
         
         # Log successful regional access check
         if regional_info:
@@ -915,9 +921,12 @@ def lambda_handler(event, context):
         })
         
     except KeyError as e:
-        return create_error_response(400, f'Missing required parameter: {str(e)}')
+        return create_error_response(400, f'Missing required parameter: {str(e)}',
+                                     error_key='validation_error', locale=locale)
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(400, 'Invalid JSON in request body',
+                                     error_key='invalid_input', locale=locale)
     except Exception as e:
         print(f"Unexpected error in update_member: {str(e)}")
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)

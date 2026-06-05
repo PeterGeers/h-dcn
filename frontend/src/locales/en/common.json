@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "H-DCN Portal",
+    "dashboard": "Dashboard",
+    "back_to_dashboard": "Back to Dashboard",
+    "logout": "Log out"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Netherlands",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "retry": "Try again",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "add": "Add",
+    "refresh": "Refresh",
+    "open": "Open"
+  },
+  "labels": {
+    "loading": "Loading...",
+    "no_data": "No data found",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information",
+    "required": "Required",
+    "optional": "Optional",
+    "status": "Status",
+    "date": "Date",
+    "name": "Name",
+    "email": "Email address",
+    "phone": "Phone",
+    "unknown": "Unknown",
+    "user": "User",
+    "select": "Select..."
+  },
+  "errors": {
+    "generic": "An error occurred. Please try again later.",
+    "network": "Network error. Check your connection and try again.",
+    "not_found": "Not found",
+    "no_access": "No access",
+    "session_expired": "Session expired. Please log in again."
+  },
+  "notifications": {
+    "save_success": "Data saved successfully",
+    "save_error": "Error saving. Please try again.",
+    "delete_success": "Successfully deleted",
+    "delete_error": "Error deleting"
+  },
+  "account": {
+    "info_title": "Account Information",
+    "access_level": "Access level",
+    "roles_tab": "Roles",
+    "permissions_tab": "Permissions",
+    "no_roles": "No roles assigned",
+    "no_permissions": "No permissions assigned",
+    "setup_passkey": "Set up Passkey",
+    "passkey_success": "Passkey set up successfully! You can now log in with your passkey.",
+    "passkey_cancelled": "Passkey setup cancelled.",
+    "passkey_failed": "Passkey setup failed: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Language preference saved",
+    "preference_save_failed": "Language preference could not be saved"
+  }
+}

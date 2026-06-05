@@ -561,7 +561,7 @@ def cors_headers():
     return {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE,PATCH",
-        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language",
         "Access-Control-Allow-Credentials": "false"
     }
 
@@ -577,19 +577,38 @@ def handle_options_request():
     }
 
 
-def create_error_response(status_code, error_message, details=None):
+def create_error_response(status_code, error_message, details=None, error_key=None, locale=None):
     """
-    Create standardized error response
+    Create standardized error response with optional i18n support.
+    
+    When error_key and locale are provided, the response includes a stable
+    'error_key' field for programmatic use and a localized 'message' field.
+    Backward compatible — existing callers without error_key/locale still work.
     
     Args:
         status_code (int): HTTP status code
-        error_message (str): Error message
+        error_message (str): Error message (used as fallback if no localized message)
         details (dict): Optional additional error details
+        error_key (str): Optional stable error identifier for i18n lookup
+        locale (str): Optional locale code for message localization
         
     Returns:
         dict: Lambda response object
     """
     body = {'error': error_message}
+    
+    # When error_key is provided, include localized response fields
+    if error_key:
+        body['error_key'] = error_key
+        try:
+            from shared.i18n.error_messages import get_error_message
+            resolved_locale = locale or 'nl'
+            localized_message = get_error_message(error_key, resolved_locale)
+            body['message'] = localized_message
+        except (ImportError, Exception):
+            # Fallback: use the error_message as the message
+            body['message'] = error_message
+    
     if details:
         body.update(details)
     

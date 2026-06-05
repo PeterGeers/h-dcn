@@ -19,6 +19,7 @@ import {
   NumberDecrementStepper,
   useToast
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 
 interface Product {
   id: string;
@@ -48,6 +49,8 @@ const ProductCardModal: React.FC<ProductCardModalProps> = ({ product, isOpen, on
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const toast = useToast();
+  const { t } = useTranslation('products');
+  const { t: tCommon } = useTranslation('common');
 
   if (!product) return null;
 
@@ -56,8 +59,8 @@ const ProductCardModal: React.FC<ProductCardModalProps> = ({ product, isOpen, on
   const handleAddToCart = (): void => {
     if (options.length > 0 && !selectedOption) {
       toast({
-        title: 'Selecteer een optie',
-        description: 'Kies een maat/optie voor dit product',
+        title: t('card.select_option'),
+        description: t('card_modal.select_option_desc'),
         status: 'warning',
         duration: 3000,
       });
@@ -91,14 +94,14 @@ const ProductCardModal: React.FC<ProductCardModalProps> = ({ product, isOpen, on
               €{Number(product.prijs).toFixed(2)}
             </Text>
             
-            <Text><strong>Groep:</strong> {product.groep}</Text>
-            <Text><strong>Subgroep:</strong> {product.subgroep}</Text>
+            <Text><strong>{t('table.group')}:</strong> {product.groep}</Text>
+            <Text><strong>{t('table.subgroup')}:</strong> {product.subgroep}</Text>
             
             {options.length > 0 && (
               <VStack align="stretch">
-                <Text fontWeight="bold">Kies een optie:</Text>
+                <Text fontWeight="bold">{t('card.select_option')}:</Text>
                 <Select
-                  placeholder="Selecteer optie"
+                  placeholder={t('card.select_option')}
                   value={selectedOption}
                   onChange={(e) => setSelectedOption(e.target.value)}
                 >
@@ -110,7 +113,7 @@ const ProductCardModal: React.FC<ProductCardModalProps> = ({ product, isOpen, on
             )}
             
             <HStack>
-              <Text fontWeight="bold">Aantal:</Text>
+              <Text fontWeight="bold">{t('card.quantity')}:</Text>
               <NumberInput
                 value={quantity}
                 onChange={(value) => setQuantity(parseInt(value) || 1)}
@@ -130,10 +133,10 @@ const ProductCardModal: React.FC<ProductCardModalProps> = ({ product, isOpen, on
 
         <ModalFooter>
           <Button variant="ghost" mr={3} onClick={onClose}>
-            Sluiten
+            {tCommon('buttons.close')}
           </Button>
           <Button colorScheme="orange" onClick={handleAddToCart}>
-            Toevoegen aan winkelwagen
+            {t('card.add_to_cart')}
           </Button>
         </ModalFooter>
       </ModalContent>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, useToast } from '@chakra-ui/react';
 import { DownloadIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { downloadOrderPdf } from '../services/pdfDownloadService';
 
 interface OrderItem {
@@ -52,6 +53,7 @@ interface OrderConfirmationProps {
 const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const toast = useToast();
+  const { t } = useTranslation('webshop');
 
   if (!orderData) return null;
 
@@ -61,7 +63,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
       const result = await downloadOrderPdf(orderData.orderId);
       if (!result.success && result.error) {
         toast({
-          title: 'Download mislukt',
+          title: t('confirmation.download_failed'),
           description: result.error.message,
           status: 'error',
           duration: 5000,
@@ -70,8 +72,8 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
       }
     } catch {
       toast({
-        title: 'Download mislukt',
-        description: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.',
+        title: t('confirmation.download_failed'),
+        description: t('confirmation.download_error_desc'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -115,10 +117,10 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
           colorScheme="green"
           onClick={handleDownloadPdf}
           isLoading={isDownloading}
-          loadingText="Downloaden..."
+          loadingText={t('confirmation.downloading')}
           isDisabled={isDownloading}
         >
-          Download PDF
+          {t('confirmation.download_pdf')}
         </Button>
       </div>
 
@@ -134,26 +136,26 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
         />
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#FF6B35', margin: '0 0 8px 0' }}>H-DCN Webshop</h1>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0' }}>Orderbevestiging</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0' }}>{t('confirmation.title')}</h2>
         </div>
       </div>
 
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontWeight: 'bold' }}>Ordernummer:</span>
+          <span style={{ fontWeight: 'bold' }}>{t('confirmation.order_number')}:</span>
           <span>{orderData.orderId}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontWeight: 'bold' }}>Datum:</span>
+          <span style={{ fontWeight: 'bold' }}>{t('confirmation.date')}:</span>
           <span>{formatDate(orderData.timestamp)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontWeight: 'bold' }}>Klant:</span>
-          <span>{orderData.customer_info?.name || 'Niet beschikbaar'}</span>
+          <span style={{ fontWeight: 'bold' }}>{t('confirmation.customer')}:</span>
+          <span>{orderData.customer_info?.name || t('confirmation.not_available')}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontWeight: 'bold' }}>Status:</span>
-          <span style={{ color: '#22C55E', fontWeight: 'bold' }}>Betaald</span>
+          <span style={{ fontWeight: 'bold' }}>{t('confirmation.status')}:</span>
+          <span style={{ color: '#22C55E', fontWeight: 'bold' }}>{t('confirmation.status_paid')}</span>
         </div>
       </div>
 
@@ -161,29 +163,29 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
 
       <div style={{ display: 'flex', gap: '40px', marginBottom: '24px' }}>
         <div style={{ flex: 1 }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>Factuuradres</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{t('confirmation.billing_address')}</h3>
           {orderData.customer_info ? (
             <>
-              <div>{orderData.customer_info.name || (orderData.customer_info.voornaam + ' ' + orderData.customer_info.achternaam) || 'Naam niet beschikbaar'}</div>
-              <div>{orderData.customer_info.straat || 'Adres niet beschikbaar'}</div>
-              <div>{(orderData.customer_info.postcode || '') + ' ' + (orderData.customer_info.woonplaats || '') || 'Postcode/plaats niet beschikbaar'}</div>
+              <div>{orderData.customer_info.name || (orderData.customer_info.voornaam + ' ' + orderData.customer_info.achternaam) || t('confirmation.name_not_available')}</div>
+              <div>{orderData.customer_info.straat || t('confirmation.address_not_available')}</div>
+              <div>{(orderData.customer_info.postcode || '') + ' ' + (orderData.customer_info.woonplaats || '') || t('confirmation.postal_not_available')}</div>
               {orderData.customer_info.email && <div>{orderData.customer_info.email}</div>}
               {orderData.customer_info.phone && <div>{orderData.customer_info.phone}</div>}
             </>
           ) : (
-            <div>Geen adresgegevens beschikbaar</div>
+            <div>{t('confirmation.no_address')}</div>
           )}
         </div>
         <div style={{ flex: 1 }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>Verzendadres</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{t('confirmation.shipping_address')}</h3>
           {orderData.shipping_address || orderData.customer_info ? (
             <>
-              <div>{orderData.shipping_address?.name || orderData.customer_info?.name || (orderData.customer_info?.voornaam + ' ' + orderData.customer_info?.achternaam) || 'Naam niet beschikbaar'}</div>
-              <div>{orderData.shipping_address?.straat || orderData.customer_info?.straat || 'Adres niet beschikbaar'}</div>
-              <div>{(orderData.shipping_address?.postcode || orderData.customer_info?.postcode || '') + ' ' + (orderData.shipping_address?.woonplaats || orderData.customer_info?.woonplaats || '') || 'Postcode/plaats niet beschikbaar'}</div>
+              <div>{orderData.shipping_address?.name || orderData.customer_info?.name || (orderData.customer_info?.voornaam + ' ' + orderData.customer_info?.achternaam) || t('confirmation.name_not_available')}</div>
+              <div>{orderData.shipping_address?.straat || orderData.customer_info?.straat || t('confirmation.address_not_available')}</div>
+              <div>{(orderData.shipping_address?.postcode || orderData.customer_info?.postcode || '') + ' ' + (orderData.shipping_address?.woonplaats || orderData.customer_info?.woonplaats || '') || t('confirmation.postal_not_available')}</div>
             </>
           ) : (
-            <div>Geen adresgegevens beschikbaar</div>
+            <div>{t('confirmation.no_address')}</div>
           )}
         </div>
       </div>
@@ -191,7 +193,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
 
       {orderData.delivery_option && (
         <>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>Levering</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{t('confirmation.delivery')}</h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
             <span>{orderData.delivery_option.label}</span>
             <span>€{orderData.delivery_cost}</span>
@@ -200,15 +202,15 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
         </>
       )}
 
-      <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>Bestelde producten</h3>
+      <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{t('confirmation.ordered_products')}</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
         <thead>
           <tr style={{ backgroundColor: '#F9FAFB' }}>
-            <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>Product</th>
-            <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>Optie</th>
-            <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>Aantal</th>
-            <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>Prijs</th>
-            <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>Totaal</th>
+            <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>{t('confirmation.col_product')}</th>
+            <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>{t('confirmation.col_option')}</th>
+            <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>{t('confirmation.col_quantity')}</th>
+            <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>{t('confirmation.col_price')}</th>
+            <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold' }}>{t('confirmation.col_total')}</th>
           </tr>
         </thead>
         <tbody>
@@ -226,18 +228,18 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
 
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span>Subtotaal:</span>
+          <span>{t('confirmation.subtotal')}:</span>
           <span>€{orderData.subtotal_amount}</span>
         </div>
         {orderData.delivery_cost && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span>Verzendkosten:</span>
+            <span>{t('confirmation.shipping_costs')}:</span>
             <span>€{orderData.delivery_cost}</span>
           </div>
         )}
         <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #E5E7EB' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold' }}>
-          <span>Totaal betaald:</span>
+          <span>{t('confirmation.total_paid')}:</span>
           <span>€{orderData.total_amount}</span>
         </div>
       </div>

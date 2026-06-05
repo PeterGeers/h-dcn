@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "Portal H-DCN",
+    "dashboard": "Panel de control",
+    "back_to_dashboard": "Volver al panel de control",
+    "logout": "Cerrar sesión"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Países Bajos",
+    "privacy": "Privacidad",
+    "contact": "Contacto"
+  },
+  "buttons": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "retry": "Reintentar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "add": "Añadir",
+    "refresh": "Actualizar",
+    "open": "Abrir"
+  },
+  "labels": {
+    "loading": "Cargando...",
+    "no_data": "No se encontraron datos",
+    "error": "Error",
+    "success": "Éxito",
+    "warning": "Advertencia",
+    "info": "Información",
+    "required": "Obligatorio",
+    "optional": "Opcional",
+    "status": "Estado",
+    "date": "Fecha",
+    "name": "Nombre",
+    "email": "Dirección de correo electrónico",
+    "phone": "Teléfono",
+    "unknown": "Desconocido",
+    "user": "Usuario",
+    "select": "Seleccionar..."
+  },
+  "errors": {
+    "generic": "Se produjo un error. Inténtalo de nuevo más tarde.",
+    "network": "Error de red. Verifica tu conexión e inténtalo de nuevo.",
+    "not_found": "No encontrado",
+    "no_access": "Sin acceso",
+    "session_expired": "Sesión expirada. Inicia sesión de nuevo."
+  },
+  "notifications": {
+    "save_success": "Datos guardados correctamente",
+    "save_error": "Error al guardar. Inténtalo de nuevo.",
+    "delete_success": "Eliminado correctamente",
+    "delete_error": "Error al eliminar"
+  },
+  "account": {
+    "info_title": "Información de la cuenta",
+    "access_level": "Nivel de acceso",
+    "roles_tab": "Roles",
+    "permissions_tab": "Permisos",
+    "no_roles": "No hay roles asignados",
+    "no_permissions": "No hay permisos asignados",
+    "setup_passkey": "Configurar Passkey",
+    "passkey_success": "Passkey configurada correctamente. Ahora puedes iniciar sesión con tu passkey.",
+    "passkey_cancelled": "Configuración de passkey cancelada.",
+    "passkey_failed": "Error en la configuración de passkey: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Preferencia de idioma guardada",
+    "preference_save_failed": "No se pudo guardar la preferencia de idioma"
+  }
+}

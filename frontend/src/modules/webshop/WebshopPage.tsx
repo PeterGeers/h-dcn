@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Container, useToast, Spinner, Center, Flex, Button, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 import { ArrowBackIcon, ViewIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ProductFilter from './components/ProductFilter';
 import ProductTable from './components/ProductTable';
 import ProductCard from './components/ProductCard';
@@ -77,6 +78,8 @@ interface WebshopPageProps {
 
 function WebshopPage({ user }: WebshopPageProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation('webshop');
+  const { t: tCommon } = useTranslation('common');
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<Filter | null>(null);
@@ -107,8 +110,8 @@ function WebshopPage({ user }: WebshopPageProps) {
             setCartItems(cartResponse.data.items || []);
             
             toast({
-              title: 'Winkelwagen hersteld',
-              description: `${cartResponse.data.items.length} items teruggevonden`,
+              title: t('cart.restored'),
+              description: t('cart.restored_desc', { count: cartResponse.data.items.length }),
               status: 'info',
               duration: 3000,
             });
@@ -129,8 +132,8 @@ function WebshopPage({ user }: WebshopPageProps) {
     } catch (error) {
       setCartId(null);
       toast({
-        title: 'Winkelwagen service niet beschikbaar',
-        description: 'De winkelwagen functionaliteit is momenteel niet beschikbaar.',
+        title: t('errors.service_unavailable_title'),
+        description: t('errors.service_unavailable_desc'),
         status: 'error',
         duration: 5000,
       });
@@ -173,8 +176,8 @@ function WebshopPage({ user }: WebshopPageProps) {
       ];
       setProducts(mockProducts);
       toast({
-        title: 'Demo modus',
-        description: 'Gebruikt mock data omdat API niet beschikbaar is',
+        title: t('demo.title'),
+        description: t('demo.description'),
         status: 'warning',
         duration: 3000,
       });
@@ -342,13 +345,13 @@ function WebshopPage({ user }: WebshopPageProps) {
       await updateCartOnServer(newItems);
       
       toast({
-        title: 'Product toegevoegd',
+        title: t('product.added'),
         status: 'success',
         duration: 2000,
       });
     } catch (error) {
       toast({
-        title: 'Fout bij toevoegen aan winkelwagen',
+        title: t('product.add_error'),
         status: 'error',
         duration: 3000,
       });
@@ -374,7 +377,7 @@ function WebshopPage({ user }: WebshopPageProps) {
       await updateCartOnServer(newItems);
     } catch (error) {
       toast({
-        title: 'Fout bij wijzigen aantal',
+        title: t('product.quantity_error'),
         status: 'error',
         duration: 3000,
       });
@@ -388,13 +391,13 @@ function WebshopPage({ user }: WebshopPageProps) {
       await updateCartOnServer(newItems);
       
       toast({
-        title: 'Product verwijderd',
+        title: t('product.removed'),
         status: 'info',
         duration: 2000,
       });
     } catch (error) {
       toast({
-        title: 'Fout bij verwijderen uit winkelwagen',
+        title: t('product.remove_error'),
         status: 'error',
         duration: 3000,
       });
@@ -404,8 +407,8 @@ function WebshopPage({ user }: WebshopPageProps) {
   const handleSaveCart = async () => {
     if (cartItems.length === 0) {
       toast({
-        title: 'Winkelwagen is leeg',
-        description: 'Voeg eerst producten toe om te bewaren.',
+        title: t('cart.empty'),
+        description: t('cart.save_hint'),
         status: 'warning',
         duration: 3000,
       });
@@ -416,8 +419,8 @@ function WebshopPage({ user }: WebshopPageProps) {
       await updateCartOnServer(cartItems);
       
       toast({
-        title: 'Winkelwagen bewaard',
-        description: `${cartItems.length} items bewaard voor later`,
+        title: t('cart.saved'),
+        description: t('cart.saved_desc', { count: cartItems.length }),
         status: 'success',
         duration: 3000,
       });
@@ -425,8 +428,8 @@ function WebshopPage({ user }: WebshopPageProps) {
       setIsCartModalOpen(false);
     } catch (error) {
       toast({
-        title: 'Fout bij bewaren winkelwagen',
-        description: 'Probeer het later opnieuw.',
+        title: t('errors.cart_save_error'),
+        description: t('errors.cart_save_error_desc'),
         status: 'error',
         duration: 3000,
       });
@@ -445,13 +448,13 @@ function WebshopPage({ user }: WebshopPageProps) {
       await initializeCart();
       
       toast({
-        title: 'Winkelwagen geleegd',
+        title: t('cart.cleared'),
         status: 'info',
         duration: 2000,
       });
     } catch (error) {
       toast({
-        title: 'Fout bij legen winkelwagen',
+        title: t('errors.cart_clear_error'),
         status: 'error',
         duration: 3000,
       });
@@ -487,10 +490,9 @@ function WebshopPage({ user }: WebshopPageProps) {
           <Alert status="warning" maxW="md">
             <AlertIcon />
             <Box>
-              <AlertTitle>Geen toegang tot webshop!</AlertTitle>
+              <AlertTitle>{t('access.no_access_title')}</AlertTitle>
               <AlertDescription>
-                U heeft geen toegang tot de H-DCN webshop. Alleen leden kunnen de webshop gebruiken. 
-                Neem contact op met de beheerder als u denkt dat dit een fout is.
+                {t('access.no_access_desc')}
               </AlertDescription>
             </Box>
           </Alert>
@@ -500,9 +502,9 @@ function WebshopPage({ user }: WebshopPageProps) {
       <Box minH="100vh">
         <Flex justify="space-between" align="center" p={4} bg="black" color="orange.400">
           <Button onClick={() => navigate('/')} variant="ghost" color="orange.300" leftIcon={<ArrowBackIcon />}>
-            Terug naar Dashboard
+            {tCommon('nav.back_to_dashboard')}
           </Button>
-          <Box fontSize="xl" fontWeight="bold">H-DCN Webshop</Box>
+          <Box fontSize="xl" fontWeight="bold">{t('title')}</Box>
           <HStack>
             {/* Orders admin button - only show for users with appropriate permissions */}
             <FunctionGuard 
@@ -527,7 +529,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               variant="outline"
               leftIcon={<ViewIcon />}
             >
-              Winkelwagen ({cartItems.length})
+              {t('cart.item_count', { count: cartItems.length })}
             </Button>
           </HStack>
         </Flex>
@@ -543,9 +545,9 @@ function WebshopPage({ user }: WebshopPageProps) {
                 <Alert status="warning">
                   <AlertIcon />
                   <Box>
-                    <AlertTitle>Geen toegang!</AlertTitle>
+                    <AlertTitle>{t('orders.no_access_title')}</AlertTitle>
                     <AlertDescription>
-                      U heeft geen toegang tot de bestellingenbeheer. Alleen beheerders kunnen bestellingen bekijken.
+                      {t('orders.no_access_desc')}
                     </AlertDescription>
                   </Box>
                 </Alert>
@@ -594,8 +596,8 @@ function WebshopPage({ user }: WebshopPageProps) {
           onCheckout={() => {
             if (cartItems.length === 0) {
               toast({
-                title: 'Winkelwagen is leeg',
-                description: 'Voeg eerst producten toe aan uw winkelwagen.',
+                title: t('cart.empty'),
+                description: t('cart.empty_hint'),
                 status: 'warning',
                 duration: 3000,
               });
@@ -685,8 +687,8 @@ function WebshopPage({ user }: WebshopPageProps) {
               }
               
               toast({
-                title: 'Betaling succesvol!',
-                description: `Bestelling ${orderId} van €${paymentData.amount.toFixed(2)} verwerkt`,
+                title: t('checkout.payment_success'),
+                description: t('checkout.payment_success_desc', { order_id: orderId, amount: paymentData.amount.toFixed(2) }),
                 status: 'success',
                 duration: 5000,
               });
@@ -695,8 +697,8 @@ function WebshopPage({ user }: WebshopPageProps) {
               setShowOrderSuccess(true);
             } catch (error) {
               toast({
-                title: 'Fout bij verwerken bestelling',
-                description: 'Er is een probleem opgetreden.',
+                title: t('checkout.payment_error'),
+                description: t('checkout.payment_error_desc'),
                 status: 'error',
                 duration: 5000,
               });

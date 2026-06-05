@@ -1105,6 +1105,7 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
           S3_BUCKET: "my-hdcn-bucket"
           LOGO_S3_KEY: "imagesWebsite/hdcnFavico.png"
       Events:
@@ -1141,6 +1142,15 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
+        - PolicyName: DynamoDBMembersRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
         - PolicyName: S3LogoRead
           PolicyDocument:
             Version: '2012-10-17'

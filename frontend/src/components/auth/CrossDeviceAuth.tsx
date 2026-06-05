@@ -13,6 +13,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { InfoIcon, CheckIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { WebAuthnService } from '../../services/webAuthnService';
 
 interface CrossDeviceAuthProps {
@@ -28,6 +29,7 @@ export function CrossDeviceAuth({ userEmail, onSuccess, onCancel, onError }: Cro
   const [error, setError] = useState('');
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes
   const toast = useToast();
+  const { t } = useTranslation('auth');
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -36,7 +38,7 @@ export function CrossDeviceAuth({ userEmail, onSuccess, onCancel, onError }: Cro
       interval = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            setError('Tijd verlopen. Probeer opnieuw.');
+            setError(t('errors.time_expired', { defaultValue: 'Tijd verlopen. Probeer opnieuw.' }));
             setStep('instructions');
             return 300;
           }

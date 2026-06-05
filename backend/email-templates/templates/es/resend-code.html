@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Código de verificación</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Código de verificación para {{ORGANIZATION_SHORT_NAME}}</h2>
+        
+        <p>Hola {{DISPLAY_NAME}},</p>
+        
+        <p>Has solicitado un nuevo código de verificación para tu cuenta de {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #e8f5e8; border: 2px solid #4caf50; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+            <h3 style="margin: 0; color: #2e7d32;">Tu código de verificación:</h3>
+            <div style="font-size: 24px; font-weight: bold; color: #1b5e20; margin: 10px 0; letter-spacing: 3px;">
+                {{CODE}}
+            </div>
+        </div>
+        
+        <p>Introduce este código para confirmar tu dirección de correo electrónico y obtener acceso al portal de miembros de {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⏰ Importante:</strong> Este código es válido durante 24 horas.
+        </div>
+        
+        <p>¿No has solicitado este código? Ignora este correo electrónico.</p>
+        
+        <p>¿Tienes preguntas? Contáctanos en <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Atentamente,<br>
+        El equipo de {{ORGANIZATION_SHORT_NAME}}</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Sitio web: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            Correo electrónico: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

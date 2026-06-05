@@ -15,6 +15,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.i18n.locale_resolver import resolve_request_locale
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -29,13 +30,14 @@ dynamodb = boto3.resource('dynamodb')
 payments_table = dynamodb.Table('Payments')
 orders_table = dynamodb.Table('Orders')
 
-def validate_payment_amount(payment_amount, order_data):
+def validate_payment_amount(payment_amount, order_data, locale=None):
     """
     Validate payment amount against order total
     
     Args:
         payment_amount (float): Amount being paid
         order_data (dict): Order data containing total amount
+        locale (str): Optional locale for localized error messages
         
     Returns:
         tuple: (is_valid, error_response)
@@ -58,15 +60,10 @@ def validate_payment_amount(payment_amount, order_data):
             payment_amount_float = float(payment_amount)
             order_total_float = float(order_total)
         except (ValueError, TypeError):
-            return False, {
-                'statusCode': 400,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Invalid payment amount or order total format',
-                    'payment_amount': payment_amount,
-                    'order_total': order_total
-                })
-            }
+            return False, create_error_response(400, 'Invalid payment amount or order total format', {
+                'payment_amount': payment_amount,
+                'order_total': order_total
+            }, error_key='validation_error', locale=locale)
         
         # Allow some tolerance for rounding differences (1 cent)
         tolerance = 0.01
@@ -75,27 +72,19 @@ def validate_payment_amount(payment_amount, order_data):
         if amount_difference > tolerance:
             # Log potential fraud attempt
             print(f"SECURITY ALERT: Payment amount mismatch - Payment: {payment_amount_float}, Order: {order_total_float}, Difference: {amount_difference}")
-            return False, {
-                'statusCode': 400,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Payment amount does not match order total',
-                    'payment_amount': payment_amount_float,
-                    'order_total': order_total_float,
-                    'difference': amount_difference,
-                    'order_id': order_data.get('order_id')
-                })
-            }
+            return False, create_error_response(400, 'Payment amount does not match order total', {
+                'payment_amount': payment_amount_float,
+                'order_total': order_total_float,
+                'difference': amount_difference,
+                'order_id': order_data.get('order_id')
+            }, error_key='validation_error', locale=locale)
         
         return True, None
         
     except Exception as e:
         print(f"Error validating payment amount: {str(e)}")
-        return False, {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Error validating payment amount'})
-        }
+        return False, create_error_response(500, 'Error validating payment amount',
+                                            error_key='internal_error', locale=locale)
 
 def log_payment_audit(event_type, payment_id, user_email, user_roles, additional_data=None):
     """
@@ -150,13 +139,14 @@ def log_payment_audit(event_type, payment_id, user_email, user_roles, additional
         print(f"Error logging payment audit: {str(e)}")
         # Don't fail the payment operation if logging fails
 
-def validate_order_ownership(order_id, user_email):
+def validate_order_ownership(order_id, user_email, locale=None):
     """
     Validate that the order belongs to the authenticated user
     
     Args:
         order_id (str): ID of the order to validate
         user_email (str): Email of the authenticated user
+        locale (str): Optional locale for localized error messages
         
     Returns:
         tuple: (is_valid, order_data, error_response)
@@ -171,14 +161,9 @@ def validate_order_ownership(order_id, user_email):
         response = orders_table.get_item(Key={'order_id': order_id})
         
         if 'Item' not in response:
-            return False, None, {
-                'statusCode': 404,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Order not found',
-                    'order_id': order_id
-                })
-            }
+            return False, None, create_error_response(404, 'Order not found', {
+                'order_id': order_id
+            }, error_key='order_not_found', locale=locale)
         
         order = response['Item']
         order_user_email = order.get('user_email')
@@ -187,36 +172,23 @@ def validate_order_ownership(order_id, user_email):
         if not order_user_email:
             # Log security issue - order without owner
             print(f"SECURITY WARNING: Order {order_id} has no user_email - potential data integrity issue")
-            return False, None, {
-                'statusCode': 400,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Order ownership cannot be verified',
-                    'order_id': order_id
-                })
-            }
+            return False, None, create_error_response(400, 'Order ownership cannot be verified', {
+                'order_id': order_id
+            }, error_key='validation_error', locale=locale)
         
         if order_user_email.lower() != user_email.lower():
             # Log unauthorized order access attempt
             print(f"SECURITY ALERT: User {user_email} attempted to create payment for order {order_id} owned by {order_user_email}")
-            return False, None, {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: You can only create payments for your own orders',
-                    'order_id': order_id
-                })
-            }
+            return False, None, create_error_response(403, 'Access denied: You can only create payments for your own orders', {
+                'order_id': order_id
+            }, error_key='forbidden', locale=locale)
         
         return True, order, None
         
     except Exception as e:
         print(f"Error validating order ownership for order {order_id}: {str(e)}")
-        return False, None, {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Error validating order ownership'})
-        }
+        return False, None, create_error_response(500, 'Error validating order ownership',
+                                                  error_key='internal_error', locale=locale)
 
 
 def lambda_handler(event, context):
@@ -224,6 +196,9 @@ def lambda_handler(event, context):
         # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
+        
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
         
         # Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
@@ -246,7 +221,7 @@ def lambda_handler(event, context):
                 'required_admin_permissions': required_permissions,
                 'required_user_role': 'hdcnLeden',
                 'user_roles': user_roles
-            })
+            }, error_key='forbidden', locale=locale)
         
         # Log successful access
         log_successful_access(user_email, user_roles, 'create_payment')
@@ -258,12 +233,12 @@ def lambda_handler(event, context):
         payment_amount = body.get('amount')
         
         # Validate order ownership if order_id is provided
-        order_valid, order_data, order_error = validate_order_ownership(order_id, user_email)
+        order_valid, order_data, order_error = validate_order_ownership(order_id, user_email, locale=locale)
         if not order_valid:
             return order_error
         
         # Validate payment amount against order total
-        amount_valid, amount_error = validate_payment_amount(payment_amount, order_data)
+        amount_valid, amount_error = validate_payment_amount(payment_amount, order_data, locale=locale)
         if not amount_valid:
             return amount_error
         
@@ -302,7 +277,9 @@ def lambda_handler(event, context):
         })
         
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(400, 'Invalid JSON in request body',
+                                     error_key='invalid_input', locale=locale)
     except Exception as e:
         print(f"Error creating payment: {str(e)}")
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)

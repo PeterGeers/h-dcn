@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Mitgliedschaftsantrag eingegangen</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Vielen Dank für Ihren Antrag, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Wir haben Ihren Mitgliedschaftsantrag für {{ORGANIZATION_SHORT_NAME}} erfolgreich erhalten.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Ihre Antragsdaten:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Name:</strong> {{FULL_NAME}}</li>
+                <li><strong>E-Mail-Adresse:</strong> {{EMAIL}}</li>
+                <li><strong>Mitgliedschaftstyp:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Region:</strong> {{REGION}}</li>
+                <li><strong>Antragsdatum:</strong> {{APPLICATION_DATE}}</li>
+                {{#MOTOR_INFO}}
+                <li><strong>Motorrad:</strong> {{MOTOR_INFO}}</li>
+                {{/MOTOR_INFO}}
+            </ul>
+        </div>
+        
+        <h3>Was passiert als Nächstes?</h3>
+        <ol>
+            <li><strong>Prüfung:</strong> Ihr Antrag wird von der regionalen Verwaltung geprüft</li>
+            <li><strong>Bestätigung:</strong> Sie erhalten innerhalb von 5-10 Werktagen eine E-Mail mit dem Ergebnis</li>
+            <li><strong>Genehmigung:</strong> Bei Genehmigung erhalten Sie Ihre Mitgliedsnummer und Zugang zu allen Einrichtungen</li>
+        </ol>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #155724;">✓ Ihr Antrag ist vollständig</h4>
+            <p style="margin-bottom: 0;">Alle erforderlichen Informationen wurden empfangen. Es sind keine weiteren Maßnahmen Ihrerseits erforderlich.</p>
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>📧 Wichtig:</strong> Überprüfen Sie regelmäßig Ihre E-Mails (auch Spam/Junk) für Updates zu Ihrem Antrag.
+        </div>
+        
+        <h3>Kontakt & Unterstützung</h3>
+        <p>Bei Fragen zu Ihrem Antrag wenden Sie sich bitte an:</p>
+        <ul>
+            <li><strong>Mitgliederverwaltung:</strong> <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></li>
+            <li><strong>Website:</strong> <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a></li>
+            <li><strong>Allgemeine Anfragen:</strong> <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></li>
+        </ul>
+        
+        <p>Mit freundlichen Grüßen,<br>
+        Das {{ORGANIZATION_SHORT_NAME}} Mitgliederverwaltungsteam</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-Mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a><br>
+            <br>
+            <em>Diese E-Mail wurde automatisch generiert. Ihre Daten werden vertraulich gemäß unserer Datenschutzerklärung behandelt.</em>
+        </footer>
+    </div>
+</body>
+</html>

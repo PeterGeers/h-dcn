@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Konto skapat</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Välkommen till {{ORGANIZATION_SHORT_NAME}}, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Ett konto har skapats för dig i {{ORGANIZATION_SHORT_NAME}} medlemsportalen.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Dina inloggningsuppgifter:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>E-postadress:</strong> {{EMAIL}}</li>
+                <li><strong>Tillfälligt lösenord:</strong> {{TEMP_PASSWORD}}</li>
+            </ul>
+        </div>
+        
+        <h3>Följ dessa steg för att aktivera ditt konto:</h3>
+        <ol>
+            <li>Gå till <a href="{{ORGANIZATION_WEBSITE}}/login">{{ORGANIZATION_WEBSITE}}/login</a></li>
+            <li>Logga in med din e-postadress och det tillfälliga lösenordet</li>
+            <li>Ställ in en ny autentiseringsmetod (passkey rekommenderas)</li>
+            <li>Verifiera din e-postadress om du uppmanas</li>
+        </ol>
+        
+        <h3>Efter aktivering har du tillgång till:</h3>
+        <ul>
+            <li>Dina personliga medlemsuppgifter</li>
+            <li>{{ORGANIZATION_SHORT_NAME}} webbshopen</li>
+            <li>Evenemang och utflykter</li>
+            <li>Kontakt med andra medlemmar</li>
+        </ul>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Viktigt:</strong> Det tillfälliga lösenordet upphör att gälla om 7 dagar.
+        </div>
+        
+        <p>Har du frågor? Kontakta oss på <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></p>
+        
+        <p>Med vänliga hälsningar,<br>
+        {{ORGANIZATION_SHORT_NAME}}-teamet</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Webbplats: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-post: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

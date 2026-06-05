@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Lidmaatschapsaanvraag Ontvangen</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Bedankt voor uw aanvraag, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Wij hebben uw lidmaatschapsaanvraag voor {{ORGANIZATION_SHORT_NAME}} succesvol ontvangen.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Uw aanvraaggegevens:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Naam:</strong> {{FULL_NAME}}</li>
+                <li><strong>E-mailadres:</strong> {{EMAIL}}</li>
+                <li><strong>Lidmaatschapstype:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Regio:</strong> {{REGION}}</li>
+                <li><strong>Aanvraagdatum:</strong> {{APPLICATION_DATE}}</li>
+                {{#MOTOR_INFO}}
+                <li><strong>Motor:</strong> {{MOTOR_INFO}}</li>
+                {{/MOTOR_INFO}}
+            </ul>
+        </div>
+        
+        <h3>Wat gebeurt er nu?</h3>
+        <ol>
+            <li><strong>Beoordeling:</strong> Uw aanvraag wordt beoordeeld door de regionale administratie</li>
+            <li><strong>Bevestiging:</strong> U ontvangt binnen 5-10 werkdagen een e-mail met de uitslag</li>
+            <li><strong>Goedkeuring:</strong> Bij goedkeuring ontvangt u uw lidnummer en toegang tot alle faciliteiten</li>
+        </ol>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #155724;">✓ Uw aanvraag is compleet</h4>
+            <p style="margin-bottom: 0;">Alle benodigde gegevens zijn ontvangen. U hoeft geen verdere actie te ondernemen.</p>
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>📧 Belangrijk:</strong> Controleer regelmatig uw e-mail (ook spam/ongewenst) voor updates over uw aanvraag.
+        </div>
+        
+        <h3>Contact & Ondersteuning</h3>
+        <p>Bij vragen over uw aanvraag kunt u contact opnemen met:</p>
+        <ul>
+            <li><strong>Ledenadministratie:</strong> <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></li>
+            <li><strong>Website:</strong> <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a></li>
+            <li><strong>Algemene vragen:</strong> <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></li>
+        </ul>
+        
+        <p>Met vriendelijke groet,<br>
+        Het {{ORGANIZATION_SHORT_NAME}} Ledenadministratie Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a><br>
+            <br>
+            <em>Deze e-mail is automatisch gegenereerd. Uw gegevens worden vertrouwelijk behandeld conform onze privacyverklaring.</em>
+        </footer>
+    </div>
+</body>
+</html>

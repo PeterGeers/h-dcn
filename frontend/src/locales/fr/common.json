@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "Portail H-DCN",
+    "dashboard": "Tableau de bord",
+    "back_to_dashboard": "Retour au tableau de bord",
+    "logout": "Se déconnecter"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Pays-Bas",
+    "privacy": "Confidentialité",
+    "contact": "Contact"
+  },
+  "buttons": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "confirm": "Confirmer",
+    "retry": "Réessayer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "add": "Ajouter",
+    "refresh": "Actualiser",
+    "open": "Ouvrir"
+  },
+  "labels": {
+    "loading": "Chargement...",
+    "no_data": "Aucune donnée trouvée",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Avertissement",
+    "info": "Information",
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "status": "Statut",
+    "date": "Date",
+    "name": "Nom",
+    "email": "Adresse e-mail",
+    "phone": "Téléphone",
+    "unknown": "Inconnu",
+    "user": "Utilisateur",
+    "select": "Sélectionner..."
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Veuillez réessayer plus tard.",
+    "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
+    "not_found": "Non trouvé",
+    "no_access": "Pas d'accès",
+    "session_expired": "Session expirée. Veuillez vous reconnecter."
+  },
+  "notifications": {
+    "save_success": "Données enregistrées avec succès",
+    "save_error": "Erreur lors de l'enregistrement. Veuillez réessayer.",
+    "delete_success": "Supprimé avec succès",
+    "delete_error": "Erreur lors de la suppression"
+  },
+  "account": {
+    "info_title": "Informations du compte",
+    "access_level": "Niveau d'accès",
+    "roles_tab": "Rôles",
+    "permissions_tab": "Autorisations",
+    "no_roles": "Aucun rôle attribué",
+    "no_permissions": "Aucune autorisation attribuée",
+    "setup_passkey": "Configurer Passkey",
+    "passkey_success": "Passkey configuré avec succès ! Vous pouvez maintenant vous connecter avec votre passkey.",
+    "passkey_cancelled": "Configuration du passkey annulée.",
+    "passkey_failed": "Échec de la configuration du passkey : {{error}}"
+  },
+  "language": {
+    "preference_saved": "Préférence linguistique enregistrée",
+    "preference_save_failed": "La préférence linguistique n'a pas pu être enregistrée"
+  }
+}

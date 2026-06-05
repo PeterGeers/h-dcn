@@ -1,0 +1,38 @@
+{
+  "title": "Arrangementer",
+  "loading": {
+    "permissions": "Indlæser tilladelser...",
+    "events": "Indlæser arrangementer..."
+  },
+  "tabs": {
+    "events": "Arrangementer",
+    "finance": "Økonomi",
+    "analytics": "Analyse"
+  },
+  "access": {
+    "no_access": "Du har ikke adgang til arrangementadministrationen. Kontakt en administrator, hvis du har brug for adgang.",
+    "no_financial_access": "Du har ikke adgang til finansielle data.",
+    "no_analytics_access": "Du har ikke adgang til analyse.",
+    "current_roles": "Nuværende roller: {{roles}}",
+    "no_roles": "Ingen roller tildelt",
+    "required_roles": "Påkrævede roller: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman eller andre arrangementrelaterede roller"
+  },
+  "communication": {
+    "title": "Arrangementkommunikation & Eksport",
+    "export_participants": "Eksporter deltagerlister",
+    "newsletter_content": "Nyhedsbrevsindhold"
+  },
+  "overview": {
+    "title": "Arrangementoversigt & Rapportering",
+    "event_overview": "Arrangementoversigt",
+    "regional_summary": "Regional oversigt"
+  },
+  "fields": {
+    "name": "Navn",
+    "date": "Dato",
+    "location": "Sted",
+    "participants": "Deltagere",
+    "revenue": "Indtægter",
+    "costs": "Omkostninger"
+  }
+}

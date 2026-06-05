@@ -1,0 +1,23 @@
+{
+  "greeting": {
+    "welcome": "Bienvenido, {{name}}!",
+    "member_intro": "Como miembro de H-DCN tienes acceso a tus datos personales y a la tienda online:",
+    "admin_intro": "Elige una aplicación para comenzar:",
+    "guest_intro": "Regístrate para ser miembro de H-DCN:",
+    "admin_access_hint": "Para acceder a las funciones de administración, contacta con la administración."
+  },
+  "loading": {
+    "checking_membership": "Verificando membresía...",
+    "redirecting": "Redirigiendo al formulario de inscripción..."
+  },
+  "cards": {
+    "my_account_title": "Mis datos",
+    "my_account_desc": "Ver y editar tus datos personales",
+    "membership_title": "Registrarse como miembro",
+    "membership_desc": "Hazte miembro de H-DCN con nuestro nuevo formulario de inscripción",
+    "webshop_title": "Tienda online",
+    "webshop_desc": "Hacer pedidos y ver tus pedidos",
+    "presmeet_title": "Presidents' Meeting",
+    "presmeet_desc": "Formulario de reserva para la delegación de tu club"
+  }
+}

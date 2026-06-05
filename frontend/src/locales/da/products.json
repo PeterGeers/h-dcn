@@ -1,0 +1,43 @@
+{
+  "title": "Produkter",
+  "filter": {
+    "all": "Alle produkter",
+    "group": "Gruppe",
+    "subgroup": "Undergruppe",
+    "search_placeholder": "Søg produkter..."
+  },
+  "table": {
+    "name": "Navn",
+    "group": "Gruppe",
+    "subgroup": "Undergruppe",
+    "price": "Pris",
+    "options": "Muligheder",
+    "actions": "Handlinger"
+  },
+  "card": {
+    "add_to_cart": "Tilføj til kurv",
+    "add_to_cart_short": "Tilføj",
+    "select_option": "Vælg en mulighed",
+    "quantity": "Antal",
+    "price_label": "Pris:",
+    "no_image": "Intet billede tilgængeligt",
+    "back": "Tilbage"
+  },
+  "card_modal": {
+    "select_option_desc": "Vælg en størrelse/mulighed for dette produkt"
+  },
+  "categories": {
+    "clothing": "Beklædning",
+    "accessories": "Tilbehør",
+    "tshirts": "T-shirts",
+    "hoodies": "Hoodies",
+    "headwear": "Hovedbeklædning"
+  },
+  "management": {
+    "title": "Produktstyring",
+    "add_product": "Tilføj produkt",
+    "edit_product": "Rediger produkt",
+    "delete_product": "Slet produkt",
+    "delete_confirm": "Er du sikker på, at du vil slette dette produkt?"
+  }
+}

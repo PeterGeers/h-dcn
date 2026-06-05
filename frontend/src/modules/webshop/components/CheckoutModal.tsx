@@ -17,6 +17,7 @@ import {
   HStack
 } from '@chakra-ui/react';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useTranslation } from 'react-i18next';
 import { getStripe } from '../services/stripe';
 import { parameterService } from '../services/api';
 import { processDeliveryOptions, getDefaultDeliveryOptions } from '../utils/deliveryOptionsProcessor';
@@ -90,6 +91,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
     postcode: '',
     woonplaats: ''
   });
+  const { t } = useTranslation('webshop');
   
   const deliveryOption = deliveryOptions.find(opt => opt.value === selectedDelivery);
   const deliveryCost = deliveryOption ? parseFloat(deliveryOption.cost || '0') : 0;
@@ -135,7 +137,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       }, 2000);
 
     } catch (error) {
-      onError('Er is een fout opgetreden bij de betaling');
+      onError(t('checkout.payment_error_desc'));
       setIsProcessing(false);
     }
   };
@@ -144,7 +146,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
     <form onSubmit={handleSubmit}>
       <VStack spacing={4}>
         <Box width="full">
-          <Text mb={2} color="white" fontWeight="medium">Leveroptie:</Text>
+          <Text mb={2} color="white" fontWeight="medium">{t('checkout.delivery_option', { defaultValue: 'Leveroptie' })}:</Text>
           <Select
             value={selectedDelivery}
             onChange={(e) => onDeliveryChange(e.target.value)}
@@ -160,7 +162,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         </Box>
         
         <Box width="full">
-          <Text mb={2} color="white" fontWeight="medium">Verzendadres:</Text>
+          <Text mb={2} color="white" fontWeight="medium">{t('checkout.shipping_address', { defaultValue: 'Verzendadres' })}:</Text>
           <VStack spacing={3} align="stretch">
             <HStack>
               <input
@@ -169,14 +171,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 checked={sameAsUserAddress}
                 onChange={(e) => setSameAsUserAddress(e.target.checked)}
               />
-              <Text color="white" fontSize="sm">Verzendadres is gelijk aan mijn adres</Text>
+              <Text color="white" fontSize="sm">{t('checkout.same_address', { defaultValue: 'Verzendadres is gelijk aan mijn adres' })}</Text>
             </HStack>
             
             {!sameAsUserAddress && (
               <VStack spacing={2} align="stretch">
                 <input
                   type="text"
-                  placeholder="Naam"
+                  placeholder={t('checkout.placeholder_name')}
                   value={shippingAddress.name}
                   onChange={(e) => setShippingAddress({...shippingAddress, name: e.target.value})}
                   style={{
@@ -190,7 +192,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 />
                 <input
                   type="text"
-                  placeholder="Straat en huisnummer"
+                  placeholder={t('checkout.placeholder_street')}
                   value={shippingAddress.straat}
                   onChange={(e) => setShippingAddress({...shippingAddress, straat: e.target.value})}
                   style={{
@@ -205,7 +207,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 <HStack>
                   <input
                     type="text"
-                    placeholder="Postcode"
+                    placeholder={t('checkout.placeholder_postal')}
                     value={shippingAddress.postcode}
                     onChange={(e) => setShippingAddress({...shippingAddress, postcode: e.target.value})}
                     style={{
@@ -219,7 +221,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
                   />
                   <input
                     type="text"
-                    placeholder="Woonplaats"
+                    placeholder={t('checkout.placeholder_city')}
                     value={shippingAddress.woonplaats}
                     onChange={(e) => setShippingAddress({...shippingAddress, woonplaats: e.target.value})}
                     style={{
@@ -262,15 +264,15 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         
         <VStack spacing={2} width="full">
           <HStack justify="space-between" width="full">
-            <Text color="white">Subtotaal:</Text>
+            <Text color="white">{t('checkout.subtotal', { defaultValue: 'Subtotaal' })}:</Text>
             <Text color="white">€{totalAmount.toFixed(2)}</Text>
           </HStack>
           <HStack justify="space-between" width="full">
-            <Text color="white">Verzending:</Text>
+            <Text color="white">{t('checkout.shipping', { defaultValue: 'Verzending' })}:</Text>
             <Text color="white">€{deliveryCost.toFixed(2)}</Text>
           </HStack>
           <HStack justify="space-between" width="full">
-            <Text fontSize="lg" fontWeight="bold" color="white">Totaal:</Text>
+            <Text fontSize="lg" fontWeight="bold" color="white">{t('checkout.total', { defaultValue: 'Totaal' })}:</Text>
             <Text fontSize="lg" fontWeight="bold" color="white">€{finalTotal.toFixed(2)}</Text>
           </HStack>
         </VStack>
@@ -283,22 +285,22 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
           width="full"
           size="lg"
           isLoading={isProcessing}
-          loadingText="Verwerken..."
+          loadingText={t('checkout.processing', { defaultValue: 'Verwerken...' })}
           disabled={!stripe || isProcessing || !selectedDelivery}
         >
-          {isProcessing ? <Spinner size="sm" /> : `Betaal €${finalTotal.toFixed(2)}`}
+          {isProcessing ? <Spinner size="sm" /> : t('checkout.pay_button', { amount: finalTotal.toFixed(2), defaultValue: `Betaal €${finalTotal.toFixed(2)}` })}
         </Button>
         
         <Box bg="blue.900" p={3} borderRadius="md" width="full">
           <Text fontSize="sm" color="blue.200" fontWeight="bold" mb={2}>
-            🧪 Testmodus - Gebruik testgegevens:
+            🧪 {t('checkout.test_mode_title')}
           </Text>
           <VStack align="start" spacing={1} fontSize="xs" color="blue.100">
-            <Text>• Kaartnummer: 4242 4242 4242 4242</Text>
-            <Text>• Vervaldatum: Elke toekomstige datum (bijv. 12/34)</Text>
-            <Text>• CVC: Elke 3 cijfers (bijv. 123)</Text>
-            <Text>• Naam: Elke naam (bijv. Test Gebruiker)</Text>
-            <Text>• Postcode: Elk formaat (bijv. 1234AB)</Text>
+            <Text>• {t('checkout.test_card_number')}</Text>
+            <Text>• {t('checkout.test_expiry')}</Text>
+            <Text>• {t('checkout.test_cvc')}</Text>
+            <Text>• {t('checkout.test_name')}</Text>
+            <Text>• {t('checkout.test_postal')}</Text>
           </VStack>
         </Box>
       </VStack>
@@ -311,6 +313,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
   const [success, setSuccess] = useState<boolean>(false);
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState<string>('');
+  const { t } = useTranslation('webshop');
   
   const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
   const stripePromise = getStripe();
@@ -390,7 +393,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
       <ModalOverlay />
       <ModalContent bg="black" color="white" borderWidth="3px" borderColor="orange.500">
-        <ModalHeader>Betaling</ModalHeader>
+        <ModalHeader>{t('checkout.payment_title', { defaultValue: 'Betaling' })}</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           {error && (
@@ -403,7 +406,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
           {success && (
             <Alert status="success" mb={4} bg="green.600" color="white">
               <AlertIcon />
-              Betaling succesvol! Bestelling wordt verwerkt...
+              {t('checkout.payment_processing', { defaultValue: 'Betaling succesvol! Bestelling wordt verwerkt...' })}
             </Alert>
           )}
           

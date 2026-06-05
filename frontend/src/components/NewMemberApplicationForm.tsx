@@ -30,6 +30,7 @@ import {
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
+import { useTranslation } from 'react-i18next';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields, getFilteredEnumOptions } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { ApiService } from '../services/apiService';
@@ -50,6 +51,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
   const [existingApplication, setExistingApplication] = useState<any>(null);
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const toast = useToast();
+  const { t } = useTranslation('members');
 
   // Get membership registration context (not membershipApplication)
   const applicationContext = MEMBER_MODAL_CONTEXTS.memberRegistration;
@@ -372,18 +374,18 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
       const isUpdate = existingApplication !== null;
       
       toast({
-        title: isUpdate ? 'Aanvraag bijgewerkt' : 'Aanvraag verzonden',
+        title: isUpdate ? t('application_form.updated_title') : t('application_form.submitted_title'),
         description: isUpdate 
-          ? 'Uw wijzigingen zijn opgeslagen en worden opnieuw beoordeeld.'
-          : 'Uw aanvraag is succesvol verzonden en wordt beoordeeld.',
+          ? t('application_form.updated_desc')
+          : t('application_form.submitted_desc'),
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: 'Fout bij verzenden',
-        description: 'Er is een fout opgetreden. Probeer het opnieuw.',
+        title: t('application_form.submit_error_title'),
+        description: t('application_form.submit_error_desc'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -482,7 +484,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                     fontSize="sm"
                     placeholder={field.placeholder}
                   >
-                    <option value="">Selecteer...</option>
+                    <option value="">{t('application_form.select_placeholder')}</option>
                     {filteredOptions.map((option: any) => (
                       <option key={option} value={option}>
                         {option}
@@ -583,7 +585,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
       >
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.500" thickness="4px" />
-          <Text color="gray.300">Gegevens laden...</Text>
+          <Text color="gray.300">{t('application_form.loading')}</Text>
         </VStack>
       </Box>
     );
@@ -595,17 +597,17 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         {/* Header */}
         <Box textAlign="center" mb={6}>
           <Heading size="xl" color="orange.300" mb={2}>
-            {existingApplication ? 'Wijzig je lidmaatschapsaanvraag' : 'Welkom bij H-DCN!'}
+            {existingApplication ? t('application_form.edit_title') : t('application_form.welcome_title')}
           </Heading>
           <Text color="gray.300" fontSize="lg" mb={4}>
             {existingApplication 
-              ? 'Je kunt je gegevens wijzigen en opnieuw indienen voor herbeoordeling'
-              : 'Met dit formulier kun je je aanmelden voor het lidmaatschap van de H-DCN (Harley-Davidson Club Nederland).'
+              ? t('application_form.edit_desc')
+              : t('application_form.welcome_desc')
             }
           </Text>
           {existingApplication && (
             <Text color="orange.300" fontSize="md" mb={4}>
-              Status: {existingApplication.status} • Ingediend: {new Date(existingApplication.created_at).toLocaleDateString('nl-NL')}
+              {t('application.status_label')} {existingApplication.status} • {t('application.submitted_label')} {new Date(existingApplication.created_at).toLocaleDateString('nl-NL')}
             </Text>
           )}
           <Divider borderColor="orange.400" />
@@ -634,12 +636,12 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                 <Card bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg" mb={6}>
                   <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
                     <Heading size="sm" color="orange.300" textAlign="left">
-                      Vrijwaring
+                      {t('application_form.disclaimer_title')}
                     </Heading>
                   </CardHeader>
                   <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
                     <Text color="gray.700" fontSize="sm" lineHeight="1.6">
-                      Met aanvaarding van het lidmaatschap verklaar je dat deelname aan activiteiten, wel of niet georganiseerd door of namens het bestuur van H-DCN, geheel voor eigen risico en rekening is. Het bestuur H-DCN, noch haar afzonderlijke bestuursleden c.q. commissarissen aanvaarden enige aansprakelijkheid voor schade in welke vorm dan ook, direct of indirect, voortvloeiende uit activiteiten door of namens H-DCN.
+                      {t('application_form.disclaimer_text')}
                     </Text>
                   </CardBody>
                 </Card>
@@ -648,12 +650,12 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                 <Card bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg" mb={6}>
                   <CardHeader bg="gray.700" borderRadius="lg lg 0 0" py={1}>
                     <Heading size="sm" color="orange.300" textAlign="left">
-                      Ondergetekende
+                      {t('application_form.signatory_title')}
                     </Heading>
                   </CardHeader>
                   <CardBody pt={4} pb={4} bg="orange.300" borderRadius="0 0 lg lg">
                     <Text color="gray.700" fontSize="sm" lineHeight="1.6" mb={4}>
-                      Ondergetekende verklaart bovenstaande naar waarheid te hebben ingevuld en zich te zullen houden aan de Statuten en het Huishoudelijk Reglement van de H-DCN (dit ter inzage op de website{' '}
+                      {t('application_form.signatory_text_1')}{' '}
                       <Text as="a" 
                             href="https://h-dcn.nl/home/hdcnalgemeneinformatie" 
                             target="_blank" 
@@ -663,10 +665,10 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                             _hover={{ color: "orange.500" }}>
                         https://h-dcn.nl/home/hdcnalgemeneinformatie
                       </Text>
-                      , en of bij het regio- c.q. algemeen secretariaat).
+                      {t('application_form.signatory_text_1_suffix')}
                     </Text>
                     <Text color="gray.700" fontSize="sm" lineHeight="1.6">
-                      Ondergetekende machtigt hierbij de H-DCN de jaarlijkse contributie te innen m.b.v. automatische incasso van haar of zijn bankrekening, tot schriftelijke wederopzegging, waarbij de termijn tot uiterlijk 01 november voor het komende jaar in acht genomen moet worden.
+                      {t('application_form.signatory_text_2')}
                     </Text>
                   </CardBody>
                 </Card>
@@ -677,8 +679,8 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                     <VStack spacing={4}>
                       <Text color="gray.300" textAlign="center">
                         {existingApplication 
-                          ? 'Door op "Wijzigingen Opslaan" te klikken, wordt je aanvraag opnieuw ter beoordeling ingediend.'
-                          : 'Door op "Aanmelden" te klikken, bevestigt u dat de verstrekte informatie correct is.'
+                          ? t('application_form.save_confirm_text')
+                          : t('application_form.submit_confirm_text')
                         }
                       </Text>
                       <HStack spacing={4} justify="center">
@@ -689,7 +691,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                             onClick={onCancel}
                             size="lg"
                           >
-                            Annuleren
+                            {t('application_form.cancel_button')}
                           </Button>
                         )}
                         <Button
@@ -698,10 +700,10 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                           size="lg"
                           isLoading={isSubmitting}
                           isDisabled={!isValid}
-                          loadingText={existingApplication ? "Opslaan..." : "Aanmelden..."}
+                          loadingText={existingApplication ? t('application_form.saving') : t('application_form.submitting')}
                           px={8}
                         >
-                          {existingApplication ? "Wijzigingen Opslaan" : "Aanmelden"}
+                          {existingApplication ? t('application_form.save_changes_button') : t('application_form.register_button')}
                         </Button>
                       </HStack>
                       
@@ -709,7 +711,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                       {!isValid && (
                         <Box mt={4} p={3} bg="red.50" borderRadius="md" border="1px" borderColor="red.200">
                           <Text fontSize="sm" color="red.600" fontWeight="semibold">
-                            Validatie fouten:
+                            {t('application_form.validation_errors')}:
                           </Text>
                           <Text fontSize="xs" color="red.500" mt={1}>
                             {JSON.stringify(errors, null, 2)}

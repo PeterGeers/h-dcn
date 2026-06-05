@@ -6,6 +6,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError, BotoCoreError
 from typing import Optional
+from datetime import datetime
 
 try:
     import weasyprint
@@ -32,19 +33,22 @@ except ImportError as e:
     import sys
     sys.exit(0)
 
+# Import i18n utilities for PDF localization
+from shared.i18n.pdf_translations import (
+    get_pdf_text,
+    format_date_for_locale,
+    format_currency_for_locale,
+)
+from shared.i18n.locale_resolver import resolve_member_locale
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Environment variables
 ORDERS_TABLE = os.environ.get('ORDERS_TABLE', 'Orders')
+MEMBERS_TABLE = os.environ.get('MEMBERS_TABLE_NAME', 'Members')
 S3_BUCKET = os.environ.get('S3_BUCKET', 'my-hdcn-bucket')
 LOGO_S3_KEY = os.environ.get('LOGO_S3_KEY', 'imagesWebsite/hdcnFavico.png')
-
-# Dutch month names for date formatting
-DUTCH_MONTHS = [
-    'januari', 'februari', 'maart', 'april', 'mei', 'juni',
-    'juli', 'augustus', 'september', 'oktober', 'november', 'december'
-]
 
 
 def fetch_logo_as_data_uri(bucket: str, key: str, timeout: int = 5) -> Optional[str]:
@@ -98,46 +102,44 @@ def fetch_logo_as_data_uri(bucket: str, key: str, timeout: int = 5) -> Optional[
         return None
 
 
-def format_euro(value) -> str:
-    """Format a monetary value with euro symbol and 2 decimal places.
+def format_euro(value, locale: str = 'nl') -> str:
+    """Format a monetary value using locale-aware currency formatting.
 
     Args:
         value: A numeric value (int, float) or string representation of a number.
+        locale: The locale code for formatting (default: 'nl').
 
     Returns:
-        Formatted string like "€12.50"
+        Locale-formatted EUR currency string.
     """
     try:
         amount = float(value)
     except (TypeError, ValueError):
         amount = 0.0
-    return f"\u20ac{amount:.2f}"
+    return format_currency_for_locale(amount, locale)
 
 
-def format_dutch_date(iso_timestamp: str) -> str:
-    """Format an ISO 8601 timestamp in Dutch locale.
-
-    Produces format: "15 januari 2025, 14:30"
+def format_date_localized(iso_timestamp: str, locale: str = 'nl') -> str:
+    """Format an ISO 8601 timestamp using locale-aware date formatting.
 
     Args:
         iso_timestamp: ISO 8601 date string (e.g. "2025-01-15T14:30:00Z")
+        locale: The locale code for formatting (default: 'nl').
 
     Returns:
-        Dutch-formatted date string.
+        Locale-formatted date string with time (e.g., "15 januari 2025, 14:30").
     """
-    from datetime import datetime
-
     try:
         # Handle both 'Z' suffix and '+00:00' timezone formats
         ts = iso_timestamp.replace('Z', '+00:00')
         dt = datetime.fromisoformat(ts)
-        day = dt.day
-        month = DUTCH_MONTHS[dt.month - 1]
-        year = dt.year
+        # Use locale-aware date formatting for the date part
+        date_str = format_date_for_locale(dt, locale)
+        # Append time
         hours = dt.hour
         minutes = dt.minute
-        return f"{day} {month} {year}, {hours:02d}:{minutes:02d}"
-    except (ValueError, TypeError, IndexError):
+        return f"{date_str}, {hours:02d}:{minutes:02d}"
+    except (ValueError, TypeError, IndexError, AttributeError):
         return iso_timestamp or ""
 
 
@@ -305,10 +307,10 @@ def build_css() -> str:
     """
 
 
-def _resolve_customer_name(customer_info: dict) -> str:
+def _resolve_customer_name(customer_info: dict, locale: str = 'nl') -> str:
     """Resolve customer name with fallback logic.
 
-    Priority: name > voornaam+achternaam > 'Niet beschikbaar'
+    Priority: name > voornaam+achternaam > localized 'no data' text
     """
     name = customer_info.get('name', '')
     if name:
@@ -318,55 +320,96 @@ def _resolve_customer_name(customer_info: dict) -> str:
     combined = f"{voornaam} {achternaam}".strip()
     if combined:
         return combined
-    return 'Niet beschikbaar'
+    return get_pdf_text('no_data', locale)
+
+
+def fetch_member_preferred_language(member_id: str) -> str | None:
+    """Fetch a member's preferred_language from the Members table.
+
+    Args:
+        member_id: The member's unique identifier.
+
+    Returns:
+        The preferred_language value, or None if not found/error.
+    """
+    if not member_id:
+        return None
+
+    try:
+        dynamodb = boto3.resource('dynamodb')
+        members_table = dynamodb.Table(MEMBERS_TABLE)
+        response = members_table.get_item(
+            Key={'member_id': member_id},
+            ProjectionExpression='preferred_language'
+        )
+        item = response.get('Item')
+        if item:
+            return item.get('preferred_language')
+        return None
+    except Exception as e:
+        logger.warning(f"Error fetching member preferred_language for {member_id}: {str(e)}")
+        return None
 
 
 def build_header_html(logo_data_uri: Optional[str], order_id: str,
-                      formatted_date: str, customer_name: str) -> str:
+                      formatted_date: str, customer_name: str,
+                      locale: str = 'nl') -> str:
     """Build the header section with logo, title, and order metadata.
 
     Matches the frontend layout: logo left, title "H-DCN Webshop" in orange,
-    subtitle "Orderbevestiging", then order meta block below.
+    subtitle (localized document title), then order meta block below.
     """
     logo_html = ''
     if logo_data_uri is not None:
         logo_html = f'<img src="{logo_data_uri}" alt="H-DCN Logo" class="logo" />'
 
+    document_title = get_pdf_text('document_title', locale)
+    order_number_label = get_pdf_text('order_number', locale)
+    order_date_label = get_pdf_text('order_date', locale)
+    customer_label = get_pdf_text('customer', locale)
+    status_label = get_pdf_text('status', locale)
+    status_paid = get_pdf_text('status_paid', locale)
+
     return f'''    <div class="header">
         {logo_html}<div class="header-inner">
             <div class="header-title">H-DCN Webshop</div>
-            <div class="header-subtitle">Orderbevestiging</div>
+            <div class="header-subtitle">{document_title}</div>
         </div>
     </div>
 
     <div class="order-meta">
         <div class="meta-row">
-            <span class="meta-label">Ordernummer:</span>
+            <span class="meta-label">{order_number_label}:</span>
             <span style="float: right;">{order_id}</span>
         </div>
         <div class="meta-row">
-            <span class="meta-label">Datum:</span>
+            <span class="meta-label">{order_date_label}:</span>
             <span style="float: right;">{formatted_date}</span>
         </div>
         <div class="meta-row">
-            <span class="meta-label">Klant:</span>
+            <span class="meta-label">{customer_label}:</span>
             <span style="float: right;">{customer_name}</span>
         </div>
         <div class="meta-row">
-            <span class="meta-label">Status:</span>
-            <span class="status-paid" style="float: right;">Betaald</span>
+            <span class="meta-label">{status_label}:</span>
+            <span class="status-paid" style="float: right;">{status_paid}</span>
         </div>
     </div>'''
 
 
-def build_addresses_html(customer_info: dict, shipping_address: Optional[dict]) -> str:
+def build_addresses_html(customer_info: dict, shipping_address: Optional[dict],
+                         locale: str = 'nl') -> str:
     """Build two-column address layout with billing and shipping addresses.
 
     Uses inline-block for WeasyPrint compatibility (no flexbox).
     Falls back to customer_info for shipping address if not provided.
     """
-    # Billing address (Factuuradres)
-    billing_name = _resolve_customer_name(customer_info)
+    billing_address_label = get_pdf_text('billing_address', locale)
+    delivery_address_label = get_pdf_text('delivery_address', locale)
+    no_data_text = get_pdf_text('no_data', locale)
+
+    # Billing address
+    billing_name = _resolve_customer_name(customer_info, locale)
     billing_straat = customer_info.get('straat', '')
     billing_postcode = customer_info.get('postcode', '')
     billing_woonplaats = customer_info.get('woonplaats', '')
@@ -385,12 +428,12 @@ def build_addresses_html(customer_info: dict, shipping_address: Optional[dict]) 
         billing_lines += f'        <p class="address-line">{billing_phone}</p>\n'
 
     if not customer_info:
-        billing_lines = '<p class="address-line">Geen adresgegevens beschikbaar</p>\n'
+        billing_lines = f'<p class="address-line">{no_data_text}</p>\n'
 
-    # Shipping address (Verzendadres) - fallback to customer_info
+    # Shipping address - fallback to customer_info
     ship = shipping_address if shipping_address else customer_info
     if ship:
-        ship_name = ship.get('name', '') or _resolve_customer_name(ship)
+        ship_name = ship.get('name', '') or _resolve_customer_name(ship, locale)
         ship_straat = ship.get('straat', '')
         ship_postcode = ship.get('postcode', '')
         ship_woonplaats = ship.get('woonplaats', '')
@@ -402,16 +445,16 @@ def build_addresses_html(customer_info: dict, shipping_address: Optional[dict]) 
         if ship_postcode_plaats:
             shipping_lines += f'        <p class="address-line">{ship_postcode_plaats}</p>\n'
     else:
-        shipping_lines = '<p class="address-line">Geen adresgegevens beschikbaar</p>\n'
+        shipping_lines = f'<p class="address-line">{no_data_text}</p>\n'
 
     return f'''    <hr class="separator" />
 
     <div class="addresses">
         <div class="address-col">
-            <div class="address-title">Factuuradres</div>
+            <div class="address-title">{billing_address_label}</div>
             {billing_lines.strip()}
         </div><div class="address-col-spacer"></div><div class="address-col">
-            <div class="address-title">Verzendadres</div>
+            <div class="address-title">{delivery_address_label}</div>
             {shipping_lines.strip()}
         </div>
     </div>
@@ -420,22 +463,29 @@ def build_addresses_html(customer_info: dict, shipping_address: Optional[dict]) 
 
 
 def build_products_table_html(items: list, delivery_option: Optional[dict],
-                              delivery_cost: Optional[str]) -> str:
+                              delivery_cost: Optional[str],
+                              locale: str = 'nl') -> str:
     """Build product table with optional delivery section above it.
 
     Table has light grey header (#F9FAFB), right-aligned numeric columns.
     Delivery section appears ABOVE the products table when present.
     """
+    shipping_label = get_pdf_text('shipping', locale)
+    product_label = get_pdf_text('product', locale)
+    quantity_label = get_pdf_text('quantity', locale)
+    unit_price_label = get_pdf_text('unit_price', locale)
+    total_label = get_pdf_text('total', locale)
+
     # Delivery section (above the table)
     delivery_html = ''
     if delivery_option:
-        delivery_label = delivery_option.get('label', 'Verzending')
+        delivery_label = delivery_option.get('label', shipping_label)
         delivery_cost_val = delivery_cost if delivery_cost else '0.00'
         delivery_html = f'''    <div class="delivery">
-        <div class="delivery-title">Levering</div>
+        <div class="delivery-title">{shipping_label}</div>
         <div class="delivery-row">
             <span class="delivery-label">{delivery_label}</span>
-            <span class="delivery-cost">{format_euro(delivery_cost_val)}</span>
+            <span class="delivery-cost">{format_euro(delivery_cost_val, locale)}</span>
         </div>
     </div>
 
@@ -455,20 +505,20 @@ def build_products_table_html(items: list, delivery_option: Optional[dict],
                 <td>{item_name}</td>
                 <td>{selected_option}</td>
                 <td class="right">{quantity}</td>
-                <td class="right">{format_euro(price)}</td>
-                <td class="right">{format_euro(line_total)}</td>
+                <td class="right">{format_euro(price, locale)}</td>
+                <td class="right">{format_euro(line_total, locale)}</td>
             </tr>
 '''
 
-    return f'''{delivery_html}    <div class="products-title">Bestelde producten</div>
+    return f'''{delivery_html}    <div class="products-title">{get_pdf_text('ordered_products', locale)}</div>
     <table>
         <thead>
             <tr>
-                <th>Product</th>
-                <th>Optie</th>
-                <th class="right">Aantal</th>
-                <th class="right">Prijs</th>
-                <th class="right">Totaal</th>
+                <th>{product_label}</th>
+                <th>{get_pdf_text('option', locale)}</th>
+                <th class="right">{quantity_label}</th>
+                <th class="right">{unit_price_label}</th>
+                <th class="right">{total_label}</th>
             </tr>
         </thead>
         <tbody>
@@ -477,34 +527,39 @@ def build_products_table_html(items: list, delivery_option: Optional[dict],
 
 
 def build_totals_html(subtotal_amount: str, delivery_cost: Optional[str],
-                      total_amount: str) -> str:
+                      total_amount: str, locale: str = 'nl') -> str:
     """Build totals section with subtotal, optional shipping, and bold final total.
 
-    Final total displayed as "Totaal betaald:" in 18px bold, matching the frontend.
+    Final total displayed as localized "Total paid:" in 18px bold, matching the frontend.
     """
+    subtotal_label = get_pdf_text('subtotal', locale)
+    shipping_label = get_pdf_text('shipping', locale)
+    total_paid_label = get_pdf_text('total_paid', locale)
+
     html = f'''    <div class="totals">
         <div class="totals-row">
-            <span class="totals-label">Subtotaal:</span>
-            <span class="totals-value">{format_euro(subtotal_amount)}</span>
+            <span class="totals-label">{subtotal_label}:</span>
+            <span class="totals-value">{format_euro(subtotal_amount, locale)}</span>
         </div>
 '''
     if delivery_cost:
         html += f'''        <div class="totals-row">
-            <span class="totals-label">Verzendkosten:</span>
-            <span class="totals-value">{format_euro(delivery_cost)}</span>
+            <span class="totals-label">{shipping_label}:</span>
+            <span class="totals-value">{format_euro(delivery_cost, locale)}</span>
         </div>
 '''
     html += f'''        <hr class="totals-separator" />
         <div class="totals-row totals-final">
-            <span class="totals-label">Totaal betaald:</span>
-            <span class="totals-value">{format_euro(total_amount)}</span>
+            <span class="totals-label">{total_paid_label}:</span>
+            <span class="totals-value">{format_euro(total_amount, locale)}</span>
         </div>
     </div>'''
 
     return html
 
 
-def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
+def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
+                      locale: str = 'nl') -> str:
     """Render order data into an HTML string matching the frontend layout.
 
     Builds a complete HTML document with A4-appropriate CSS styling,
@@ -514,6 +569,7 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
     Args:
         order: Order record dict from DynamoDB.
         logo_data_uri: Base64 data URI for the logo image, or None to omit.
+        locale: Locale code for translations and formatting (default: 'nl').
 
     Returns:
         Complete HTML string ready for WeasyPrint rendering.
@@ -521,7 +577,7 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
     # Extract data from order
     order_id = order.get('order_id', '')
     timestamp = order.get('timestamp', '')
-    formatted_date = format_dutch_date(timestamp)
+    formatted_date = format_date_localized(timestamp, locale)
     customer_info = order.get('customer_info', {})
     shipping_address = order.get('shipping_address')
     items = order.get('items', [])
@@ -530,20 +586,22 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None) -> str:
     subtotal_amount = order.get('subtotal_amount', '0.00')
     total_amount = order.get('total_amount', '0.00')
 
-    customer_name = _resolve_customer_name(customer_info)
+    customer_name = _resolve_customer_name(customer_info, locale)
 
     # Build HTML sections
     css = build_css()
-    header_html = build_header_html(logo_data_uri, order_id, formatted_date, customer_name)
-    addresses_html = build_addresses_html(customer_info, shipping_address)
-    products_html = build_products_table_html(items, delivery_option, delivery_cost)
-    totals_html = build_totals_html(subtotal_amount, delivery_cost, total_amount)
+    document_title = get_pdf_text('document_title', locale)
+    header_html = build_header_html(logo_data_uri, order_id, formatted_date,
+                                    customer_name, locale)
+    addresses_html = build_addresses_html(customer_info, shipping_address, locale)
+    products_html = build_products_table_html(items, delivery_option, delivery_cost, locale)
+    totals_html = build_totals_html(subtotal_amount, delivery_cost, total_amount, locale)
 
     html = f'''<!DOCTYPE html>
-<html lang="nl">
+<html lang="{locale}">
 <head>
     <meta charset="UTF-8" />
-    <title>Orderbevestiging {order_id}</title>
+    <title>{document_title} {order_id}</title>
     <style>{css}
     </style>
 </head>
@@ -604,11 +662,16 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'generate_order_pdf', {'order_id': order_id})
 
+        # Resolve locale from member's preferred_language
+        member_id = order.get('member_id', '')
+        preferred_language = fetch_member_preferred_language(member_id) if member_id else None
+        locale = resolve_member_locale(preferred_language)
+
         # Fetch logo from S3 (graceful degradation: PDF still generated if logo fails)
         logo_data_uri = fetch_logo_as_data_uri(S3_BUCKET, LOGO_S3_KEY)
 
-        # Render HTML template with order data and logo
-        html = render_order_html(order, logo_data_uri)
+        # Render HTML template with order data, logo, and locale
+        html = render_order_html(order, logo_data_uri, locale)
 
         # Generate PDF with WeasyPrint
         try:
@@ -622,12 +685,16 @@ def lambda_handler(event, context):
         # Base64-encode PDF bytes for API Gateway binary response
         base64_encoded_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
 
+        # Use localized filename
+        document_title = get_pdf_text('document_title', locale).lower().replace(' ', '-')
+        filename = f"{document_title}-{order_id}.pdf"
+
         # Return PDF response
         return {
             "statusCode": 200,
             "headers": {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": f'attachment; filename="orderbevestiging-{order_id}.pdf"',
+                "Content-Disposition": f'attachment; filename="{filename}"',
                 **cors_headers()
             },
             "body": base64_encoded_pdf,

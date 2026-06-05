@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ApiService } from '../services/apiService';
 import NewMemberApplicationForm from '../components/NewMemberApplicationForm';
 import {
@@ -45,6 +46,7 @@ interface NewMemberApplicationProps {
 
 const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation('members');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
@@ -127,7 +129,7 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
 
       } catch (error) {
         console.error('NewMemberApplication - Error checking user status:', error);
-        setError('Er is een fout opgetreden bij het controleren van uw gegevens.');
+        setError(t('new_application.check_error'));
         setIsLoading(false);
       }
     };
@@ -176,7 +178,7 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
       >
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.500" thickness="4px" />
-          <Text color="gray.300">Gegevens controleren...</Text>
+          <Text color="gray.300">{t('new_application.checking')}</Text>
         </VStack>
       </Box>
     );
@@ -188,7 +190,7 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
         <Alert status="error" bg="red.900" color="white" borderRadius="lg">
           <AlertIcon />
           <Box>
-            <AlertTitle>Fout opgetreden</AlertTitle>
+            <AlertTitle>{t('new_application.error_title')}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Box>
         </Alert>
@@ -213,27 +215,26 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
       <VStack spacing={6} align="stretch">
         <Box textAlign="center">
           <Heading size="xl" color="orange.300" mb={4}>
-            Lid worden van H-DCN
+            {t('new_application.page_title')}
           </Heading>
           <Text color="gray.300" fontSize="lg" mb={6}>
-            Welkom bij de Harley-Davidson Club Nederland
+            {t('new_application.page_subtitle')}
           </Text>
         </Box>
 
         <Alert status="info" bg="blue.900" color="white" borderRadius="lg">
           <AlertIcon />
           <Box>
-            <AlertTitle>Lidmaatschap aanvragen</AlertTitle>
+            <AlertTitle>{t('new_application.info_title')}</AlertTitle>
             <AlertDescription>
-              Om lid te worden van de H-DCN moet u eerst inloggen of een account aanmaken.
-              Na het inloggen kunt u uw lidmaatschapsaanvraag indienen.
+              {t('new_application.info_desc')}
             </AlertDescription>
           </Box>
         </Alert>
 
         <VStack spacing={4}>
           <Text color="gray.300" textAlign="center">
-            Heeft u al een account? Log dan in om uw aanvraag in te dienen.
+            {t('new_application.login_prompt')}
           </Text>
           
           <Button
@@ -241,20 +242,20 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
             size="lg"
             onClick={() => navigate('/')}
           >
-            Naar Inlogpagina
+            {t('new_application.to_login')}
           </Button>
         </VStack>
 
         <Box bg="gray.800" p={6} borderRadius="lg" border="1px" borderColor="orange.400">
           <Heading size="md" color="orange.300" mb={4}>
-            Over het lidmaatschap
+            {t('new_application.about_title')}
           </Heading>
           <VStack align="start" spacing={3} color="gray.300">
-            <Text>• Toegang tot alle H-DCN evenementen en ritten</Text>
-            <Text>• Maandelijks clubblad (digitaal of papier)</Text>
-            <Text>• Toegang tot de webshop met exclusieve producten</Text>
-            <Text>• Netwerk van Harley-Davidson liefhebbers</Text>
-            <Text>• Regionale activiteiten en bijeenkomsten</Text>
+            <Text>• {t('new_application.benefit_events')}</Text>
+            <Text>• {t('new_application.benefit_magazine')}</Text>
+            <Text>• {t('new_application.benefit_webshop')}</Text>
+            <Text>• {t('new_application.benefit_network')}</Text>
+            <Text>• {t('new_application.benefit_regional')}</Text>
           </VStack>
         </Box>
       </VStack>

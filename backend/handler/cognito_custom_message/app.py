@@ -2,7 +2,8 @@
 H-DCN Cognito Custom Message Lambda Function
 
 This function customizes email messages sent by AWS Cognito for different authentication scenarios.
-It provides Dutch language templates with H-DCN branding for various message types.
+It provides localized email templates with H-DCN branding for various message types.
+The locale is resolved from clientMetadata.locale passed by the frontend, with Dutch as fallback.
 
 Supported message types:
 - CustomMessage_AdminCreateUser: Welcome message for admin-created users
@@ -18,6 +19,7 @@ import logging
 import os
 from datetime import datetime
 from template_service import template_service
+from shared.i18n.email_utils import resolve_email_locale
 
 # Configure logging
 logger = logging.getLogger()
@@ -57,6 +59,12 @@ def lambda_handler(event, context):
         # Log the user pool ID for debugging (since it's no longer in environment variables)
         logger.info(f"Processing custom message for User Pool: {user_pool_id}")
         
+        # Resolve locale from clientMetadata.locale, fallback to Dutch
+        client_metadata = event.get('request', {}).get('clientMetadata') or {}
+        raw_locale = client_metadata.get('locale')
+        locale = resolve_email_locale(raw_locale)
+        logger.info(f"Resolved email locale: {locale} (raw: {raw_locale})")
+        
         # Extract user information
         email = user_attributes.get('email', username)
         given_name = user_attributes.get('given_name', '')
@@ -72,24 +80,24 @@ def lambda_handler(event, context):
         
         # Generate custom message based on trigger source
         if trigger_source == 'CustomMessage_AdminCreateUser':
-            event = handle_admin_create_user(event, display_name, email)
+            event = handle_admin_create_user(event, display_name, email, locale)
         elif trigger_source == 'CustomMessage_ResendCode':
-            event = handle_resend_code(event, display_name, email)
+            event = handle_resend_code(event, display_name, email, locale)
         elif trigger_source == 'CustomMessage_ForgotPassword':
-            event = handle_forgot_password(event, display_name, email)
+            event = handle_forgot_password(event, display_name, email, locale)
         elif trigger_source == 'CustomMessage_UpdateUserAttribute':
-            event = handle_update_user_attribute(event, display_name, email)
+            event = handle_update_user_attribute(event, display_name, email, locale)
         elif trigger_source == 'CustomMessage_VerifyUserAttribute':
-            event = handle_verify_user_attribute(event, display_name, email)
+            event = handle_verify_user_attribute(event, display_name, email, locale)
         elif trigger_source == 'CustomMessage_Authentication':
-            event = handle_authentication(event, display_name, email)
+            event = handle_authentication(event, display_name, email, locale)
         # Handle passwordless account recovery scenarios
         elif 'Recovery' in trigger_source or 'recovery' in trigger_source.lower():
-            event = handle_passwordless_recovery(event, display_name, email)
+            event = handle_passwordless_recovery(event, display_name, email, locale)
         else:
             logger.warning(f"Unhandled trigger source: {trigger_source}")
             # Return default message for unhandled cases
-            event = handle_default_message(event, display_name, email)
+            event = handle_default_message(event, display_name, email, locale)
         
         logger.info("Custom message generated successfully")
         return event
@@ -106,46 +114,62 @@ def get_email_footer():
 Website: {ORGANIZATION_WEBSITE}
 E-mail: {ORGANIZATION_EMAIL}"""
 
-def handle_admin_create_user(event, display_name, email):
+def handle_admin_create_user(event, display_name, email, locale):
     """Handle admin-created user welcome message"""
     temp_password = event.get('request', {}).get('tempPassword', '')
     
-    # Use template service to render email
+    # Use template service to render email with locale
     context = {
         'DISPLAY_NAME': display_name,
         'EMAIL': email,
         'TEMP_PASSWORD': temp_password
     }
     
-    subject, message = template_service.render_template('welcome-user', context)
+    subject, message = template_service.render_template('welcome-user', context, locale=locale)
     
     event['response']['emailMessage'] = message
     event['response']['emailSubject'] = subject
     
     return event
 
-def handle_resend_code(event, display_name, email):
+def handle_resend_code(event, display_name, email, locale):
     """Handle resend verification code message"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
-    # Use template service to render email
+    # Use template service to render email with locale
     context = {
         'DISPLAY_NAME': display_name,
         'EMAIL': email,
         'CODE': code_parameter
     }
     
-    subject, message = template_service.render_template('resend-code', context)
+    subject, message = template_service.render_template('resend-code', context, locale=locale)
     
     event['response']['emailMessage'] = message
     event['response']['emailSubject'] = subject
     
     return event
 
-def handle_forgot_password(event, display_name, email):
+def handle_forgot_password(event, display_name, email, locale):
     """Handle passwordless account recovery message"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('passwordless-recovery', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for passwordless-recovery/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
     subject = f"{ORGANIZATION_SHORT_NAME} Account Herstel - Toegang herstellen zonder wachtwoord"
     
     message = f"""Hallo {display_name},
@@ -198,10 +222,26 @@ Het {ORGANIZATION_SHORT_NAME} Team
     
     return event
 
-def handle_update_user_attribute(event, display_name, email):
+def handle_update_user_attribute(event, display_name, email, locale):
     """Handle user attribute update verification"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('update-user-attribute', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for update-user-attribute/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
     subject = f"{ORGANIZATION_SHORT_NAME} Account Update - Bevestig wijziging"
     
     message = f"""Hallo {display_name},
@@ -226,10 +266,26 @@ Het {ORGANIZATION_SHORT_NAME} Team
     
     return event
 
-def handle_verify_user_attribute(event, display_name, email):
+def handle_verify_user_attribute(event, display_name, email, locale):
     """Handle user attribute verification"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('verify-user-attribute', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for verify-user-attribute/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
     subject = f"{ORGANIZATION_SHORT_NAME} Account Verificatie - Bevestig uw gegevens"
     
     message = f"""Hallo {display_name},
@@ -258,10 +314,26 @@ Het {ORGANIZATION_SHORT_NAME} Team
     
     return event
 
-def handle_authentication(event, display_name, email):
+def handle_authentication(event, display_name, email, locale):
     """Handle authentication code delivery"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('authentication', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for authentication/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
     subject = f"{ORGANIZATION_SHORT_NAME} Inlogcode - Bevestig uw identiteit"
     
     message = f"""Hallo {display_name},
@@ -286,10 +358,26 @@ Het {ORGANIZATION_SHORT_NAME} Team
     
     return event
 
-def handle_passwordless_recovery(event, display_name, email):
+def handle_passwordless_recovery(event, display_name, email, locale):
     """Handle passwordless account recovery scenarios"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('passwordless-recovery', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for passwordless-recovery/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
     subject = f"{ORGANIZATION_SHORT_NAME} Passwordless Account Recovery - Veilig toegang herstellen"
     
     message = f"""Hallo {display_name},
@@ -350,10 +438,26 @@ Het {ORGANIZATION_SHORT_NAME} Security Team
     
     return event
 
-def handle_default_message(event, display_name, email):
+def handle_default_message(event, display_name, email, locale):
     """Handle default message for unrecognized trigger sources"""
     code_parameter = event.get('request', {}).get('codeParameter', '{####}')
     
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('default-message', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for default-message/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
     subject = f"{ORGANIZATION_SHORT_NAME} Account Verificatie"
     
     message = f"""Hallo {display_name},

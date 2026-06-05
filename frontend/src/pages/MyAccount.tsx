@@ -16,6 +16,7 @@ import {
   Button,
   Heading
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import MemberSelfServiceView from '../components/MemberSelfServiceView';
 import NewMemberApplicationForm from '../components/NewMemberApplicationForm';
 import { Member } from '../types';
@@ -48,6 +49,7 @@ function MyAccount({ user }: MyAccountProps) {
   const [error, setError] = useState<string | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [isVerzoekLid, setIsVerzoekLid] = useState(false);
+  const { t } = useTranslation('members');
   
   const { handleError } = useErrorHandler();
 
@@ -84,7 +86,7 @@ function MyAccount({ user }: MyAccountProps) {
   useEffect(() => {
     const loadMemberData = async () => {
       if (!user?.attributes?.email) {
-        setError('Geen gebruikersgegevens beschikbaar');
+        setError(t('self_service.no_data_error'));
         setLoading(false);
         return;
       }
@@ -128,7 +130,7 @@ function MyAccount({ user }: MyAccountProps) {
           console.log('verzoek_lid user without member record - this is expected');
           setMember(null);
         } else {
-          setError('Fout bij het laden van uw gegevens. Probeer het later opnieuw.');
+          setError(t('self_service.load_error'));
         }
       } finally {
         setLoading(false);
@@ -156,7 +158,7 @@ function MyAccount({ user }: MyAccountProps) {
         throw new Error(response.error || 'Failed to update member data');
       }
     } catch (error) {
-      handleError(error, 'Fout bij het bijwerken van uw gegevens');
+      handleError(error, t('self_service.update_api_error'));
       throw error; // Re-throw so the component can handle it
     }
   };
@@ -200,7 +202,7 @@ function MyAccount({ user }: MyAccountProps) {
       <Box display="flex" justifyContent="center" alignItems="center" minH="400px">
         <VStack spacing={4}>
           <Spinner size="xl" color="orange.500" />
-          <Text>Uw gegevens laden...</Text>
+          <Text>{t('self_service.loading')}</Text>
         </VStack>
       </Box>
     );
@@ -212,7 +214,7 @@ function MyAccount({ user }: MyAccountProps) {
         <Alert status="error">
           <AlertIcon />
           <VStack align="start" spacing={1}>
-            <Text fontWeight="semibold">Fout bij laden gegevens</Text>
+            <Text fontWeight="semibold">{t('self_service.load_error_title')}</Text>
             <Text fontSize="sm">{error}</Text>
           </VStack>
         </Alert>
@@ -243,12 +245,12 @@ function MyAccount({ user }: MyAccountProps) {
         {isVerzoekLid && (
           <Box p={4} bg="orange.50" borderRadius="md" border="1px" borderColor="orange.200">
             <VStack align="start" spacing={2}>
-              <Heading size="sm" color="orange.700">Aanvraag Status</Heading>
+              <Heading size="sm" color="orange.700">{t('application.status_title')}</Heading>
               <Text fontSize="sm" color="orange.600">
-                Status: <strong>{member.status || 'Aangemeld'}</strong>
+                {t('application.status_label')} <strong>{member.status || 'Aangemeld'}</strong>
               </Text>
               <Text fontSize="sm" color="orange.600">
-                Ingediend: {member.created_at ? new Date(member.created_at).toLocaleDateString('nl-NL') : 'Onbekend'}
+                {t('application.submitted_label')} {member.created_at ? new Date(member.created_at).toLocaleDateString('nl-NL') : t('labels.unknown', { ns: 'common' })}
               </Text>
               <Button
                 size="sm"
@@ -256,7 +258,7 @@ function MyAccount({ user }: MyAccountProps) {
                 variant="outline"
                 onClick={() => setShowApplicationForm(true)}
               >
-                Gegevens Wijzigen
+                {t('application.edit_data')}
               </Button>
             </VStack>
           </Box>
@@ -277,15 +279,15 @@ function MyAccount({ user }: MyAccountProps) {
         <Alert status="info">
           <AlertIcon />
           <VStack align="start" spacing={3}>
-            <Text fontWeight="semibold">Welkom bij H-DCN!</Text>
+            <Text fontWeight="semibold">{t('application.welcome_title')}</Text>
             <Text fontSize="sm">
-              U bent ingelogd als aanvrager. U kunt nu uw lidmaatschapsaanvraag indienen.
+              {t('application.welcome_message')}
             </Text>
             <Button
               colorScheme="orange"
               onClick={() => setShowApplicationForm(true)}
             >
-              Lidmaatschapsaanvraag Indienen
+              {t('application.submit_button')}
             </Button>
           </VStack>
         </Alert>
@@ -299,11 +301,11 @@ function MyAccount({ user }: MyAccountProps) {
       <Alert status="info">
         <AlertIcon />
         <VStack align="start" spacing={1}>
-          <Text fontWeight="semibold">Geen lidgegevens gevonden</Text>
+          <Text fontWeight="semibold">{t('no_member.title')}</Text>
           <Text fontSize="sm">
-            U bent nog geen lid van de H-DCN. 
+            {t('no_member.message')}
             <Text as="a" href="/new-member-application" color="orange.500" textDecoration="underline" ml={1}>
-              Klik hier om lid te worden
+              {t('no_member.apply_link')}
             </Text>
           </Text>
         </VStack>

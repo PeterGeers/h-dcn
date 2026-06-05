@@ -1,6 +1,21 @@
 # H-DCN Todo List
-Bugs found
-- Download webshop pdf mislukt.Orderbevestiging staat netjes op het scherm maar download lukt niet. For peter@pgeers.nl but also for webmaster@h-dcn.nl  No console messages
+Presmeet v3 A few items 
+ 1. Create a pdf of the booking overview that can be downloaded by the user 
+ 2. In the overview the cost of the parties missing 
+ 2.2 The order details are missing from the overview
+ 3. The start page of the presmeet when Not having an account should have a search button to find club 
+ 4. The start page should have the presmeet logo and fh-dce logo as start that starts rather big and size down to small logos at the top 
+
+Multi-language support for major european languages to start with
+NL, GB, FR, DE, SE, DK, DN, IT, ES
+
+WEBSHOP generic backoffice workflow multi tenant see .kiro\specs\Webshop\Workflow
+
+
+
+
+
+
 
 - Prepare for demo
 -- different functions by user type,

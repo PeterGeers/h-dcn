@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Select, SelectProps } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { getAuthHeadersForGet } from '../../utils/authHeaders';
 
 interface Membership {
@@ -23,6 +24,7 @@ function MembershipSelect({
   placeholder, 
   ...props 
 }: MembershipSelectProps) {
+  const { t } = useTranslation('common');
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,8 +57,8 @@ function MembershipSelect({
 
   if (loading) {
     return (
-      <Select placeholder="Laden..." disabled {...props}>
-        <option>Lidmaatschappen laden...</option>
+      <Select placeholder={t('labels.loading')} disabled {...props}>
+        <option>{t('labels.loading')}</option>
       </Select>
     );
   }

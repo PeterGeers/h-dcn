@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Text, VStack } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import OrderConfirmation from './OrderConfirmation';
 
 interface OrderItem {
@@ -50,6 +51,7 @@ interface OrderSuccessProps {
 
 const OrderSuccess: React.FC<OrderSuccessProps> = ({ onClose }) => {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const { t } = useTranslation('webshop');
 
   useEffect(() => {
     const latestOrder = localStorage.getItem('latest_order');
@@ -63,8 +65,8 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ onClose }) => {
   if (!orderData) {
     return (
       <Box p={6} textAlign="center">
-        <Text>Geen ordergegevens gevonden.</Text>
-        <Button onClick={onClose} mt={4}>Sluiten</Button>
+        <Text>{t('orders.no_data', { defaultValue: 'Geen ordergegevens gevonden.' })}</Text>
+        <Button onClick={onClose} mt={4}>{t('buttons.close', { ns: 'common', defaultValue: 'Sluiten' })}</Button>
       </Box>
     );
   }
@@ -72,16 +74,16 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ onClose }) => {
   return (
     <VStack spacing={4} p={6}>
       <Text fontSize="xl" fontWeight="bold" color="green.500">
-        Bestelling succesvol geplaatst!
+        {t('orders.success', { defaultValue: 'Bestelling succesvol geplaatst!' })}
       </Text>
-      <Text>Ordernummer: {orderData.orderId}</Text>
+      <Text>{t('orders.order_number', { defaultValue: 'Ordernummer' })}: {orderData.orderId}</Text>
       
       <Box border="1px solid #ddd" p={4}>
         <OrderConfirmation orderData={orderData} />
       </Box>
       
       <Button onClick={onClose} colorScheme="blue">
-        Terug naar webshop
+        {t('orders.back_to_webshop', { defaultValue: 'Terug naar webshop' })}
       </Button>
     </VStack>
   );

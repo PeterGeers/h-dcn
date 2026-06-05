@@ -1,0 +1,43 @@
+{
+  "title": "Productos",
+  "filter": {
+    "all": "Todos los productos",
+    "group": "Grupo",
+    "subgroup": "Subgrupo",
+    "search_placeholder": "Buscar productos..."
+  },
+  "table": {
+    "name": "Nombre",
+    "group": "Grupo",
+    "subgroup": "Subgrupo",
+    "price": "Precio",
+    "options": "Opciones",
+    "actions": "Acciones"
+  },
+  "card": {
+    "add_to_cart": "Añadir al carrito",
+    "add_to_cart_short": "Añadir",
+    "select_option": "Elige una opción",
+    "quantity": "Cantidad",
+    "price_label": "Precio:",
+    "no_image": "No hay imagen disponible",
+    "back": "Atrás"
+  },
+  "card_modal": {
+    "select_option_desc": "Elige una talla/opción para este producto"
+  },
+  "categories": {
+    "clothing": "Ropa",
+    "accessories": "Accesorios",
+    "tshirts": "Camisetas",
+    "hoodies": "Sudaderas con capucha",
+    "headwear": "Sombreros"
+  },
+  "management": {
+    "title": "Gestión de productos",
+    "add_product": "Añadir producto",
+    "edit_product": "Editar producto",
+    "delete_product": "Eliminar producto",
+    "delete_confirm": "¿Estás seguro de que quieres eliminar este producto?"
+  }
+}

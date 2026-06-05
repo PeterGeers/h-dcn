@@ -12,6 +12,47 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      const translations: Record<string, string> = {
+        'login.title': 'Inloggen',
+        'login.welcome': 'Welkom bij het H-DCN Portaal',
+        'login.email_placeholder': 'Voer je e-mailadres in',
+        'login.passkey_button': 'Inloggen met Passkey',
+        'login.google_button': 'Inloggen met Google',
+        'login.loading': 'Inloggen...',
+        'login.or_use': 'of gebruik',
+        'login.advanced_options': 'Geavanceerde opties',
+        'login.setup_new_passkey': 'Nieuwe Passkey Instellen',
+        'login.debug_passkey': 'Debug Passkey Problemen',
+        'errors.network': 'Netwerkfout. Controleer je verbinding en probeer opnieuw.',
+        'errors.code_expired': 'Code verlopen. Vraag een nieuwe code aan.',
+        'errors.login_failed': 'Inloggen mislukt. Probeer opnieuw.',
+        'errors.google_sso': 'Google SSO fout: {{error}}',
+        'errors.step_required': 'Extra stap vereist: {{step}}',
+        'verification.enter_code': 'Voer de verificatiecode in die naar je e-mail is gestuurd:',
+        'verification.resend_code': 'Nieuwe code versturen',
+        'verification.sending': 'Versturen...',
+        'info.title': 'Authenticatie Informatie',
+        'info.passkey_title': 'Passkey (aanbevolen)',
+        'info.passkey_desc': 'Veilig inloggen met vingerafdruk, gezichtsherkenning, of apparaat-PIN',
+        'signup.title': 'Account Aanmaken',
+        'signup.back_to_login': 'Terug naar inloggen',
+      };
+      let value = translations[key] || key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          value = value.replace(`{{${k}}}`, v);
+        });
+      }
+      return value;
+    },
+    i18n: { language: 'nl', changeLanguage: jest.fn() },
+  }),
+}));
+
 // --- Mock aws-amplify/auth ---
 const mockSignInWithRedirect = jest.fn();
 const mockFetchAuthSession = jest.fn();

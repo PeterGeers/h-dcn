@@ -16,6 +16,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.i18n.locale_resolver import resolve_request_locale
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -31,12 +32,13 @@ orders_table = dynamodb.Table('Orders')
 members_table = dynamodb.Table('Members')
 carts_table = dynamodb.Table('Carts')
 
-def get_member_id_from_email(user_email):
+def get_member_id_from_email(user_email, locale=None):
     """
     Get member_id from user email by querying the Members table
     
     Args:
         user_email (str): User's email address
+        locale (str): Optional locale for localized error messages
         
     Returns:
         tuple: (member_id, error_response)
@@ -52,9 +54,8 @@ def get_member_id_from_email(user_email):
         
         if not response['Items']:
             return None, create_error_response(404, 'Member record not found for authenticated user', {
-                'user_email': user_email,
-                'message': 'Please contact administration to link your account to a member record'
-            })
+                'user_email': user_email
+            }, error_key='member_not_found', locale=locale)
         
         # Get the first matching member record
         member_record = response['Items'][0]
@@ -63,21 +64,23 @@ def get_member_id_from_email(user_email):
         if not member_id:
             return None, create_error_response(500, 'Member record found but missing member_id', {
                 'user_email': user_email
-            })
+            }, error_key='internal_error', locale=locale)
         
         return member_id, None
         
     except Exception as e:
         print(f"Error looking up member_id for email {user_email}: {str(e)}")
-        return None, create_error_response(500, 'Error looking up member information')
+        return None, create_error_response(500, 'Error looking up member information',
+                                           error_key='internal_error', locale=locale)
 
-def validate_cart_ownership(cart_id, user_email):
+def validate_cart_ownership(cart_id, user_email, locale=None):
     """
     Validate that the cart belongs to the authenticated user
     
     Args:
         cart_id (str): ID of the cart to validate
         user_email (str): Email of the authenticated user
+        locale (str): Optional locale for localized error messages
         
     Returns:
         tuple: (is_valid, cart_data, error_response)
@@ -86,7 +89,8 @@ def validate_cart_ownership(cart_id, user_email):
     """
     try:
         if not cart_id:
-            return False, None, create_error_response(400, 'cart_id is required for order creation')
+            return False, None, create_error_response(400, 'cart_id is required for order creation',
+                                                      error_key='validation_error', locale=locale)
         
         # Get cart from database
         response = carts_table.get_item(Key={'cart_id': cart_id})
@@ -94,7 +98,7 @@ def validate_cart_ownership(cart_id, user_email):
         if 'Item' not in response:
             return False, None, create_error_response(404, 'Cart not found', {
                 'cart_id': cart_id
-            })
+            }, error_key='not_found', locale=locale)
         
         cart = response['Item']
         cart_user_email = cart.get('user_email')
@@ -105,20 +109,21 @@ def validate_cart_ownership(cart_id, user_email):
             print(f"SECURITY WARNING: Cart {cart_id} has no user_email - potential data integrity issue")
             return False, None, create_error_response(400, 'Cart ownership cannot be verified', {
                 'cart_id': cart_id
-            })
+            }, error_key='validation_error', locale=locale)
         
         if cart_user_email.lower() != user_email.lower():
             # Log unauthorized cart access attempt
             print(f"SECURITY ALERT: User {user_email} attempted to create order from cart {cart_id} owned by {cart_user_email}")
             return False, None, create_error_response(403, 'Access denied: You can only create orders from your own cart', {
                 'cart_id': cart_id
-            })
+            }, error_key='forbidden', locale=locale)
         
         return True, cart, None
         
     except Exception as e:
         print(f"Error validating cart ownership for cart {cart_id}: {str(e)}")
-        return False, None, create_error_response(500, 'Error validating cart ownership')
+        return False, None, create_error_response(500, 'Error validating cart ownership',
+                                                  error_key='internal_error', locale=locale)
 
 def log_order_creation_audit(order_id, user_email, user_roles, member_id, cart_id, order_data):
     """
@@ -168,6 +173,9 @@ def lambda_handler(event, context):
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
         
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
+        
         # Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
@@ -189,13 +197,13 @@ def lambda_handler(event, context):
                 'required_admin_permissions': required_permissions,
                 'required_user_role': 'hdcnLeden',
                 'user_roles': user_roles
-            })
+            }, error_key='forbidden', locale=locale)
         
         # Log successful access
         log_successful_access(user_email, user_roles, 'create_order')
         
         # Get member_id from user email
-        member_id, member_error = get_member_id_from_email(user_email)
+        member_id, member_error = get_member_id_from_email(user_email, locale=locale)
         if member_error:
             return member_error
         
@@ -205,7 +213,7 @@ def lambda_handler(event, context):
         cart_id = body.get('cart_id')
         
         # Validate cart ownership before order creation
-        cart_valid, cart_data, cart_error = validate_cart_ownership(cart_id, user_email)
+        cart_valid, cart_data, cart_error = validate_cart_ownership(cart_id, user_email, locale=locale)
         if not cart_valid:
             return cart_error
         
@@ -235,7 +243,9 @@ def lambda_handler(event, context):
             'message': 'Order created successfully'
         })
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(400, 'Invalid JSON in request body',
+                                     error_key='invalid_input', locale=locale)
     except Exception as e:
         print(f"Error creating order: {str(e)}")
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)

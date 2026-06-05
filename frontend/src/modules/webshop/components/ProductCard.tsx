@@ -19,6 +19,7 @@ import {
   HStack
 } from '@chakra-ui/react';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon, ArrowBackIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 
 interface Product {
   id: string;
@@ -49,6 +50,7 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onAddToCart }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<string>('');
+  const { t } = useTranslation('products');
 
   if (!product) return null;
 
@@ -170,13 +172,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                     justifyContent="center"
                     borderRadius="md"
                   >
-                    <Text color="gray.500">Geen afbeelding beschikbaar</Text>
+                    <Text color="gray.500">{t('card.no_image')}</Text>
                   </Box>
                 )}
                 
                 <VStack align="start" spacing={2}>
                   <Text fontSize={{ base: 'md', md: 'lg' }}>
-                    Prijs: <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>€{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}</Text>
+                    {t('card.price_label')} <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>€{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}</Text>
                   </Text>
                   <Text fontSize={{ base: 'sm', md: 'md' }}>
                     <strong>Product:</strong> {product.naam}
@@ -185,9 +187,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
 
                 {options.length > 0 && (
                   <Box>
-                    <Text fontWeight="medium" mb={2}>Opties:</Text>
+                    <Text fontWeight="medium" mb={2}>{t('card.select_option')}:</Text>
                     <Select
-                      placeholder="Selecteer een optie"
+                      placeholder={t('card.select_option')}
                       value={selectedOption}
                       onChange={(e) => setSelectedOption(e.target.value)}
                     >
@@ -204,7 +206,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                     fontSize={{ base: 'xs', md: 'sm' }} 
                     textAlign="center"
                   >
-                    Selecteer eerst een optie
+                    {t('card.select_option')}
                   </Text>
                 )}
                 
@@ -217,7 +219,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                     size={{ base: 'md', md: 'lg' }}
                     display={{ base: 'flex', md: 'none' }}
                   >
-                    Terug
+                    {t('buttons.back', { ns: 'common', defaultValue: 'Terug' })}
                   </Button>
                   <Button
                     bg="orange.500"
@@ -230,8 +232,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                     size={{ base: 'md', md: 'lg' }}
                     fontSize={{ base: 'sm', md: 'md' }}
                   >
-                    <Text display={{ base: 'none', sm: 'block' }}>Toevoegen aan winkelwagen</Text>
-                    <Text display={{ base: 'block', sm: 'none' }}>Toevoegen</Text>
+                    <Text display={{ base: 'none', sm: 'block' }}>{t('card.add_to_cart')}</Text>
+                    <Text display={{ base: 'block', sm: 'none' }}>{t('card.add_to_cart_short', { defaultValue: 'Toevoegen' })}</Text>
                   </Button>
                 </HStack>
               </VStack>

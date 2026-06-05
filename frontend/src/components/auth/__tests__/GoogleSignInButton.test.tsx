@@ -2,6 +2,19 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'login.google_button': 'Inloggen met Google',
+      };
+      return translations[key] || key;
+    },
+    i18n: { language: 'nl', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock aws-amplify/auth
 const mockSignInWithRedirect = jest.fn();
 jest.mock('aws-amplify/auth', () => ({

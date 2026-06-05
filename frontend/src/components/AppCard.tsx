@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, VStack, Text, Button } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 
 interface App {
   id?: string;
@@ -15,6 +16,7 @@ interface AppCardProps {
 }
 
 function AppCard({ app, onClick }: AppCardProps) {
+  const { t } = useTranslation('common');
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -63,7 +65,7 @@ function AppCard({ app, onClick }: AppCardProps) {
             handleClick();
           }}
         >
-          Openen
+          {t('buttons.open', { defaultValue: 'Openen' })}
         </Button>
       </VStack>
     </Box>

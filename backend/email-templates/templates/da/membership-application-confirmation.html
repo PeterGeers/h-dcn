@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Medlemsansøgning modtaget</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Tak for din ansøgning, {{DISPLAY_NAME}}!</h2>
+        
+        <p>Vi har modtaget din medlemsansøgning til {{ORGANIZATION_SHORT_NAME}}.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Dine ansøgningsoplysninger:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Navn:</strong> {{FULL_NAME}}</li>
+                <li><strong>E-mailadresse:</strong> {{EMAIL}}</li>
+                <li><strong>Medlemskabstype:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Region:</strong> {{REGION}}</li>
+                <li><strong>Ansøgningsdato:</strong> {{APPLICATION_DATE}}</li>
+                {{#MOTOR_INFO}}
+                <li><strong>Motorcykel:</strong> {{MOTOR_INFO}}</li>
+                {{/MOTOR_INFO}}
+            </ul>
+        </div>
+        
+        <h3>Hvad sker der nu?</h3>
+        <ol>
+            <li><strong>Gennemgang:</strong> Din ansøgning vil blive gennemgået af den regionale administration</li>
+            <li><strong>Bekræftelse:</strong> Du modtager en e-mail med resultatet inden for 5-10 hverdage</li>
+            <li><strong>Godkendelse:</strong> Ved godkendelse modtager du dit medlemsnummer og adgang til alle faciliteter</li>
+        </ol>
+        
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #155724;">✓ Din ansøgning er komplet</h4>
+            <p style="margin-bottom: 0;">Alle nødvendige oplysninger er modtaget. Der kræves ingen yderligere handling fra din side.</p>
+        </div>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>📧 Vigtigt:</strong> Tjek din e-mail regelmæssigt (inklusiv spam/uønsket) for opdateringer om din ansøgning.
+        </div>
+        
+        <h3>Kontakt & Support</h3>
+        <p>Har du spørgsmål om din ansøgning, kontakt venligst:</p>
+        <ul>
+            <li><strong>Medlemsadministration:</strong> <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></li>
+            <li><strong>Hjemmeside:</strong> <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a></li>
+            <li><strong>Generelle spørgsmål:</strong> <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a></li>
+        </ul>
+        
+        <p>Med venlig hilsen,<br>
+        {{ORGANIZATION_SHORT_NAME}} Medlemsadministrationsteamet</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Hjemmeside: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a><br>
+            <br>
+            <em>Denne e-mail er automatisk genereret. Dine data behandles fortroligt i overensstemmelse med vores privatlivspolitik.</em>
+        </footer>
+    </div>
+</body>
+</html>

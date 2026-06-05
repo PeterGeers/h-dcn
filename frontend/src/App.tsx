@@ -4,6 +4,7 @@ import { Box, Flex, Heading, Button, Text, Spacer, HStack, Image } from '@chakra
 import { ArrowBackIcon } from '@chakra-ui/icons';
 import { Suspense, lazy, useEffect } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
 import { UserAccountPopup } from './components/common/UserAccountPopup';
@@ -50,6 +51,7 @@ function NavigationHeader({ signOut, user }: AppProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const { t } = useTranslation('common');
 
   return (
     <Flex 
@@ -63,7 +65,7 @@ function NavigationHeader({ signOut, user }: AppProps) {
       direction={{ base: 'column', md: 'row' }}
       gap={{ base: 3, md: 0 }}
     >
-      <Heading size={{ base: 'md', md: 'lg' }}>H-DCN Portal</Heading>
+      <Heading size={{ base: 'md', md: 'lg' }}>{t('nav.portal_title')}</Heading>
       <Spacer />
       <Flex 
         direction={{ base: 'column', sm: 'row' }}
@@ -80,7 +82,7 @@ function NavigationHeader({ signOut, user }: AppProps) {
             size={{ base: 'sm', md: 'sm' }}
             w={{ base: 'full', sm: 'auto' }}
           >
-            Dashboard
+            {t('nav.dashboard')}
           </Button>
         )}
         

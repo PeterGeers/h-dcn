@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import { ChakraProvider } from '@chakra-ui/react';
+import { ChakraProvider, Center, Spinner } from '@chakra-ui/react';
+import { I18nextProvider } from 'react-i18next';
 import { Amplify } from 'aws-amplify';
 import App from './App';
 import theme from './theme';
 import awsconfig from './aws-exports';
+import i18n from './i18n';
 import './index.css';
 
 /**
@@ -31,7 +33,17 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <ChakraProvider theme={theme}>
-    <App />
-  </ChakraProvider>
+  <I18nextProvider i18n={i18n}>
+    <Suspense
+      fallback={
+        <Center h="100vh" bg="black">
+          <Spinner size="xl" color="orange.400" />
+        </Center>
+      }
+    >
+      <ChakraProvider theme={theme}>
+        <App />
+      </ChakraProvider>
+    </Suspense>
+  </I18nextProvider>
 );

@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "Portale H-DCN",
+    "dashboard": "Pannello di controllo",
+    "back_to_dashboard": "Torna al pannello di controllo",
+    "logout": "Esci"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Paesi Bassi",
+    "privacy": "Privacy",
+    "contact": "Contatto"
+  },
+  "buttons": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "close": "Chiudi",
+    "back": "Indietro",
+    "next": "Avanti",
+    "submit": "Invia",
+    "confirm": "Conferma",
+    "retry": "Riprova",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "export": "Esporta",
+    "add": "Aggiungi",
+    "refresh": "Aggiorna",
+    "open": "Apri"
+  },
+  "labels": {
+    "loading": "Caricamento...",
+    "no_data": "Nessun dato trovato",
+    "error": "Errore",
+    "success": "Successo",
+    "warning": "Avviso",
+    "info": "Informazione",
+    "required": "Obbligatorio",
+    "optional": "Facoltativo",
+    "status": "Stato",
+    "date": "Data",
+    "name": "Nome",
+    "email": "Indirizzo e-mail",
+    "phone": "Telefono",
+    "unknown": "Sconosciuto",
+    "user": "Utente",
+    "select": "Seleziona..."
+  },
+  "errors": {
+    "generic": "Si è verificato un errore. Riprova più tardi.",
+    "network": "Errore di rete. Verifica la connessione e riprova.",
+    "not_found": "Non trovato",
+    "no_access": "Nessun accesso",
+    "session_expired": "Sessione scaduta. Accedi nuovamente."
+  },
+  "notifications": {
+    "save_success": "Dati salvati con successo",
+    "save_error": "Errore durante il salvataggio. Riprova.",
+    "delete_success": "Eliminato con successo",
+    "delete_error": "Errore durante l'eliminazione"
+  },
+  "account": {
+    "info_title": "Informazioni account",
+    "access_level": "Livello di accesso",
+    "roles_tab": "Ruoli",
+    "permissions_tab": "Permessi",
+    "no_roles": "Nessun ruolo assegnato",
+    "no_permissions": "Nessun permesso assegnato",
+    "setup_passkey": "Configura Passkey",
+    "passkey_success": "Passkey configurata con successo! Ora puoi accedere con la tua passkey.",
+    "passkey_cancelled": "Configurazione passkey annullata.",
+    "passkey_failed": "Configurazione passkey fallita: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Preferenza linguistica salvata",
+    "preference_save_failed": "La preferenza linguistica non è stata salvata"
+  }
+}

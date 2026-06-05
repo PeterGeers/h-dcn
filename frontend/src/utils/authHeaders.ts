@@ -8,6 +8,7 @@
  */
 
 import { fetchAuthSession } from 'aws-amplify/auth';
+import i18n from '../i18n';
 
 /**
  * Filters cognito groups to only include valid role structure roles.
@@ -63,6 +64,7 @@ export const getAuthHeaders = async (): Promise<Record<string, string>> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
+    'Accept-Language': i18n.language,
   };
 
   // Add user email from ID token for backend identity resolution
@@ -90,6 +92,7 @@ export const getAuthHeadersForGet = async (): Promise<Record<string, string>> =>
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
+    'Accept-Language': i18n.language,
   };
 
   // Add user email from ID token for backend identity resolution

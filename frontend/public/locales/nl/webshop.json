@@ -1,0 +1,51 @@
+{
+  "title": "H-DCN Webshop",
+  "cart": {
+    "title": "Winkelwagen",
+    "item_count": "Winkelwagen ({{count}})",
+    "empty": "Winkelwagen is leeg",
+    "empty_hint": "Voeg eerst producten toe aan uw winkelwagen.",
+    "save": "Winkelwagen bewaren",
+    "clear": "Winkelwagen legen",
+    "restored": "Winkelwagen hersteld",
+    "restored_desc": "{{count}} items teruggevonden",
+    "saved": "Winkelwagen bewaard",
+    "saved_desc": "{{count}} items bewaard voor later",
+    "cleared": "Winkelwagen geleegd",
+    "save_hint": "Voeg eerst producten toe om te bewaren."
+  },
+  "product": {
+    "added": "Product toegevoegd",
+    "removed": "Product verwijderd",
+    "add_error": "Fout bij toevoegen aan winkelwagen",
+    "quantity_error": "Fout bij wijzigen aantal",
+    "remove_error": "Fout bij verwijderen uit winkelwagen"
+  },
+  "checkout": {
+    "title": "Afrekenen",
+    "payment_success": "Betaling succesvol!",
+    "payment_success_desc": "Bestelling {{order_id}} van €{{amount}} verwerkt",
+    "payment_error": "Fout bij verwerken bestelling",
+    "payment_error_desc": "Er is een probleem opgetreden."
+  },
+  "orders": {
+    "title": "Orders",
+    "no_access_title": "Geen toegang!",
+    "no_access_desc": "U heeft geen toegang tot de bestellingenbeheer. Alleen beheerders kunnen bestellingen bekijken."
+  },
+  "access": {
+    "no_access_title": "Geen toegang tot webshop!",
+    "no_access_desc": "U heeft geen toegang tot de H-DCN webshop. Alleen leden kunnen de webshop gebruiken. Neem contact op met de beheerder als u denkt dat dit een fout is."
+  },
+  "errors": {
+    "service_unavailable_title": "Winkelwagen service niet beschikbaar",
+    "service_unavailable_desc": "De winkelwagen functionaliteit is momenteel niet beschikbaar.",
+    "cart_save_error": "Fout bij bewaren winkelwagen",
+    "cart_save_error_desc": "Probeer het later opnieuw.",
+    "cart_clear_error": "Fout bij legen winkelwagen"
+  },
+  "demo": {
+    "title": "Demo modus",
+    "description": "Gebruikt mock data omdat API niet beschikbaar is"
+  }
+}

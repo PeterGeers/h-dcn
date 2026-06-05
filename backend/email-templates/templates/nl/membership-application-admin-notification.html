@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} Nieuwe Lidmaatschapsaanvraag</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Nieuwe Lidmaatschapsaanvraag Ontvangen</h2>
+        
+        <p>Er is een nieuwe lidmaatschapsaanvraag ingediend via het {{ORGANIZATION_SHORT_NAME}} portal.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Aanvrager Gegevens:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Naam:</strong> {{FULL_NAME}}</li>
+                <li><strong>E-mailadres:</strong> {{EMAIL}}</li>
+                <li><strong>Telefoon:</strong> {{PHONE}}</li>
+                <li><strong>Geboortedatum:</strong> {{BIRTH_DATE}}</li>
+                <li><strong>Adres:</strong> {{ADDRESS}}</li>
+                <li><strong>Woonplaats:</strong> {{CITY}}, {{POSTAL_CODE}}</li>
+                <li><strong>Land:</strong> {{COUNTRY}}</li>
+            </ul>
+        </div>
+        
+        <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Lidmaatschap Details:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Lidmaatschapstype:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Gewenste Regio:</strong> {{REGION}}</li>
+                <li><strong>Hoe gevonden:</strong> {{HOW_FOUND}}</li>
+                <li><strong>Clubblad:</strong> {{MAGAZINE_PREFERENCE}}</li>
+                <li><strong>Nieuwsbrief:</strong> {{NEWSLETTER_PREFERENCE}}</li>
+                <li><strong>Privacy toestemming:</strong> {{PRIVACY_CONSENT}}</li>
+            </ul>
+        </div>
+        
+        {{#MOTOR_INFO}}
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Motor Informatie:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Merk:</strong> {{MOTOR_BRAND}}</li>
+                <li><strong>Type:</strong> {{MOTOR_TYPE}}</li>
+                <li><strong>Bouwjaar:</strong> {{MOTOR_YEAR}}</li>
+                <li><strong>Kenteken:</strong> {{LICENSE_PLATE}}</li>
+            </ul>
+        </div>
+        {{/MOTOR_INFO}}
+        
+        <div style="background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Betaalgegevens:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Betaalwijze:</strong> {{PAYMENT_METHOD}}</li>
+                {{#IBAN}}
+                <li><strong>IBAN:</strong> {{IBAN}}</li>
+                {{/IBAN}}
+            </ul>
+        </div>
+        
+        <div style="background-color: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">⚡ Actie Vereist:</h3>
+            <ol>
+                <li>Controleer de aanvraag in het admin portal</li>
+                <li>Verifieer de gegevens en motorinformatie</li>
+                <li>Wijs de aanvraag toe aan de juiste regio</li>
+                <li>Goedkeuren of afwijzen van het lidmaatschap</li>
+                <li>Bij goedkeuring: lidnummer toewijzen</li>
+            </ol>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ORGANIZATION_WEBSITE}}/members" 
+               style="background-color: #d2691e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Bekijk in Admin Portal
+            </a>
+        </div>
+        
+        <div style="background-color: #e2e3e5; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>📊 Systeem Informatie:</strong><br>
+            <small>
+                Aanvraagdatum: {{APPLICATION_DATE}}<br>
+                Status: Aangemeld<br>
+                Portal: {{ORGANIZATION_WEBSITE}}
+            </small>
+        </div>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}} - Ledenadministratie</strong><br>
+            Deze e-mail is automatisch gegenereerd door het lidmaatschapsportaal.<br>
+            Voor vragen: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

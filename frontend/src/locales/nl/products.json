@@ -1,0 +1,43 @@
+{
+  "title": "Producten",
+  "filter": {
+    "all": "Alle producten",
+    "group": "Groep",
+    "subgroup": "Subgroep",
+    "search_placeholder": "Zoek producten..."
+  },
+  "table": {
+    "name": "Naam",
+    "group": "Groep",
+    "subgroup": "Subgroep",
+    "price": "Prijs",
+    "options": "Opties",
+    "actions": "Acties"
+  },
+  "card": {
+    "add_to_cart": "Toevoegen aan winkelwagen",
+    "add_to_cart_short": "Toevoegen",
+    "select_option": "Kies een optie",
+    "quantity": "Aantal",
+    "price_label": "Prijs:",
+    "no_image": "Geen afbeelding beschikbaar",
+    "back": "Terug"
+  },
+  "card_modal": {
+    "select_option_desc": "Kies een maat/optie voor dit product"
+  },
+  "categories": {
+    "clothing": "Kleding",
+    "accessories": "Accessoires",
+    "tshirts": "T-shirts",
+    "hoodies": "Hoodies",
+    "headwear": "Hoofddeksels"
+  },
+  "management": {
+    "title": "Product Management",
+    "add_product": "Product Toevoegen",
+    "edit_product": "Product Bewerken",
+    "delete_product": "Product Verwijderen",
+    "delete_confirm": "Weet je zeker dat je dit product wilt verwijderen?"
+  }
+}

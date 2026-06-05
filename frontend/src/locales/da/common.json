@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "portal_title": "H-DCN Portal",
+    "dashboard": "Oversigt",
+    "back_to_dashboard": "Tilbage til oversigt",
+    "logout": "Log ud"
+  },
+  "footer": {
+    "copyright": "© H-DCN - Harley-Davidson Club Holland",
+    "privacy": "Privatliv",
+    "contact": "Kontakt"
+  },
+  "buttons": {
+    "save": "Gem",
+    "cancel": "Annuller",
+    "delete": "Slet",
+    "edit": "Rediger",
+    "close": "Luk",
+    "back": "Tilbage",
+    "next": "Næste",
+    "submit": "Indsend",
+    "confirm": "Bekræft",
+    "retry": "Prøv igen",
+    "search": "Søg",
+    "filter": "Filtrer",
+    "export": "Eksporter",
+    "add": "Tilføj",
+    "refresh": "Opdater",
+    "open": "Åbn"
+  },
+  "labels": {
+    "loading": "Indlæser...",
+    "no_data": "Ingen data fundet",
+    "error": "Fejl",
+    "success": "Succes",
+    "warning": "Advarsel",
+    "info": "Information",
+    "required": "Påkrævet",
+    "optional": "Valgfrit",
+    "status": "Status",
+    "date": "Dato",
+    "name": "Navn",
+    "email": "E-mailadresse",
+    "phone": "Telefon",
+    "unknown": "Ukendt",
+    "user": "Bruger",
+    "select": "Vælg..."
+  },
+  "errors": {
+    "generic": "Der opstod en fejl. Prøv igen senere.",
+    "network": "Netværksfejl. Kontroller din forbindelse og prøv igen.",
+    "not_found": "Ikke fundet",
+    "no_access": "Ingen adgang",
+    "session_expired": "Sessionen er udløbet. Log ind igen."
+  },
+  "notifications": {
+    "save_success": "Data gemt",
+    "save_error": "Fejl ved gemning. Prøv igen.",
+    "delete_success": "Slettet",
+    "delete_error": "Fejl ved sletning"
+  },
+  "account": {
+    "info_title": "Kontoinformation",
+    "access_level": "Adgangsniveau",
+    "roles_tab": "Roller",
+    "permissions_tab": "Tilladelser",
+    "no_roles": "Ingen roller tildelt",
+    "no_permissions": "Ingen tilladelser tildelt",
+    "setup_passkey": "Opsæt Passkey",
+    "passkey_success": "Passkey opsat! Du kan nu logge ind med din passkey.",
+    "passkey_cancelled": "Passkey-opsætning annulleret.",
+    "passkey_failed": "Passkey-opsætning mislykkedes: {{error}}"
+  },
+  "language": {
+    "preference_saved": "Sprogindstilling gemt",
+    "preference_save_failed": "Sprogindstilling kunne ikke gemmes"
+  }
+}

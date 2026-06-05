@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   VStack,
@@ -27,6 +28,7 @@ import { CheckIcon, EmailIcon } from '@chakra-ui/icons';
 
 const ApplicationSubmitted: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('members');
 
   const handleGoToDashboard = () => {
     navigate('/dashboard');
@@ -43,10 +45,10 @@ const ApplicationSubmitted: React.FC = () => {
         <Box textAlign="center" pt={8}>
           <Icon as={CheckIcon} boxSize={16} color="green.400" mb={4} />
           <Heading size="xl" color="orange.300" mb={2}>
-            Aanvraag Succesvol Verzonden!
+            {t('submitted.title')}
           </Heading>
           <Text color="gray.300" fontSize="lg">
-            Bedankt voor uw interesse in het H-DCN lidmaatschap
+            {t('submitted.subtitle')}
           </Text>
         </Box>
 
@@ -56,46 +58,46 @@ const ApplicationSubmitted: React.FC = () => {
             <Alert status="success" bg="green.900" color="white" borderRadius="md" mb={6}>
               <AlertIcon />
               <Box>
-                <AlertTitle>Uw aanvraag is ontvangen</AlertTitle>
+                <AlertTitle>{t('submitted.received_title')}</AlertTitle>
                 <AlertDescription>
-                  Uw lidmaatschapsaanvraag wordt nu beoordeeld door onze administratie.
+                  {t('submitted.received_desc')}
                 </AlertDescription>
               </Box>
             </Alert>
 
             <VStack spacing={4} align="stretch">
               <Heading size="md" color="orange.300">
-                Wat gebeurt er nu?
+                {t('submitted.what_next')}
               </Heading>
               
               <List spacing={3} color="gray.300">
                 <ListItem>
                   <ListIcon as={CheckIcon} color="green.400" />
-                  <strong>Beoordeling:</strong> Uw aanvraag wordt beoordeeld door de regionale administratie
+                  <strong>{t('submitted.step_review')}:</strong> {t('submitted.step_review_desc')}
                 </ListItem>
                 <ListItem>
                   <ListIcon as={EmailIcon} color="blue.400" />
-                  <strong>Bevestiging:</strong> U ontvangt binnen 5-10 werkdagen een e-mail met de uitslag
+                  <strong>{t('submitted.step_confirmation')}:</strong> {t('submitted.step_confirmation_desc')}
                 </ListItem>
                 <ListItem>
                   <ListIcon as={CheckIcon} color="green.400" />
-                  <strong>Goedkeuring:</strong> Bij goedkeuring ontvangt u uw lidnummer en toegang tot alle faciliteiten
+                  <strong>{t('submitted.step_approval')}:</strong> {t('submitted.step_approval_desc')}
                 </ListItem>
               </List>
 
               <Box bg="orange.900" p={4} borderRadius="md" mt={6}>
                 <Heading size="sm" color="orange.300" mb={2}>
-                  Belangrijke informatie:
+                  {t('submitted.important_info')}:
                 </Heading>
                 <List spacing={2} color="gray.300" fontSize="sm">
                   <ListItem>
-                    • Controleer regelmatig uw e-mail (ook spam/ongewenst)
+                    • {t('submitted.tip_check_email')}
                   </ListItem>
                   <ListItem>
-                    • Bij vragen kunt u contact opnemen met uw regionale afdeling
+                    • {t('submitted.tip_contact')}
                   </ListItem>
                   <ListItem>
-                    • Uw gegevens worden vertrouwelijk behandeld conform onze privacyverklaring
+                    • {t('submitted.tip_privacy')}
                   </ListItem>
                 </List>
               </Box>
@@ -107,17 +109,17 @@ const ApplicationSubmitted: React.FC = () => {
         <Card bg="gray.800" borderColor="orange.400" border="1px" borderRadius="lg">
           <CardBody>
             <Heading size="md" color="orange.300" mb={4}>
-              Contact & Ondersteuning
+              {t('submitted.contact_title')}
             </Heading>
             <VStack spacing={3} align="stretch" color="gray.300">
               <Text>
-                <strong>Website:</strong> www.h-dcn.nl
+                <strong>{t('submitted.website')}:</strong> www.h-dcn.nl
               </Text>
               <Text>
-                <strong>E-mail:</strong> info@h-dcn.nl
+                <strong>{t('submitted.email')}:</strong> info@h-dcn.nl
               </Text>
               <Text>
-                <strong>Telefoon:</strong> Zie contactgegevens op de website per regio
+                <strong>{t('submitted.phone')}:</strong> {t('submitted.phone_desc')}
               </Text>
             </VStack>
           </CardBody>
@@ -128,7 +130,7 @@ const ApplicationSubmitted: React.FC = () => {
           <CardBody>
             <VStack spacing={4}>
               <Text color="gray.300" textAlign="center">
-                U kunt nu de website verkennen of uitloggen
+                {t('submitted.action_prompt')}
               </Text>
               <VStack spacing={3} w="full">
                 <Button
@@ -138,7 +140,7 @@ const ApplicationSubmitted: React.FC = () => {
                   w="full"
                   maxW="300px"
                 >
-                  Ga naar Dashboard
+                  {t('submitted.go_dashboard')}
                 </Button>
                 <Button
                   variant="outline"
@@ -148,7 +150,7 @@ const ApplicationSubmitted: React.FC = () => {
                   w="full"
                   maxW="300px"
                 >
-                  Terug naar Home
+                  {t('submitted.go_home')}
                 </Button>
               </VStack>
             </VStack>

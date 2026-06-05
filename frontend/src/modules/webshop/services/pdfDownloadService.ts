@@ -6,6 +6,7 @@
  */
 
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
+import i18next from 'i18next';
 
 export type PdfDownloadErrorCode = 'unauthorized' | 'forbidden' | 'not_found' | 'server_error' | 'timeout' | 'network_error';
 
@@ -80,7 +81,7 @@ export async function downloadOrderPdf(orderId: string): Promise<PdfDownloadResu
         success: false,
         error: {
           code: 'timeout',
-          message: 'Het downloaden van de PDF duurde te lang. Probeer het opnieuw.',
+          message: i18next.t('errors.pdf_timeout', { ns: 'webshop', defaultValue: 'Het downloaden van de PDF duurde te lang. Probeer het opnieuw.' }),
         },
       };
     }
@@ -91,7 +92,7 @@ export async function downloadOrderPdf(orderId: string): Promise<PdfDownloadResu
         success: false,
         error: {
           code: 'unauthorized',
-          message: 'Je bent niet ingelogd. Log opnieuw in om de PDF te downloaden.',
+          message: i18next.t('errors.pdf_unauthorized', { ns: 'webshop', defaultValue: 'Je bent niet ingelogd. Log opnieuw in om de PDF te downloaden.' }),
           statusCode: 401,
         },
       };
@@ -101,7 +102,7 @@ export async function downloadOrderPdf(orderId: string): Promise<PdfDownloadResu
       success: false,
       error: {
         code: 'network_error',
-        message: 'Er is een netwerkfout opgetreden. Controleer je internetverbinding en probeer het opnieuw.',
+        message: i18next.t('errors.pdf_network', { ns: 'webshop', defaultValue: 'Er is een netwerkfout opgetreden. Controleer je internetverbinding en probeer het opnieuw.' }),
       },
     };
   }
@@ -114,7 +115,7 @@ function handleErrorResponse(statusCode: number): PdfDownloadResult {
         success: false,
         error: {
           code: 'unauthorized',
-          message: 'Je bent niet geautoriseerd om deze PDF te downloaden.',
+          message: i18next.t('errors.pdf_unauthorized', { ns: 'webshop', defaultValue: 'Je bent niet geautoriseerd om deze PDF te downloaden.' }),
           statusCode: 401,
         },
       };
@@ -123,7 +124,7 @@ function handleErrorResponse(statusCode: number): PdfDownloadResult {
         success: false,
         error: {
           code: 'forbidden',
-          message: 'Je hebt geen toegang tot deze orderbevestiging.',
+          message: i18next.t('errors.pdf_forbidden', { ns: 'webshop', defaultValue: 'Je hebt geen toegang tot deze orderbevestiging.' }),
           statusCode: 403,
         },
       };
@@ -132,7 +133,7 @@ function handleErrorResponse(statusCode: number): PdfDownloadResult {
         success: false,
         error: {
           code: 'not_found',
-          message: 'De bestelling is niet gevonden.',
+          message: i18next.t('errors.pdf_not_found', { ns: 'webshop', defaultValue: 'De bestelling is niet gevonden.' }),
           statusCode: 404,
         },
       };
@@ -141,7 +142,7 @@ function handleErrorResponse(statusCode: number): PdfDownloadResult {
         success: false,
         error: {
           code: 'server_error',
-          message: 'De PDF kon niet worden gegenereerd. Probeer het later opnieuw.',
+          message: i18next.t('errors.pdf_server_error', { ns: 'webshop', defaultValue: 'De PDF kon niet worden gegenereerd. Probeer het later opnieuw.' }),
           statusCode,
         },
       };

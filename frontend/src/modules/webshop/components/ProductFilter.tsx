@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Box, Text, VStack, Button, Collapse, useDisclosure, HStack } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 
 interface Product {
   groep?: string;
@@ -29,6 +30,7 @@ interface ProductFilterProps {
 }
 
 const ProductFilter: React.FC<ProductFilterProps> = ({ products, selectedFilter, onFilterChange }) => {
+  const { t } = useTranslation('products');
   const filterStructure = useMemo(() => {
     const groups: { [key: string]: Set<string> } = {};
     
@@ -117,10 +119,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ products, selectedFilter,
   const { isOpen, onToggle } = useDisclosure();
   
   const getSelectedText = (): string => {
-    if (!selectedFilter) return 'Alle producten';
+    if (!selectedFilter) return t('filter.all');
     if (selectedFilter.type === 'group') return selectedFilter.value;
     if (selectedFilter.type === 'subgroup') return `${selectedFilter.group} - ${selectedFilter.value}`;
-    return 'Filter';
+    return t('filter.group', { defaultValue: 'Filter' });
   };
 
   return (
@@ -138,7 +140,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ products, selectedFilter,
         p={4}
       >
         <HStack>
-          <Text fontWeight="bold">Filter:</Text>
+          <Text fontWeight="bold">{t('filter.group', { defaultValue: 'Filter' })}:</Text>
           <Text>{getSelectedText()}</Text>
         </HStack>
       </Button>
@@ -156,7 +158,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ products, selectedFilter,
             w="full"
             justifyContent="flex-start"
           >
-            Alle producten
+            {t('filter.all')}
           </Button>
           <VStack align="stretch" spacing={1}>
             {filterStructure.map(groupData => (
