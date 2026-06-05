@@ -197,6 +197,73 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
             ))
           )}
         </VStack>
+
+        {/* New group/subgroup inputs */}
+        {!readOnly && (
+          <Box mt={4} pt={3} borderTop="1px solid" borderColor="gray.300">
+            <Text fontSize="sm" fontWeight="bold" color="gray.600" mb={2}>Nieuwe categorie toevoegen:</Text>
+            <HStack spacing={2} mb={2}>
+              <Input
+                size="sm"
+                placeholder="Nieuwe groep"
+                bg="white"
+                id="new-group-input"
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'Enter') {
+                    const val = (e.target as HTMLInputElement).value.trim();
+                    if (val) {
+                      setSelectedCategory({ groep: val, subgroep: '' });
+                      setFieldValue('groep', val);
+                      setFieldValue('subgroep', '');
+                      onCategoryModalClose();
+                    }
+                  }
+                }}
+              />
+              <Button size="sm" colorScheme="orange" onClick={() => {
+                const input = document.getElementById('new-group-input') as HTMLInputElement;
+                const val = input?.value?.trim();
+                if (val) {
+                  setSelectedCategory({ groep: val, subgroep: '' });
+                  setFieldValue('groep', val);
+                  setFieldValue('subgroep', '');
+                  onCategoryModalClose();
+                }
+              }}>+</Button>
+            </HStack>
+            <HStack spacing={2}>
+              <Input
+                size="sm"
+                placeholder="Nieuwe subgroep"
+                bg="white"
+                id="new-subgroup-input"
+                isDisabled={!selectedCategory.groep}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'Enter' && selectedCategory.groep) {
+                    const val = (e.target as HTMLInputElement).value.trim();
+                    if (val) {
+                      setSelectedCategory({ groep: selectedCategory.groep, subgroep: val });
+                      setFieldValue('groep', selectedCategory.groep);
+                      setFieldValue('subgroep', val);
+                      onCategoryModalClose();
+                    }
+                  }
+                }}
+              />
+              <Button size="sm" colorScheme="orange" isDisabled={!selectedCategory.groep} onClick={() => {
+                const input = document.getElementById('new-subgroup-input') as HTMLInputElement;
+                const val = input?.value?.trim();
+                if (val && selectedCategory.groep) {
+                  setSelectedCategory({ groep: selectedCategory.groep, subgroep: val });
+                  setFieldValue('groep', selectedCategory.groep);
+                  setFieldValue('subgroep', val);
+                  onCategoryModalClose();
+                }
+              }}>+</Button>
+            </HStack>
+            <Text fontSize="xs" color="gray.500" mt={1}>Typ een naam en druk Enter of klik +</Text>
+          </Box>
+        )}
       </Box>
     );
   };
