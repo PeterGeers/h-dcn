@@ -23,6 +23,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
   const productPageUser = useMemo(() => {
     if (!user) return null;
     return {
+      groups: user.groups || [],
       attributes: {
         given_name: user.givenName,
         family_name: user.familyName,
@@ -31,8 +32,9 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
       signInUserSession: {
         accessToken: {
           payload: {
-            'cognito:groups': user.groups,
+            'cognito:groups': user.groups || [],
           },
+          jwtToken: user.accessToken,
         },
       },
     };

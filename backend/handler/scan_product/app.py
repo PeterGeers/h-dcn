@@ -59,8 +59,10 @@ def lambda_handler(event, context):
 
         response = table.scan(
             Limit=100,
-            FilterExpression=boto3.dynamodb.conditions.Attr('source').not_exists() | 
-                           boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')
+            FilterExpression=(boto3.dynamodb.conditions.Attr('source').not_exists() | 
+                           boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')) &
+                           (boto3.dynamodb.conditions.Attr('is_parent').not_exists() |
+                           boto3.dynamodb.conditions.Attr('is_parent').ne(False))
         )
         items = response['Items']
         
@@ -68,8 +70,10 @@ def lambda_handler(event, context):
             response = table.scan(
                 ExclusiveStartKey=response['LastEvaluatedKey'],
                 Limit=100,
-                FilterExpression=boto3.dynamodb.conditions.Attr('source').not_exists() | 
-                               boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')
+                FilterExpression=(boto3.dynamodb.conditions.Attr('source').not_exists() | 
+                               boto3.dynamodb.conditions.Attr('source').ne('presmeet_config')) &
+                               (boto3.dynamodb.conditions.Attr('is_parent').not_exists() |
+                               boto3.dynamodb.conditions.Attr('is_parent').ne(False))
             )
             items.extend(response['Items'])
 
