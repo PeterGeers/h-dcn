@@ -15,13 +15,19 @@ from unittest.mock import patch, MagicMock
 import pytest
 from PIL import Image
 
-# Add handler path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'upload_club_logo'))
+# Add backend root to path for package-style imports
+_backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if _backend_path not in sys.path:
+    sys.path.insert(0, _backend_path)
 
 # Set environment variables before importing handler
 os.environ['FRONTEND_BUCKET_NAME'] = 'h-dcn-frontend-506221081911'
 os.environ['MEMBERS_TABLE_NAME'] = 'Members'
 os.environ['COGNITO_USER_POOL_ID'] = 'eu-west-1_test'
+
+# Import using package-style to avoid bare 'app' module cache conflicts
+import handler.upload_club_logo.app as app
+from handler.upload_club_logo.app import lambda_handler
 
 
 # --- Helpers ---
@@ -55,25 +61,25 @@ def _mock_auth(user_email='user@club.nl', user_roles=None):
     if user_roles is None:
         user_roles = ['hdcnLeden', 'Regio_Pressmeet']
     return patch(
-        'app.extract_user_credentials',
+        'handler.upload_club_logo.app.extract_user_credentials',
         return_value=(user_email, user_roles, None),
     )
 
 
 def _mock_club_id(club_id='club-123'):
     """Patch get_club_id to return a specific club_id."""
-    return patch('app.get_club_id', return_value=club_id)
+    return patch('handler.upload_club_logo.app.get_club_id', return_value=club_id)
 
 
 def _mock_s3():
     """Patch the s3_client.put_object to a MagicMock."""
     mock = MagicMock()
-    return patch('app.s3_client', mock), mock
+    return patch('handler.upload_club_logo.app.s3_client', mock), mock
 
 
 def _mock_log():
     """Patch log_successful_access."""
-    return patch('app.log_successful_access')
+    return patch('handler.upload_club_logo.app.log_successful_access')
 
 
 # --- Tests ---
@@ -83,7 +89,6 @@ class TestUploadClubLogoHappyPath:
 
     def test_valid_jpeg_upload_returns_200_with_logo_url(self):
         """Validates: Requirements 4.1, 4.2"""
-        from app import lambda_handler
 
         image_bytes = _create_test_image(400, 300, 'JPEG')
         body = {
@@ -116,7 +121,6 @@ class TestUploadClubLogoHappyPath:
 
     def test_valid_png_upload_returns_200(self):
         """PNG input is also accepted and re-saved as PNG."""
-        from app import lambda_handler
 
         image_bytes = _create_test_image(150, 150, 'PNG')
         body = {
@@ -134,7 +138,6 @@ class TestUploadClubLogoHappyPath:
 
     def test_resized_image_fits_within_200x200(self):
         """Validates: Requirements 4.1 — output fits within 200×200 bounding box."""
-        from app import lambda_handler
 
         # Create a large image (800x400) that needs significant downscaling
         image_bytes = _create_test_image(800, 400, 'JPEG')
@@ -164,7 +167,7 @@ class TestUploadClubLogoSizeEdgeCases:
 
     def test_exactly_5mb_file_is_accepted(self):
         """Validates: Requirements 4.8 — exactly 5MB decoded payload is accepted."""
-        from app import lambda_handler, MAX_IMAGE_SIZE
+        from handler.upload_club_logo.app import MAX_IMAGE_SIZE
 
         # Create image bytes padded to exactly 5MB
         # We need the decoded bytes to be exactly MAX_IMAGE_SIZE
@@ -195,7 +198,7 @@ class TestUploadClubLogoSizeEdgeCases:
 
     def test_5mb_plus_one_byte_is_rejected_with_413(self):
         """Validates: Requirements 4.8 — 5MB + 1 byte returns 413."""
-        from app import lambda_handler, MAX_IMAGE_SIZE
+        from handler.upload_club_logo.app import MAX_IMAGE_SIZE
 
         # Create payload that is exactly 1 byte over the limit
         oversized = b'\x00' * (MAX_IMAGE_SIZE + 1)
@@ -223,7 +226,6 @@ class TestUploadClubLogoSpecialCharacters:
 
     def test_club_id_with_special_characters_in_s3_key(self):
         """Club IDs with hyphens, underscores, and dots are stored correctly."""
-        from app import lambda_handler
 
         image_bytes = _create_test_image(100, 100, 'JPEG')
         club_id = 'club-xyz_123.test'
@@ -251,7 +253,6 @@ class TestUploadClubLogoAuth:
 
     def test_missing_auth_token_returns_401(self):
         """Validates: Requirements 5.2 — no auth returns 401."""
-        from app import lambda_handler
 
         body = {
             'image_data': _encode_image(_create_test_image()),
@@ -266,7 +267,7 @@ class TestUploadClubLogoAuth:
             'headers': {'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': 'Authorization header required'}),
         }
-        with patch('app.extract_user_credentials', return_value=(None, None, auth_error)), \
+        with patch('handler.upload_club_logo.app.extract_user_credentials', return_value=(None, None, auth_error)), \
              _mock_log():
             response = lambda_handler(event, None)
 
@@ -274,7 +275,6 @@ class TestUploadClubLogoAuth:
 
     def test_user_with_no_club_id_returns_403(self):
         """Validates: Requirements 5.3 — no club_id assigned returns 403."""
-        from app import lambda_handler
 
         body = {
             'image_data': _encode_image(_create_test_image()),
@@ -284,7 +284,7 @@ class TestUploadClubLogoAuth:
         event = _make_event(body)
 
         # get_club_id returns None (user has no club assigned)
-        with _mock_auth(), patch('app.get_club_id', return_value=None), _mock_log():
+        with _mock_auth(), patch('handler.upload_club_logo.app.get_club_id', return_value=None), _mock_log():
             response = lambda_handler(event, None)
 
         assert response['statusCode'] == 403
@@ -293,7 +293,6 @@ class TestUploadClubLogoAuth:
 
     def test_club_id_mismatch_non_admin_returns_403(self):
         """Validates: Requirements 5.5 — non-admin cannot upload for other club."""
-        from app import lambda_handler
 
         body = {
             'image_data': _encode_image(_create_test_image()),
@@ -314,7 +313,6 @@ class TestUploadClubLogoAuth:
 
     def test_admin_override_allows_any_club_id(self):
         """Validates: Requirements 5.6 — Products_CRUD can upload for any club."""
-        from app import lambda_handler
 
         image_bytes = _create_test_image(100, 100, 'JPEG')
         body = {
@@ -336,7 +334,6 @@ class TestUploadClubLogoAuth:
 
     def test_webshop_management_admin_override(self):
         """Validates: Requirements 5.6 — Webshop_Management can upload for any club."""
-        from app import lambda_handler
 
         image_bytes = _create_test_image(100, 100, 'JPEG')
         body = {
@@ -361,7 +358,6 @@ class TestUploadClubLogoValidation:
 
     def test_missing_image_data_returns_400(self):
         """Validates: Requirements 4.7 — missing required field."""
-        from app import lambda_handler
 
         body = {
             'club_id': 'club-123',
@@ -378,7 +374,6 @@ class TestUploadClubLogoValidation:
 
     def test_missing_club_id_returns_400(self):
         """Missing club_id returns 400."""
-        from app import lambda_handler
 
         body = {
             'image_data': _encode_image(_create_test_image()),
@@ -395,7 +390,6 @@ class TestUploadClubLogoValidation:
 
     def test_missing_content_type_returns_400(self):
         """Missing content_type returns 400."""
-        from app import lambda_handler
 
         body = {
             'image_data': _encode_image(_create_test_image()),
@@ -412,7 +406,6 @@ class TestUploadClubLogoValidation:
 
     def test_invalid_content_type_returns_400(self):
         """Validates: Requirements 4.7 — unsupported content type is rejected."""
-        from app import lambda_handler
 
         body = {
             'image_data': _encode_image(_create_test_image()),
@@ -430,7 +423,6 @@ class TestUploadClubLogoValidation:
 
     def test_invalid_base64_returns_400(self):
         """Invalid base64 encoding returns 400."""
-        from app import lambda_handler
 
         body = {
             'image_data': '!!!not-valid-base64!!!',
@@ -448,7 +440,6 @@ class TestUploadClubLogoValidation:
 
     def test_non_image_data_returns_400(self):
         """Validates: Requirements 4.2, 4.7 — random bytes (not an image) returns 400."""
-        from app import lambda_handler
 
         # Random bytes that are not a valid image
         random_bytes = b'This is not an image file at all. Just random text data.'
@@ -471,7 +462,6 @@ class TestUploadClubLogoValidation:
 
     def test_empty_body_returns_400(self):
         """Empty/no body returns 400 for missing fields."""
-        from app import lambda_handler
 
         event = {
             'httpMethod': 'POST',

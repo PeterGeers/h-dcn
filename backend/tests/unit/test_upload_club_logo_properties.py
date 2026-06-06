@@ -108,15 +108,21 @@ import os
 import sys
 from unittest.mock import patch, MagicMock
 
-# Ensure handler is importable
+# Ensure backend root is importable for package-style imports
 _backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_handler_dir = os.path.join(_backend_dir, "handler", "upload_club_logo")
 _layers_path = os.path.join(_backend_dir, "layers", "auth-layer", "python")
 
-if _handler_dir not in sys.path:
-    sys.path.insert(0, _handler_dir)
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
 if _layers_path not in sys.path:
     sys.path.insert(0, _layers_path)
+
+# Set environment variables before importing handler
+os.environ.setdefault('FRONTEND_BUCKET_NAME', 'h-dcn-frontend-506221081911')
+os.environ.setdefault('MEMBERS_TABLE_NAME', 'Members')
+os.environ.setdefault('COGNITO_USER_POOL_ID', 'eu-west-1_test')
+
+from handler.upload_club_logo.app import lambda_handler
 
 
 class TestProperty7ServerSidePayloadSizeLimit:
@@ -158,14 +164,13 @@ class TestProperty7ServerSidePayloadSizeLimit:
         }
 
         # Mock auth and club identity so we reach the size check
-        with patch('app.extract_user_credentials') as mock_auth, \
-             patch('app.get_club_id') as mock_club_id, \
-             patch('app.s3_client'):
+        with patch('handler.upload_club_logo.app.extract_user_credentials') as mock_auth, \
+             patch('handler.upload_club_logo.app.get_club_id') as mock_club_id, \
+             patch('handler.upload_club_logo.app.s3_client'):
             mock_auth.return_value = ('test@test.nl', ['hdcnLeden'], None)
             mock_club_id.return_value = 'test-club-123'
 
             # Import and invoke handler
-            from app import lambda_handler
             response = lambda_handler(event, None)
 
         assert response['statusCode'] == 413, (
@@ -640,13 +645,12 @@ class TestProperty9ResponseUrlCacheBusting:
         # Mock auth, club identity, and S3 so we get a successful upload
         mock_s3 = MagicMock()
 
-        with patch('app.extract_user_credentials') as mock_auth, \
-             patch('app.get_club_id') as mock_club_id, \
-             patch('app.s3_client', mock_s3):
+        with patch('handler.upload_club_logo.app.extract_user_credentials') as mock_auth, \
+             patch('handler.upload_club_logo.app.get_club_id') as mock_club_id, \
+             patch('handler.upload_club_logo.app.s3_client', mock_s3):
             mock_auth.return_value = ('user@club.nl', ['hdcnLeden'], None)
             mock_club_id.return_value = club_id  # Same as request -> authorized
 
-            from app import lambda_handler
             response = lambda_handler(event, None)
 
         # Verify successful response
@@ -741,13 +745,12 @@ class TestProperty4InvalidImageDataProduces400:
         # Mock auth, club identity, and S3 client
         mock_s3 = MagicMock()
 
-        with patch('app.extract_user_credentials') as mock_auth, \
-             patch('app.get_club_id') as mock_club_id, \
-             patch('app.s3_client', mock_s3):
+        with patch('handler.upload_club_logo.app.extract_user_credentials') as mock_auth, \
+             patch('handler.upload_club_logo.app.get_club_id') as mock_club_id, \
+             patch('handler.upload_club_logo.app.s3_client', mock_s3):
             mock_auth.return_value = ('user@club.nl', ['hdcnLeden'], None)
             mock_club_id.return_value = 'test-club-123'
 
-            from app import lambda_handler
             response = lambda_handler(event, None)
 
         # Verify: handler returns 400 for invalid image data

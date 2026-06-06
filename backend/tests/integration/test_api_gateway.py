@@ -5,6 +5,7 @@ from datetime import datetime
 from unittest import TestCase
 
 import boto3
+import pytest
 import requests
 
 """
@@ -13,6 +14,10 @@ Make sure env variable AWS_SAM_STACK_NAME exists with the name of the stack we a
 """
 
 
+@pytest.mark.skipif(
+    not os.environ.get("AWS_SAM_STACK_NAME"),
+    reason="AWS_SAM_STACK_NAME environment variable not set. These tests require a deployed stack."
+)
 class TestApiGateway(TestCase):
     api_endpoint: str
     

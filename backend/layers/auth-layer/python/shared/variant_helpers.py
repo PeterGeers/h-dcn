@@ -1,73 +1,117 @@
 """
-Variant generation and management helpers for the webshop management admin.
+Variant generation and management helpers for the webshop.
 
 Provides utilities for:
-- Generating all attribute combinations from a product's required_attributes schema
+- Generating variant records from a product's variant_schema
 - Creating Default_Variant records for simple products
 - Determining when a Default_Variant should be removed (when real variants are added)
 """
 
 import itertools
-import uuid
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
-def generate_variant_combinations(
-    required_attributes: Optional[Dict[str, Any]],
-) -> List[Dict[str, str]]:
+def _sanitize_for_id(value: str) -> str:
     """
-    Generate all possible combinations of attribute values from a
-    required_attributes JSON schema.
+    Sanitize a value for use in a variant product_id.
 
-    The required_attributes schema follows this structure:
+    Lowercases, replaces spaces/special chars with underscores, and strips
+    leading/trailing underscores.
+    """
+    sanitized = re.sub(r"[^a-z0-9]+", "_", value.lower())
+    return sanitized.strip("_")
+
+
+def generate_variant_combinations(
+    variant_schema: Optional[Dict[str, List[str]]],
+    parent_product_id: str,
+    tenant: str,
+) -> List[Dict[str, Any]]:
+    """
+    Generate variant records from a variant_schema definition.
+
+    The variant_schema is an object where keys are axis names (1-50 chars)
+    and values are arrays of allowed string values (each 1-100 chars):
     {
-        "type": "object",
-        "properties": {
-            "gender": {"type": "string", "enum": ["male", "female"]},
-            "size": {"type": "string", "enum": ["S", "M", "L"]}
-        }
+        "Maat": ["S", "M", "L", "XL"],
+        "Gender": ["Male", "Female"]
     }
 
-    Returns a list of dicts, each representing one unique combination:
-    [
-        {"gender": "male", "size": "S"},
-        {"gender": "male", "size": "M"},
-        {"gender": "male", "size": "L"},
-        {"gender": "female", "size": "S"},
-        ...
-    ]
+    Returns a list of variant record dicts ready for DynamoDB insertion.
+    Each record contains:
+    - product_id: "var_{parent_id}_{axis1_value}_{axis2_value}_..."
+    - is_parent: False
+    - parent_id: reference to parent product
+    - tenant: inherited from parent
+    - variant_attributes: mapping of axis name to selected value
+    - stock: 0
+    - sold_count: 0
+    - allow_oversell: False
+    - active: True
 
-    Returns an empty list if required_attributes is None, empty, or has
-    no properties with enum values.
+    Constraints enforced by product_validation.py (not here):
+    - Max 5 axes
+    - Max 20 values per axis
+    - Max 100 total combinations (C₁ × C₂ × ... × Cₙ ≤ 100)
+
+    Returns an empty list if variant_schema is None or empty.
+
+    Args:
+        variant_schema: Dict mapping axis names to lists of allowed values.
+        parent_product_id: The product_id of the parent product.
+        tenant: The tenant identifier (e.g., "h-dcn", "presmeet").
+
+    Returns:
+        A list of variant record dicts for DynamoDB insertion.
     """
-    if not required_attributes:
+    if not variant_schema:
         return []
 
-    properties = required_attributes.get("properties", {})
-    if not properties:
+    # Extract axis names and their values in consistent order
+    axis_names: List[str] = list(variant_schema.keys())
+    axis_values: List[List[str]] = [variant_schema[name] for name in axis_names]
+
+    # Filter out axes with no values
+    filtered_axes: List[str] = []
+    filtered_values: List[List[str]] = []
+    for name, values in zip(axis_names, axis_values):
+        if values:
+            filtered_axes.append(name)
+            filtered_values.append(values)
+
+    if not filtered_axes:
         return []
 
-    # Extract attribute names and their enum values
-    attr_names: List[str] = []
-    attr_values: List[List[str]] = []
+    now = datetime.now(timezone.utc).isoformat()
 
-    for attr_name, attr_schema in properties.items():
-        enum_values = attr_schema.get("enum", [])
-        if enum_values:
-            attr_names.append(attr_name)
-            attr_values.append(enum_values)
+    # Generate cartesian product of all axis values
+    variants: List[Dict[str, Any]] = []
+    for combo in itertools.product(*filtered_values):
+        # Build variant_attributes mapping
+        variant_attributes = dict(zip(filtered_axes, combo))
 
-    if not attr_names:
-        return []
+        # Build product_id from axis values
+        id_parts = [_sanitize_for_id(v) for v in combo]
+        variant_id = f"var_{parent_product_id}_{'_'.join(id_parts)}"
 
-    # Generate cartesian product of all attribute values
-    combinations: List[Dict[str, str]] = []
-    for combo in itertools.product(*attr_values):
-        combination = dict(zip(attr_names, combo))
-        combinations.append(combination)
+        variant_record: Dict[str, Any] = {
+            "product_id": variant_id,
+            "is_parent": False,
+            "parent_id": parent_product_id,
+            "tenant": tenant,
+            "variant_attributes": variant_attributes,
+            "stock": 0,
+            "sold_count": 0,
+            "allow_oversell": False,
+            "active": True,
+            "created_at": now,
+            "updated_at": now,
+        }
+        variants.append(variant_record)
 
-    return combinations
+    return variants
 
 
 def create_default_variant(
@@ -77,7 +121,7 @@ def create_default_variant(
     Create a Default_Variant record for a newly created product.
 
     Every product must have at least one variant. Simple products (without
-    required_attributes) get a single Default_Variant with empty
+    variant_schema) get a single Default_Variant with empty
     variant_attributes. Stock is tracked exclusively at the variant level.
 
     Args:

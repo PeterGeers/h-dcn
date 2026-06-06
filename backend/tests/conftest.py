@@ -5,6 +5,7 @@ import boto3
 from moto import mock_aws
 import os
 import sys
+import importlib
 
 # Ensure the auth layer path is available for all tests, so that
 # handlers importing from `shared.presmeet_validation` (etc.) can resolve correctly.
@@ -12,6 +13,31 @@ import sys
 _layers_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'layers', 'auth-layer', 'python'))
 if _layers_path not in sys.path:
     sys.path.insert(0, _layers_path)
+
+
+def pytest_collectstart(collector):
+    """
+    Clear cached 'app' module before collecting each test module.
+
+    Multiple test files add different handler directories to sys.path and then
+    do `from app import ...`. Without clearing the module cache, Python reuses
+    the first 'app' module it ever imported, causing ImportErrors when a
+    different test file expects a different handler's app.py.
+    """
+    if 'app' in sys.modules:
+        del sys.modules['app']
+
+
+def pytest_runtest_setup(item):
+    """
+    Clear cached 'app' module before each test runs.
+
+    This handles the case where `from app import ...` is done inside test
+    methods (not at module level), ensuring each test uses the correct
+    handler's app module based on its sys.path setup.
+    """
+    if 'app' in sys.modules:
+        del sys.modules['app']
 
 @pytest.fixture
 def aws_credentials():

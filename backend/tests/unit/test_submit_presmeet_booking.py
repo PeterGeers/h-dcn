@@ -210,7 +210,7 @@ class TestSubmitPresmeetBooking:
 
     def _mock_auth(self, user_email="user@club.nl", user_roles=None):
         if user_roles is None:
-            user_roles = ["hdcnLeden", "club_amsterdam"]
+            user_roles = ["hdcnLeden", "Regio_Pressmeet", "club_amsterdam"]
         return (
             patch(
                 "handler.submit_presmeet_booking.app.extract_user_credentials",
@@ -221,6 +221,10 @@ class TestSubmitPresmeetBooking:
                 return_value=(True, None, {}),
             ),
             patch("handler.submit_presmeet_booking.app.log_successful_access"),
+            patch(
+                "handler.submit_presmeet_booking.app.get_club_id",
+                return_value="amsterdam",
+            ),
         )
 
     def test_successful_submission(self):
@@ -228,7 +232,7 @@ class TestSubmitPresmeetBooking:
         self._create_draft_order()
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 200
@@ -240,7 +244,7 @@ class TestSubmitPresmeetBooking:
     def test_no_order_returns_404(self):
         """Submitting when no order exists returns 404."""
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 404
@@ -268,7 +272,7 @@ class TestSubmitPresmeetBooking:
         )
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 409
@@ -294,7 +298,7 @@ class TestSubmitPresmeetBooking:
         )
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 409
@@ -314,7 +318,7 @@ class TestSubmitPresmeetBooking:
         self._create_draft_order(items=items)
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 400
@@ -336,7 +340,7 @@ class TestSubmitPresmeetBooking:
         self._create_draft_order(items=items)
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 400
@@ -350,7 +354,7 @@ class TestSubmitPresmeetBooking:
     def test_no_club_assignment_returns_403(self):
         """User without club group gets 403."""
         auth_patches = self._mock_auth(user_roles=["hdcnLeden"])
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 403
@@ -365,7 +369,7 @@ class TestSubmitPresmeetBooking:
         self._create_draft_order()
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             lambda_handler(self._make_event(), None)
 
         # Verify in DynamoDB
@@ -397,7 +401,7 @@ class TestSubmitPresmeetBooking:
         self._create_draft_order(items=items)
 
         auth_patches = self._mock_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1], auth_patches[2], auth_patches[3]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 400

@@ -109,5 +109,45 @@
   "demo": {
     "title": "Demo modus",
     "description": "Gebruikt mock data omdat API niet beschikbaar is"
+  },
+  "variant": {
+    "select_placeholder": "Kies {{axis}}",
+    "in_stock": "{{count}} op voorraad",
+    "out_of_stock": "Niet op voorraad",
+    "combination_unavailable": "Combinatie niet beschikbaar",
+    "select_all_prompt": "Selecteer alle opties om beschikbaarheid te zien"
+  },
+  "item_fields": {
+    "item_label": "Item {{current}} van {{total}}",
+    "required": "Dit veld is verplicht",
+    "min_length": "Minimaal {{count}} tekens",
+    "max_length": "Maximaal {{count}} tekens",
+    "minimum": "Minimale waarde is {{value}}",
+    "maximum": "Maximale waarde is {{value}}",
+    "invalid_email": "Ongeldig e-mailadres",
+    "invalid_number": "Voer een geldig getal in",
+    "invalid_option": "Selecteer een geldige optie",
+    "pattern_mismatch": "Waarde voldoet niet aan het vereiste formaat",
+    "select_placeholder": "Selecteer...",
+    "email_placeholder": "email@voorbeeld.nl"
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximaal {{limit}} stuks per bestelling",
+    "max_per_member": "Je hebt nog {{remaining}} stuks beschikbaar (limiet: {{limit}} per lid)",
+    "max_per_club": "Je club heeft nog {{remaining}} stuks beschikbaar (limiet: {{limit}} per club)",
+    "requires_membership": "Een actief lidmaatschap is vereist om dit product te bestellen"
+  },
+  "payment": {
+    "method_title": "Betaalmethode",
+    "ideal_description": "iDEAL - direct betalen via je bank",
+    "creditcard_description": "Creditcard (Visa, Mastercard)",
+    "bank_transfer": "Overschrijving",
+    "bank_transfer_description": "Handmatige overboeking",
+    "transfer_instructions_title": "Overboekingsinstructies",
+    "reference": "Kenmerk:",
+    "amount": "Bedrag:",
+    "return_success_title": "Betaling geslaagd",
+    "return_failed_title": "Betaling niet voltooid",
+    "retry_button": "Opnieuw proberen"
   }
 }

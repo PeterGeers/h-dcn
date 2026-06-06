@@ -103,5 +103,45 @@
   "demo": {
     "title": "Mode démo",
     "description": "Utilisation de données fictives car l'API est indisponible"
+  },
+  "variant": {
+    "select_placeholder": "Choisir {{axis}}",
+    "in_stock": "{{count}} en stock",
+    "out_of_stock": "En rupture de stock",
+    "combination_unavailable": "Combinaison non disponible",
+    "select_all_prompt": "Sélectionnez toutes les options pour voir la disponibilité"
+  },
+  "item_fields": {
+    "item_label": "Article {{current}} sur {{total}}",
+    "required": "Ce champ est obligatoire",
+    "min_length": "Minimum {{count}} caractères",
+    "max_length": "Maximum {{count}} caractères",
+    "minimum": "La valeur minimale est {{value}}",
+    "maximum": "La valeur maximale est {{value}}",
+    "invalid_email": "Adresse e-mail invalide",
+    "invalid_number": "Entrez un nombre valide",
+    "invalid_option": "Sélectionnez une option valide",
+    "pattern_mismatch": "La valeur ne correspond pas au format requis",
+    "select_placeholder": "Sélectionner...",
+    "email_placeholder": "email@exemple.fr"
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximum {{limit}} articles par commande",
+    "max_per_member": "Il vous reste {{remaining}} articles disponibles (limite : {{limit}} par membre)",
+    "max_per_club": "Votre club a encore {{remaining}} articles disponibles (limite : {{limit}} par club)",
+    "requires_membership": "Un abonnement actif est requis pour commander ce produit"
+  },
+  "payment": {
+    "method_title": "Mode de paiement",
+    "ideal_description": "iDEAL - payer directement via votre banque",
+    "creditcard_description": "Carte de crédit (Visa, Mastercard)",
+    "bank_transfer": "Virement bancaire",
+    "bank_transfer_description": "Virement bancaire manuel",
+    "transfer_instructions_title": "Instructions de virement",
+    "reference": "Référence :",
+    "amount": "Montant :",
+    "return_success_title": "Paiement réussi",
+    "return_failed_title": "Paiement non finalisé",
+    "retry_button": "Réessayer"
   }
 }

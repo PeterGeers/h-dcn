@@ -520,6 +520,27 @@ Resources:
             Path: /getproduct-byid/{id}
             Method: get
 
+  # --- Webshop: Get Variants for a Product ---
+  GetVariantsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_variants
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+      Events:
+        GetVariants:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /products/{id}/variants
+            Method: get
+
   scanProductFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1024,6 +1045,16 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          CARTS_TABLE_NAME: !Ref CartsTable
+          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mollie-webhook"
+          MOLLIE_REDIRECT_URL: "https://portal.h-dcn.nl/webshop/payment/return"
       Events:
         CreateOrder:
           Type: Api
@@ -1516,7 +1547,7 @@ Resources:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MOLLIE_API_KEY: !Ref MollieApiKey
+          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
         CreatePresMeetPayment:
@@ -1541,14 +1572,21 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MOLLIE_API_KEY: !Ref MollieApiKey
+          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
       Events:
-        MollieWebhook:
+        MollieWebhookLegacy:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
             Path: /presmeet/webhook/mollie
+            Method: post
+        MollieWebhook:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /mollie-webhook
             Method: post
 
   # --- PresMeet: Manual Payment (Admin) ---

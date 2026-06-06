@@ -103,5 +103,45 @@
   "demo": {
     "title": "Demo mode",
     "description": "Using mock data because API is unavailable"
+  },
+  "variant": {
+    "select_placeholder": "Choose {{axis}}",
+    "in_stock": "{{count}} in stock",
+    "out_of_stock": "Out of stock",
+    "combination_unavailable": "Combination not available",
+    "select_all_prompt": "Select all options to see availability"
+  },
+  "item_fields": {
+    "item_label": "Item {{current}} of {{total}}",
+    "required": "This field is required",
+    "min_length": "Minimum {{count}} characters",
+    "max_length": "Maximum {{count}} characters",
+    "minimum": "Minimum value is {{value}}",
+    "maximum": "Maximum value is {{value}}",
+    "invalid_email": "Invalid email address",
+    "invalid_number": "Enter a valid number",
+    "invalid_option": "Select a valid option",
+    "pattern_mismatch": "Value does not match the required format",
+    "select_placeholder": "Select...",
+    "email_placeholder": "email@example.com"
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximum {{limit}} items per order",
+    "max_per_member": "You have {{remaining}} items available (limit: {{limit}} per member)",
+    "max_per_club": "Your club has {{remaining}} items available (limit: {{limit}} per club)",
+    "requires_membership": "An active membership is required to order this product"
+  },
+  "payment": {
+    "method_title": "Payment method",
+    "ideal_description": "iDEAL - pay directly via your bank",
+    "creditcard_description": "Credit card (Visa, Mastercard)",
+    "bank_transfer": "Bank transfer",
+    "bank_transfer_description": "Manual bank transfer",
+    "transfer_instructions_title": "Transfer instructions",
+    "reference": "Reference:",
+    "amount": "Amount:",
+    "return_success_title": "Payment successful",
+    "return_failed_title": "Payment not completed",
+    "retry_button": "Try again"
   }
 }

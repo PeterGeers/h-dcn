@@ -17,11 +17,17 @@ from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
 
-# Add the handler directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../handler/get_members_filtered'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../shared'))
+# Add the handler directory to the path for package-style imports
+_backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if _backend_path not in sys.path:
+    sys.path.insert(0, _backend_path)
 
-from app import (
+# Add layers path for shared module
+_layers_path = os.path.join(os.path.dirname(__file__), '../../layers/auth-layer/python')
+if _layers_path not in sys.path:
+    sys.path.insert(0, os.path.abspath(_layers_path))
+
+from handler.get_members_filtered.app import (
     filter_members_by_region,
     convert_dynamodb_to_python,
     lambda_handler
@@ -478,7 +484,7 @@ class TestAuthenticationAndAuthorization:
         
         return f"{header}.{payload_encoded}.{signature}"
     
-    @patch('app.load_members_from_dynamodb')
+    @patch('handler.get_members_filtered.app.load_members_from_dynamodb')
     def test_missing_jwt_token_returns_401(self, mock_load_members):
         """
         Test that requests without JWT token return 401
@@ -502,7 +508,7 @@ class TestAuthenticationAndAuthorization:
         # Verify DynamoDB was not called
         mock_load_members.assert_not_called()
     
-    @patch('app.load_members_from_dynamodb')
+    @patch('handler.get_members_filtered.app.load_members_from_dynamodb')
     def test_invalid_permissions_return_403(self, mock_load_members):
         """
         Test that requests with invalid permissions return 403
@@ -529,8 +535,8 @@ class TestAuthenticationAndAuthorization:
         # Verify DynamoDB was not called
         mock_load_members.assert_not_called()
     
-    @patch('app.load_members_from_dynamodb')
-    @patch('app.filter_members_by_region')
+    @patch('handler.get_members_filtered.app.load_members_from_dynamodb')
+    @patch('handler.get_members_filtered.app.filter_members_by_region')
     def test_valid_permissions_allow_access(self, mock_filter, mock_load_members):
         """
         Test that requests with valid permissions are allowed
@@ -568,8 +574,8 @@ class TestAuthenticationAndAuthorization:
         mock_load_members.assert_called_once()
         mock_filter.assert_called_once()
     
-    @patch('app.load_members_from_dynamodb')
-    @patch('app.filter_members_by_region')
+    @patch('handler.get_members_filtered.app.load_members_from_dynamodb')
+    @patch('handler.get_members_filtered.app.filter_members_by_region')
     def test_members_read_permission_allows_access(self, mock_filter, mock_load_members):
         """
         Test that members_read permission allows access
@@ -598,8 +604,8 @@ class TestAuthenticationAndAuthorization:
         body = json.loads(response['body'])
         assert body['success'] is True, "Response should indicate success"
     
-    @patch('app.load_members_from_dynamodb')
-    @patch('app.filter_members_by_region')
+    @patch('handler.get_members_filtered.app.load_members_from_dynamodb')
+    @patch('handler.get_members_filtered.app.filter_members_by_region')
     def test_members_export_permission_allows_access(self, mock_filter, mock_load_members):
         """
         Test that members_export permission allows access
@@ -628,8 +634,8 @@ class TestAuthenticationAndAuthorization:
         body = json.loads(response['body'])
         assert body['success'] is True, "Response should indicate success"
     
-    @patch('app.load_members_from_dynamodb')
-    @patch('app.filter_members_by_region')
+    @patch('handler.get_members_filtered.app.load_members_from_dynamodb')
+    @patch('handler.get_members_filtered.app.filter_members_by_region')
     def test_members_crud_permissions_allow_access(self, mock_filter, mock_load_members):
         """
         Test that CRUD permissions (create, update, delete) allow access

@@ -101,31 +101,23 @@ class TestUnlockPresmeetOrder:
         }
 
     def _mock_admin_auth(self, user_email="admin@h-dcn.nl"):
-        """Mock auth for an admin user with webmaster role."""
-        user_roles = ["hdcnLeden", "webmaster"]
+        """Mock auth for an admin user with Products_CRUD + Regio_Pressmeet roles."""
+        user_roles = ["hdcnLeden", "Products_CRUD", "Regio_Pressmeet"]
         return (
             patch(
                 "handler.unlock_presmeet_order.app.extract_user_credentials",
                 return_value=(user_email, user_roles, None),
-            ),
-            patch(
-                "handler.unlock_presmeet_order.app.validate_permissions_with_regions",
-                return_value=(True, None, {}),
             ),
             patch("handler.unlock_presmeet_order.app.log_successful_access"),
         )
 
     def _mock_non_admin_auth(self, user_email="user@club.nl"):
-        """Mock auth for a regular club user (no webmaster role)."""
-        user_roles = ["hdcnLeden", "club_amsterdam"]
+        """Mock auth for a regular club user (no admin write access)."""
+        user_roles = ["hdcnLeden", "Regio_Pressmeet", "club_amsterdam"]
         return (
             patch(
                 "handler.unlock_presmeet_order.app.extract_user_credentials",
                 return_value=(user_email, user_roles, None),
-            ),
-            patch(
-                "handler.unlock_presmeet_order.app.validate_permissions_with_regions",
-                return_value=(True, None, {}),
             ),
             patch("handler.unlock_presmeet_order.app.log_successful_access"),
         )
@@ -135,7 +127,7 @@ class TestUnlockPresmeetOrder:
         self._create_order(status="locked")
 
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 200
@@ -148,7 +140,7 @@ class TestUnlockPresmeetOrder:
         self._create_order(status="locked")
 
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             lambda_handler(self._make_event(), None)
 
         # Verify in DynamoDB
@@ -160,7 +152,7 @@ class TestUnlockPresmeetOrder:
         self._create_order(status="locked")
 
         auth_patches = self._mock_non_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 403
@@ -170,7 +162,7 @@ class TestUnlockPresmeetOrder:
     def test_order_not_found_returns_404(self):
         """Unlocking a non-existent order returns 404."""
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(self._make_event(order_id="nonexistent"), None)
 
         assert response["statusCode"] == 404
@@ -182,7 +174,7 @@ class TestUnlockPresmeetOrder:
         self._create_order(status="draft")
 
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 409
@@ -194,7 +186,7 @@ class TestUnlockPresmeetOrder:
         self._create_order(status="submitted")
 
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 409
@@ -206,7 +198,7 @@ class TestUnlockPresmeetOrder:
         self._create_order(source="webshop")
 
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(self._make_event(), None)
 
         assert response["statusCode"] == 404
@@ -236,7 +228,7 @@ class TestUnlockPresmeetOrder:
         }
 
         auth_patches = self._mock_admin_auth()
-        with auth_patches[0], auth_patches[1], auth_patches[2]:
+        with auth_patches[0], auth_patches[1]:
             response = lambda_handler(event, None)
 
         assert response["statusCode"] == 400

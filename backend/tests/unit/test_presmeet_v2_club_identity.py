@@ -172,13 +172,14 @@ class TestProperty12ClubIdentityResolution:
         status=non_presmeet_status_strategy,
     )
     @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_property12_non_presmeet_status_returns_none(
+    def test_property12_non_presmeet_status_returns_club_id(
         self, members_table, email, club_id, status
     ):
         """Feature: presmeet, Property 12: Club identity resolution
 
-        If a member matches the email but status != 'presmeet',
-        get_club_id(email) SHALL return None.
+        get_club_id(email) returns club_id for any member who has one assigned,
+        regardless of status. Access gating is handled at handler level by
+        has_presmeet_access() checking Cognito groups.
 
         **Validates: Requirements 2.1, 11.4**
         """
@@ -186,7 +187,7 @@ class TestProperty12ClubIdentityResolution:
 
         member_id = str(uuid.uuid4())
 
-        # Insert a member with matching email but non-presmeet status
+        # Insert a member with matching email and any status
         members_table.put_item(Item={
             'member_id': member_id,
             'email': email,
@@ -195,9 +196,9 @@ class TestProperty12ClubIdentityResolution:
         })
 
         result = get_club_id(email)
-        assert result is None, (
-            f"Expected get_club_id('{email}') to return None when status='{status}' "
-            f"(not 'presmeet'), got '{result}'"
+        assert result == club_id, (
+            f"Expected get_club_id('{email}') to return '{club_id}' "
+            f"(club_id is returned regardless of status), got '{result}'"
         )
 
         # Clean up

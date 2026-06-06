@@ -1,75 +1,123 @@
+"""
+Mollie webhook handler for the unified webshop/PresMeet payment pipeline.
+
+POST /mollie-webhook — processes Mollie payment status callbacks.
+
+Key design decisions:
+- NO auth required (Mollie calls this endpoint externally)
+- Always returns 200 for valid webhook calls (Mollie requirement)
+- Uses shared.mollie_client.get_payment() to fetch current payment status
+- Uses shared.stock_reservation.reserve_stock_for_order() when paid
+- Idempotent: uses mollie_payment_id as lookup key, guards stock reservation
+  with conditional update (stock_reserved field on order)
+- Only transitions order state forward (never backward): open → paid, open → failed
+
+Requirements: 9.6, 9.7, 9.11
+"""
+
 import json
 import os
+import logging
+from datetime import datetime, timezone
+
 import boto3
-import requests
-from decimal import Decimal
 from boto3.dynamodb.conditions import Attr
 
-# Import shared utilities (only cors_headers for response formatting)
+# Import shared utilities
 try:
     from shared.auth_utils import cors_headers
-except ImportError:
-    def cors_headers():
-        return {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE,PATCH",
-            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-            "Access-Control-Allow-Credentials": "false"
-        }
+    from shared.mollie_client import get_payment, MollieError
+    from shared.stock_reservation import (
+        reserve_stock_for_order,
+        StockReservationError,
+        InsufficientStockError,
+    )
+    print("Using shared auth layer for mollie_webhook")
+except ImportError as e:
+    print(f"⚠️ Shared auth unavailable: {str(e)}")
+    from shared.maintenance_fallback import create_smart_fallback_handler
+    lambda_handler = create_smart_fallback_handler("mollie_webhook")
+    import sys
+    sys.exit(0)
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# DynamoDB resources
 dynamodb = boto3.resource('dynamodb')
-payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
+producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
 
-MOLLIE_API_KEY = os.environ.get('MOLLIE_API_KEY', '')
+# Payment statuses that indicate a terminal failure
+FAILED_STATUSES = ("failed", "expired", "cancelled")
+
+# Order payment statuses that are already terminal (no backward transitions)
+TERMINAL_PAID_STATUSES = ("paid",)
+TERMINAL_FAILED_STATUSES = ("payment_failed",)
 
 
-def fetch_mollie_payment(mollie_payment_id):
+def _now_iso() -> str:
+    """Return current UTC timestamp in ISO format."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _extract_payment_id(event: dict) -> str | None:
     """
-    Fetch payment status from Mollie API.
+    Extract Mollie payment ID from the webhook request body.
 
-    Args:
-        mollie_payment_id: The Mollie payment ID (e.g., tr_xxx)
+    Mollie sends the payment ID as form-encoded body (id=tr_xxx) or JSON {"id": "tr_xxx"}.
+    API Gateway may base64-encode the body.
 
     Returns:
-        dict: Mollie payment object, or None on error
+        The payment ID string, or None if not found.
     """
-    try:
-        url = f"https://api.mollie.com/v2/payments/{mollie_payment_id}"
-        headers = {
-            "Authorization": f"Bearer {MOLLIE_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"Mollie API error: status={response.status_code}, body={response.text}")
-            return None
-    except Exception as e:
-        print(f"Error fetching Mollie payment {mollie_payment_id}: {str(e)}")
+    body = event.get('body', '')
+    if not body:
         return None
 
+    # Decode base64 if needed (API Gateway behavior)
+    if event.get('isBase64Encoded', False):
+        import base64
+        body = base64.b64decode(body).decode('utf-8')
 
-def find_payment_by_mollie_id(mollie_payment_id):
+    # Try form-encoded first (Mollie's default format)
+    try:
+        from urllib.parse import parse_qs
+        parsed = parse_qs(body)
+        if 'id' in parsed:
+            return parsed['id'][0]
+    except Exception:
+        pass
+
+    # Fallback: try JSON body
+    try:
+        json_body = json.loads(body)
+        return json_body.get('id')
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    return None
+
+
+def _find_order_by_mollie_payment_id(mollie_payment_id: str) -> dict | None:
     """
-    Find payment record in Payments table by mollie_payment_id.
+    Find an order by scanning the Orders table for mollie_payment_id.
 
     Args:
-        mollie_payment_id: The Mollie payment ID to look up
+        mollie_payment_id: The Mollie payment ID to look up.
 
     Returns:
-        dict or None: The payment record, or None if not found
+        The order record, or None if not found.
     """
     try:
-        response = payments_table.scan(
+        response = orders_table.scan(
             FilterExpression=Attr('mollie_payment_id').eq(mollie_payment_id)
         )
         items = response.get('Items', [])
 
         # Handle pagination
         while 'LastEvaluatedKey' in response:
-            response = payments_table.scan(
+            response = orders_table.scan(
                 FilterExpression=Attr('mollie_payment_id').eq(mollie_payment_id),
                 ExclusiveStartKey=response['LastEvaluatedKey']
             )
@@ -79,106 +127,146 @@ def find_payment_by_mollie_id(mollie_payment_id):
             return items[0]
         return None
     except Exception as e:
-        print(f"Error finding payment by mollie_id {mollie_payment_id}: {str(e)}")
+        logger.error("Error finding order by mollie_payment_id %s: %s", mollie_payment_id, str(e))
         return None
 
 
-def update_payment_status(payment_id, new_status):
-    """
-    Update payment record status in Payments table.
+def _can_transition_to_paid(current_status: str) -> bool:
+    """Check if order can transition to paid (only forward transitions)."""
+    # Already paid — idempotent, no action needed
+    if current_status in TERMINAL_PAID_STATUSES:
+        return False
+    # Already marked as failed — we still allow transition to paid
+    # (Mollie may retry and succeed after initial failure report)
+    # Only "paid" is truly terminal for the paid path
+    return True
 
-    Args:
-        payment_id: The internal payment_id (primary key)
-        new_status: The new status string
+
+def _can_transition_to_failed(current_status: str) -> bool:
+    """Check if order can transition to payment_failed (only forward transitions)."""
+    # Already paid — never go backward
+    if current_status in TERMINAL_PAID_STATUSES:
+        return False
+    # Already failed — idempotent
+    if current_status in TERMINAL_FAILED_STATUSES:
+        return False
+    return True
+
+
+def _update_order_to_paid(order: dict) -> bool:
     """
+    Update order payment_status to "paid" with conditional guard on stock_reserved.
+
+    Uses a conditional update to ensure stock reservation is only triggered once:
+    - Sets payment_status = "paid"
+    - Sets stock_reserved = true (only if not already true)
+
+    Returns:
+        True if update succeeded (stock reservation should proceed),
+        False if order was already paid/reserved (idempotent).
+    """
+    order_id = order['order_id']
+
     try:
-        payments_table.update_item(
-            Key={'payment_id': payment_id},
-            UpdateExpression='SET #status = :status, updated_at = :updated_at',
-            ExpressionAttributeNames={'#status': 'status'},
-            ExpressionAttributeValues={
-                ':status': new_status,
-                ':updated_at': _now_iso()
-            }
-        )
-    except Exception as e:
-        print(f"Error updating payment {payment_id} status to {new_status}: {str(e)}")
-        raise
-
-
-def recalculate_order_payment_status(order_id):
-    """
-    Recalculate and update order payment_status based on all paid payments.
-
-    Loads all payments for the order_id, sums amounts where status="paid",
-    compares to order total_amount:
-    - If outstanding balance = 0 → payment_status = "paid"
-    - Else → payment_status = "partial"
-
-    Args:
-        order_id: The order_id to recalculate
-    """
-    try:
-        # Load order
-        order_response = orders_table.get_item(Key={'order_id': order_id})
-        if 'Item' not in order_response:
-            print(f"Warning: Order {order_id} not found during payment status recalculation")
-            return
-
-        order = order_response['Item']
-        order_total = Decimal(str(order.get('total_amount', 0)))
-
-        # Load all payments for this order
-        payments_response = payments_table.scan(
-            FilterExpression=Attr('order_id').eq(order_id) & Attr('status').eq('paid')
-        )
-        paid_payments = payments_response.get('Items', [])
-
-        # Handle pagination
-        while 'LastEvaluatedKey' in payments_response:
-            payments_response = payments_table.scan(
-                FilterExpression=Attr('order_id').eq(order_id) & Attr('status').eq('paid'),
-                ExclusiveStartKey=payments_response['LastEvaluatedKey']
-            )
-            paid_payments.extend(payments_response.get('Items', []))
-
-        # Sum paid amounts
-        total_paid = Decimal('0.00')
-        for payment in paid_payments:
-            amount = payment.get('amount', 0)
-            if isinstance(amount, Decimal):
-                total_paid += amount
-            else:
-                total_paid += Decimal(str(amount))
-
-        # Determine payment_status
-        outstanding = max(Decimal('0.00'), order_total - total_paid)
-        if outstanding == Decimal('0.00'):
-            new_payment_status = 'paid'
-        else:
-            new_payment_status = 'partial'
-
-        # Update order payment_status
         orders_table.update_item(
             Key={'order_id': order_id},
-            UpdateExpression='SET payment_status = :ps, updated_at = :updated_at',
+            UpdateExpression=(
+                'SET payment_status = :paid, '
+                'stock_reserved = :true_val, '
+                'updated_at = :now'
+            ),
+            ConditionExpression=(
+                'attribute_not_exists(stock_reserved) OR stock_reserved = :false_val'
+            ),
             ExpressionAttributeValues={
-                ':ps': new_payment_status,
-                ':updated_at': _now_iso()
+                ':paid': 'paid',
+                ':true_val': True,
+                ':false_val': False,
+                ':now': _now_iso(),
             }
         )
-        print(f"Order {order_id} payment_status updated to '{new_payment_status}' "
-              f"(total={order_total}, paid={total_paid}, outstanding={outstanding})")
-
+        logger.info("Order %s payment_status updated to 'paid'", order_id)
+        return True
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        # stock_reserved is already True — order was already processed
+        logger.info("Order %s already has stock_reserved=true (idempotent)", order_id)
+        return False
     except Exception as e:
-        print(f"Error recalculating payment status for order {order_id}: {str(e)}")
+        logger.error("Error updating order %s to paid: %s", order_id, str(e))
         raise
 
 
-def _now_iso():
-    """Return current UTC timestamp in ISO format."""
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).isoformat()
+def _update_order_to_failed(order: dict) -> None:
+    """Update order payment_status to 'payment_failed'."""
+    order_id = order['order_id']
+
+    try:
+        orders_table.update_item(
+            Key={'order_id': order_id},
+            UpdateExpression='SET payment_status = :status, updated_at = :now',
+            ExpressionAttributeValues={
+                ':status': 'payment_failed',
+                ':now': _now_iso(),
+            }
+        )
+        logger.info("Order %s payment_status updated to 'payment_failed'", order_id)
+    except Exception as e:
+        logger.error("Error updating order %s to payment_failed: %s", order_id, str(e))
+        raise
+
+
+def _trigger_stock_reservation(order: dict) -> None:
+    """
+    Trigger stock reservation for all items in the order.
+
+    Extracts variant_id and quantity from order items and calls
+    shared.stock_reservation.reserve_stock_for_order().
+    """
+    order_id = order['order_id']
+    items = order.get('items', [])
+
+    if not items:
+        logger.warning("Order %s has no items, skipping stock reservation", order_id)
+        return
+
+    # Build order_items list for stock_reservation module
+    order_items = []
+    for item in items:
+        variant_id = item.get('variant_id')
+        quantity = item.get('quantity', 0)
+        if variant_id and quantity > 0:
+            order_items.append({
+                'variant_id': variant_id,
+                'quantity': quantity,
+            })
+
+    if not order_items:
+        logger.warning("Order %s has no valid variant items for stock reservation", order_id)
+        return
+
+    try:
+        results = reserve_stock_for_order(
+            order_items=order_items,
+            producten_table=producten_table,
+            order_id=order_id,
+        )
+        for result in results:
+            logger.info(
+                "Stock reservation for order %s: variant=%s, qty=%d, status=%s",
+                order_id, result['variant_id'], result['quantity'], result['status']
+            )
+    except InsufficientStockError as e:
+        # Log but don't fail the webhook — payment is confirmed, stock issue
+        # needs admin attention
+        logger.error(
+            "Insufficient stock during reservation for order %s: variant=%s, "
+            "available=%d, requested=%d",
+            order_id, e.variant_id, e.available, e.requested
+        )
+    except StockReservationError as e:
+        logger.error(
+            "Stock reservation error for order %s: %s", order_id, str(e)
+        )
 
 
 def lambda_handler(event, context):
@@ -186,14 +274,14 @@ def lambda_handler(event, context):
     Mollie webhook handler.
 
     - No Cognito auth (public endpoint called by Mollie)
-    - Receives Mollie payment ID via form-encoded POST body
-    - Fetches payment status from Mollie API
-    - Updates payment record and optionally order payment_status
-    - Always returns 200 to Mollie
-    - Idempotent: re-processing same payment ID is safe
+    - Receives Mollie payment ID via form-encoded or JSON POST body
+    - Fetches payment status from Mollie API via shared.mollie_client
+    - Updates order payment_status and triggers stock reservation if paid
+    - Always returns 200 to Mollie (Mollie requirement)
+    - Idempotent: re-processing same payment ID produces same final state
     """
     try:
-        # Handle OPTIONS request (unlikely for webhook but good practice)
+        # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
             return {
                 'statusCode': 200,
@@ -202,48 +290,23 @@ def lambda_handler(event, context):
             }
 
         # Extract Mollie payment ID from request body
-        # Mollie sends form-encoded body with 'id' field
-        body = event.get('body', '')
-        mollie_payment_id = None
-
-        if body:
-            # Check if body is base64 encoded (API Gateway may encode it)
-            if event.get('isBase64Encoded', False):
-                import base64
-                body = base64.b64decode(body).decode('utf-8')
-
-            # Parse form-encoded body: "id=tr_xxx"
-            try:
-                # Try form-encoded first
-                from urllib.parse import parse_qs
-                parsed = parse_qs(body)
-                if 'id' in parsed:
-                    mollie_payment_id = parsed['id'][0]
-            except Exception:
-                pass
-
-            # Fallback: try JSON body
-            if not mollie_payment_id:
-                try:
-                    json_body = json.loads(body)
-                    mollie_payment_id = json_body.get('id')
-                except (json.JSONDecodeError, TypeError):
-                    pass
+        mollie_payment_id = _extract_payment_id(event)
 
         if not mollie_payment_id:
-            print("Warning: No Mollie payment ID found in webhook request body")
+            logger.warning("No Mollie payment ID found in webhook request body")
             return {
                 'statusCode': 200,
                 'headers': cors_headers(),
                 'body': json.dumps({'status': 'ignored', 'reason': 'no payment id'})
             }
 
-        print(f"Processing Mollie webhook for payment: {mollie_payment_id}")
+        logger.info("Processing Mollie webhook for payment: %s", mollie_payment_id)
 
-        # Fetch payment status from Mollie API
-        mollie_payment = fetch_mollie_payment(mollie_payment_id)
-        if not mollie_payment:
-            print(f"Warning: Could not fetch Mollie payment {mollie_payment_id}")
+        # Fetch current payment status from Mollie API using shared client
+        try:
+            mollie_payment = get_payment(mollie_payment_id)
+        except MollieError as e:
+            logger.error("Failed to fetch Mollie payment %s: %s", mollie_payment_id, e.reason)
             # Return 200 to prevent Mollie from retrying endlessly
             return {
                 'statusCode': 200,
@@ -252,51 +315,53 @@ def lambda_handler(event, context):
             }
 
         mollie_status = mollie_payment.get('status', '')
-        print(f"Mollie payment {mollie_payment_id} status: {mollie_status}")
+        logger.info("Mollie payment %s status: %s", mollie_payment_id, mollie_status)
 
-        # Find our payment record by mollie_payment_id
-        payment_record = find_payment_by_mollie_id(mollie_payment_id)
-        if not payment_record:
-            print(f"Warning: No payment record found for mollie_payment_id {mollie_payment_id}")
-            # Return 200 - don't crash, this might be a duplicate or old webhook
+        # Find our order by mollie_payment_id
+        order = _find_order_by_mollie_payment_id(mollie_payment_id)
+        if not order:
+            logger.warning("No order found for mollie_payment_id %s", mollie_payment_id)
             return {
                 'statusCode': 200,
                 'headers': cors_headers(),
-                'body': json.dumps({'status': 'ignored', 'reason': 'payment not found'})
+                'body': json.dumps({'status': 'ignored', 'reason': 'order not found'})
             }
 
-        payment_id = payment_record['payment_id']
-        order_id = payment_record.get('order_id')
-        current_status = payment_record.get('status', '')
+        order_id = order['order_id']
+        current_payment_status = order.get('payment_status', '')
+        logger.info(
+            "Order %s current payment_status: %s", order_id, current_payment_status
+        )
 
-        # Idempotency: if payment is already in the target status, skip
-        if current_status == mollie_status:
-            print(f"Payment {payment_id} already has status '{mollie_status}', skipping")
-            return {
-                'statusCode': 200,
-                'headers': cors_headers(),
-                'body': json.dumps({'status': 'ok', 'message': 'already processed'})
-            }
-
-        # Update payment record status
-        update_payment_status(payment_id, mollie_status)
-
-        # Handle status-specific logic
+        # Process based on Mollie payment status
         if mollie_status == 'paid':
-            # Payment successful: recalculate order payment_status
-            if order_id:
-                recalculate_order_payment_status(order_id)
+            if _can_transition_to_paid(current_payment_status):
+                # Update order to paid with conditional guard on stock_reserved
+                should_reserve = _update_order_to_paid(order)
+                if should_reserve:
+                    # Trigger stock reservation (only once due to conditional update)
+                    _trigger_stock_reservation(order)
             else:
-                print(f"Warning: Payment {payment_id} has no order_id, cannot update order status")
+                logger.info(
+                    "Order %s already in terminal status '%s', skipping paid transition",
+                    order_id, current_payment_status
+                )
 
-        elif mollie_status in ('failed', 'cancelled', 'expired'):
-            # Payment failed/cancelled/expired: update payment record only
-            # Order payment_status remains unchanged
-            print(f"Payment {payment_id} status set to '{mollie_status}', order status unchanged")
+        elif mollie_status in FAILED_STATUSES:
+            if _can_transition_to_failed(current_payment_status):
+                _update_order_to_failed(order)
+            else:
+                logger.info(
+                    "Order %s in status '%s', cannot transition to failed",
+                    order_id, current_payment_status
+                )
 
         else:
-            # Other statuses (open, pending, authorized): update payment record only
-            print(f"Payment {payment_id} status set to '{mollie_status}' (intermediate status)")
+            # Other statuses (open, pending, authorized): log but don't change order
+            logger.info(
+                "Mollie payment %s has intermediate status '%s', no order update",
+                mollie_payment_id, mollie_status
+            )
 
         return {
             'statusCode': 200,
@@ -306,9 +371,9 @@ def lambda_handler(event, context):
 
     except Exception as e:
         # Always return 200 to Mollie to prevent retry flooding
-        print(f"Error processing Mollie webhook: {str(e)}")
+        logger.error("Error processing Mollie webhook: %s", str(e))
         import traceback
-        print(f"Traceback: {traceback.format_exc()}")
+        logger.error("Traceback: %s", traceback.format_exc())
         return {
             'statusCode': 200,
             'headers': cors_headers(),

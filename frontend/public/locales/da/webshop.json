@@ -103,5 +103,45 @@
   "demo": {
     "title": "Demotilstand",
     "description": "Bruger testdata fordi API'et er utilgængeligt"
+  },
+  "variant": {
+    "select_placeholder": "Vælg {{axis}}",
+    "in_stock": "{{count}} på lager",
+    "out_of_stock": "Ikke på lager",
+    "combination_unavailable": "Kombination ikke tilgængelig",
+    "select_all_prompt": "Vælg alle muligheder for at se tilgængelighed"
+  },
+  "item_fields": {
+    "item_label": "Vare {{current}} af {{total}}",
+    "required": "Dette felt er påkrævet",
+    "min_length": "Minimum {{count}} tegn",
+    "max_length": "Maksimum {{count}} tegn",
+    "minimum": "Minimumsværdi er {{value}}",
+    "maximum": "Maksimumsværdi er {{value}}",
+    "invalid_email": "Ugyldig e-mailadresse",
+    "invalid_number": "Indtast et gyldigt tal",
+    "invalid_option": "Vælg en gyldig mulighed",
+    "pattern_mismatch": "Værdien matcher ikke det påkrævede format",
+    "select_placeholder": "Vælg...",
+    "email_placeholder": "email@eksempel.dk"
+  },
+  "purchase_rules": {
+    "max_per_order": "Maksimalt {{limit}} styk pr. ordre",
+    "max_per_member": "Du har {{remaining}} styk til rådighed (grænse: {{limit}} pr. medlem)",
+    "max_per_club": "Din klub har {{remaining}} styk til rådighed (grænse: {{limit}} pr. klub)",
+    "requires_membership": "Et aktivt medlemskab er påkrævet for at bestille dette produkt"
+  },
+  "payment": {
+    "method_title": "Betalingsmetode",
+    "ideal_description": "iDEAL - betal direkte via din bank",
+    "creditcard_description": "Kreditkort (Visa, Mastercard)",
+    "bank_transfer": "Bankoverførsel",
+    "bank_transfer_description": "Manuel bankoverførsel",
+    "transfer_instructions_title": "Overførselsoplysninger",
+    "reference": "Reference:",
+    "amount": "Beløb:",
+    "return_success_title": "Betaling gennemført",
+    "return_failed_title": "Betaling ikke gennemført",
+    "retry_button": "Prøv igen"
   }
 }

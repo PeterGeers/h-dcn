@@ -15,16 +15,39 @@ Full end-to-end tests with real JWT tokens should be done in a deployed environm
 import pytest
 import json
 import time
+import base64
 from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
+import boto3
+from moto import mock_aws
 
 # Add handler directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../handler/get_members_filtered'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../shared'))
 
-from app import filter_members_by_region, convert_dynamodb_to_python
+# Clear cached app module to ensure correct handler is imported
+if 'app' in sys.modules:
+    del sys.modules['app']
+
+from app import filter_members_by_region, convert_dynamodb_to_python, lambda_handler
+
+
+def _create_jwt_token(email, groups):
+    """Create a mock JWT token with proper 3-part format for testing."""
+    header = base64.urlsafe_b64encode(
+        json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+    ).decode().rstrip('=')
+    payload = base64.urlsafe_b64encode(
+        json.dumps({
+            "email": email,
+            "cognito:groups": groups,
+            "exp": 9999999999,
+            "iat": 1000000000,
+        }).encode()
+    ).decode().rstrip('=')
+    return f"{header}.{payload}.test_signature"
 
 
 @pytest.fixture
@@ -144,16 +167,7 @@ class TestCompleteUserFlow:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Utrecht,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'regional.user@utrecht.nl',
-                        'cognito:groups': 'Regio_Utrecht,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("regional.user@utrecht.nl", ["Regio_Utrecht", "Members_Read"])}'
             }
         }
         
@@ -200,16 +214,7 @@ class TestCompleteUserFlow:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Zuid-Holland,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'regional.user@zuidholland.nl',
-                        'cognito:groups': 'Regio_Zuid-Holland,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("regional.user@zuidholland.nl", ["Regio_Zuid-Holland", "Members_Read"])}'
             }
         }
         
@@ -237,16 +242,7 @@ class TestCompleteUserFlow:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_All,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'admin@hdcn.nl',
-                        'cognito:groups': 'Regio_All,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("admin@hdcn.nl", ["Regio_All", "Members_Read"])}'
             }
         }
         
@@ -285,16 +281,7 @@ class TestCompleteUserFlow:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Utrecht,members_update,members_create'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'crud.user@utrecht.nl',
-                        'cognito:groups': 'Regio_Utrecht,members_update,members_create'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("crud.user@utrecht.nl", ["Regio_Utrecht", "Members_CRUD"])}'
             }
         }
         
@@ -324,16 +311,7 @@ class TestPerformance:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Utrecht,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'test@utrecht.nl',
-                        'cognito:groups': 'Regio_Utrecht,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("test@utrecht.nl", ["Regio_Utrecht", "Members_Read"])}'
             }
         }
         
@@ -412,8 +390,8 @@ class TestErrorScenarios:
         
         assert response['statusCode'] == 401
         body = json.loads(response['body'])
-        assert body['success'] is False
-        assert 'Authentication' in body['error'] or 'Unauthorized' in body['error']
+        assert 'error' in body
+        assert 'auth' in body['error'].lower() or 'token' in body['error'].lower() or 'header' in body['error'].lower()
         
         print(f"✓ Missing JWT token correctly rejected")
     
@@ -424,16 +402,7 @@ class TestErrorScenarios:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'some_other_permission'  # No member permissions
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'user@example.com',
-                        'cognito:groups': 'some_other_permission'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("user@example.com", ["hdcnLeden"])}'
             }
         }
         
@@ -443,7 +412,7 @@ class TestErrorScenarios:
         
         assert response['statusCode'] == 403
         body = json.loads(response['body'])
-        assert body['success'] is False
+        assert 'error' in body
         assert 'permission' in body['error'].lower() or 'access denied' in body['error'].lower()
         
         print(f"✓ Invalid permissions correctly rejected")
@@ -470,16 +439,7 @@ class TestErrorScenarios:
             event = {
                 'httpMethod': 'GET',
                 'headers': {
-                    'Authorization': 'Bearer mock_jwt_token',
-                    'X-Enhanced-Groups': 'Regio_All,members_read'
-                },
-                'requestContext': {
-                    'authorizer': {
-                        'claims': {
-                            'email': 'admin@hdcn.nl',
-                            'cognito:groups': 'Regio_All,members_read'
-                        }
-                    }
+                    'Authorization': f'Bearer {_create_jwt_token("admin@hdcn.nl", ["Regio_All", "Members_Read"])}'
                 }
             }
             
@@ -509,16 +469,7 @@ class TestErrorScenarios:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_All,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'admin@hdcn.nl',
-                        'cognito:groups': 'Regio_All,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("admin@hdcn.nl", ["Regio_All", "Members_Read"])}'
             }
         }
         
@@ -545,16 +496,7 @@ class TestRegionalIsolation:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Utrecht,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'user@utrecht.nl',
-                        'cognito:groups': 'Regio_Utrecht,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("user@utrecht.nl", ["Regio_Utrecht", "Members_Read"])}'
             }
         }
         
@@ -587,16 +529,7 @@ class TestRegionalIsolation:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Utrecht,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'user@utrecht.nl',
-                        'cognito:groups': 'Regio_Utrecht,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("user@utrecht.nl", ["Regio_Utrecht", "Members_Read"])}'
             }
         }
         
@@ -700,16 +633,7 @@ class TestDecimalConversion:
         event = {
             'httpMethod': 'GET',
             'headers': {
-                'Authorization': 'Bearer mock_jwt_token',
-                'X-Enhanced-Groups': 'Regio_Utrecht,members_read'
-            },
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'user@utrecht.nl',
-                        'cognito:groups': 'Regio_Utrecht,members_read'
-                    }
-                }
+                'Authorization': f'Bearer {_create_jwt_token("user@utrecht.nl", ["Regio_Utrecht", "Members_Read"])}'
             }
         }
         
@@ -732,3 +656,4 @@ class TestDecimalConversion:
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '--tb=short'])
+

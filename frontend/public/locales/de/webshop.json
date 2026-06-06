@@ -103,5 +103,45 @@
   "demo": {
     "title": "Demomodus",
     "description": "Verwendet Mock-Daten, da die API nicht verfügbar ist"
+  },
+  "variant": {
+    "select_placeholder": "Wähle {{axis}}",
+    "in_stock": "{{count}} auf Lager",
+    "out_of_stock": "Nicht auf Lager",
+    "combination_unavailable": "Kombination nicht verfügbar",
+    "select_all_prompt": "Wähle alle Optionen um die Verfügbarkeit zu sehen"
+  },
+  "item_fields": {
+    "item_label": "Artikel {{current}} von {{total}}",
+    "required": "Dieses Feld ist erforderlich",
+    "min_length": "Mindestens {{count}} Zeichen",
+    "max_length": "Höchstens {{count}} Zeichen",
+    "minimum": "Mindestwert ist {{value}}",
+    "maximum": "Höchstwert ist {{value}}",
+    "invalid_email": "Ungültige E-Mail-Adresse",
+    "invalid_number": "Geben Sie eine gültige Zahl ein",
+    "invalid_option": "Wählen Sie eine gültige Option",
+    "pattern_mismatch": "Wert entspricht nicht dem erforderlichen Format",
+    "select_placeholder": "Auswählen...",
+    "email_placeholder": "email@beispiel.de"
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximal {{limit}} Stück pro Bestellung",
+    "max_per_member": "Sie haben noch {{remaining}} Stück verfügbar (Limit: {{limit}} pro Mitglied)",
+    "max_per_club": "Ihr Club hat noch {{remaining}} Stück verfügbar (Limit: {{limit}} pro Club)",
+    "requires_membership": "Eine aktive Mitgliedschaft ist erforderlich um dieses Produkt zu bestellen"
+  },
+  "payment": {
+    "method_title": "Zahlungsmethode",
+    "ideal_description": "iDEAL - direkt über Ihre Bank bezahlen",
+    "creditcard_description": "Kreditkarte (Visa, Mastercard)",
+    "bank_transfer": "Überweisung",
+    "bank_transfer_description": "Manuelle Banküberweisung",
+    "transfer_instructions_title": "Überweisungsdaten",
+    "reference": "Verwendungszweck:",
+    "amount": "Betrag:",
+    "return_success_title": "Zahlung erfolgreich",
+    "return_failed_title": "Zahlung nicht abgeschlossen",
+    "retry_button": "Erneut versuchen"
   }
 }

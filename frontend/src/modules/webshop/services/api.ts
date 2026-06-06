@@ -1,11 +1,58 @@
 import { ApiService } from '../../../services/apiService';
 
+// --- Variant types ---
+
+export interface VariantRecord {
+  product_id: string;
+  parent_id: string;
+  is_parent: false;
+  tenant: string;
+  name: string;
+  variant_attributes: Record<string, string>;
+  price: number;
+  stock: number;
+  sold_count: number;
+  allow_oversell: boolean;
+  active: boolean;
+}
+
+// --- Cart types ---
+
+export interface ItemFieldsEntry {
+  field_values: Record<string, string | number>;
+}
+
+export interface CartItemData {
+  product_id: string;
+  variant_id: string;
+  variant_attributes?: Record<string, string>;
+  quantity: number;
+  unit_price?: number;
+  item_fields_data?: ItemFieldsEntry[];
+}
+
 interface CartData {
-  items?: any[];
+  items?: CartItemData[];
+  club_id?: string;
+  tenant?: string;
   [key: string]: any;
 }
 
+// --- Order types ---
+
+export interface OrderItemData {
+  product_id: string;
+  variant_id: string;
+  quantity: number;
+  item_fields_data?: ItemFieldsEntry[];
+}
+
+export type PaymentMethod = 'ideal' | 'creditcard' | 'bank_transfer';
+
 interface OrderData {
+  cart_id?: string;
+  payment_method: PaymentMethod;
+  items?: OrderItemData[];
   [key: string]: any;
 }
 
@@ -33,6 +80,28 @@ export const productService = {
       throw new Error('Authentication required');
     }
     return ApiService.get('/scan-product/');
+  },
+
+  getProducts: async (tenant?: string) => {
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    const endpoint = tenant ? `/products?tenant=${encodeURIComponent(tenant)}` : '/products';
+    return ApiService.get(endpoint);
+  },
+
+  getVariants: async (productId: string) => {
+    if (!productId || typeof productId !== 'string') {
+      throw new Error('Invalid product ID');
+    }
+    const sanitizedProductId = productId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedProductId || sanitizedProductId !== productId) {
+      throw new Error('Product ID contains invalid characters');
+    }
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    return ApiService.get<VariantRecord[]>(`/products/${sanitizedProductId}/variants`);
   },
 };
 
@@ -88,6 +157,9 @@ export const orderService = {
   createOrder: async (data: OrderData) => {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
+    }
+    if (!data.payment_method) {
+      throw new Error('Payment method is required');
     }
     return ApiService.post('/orders', data);
   },

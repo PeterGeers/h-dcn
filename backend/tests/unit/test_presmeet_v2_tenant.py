@@ -42,6 +42,10 @@ _handler_path = os.path.abspath(
 if _handler_path not in sys.path:
     sys.path.insert(0, _handler_path)
 
+# Remove any previously cached 'app' module so we import from the correct handler
+if 'app' in sys.modules:
+    del sys.modules['app']
+
 # Import the mapping functions from save_presmeet_booking
 from app import map_delegates_to_items, map_guests_to_items, map_transfers_to_items
 

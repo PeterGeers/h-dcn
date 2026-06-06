@@ -103,5 +103,45 @@
   "demo": {
     "title": "Modalità demo",
     "description": "Utilizzo di dati simulati perché l'API non è disponibile"
+  },
+  "variant": {
+    "select_placeholder": "Scegli {{axis}}",
+    "in_stock": "{{count}} disponibili",
+    "out_of_stock": "Non disponibile",
+    "combination_unavailable": "Combinazione non disponibile",
+    "select_all_prompt": "Seleziona tutte le opzioni per vedere la disponibilità"
+  },
+  "item_fields": {
+    "item_label": "Articolo {{current}} di {{total}}",
+    "required": "Questo campo è obbligatorio",
+    "min_length": "Minimo {{count}} caratteri",
+    "max_length": "Massimo {{count}} caratteri",
+    "minimum": "Il valore minimo è {{value}}",
+    "maximum": "Il valore massimo è {{value}}",
+    "invalid_email": "Indirizzo email non valido",
+    "invalid_number": "Inserisci un numero valido",
+    "invalid_option": "Seleziona un'opzione valida",
+    "pattern_mismatch": "Il valore non corrisponde al formato richiesto",
+    "select_placeholder": "Seleziona...",
+    "email_placeholder": "email@esempio.it"
+  },
+  "purchase_rules": {
+    "max_per_order": "Massimo {{limit}} articoli per ordine",
+    "max_per_member": "Hai ancora {{remaining}} articoli disponibili (limite: {{limit}} per membro)",
+    "max_per_club": "Il tuo club ha ancora {{remaining}} articoli disponibili (limite: {{limit}} per club)",
+    "requires_membership": "È richiesta un'iscrizione attiva per ordinare questo prodotto"
+  },
+  "payment": {
+    "method_title": "Metodo di pagamento",
+    "ideal_description": "iDEAL - paga direttamente tramite la tua banca",
+    "creditcard_description": "Carta di credito (Visa, Mastercard)",
+    "bank_transfer": "Bonifico bancario",
+    "bank_transfer_description": "Bonifico bancario manuale",
+    "transfer_instructions_title": "Istruzioni per il bonifico",
+    "reference": "Causale:",
+    "amount": "Importo:",
+    "return_success_title": "Pagamento riuscito",
+    "return_failed_title": "Pagamento non completato",
+    "retry_button": "Riprova"
   }
 }

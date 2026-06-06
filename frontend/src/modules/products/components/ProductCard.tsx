@@ -1,10 +1,45 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton } from '@chakra-ui/react';
+import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
 import { useState, useEffect } from 'react';
 import { Product } from '../../../types';
+import VariantSchemaEditor from './VariantSchemaEditor';
+import OrderItemFieldsEditor from './OrderItemFieldsEditor';
+import PurchaseRulesEditor from './PurchaseRulesEditor';
+import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
+
+/**
+ * CollapsibleSection renders a titled, expandable/collapsible box
+ * used to wrap the new product configuration editors.
+ */
+function CollapsibleSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: defaultOpen });
+  return (
+    <Box w="100%" borderWidth="1px" borderColor="gray.400" borderRadius="md" overflow="hidden">
+      <Button
+        w="100%"
+        variant="ghost"
+        justifyContent="space-between"
+        onClick={onToggle}
+        size="sm"
+        rightIcon={isOpen ? <ChevronDownIcon /> : <ChevronRight />}
+        bg="gray.700"
+        color="white"
+        _hover={{ bg: 'gray.600' }}
+        borderRadius="0"
+      >
+        {title}
+      </Button>
+      <Collapse in={isOpen}>
+        <Box p={3} bg="white">
+          {children}
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
 
 interface ProductCardProps {
   product: Product;
@@ -346,7 +381,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           groep: product.groep || '',
           subgroep: product.subgroep || '',
           opties: product.opties || '',
-          nietInWinkel: (product as any).nietInWinkel || false
+          nietInWinkel: (product as any).nietInWinkel || false,
+          variant_schema: (product as any).variant_schema || undefined,
+          order_item_fields: (product as any).order_item_fields || undefined,
+          purchase_rules: (product as any).purchase_rules || undefined,
         }}
         validationSchema={schema}
         onSubmit={(values) => onSave(values)}
@@ -458,6 +496,65 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   )}
                 </Field>
               </FormControl>
+
+              {/* Legacy required_attributes display */}
+              {(product as any).required_attributes && !values.variant_schema && !values.order_item_fields && !values.purchase_rules && (
+                <Box w="100%" p={3} bg="yellow.50" borderRadius="md" border="1px solid" borderColor="yellow.300">
+                  <HStack mb={2}>
+                    <Text fontSize="sm" fontWeight="bold" color="yellow.800">
+                      Legacy veldconfiguratie
+                    </Text>
+                    <Badge colorScheme="yellow" fontSize="xs">Migratie vereist</Badge>
+                  </HStack>
+                  <Box
+                    p={2}
+                    bg="gray.50"
+                    borderRadius="sm"
+                    fontSize="xs"
+                    color="gray.600"
+                    maxH="100px"
+                    overflowY="auto"
+                    fontFamily="mono"
+                  >
+                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                      {JSON.stringify((product as any).required_attributes, null, 2)}
+                    </pre>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Variant Schema Editor - collapsible */}
+              {!readOnly && (
+                <CollapsibleSection title="Variant Schema" defaultOpen={!!values.variant_schema && Object.keys(values.variant_schema).length > 0}>
+                  <VariantSchemaEditor
+                    value={values.variant_schema || {}}
+                    onChange={(schema: VariantSchema) => setFieldValue('variant_schema', Object.keys(schema).length > 0 ? schema : undefined)}
+                  />
+                </CollapsibleSection>
+              )}
+
+              {/* Order Item Fields Editor - collapsible */}
+              {!readOnly && (
+                <CollapsibleSection title="Bestelvelden per item" defaultOpen={!!values.order_item_fields && values.order_item_fields.length > 0}>
+                  <OrderItemFieldsEditor
+                    value={values.order_item_fields || []}
+                    onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields.length > 0 ? fields : undefined)}
+                  />
+                </CollapsibleSection>
+              )}
+
+              {/* Purchase Rules Editor - collapsible */}
+              {!readOnly && (
+                <CollapsibleSection title="Aankoopregels" defaultOpen={!!values.purchase_rules && Object.values(values.purchase_rules).some(v => v != null)}>
+                  <PurchaseRulesEditor
+                    value={values.purchase_rules || {}}
+                    onChange={(rules: PurchaseRules) => {
+                      const hasValues = Object.values(rules).some(v => v != null && v !== false);
+                      setFieldValue('purchase_rules', hasValues ? rules : undefined);
+                    }}
+                  />
+                </CollapsibleSection>
+              )}
 
               {/* Image upload button */}
               <Button 

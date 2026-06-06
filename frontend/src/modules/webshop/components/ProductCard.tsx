@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -13,13 +13,21 @@ import {
   VStack,
   Image,
   Box,
-  Select,
   IconButton,
   Flex,
-  HStack
+  HStack,
+  Spinner,
 } from '@chakra-ui/react';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
+import VariantSelector from './VariantSelector';
+import PurchaseRulesFeedback from './PurchaseRulesFeedback';
+import { productService } from '../services/api';
+import {
+  VariantSchema,
+  VariantRecord,
+  PurchaseRules,
+} from '../types/unifiedProduct.types';
 
 interface Product {
   id: string;
@@ -28,15 +36,18 @@ interface Product {
   opties?: string;
   images?: string | string[];
   image?: string | string[];
+  variant_schema?: VariantSchema;
+  purchase_rules?: PurchaseRules;
 }
 
 interface CartItem {
   product_id: string;
+  variant_id: string;
+  variant_attributes: Record<string, string>;
   name?: string;
   naam?: string;
   price?: number;
   quantity: number;
-  selectedOption?: string;
   id?: string;
 }
 
@@ -45,19 +56,96 @@ interface ProductCardProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (cartItem: CartItem) => void;
+  /** Quantity already ordered by this member for this product (paid/pending) */
+  memberOrderedQuantity?: number;
+  /** Quantity already ordered by this member's club for this product (paid/pending) */
+  clubOrderedQuantity?: number;
+  /** Whether the user has an active membership */
+  hasActiveMembership?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onAddToCart }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  isOpen,
+  onClose,
+  onAddToCart,
+  memberOrderedQuantity = 0,
+  clubOrderedQuantity = 0,
+  hasActiveMembership = true,
+}) => {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
-  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [selectedVariant, setSelectedVariant] = useState<VariantRecord | null>(null);
+  const [variants, setVariants] = useState<VariantRecord[]>([]);
+  const [loadingVariants, setLoadingVariants] = useState<boolean>(false);
+  const [hasPurchaseViolation, setHasPurchaseViolation] = useState<boolean>(false);
   const { t } = useTranslation('products');
 
+  // Fetch variants when product has a variant_schema
+  useEffect(() => {
+    if (!product || !isOpen) return;
+
+    if (product.variant_schema && Object.keys(product.variant_schema).length > 0) {
+      setLoadingVariants(true);
+      productService
+        .getVariants(product.id)
+        .then((response: any) => {
+          const variantData = Array.isArray(response) ? response : response?.data || [];
+          setVariants(variantData);
+        })
+        .catch((err: Error) => {
+          console.error('Failed to fetch variants:', err);
+          setVariants([]);
+        })
+        .finally(() => {
+          setLoadingVariants(false);
+        });
+    } else {
+      // For products without variant_schema, try to load the default variant
+      setLoadingVariants(true);
+      productService
+        .getVariants(product.id)
+        .then((response: any) => {
+          const variantData = Array.isArray(response) ? response : response?.data || [];
+          setVariants(variantData);
+          // Auto-select default variant (variant with empty variant_attributes)
+          const defaultVariant = variantData.find(
+            (v: VariantRecord) => Object.keys(v.variant_attributes || {}).length === 0
+          );
+          if (defaultVariant) {
+            setSelectedVariant(defaultVariant);
+          }
+        })
+        .catch(() => {
+          setVariants([]);
+        })
+        .finally(() => {
+          setLoadingVariants(false);
+        });
+    }
+
+    // Reset state on product change
+    setSelectedVariant(null);
+    setCurrentImageIndex(0);
+    setHasPurchaseViolation(false);
+  }, [product, isOpen]);
+
+  const handleVariantSelect = useCallback((variant: VariantRecord | null) => {
+    setSelectedVariant(variant);
+  }, []);
+
+  const handlePurchaseViolation = useCallback((hasViolation: boolean) => {
+    setHasPurchaseViolation(hasViolation);
+  }, []);
+
   if (!product) return null;
+
+  const hasVariantSchema =
+    product.variant_schema && Object.keys(product.variant_schema).length > 0;
 
   // Handle both 'image' and 'images' properties from API
   let images: string[] = [];
   const imageData = product.images || product.image;
-  
+
   if (imageData) {
     if (Array.isArray(imageData)) {
       images = imageData;
@@ -65,25 +153,42 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
       images = [imageData];
     }
   }
-  
+
   // Fix image URLs if they're incomplete or use them as-is if complete
-  images = images.map(img => {
-    if (typeof img === 'string') {
-      // If URL is already complete, use it as-is
-      if (img.startsWith('https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com')) {
-        return img;
+  images = images
+    .map((img) => {
+      if (typeof img === 'string') {
+        if (img.startsWith('https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com')) {
+          return img;
+        }
+        if (img.startsWith('https://my-hdcn-bucke')) {
+          return img.replace(
+            'https://my-hdcn-bucke',
+            'https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com'
+          );
+        }
       }
-      // If URL is incomplete, fix it
-      if (img.startsWith('https://my-hdcn-bucke')) {
-        return img.replace('https://my-hdcn-bucke', 'https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com');
-      }
-    }
-    return img;
-  }).filter(img => img && typeof img === 'string');
-  
-  // Parse options from opties field (supports comma-separated values)
-  const options = product.opties && typeof product.opties === 'string' ? 
-    product.opties.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0) : [];
+      return img;
+    })
+    .filter((img) => img && typeof img === 'string');
+
+  // Check if selected variant is out of stock
+  const isOutOfStock = selectedVariant
+    ? !selectedVariant.allow_oversell && selectedVariant.stock <= 0
+    : false;
+
+  // Determine if add-to-cart should be enabled
+  const canAddToCart = (() => {
+    // For products with variant_schema, a variant must be resolved
+    if (hasVariantSchema && !selectedVariant) return false;
+    // For products without variant_schema, allow if default variant is loaded or no variants
+    if (!hasVariantSchema && variants.length > 0 && !selectedVariant) return false;
+    // Cannot add if out of stock
+    if (isOutOfStock) return false;
+    // Cannot add if purchase rule violated
+    if (hasPurchaseViolation) return false;
+    return true;
+  })();
 
   const nextImage = (): void => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -96,26 +201,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
   const handleAddToCart = (): void => {
     const cartItem: CartItem = {
       product_id: product.id,
+      variant_id: selectedVariant?.product_id || '',
+      variant_attributes: selectedVariant?.variant_attributes || {},
       name: product.naam,
       price: Number(product.prijs),
       quantity: 1,
-      selectedOption: options.length > 0 ? selectedOption : undefined
     };
     onAddToCart(cartItem);
     onClose();
   };
 
-  const canAddToCart = options.length === 0 || selectedOption;
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size={{ base: 'full', md: 'xl' }}>
       <ModalOverlay />
       <ModalContent mx={{ base: 2, md: 'auto' }} my={{ base: 2, md: 'auto' }}>
-        <ModalHeader 
-          color="black"
-          fontSize={{ base: 'lg', md: 'xl' }}
-          pr={10}
-        >
+        <ModalHeader color="black" fontSize={{ base: 'lg', md: 'xl' }} pr={10}>
           {product.naam}
         </ModalHeader>
         <ModalCloseButton />
@@ -123,6 +223,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
           <Card>
             <CardBody>
               <VStack spacing={{ base: 3, md: 4 }} align="stretch">
+                {/* Image carousel - preserved from existing implementation */}
                 {images.length > 0 ? (
                   <Box position="relative">
                     <Image
@@ -133,15 +234,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                       objectFit="contain"
                       mx="auto"
                       onError={(e) => {
-                        console.error('Image failed to load:', images[currentImageIndex]);
                         (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                      onLoad={() => {
-                        console.log('Image loaded successfully:', images[currentImageIndex]);
                       }}
                     />
                     {images.length > 1 && (
-                      <Flex justify="space-between" position="absolute" top="50%" w="100%" px={2}>
+                      <Flex
+                        justify="space-between"
+                        position="absolute"
+                        top="50%"
+                        w="100%"
+                        px={2}
+                      >
                         <IconButton
                           icon={<ChevronLeftIcon />}
                           onClick={prevImage}
@@ -164,52 +267,64 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                     )}
                   </Box>
                 ) : (
-                  <Box 
-                    height="300px" 
-                    bg="gray.100" 
-                    display="flex" 
-                    alignItems="center" 
+                  <Box
+                    height="300px"
+                    bg="gray.100"
+                    display="flex"
+                    alignItems="center"
                     justifyContent="center"
                     borderRadius="md"
                   >
                     <Text color="gray.500">{t('card.no_image')}</Text>
                   </Box>
                 )}
-                
+
+                {/* Product details - preserved from existing implementation */}
                 <VStack align="start" spacing={2}>
                   <Text fontSize={{ base: 'md', md: 'lg' }}>
-                    {t('card.price_label')} <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>€{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}</Text>
+                    {t('card.price_label')}{' '}
+                    <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>
+                      €{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}
+                    </Text>
                   </Text>
                   <Text fontSize={{ base: 'sm', md: 'md' }}>
                     <strong>Product:</strong> {product.naam}
                   </Text>
                 </VStack>
 
-                {options.length > 0 && (
+                {/* Variant selector - replaces legacy opties dropdown */}
+                {hasVariantSchema && (
                   <Box>
-                    <Text fontWeight="medium" mb={2}>{t('card.select_option')}:</Text>
-                    <Select
-                      placeholder={t('card.select_option')}
-                      value={selectedOption}
-                      onChange={(e) => setSelectedOption(e.target.value)}
-                    >
-                      {options.map((option, index) => (
-                        <option key={index} value={option}>{option}</option>
-                      ))}
-                    </Select>
+                    {loadingVariants ? (
+                      <Flex justify="center" py={3}>
+                        <Spinner size="sm" />
+                        <Text ml={2} fontSize="sm" color="gray.500">
+                          Opties laden...
+                        </Text>
+                      </Flex>
+                    ) : (
+                      <VariantSelector
+                        variantSchema={product.variant_schema!}
+                        variants={variants}
+                        onVariantSelect={handleVariantSelect}
+                      />
+                    )}
                   </Box>
                 )}
 
-                {options.length > 0 && !selectedOption && (
-                  <Text 
-                    color="red.500" 
-                    fontSize={{ base: 'xs', md: 'sm' }} 
-                    textAlign="center"
-                  >
-                    {t('card.select_option')}
-                  </Text>
+                {/* Purchase rules feedback */}
+                {product.purchase_rules && (
+                  <PurchaseRulesFeedback
+                    rules={product.purchase_rules}
+                    requestedQuantity={1}
+                    memberOrderTotal={memberOrderedQuantity}
+                    clubOrderTotal={clubOrderedQuantity}
+                    hasMembership={hasActiveMembership}
+                    onViolation={handlePurchaseViolation}
+                  />
                 )}
-                
+
+                {/* Action buttons */}
                 <HStack spacing={2}>
                   <Button
                     variant="outline"
@@ -224,7 +339,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                   <Button
                     bg="orange.500"
                     color="white"
-                    _hover={{ bg: "orange.500", opacity: 0.8 }}
+                    _hover={{ bg: 'orange.500', opacity: 0.8 }}
                     onClick={handleAddToCart}
                     isDisabled={!canAddToCart}
                     flex={1}
@@ -232,8 +347,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isOpen, onClose, onA
                     size={{ base: 'md', md: 'lg' }}
                     fontSize={{ base: 'sm', md: 'md' }}
                   >
-                    <Text display={{ base: 'none', sm: 'block' }}>{t('card.add_to_cart')}</Text>
-                    <Text display={{ base: 'block', sm: 'none' }}>{t('card.add_to_cart_short', { defaultValue: 'Toevoegen' })}</Text>
+                    <Text display={{ base: 'none', sm: 'block' }}>
+                      {t('card.add_to_cart')}
+                    </Text>
+                    <Text display={{ base: 'block', sm: 'none' }}>
+                      {t('card.add_to_cart_short', { defaultValue: 'Toevoegen' })}
+                    </Text>
                   </Button>
                 </HStack>
               </VStack>

@@ -2,6 +2,7 @@ import json
 import boto3
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -14,6 +15,8 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.tenant_resolver import resolve_tenants
+    from shared.club_identity import get_club_id
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -112,6 +115,46 @@ def log_security_event(event_type, user_info, additional_data=None):
         print(f"Error logging security event: {str(e)}")
         # Don't fail the operation if security logging fails
 
+def validate_cart_items(items):
+    """
+    Validate cart items use variant_id reference (not selectedOption).
+
+    Each item must have: product_id, variant_id, quantity.
+    Items must NOT contain selectedOption.
+
+    Args:
+        items (list): List of cart item dicts
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not isinstance(items, list):
+        return False, "items must be an array"
+
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            return False, f"Item at index {i} must be an object"
+
+        # Required fields
+        if 'product_id' not in item:
+            return False, f"Item at index {i} missing required field 'product_id'"
+        if 'variant_id' not in item:
+            return False, f"Item at index {i} missing required field 'variant_id'"
+        if 'quantity' not in item:
+            return False, f"Item at index {i} missing required field 'quantity'"
+
+        # Validate quantity is a positive integer
+        quantity = item['quantity']
+        if not isinstance(quantity, int) or quantity < 1:
+            return False, f"Item at index {i}: quantity must be a positive integer"
+
+        # Reject legacy selectedOption field
+        if 'selectedOption' in item:
+            return False, f"Item at index {i}: 'selectedOption' is not allowed, use 'variant_id' instead"
+
+    return True, None
+
+
 def lambda_handler(event, context):
     try:
         # Handle OPTIONS request
@@ -138,24 +181,84 @@ def lambda_handler(event, context):
         
         body = json.loads(event['body'])
         
+        # Derive tenant from Cognito group membership
+        user_tenants = resolve_tenants(user_roles)
+        # Use requested tenant from body, or default to first available tenant
+        tenant = body.get('tenant')
+        if tenant:
+            if tenant not in user_tenants:
+                return create_error_response(403, 'Tenant access denied', {
+                    'details': {
+                        'requested_tenant': tenant,
+                        'allowed_tenants': sorted(user_tenants)
+                    }
+                })
+        else:
+            # Default to h-dcn if available, otherwise first tenant
+            tenant = 'h-dcn' if 'h-dcn' in user_tenants else (
+                next(iter(sorted(user_tenants))) if user_tenants else None
+            )
+
+        if not tenant:
+            return create_error_response(403, 'No tenant access available')
+
+        # Derive club_id for PresMeet users (from Member record)
+        club_id = None
+        if tenant == 'presmeet':
+            club_id = get_club_id(user_email)
+
+        # Validate items if provided
+        items = body.get('items', [])
+        if items:
+            is_valid, error_msg = validate_cart_items(items)
+            if not is_valid:
+                return create_error_response(400, error_msg)
+
+        # Build cart items with proper structure
+        cart_items = []
+        total_amount = Decimal('0')
+        for item in items:
+            unit_price = Decimal(str(item.get('unit_price', '0')))
+            quantity = item['quantity']
+            cart_item = {
+                'product_id': item['product_id'],
+                'variant_id': item['variant_id'],
+                'quantity': quantity,
+                'unit_price': unit_price,
+            }
+            # Include optional display fields
+            if 'variant_attributes' in item:
+                cart_item['variant_attributes'] = item['variant_attributes']
+            if 'item_fields_data' in item:
+                cart_item['item_fields_data'] = item['item_fields_data']
+            cart_items.append(cart_item)
+            total_amount += unit_price * quantity
+
         cart_id = str(uuid.uuid4())
         cart = {
             'cart_id': cart_id,
             'customer_id': body['customer_id'],
-            'user_email': user_email,  # Link cart to authenticated user
-            'items': [],
-            'total_amount': 0,
+            'user_email': user_email,
+            'tenant': tenant,
+            'items': cart_items,
+            'total_amount': total_amount,
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat()
         }
+
+        # Add club_id for PresMeet users
+        if club_id:
+            cart['club_id'] = club_id
         
         table.put_item(Item=cart)
         
         # Log cart creation for comprehensive audit trail
         log_cart_audit('CREATE', cart_id, user_email, user_roles, {
             'customer_id': body['customer_id'],
-            'total_amount': cart.get('total_amount', 0),
-            'item_count': len(cart.get('items', [])),
+            'tenant': tenant,
+            'club_id': club_id,
+            'total_amount': str(total_amount),
+            'item_count': len(cart_items),
             'timestamp': cart['created_at']
         })
         
@@ -166,6 +269,8 @@ def lambda_handler(event, context):
         
     except json.JSONDecodeError:
         return create_error_response(400, 'Invalid JSON in request body')
+    except KeyError as e:
+        return create_error_response(400, f'Missing required field: {str(e)}')
     except Exception as e:
         print(f"Error creating cart: {str(e)}")
         return create_error_response(500, 'Internal server error')

@@ -307,6 +307,8 @@ class TestAuthenticationConcurrency:
                 required_permissions = ["profile_read"]
             elif "System_CRUD" in roles:
                 required_permissions = ["members_delete"]
+            elif "Events_Read" in roles:
+                required_permissions = ["events_read"]
             else:
                 required_permissions = ["members_read"]
             

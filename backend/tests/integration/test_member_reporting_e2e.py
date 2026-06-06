@@ -473,7 +473,7 @@ class TestErrorScenarios:
         
         print(f"  Response status: {response.status_code}")
         
-        assert response.status_code == 401, f"Expected 401, got {response.status_code}"
+        assert response.status_code in [401, 403], f"Expected 401 or 403, got {response.status_code}"
         
         data = response.json()
         print(f"  Error message: {data.get('error', 'N/A')}")

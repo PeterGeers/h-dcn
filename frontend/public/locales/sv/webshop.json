@@ -103,5 +103,45 @@
   "demo": {
     "title": "Demoläge",
     "description": "Använder testdata eftersom API:et är otillgängligt"
+  },
+  "variant": {
+    "select_placeholder": "Välj {{axis}}",
+    "in_stock": "{{count}} i lager",
+    "out_of_stock": "Slut i lager",
+    "combination_unavailable": "Kombination ej tillgänglig",
+    "select_all_prompt": "Välj alla alternativ för att se tillgänglighet"
+  },
+  "item_fields": {
+    "item_label": "Artikel {{current}} av {{total}}",
+    "required": "Detta fält är obligatoriskt",
+    "min_length": "Minst {{count}} tecken",
+    "max_length": "Högst {{count}} tecken",
+    "minimum": "Minimivärdet är {{value}}",
+    "maximum": "Maxvärdet är {{value}}",
+    "invalid_email": "Ogiltig e-postadress",
+    "invalid_number": "Ange ett giltigt tal",
+    "invalid_option": "Välj ett giltigt alternativ",
+    "pattern_mismatch": "Värdet matchar inte det obligatoriska formatet",
+    "select_placeholder": "Välj...",
+    "email_placeholder": "email@exempel.se"
+  },
+  "purchase_rules": {
+    "max_per_order": "Högst {{limit}} stycken per beställning",
+    "max_per_member": "Du har {{remaining}} stycken tillgängliga (gräns: {{limit}} per medlem)",
+    "max_per_club": "Din klubb har {{remaining}} stycken tillgängliga (gräns: {{limit}} per klubb)",
+    "requires_membership": "Ett aktivt medlemskap krävs för att beställa denna produkt"
+  },
+  "payment": {
+    "method_title": "Betalningsmetod",
+    "ideal_description": "iDEAL - betala direkt via din bank",
+    "creditcard_description": "Kreditkort (Visa, Mastercard)",
+    "bank_transfer": "Banköverföring",
+    "bank_transfer_description": "Manuell banköverföring",
+    "transfer_instructions_title": "Överföringsuppgifter",
+    "reference": "Referens:",
+    "amount": "Belopp:",
+    "return_success_title": "Betalning lyckades",
+    "return_failed_title": "Betalning ej slutförd",
+    "retry_button": "Försök igen"
   }
 }

@@ -1,6 +1,7 @@
 # H-DCN Todo List
-Presmeet v3 A few items 
- 1. Create a pdf of the booking overview that can be downloaded by the user 
+## Presmeet v3 
+A few items 
+ 1. Create a pdf of the booking overview ad payment instrruction if not paid that can be downloaded by the user 
  2. In the overview the cost of the parties are missing for meeting attendants
  2.2 The order details are missing from the overview
  3. The start page of the presmeet when Not having an account should have a search button to find club 
@@ -8,10 +9,8 @@ Presmeet v3 A few items
 
 
 
-
-
-- Prepare for demo
--- different functions by user type,
+# Prepare for demo
+##  different functions by user type,
 -- different user screen by member type
 -- Toegang tot platform afhankelijk van toegangscontrole
 --- Leden zien alleen eigen gegevens en clubsjop
@@ -24,17 +23,17 @@ Presmeet v3 A few items
 --- penningmeester@h-dcn.nl
 --- Regio secretarissen regio evenementen al dan niet met budget en actuals
 
--- webshop and payment
+## webshop and payment
 --- Productbeheer (met fotos, maten, ..)
 --- Webshop met Producten en Orders (status= Winkelwagen, Besteld, Betaald, Verzonden)
 --- Betaalsysteem Stripe of Tikkies??
 
--- Evenementen administratie,
+## Evenementen administratie,
 --- lijst van evenementen met posters (if available)
 --- Evenementen kalender (voor op website, facebook, clubblad)
 --- Manage evenement budget en actuals voor specifieke h-dcn evenemnten
 
--- Ledenadministratie
+## Ledenadministratie
 --- Administratie van leden, gezinsleden, sponsors, adverteerders, etc..
 --- Leden++ kunnen zelf persoonsgegevens aanpassen
 --- Alleen leden++ hebben toeganmg tot clubsjop
@@ -43,8 +42,8 @@ Presmeet v3 A few items
 --- Automatische generatie van ALV oorkondes, Brieven(e-mails) nieuwe aanmeldingen, 
 --- AI modus mbt Ledenadministratie. Vragen jn natuurlijke taal hoeveel gezinsleden per regio en het totaal etc... ... 
 
-Opties
-- Ondersteuning financuiele administratie
+## Opties
+- Ondersteuning financiele administratie
 - Eigen webshop per regio met regio gesloten , H-DCN gsloten of oopenbaar
 - Uitbreidbaar naar andere federatie clubs
 

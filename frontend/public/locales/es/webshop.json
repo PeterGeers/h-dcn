@@ -103,5 +103,45 @@
   "demo": {
     "title": "Modo demo",
     "description": "Usando datos simulados porque la API no está disponible"
+  },
+  "variant": {
+    "select_placeholder": "Elegir {{axis}}",
+    "in_stock": "{{count}} en stock",
+    "out_of_stock": "Agotado",
+    "combination_unavailable": "Combinación no disponible",
+    "select_all_prompt": "Selecciona todas las opciones para ver la disponibilidad"
+  },
+  "item_fields": {
+    "item_label": "Artículo {{current}} de {{total}}",
+    "required": "Este campo es obligatorio",
+    "min_length": "Mínimo {{count}} caracteres",
+    "max_length": "Máximo {{count}} caracteres",
+    "minimum": "El valor mínimo es {{value}}",
+    "maximum": "El valor máximo es {{value}}",
+    "invalid_email": "Dirección de correo electrónico no válida",
+    "invalid_number": "Introduce un número válido",
+    "invalid_option": "Selecciona una opción válida",
+    "pattern_mismatch": "El valor no coincide con el formato requerido",
+    "select_placeholder": "Seleccionar...",
+    "email_placeholder": "email@ejemplo.es"
+  },
+  "purchase_rules": {
+    "max_per_order": "Máximo {{limit}} artículos por pedido",
+    "max_per_member": "Te quedan {{remaining}} artículos disponibles (límite: {{limit}} por miembro)",
+    "max_per_club": "Tu club tiene {{remaining}} artículos disponibles (límite: {{limit}} por club)",
+    "requires_membership": "Se requiere una membresía activa para pedir este producto"
+  },
+  "payment": {
+    "method_title": "Método de pago",
+    "ideal_description": "iDEAL - pagar directamente a través de tu banco",
+    "creditcard_description": "Tarjeta de crédito (Visa, Mastercard)",
+    "bank_transfer": "Transferencia bancaria",
+    "bank_transfer_description": "Transferencia bancaria manual",
+    "transfer_instructions_title": "Instrucciones de transferencia",
+    "reference": "Referencia:",
+    "amount": "Importe:",
+    "return_success_title": "Pago exitoso",
+    "return_failed_title": "Pago no completado",
+    "retry_button": "Intentar de nuevo"
   }
 }

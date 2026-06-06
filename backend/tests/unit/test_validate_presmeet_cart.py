@@ -43,7 +43,7 @@ from handler.validate_presmeet_cart.app import lambda_handler
 def create_jwt_token(email="club@fhd.nl", groups=None):
     """Helper to create JWT tokens for testing."""
     if groups is None:
-        groups = ["hdcnLeden", "club_amsterdam"]
+        groups = ["hdcnLeden", "Regio_Pressmeet", "club_amsterdam"]
 
     payload = {
         "email": email,
@@ -88,8 +88,20 @@ class TestValidatePresMeetCartAuth:
 
     @patch.object(app, 'producten_table')
     def test_no_club_group_returns_403(self, mock_table):
-        """User without club group returns 403."""
+        """User without Regio_Pressmeet group returns 403 (PresMeet access required)."""
         token = create_jwt_token(groups=["hdcnLeden"])
+        event = make_event(token=token, body={"items": []})
+        response = lambda_handler(event, None)
+
+        assert response['statusCode'] == 403
+        body = json.loads(response['body'])
+        assert 'PresMeet access required' in body.get('error', '')
+
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value=None)
+    @patch.object(app, 'producten_table')
+    def test_no_club_assignment_returns_403(self, mock_table, mock_club_id):
+        """User with Regio_Pressmeet but no club_id returns 403."""
+        token = create_jwt_token(groups=["hdcnLeden", "Regio_Pressmeet"])
         event = make_event(token=token, body={"items": []})
         response = lambda_handler(event, None)
 
@@ -101,8 +113,9 @@ class TestValidatePresMeetCartAuth:
 class TestValidatePresMeetCartBodyParsing:
     """Test request body parsing and validation."""
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_missing_body_returns_400(self, mock_table):
+    def test_missing_body_returns_400(self, mock_table, mock_club_id):
         """Missing request body returns 400."""
         token = create_jwt_token()
         event = make_event(token=token)
@@ -113,8 +126,9 @@ class TestValidatePresMeetCartBodyParsing:
         body = json.loads(response['body'])
         assert 'Invalid JSON' in body.get('error', '')
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_invalid_json_returns_400(self, mock_table):
+    def test_invalid_json_returns_400(self, mock_table, mock_club_id):
         """Invalid JSON in body returns 400."""
         token = create_jwt_token()
         event = make_event(token=token)
@@ -125,8 +139,9 @@ class TestValidatePresMeetCartBodyParsing:
         body = json.loads(response['body'])
         assert 'Invalid JSON' in body.get('error', '')
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_missing_items_field_returns_400(self, mock_table):
+    def test_missing_items_field_returns_400(self, mock_table, mock_club_id):
         """Body without 'items' field returns 400."""
         token = create_jwt_token()
         event = make_event(token=token, body={"delegates": []})
@@ -136,8 +151,9 @@ class TestValidatePresMeetCartBodyParsing:
         body = json.loads(response['body'])
         assert 'items' in body.get('error', '')
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_items_not_array_returns_400(self, mock_table):
+    def test_items_not_array_returns_400(self, mock_table, mock_club_id):
         """Body with 'items' not as array returns 400."""
         token = create_jwt_token()
         event = make_event(token=token, body={"items": "not_an_array"})
@@ -151,8 +167,9 @@ class TestValidatePresMeetCartBodyParsing:
 class TestValidatePresMeetCartValidation:
     """Test cart item validation logic."""
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_valid_meeting_ticket_returns_success(self, mock_table):
+    def test_valid_meeting_ticket_returns_success(self, mock_table, mock_club_id):
         """Valid meeting_ticket item passes validation."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -170,8 +187,9 @@ class TestValidatePresMeetCartValidation:
         assert body['valid'] is True
         assert body['errors'] == []
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_invalid_product_type_returns_error(self, mock_table):
+    def test_invalid_product_type_returns_error(self, mock_table, mock_club_id):
         """Invalid product_type returns validation error."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -193,8 +211,9 @@ class TestValidatePresMeetCartValidation:
         assert error['field'] == 'product_type'
         assert error['constraint'] == 'enum'
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_missing_required_attribute_returns_error(self, mock_table):
+    def test_missing_required_attribute_returns_error(self, mock_table, mock_club_id):
         """Missing required attribute returns validation error."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -213,8 +232,9 @@ class TestValidatePresMeetCartValidation:
         errors = body['errors']
         assert any(e['field'] == 'role' and e['constraint'] == 'required' for e in errors)
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_invalid_enum_value_returns_error(self, mock_table):
+    def test_invalid_enum_value_returns_error(self, mock_table, mock_club_id):
         """Invalid enum value returns validation error."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -233,8 +253,9 @@ class TestValidatePresMeetCartValidation:
         errors = body['errors']
         assert any(e['field'] == 'gender' and e['constraint'] == 'enum' for e in errors)
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_multiple_items_validated(self, mock_table):
+    def test_multiple_items_validated(self, mock_table, mock_club_id):
         """Multiple items are each validated independently."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -261,8 +282,9 @@ class TestValidatePresMeetCartValidation:
         # Only errors from bad-item
         assert all(e['item_id'] == 'bad-item' for e in errors)
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_empty_items_returns_valid(self, mock_table):
+    def test_empty_items_returns_valid(self, mock_table, mock_club_id):
         """Empty items array returns valid=true with no errors."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -275,8 +297,9 @@ class TestValidatePresMeetCartValidation:
         assert body['valid'] is True
         assert body['errors'] == []
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_missing_product_type_returns_error(self, mock_table):
+    def test_missing_product_type_returns_error(self, mock_table, mock_club_id):
         """Item without product_type returns validation error."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -294,8 +317,9 @@ class TestValidatePresMeetCartValidation:
         errors = body['errors']
         assert any(e['field'] == 'product_type' and e['constraint'] == 'required' for e in errors)
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_type_constraint_violation_returns_error(self, mock_table):
+    def test_type_constraint_violation_returns_error(self, mock_table, mock_club_id):
         """Attribute with wrong type returns validation error."""
         mock_table.scan.return_value = {'Items': []}
 
@@ -325,8 +349,9 @@ class TestValidatePresMeetCartValidation:
 class TestValidatePresMeetCartWithConfig:
     """Test validation using config records from Producten table."""
 
+    @patch('handler.validate_presmeet_cart.app.get_club_id', return_value='club_amsterdam')
     @patch.object(app, 'producten_table')
-    def test_uses_db_config_when_available(self, mock_table):
+    def test_uses_db_config_when_available(self, mock_table, mock_club_id):
         """Uses config from Producten table instead of defaults when available."""
         # Config record with custom schema
         config_item = {
