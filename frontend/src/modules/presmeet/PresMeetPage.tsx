@@ -78,8 +78,6 @@ const PresMeetPage: React.FC = () => {
     needsOnboarding,
     loadBooking,
     reloadAll,
-    saveBooking,
-    submitBooking,
   } = usePresMeetBooking();
 
   const userGroups = user?.groups ?? [];

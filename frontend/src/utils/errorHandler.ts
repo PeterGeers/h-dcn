@@ -1,5 +1,4 @@
 import { useToast } from '@chakra-ui/react';
-import React from 'react';
 
 // Error types for consistent handling
 export interface ApiError {

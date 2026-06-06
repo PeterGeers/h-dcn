@@ -123,7 +123,7 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
 
   const addValue = (axisIndex: number, newValue: string) => {
     if (!newValue.trim()) return;
-    const [name, values] = axes[axisIndex];
+    const [, values] = axes[axisIndex];
     if (values.length >= MAX_VALUES_PER_AXIS) return;
     const newAxes: [string, string[]][] = axes.map(([n, v], i) =>
       i === axisIndex ? [n, [...v, newValue.trim()]] : [n, v]
@@ -132,8 +132,8 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
   };
 
   const removeValue = (axisIndex: number, valueIndex: number) => {
-    const newAxes: [string, string[]][] = axes.map(([name, values], i) =>
-      i === axisIndex ? [name, values.filter((_, vi) => vi !== valueIndex)] : [name, values]
+    const newAxes: [string, string[]][] = axes.map(([axisName, values], i) =>
+      i === axisIndex ? [axisName, values.filter((_, vi) => vi !== valueIndex)] : [axisName, values]
     );
     updateSchema(newAxes);
   };

@@ -4,8 +4,6 @@ import {
   Button,
   VStack,
   Text,
-  Alert,
-  AlertIcon,
   Heading,
   Code,
   List,

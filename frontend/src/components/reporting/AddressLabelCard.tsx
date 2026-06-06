@@ -5,7 +5,7 @@
  * generation functionality from the main reporting dashboard.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   VStack,
@@ -21,7 +21,7 @@ import {
   useDisclosure,
   Icon
 } from '@chakra-ui/react';
-import { EmailIcon, EditIcon } from '@chakra-ui/icons';
+import { EditIcon } from '@chakra-ui/icons';
 import { Member } from '../../types/index';
 import AddressLabelGenerator from './AddressLabelGenerator';
 

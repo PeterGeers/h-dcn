@@ -15,11 +15,9 @@ import React, { useState } from 'react';
 import {
   Box,
   Button,
-  ButtonGroup,
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
   SimpleGrid,
   Table,
   Thead,
@@ -35,7 +33,6 @@ import {
   Radio,
   RadioGroup,
   Stack,
-  Divider,
   Tooltip,
 } from '@chakra-ui/react';
 import { useAdminReports } from '../hooks/useAdminReports';
@@ -260,7 +257,7 @@ interface HdcnMetricsProps {
 const HdcnMetrics: React.FC<HdcnMetricsProps> = ({ byProduct }) => {
   if (byProduct.length === 0) return null;
 
-  const totalOrders = byProduct.reduce((sum, p) => sum + p.items_sold, 0);
+  const totalOrders = byProduct.reduce((sum, p) => sum + p.items_sold, 0); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   return (
     <Box bg="gray.800" borderRadius="md" p={4} mb={4}>

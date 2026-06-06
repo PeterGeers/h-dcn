@@ -4,18 +4,12 @@ interface DeliveryOption {
   cost: string;
 }
 
-interface RawOption {
-  id?: any;
-  value?: any;
-  parent?: any;
-  [key: string]: any;
-}
-
 export const processDeliveryOptions = (optionsString: string): DeliveryOption[] => {
   if (typeof optionsString !== 'string' || optionsString.trim() === '') {
     throw new Error('Invalid options string');
   }
   
+  // eslint-disable-next-line no-control-regex
   const sanitizedString = optionsString.replace(/[\u0000-\u001f\u007f-\u009f]/g, '');
   const rawOptions: any[] = JSON.parse(sanitizedString);
   

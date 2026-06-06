@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, VStack, HStack, Heading, Tabs, TabList, TabPanels, Tab, TabPanel,
-  useToast, Spinner, Text, Alert, AlertIcon, Button
+  Spinner, Text, Alert, AlertIcon, Button
 } from '@chakra-ui/react';
 import EventList from './components/EventList';
 import FinanceModule from './components/FinanceModule';
@@ -48,6 +48,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   useEffect(() => {
     loadEvents();
     loadPermissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPermissions = async () => {
@@ -63,6 +64,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
 
   useEffect(() => {
     loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadEvents = async () => {

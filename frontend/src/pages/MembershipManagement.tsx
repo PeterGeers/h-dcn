@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, VStack, HStack, Heading, Button, Table, Thead, Tbody, Tr, Th, Td,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, useToast, Badge, Text, NumberInput, NumberInputField, Select
+  useDisclosure, useToast, Text, NumberInput, NumberInputField, Select
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
@@ -101,6 +101,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMembersCRUDRole]);
 
   // If user doesn't have the required permission, show access denied message

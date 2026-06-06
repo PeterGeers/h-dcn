@@ -5,10 +5,6 @@
  * all modules (membership, webshop, events, etc.) with parameter-driven configuration.
  */
 
-import { apiCall } from './errorHandler';
-import { API_URLS } from '../config/api';
-import { getAuthHeaders } from './authHeaders';
-
 // ============================================================================
 // GENERIC EMAIL INTERFACES
 // ============================================================================

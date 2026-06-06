@@ -112,6 +112,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // Check for payment return status from URL params
       checkPaymentReturn();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const checkPaymentReturn = useCallback(() => {

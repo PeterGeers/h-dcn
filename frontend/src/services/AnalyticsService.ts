@@ -392,7 +392,6 @@ export class AnalyticsService {
     const yearlyGrowth = years.map((year, index) => {
       const newMembers = yearGroups[year].length;
       cumulativeMembers += newMembers;
-      const previousYear = index > 0 ? years[index - 1] : year;
       const previousTotal = index > 0 ? cumulativeMembers - newMembers : 0;
       const growthRate = previousTotal > 0 ? ((newMembers / previousTotal) * 100) : 0;
 

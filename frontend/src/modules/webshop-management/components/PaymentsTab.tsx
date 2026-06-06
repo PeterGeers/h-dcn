@@ -7,7 +7,7 @@
  * Validates: Requirements 5.1, 5.2
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Stat,
@@ -53,7 +53,7 @@ function formatCurrency(amount: number): string {
 }
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {
-  const { aggregates, orderPayments, loading, error, recordPayment, refetch } =
+  const { aggregates, orderPayments, loading, error, recordPayment } =
     useAdminPayments(tenant);
   const { canMutate } = useAdminPermissions();
 

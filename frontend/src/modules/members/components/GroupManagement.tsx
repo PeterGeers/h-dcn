@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Th, Td,
-  Input, useToast, Text, IconButton, Badge, useDisclosure
+  useToast, Text, IconButton, Badge, useDisclosure
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import cognitoService from '../services/cognitoService';
@@ -30,6 +30,7 @@ function GroupManagement({ user }: GroupManagementProps) {
 
   useEffect(() => {
     loadGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadGroups = async () => {

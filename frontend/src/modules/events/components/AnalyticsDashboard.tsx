@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   Box, VStack, HStack, Heading, SimpleGrid, Stat, StatLabel, StatNumber,
-  Table, Thead, Tbody, Tr, Th, Td, Text, Progress, Alert, AlertIcon
+  Table, Thead, Tbody, Tr, Th, Td, Text, Progress
 } from '@chakra-ui/react';
 import CSVExportButton from './CSVExportButton';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';

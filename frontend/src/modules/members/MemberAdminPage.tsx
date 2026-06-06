@@ -8,9 +8,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
-  HStack,
   Heading,
-  Button,
   useToast,
   Spinner,
   Text,
@@ -23,7 +21,6 @@ import {
   Alert,
   AlertIcon
 } from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
 import MemberAdminTable from '../../components/MemberAdminTable';
 import MemberEditView from '../../components/MemberEditView';
 import MemberSelfServiceView from '../../components/MemberSelfServiceView';
@@ -33,7 +30,7 @@ import GroupManagement from './components/GroupManagement';
 import PoolSettings from './components/PoolSettings';
 import { HDCNGroup } from '../../config/memberFields';
 import { Member } from '../../types';
-import { getAuthHeaders, getAuthHeadersForGet } from '../../utils/authHeaders';
+import { getAuthHeaders } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { getUserRoles } from '../../utils/functionPermissions';
@@ -134,6 +131,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     if (userRoles.length > 0) {
       loadMembers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRoles]); // Removed handleError from dependencies
 
   // Handle member view/edit - now uses same modal

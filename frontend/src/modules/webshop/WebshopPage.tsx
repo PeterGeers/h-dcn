@@ -138,7 +138,7 @@ function WebshopPage({ user }: WebshopPageProps) {
         duration: 5000,
       });
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -184,7 +184,7 @@ function WebshopPage({ user }: WebshopPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const filterProducts = useCallback(() => {
     let filtered = products;

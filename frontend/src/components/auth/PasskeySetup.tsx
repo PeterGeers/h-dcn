@@ -12,9 +12,6 @@ import {
   ListItem,
   ListIcon,
   useToast,
-  Input,
-  FormControl,
-  FormLabel,
 } from '@chakra-ui/react';
 import { CheckIcon, WarningIcon } from '@chakra-ui/icons';
 import { associateWebAuthnCredential } from 'aws-amplify/auth';
@@ -51,6 +48,7 @@ export function PasskeySetup({ userEmail, onSuccess, onSkip, onError, isRecovery
     checkBrowserCompatibility();
     checkEmailVerification();
     checkMigrationStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkBrowserCompatibility = async () => {

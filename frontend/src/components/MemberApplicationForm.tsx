@@ -22,8 +22,7 @@ import {
   CardHeader,
   CardBody,
   SimpleGrid,
-  useToast,
-  Divider
+  useToast
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';

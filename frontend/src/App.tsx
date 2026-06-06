@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Box, Flex, Heading, Button, Text, Spacer, HStack, Image } from '@chakra-ui/react';
+import { Box, Flex, Heading, Button, Text, Spacer } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import GroupAccessGuard from './components/common/GroupAccessGuard';

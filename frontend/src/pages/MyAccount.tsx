@@ -138,7 +138,7 @@ function MyAccount({ user }: MyAccountProps) {
     };
 
     loadMemberData();
-  }, [user, isVerzoekLid]);
+  }, [user, isVerzoekLid, t]);
 
   // Handle member data update (for existing members)
   const handleMemberUpdate = async (memberData: any) => {

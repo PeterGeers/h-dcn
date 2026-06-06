@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Th, Td,
-  Input, Badge, useToast, Text, IconButton, Select, useDisclosure
+  Input, Badge, useToast, Text, IconButton, useDisclosure
 } from '@chakra-ui/react';
 import {
   Menu, MenuButton, MenuList, MenuItem
@@ -42,6 +42,7 @@ function UserManagement({ user }: UserManagementProps) {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getUserAttribute = (user: CognitoUser, attributeName: string) => {

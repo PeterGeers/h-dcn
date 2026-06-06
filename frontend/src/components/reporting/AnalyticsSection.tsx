@@ -92,6 +92,7 @@ const AnalyticsSection: React.FC<AnalyticsSectionProps> = ({
     if (members && members.length > 0) {
       processAnalyticsData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members]);
 
   // Process analytics data

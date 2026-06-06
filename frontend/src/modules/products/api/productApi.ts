@@ -1,6 +1,5 @@
 import { Product } from '../../../types';
 import { ApiService } from '../../../services/apiService';
-import { API_CONFIG } from '../../../config/api';
 
 interface Parameter {
   id?: string;
@@ -8,8 +7,6 @@ interface Parameter {
   value: string;
   [key: string]: any;
 }
-
-const BASE: string = API_CONFIG.BASE_URL;
 
 export const scanProducts = async () => {
   if (!(await ApiService.isAuthenticated())) {

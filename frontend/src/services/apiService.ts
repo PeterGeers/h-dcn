@@ -9,7 +9,7 @@
 
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { getAuthHeaders } from '../utils/authHeaders';
-import { parseApiError, showMaintenanceScreen, ApiError } from '../utils/errorHandler';
+import { parseApiError, showMaintenanceScreen } from '../utils/errorHandler';
 
 export interface ApiResponse<T = any> {
   success: boolean;

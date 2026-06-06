@@ -9,7 +9,6 @@ import {
   Box,
   VStack,
   HStack,
-  Heading,
   Text,
   Button,
   Select,
@@ -20,44 +19,21 @@ import {
   Th,
   Td,
   Badge,
-  IconButton,
   Input,
-  InputGroup,
-  InputLeftElement,
   Flex,
   Spacer,
   Card,
-  CardHeader,
   CardBody,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  useDisclosure,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverCloseButton,
-  FormControl,
-  FormLabel,
-  Collapse,
   useColorModeValue
 } from '@chakra-ui/react';
 import { 
-  SearchIcon, 
-  DownloadIcon,
-  ChevronDownIcon,
-  SettingsIcon,
-  ChevronUpIcon,
   AddIcon
 } from '@chakra-ui/icons';
 import { MEMBER_TABLE_CONTEXTS, MEMBER_FIELDS, HDCNGroup, getFilteredEnumOptions } from '../config/memberFields';
-import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
+import { canViewField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { computeCalculatedFieldsForArray, getMemberFullName } from '../utils/calculatedFields';
-import { canPerformAction, hasRegionalAccess } from '../utils/permissionHelpers';
+
 
 interface MemberAdminTableProps {
   members: any[];
@@ -85,7 +61,8 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
-  const filterBg = useColorModeValue('gray.50', 'gray.700');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _filterBg = useColorModeValue('gray.50', 'gray.700');
 
   // Get available contexts based on user permissions
   const availableContexts = useMemo(() => {
@@ -225,7 +202,8 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
     }));
   };
 
-  const clearAllFilters = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _clearAllFilters = () => {
     setColumnFilters({});
   };
 

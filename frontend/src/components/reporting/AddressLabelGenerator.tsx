@@ -24,8 +24,7 @@ import {
   Grid,
   GridItem,
   Divider,
-  Badge,
-  Spinner
+  Badge
 } from '@chakra-ui/react';
 import { DownloadIcon, ViewIcon, EditIcon } from '@chakra-ui/icons';
 import { Member } from '../../types/index';
@@ -141,7 +140,8 @@ const AddressLabelGenerator: React.FC<AddressLabelGeneratorProps> = ({
   // Export to other formats
   const exportToFormat = async (format: 'csv' | 'xlsx') => {
     try {
-      const exportData = processedMembers.map(member => ({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _exportData = processedMembers.map(member => ({
         'Naam': member.korte_naam || '',
         'Straat': member.straat || '',
         'Postcode': member.postcode || '',

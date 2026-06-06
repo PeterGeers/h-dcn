@@ -5,8 +5,6 @@
   tijdstempel?: string; 
  */
 
-import { apiCall } from './errorHandler';
-import { API_URLS } from '../config/api';
 import { ApiService } from '../services/apiService';
 import { emailService } from './emailService';
 import { MEMBERSHIP_EMAIL_CONFIG } from '../config/memberFields';

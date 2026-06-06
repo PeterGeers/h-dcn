@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
-  VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, useToast, Select,
+  VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, Select,
   Alert, AlertIcon, Text
 } from '@chakra-ui/react';
 import { MEMBER_FIELDS } from '../../../config/memberFields';

@@ -1,12 +1,3 @@
-import { CognitoIdentityProviderClient, 
-  ListUsersCommand, AdminCreateUserCommand, AdminDeleteUserCommand,
-  AdminUpdateUserAttributesCommand,
-  AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand,
-  ListGroupsCommand, CreateGroupCommand, DeleteGroupCommand,
-  AdminListGroupsForUserCommand, ListUsersInGroupCommand,
-  AdminDisableUserCommand, AdminEnableUserCommand,
-  DescribeUserPoolCommand
-} from '@aws-sdk/client-cognito-identity-provider';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 
 interface RequestOptions {
@@ -176,4 +167,5 @@ class CognitoService {
   }
 }
 
-export default new CognitoService();
+const cognitoService = new CognitoService();
+export default cognitoService;

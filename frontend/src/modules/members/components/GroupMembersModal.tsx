@@ -38,6 +38,7 @@ function GroupMembersModal({ isOpen, onClose, group }: GroupMembersModalProps) {
     if (group && isOpen) {
       loadMembers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group, isOpen]);
 
   const loadMembers = async () => {

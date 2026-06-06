@@ -18,7 +18,6 @@ import {
   AddStockRequest,
   RecordPaymentRequest,
   OrderStatus,
-  PaymentRecord,
 } from '../types/admin.types';
 
 const BASE_URL =

@@ -47,6 +47,7 @@ function PoolSettings({ user }: PoolSettingsProps) {
 
   useEffect(() => {
     loadPoolSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPoolSettings = async () => {

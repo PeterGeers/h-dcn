@@ -9,7 +9,6 @@ import React, { useState } from 'react';
 import {
   Box,
   VStack,
-  HStack,
   Heading,
   Text,
   Button,
@@ -30,13 +29,13 @@ import {
   Collapse,
   Tooltip
 } from '@chakra-ui/react';
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, EditIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, EditIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { Formik, Form, Field } from 'formik';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields } from '../config/memberFields';
-import { resolveFieldsForContext, canViewField, canEditField } from '../utils/fieldResolver';
+import { canViewField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
-import { computeCalculatedFields, getCalculatedFieldValue } from '../utils/calculatedFields';
+import { getCalculatedFieldValue } from '../utils/calculatedFields';
 
 interface MemberSelfServiceViewProps {
   member: any;

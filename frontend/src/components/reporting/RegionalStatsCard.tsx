@@ -12,7 +12,6 @@ import {
   HStack,
   Text,
   Heading,
-  Progress,
   Badge,
   Stat,
   StatLabel,

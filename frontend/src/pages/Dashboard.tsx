@@ -15,7 +15,7 @@ function Dashboard() {
   const [memberExists, setMemberExists] = useState<boolean | null>(null);
 
   // Get groups directly from auth context (R4.2 - groups from access token payload)
-  const userGroups = user?.groups ?? [];
+  const userGroups = useMemo(() => user?.groups ?? [], [user?.groups]);
 
   // Build a compatibility shim for FunctionGuard which still expects the legacy user shape
   const functionGuardUser = useMemo(() => {
@@ -59,7 +59,6 @@ function Dashboard() {
         group.includes('Regio_')
       );
 
-      const isOnlyApplicant = userGroups.length === 1 && userGroups.includes('verzoek_lid');
       const hasNoGroups = userGroups.length === 0;
       const hasHdcnLedenRole = userGroups.includes('hdcnLeden');
       const hasVerzoekLidRole = userGroups.includes('verzoek_lid');

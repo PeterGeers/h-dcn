@@ -10,7 +10,7 @@ import {
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
+
   ModalBody,
   ModalCloseButton,
   Button,
@@ -46,7 +46,7 @@ import * as Yup from 'yup';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, HDCNGroup } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
-import { computeCalculatedFields, getMemberFullName } from '../utils/calculatedFields';
+import { getMemberFullName } from '../utils/calculatedFields';
 
 interface MemberEditViewProps {
   isOpen: boolean;
@@ -208,7 +208,8 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     }
   };
 
-  const getMembershipColor = (membership: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getMembershipColor = (membership: string) => {
     switch (membership) {
       case 'Gewoon lid': return 'blue';
       case 'Gezins lid': return 'purple';

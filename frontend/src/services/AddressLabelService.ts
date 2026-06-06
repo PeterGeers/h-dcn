@@ -282,7 +282,6 @@ export class AddressLabelService {
       const { format, style } = options;
       
       let labelIndex = options.startPosition || 0;
-      let currentPage = 1;
       
       // Generate labels
       processedMembers.forEach((member, memberIndex) => {
@@ -297,7 +296,6 @@ export class AddressLabelService {
         // Add new page if needed
         if (labelIndex > options.startPosition && pagePosition === 0) {
           doc.addPage();
-          currentPage++;
         }
         
         // Calculate coordinates

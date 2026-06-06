@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box, VStack, HStack, Heading, Table, Thead, Tbody, Tr, Th, Td,
-  Badge, Button, Select, Text, SimpleGrid, Stat, StatLabel, StatNumber,
-  Alert, AlertIcon
+  Badge, Select, Text, SimpleGrid, Stat, StatLabel, StatNumber,
 } from '@chakra-ui/react';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';

@@ -57,15 +57,6 @@ export function useAdminPayments(tenant: string): UseAdminPaymentsReturn {
     try {
       const data = await getAdminPayments(tenant || undefined);
       // The API returns payment records — aggregate them client-side
-      // Group payments by order_id to build order summaries
-      const orderMap = new Map<string, {
-        order_id: string;
-        tenant: string;
-        customer: string;
-        total: number;
-        paid: number;
-      }>();
-
       // The backend returns a response with aggregates and order details
       // Adapt based on actual API response shape
       const response = data as any;

@@ -1,4 +1,3 @@
-import { ApiService } from '../services/apiService';
 import { getCurrentUserRoles } from '../services/authService';
 import { HDCNGroup } from '../types/user';
 
@@ -627,8 +626,6 @@ export class FunctionPermissionManager {
             return context?.userRegion === 'friesland' || this.userGroups.includes('Regio_Friesland') || this.userGroups.includes('Regio_All');
           case 'region_duitsland':
             return context?.userRegion === 'duitsland' || this.userGroups.includes('Regio_Duitsland') || this.userGroups.includes('Regio_All');
-          case 'region_noord_holland':
-            return context?.userRegion === 'noord_holland' || this.userGroups.includes('Regio_Noord-Holland') || this.userGroups.includes('Regio_All');
           
           default:
             return false;

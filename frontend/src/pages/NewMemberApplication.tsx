@@ -49,6 +49,7 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
   const { t } = useTranslation('members');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showApplicationForm, setShowApplicationForm] = useState(false);
 
   useEffect(() => {
@@ -135,7 +136,7 @@ const NewMemberApplication: React.FC<NewMemberApplicationProps> = ({ user }) => 
     };
 
     handleUserStatus();
-  }, [user, navigate]);
+  }, [user, navigate, t]);
 
   // Handle application submission
   const handleSubmitApplication = async (applicationData: any) => {

@@ -31,8 +31,7 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
   Bar,
-  Line,
-  Area
+  Line
 } from 'recharts';
 import { ViolinPlotData } from '../../services/AnalyticsService';
 

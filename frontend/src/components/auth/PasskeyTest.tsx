@@ -23,6 +23,7 @@ export function PasskeyTest() {
 
   useEffect(() => {
     checkBrowserSupport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkBrowserSupport = async () => {

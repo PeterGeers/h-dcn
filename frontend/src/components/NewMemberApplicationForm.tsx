@@ -34,7 +34,7 @@ import { useTranslation } from 'react-i18next';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields, getFilteredEnumOptions } from '../config/memberFields';
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { ApiService } from '../services/apiService';
-import { computeCalculatedFields, getCalculatedFieldValue } from '../utils/calculatedFields';
+import { getCalculatedFieldValue } from '../utils/calculatedFields';
 
 interface NewMemberApplicationFormProps {
   userEmail: string; // From Cognito
@@ -430,7 +430,8 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
 
     const error = errors[fieldKey];
     const isTouched = touched[fieldKey];
-    const isRequired = isRequiredField(fieldKey);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _isRequired = isRequiredField(fieldKey);
 
     // Check conditional visibility
     if (field.showWhen) {
