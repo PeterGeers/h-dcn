@@ -615,6 +615,7 @@ function WebshopPage({ user }: WebshopPageProps) {
           onClose={() => setIsCheckoutModalOpen(false)}
           cartItems={cartItems}
           userEmail={user?.attributes?.email || memberInfo?.email || ''}
+          cartId={cartId || undefined}
           onPaymentSuccess={async (paymentData: PaymentData) => {
             try {
               const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);

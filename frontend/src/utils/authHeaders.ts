@@ -16,6 +16,11 @@ import i18n from '../i18n';
  */
 const filterValidRoles = (groups: string[]): string[] => {
   return groups.filter((role: string) => {
+    // Silently skip Cognito identity provider groups (e.g. eu-west-1_fcUkvwjH5_Google)
+    if (/^[a-z]{2}-[a-z]+-\d_[A-Za-z0-9]+_/.test(role)) {
+      return false;
+    }
+
     // Allow permission-based roles (current system)
     if (role.includes('_CRUD') || role.includes('_Read') || role.includes('_Export') || role.includes('_Status_Approve')) {
       // Note: Regio_All is the only _All role that still exists
