@@ -9,6 +9,7 @@ import VariantSchemaEditor from './VariantSchemaEditor';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
+import { PRODUCT_CATEGORIES } from '../config/productCategories';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -91,8 +92,6 @@ const schema = Yup.object().shape({
   }),
   images: Yup.array().of(Yup.string()).nullable(),
 });
-
-import { PRODUCT_CATEGORIES } from '../config/productCategories';
 
 export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);

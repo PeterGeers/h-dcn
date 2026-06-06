@@ -69,6 +69,11 @@
       "last 1 safari version"
     ]
   },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
   "devDependencies": {
     "@chakra-ui/utils": "^2.2.5",
     "@testing-library/jest-dom": "^6.9.1",

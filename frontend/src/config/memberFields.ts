@@ -60,8 +60,8 @@
  */
 
 // Import HDCNGroup from user.ts to avoid duplication
-export type { HDCNGroup } from '../types/user';
 import type { HDCNGroup } from '../types/user';
+export type { HDCNGroup } from '../types/user';
 
 // ============================================================================
 // TYPE DEFINITIONS

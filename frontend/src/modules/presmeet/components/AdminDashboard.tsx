@@ -80,21 +80,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isAdmin }) => {
   const [paymentDescription, setPaymentDescription] = useState('');
   const [submittingPayment, setSubmittingPayment] = useState(false);
 
-  // Access control: return 403 for non-admin users
-  if (!isAdmin) {
-    return (
-      <Alert status="error" variant="subtle" borderRadius="md">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            Admin access required. You do not have permission to view this page.
-          </AlertDescription>
-        </Box>
-      </Alert>
-    );
-  }
-
   const loadReportData = useCallback(async () => {
     setLoading(true);
     try {
@@ -129,6 +114,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isAdmin }) => {
   useEffect(() => {
     loadReportData();
   }, [loadReportData]);
+
+  // Access control: return 403 for non-admin users
+  if (!isAdmin) {
+    return (
+      <Alert status="error" variant="subtle" borderRadius="md">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            Admin access required. You do not have permission to view this page.
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
 
   const handleRefreshData = async () => {
     setRefreshing(true);

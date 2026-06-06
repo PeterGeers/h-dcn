@@ -24,7 +24,7 @@ export interface ItemFieldsEntry {
 
 export interface CartItemData {
   product_id: string;
-  variant_id: string;
+  variant_id?: string;
   variant_attributes?: Record<string, string>;
   quantity: number;
   unit_price?: number;
@@ -42,7 +42,7 @@ interface CartData {
 
 export interface OrderItemData {
   product_id: string;
-  variant_id: string;
+  variant_id?: string;
   quantity: number;
   item_fields_data?: ItemFieldsEntry[];
 }
@@ -51,7 +51,7 @@ export type PaymentMethod = 'ideal' | 'creditcard' | 'bank_transfer';
 
 interface OrderData {
   cart_id?: string;
-  payment_method: PaymentMethod;
+  payment_method?: PaymentMethod;
   items?: OrderItemData[];
   [key: string]: any;
 }
