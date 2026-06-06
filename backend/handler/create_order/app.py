@@ -69,6 +69,20 @@ members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 MOLLIE_WEBHOOK_URL = os.environ.get('MOLLIE_WEBHOOK_URL', '')
 MOLLIE_REDIRECT_URL = os.environ.get('MOLLIE_REDIRECT_URL', '')
 
+
+def _build_webhook_url(event):
+    """Construct the Mollie webhook URL from the Lambda event's request context.
+
+    This avoids referencing MyApi in the SAM template (which causes circular
+    dependency errors) by deriving the URL at runtime from the API Gateway
+    request context available in every Lambda invocation.
+    """
+    request_context = event.get('requestContext', {})
+    api_id = request_context.get('apiId', '')
+    stage = request_context.get('stage', '')
+    region = os.environ.get('AWS_REGION', 'eu-west-1')
+    return f"https://{api_id}.execute-api.{region}.amazonaws.com/{stage}/mollie-webhook"
+
 # Valid payment methods
 VALID_PAYMENT_METHODS = ("ideal", "creditcard", "bank_transfer")
 
@@ -211,13 +225,13 @@ def lambda_handler(event, context):
         if is_persistent and persistent_order:
             return _update_persistent_order(
                 persistent_order, items, products, payment_method,
-                member_id, user_email, club_id, tenant, body, locale
+                member_id, user_email, club_id, tenant, body, locale, event
             )
 
         # Create new order
         return _create_new_order(
             items, products, payment_method, member_id, user_email,
-            club_id, tenant, cart_id, body, locale, is_persistent
+            club_id, tenant, cart_id, body, locale, is_persistent, event
         )
 
     except json.JSONDecodeError:
@@ -345,7 +359,7 @@ def _validate_stock(variant_id, quantity, locale):
 
 
 def _create_new_order(items, products, payment_method, member_id, user_email,
-                      club_id, tenant, cart_id, body, locale, is_persistent):
+                      club_id, tenant, cart_id, body, locale, is_persistent, event=None):
     """Create a new order record and handle payment."""
     order_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -379,12 +393,12 @@ def _create_new_order(items, products, payment_method, member_id, user_email,
 
     # Handle payment method
     if payment_method in ('ideal', 'creditcard'):
-        return _handle_mollie_payment(order, payment_method, locale)
+        return _handle_mollie_payment(order, payment_method, locale, event)
     else:
         return _handle_bank_transfer(order, locale)
 
 
-def _handle_mollie_payment(order, payment_method, locale):
+def _handle_mollie_payment(order, payment_method, locale, event=None):
     """Create Mollie payment and store order with pending status."""
     order_id = order['order_id']
     total_amount = order['total_amount']
@@ -394,7 +408,7 @@ def _handle_mollie_payment(order, payment_method, locale):
     description = f"Order {order_id}"
 
     redirect_url = MOLLIE_REDIRECT_URL or f"https://portal.h-dcn.nl/orders/{order_id}/confirmation"
-    webhook_url = MOLLIE_WEBHOOK_URL or None
+    webhook_url = os.environ.get('MOLLIE_WEBHOOK_URL') or _build_webhook_url(event or {})
 
     try:
         mollie_result = create_payment(
@@ -488,7 +502,7 @@ def _find_persistent_order(club_id, product_id):
 
 
 def _update_persistent_order(existing_order, items, products, payment_method,
-                             member_id, user_email, club_id, tenant, body, locale):
+                             member_id, user_email, club_id, tenant, body, locale, event=None):
     """Update an existing persistent order with optimistic locking."""
     order_id = existing_order['order_id']
     current_version = int(existing_order.get('version', 1))
@@ -560,7 +574,7 @@ def _update_persistent_order(existing_order, items, products, payment_method,
         if difference > 0:
             amount_str = f"{difference:.2f}"
             redirect_url = MOLLIE_REDIRECT_URL or f"https://portal.h-dcn.nl/orders/{order_id}/confirmation"
-            webhook_url = MOLLIE_WEBHOOK_URL or None
+            webhook_url = os.environ.get('MOLLIE_WEBHOOK_URL') or _build_webhook_url(event or {})
 
             try:
                 mollie_result = create_payment(

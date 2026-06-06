@@ -1053,7 +1053,7 @@ Resources:
           MEMBERS_TABLE_NAME: !Ref MembersTable
           CARTS_TABLE_NAME: !Ref CartsTable
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
-          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mollie-webhook"
+          MOLLIE_WEBHOOK_URL: ""
           MOLLIE_REDIRECT_URL: "https://portal.h-dcn.nl/webshop/payment/return"
       Events:
         CreateOrder:
