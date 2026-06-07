@@ -139,7 +139,7 @@ describe('MemberList Component', () => {
       render(<MemberList />);
       
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       expect(mockFetchMembers).toHaveBeenCalledTimes(1);
@@ -186,7 +186,7 @@ describe('MemberList Component', () => {
       
       await waitFor(() => {
         expect(mockFetchMembers).toHaveBeenCalledTimes(2);
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
     });
 
@@ -195,7 +195,7 @@ describe('MemberList Component', () => {
       
       // Wait for initial load
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Make refresh fail
@@ -207,10 +207,12 @@ describe('MemberList Component', () => {
       
       // Wait for error to appear
       await waitFor(() => {
-        expect(screen.getByText(/Refresh Failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/Showing cached data/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
-      expect(screen.getByText(/Showing cached data/i)).toBeInTheDocument();
+      // Verify the warning alert title is present
+      const alertTitles = screen.getAllByTestId('alert-title');
+      expect(alertTitles.some(el => el.textContent === 'Refresh Failed')).toBe(true);
       
       // Members should still be displayed
       expect(screen.getByText('3')).toBeInTheDocument();
@@ -262,7 +264,7 @@ describe('MemberList Component', () => {
       render(<MemberList />);
       
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       expect(screen.queryByText(/Refresh Data/i)).not.toBeInTheDocument();
@@ -307,7 +309,7 @@ describe('MemberList Component', () => {
       
       // Wait for initial load
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Make refresh hang
@@ -336,7 +338,7 @@ describe('MemberList Component', () => {
       
       // Wait for initial load
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Click refresh
@@ -358,7 +360,7 @@ describe('MemberList Component', () => {
       
       // Wait for initial load
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Make refresh fail
@@ -476,7 +478,8 @@ describe('MemberList Component', () => {
       render(<MemberList />);
       
       await waitFor(() => {
-        expect(screen.getByText(/Use the renderMembers prop/i)).toBeInTheDocument();
+        // Text is split by <code> element, so check for the code element content
+        expect(screen.getByText('renderMembers')).toBeInTheDocument();
       }, { timeout: 3000 });
     });
   });
@@ -500,7 +503,7 @@ describe('MemberList Component', () => {
       
       // Wait for initial load
       await waitFor(() => {
-        expect(screen.getByText(/Members/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Members/i })).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Simulate scroll

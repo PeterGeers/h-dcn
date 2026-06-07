@@ -5,8 +5,8 @@ from datetime import datetime
 import sys
 import os
 
-# Import role_permissions from local directory
-from role_permissions import can_edit_field, PERSONAL_FIELDS, MOTORCYCLE_FIELDS, ADMINISTRATIVE_FIELDS, get_combined_permissions
+# Import role_permissions from shared layer
+from shared.role_permissions import can_edit_field, PERSONAL_FIELDS, MOTORCYCLE_FIELDS, ADMINISTRATIVE_FIELDS, get_combined_permissions
 
 # Fallback auth utilities (in case layer doesn't work)
 def extract_user_credentials_fallback(event):

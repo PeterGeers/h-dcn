@@ -4,6 +4,8 @@
 
 This document describes the improved image management system for the H-DCN webshop after the restoration and fixes implemented on December 30, 2025.
 
+> **Note — Product Unification (March 2026):** The webshop product system was reworked in March 2026 to unify products and variants into a single coherent structure. Images now associate with both products and their variants. The naming convention below applies to the unified product/variant model — each variant can have its own image using the pattern `product-images/{VARIANT_ID}.{extension}` in addition to the product-level image.
+
 ## Image Naming Convention
 
 ### Current System (After Fix)
@@ -40,11 +42,12 @@ uploadToS3(file); // Creates: product-images/1767104567890-newimage.jpg
 
 ## Database Image URLs
 
-All products now store logical image URLs:
+Since the product unification rework (March 2026), both products and variants store image URLs. The unified structure uses a consistent pattern:
 
 ```json
 {
   "id": "G2",
+  "product_id": "G2",
   "image": [
     "https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/product-images/G2.jpg"
   ],
@@ -53,6 +56,8 @@ All products now store logical image URLs:
   ]
 }
 ```
+
+Variants inherit the parent product image unless overridden with a variant-specific image.
 
 ## Restored Images
 

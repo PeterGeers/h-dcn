@@ -333,6 +333,7 @@ export function isAdministrator(roles: string[]): boolean {
     role.includes('System_') || 
     role.includes('Members_CRUD') ||
     role.includes('National_') ||
-    role.includes('Communication_CRUD')
+    role.includes('Communication_CRUD') ||
+    role === 'Webmaster'
   );
 }

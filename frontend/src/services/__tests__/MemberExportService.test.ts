@@ -29,7 +29,19 @@ jest.mock('../../config/memberFields', () => ({
 }));
 
 jest.mock('../../utils/fieldRenderers', () => ({
-  renderFieldValue: jest.fn((value, field) => value?.toString() || '')
+  renderFieldValue: jest.fn((value: any) => value?.toString() || '')
+}));
+
+const mockIsAuthenticated = jest.fn().mockReturnValue(false);
+const mockCreateDistributionListFromView = jest.fn();
+
+jest.mock('../GoogleMailService', () => ({
+  GoogleMailService: {
+    getInstance: () => ({
+      isAuthenticated: mockIsAuthenticated,
+      createDistributionListFromView: mockCreateDistributionListFromView
+    })
+  }
 }));
 
 // Mock the external dependencies
@@ -65,7 +77,7 @@ Object.defineProperty(window, 'URL', {
   writable: true
 });
 
-// Mock document.createElement to return a proper mock element
+// Mock document.createElement to return a proper mock element for anchor tags
 const mockElement = {
   href: '',
   download: '',
@@ -74,20 +86,18 @@ const mockElement = {
   setAttribute: jest.fn()
 };
 
-Object.defineProperty(document, 'createElement', {
-  value: jest.fn(() => mockElement),
-  writable: true
-});
+const origCreateElement = Document.prototype.createElement;
+Document.prototype.createElement = function(tagName: string, ...args: any[]) {
+  if (tagName === 'a') {
+    return mockElement as any;
+  }
+  return origCreateElement.call(this, tagName, ...args);
+};
 
-Object.defineProperty(document.body, 'appendChild', {
-  value: jest.fn(),
-  writable: true
-});
-
-Object.defineProperty(document.body, 'removeChild', {
-  value: jest.fn(),
-  writable: true
-});
+const origAppendChild = document.body.appendChild;
+document.body.appendChild = jest.fn((node: any) => node) as any;
+const origRemoveChild = document.body.removeChild;
+document.body.removeChild = jest.fn((node: any) => node) as any;
 
 describe('MemberExportService', () => {
   let service: MemberExportService;

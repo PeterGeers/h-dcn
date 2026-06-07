@@ -315,13 +315,19 @@ describe('Regional Filtering Integration Tests', () => {
     function simulateRegionalFiltering(members: Member[], user: typeof testUsers.nationalAdmin): Member[] {
       const userRoles = user.groups || [];
       
-      // Check for full access roles
-      const hasFullAccess = userRoles.some(role => 
-        ['Members_CRUD', 'System_CRUD', 'System_User_Management'].includes(role)
+      // Check for admin-level member management permissions
+      const hasAdminAccess = userRoles.some(role => 
+        ['Members_CRUD', 'Members_Read', 'System_CRUD', 'System_User_Management'].includes(role)
       );
+      
+      // Users without admin permissions cannot see any members
+      if (!hasAdminAccess) {
+        return [];
+      }
+      
       const hasRegioAll = userRoles.includes('Regio_All');
       
-      if (hasFullAccess && hasRegioAll) {
+      if (hasAdminAccess && hasRegioAll) {
         return members; // No filtering for full access users
       }
       
@@ -341,7 +347,7 @@ describe('Regional Filtering Integration Tests', () => {
         const memberRegion = member.regio;
         if (!memberRegion) {
           // Members without region - only include for full access users with Regio_All
-          return hasFullAccess && hasRegioAll;
+          return hasAdminAccess && hasRegioAll;
         }
         return allowedRegions.includes(memberRegion);
       });

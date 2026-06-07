@@ -223,11 +223,32 @@ class TestAdminOperationsPreservation:
         assert "group" in content.lower()
 
     def test_cognito_admin_uses_pool_id_env_var(self):
-        """Handler reads COGNITO_USER_POOL_ID from environment."""
-        content = read_file_content(
-            os.path.join(HANDLER_DIR, "hdcn_cognito_admin", "app.py")
+        """Handler package reads COGNITO_USER_POOL_ID from environment.
+
+        After the refactoring split, COGNITO_USER_POOL_ID lives in sub-modules
+        (user_operations.py, group_operations.py, etc.) rather than app.py directly.
+        """
+        hdcn_admin_dir = os.path.join(HANDLER_DIR, "hdcn_cognito_admin")
+        sub_modules = [
+            "app.py",
+            "user_operations.py",
+            "group_operations.py",
+            "auth_operations.py",
+            "role_operations.py",
+            "permission_utils.py",
+        ]
+        found = False
+        for module in sub_modules:
+            module_path = os.path.join(hdcn_admin_dir, module)
+            if not os.path.exists(module_path):
+                continue
+            content = read_file_content(module_path)
+            if "COGNITO_USER_POOL_ID" in content:
+                found = True
+                break
+        assert found, (
+            "COGNITO_USER_POOL_ID not found in any hdcn_cognito_admin module"
         )
-        assert "COGNITO_USER_POOL_ID" in content
 
 
 # --- Test Class: DynamoDB API Operations Preservation (Requirement 3.8) ---

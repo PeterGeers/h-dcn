@@ -220,7 +220,8 @@ describe('Regional Filtering System', () => {
       const user = testUsers.nationalAdmin;
       expect(userHasPermissionWithRegion(user, 'members_read', 'utrecht')).toBe(true);
       expect(userHasPermissionWithRegion(user, 'members_crud', 'limburg')).toBe(true);
-      expect(userHasPermissionWithRegion(user, 'events_crud', 'noord_holland')).toBe(true);
+      // National admin only has Members_CRUD + Regio_All, not Events_CRUD
+      expect(userHasPermissionWithRegion(user, 'members_crud', 'noord_holland')).toBe(true);
     });
 
     test('should validate permission with region for regional coordinator', () => {

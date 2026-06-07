@@ -4,6 +4,8 @@
 
 This guide sets up `testportal.h-dcn.nl` with HTTPS support for testing authentication changes without affecting production.
 
+> **Note (June 2026):** The backend now has 85 Lambda function handlers (up from ~46 at the time of the original guide). New features including PresMeet and product unification have been added since this guide was last updated.
+
 ## Step-by-Step Setup
 
 ### 1. Create S3 Bucket and Basic Setup
@@ -122,6 +124,23 @@ headers = {
 ```
 
 ## Troubleshooting
+
+### Common Issues After Setup
+
+#### PresMeet Configuration
+
+If testing PresMeet features locally, ensure the following environment variables are set:
+
+- `PRESMEET_TABLE_NAME` — points to the PresMeet DynamoDB table
+- PresMeet handlers follow the same auth pattern as other handlers
+
+#### Product Variants Setup
+
+The product unification (March 2026) introduced variant-level operations. For local testing:
+
+- The `Producten` table now stores both products and variants in a unified structure
+- Use `admin_bulk_create_variants` and `admin_create_variant` handlers for variant operations
+- Stock management operates at the variant level via `admin_add_stock`
 
 ### Certificate Issues
 

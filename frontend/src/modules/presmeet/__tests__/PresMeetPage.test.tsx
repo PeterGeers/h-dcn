@@ -11,6 +11,30 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, any>) => {
+      const translations: Record<string, string> = {
+        'page.title': "Presidents' Meeting",
+        'page.title_booking': "Presidents' Meeting Booking",
+        'page.error_loading': 'Error loading PresMeet',
+        'page.tab_booking': 'Booking',
+        'page.tab_overview': 'Overview',
+        'page.tab_admin': 'Admin',
+      };
+      let result = translations[key] ?? key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          result = result.replace(`{{${k}}}`, String(v));
+        });
+      }
+      return result;
+    },
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock useAuth to provide controlled user groups
 const mockUseAuth = jest.fn();
 jest.mock('../../../context/AuthProvider', () => ({

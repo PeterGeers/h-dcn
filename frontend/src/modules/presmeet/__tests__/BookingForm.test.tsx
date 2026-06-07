@@ -10,6 +10,33 @@ import '@testing-library/jest-dom';
 import BookingForm from '../components/BookingForm';
 import { ProductTypeConfig, BookingFormData } from '../types/presmeet';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, any>) => {
+      const translations: Record<string, string> = {
+        'booking_form.save_draft': 'Save Draft',
+        'booking_form.submit_booking': 'Submit Booking',
+        'booking_form.booking_locked': 'This booking is locked and cannot be modified.',
+        'booking_form.estimated_total': 'Estimated Total',
+        'booking_form.summary': '{{delegates}} delegate(s) · {{party}} party ticket(s) · {{tshirts}} t-shirt(s) · {{transfers}} transfer(s)',
+        'booking_form.draft_saved': 'Draft saved',
+        'booking_form.validation_errors': 'Validation errors',
+        'booking_form.min_delegates': 'At least {{count}} delegate is required',
+        'booking_form.max_tshirts': 'Maximum {{count}} t-shirts allowed',
+      };
+      let result = translations[key] ?? key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          result = result.replace(`{{${k}}}`, String(v));
+        });
+      }
+      return result;
+    },
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock presmeetService
 const mockSaveBooking = jest.fn();
 const mockSubmitBooking = jest.fn();

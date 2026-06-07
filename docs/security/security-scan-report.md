@@ -3,7 +3,10 @@
 **Date**: December 29, 2025  
 **Scan Tool**: GitGuardian Secret Scanner v2.153.1  
 **Status**: ✅ PASSED - No security incidents detected  
-**Configuration**: ✅ FIXED - GitGuardian config migrated to v2 format
+**Configuration**: ✅ FIXED - GitGuardian config migrated to v2 format  
+**Handlers at scan time**: 85 (updated June 2026, was 51 at original scan)
+
+> **Note (June 2026):** The codebase has grown to 85 Lambda handlers. This report reflects the scan performed in December 2025. A full re-scan against the current codebase is recommended but is out of scope for this documentation update.
 
 ## Scan Summary
 

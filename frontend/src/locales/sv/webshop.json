@@ -15,7 +15,8 @@
     "save_hint": "Lägg till produkter först för att spara.",
     "option_label": "Alternativ",
     "item_total_label": "Antal artiklar",
-    "total_label": "Totalt"
+    "total_label": "Totalt",
+    "item_fields_label": "Deltagaruppgifter"
   },
   "product": {
     "added": "Produkt tillagd",
@@ -40,6 +41,7 @@
     "total": "Totalt",
     "processing": "Behandlar...",
     "pay_button": "Betala €{{amount}}",
+    "place_order": "Lägg beställning",
     "placeholder_name": "Namn",
     "placeholder_street": "Gata och husnummer",
     "placeholder_postal": "Postnummer",
@@ -103,5 +105,42 @@
   "demo": {
     "title": "Demoläge",
     "description": "Använder testdata eftersom API:et är otillgängligt"
+  },
+  "item_fields": {
+    "item_label": "Artikel {{current}} av {{total}}",
+    "select_placeholder": "Välj...",
+    "email_placeholder": "E-postadress"
+  },
+  "payment": {
+    "return_success_title": "Betalning lyckades",
+    "return_failed_title": "Betalning ej slutförd",
+    "retry_button": "Försök igen",
+    "method_title": "Betalningsmetod",
+    "ideal_description": "Betala via din egen bank",
+    "creditcard_description": "Betala med Visa, Mastercard eller American Express",
+    "bank_transfer": "Banköverföring",
+    "bank_transfer_description": "Överför beloppet manuellt",
+    "transfer_instructions_title": "Överföringsuppgifter",
+    "reference": "Referens:",
+    "amount": "Belopp:",
+    "return_success_message": "Betalning lyckades! Din beställning har bekräftats.",
+    "return_failed_message": "Betalningen misslyckades. Försök igen eller välj en annan betalningsmetod.",
+    "return_expired_message": "Betalningen har löpt ut. Försök igen eller välj en annan betalningsmetod.",
+    "return_cancelled_message": "Betalningen har avbrutits. Försök igen eller välj en annan betalningsmetod.",
+    "return_pending_message": "Betalningen behandlas. Du får en bekräftelse när betalningen är slutförd.",
+    "return_unknown_message": "Status för din betalning kontrolleras."
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximalt {{limit}} per beställning",
+    "max_per_member": "{{remaining}} tillgängliga (max {{limit}} per medlem)",
+    "max_per_club": "{{remaining}} tillgängliga för din klubb (max {{limit}} per klubb)",
+    "requires_membership": "Ett aktivt medlemskap krävs"
+  },
+  "variant": {
+    "select_placeholder": "Välj {{axis}}",
+    "in_stock": "{{count}} i lager",
+    "out_of_stock": "Slut i lager",
+    "combination_unavailable": "Kombination ej tillgänglig",
+    "select_all_prompt": "Välj alla alternativ"
   }
 }

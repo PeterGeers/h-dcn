@@ -110,6 +110,11 @@ class MockWorker {
   }
 }
 
+// Helper to reset the singleton instance between tests
+function resetWebWorkerManagerInstance(): void {
+  (WebWorkerManager as any).instance = undefined;
+}
+
 // Mock global Worker
 (global as any).Worker = MockWorker;
 (global as any).navigator = {
@@ -120,6 +125,12 @@ describe('WebWorkerManager', () => {
   let workerManager: WebWorkerManager;
 
   beforeEach(() => {
+    // Reset the singleton so each test gets a fresh instance
+    resetWebWorkerManagerInstance();
+    
+    // Ensure Worker mock is set
+    (global as any).Worker = MockWorker;
+    
     // Create a new instance for each test
     workerManager = WebWorkerManager.getInstance({
       maxWorkers: 2,
@@ -131,6 +142,7 @@ describe('WebWorkerManager', () => {
 
   afterEach(() => {
     workerManager.terminate();
+    resetWebWorkerManagerInstance();
   });
 
   describe('Initialization', () => {
@@ -225,7 +237,6 @@ describe('WebWorkerManager', () => {
       
       // Check status while task is running
       await new Promise(resolve => setTimeout(resolve, 10));
-      const statusDuringExecution = workerManager.getStatus();
       
       await taskPromise;
       
@@ -238,9 +249,13 @@ describe('WebWorkerManager', () => {
 
   describe('Error Handling', () => {
     test('should handle task timeout', async () => {
-      // Create manager with very short timeout
+      // Reset singleton and create manager with very short timeout
+      workerManager.terminate();
+      resetWebWorkerManagerInstance();
+      
       const shortTimeoutManager = WebWorkerManager.getInstance({
         maxWorkers: 1,
+        workerScriptPath: '/test-worker.js',
         taskTimeout: 1, // 1ms timeout
         enableLogging: false
       });
@@ -290,6 +305,14 @@ describe('WebWorkerManager', () => {
 });
 
 describe('WebWorkerManager Edge Cases', () => {
+  beforeEach(() => {
+    resetWebWorkerManagerInstance();
+  });
+
+  afterEach(() => {
+    resetWebWorkerManagerInstance();
+  });
+
   test('should handle environment without Worker support', () => {
     // Temporarily remove Worker from global
     const originalWorker = (global as any).Worker;

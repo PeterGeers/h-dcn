@@ -57,6 +57,8 @@ npm test -- --watchAll=false                        # Run all tests
 npm test -- --coverage --watchAll=false             # Coverage report
 ```
 
+> **Important:** Always use `npx react-scripts test` (or `npm test`) — never `npx jest` directly. The CRA Babel config required for TypeScript is only applied through react-scripts. Running jest directly causes parse errors on type annotations.
+
 ## Key Rules
 
 - Mock AWS services with moto (never hit real AWS in tests)

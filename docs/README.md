@@ -14,8 +14,30 @@ The H-DCN Dashboard is a modern web application built with React frontend and AW
 - **E-commerce Integration** - Webshop with Stripe payments
 - **Member Management** - Complete CRUD operations with bulk import
 - **Event Management** - Club events and participation tracking
+- **PresMeet** - Meeting management for club meetings (attendance, reports, payments)
+- **Unified Product/Variant System** - Streamlined product and variant management (March 2026)
 - **AWS Cognito Authentication** - Secure user management with Dutch language support
 - **Serverless Architecture** - Scalable and cost-effective infrastructure
+
+## 🆕 Recent Features (2026)
+
+### PresMeet — Club Meeting Management
+
+PresMeet is a meeting management feature for H-DCN club meetings. It provides:
+
+- Attendance tracking and reporting for official meetings
+- Payment management for meeting-related fees
+- Administrative dashboard with meeting reports
+- Configurable meeting settings per club region
+
+### Product Unification (March 2026)
+
+The product and variant structure was unified in March 2026 to streamline webshop management:
+
+- Products and variants now share a consistent data model
+- Bulk variant creation for products with multiple options (sizes, colors)
+- Stock management integrated at the variant level
+- Simplified admin interface for product/variant CRUD operations
 
 ## 🏗️ Architecture
 
@@ -31,7 +53,7 @@ The H-DCN Dashboard is a modern web application built with React frontend and AW
 
 ### Backend (AWS Serverless)
 
-- **API**: 51 Lambda functions with API Gateway
+- **API**: 85 Lambda functions with API Gateway
 - **Database**: DynamoDB for all data storage
 - **Authentication**: Cognito User Pools
 - **File Storage**: S3 buckets
@@ -161,7 +183,7 @@ h-dcn/
 │   │   └── utils/         # Services and utilities
 │   └── public/
 ├── backend/          # AWS SAM application
-│   ├── handler/      # Lambda function handlers (51 functions)
+│   ├── handler/      # Lambda function handlers (85 functions)
 │   ├── template.yaml # SAM infrastructure template
 │   └── tests/        # Backend tests
 └── documentation/    # Project documentation
@@ -169,7 +191,7 @@ h-dcn/
 
 ## 🔧 API Endpoints
 
-The backend provides 51 REST API endpoints organized by functionality:
+The backend provides 85 REST API endpoints organized by functionality:
 
 - **Products** - E-commerce product management
 - **Members** - Club member CRUD operations
@@ -179,6 +201,8 @@ The backend provides 51 REST API endpoints organized by functionality:
 - **Carts & Orders** - Shopping cart and order processing
 - **Parameters** - System configuration
 - **Cognito** - User pool administration
+- **PresMeet** - Meeting management and reporting
+- **Stock** - Product stock and variant management
 
 ## 🧪 Testing
 
@@ -307,6 +331,6 @@ For technical support or access rights questions, contact the H-DCN administrato
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: October 2025  
+**Version**: 2.0.0  
+**Last Updated**: June 2026  
 **Repository**: https://github.com/PeterGeers/h-dcn

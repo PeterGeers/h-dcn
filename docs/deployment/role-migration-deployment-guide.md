@@ -1,3 +1,5 @@
+# ⚠️ ARCHIVED — Migration completed January 2026. This document is kept for historical reference only.
+
 # Role Migration Deployment Guide
 
 ## Overview
@@ -57,17 +59,14 @@ This guide covers deployment procedures after the role migration from deprecated
 ### Scripts Modified for New Role Structure
 
 1. **test-s3-list.ps1**
-
    - Changed: `hdcnAdmins` → `System_User_Management`
    - Purpose: S3 file listing tests
 
 2. **test-s3-api.ps1**
-
    - Changed: `hdcnAdmins` → `System_User_Management`
    - Purpose: S3 API functionality tests
 
 3. **cleanup-s3-bucket.ps1**
-
    - Changed: `hdcnAdmins` → `System_User_Management`
    - Purpose: S3 bucket cleanup operations
 
@@ -176,12 +175,10 @@ For S3 management:
 ### Common Issues After Role Migration
 
 1. **"Access Denied" errors in deployment scripts**
-
    - **Cause:** User still has old `hdcnAdmins` role
    - **Solution:** Assign `System_User_Management` role
 
 2. **API tests failing with 403 errors**
-
    - **Cause:** Scripts using deprecated role headers
    - **Solution:** Verify scripts use `System_User_Management`
 

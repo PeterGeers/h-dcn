@@ -131,24 +131,45 @@ class TestPoolIdConsistency:
 
     def test_hdcn_cognito_admin_fallback_pool_id(self):
         """
-        Assert hdcn_cognito_admin/app.py fallback pool ID equals eu-west-1_gKK2nZjEK.
+        Assert hdcn_cognito_admin package fallback pool ID equals eu-west-1_fcUkvwjH5.
+
+        After the refactoring split, COGNITO_USER_POOL_ID lives in sub-modules
+        (user_operations.py, group_operations.py, etc.) rather than app.py directly.
 
         **Validates: Requirements 1.3**
         """
-        content = read_file_content(HDCN_COGNITO_ADMIN_PATH)
+        hdcn_admin_dir = os.path.dirname(HDCN_COGNITO_ADMIN_PATH)
+        sub_modules = [
+            "user_operations.py",
+            "group_operations.py",
+            "auth_operations.py",
+            "role_operations.py",
+            "permission_utils.py",
+            "app.py",
+        ]
 
-        # Find the os.environ.get('COGNITO_USER_POOL_ID', '...') pattern
-        match = re.search(
-            r"os\.environ\.get\(['\"]COGNITO_USER_POOL_ID['\"],\s*['\"]([^'\"]+)['\"]",
-            content,
-        )
-        assert match is not None, (
-            "Could not find COGNITO_USER_POOL_ID fallback in hdcn_cognito_admin/app.py"
+        found_fallback = None
+        found_in_file = None
+        for module in sub_modules:
+            module_path = os.path.join(hdcn_admin_dir, module)
+            if not os.path.exists(module_path):
+                continue
+            content = read_file_content(module_path)
+            match = re.search(
+                r"os\.environ\.get\(['\"]COGNITO_USER_POOL_ID['\"],\s*['\"]([^'\"]+)['\"]",
+                content,
+            )
+            if match:
+                found_fallback = match.group(1)
+                found_in_file = module
+                break
+
+        assert found_fallback is not None, (
+            "Could not find COGNITO_USER_POOL_ID fallback in any hdcn_cognito_admin module"
         )
 
-        actual_fallback = match.group(1)
-        assert actual_fallback == CORRECT_POOL_ID, (
-            f"hdcn_cognito_admin/app.py fallback pool ID is '{actual_fallback}', "
+        assert found_fallback == CORRECT_POOL_ID, (
+            f"hdcn_cognito_admin/{found_in_file} fallback pool ID is '{found_fallback}', "
             f"expected '{CORRECT_POOL_ID}'"
         )
 
@@ -336,12 +357,29 @@ class TestPoolIdConsistencyProperty:
             actual = match.group(1)
 
         elif source == "hdcn_cognito_admin":
-            content = read_file_content(HDCN_COGNITO_ADMIN_PATH)
-            match = re.search(
-                r"os\.environ\.get\(['\"]COGNITO_USER_POOL_ID['\"],\s*['\"]([^'\"]+)['\"]",
-                content,
-            )
-            assert match is not None, "COGNITO_USER_POOL_ID fallback not found"
+            # After refactoring, COGNITO_USER_POOL_ID lives in sub-modules
+            hdcn_admin_dir = os.path.dirname(HDCN_COGNITO_ADMIN_PATH)
+            sub_modules = [
+                "user_operations.py",
+                "group_operations.py",
+                "auth_operations.py",
+                "role_operations.py",
+                "permission_utils.py",
+                "app.py",
+            ]
+            match = None
+            for module in sub_modules:
+                module_path = os.path.join(hdcn_admin_dir, module)
+                if not os.path.exists(module_path):
+                    continue
+                content = read_file_content(module_path)
+                match = re.search(
+                    r"os\.environ\.get\(['\"]COGNITO_USER_POOL_ID['\"],\s*['\"]([^'\"]+)['\"]",
+                    content,
+                )
+                if match:
+                    break
+            assert match is not None, "COGNITO_USER_POOL_ID fallback not found in any hdcn_cognito_admin module"
             actual = match.group(1)
 
         elif source == "aws_exports":

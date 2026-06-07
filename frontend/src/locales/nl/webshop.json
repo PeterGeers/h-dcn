@@ -15,7 +15,8 @@
     "save_hint": "Voeg eerst producten toe om te bewaren.",
     "option_label": "Optie",
     "item_total_label": "Aantal items",
-    "total_label": "Totaal"
+    "total_label": "Totaal",
+    "item_fields_label": "Deelnemersgegevens"
   },
   "product": {
     "added": "Product toegevoegd",
@@ -40,6 +41,7 @@
     "total": "Totaal",
     "processing": "Verwerken...",
     "pay_button": "Betaal €{{amount}}",
+    "place_order": "Bestelling plaatsen",
     "placeholder_name": "Naam",
     "placeholder_street": "Straat en huisnummer",
     "placeholder_postal": "Postcode",
@@ -109,5 +111,42 @@
   "demo": {
     "title": "Demo modus",
     "description": "Gebruikt mock data omdat API niet beschikbaar is"
+  },
+  "item_fields": {
+    "item_label": "Item {{current}} van {{total}}",
+    "select_placeholder": "Selecteer...",
+    "email_placeholder": "E-mailadres"
+  },
+  "payment": {
+    "return_success_title": "Betaling geslaagd",
+    "return_failed_title": "Betaling niet voltooid",
+    "retry_button": "Opnieuw proberen",
+    "method_title": "Betaalmethode",
+    "ideal_description": "Betaal via je eigen bank",
+    "creditcard_description": "Betaal met Visa, Mastercard of American Express",
+    "bank_transfer": "Overschrijving",
+    "bank_transfer_description": "Maak het bedrag handmatig over",
+    "transfer_instructions_title": "Overschrijving gegevens",
+    "reference": "Kenmerk:",
+    "amount": "Bedrag:",
+    "return_success_message": "Betaling succesvol! Je bestelling is bevestigd.",
+    "return_failed_message": "De betaling is mislukt. Probeer het opnieuw of kies een andere betaalmethode.",
+    "return_expired_message": "De betaling is verlopen. Probeer het opnieuw of kies een andere betaalmethode.",
+    "return_cancelled_message": "De betaling is geannuleerd. Probeer het opnieuw of kies een andere betaalmethode.",
+    "return_pending_message": "De betaling wordt verwerkt. Je ontvangt een bevestiging zodra de betaling is afgerond.",
+    "return_unknown_message": "De status van je betaling wordt gecontroleerd."
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximum {{limit}} per bestelling",
+    "max_per_member": "Nog {{remaining}} beschikbaar (max {{limit}} per lid)",
+    "max_per_club": "Nog {{remaining}} beschikbaar voor je club (max {{limit}} per club)",
+    "requires_membership": "Een actief lidmaatschap is vereist"
+  },
+  "variant": {
+    "select_placeholder": "Kies {{axis}}",
+    "in_stock": "{{count}} op voorraad",
+    "out_of_stock": "Niet op voorraad",
+    "combination_unavailable": "Combinatie niet beschikbaar",
+    "select_all_prompt": "Selecteer alle opties"
   }
 }

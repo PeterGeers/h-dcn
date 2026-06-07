@@ -6,6 +6,51 @@ A few items
  2.2 The order details are missing from the overview
  3. The start page of the presmeet when Not having an account should have a search button to find club 
  4. The start page should have the presmeet logo and fh-dce logo as start that starts rather big and size down to small logos at the top 
+ 5. Betaling registreren Fout bij registreren Request failed with status code 500
+ 6. Berekening en behandeling van bestellingen klopt niet.
+ 6.1 Bij orders in presmeet modal the party tickets of delegates are not included
+ 6.2 Pickup oe drop off is only taken 1 (Even if 4 is asked)
+ 6.3 Party ticket without name / guest
+ 6.4 Generate pdf missing (alternative Ctrrl P makes a nice hardcopu)
+ 6.4.1 Missing club name
+ 6.4.2 Party tickets for delegates missing in the overview and calculation
+ 6.5 The order created in the presmeet modal is not shown in the cart
+ 6.6 Order presmeet products via webshop checkout place iorder installHook.js:1 API request failed: TypeError: Failed to fetch
+    at s.request (main.fcdc86ab.js:2:388950)
+    at async onClick (531.8e129152.chunk.js:1:35271)
+    This order seems not added to the order table
+  6.6.1 Order via webshop of some presmeet products
+  installHook.js:1 TypeError: t.find is not a function
+    at 531.8e129152.chunk.js:1:6804
+    at 531.8e129152.chunk.js:1:6891
+    at Object.Ha [as useMemo] (main.fcdc86ab.js:2:255378)
+    at main.fcdc86ab.js:2:171532
+    at ne (531.8e129152.chunk.js:1:6704)
+    at ma (main.fcdc86ab.js:2:250969)
+    at Cs (main.fcdc86ab.js:2:265191)
+    at Sl (main.fcdc86ab.js:2:311450)
+    at yc (main.fcdc86ab.js:2:299675)
+    at mc (main.fcdc86ab.js:2:299603)
+
+
+7. Migrate presmeet products to new model. Make sure the presmeet modal keeps working with the new presmeet product datamodel
+8. Presidents'Meeting Booking
+8.1 >> Overzicht Party tickets for delegates are missing
+8.2  >>Admin Data is white on white and not in line with the standard presentation dwefinition 
+9. Product modal in webshopbeheer
+9.1 Variant schema white on white
+9.2 Aankoopregels white on white
+9.3 Aankoopregels lijkt een dropdown (met hard coded comtent) maar heeft geen opties
+10. Evenementenadmin istratie webmaster@h-dcn.nl heeft geen rechten (Evenementen Events_Read Evenementen - Inzage in alle evenementen Events_Export Evenementen - Export van evenementengegevens Events_CRUD Evenementen - Volledig beheer van evenementen)
+
+# .kiro\specs\code-quality-maintenance
+- Add check failing tests (UNit, Integration and e2e) and add test resolution to tasks.md
+- Add security analysis (or sperate prompt) to detect 
+
+# Use of google mail vs AWS SES
+
+# Test steering
+The key is to use react-scripts test not npx jest directly. Now let me run the actual failing test  should we add a remark in .kiro\steering\testing.md
 
 
 
@@ -16,7 +61,7 @@ A few items
 --- Leden zien alleen eigen gegevens en clubsjop
 --- Bestuursleden met een h-dcn mail account hebben toegang afhankelijk van hun rol
 --- Regio leden alleen toegang to regio specifieke gegevens (vaak alleen leesrechten)
---- AB lden toegang tot alle gegevens (Vaak alleen leesrechten)
+--- AB leden toegang tot alle gegevens (Vaak alleen leesrechten)
 --- ledenadministratie@h-dcn.nl lees-en schrijfrechten op de ledenadministratie
 --- webmaster@h-dcn.nl lees- en schrijfrechten op het hele systeem
 --- secretaris@h-dcn.nl

@@ -12,6 +12,7 @@
  */
 
 import { ApiService, ApiResponse } from '../../../services/apiService';
+import i18next from 'i18next';
 
 // Payment method types supported by Mollie
 export type MolliePaymentMethod = 'ideal' | 'creditcard';
@@ -142,7 +143,7 @@ export function handlePaymentReturn(
       return {
         status: 'success',
         orderId: orderId || null,
-        message: 'Betaling succesvol! Je bestelling is bevestigd.',
+        message: i18next.t('payment.return_success_message', { ns: 'webshop', defaultValue: 'Betaling succesvol! Je bestelling is bevestigd.' }),
         canRetry: false,
       };
 
@@ -150,7 +151,7 @@ export function handlePaymentReturn(
       return {
         status: 'failed',
         orderId: orderId || null,
-        message: 'De betaling is mislukt. Probeer het opnieuw of kies een andere betaalmethode.',
+        message: i18next.t('payment.return_failed_message', { ns: 'webshop', defaultValue: 'De betaling is mislukt. Probeer het opnieuw of kies een andere betaalmethode.' }),
         canRetry: true,
       };
 
@@ -158,7 +159,7 @@ export function handlePaymentReturn(
       return {
         status: 'expired',
         orderId: orderId || null,
-        message: 'De betaling is verlopen. Probeer het opnieuw of kies een andere betaalmethode.',
+        message: i18next.t('payment.return_expired_message', { ns: 'webshop', defaultValue: 'De betaling is verlopen. Probeer het opnieuw of kies een andere betaalmethode.' }),
         canRetry: true,
       };
 
@@ -166,7 +167,7 @@ export function handlePaymentReturn(
       return {
         status: 'cancelled',
         orderId: orderId || null,
-        message: 'De betaling is geannuleerd. Probeer het opnieuw of kies een andere betaalmethode.',
+        message: i18next.t('payment.return_cancelled_message', { ns: 'webshop', defaultValue: 'De betaling is geannuleerd. Probeer het opnieuw of kies een andere betaalmethode.' }),
         canRetry: true,
       };
 
@@ -174,7 +175,7 @@ export function handlePaymentReturn(
       return {
         status: 'pending',
         orderId: orderId || null,
-        message: 'De betaling wordt verwerkt. Je ontvangt een bevestiging zodra de betaling is afgerond.',
+        message: i18next.t('payment.return_pending_message', { ns: 'webshop', defaultValue: 'De betaling wordt verwerkt. Je ontvangt een bevestiging zodra de betaling is afgerond.' }),
         canRetry: false,
       };
 
@@ -182,7 +183,7 @@ export function handlePaymentReturn(
       return {
         status: 'pending',
         orderId: orderId || null,
-        message: 'De status van je betaling wordt gecontroleerd.',
+        message: i18next.t('payment.return_unknown_message', { ns: 'webshop', defaultValue: 'De status van je betaling wordt gecontroleerd.' }),
         canRetry: true,
       };
   }

@@ -10,6 +10,36 @@ import '@testing-library/jest-dom';
 import BookingOverview from '../components/BookingOverview';
 import { CartItem, OrderStatus } from '../types/presmeet';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, any>) => {
+      const translations: Record<string, string> = {
+        'overview.title': 'Booking Overview',
+        'overview.no_items': 'No items have been added to your booking yet.',
+        'overview.grand_total': 'Grand Total',
+        'overview.total_paid': 'Total Paid',
+        'overview.remaining_balance': 'Remaining Balance',
+        'overview.item': 'Item',
+        'overview.price': 'Price',
+        'overview.items_count': '{{count}} items',
+        'product_types.meeting_ticket': 'Meeting Ticket',
+        'product_types.party_ticket': 'Party Ticket',
+        'product_types.tshirt': 'T-Shirt',
+        'product_types.airport_transfer': 'Airport Transfer',
+      };
+      let result = translations[key] ?? key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          result = result.replace(`{{${k}}}`, String(v));
+        });
+      }
+      return result;
+    },
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock Chakra UI — provide simple DOM elements
 jest.mock('@chakra-ui/react', () => ({
   Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,

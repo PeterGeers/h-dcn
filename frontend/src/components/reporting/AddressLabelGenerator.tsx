@@ -82,12 +82,12 @@ const AddressLabelGenerator: React.FC<AddressLabelGeneratorProps> = ({
       countryFilter,
       sortBy,
       includeCountry
-    });
+    }) || [];
   }, [members, countryFilter, sortBy, includeCountry]);
 
   // Get unique countries for filter using service
   const availableCountries = React.useMemo(() => {
-    return addressLabelService.getAvailableCountries(members);
+    return addressLabelService.getAvailableCountries(members) || [];
   }, [members]);
 
   // Format address for label using service

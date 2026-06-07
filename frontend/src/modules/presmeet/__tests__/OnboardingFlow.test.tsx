@@ -19,6 +19,41 @@ import '@testing-library/jest-dom';
 import OnboardingFlow from '../components/OnboardingFlow';
 import { ClubRegistry } from '../types/presmeet';
 
+// Mock react-i18next
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, any>) => {
+      const translations: Record<string, string> = {
+        'onboarding.select_club': 'Select Your Club',
+        'onboarding.select_club_desc': 'Choose the club you represent for the Presidents\' Meeting.',
+        'onboarding.loading_clubs': 'Loading available clubs...',
+        'onboarding.load_failed': 'Failed to load clubs',
+        'onboarding.no_clubs': 'No clubs are currently available. Please contact the administrator.',
+        'onboarding.club_assigned': 'Club assigned',
+        'onboarding.club_assigned_desc': '{{clubName}} assigned successfully.',
+        'onboarding.assignment_failed': 'Assignment failed',
+        'onboarding.assignment_failed_desc': 'An unexpected error occurred. Please try again.',
+        'onboarding.club_already_assigned': 'Club Already Assigned',
+        'onboarding.already_assigned_desc': '{{clubName}} already has a registered representative.',
+        'onboarding.current_contact': 'Current contact',
+        'onboarding.contact_admin': 'If you believe this is incorrect, please contact the PresMeet administrator.',
+        'onboarding.choose_different': 'Choose a different club',
+        'onboarding.no_logo': 'No logo',
+        'onboarding.already_assigned': 'Already assigned',
+        'onboarding.assigning': 'Assigning...',
+      };
+      let result = translations[key] ?? key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          result = result.replace(`{{${k}}}`, String(v));
+        });
+      }
+      return result;
+    },
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock presmeetService
 const mockGetClubRegistry = jest.fn();
 const mockAssignClub = jest.fn();

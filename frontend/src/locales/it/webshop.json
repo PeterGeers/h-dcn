@@ -15,7 +15,8 @@
     "save_hint": "Aggiungi prima dei prodotti per salvare.",
     "option_label": "Opzione",
     "item_total_label": "Numero di articoli",
-    "total_label": "Totale"
+    "total_label": "Totale",
+    "item_fields_label": "Dati dei partecipanti"
   },
   "product": {
     "added": "Prodotto aggiunto",
@@ -40,6 +41,7 @@
     "total": "Totale",
     "processing": "Elaborazione...",
     "pay_button": "Paga €{{amount}}",
+    "place_order": "Effettua ordine",
     "placeholder_name": "Nome",
     "placeholder_street": "Via e numero civico",
     "placeholder_postal": "Codice postale",
@@ -103,5 +105,42 @@
   "demo": {
     "title": "Modalità demo",
     "description": "Utilizzo di dati simulati perché l'API non è disponibile"
+  },
+  "item_fields": {
+    "item_label": "Articolo {{current}} di {{total}}",
+    "select_placeholder": "Seleziona...",
+    "email_placeholder": "Indirizzo e-mail"
+  },
+  "payment": {
+    "return_success_title": "Pagamento riuscito",
+    "return_failed_title": "Pagamento non completato",
+    "retry_button": "Riprova",
+    "method_title": "Metodo di pagamento",
+    "ideal_description": "Paga tramite la tua banca",
+    "creditcard_description": "Paga con Visa, Mastercard o American Express",
+    "bank_transfer": "Bonifico bancario",
+    "bank_transfer_description": "Trasferisci l'importo manualmente",
+    "transfer_instructions_title": "Dati del bonifico",
+    "reference": "Causale:",
+    "amount": "Importo:",
+    "return_success_message": "Pagamento riuscito! Il tuo ordine è stato confermato.",
+    "return_failed_message": "Il pagamento non è andato a buon fine. Riprova o scegli un altro metodo di pagamento.",
+    "return_expired_message": "Il pagamento è scaduto. Riprova o scegli un altro metodo di pagamento.",
+    "return_cancelled_message": "Il pagamento è stato annullato. Riprova o scegli un altro metodo di pagamento.",
+    "return_pending_message": "Il pagamento è in fase di elaborazione. Riceverai una conferma non appena il pagamento sarà completato.",
+    "return_unknown_message": "Lo stato del tuo pagamento è in fase di verifica."
+  },
+  "purchase_rules": {
+    "max_per_order": "Massimo {{limit}} per ordine",
+    "max_per_member": "{{remaining}} disponibile/i (max {{limit}} per membro)",
+    "max_per_club": "{{remaining}} disponibile/i per il tuo club (max {{limit}} per club)",
+    "requires_membership": "È richiesta un'iscrizione attiva"
+  },
+  "variant": {
+    "select_placeholder": "Scegli {{axis}}",
+    "in_stock": "{{count}} disponibili",
+    "out_of_stock": "Esaurito",
+    "combination_unavailable": "Combinazione non disponibile",
+    "select_all_prompt": "Seleziona tutte le opzioni"
   }
 }

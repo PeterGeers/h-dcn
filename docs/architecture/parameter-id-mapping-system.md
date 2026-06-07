@@ -178,6 +178,22 @@ AI-generated parameters often use timestamp-based IDs:
 
 ## Future Considerations
 
+### i18n Changes (2026)
+
+The internationalization (i18n) effort introduced language-aware parameter handling:
+
+- Parameter values may now have locale-specific display names
+- The lookup system supports fallback to Dutch (NL) as the default language
+- Frontend parameter display respects the user's language setting where applicable
+
+### Product Unification Parameter Changes (March 2026)
+
+The product unification rework affected parameter handling for product-related data:
+
+- Product sub-groups (`productsubgroepen`) now apply to the unified product/variant model
+- Delivery options (`leveropties`) are associated at the order level, not per-product
+- New parameters were introduced for variant-level attributes (sizes, colors)
+
 ### 1. **Parameter Management UI**
 
 - Must preserve ID mappings when editing

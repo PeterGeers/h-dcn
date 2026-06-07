@@ -69,6 +69,11 @@
       "last 1 safari version"
     ]
   },
+  "jest": {
+    "moduleNameMapper": {
+      "^@chakra-ui/utils/(.*)$": "<rootDir>/node_modules/@chakra-ui/utils/dist/cjs/$1.cjs"
+    }
+  },
   "eslintConfig": {
     "extends": [
       "react-app"
