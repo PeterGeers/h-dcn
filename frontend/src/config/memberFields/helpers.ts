@@ -11,7 +11,6 @@ import type {
   HDCNGroup,
   ModalContextConfig,
   ModalFieldConfig,
-  ModalGroupConfig,
   ModalSectionConfig,
 } from './types';
 

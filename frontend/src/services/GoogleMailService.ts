@@ -15,7 +15,7 @@
 
 import { Member } from '../types/index';
 import { getMemberFullName } from '../utils/calculatedFields';
-import { EXPORT_VIEWS, ExportViewConfig } from './MemberExportService';
+import { EXPORT_VIEWS } from './MemberExportService';
 
 // ============================================================================
 // TYPE DEFINITIONS
