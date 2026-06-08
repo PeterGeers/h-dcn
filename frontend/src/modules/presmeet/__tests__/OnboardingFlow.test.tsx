@@ -41,6 +41,8 @@ jest.mock('react-i18next', () => ({
         'onboarding.no_logo': 'No logo',
         'onboarding.already_assigned': 'Already assigned',
         'onboarding.assigning': 'Assigning...',
+        'onboarding.search_clubs': 'Search clubs...',
+        'onboarding.no_search_results': 'No clubs found matching your search.',
       };
       let result = translations[key] ?? key;
       if (params) {
@@ -86,6 +88,9 @@ jest.mock('@chakra-ui/react', () => ({
   AlertDescription: ({ children }: any) => <div>{children}</div>,
   VStack: ({ children }: any) => <div>{children}</div>,
   HStack: ({ children }: any) => <div style={{ display: 'flex' }}>{children}</div>,
+  Input: ({ placeholder, value, onChange, ...props }: any) => (
+    <input placeholder={placeholder} value={value} onChange={onChange} aria-label={props['aria-label']} data-testid="search-input" />
+  ),
   Center: ({ children }: any) => <div>{children}</div>,
   useToast: () => mockToast,
 }));
@@ -267,6 +272,81 @@ describe('OnboardingFlow', () => {
 
     // Club list should be visible again
     expect(screen.getByText('Select Your Club')).toBeInTheDocument();
+    expect(screen.getByText('HD Club Amsterdam')).toBeInTheDocument();
+  });
+
+  it('renders search input above the club grid', async () => {
+    mockGetClubRegistry.mockResolvedValue({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} />);
+    });
+
+    const searchInput = screen.getByTestId('search-input');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toHaveAttribute('placeholder', 'Search clubs...');
+  });
+
+  it('filters clubs by name when typing in search input', async () => {
+    mockGetClubRegistry.mockResolvedValue({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} />);
+    });
+
+    const searchInput = screen.getByTestId('search-input');
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Amsterdam' } });
+    });
+
+    expect(screen.getByText('HD Club Amsterdam')).toBeInTheDocument();
+    expect(screen.queryByText('HD Club Rotterdam')).not.toBeInTheDocument();
+    expect(screen.queryByText('HD Club Utrecht')).not.toBeInTheDocument();
+  });
+
+  it('shows "no results" message when search yields no matches', async () => {
+    mockGetClubRegistry.mockResolvedValue({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} />);
+    });
+
+    const searchInput = screen.getByTestId('search-input');
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'NonExistentClub' } });
+    });
+
+    expect(screen.getByText('No clubs found matching your search.')).toBeInTheDocument();
+    expect(screen.queryByText('HD Club Amsterdam')).not.toBeInTheDocument();
+  });
+
+  it('performs case-insensitive search', async () => {
+    mockGetClubRegistry.mockResolvedValue({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} />);
+    });
+
+    const searchInput = screen.getByTestId('search-input');
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'amsterdam' } });
+    });
+
     expect(screen.getByText('HD Club Amsterdam')).toBeInTheDocument();
   });
 });

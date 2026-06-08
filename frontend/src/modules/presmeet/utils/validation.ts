@@ -2,10 +2,14 @@
  * Client-side validation helpers for the PresMeet booking form.
  *
  * Validates delegate, guest, and transfer form data before submission.
+ * Also validates cart items (party ticket name check) before order submission.
  * Draft saves bypass validation (Requirement 8.6).
+ *
+ * Validates: Requirements 9.1, 9.2
  */
 
 import {
+  CartItem,
   DelegateFormData,
   GuestFormData,
   TransferFormData,
@@ -250,4 +254,48 @@ export function getFieldError(
 ): string | undefined {
   const error = errors.find((e) => e.field === fieldPath);
   return error?.message;
+}
+
+/**
+ * Validate that a party_ticket cart item has a non-empty name attribute.
+ * Returns an error if name is empty, whitespace-only, or missing.
+ *
+ * Validates: Requirement 9.1
+ */
+export function validatePartyTicketName(item: CartItem): ValidationError | null {
+  if (item.product_type !== 'party_ticket') {
+    return null;
+  }
+
+  const name = item.attributes?.name;
+
+  if (name == null || (typeof name === 'string' && name.trim().length === 0)) {
+    return {
+      item_id: item.item_id,
+      field: `items.${item.item_id}.name`,
+      message: 'A name is required for each party ticket',
+      constraint: 'required',
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Validate all party_ticket items in a cart have names.
+ * Returns an array of validation errors for items with missing/empty names.
+ *
+ * Validates: Requirements 9.1, 9.2
+ */
+export function validateBookingSubmission(items: CartItem[]): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  for (const item of items) {
+    const error = validatePartyTicketName(item);
+    if (error) {
+      errors.push(error);
+    }
+  }
+
+  return errors;
 }

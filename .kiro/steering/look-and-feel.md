@@ -1,5 +1,6 @@
 ---
-inclusion: manual
+inclusion: fileMatch
+fileMatchPattern: "frontend/**/*.tsx,frontend/**/*.ts,frontend/**/*.css"
 ---
 
 # Look and Feel

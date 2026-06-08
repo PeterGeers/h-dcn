@@ -36,7 +36,9 @@
     "item": "Item",
     "price": "Price",
     "items_count_one": "{{count}} item",
-    "items_count_other": "{{count}} items"
+    "items_count_other": "{{count}} items",
+    "submitted_at": "Submitted",
+    "delegate": "delegate"
   },
   "product_types": {
     "meeting_ticket": "Meeting Ticket",

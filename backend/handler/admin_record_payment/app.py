@@ -17,8 +17,10 @@ Requirements: 9.10
 import json
 import logging
 import os
+import traceback
 import uuid
 import boto3
+from botocore.exceptions import ClientError
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -177,21 +179,39 @@ def lambda_handler(event, context):
         description = body.get('description', '')
 
         if not order_id:
-            return create_error_response(400, 'order_id is required')
+            return create_error_response(
+                400, 'order_id is required',
+                details={'error_code': 'VALIDATION_ERROR', 'field': 'order_id'}
+            )
         if amount is None or not isinstance(amount, (int, float)):
-            return create_error_response(400, 'amount must be a number')
+            return create_error_response(
+                400, 'amount must be a number',
+                details={'error_code': 'VALIDATION_ERROR', 'field': 'amount'}
+            )
         if amount < 0.01 or amount > 999999.99:
-            return create_error_response(400, 'amount must be between 0.01 and 999999.99')
+            return create_error_response(
+                400, 'amount must be between 0.01 and 999999.99',
+                details={'error_code': 'VALIDATION_ERROR', 'field': 'amount'}
+            )
         if not date:
-            return create_error_response(400, 'date is required (ISO 8601 format)')
+            return create_error_response(
+                400, 'date is required (ISO 8601 format)',
+                details={'error_code': 'VALIDATION_ERROR', 'field': 'date'}
+            )
         if description and len(description) > 255:
-            return create_error_response(400, 'description must be 255 characters or less')
+            return create_error_response(
+                400, 'description must be 255 characters or less',
+                details={'error_code': 'VALIDATION_ERROR', 'field': 'description'}
+            )
 
         # Validate date format
         try:
             datetime.fromisoformat(date.replace('Z', '+00:00'))
         except (ValueError, AttributeError):
-            return create_error_response(400, 'date must be valid ISO 8601 format')
+            return create_error_response(
+                400, 'date must be valid ISO 8601 format',
+                details={'error_code': 'VALIDATION_ERROR', 'field': 'date'}
+            )
 
         # Get order
         response = orders_table.get_item(Key={'order_id': order_id})
@@ -308,7 +328,25 @@ def lambda_handler(event, context):
         })
 
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(
+            400, 'Invalid JSON in request body',
+            details={'error_code': 'INVALID_JSON'}
+        )
+    except ClientError as e:
+        logger.error(
+            "DynamoDB ClientError in admin_record_payment: %s\n%s",
+            str(e), traceback.format_exc()
+        )
+        return create_error_response(
+            500, 'Internal server error',
+            details={'error_code': 'DYNAMO_ERROR'}
+        )
     except Exception as e:
-        logger.error("Error recording payment: %s", str(e))
-        return create_error_response(500, 'Internal server error')
+        logger.error(
+            "Unexpected error in admin_record_payment: %s\n%s",
+            str(e), traceback.format_exc()
+        )
+        return create_error_response(
+            500, 'Internal server error',
+            details={'error_code': 'INTERNAL_ERROR'}
+        )

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Presmeet v3 addresses critical bugs, missing features, and UX improvements in the FH-DCE Presidents' Meeting booking system within the H-DCN member portal. The scope covers PDF generation for booking confirmations, correct order calculation including delegate party tickets and transport quantities, onboarding UX improvements, product data model migration, admin UI fixes, and permission corrections.
+Presmeet v3 immediate fixes addresses critical bugs, missing features, and UX improvements in the current FH-DCE Presidents' Meeting booking system. These fixes apply to the existing architecture and should be implemented before the full architectural redesign (see `presmeet-findings.md` for the redesign direction).
 
 ## Glossary
 
@@ -13,10 +13,8 @@ Presmeet v3 addresses critical bugs, missing features, and UX improvements in th
 - **Onboarding_Page**: The start page of the Presmeet module shown to users who are not yet assigned to a club, allowing them to search for and select their club.
 - **Product_Modal**: The admin modal in webshopbeheer used to create and edit products, including variant schemas and purchase rules.
 - **Presmeet_Modal**: The booking modal/form where club presidents configure their meeting attendance, delegates, guests, and transfers.
-- **Webshop_Checkout**: The general H-DCN webshop order placement flow that handles cart-to-order conversion and payment initiation.
 - **Admin_Payment_Handler**: The backend Lambda (`admin_record_payment`) that registers manual payments against orders.
 - **Event_Admin**: The event administration module that manages club events and requires specific permissions.
-- **Cart_System**: The webshop cart (Carts DynamoDB table) that stores items before order placement.
 
 ## Requirements
 
@@ -111,37 +109,7 @@ Presmeet v3 addresses critical bugs, missing features, and UX improvements in th
 1. WHEN a party_ticket cart item has an empty or missing name attribute, THE Presmeet_System SHALL display a validation error indicating that a name is required.
 2. THE Order_Calculator SHALL reject order submission (return validation errors) for any party_ticket item without a name attribute.
 
-### Requirement 10: Presmeet Order Visibility in Cart
-
-**User Story:** As a club president, I want to see my presmeet order reflected in the webshop cart, so that I can proceed to checkout through the normal webshop flow.
-
-#### Acceptance Criteria
-
-1. WHEN a presmeet order is created or updated in the Presmeet_Modal, THE Cart_System SHALL create or update corresponding cart items in the Carts table with source "presmeet".
-2. WHEN the user navigates to the webshop cart, THE Cart_System SHALL display presmeet items alongside regular webshop items with appropriate grouping.
-3. THE Cart_System SHALL prevent editing of presmeet items from the webshop cart (read-only display with link back to presmeet modal).
-
-### Requirement 11: Fix Webshop Checkout Order Placement for Presmeet Products
-
-**User Story:** As a club president, I want to place an order for presmeet products through the webshop checkout without errors, so that my booking is confirmed and payment can proceed.
-
-#### Acceptance Criteria
-
-1. WHEN the user places an order containing presmeet products via Webshop_Checkout, THE Webshop_Checkout SHALL serialize the order payload correctly (items as array, not null) and submit it to the create_order endpoint.
-2. WHEN the create_order endpoint receives presmeet items, THE Webshop_Checkout SHALL handle the response without TypeError by validating the response structure before accessing array methods.
-3. IF the order placement request fails with a network error, THEN THE Webshop_Checkout SHALL display a user-friendly error message and retain the cart contents.
-
-### Requirement 12: Migrate Presmeet Products to New Data Model
-
-**User Story:** As a developer, I want presmeet products migrated to the new product data model, so that the presmeet modal works consistently with the updated webshop product schema.
-
-#### Acceptance Criteria
-
-1. THE Presmeet_System SHALL read product configurations from Producten table items that use the new product data model schema (with product_type, variants, and purchase_rules fields).
-2. THE Presmeet_Modal SHALL continue to function correctly after the product data model migration, mapping new schema fields to the existing booking form interface.
-3. WHEN legacy `source: "presmeet_config"` items exist alongside new model items, THE Presmeet_System SHALL prefer the new model items and ignore legacy items.
-
-### Requirement 13: Admin Dashboard Data Visibility Fix
+### Requirement 10: Admin Dashboard Data Visibility Fix
 
 **User Story:** As an admin viewing booking details, I want the admin data section to be readable and follow the standard presentation, so that I can review booking information efficiently.
 
@@ -150,7 +118,7 @@ Presmeet v3 addresses critical bugs, missing features, and UX improvements in th
 1. THE Admin_Dashboard SHALL render text in the admin data section with sufficient color contrast (minimum WCAG AA ratio of 4.5:1 against the background).
 2. THE Admin_Dashboard SHALL apply the standard presentation definition (consistent spacing, font sizes, and layout) to the admin data section matching other admin views.
 
-### Requirement 14: Product Modal UI Fixes in Webshopbeheer
+### Requirement 11: Product Modal UI Fixes in Webshopbeheer
 
 **User Story:** As a webshop admin, I want the product modal variant schema and purchase rules to be readable and functional, so that I can configure products correctly.
 
@@ -160,7 +128,7 @@ Presmeet v3 addresses critical bugs, missing features, and UX improvements in th
 2. THE Product_Modal SHALL render purchase rules (aankoopregels) text with sufficient color contrast (minimum WCAG AA ratio of 4.5:1 against the background).
 3. WHEN the purchase rules dropdown is displayed, THE Product_Modal SHALL populate the dropdown options from the product configuration data (not hardcoded empty content).
 
-### Requirement 15: Event Administration Permissions for Webmaster
+### Requirement 12: Event Administration Permissions for Webmaster
 
 **User Story:** As the webmaster (webmaster@h-dcn.nl), I want to have event administration permissions, so that I can manage club events.
 

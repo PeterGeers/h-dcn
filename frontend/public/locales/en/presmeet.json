@@ -36,7 +36,9 @@
     "item": "Item",
     "price": "Price",
     "items_count_one": "{{count}} item",
-    "items_count_other": "{{count}} items"
+    "items_count_other": "{{count}} items",
+    "submitted_at": "Submitted",
+    "delegate": "delegate"
   },
   "product_types": {
     "meeting_ticket": "Meeting Ticket",
@@ -47,6 +49,8 @@
   "onboarding": {
     "select_club": "Select Your Club",
     "select_club_desc": "Choose the club you represent for the Presidents' Meeting.",
+    "search_clubs": "Search clubs...",
+    "no_search_results": "No clubs match your search.",
     "loading_clubs": "Loading available clubs...",
     "load_failed": "Failed to load clubs",
     "no_clubs": "No clubs are currently available. Please contact the administrator.",

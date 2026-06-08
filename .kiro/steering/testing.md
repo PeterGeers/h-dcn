@@ -1,5 +1,6 @@
 ---
-inclusion: manual
+inclusion: fileMatch
+fileMatchPattern: "**/*.test.*,**/*.spec.*,**/tests/**"
 ---
 
 # Testing

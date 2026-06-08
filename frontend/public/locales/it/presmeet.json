@@ -36,7 +36,9 @@
     "item": "Articolo",
     "price": "Prezzo",
     "items_count_one": "{{count}} articolo",
-    "items_count_other": "{{count}} articoli"
+    "items_count_other": "{{count}} articoli",
+    "submitted_at": "Inviato",
+    "delegate": "delegato"
   },
   "product_types": {
     "meeting_ticket": "Biglietto Riunione",

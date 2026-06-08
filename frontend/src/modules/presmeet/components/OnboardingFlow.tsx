@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Heading,
@@ -13,12 +13,41 @@ import {
   AlertDescription,
   VStack,
   HStack,
+  Input,
   useToast,
   Center,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { ClubRegistryEntry, ClubRegistry } from '../types/presmeet';
 import { presmeetService } from '../services/presmeetApi';
+
+// TODO: Replace with actual logo paths once branding assets are added to /public/assets/presmeet/
+const PRESMEET_LOGO_SRC = '/assets/presmeet/presmeet-logo.png';
+const FH_DCE_LOGO_SRC = '/assets/presmeet/fh-dce-logo.png';
+
+/** Duration (ms) after which logos shrink automatically if user hasn't scrolled. */
+const LOGO_ANIMATION_DELAY_MS = 3000;
+/** Minimum CSS transition duration for logo size change. */
+const LOGO_TRANSITION_DURATION = '400ms';
+
+/**
+ * Filters clubs by name using case-insensitive matching.
+ * Returns all clubs when search text is empty.
+ * Exported for testability (used in property tests).
+ */
+export function filterClubs(
+  clubs: ClubRegistryEntry[],
+  search: string
+): ClubRegistryEntry[] {
+  const trimmed = search.trim();
+  if (!trimmed) {
+    return clubs;
+  }
+  const lowerSearch = trimmed.toLowerCase();
+  return clubs.filter((club) =>
+    club.club_name.toLowerCase().includes(lowerSearch)
+  );
+}
 
 export interface OnboardingFlowProps {
   onComplete: (clubId: string) => void;
@@ -34,10 +63,39 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [logosSmall, setLogosSmall] = useState(false);
   const [conflictInfo, setConflictInfo] = useState<{
     clubName: string;
     contact: string;
   } | null>(null);
+
+  const logosTransitioned = useRef(false);
+
+  // Shrink logos on scroll or after a timer
+  const shrinkLogos = useCallback(() => {
+    if (!logosTransitioned.current) {
+      logosTransitioned.current = true;
+      setLogosSmall(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(shrinkLogos, LOGO_ANIMATION_DELAY_MS);
+
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        shrinkLogos();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [shrinkLogos]);
 
   // Fetch club registry on mount
   useEffect(() => {
@@ -154,10 +212,66 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
   // --- Club selection list ---
   const clubs = registry?.clubs ?? [];
+  const filteredClubs = filterClubs(clubs, searchText);
 
   return (
     <Box py={6}>
       <VStack spacing={6} align="stretch">
+        {/* Presmeet + FH-DCE logos with animated size transition */}
+        <HStack
+          justify="center"
+          spacing={6}
+          position={logosSmall ? 'sticky' : 'relative'}
+          top={logosSmall ? 0 : undefined}
+          zIndex={logosSmall ? 10 : undefined}
+          bg={logosSmall ? 'white' : 'transparent'}
+          py={logosSmall ? 2 : 6}
+          transition={`all ${LOGO_TRANSITION_DURATION} ease-in-out`}
+        >
+          <Image
+            src={PRESMEET_LOGO_SRC}
+            alt="Presmeet logo"
+            height={logosSmall ? '40px' : '120px'}
+            objectFit="contain"
+            transition={`height ${LOGO_TRANSITION_DURATION} ease-in-out`}
+            fallback={
+              <Box
+                height={logosSmall ? '40px' : '120px'}
+                width={logosSmall ? '40px' : '120px'}
+                bg="gray.100"
+                borderRadius="md"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                transition={`all ${LOGO_TRANSITION_DURATION} ease-in-out`}
+              >
+                <Text fontSize="xs" color="gray.500">Presmeet</Text>
+              </Box>
+            }
+          />
+          <Image
+            src={FH_DCE_LOGO_SRC}
+            alt="FH-DCE logo"
+            height={logosSmall ? '40px' : '120px'}
+            objectFit="contain"
+            transition={`height ${LOGO_TRANSITION_DURATION} ease-in-out`}
+            fallback={
+              <Box
+                height={logosSmall ? '40px' : '120px'}
+                width={logosSmall ? '40px' : '120px'}
+                bg="gray.100"
+                borderRadius="md"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                transition={`all ${LOGO_TRANSITION_DURATION} ease-in-out`}
+              >
+                <Text fontSize="xs" color="gray.500">FH-DCE</Text>
+              </Box>
+            }
+          />
+        </HStack>
+
         <Box textAlign="center">
           <Heading size="lg" mb={2}>
             {t('onboarding.select_club')}
@@ -173,8 +287,23 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             {t('onboarding.no_clubs')}
           </Alert>
         ) : (
-          <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
-            {clubs.map((club) => {
+          <>
+            <Input
+              placeholder={t('onboarding.search_clubs')}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              size="md"
+              aria-label={t('onboarding.search_clubs')}
+            />
+
+            {filteredClubs.length === 0 ? (
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                {t('onboarding.no_search_results')}
+              </Alert>
+            ) : (
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+                {filteredClubs.map((club) => {
               const isAssigned = !!club.assigned_member_id;
               const isSelected = selectedClubId === club.club_id;
 
@@ -255,6 +384,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
               );
             })}
           </SimpleGrid>
+            )}
+          </>
         )}
       </VStack>
     </Box>

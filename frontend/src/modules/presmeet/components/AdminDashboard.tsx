@@ -450,7 +450,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isAdmin }) => {
       <Box bg="white" p={5} borderRadius="md" borderWidth={1} overflowX="auto">
         <Heading size="md" mb={4}>Orders ({orders.length})</Heading>
         {orders.length === 0 ? (
-          <Text color="gray.500">No orders found. Click "Refresh Data" to generate report.</Text>
+          <Text color="gray.700">No orders found. Click "Refresh Data" to generate report.</Text>
         ) : (
           <Table size="sm" variant="simple">
             <Thead>
@@ -544,7 +544,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isAdmin }) => {
 
       {/* Report metadata */}
       {overview && (
-        <Text fontSize="sm" color="gray.500" textAlign="right">
+        <Text fontSize="sm" color="gray.700" textAlign="right">
           Report generated: {new Date(overview.generated_at).toLocaleString()} by{' '}
           {overview.generated_by}
         </Text>

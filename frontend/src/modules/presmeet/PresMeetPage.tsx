@@ -168,7 +168,11 @@ const PresMeetPage: React.FC = () => {
             <BookingOverview
               items={booking?.items ?? []}
               status={booking?.status ?? 'draft'}
+              paymentStatus={booking?.payment_status ?? 'unpaid'}
               totalPaid={0}
+              clubName={booking?.club_id ?? ''}
+              clubId={booking?.club_id ?? ''}
+              submittedAt={booking?.submitted_at ?? null}
             />
           </TabPanel>
 

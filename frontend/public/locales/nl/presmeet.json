@@ -36,7 +36,9 @@
     "item": "Item",
     "price": "Prijs",
     "items_count_one": "{{count}} item",
-    "items_count_other": "{{count}} items"
+    "items_count_other": "{{count}} items",
+    "submitted_at": "Ingediend",
+    "delegate": "deelnemer"
   },
   "product_types": {
     "meeting_ticket": "Meeting Ticket",
@@ -47,6 +49,8 @@
   "onboarding": {
     "select_club": "Selecteer uw club",
     "select_club_desc": "Kies de club die u vertegenwoordigt bij de Presidents' Meeting.",
+    "search_clubs": "Zoek clubs...",
+    "no_search_results": "Geen clubs gevonden voor uw zoekopdracht.",
     "loading_clubs": "Beschikbare clubs laden...",
     "load_failed": "Kon clubs niet laden",
     "no_clubs": "Er zijn momenteel geen clubs beschikbaar. Neem contact op met de beheerder.",

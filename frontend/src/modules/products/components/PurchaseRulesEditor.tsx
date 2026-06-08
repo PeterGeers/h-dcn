@@ -15,6 +15,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { PurchaseRules, OrderMode } from '../../webshop/types/unifiedProduct.types';
+import { ORDER_MODE_OPTIONS, DEFAULT_ORDER_MODE, PURCHASE_RULES_LIMITS } from '../config/purchaseRulesConfig';
 
 export interface PurchaseRulesEditorProps {
   /** Current purchase rules values */
@@ -83,15 +84,15 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
     <VStack spacing={4} align="stretch" w="100%">
       {/* Max per bestelling */}
       <FormControl isInvalid={!!errors?.max_per_order}>
-        <FormLabel fontSize="sm">Max per bestelling</FormLabel>
+        <FormLabel fontSize="sm" color="gray.800">Max per bestelling</FormLabel>
         <NumberInput
-          min={1}
-          max={9999}
+          min={PURCHASE_RULES_LIMITS.min}
+          max={PURCHASE_RULES_LIMITS.max}
           value={value.max_per_order ?? ''}
           onChange={handleNumberChange('max_per_order')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen limiet" />
+          <NumberInputField placeholder="Geen limiet" color="gray.800" />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -104,15 +105,15 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Max per lid */}
       <FormControl isInvalid={!!errors?.max_per_member}>
-        <FormLabel fontSize="sm">Max per lid</FormLabel>
+        <FormLabel fontSize="sm" color="gray.800">Max per lid</FormLabel>
         <NumberInput
-          min={1}
-          max={9999}
+          min={PURCHASE_RULES_LIMITS.min}
+          max={PURCHASE_RULES_LIMITS.max}
           value={value.max_per_member ?? ''}
           onChange={handleNumberChange('max_per_member')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen limiet" />
+          <NumberInputField placeholder="Geen limiet" color="gray.800" />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -125,15 +126,15 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Max per club */}
       <FormControl isInvalid={!!errors?.max_per_club || !!minMaxError}>
-        <FormLabel fontSize="sm">Max per club</FormLabel>
+        <FormLabel fontSize="sm" color="gray.800">Max per club</FormLabel>
         <NumberInput
-          min={1}
-          max={9999}
+          min={PURCHASE_RULES_LIMITS.min}
+          max={PURCHASE_RULES_LIMITS.max}
           value={value.max_per_club ?? ''}
           onChange={handleNumberChange('max_per_club')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen limiet" />
+          <NumberInputField placeholder="Geen limiet" color="gray.800" />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -146,15 +147,15 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Min per club */}
       <FormControl isInvalid={!!errors?.min_per_club || !!minMaxError}>
-        <FormLabel fontSize="sm">Min per club</FormLabel>
+        <FormLabel fontSize="sm" color="gray.800">Min per club</FormLabel>
         <NumberInput
-          min={1}
-          max={9999}
+          min={PURCHASE_RULES_LIMITS.min}
+          max={PURCHASE_RULES_LIMITS.max}
           value={value.min_per_club ?? ''}
           onChange={handleNumberChange('min_per_club')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen minimum" />
+          <NumberInputField placeholder="Geen minimum" color="gray.800" />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -173,7 +174,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
       {/* Lidmaatschap vereist */}
       <FormControl>
         <HStack justify="space-between">
-          <FormLabel fontSize="sm" mb={0}>
+          <FormLabel fontSize="sm" color="gray.800" mb={0}>
             Lidmaatschap vereist
           </FormLabel>
           <Switch
@@ -186,14 +187,18 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Bestelmodus */}
       <FormControl>
-        <FormLabel fontSize="sm">Bestelmodus</FormLabel>
+        <FormLabel fontSize="sm" color="gray.800">Bestelmodus</FormLabel>
         <Select
           size="sm"
-          value={value.order_mode ?? 'single'}
+          value={value.order_mode ?? DEFAULT_ORDER_MODE}
           onChange={handleOrderModeChange}
+          color="gray.800"
         >
-          <option value="single">Single (eenmalige bestelling)</option>
-          <option value="persistent">Persistent (heropbare bestelling per club)</option>
+          {ORDER_MODE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </Select>
       </FormControl>
     </VStack>

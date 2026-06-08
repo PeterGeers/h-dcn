@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ProductTypeConfig,
   BookingFormData,
+  CartItem,
   DelegateFormData,
   GuestFormData,
   TransferFormData,
@@ -38,6 +39,7 @@ import {
   validateDelegate,
   validateGuest,
   validateTransfer,
+  validateBookingSubmission,
 } from '../utils/validation';
 import DelegateSection from './DelegateSection';
 import GuestSection from './GuestSection';
@@ -193,6 +195,32 @@ const BookingForm: React.FC<BookingFormProps> = ({
       allErrors.push(...validateTransfer(transfer, i, eventStartDate, eventEndDate));
     });
 
+    // Validate party ticket names (Req 9.1, 9.2)
+    // Build party ticket cart items from form data and validate names
+    const partyTicketItems: CartItem[] = [];
+    let partyIdx = 0;
+    formData.delegates.forEach((delegate) => {
+      if (delegate.attend_party) {
+        partyTicketItems.push({
+          item_id: `party_ticket_${partyIdx}_delegate`,
+          product_type: 'party_ticket',
+          attributes: { name: delegate.name, person_type: 'delegate' },
+          unit_price: 0,
+        });
+        partyIdx++;
+      }
+    });
+    formData.guests.forEach((guest) => {
+      partyTicketItems.push({
+        item_id: `party_ticket_${partyIdx}_guest`,
+        product_type: 'party_ticket',
+        attributes: { name: guest.name, person_type: 'guest' },
+        unit_price: 0,
+      });
+      partyIdx++;
+    });
+    allErrors.push(...validateBookingSubmission(partyTicketItems));
+
     // Check min delegates (Req 8.3: at least 1 meeting_ticket)
     const minDelegates = config.find((c) => c.product_type === 'meeting_ticket')?.min_per_club ?? 1;
     if (formData.delegates.length < minDelegates) {
@@ -312,7 +340,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   // Global-level errors (not field-specific)
   const globalErrors = errors.filter(
-    (e) => e.field === 'delegates' || e.field === 'tshirts'
+    (e) => e.field === 'delegates' || e.field === 'tshirts' || e.field.startsWith('items.')
   );
 
   return (

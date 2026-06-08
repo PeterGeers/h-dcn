@@ -36,7 +36,9 @@
     "item": "Article",
     "price": "Prix",
     "items_count_one": "{{count}} article",
-    "items_count_other": "{{count}} articles"
+    "items_count_other": "{{count}} articles",
+    "submitted_at": "Soumis",
+    "delegate": "délégué"
   },
   "product_types": {
     "meeting_ticket": "Ticket Réunion",

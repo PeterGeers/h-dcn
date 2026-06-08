@@ -147,7 +147,7 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
       )}
 
       {axes.length > 0 && !combinationsExceeded && (
-        <Text fontSize="sm" color="gray.500">
+        <Text fontSize="sm" color="gray.700">
           Totaal combinaties: {totalCombinations}
         </Text>
       )}
@@ -229,7 +229,7 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
               />
             )}
             {values.length >= MAX_VALUES_PER_AXIS && (
-              <Text fontSize="xs" color="orange.500">
+              <Text fontSize="xs" color="orange.700">
                 Maximaal {MAX_VALUES_PER_AXIS} waarden per as
               </Text>
             )}
@@ -248,7 +248,7 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
       </Button>
 
       {axes.length >= MAX_AXES && (
-        <Text fontSize="xs" color="orange.500">
+        <Text fontSize="xs" color="orange.700">
           Maximaal {MAX_AXES} assen
         </Text>
       )}

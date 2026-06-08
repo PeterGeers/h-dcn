@@ -36,7 +36,9 @@
     "item": "Artikel",
     "price": "Pris",
     "items_count_one": "{{count}} artikel",
-    "items_count_other": "{{count}} artikler"
+    "items_count_other": "{{count}} artikler",
+    "submitted_at": "Indsendt",
+    "delegate": "delegeret"
   },
   "product_types": {
     "meeting_ticket": "Mødebillet",
