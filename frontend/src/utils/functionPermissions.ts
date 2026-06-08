@@ -529,6 +529,11 @@ export class FunctionPermissionManager {
     
     const hasAccess = this.userGroups.some(userGroup => {
       return allowedGroups.some(allowedGroup => {
+        // Handle 'all' permission level (full access for any authenticated user with this role)
+        if (allowedGroup === 'all') {
+          return true;
+        }
+
         // Direct group matching
         if (userGroup === allowedGroup) {
           return true;
@@ -637,8 +642,9 @@ export class FunctionPermissionManager {
   static async create(user: User): Promise<FunctionPermissionManager> {
     const userGroups = getUserRoles(user);
     
-    // Use the updated ROLE_PERMISSIONS configuration that supports role structure
-    const permissionManager = new FunctionPermissionManager(user, ROLE_PERMISSIONS);
+    // Calculate combined permissions from user's roles (merges into function-keyed structure)
+    const combinedPermissions = calculatePermissions(userGroups);
+    const permissionManager = new FunctionPermissionManager(user, combinedPermissions);
     
     const permissionRoles = userGroups.filter(role => !role.startsWith('Regio_'));
     const regionRoles = userGroups.filter(role => role.startsWith('Regio_'));
@@ -674,8 +680,9 @@ export class FunctionPermissionManager {
 export async function createEnhancedPermissionManager(user: User): Promise<FunctionPermissionManager> {
   const userRoles = getUserRoles(user);
   
-  // Use the updated ROLE_PERMISSIONS configuration that supports role structure
-  const permissionManager = new FunctionPermissionManager(user, ROLE_PERMISSIONS);
+  // Calculate combined permissions from user's roles (merges into function-keyed structure)
+  const combinedPermissions = calculatePermissions(userRoles);
+  const permissionManager = new FunctionPermissionManager(user, combinedPermissions);
   
   const permissionRoles = userRoles.filter(role => !role.startsWith('Regio_'));
   const regionRoles = userRoles.filter(role => role.startsWith('Regio_'));

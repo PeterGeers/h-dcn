@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
   VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, Select,
@@ -59,8 +59,12 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
   const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || false;
   const hasFullEventAccess = permissionManager?.hasAccess('events', 'write') || false;
   
-  // Get user's allowed regions for regional users
-  const allowedRegions = getAllowedRegions(userRoles, hasFullEventAccess);
+  // Get user's allowed regions for regional users - memoized to prevent useEffect re-fires
+  const allowedRegions = useMemo(
+    () => getAllowedRegions(userRoles, hasFullEventAccess),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(userRoles), hasFullEventAccess]
+  );
 
   useEffect(() => {
     if (event) {
