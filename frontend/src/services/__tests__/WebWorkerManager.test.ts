@@ -172,7 +172,7 @@ describe('WebWorkerManager', () => {
       expect(result.data[0]).toHaveProperty('korte_naam', 'John Doe');
       expect(result.data[0]).toHaveProperty('leeftijd', 35);
       expect(result.stats).toBeDefined();
-      expect(result.stats?.calculatedFieldsComputed).toBe(2);
+      expect(result.stats?.processedRecords).toBe(2);
     });
 
     test('should execute regional filter task successfully', async () => {
@@ -191,7 +191,7 @@ describe('WebWorkerManager', () => {
 
       expect(result.data).toHaveLength(2); // Both Noord-Holland members
       expect(result.data[0].regio).toBe('Noord-Holland');
-      expect(result.stats?.regionallyFiltered).toBe(1); // 1 member filtered out (Zuid-Holland)
+      expect(result.stats?.processedRecords).toBe(1); // 1 member filtered out (Zuid-Holland)
     });
 
     test('should handle progress updates', async () => {

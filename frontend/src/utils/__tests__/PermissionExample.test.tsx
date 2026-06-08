@@ -29,13 +29,15 @@ describe('PermissionExample', () => {
     id: 'test-user',
     username: 'testuser',
     email: 'test@example.com',
+    sub: 'test-user-sub',
+    accessToken: 'mock-access-token',
     groups: ['Members_CRUD', 'Regio_Utrecht'],
     attributes: {}
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseAuth.mockReturnValue({ user: mockUser });
+    mockUseAuth.mockReturnValue({ user: mockUser } as any);
   });
 
   test('renders permission examples with user access', () => {
@@ -112,13 +114,15 @@ describe('usePermissions hook', () => {
     id: 'test-user',
     username: 'testuser',
     email: 'test@example.com',
+    sub: 'test-user-sub',
+    accessToken: 'mock-access-token',
     groups: ['Members_CRUD', 'Regio_Utrecht'],
     attributes: {}
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseAuth.mockReturnValue({ user: mockUser });
+    mockUseAuth.mockReturnValue({ user: mockUser } as any);
   });
 
   test('returns correct permission values', () => {
@@ -189,10 +193,12 @@ describe('withPermissionCheck HOC', () => {
         id: 'test-user',
         username: 'testuser',
         email: 'test@example.com',
+        sub: 'test-user-sub',
+        accessToken: 'mock-access-token',
         groups: ['Members_CRUD', 'Regio_Utrecht'],
         attributes: {}
       }
-    });
+    } as any);
   });
 
   test('renders component when user has required permissions', () => {

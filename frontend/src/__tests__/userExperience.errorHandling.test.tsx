@@ -113,7 +113,7 @@ Object.defineProperty(window, 'location', {
 // Import components after mocking
 import MaintenanceProvider from '../components/MaintenanceProvider';
 import MaintenanceScreen from '../components/MaintenanceScreen';
-import { ApiService } from '../services/apiService';
+import { ApiService, ApiResponse } from '../services/apiService';
 import { setMaintenanceScreenCallback } from '../utils/errorHandler';
 import { getAuthHeaders } from '../utils/authHeaders';
 
@@ -510,7 +510,7 @@ describe('User Experience Error Handling Integration', () => {
       let resolvePromise: (value: any) => void;
       const controlledPromise = new Promise((resolve) => {
         resolvePromise = resolve;
-      });
+      }) as Promise<ApiResponse<unknown>>;
 
       mockApiService.get.mockReturnValue(controlledPromise);
 
@@ -539,7 +539,7 @@ describe('User Experience Error Handling Integration', () => {
       let rejectPromise: (error: any) => void;
       const controlledPromise = new Promise((_, reject) => {
         rejectPromise = reject;
-      });
+      }) as Promise<ApiResponse<unknown>>;
 
       mockApiService.get.mockReturnValue(controlledPromise);
 

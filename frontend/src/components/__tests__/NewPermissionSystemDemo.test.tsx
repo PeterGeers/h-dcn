@@ -28,6 +28,7 @@ describe('NewPermissionSystemDemo', () => {
       accessibleRegions: ['all'],
       hasFullRegionalAccess: true,
       hasExportPermission: true,
+      hasSystemAccess: true,
       checkPermission: jest.fn().mockReturnValue(true),
       validateMultiplePermissions: jest.fn().mockReturnValue(true)
     });
@@ -54,6 +55,7 @@ describe('NewPermissionSystemDemo', () => {
       accessibleRegions: ['all'],
       hasFullRegionalAccess: true,
       hasExportPermission: true,
+      hasSystemAccess: true,
       checkPermission: jest.fn().mockReturnValue(true),
       validateMultiplePermissions: jest.fn().mockReturnValue(true)
     });
@@ -85,6 +87,7 @@ describe('NewPermissionSystemDemo', () => {
       accessibleRegions: ['utrecht'],
       hasFullRegionalAccess: false,
       hasExportPermission: false,
+      hasSystemAccess: false,
       checkPermission: jest.fn((func, action, region) => {
         // Only allow members read in utrecht
         return func === 'members' && action === 'read' && region === 'utrecht';
@@ -117,6 +120,7 @@ describe('NewPermissionSystemDemo', () => {
       accessibleRegions: ['utrecht'],
       hasFullRegionalAccess: false,
       hasExportPermission: true,
+      hasSystemAccess: false,
       checkPermission: jest.fn().mockReturnValue(false),
       validateMultiplePermissions: jest.fn().mockReturnValue(false)
     });
@@ -144,6 +148,7 @@ describe('NewPermissionSystemDemo', () => {
       accessibleRegions: [],
       hasFullRegionalAccess: false,
       hasExportPermission: false,
+      hasSystemAccess: false,
       checkPermission: jest.fn().mockReturnValue(false),
       validateMultiplePermissions: jest.fn().mockReturnValue(false)
     });
@@ -173,6 +178,7 @@ describe('NewPermissionSystemDemo', () => {
       accessibleRegions: ['utrecht', 'limburg'],
       hasFullRegionalAccess: false,
       hasExportPermission: false,
+      hasSystemAccess: false,
       checkPermission: mockCheckPermission,
       validateMultiplePermissions: jest.fn().mockReturnValue(false)
     });

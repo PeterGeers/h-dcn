@@ -109,13 +109,12 @@ describe('MemberList Component', () => {
     
     // Default mock implementations
     mockUseAuth.mockReturnValue({
-      user: { id: '1', username: 'testuser', email: 'test@example.com', groups: ['Members_CRUD'], attributes: {} },
-      loading: false,
+      user: { email: 'test@example.com', sub: 'user-1', groups: ['Members_CRUD'], accessToken: 'mock-token' },
+      isLoading: false,
       isAuthenticated: true,
-      logout: jest.fn(),
-      hasRole: jest.fn(),
-      refreshUserRoles: jest.fn(),
-    });
+      error: null,
+      signOut: jest.fn(),
+    } as any);
     
     mockUserHasPermissionType.mockReturnValue(true);
     
@@ -253,13 +252,12 @@ describe('MemberList Component', () => {
     test('should hide refresh button for non-CRUD users', async () => {
       mockUserHasPermissionType.mockReturnValue(false);
       mockUseAuth.mockReturnValue({
-        user: { id: '1', username: 'testuser', email: 'test@example.com', groups: ['Members_Read'], attributes: {} },
-        loading: false,
+        user: { email: 'test@example.com', sub: 'user-1', groups: ['Members_Read'], accessToken: 'mock-token' },
+        isLoading: false,
         isAuthenticated: true,
-        logout: jest.fn(),
-        hasRole: jest.fn(),
-        refreshUserRoles: jest.fn(),
-      });
+        error: null,
+        signOut: jest.fn(),
+      } as any);
       
       render(<MemberList />);
       
@@ -532,12 +530,11 @@ describe('MemberList Component', () => {
     test('should handle unauthenticated user', async () => {
       mockUseAuth.mockReturnValue({
         user: null,
-        loading: false,
+        isLoading: false,
         isAuthenticated: false,
-        logout: jest.fn(),
-        hasRole: jest.fn(),
-        refreshUserRoles: jest.fn(),
-      });
+        error: null,
+        signOut: jest.fn(),
+      } as any);
       
       mockUserHasPermissionType.mockReturnValue(false);
       

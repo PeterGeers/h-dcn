@@ -91,14 +91,14 @@ const mockFetchAuthSession = fetchAuthSession as jest.MockedFunction<typeof fetc
 const mockGetCurrentUserRoles = getCurrentUserRoles as jest.MockedFunction<typeof getCurrentUserRoles>;
 const mockGetCurrentUserInfo = getCurrentUserInfo as jest.MockedFunction<typeof getCurrentUserInfo>;
 const mockValidateCognitoGroupsClaim = validateCognitoGroupsClaim as jest.MockedFunction<typeof validateCognitoGroupsClaim>;
-const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const mockUseAuth = useAuth as jest.MockedFunction<() => any>;
 
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
 // Simple test component that uses the useAuth hook
 const TestComponent: React.FC<{ onUserData?: (userData: any) => void }> = ({ onUserData }) => {
-  const authData = useAuth();
+  const authData = useAuth() as any;
   
   React.useEffect(() => {
     if (onUserData) {
@@ -106,7 +106,7 @@ const TestComponent: React.FC<{ onUserData?: (userData: any) => void }> = ({ onU
     }
   }, [authData, onUserData]);
 
-  if (authData.loading) {
+  if (authData.isLoading) {
     return <div>Loading...</div>;
   }
 
@@ -122,7 +122,7 @@ const TestComponent: React.FC<{ onUserData?: (userData: any) => void }> = ({ onU
     <div>
       <div data-testid="user-email">{authData.user.email}</div>
       <div data-testid="user-roles">{authData.user.groups.join(',')}</div>
-      <div data-testid="has-hdcnleden">{authData.hasRole('hdcnLeden') ? 'true' : 'false'}</div>
+      <div data-testid="has-hdcnleden">{authData.user.groups.includes('hdcnLeden') ? 'true' : 'false'}</div>
       {authData.user.groups.includes('hdcnLeden') ? (
         <div data-testid="member-content">Member Portal</div>
       ) : (

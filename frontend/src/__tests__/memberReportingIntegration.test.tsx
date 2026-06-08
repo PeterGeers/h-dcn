@@ -45,31 +45,43 @@ describe('Member Reporting Integration Tests', () => {
   // Sample test data
   const mockUtrechtMembers: Member[] = [
     {
+      id: 'ut001',
+      name: 'Jan Jansen',
       lidnummer: 'UT001',
       voornaam: 'Jan',
       achternaam: 'Jansen',
       email: 'jan@utrecht.nl',
+      region: 'Utrecht',
       regio: 'Utrecht',
+      membershipType: 'Gewoon lid',
       status: 'Actief',
       geboortedatum: '1980-05-15',
       tijdstempel: '2020-01-01'
     },
     {
+      id: 'ut002',
+      name: 'Piet Pietersen',
       lidnummer: 'UT002',
       voornaam: 'Piet',
       achternaam: 'Pietersen',
       email: 'piet@utrecht.nl',
+      region: 'Utrecht',
       regio: 'Utrecht',
+      membershipType: 'Gewoon lid',
       status: 'Inactief',
       geboortedatum: '1975-08-20',
       tijdstempel: '2018-06-15'
     },
     {
+      id: 'ut003',
+      name: 'Klaas Klaassen',
       lidnummer: 'UT003',
       voornaam: 'Klaas',
       achternaam: 'Klaassen',
       email: 'klaas@utrecht.nl',
+      region: 'Utrecht',
       regio: 'Utrecht',
+      membershipType: 'Gewoon lid',
       status: 'Opgezegd',
       geboortedatum: '1990-12-10',
       tijdstempel: '2019-03-20'
@@ -79,21 +91,29 @@ describe('Member Reporting Integration Tests', () => {
   const mockAllRegionsMembers: Member[] = [
     ...mockUtrechtMembers,
     {
+      id: 'zh001',
+      name: 'Anna de Vries',
       lidnummer: 'ZH001',
       voornaam: 'Anna',
       achternaam: 'de Vries',
       email: 'anna@zuidholland.nl',
+      region: 'Zuid-Holland',
       regio: 'Zuid-Holland',
+      membershipType: 'Gewoon lid',
       status: 'Actief',
       geboortedatum: '1985-03-25',
       tijdstempel: '2021-02-10'
     },
     {
+      id: 'nh001',
+      name: 'Emma Smit',
       lidnummer: 'NH001',
       voornaam: 'Emma',
       achternaam: 'Smit',
       email: 'emma@noordholland.nl',
+      region: 'Noord-Holland',
       regio: 'Noord-Holland',
+      membershipType: 'Gewoon lid',
       status: 'Actief',
       geboortedatum: '1988-11-05',
       tijdstempel: '2020-09-01'
@@ -322,7 +342,7 @@ describe('Member Reporting Integration Tests', () => {
       const metadata = MemberDataService.getCacheMetadata();
       
       expect(metadata).toBeTruthy();
-      expect(metadata?.memberCount).toBe(3);
+      expect(metadata?.count).toBe(3);
       expect(metadata?.timestamp).toBeTruthy();
 
       console.log('✓ Cache metadata verified');

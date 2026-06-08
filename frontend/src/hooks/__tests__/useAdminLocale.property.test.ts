@@ -72,7 +72,7 @@ const memberRouteArb = fc.oneof(
 );
 
 /** Generates a non-Dutch supported locale */
-const nonDutchLocales = SUPPORTED_LOCALES.filter((l): l is string => l !== DEFAULT_LOCALE);
+const nonDutchLocales = SUPPORTED_LOCALES.filter((l) => l !== DEFAULT_LOCALE) as string[];
 const nonDutchLocaleArb = fc.constantFrom(...nonDutchLocales);
 
 /** Generates any supported locale */

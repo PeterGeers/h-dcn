@@ -13,13 +13,6 @@ import '@testing-library/jest-dom';
 // Mock the errorHandler module
 jest.mock('../../utils/errorHandler', () => ({
   setMaintenanceScreenCallback: jest.fn(),
-  ApiError: class MockApiError {
-    constructor(mockStatus, mockMessage, mockIsMaintenanceMode) {
-      this.status = mockStatus;
-      this.message = mockMessage;
-      this.isMaintenanceMode = mockIsMaintenanceMode;
-    }
-  }
 }));
 
 // Mock MaintenanceScreen component
@@ -39,7 +32,7 @@ jest.mock('../MaintenanceScreen', () => {
 });
 
 import MaintenanceProvider from '../MaintenanceProvider';
-import { setMaintenanceScreenCallback } from '../../utils/errorHandler';
+import { setMaintenanceScreenCallback, ApiError } from '../../utils/errorHandler';
 
 // Get the mocked function
 const mockSetMaintenanceScreenCallback = setMaintenanceScreenCallback as jest.MockedFunction<typeof setMaintenanceScreenCallback>;
@@ -54,7 +47,7 @@ Object.defineProperty(window, 'location', {
 });
 
 describe('MaintenanceProvider Component', () => {
-  let mockCallback: jest.Mock;
+  let mockCallback: (show: boolean, error?: ApiError) => void;
 
   beforeEach(() => {
     jest.clearAllMocks();
