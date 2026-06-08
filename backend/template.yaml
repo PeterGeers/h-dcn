@@ -829,6 +829,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: Events
       Events:
         CreateEvent:
           Type: Api
@@ -846,6 +849,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: Events
       Events:
         GetEvents:
           Type: Api
@@ -1229,6 +1235,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: Events
       Events:
         UpdateEvent:
           Type: Api
@@ -1246,6 +1255,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: Events
       Events:
         DeleteEvent:
           Type: Api
