@@ -102,6 +102,15 @@ def lambda_handler(event, context):
         if is_admin and 'club_id' in query_params:
             # Admin can query any club via query parameter
             club_id = query_params['club_id']
+        elif is_admin:
+            # Admin without club_id param: try member record, but don't block access
+            club_id = get_club_id(user_email)
+            if not club_id:
+                # Admin has no personal club — return empty response (they use admin tab)
+                return create_success_response({
+                    'admin_no_club': True,
+                    'message': 'No personal club assignment. Use admin tab to manage orders.',
+                })
         else:
             # Regular user: resolve club from member record
             club_id = get_club_id(user_email)

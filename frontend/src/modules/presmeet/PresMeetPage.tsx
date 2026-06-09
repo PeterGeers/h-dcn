@@ -98,20 +98,43 @@ const PresMeetPage: React.FC = () => {
     setNeedsOnboarding(false);
 
     try {
-      // Get all presmeet events
-      const events = await presmeetApi.getEvent('presmeet');
+      // Try to get presmeet events. If user lacks events_read permission,
+      // fall back to using the order endpoint directly with a known event ID.
+      let currentEvent: Event | null = null;
 
-      // Find the first open event, fallback to most recent by start_date
-      const openEvent = events.find((e) => e.status === 'open');
-      const fallbackEvent = events.length > 0
-        ? events.sort((a, b) => (b.start_date || '').localeCompare(a.start_date || ''))[0]
-        : null;
-      const currentEvent = openEvent || fallbackEvent;
+      try {
+        const events = await presmeetApi.getEvent('presmeet');
+        const openEvent = events.find((e) => e.status === 'open');
+        const fallbackEvent = events.length > 0
+          ? events.sort((a, b) => (b.start_date || '').localeCompare(a.start_date || ''))[0]
+          : null;
+        currentEvent = openEvent || fallbackEvent || null;
+      } catch (eventErr: any) {
+        // If 403 on events endpoint, try loading order directly with known event ID
+        // The presmeet_get_order handler will return event info in its response
+        console.warn('Could not fetch events (likely permission), trying direct order load');
+      }
 
       if (!currentEvent) {
-        setError(t('page.no_event'));
-        setIsLoading(false);
-        return;
+        // Fallback: try to get order without knowing the event ID
+        // Use a well-known event ID if available from environment
+        const fallbackEventId = process.env.REACT_APP_PRESMEET_EVENT_ID || 'pm2027-event';
+        currentEvent = {
+          event_id: fallbackEventId,
+          event_type: 'presmeet',
+          name: 'Presidents Meeting 2027',
+          location: '',
+          status: 'open',
+          start_date: '',
+          end_date: '',
+          registration_open: '',
+          registration_close: '',
+          payment_deadline: '',
+          product_ids: [],
+          constraints: [],
+          created_at: '',
+          created_by: '',
+        };
       }
 
       setActiveEvent(currentEvent);
@@ -119,31 +142,47 @@ const PresMeetPage: React.FC = () => {
       // Try to load the order for this event
       try {
         const orderData = await presmeetApi.getOrder(currentEvent.event_id);
-        setOrder(orderData);
 
-        // Load products for the event
-        const eventProducts = await presmeetApi.getProducts(
-          'presmeet',
-          currentEvent.product_ids
-        );
-        setProducts(eventProducts);
+        // Admin without personal club gets a special response (not a real order)
+        if (orderData && (orderData as any).admin_no_club) {
+          // Admin has no personal booking — they'll use the admin tab
+          // Don't set order, just proceed to render with admin tab available
+        } else {
+          setOrder(orderData);
+
+          // Load products for the event
+          const eventProducts = await presmeetApi.getProducts(
+            'presmeet',
+            currentEvent.product_ids
+          );
+          setProducts(eventProducts);
+        }
       } catch (orderErr: any) {
         if (isAuthorizationError(orderErr)) {
-          // 403 — likely missing club assignment
+          // 403 — check specific error message
           const msg = orderErr.message?.toLowerCase() || '';
           if (msg.includes('club') || msg.includes('assignment')) {
-            setNeedsOnboarding(true);
+            // Admin users don't need club assignment to access admin tab
+            if (!isAdmin) {
+              setNeedsOnboarding(true);
+            }
+            // For admins: skip order loading, allow admin tab access
+          } else if (msg.includes('presmeet access required')) {
+            // User lacks Regio_Pressmeet or Regio_All
+            setError(orderErr.message);
           } else {
             setError(orderErr.message);
           }
         } else if (orderErr?.response?.status === 403) {
           // Fallback: check raw 403 response message
-          const msg = orderErr?.response?.data?.message?.toLowerCase() || '';
+          const msg = (orderErr?.response?.data?.message || orderErr?.response?.data?.error || '').toLowerCase();
           if (msg.includes('club') || msg.includes('assignment')) {
-            setNeedsOnboarding(true);
+            if (!isAdmin) {
+              setNeedsOnboarding(true);
+            }
           } else {
             setError(
-              orderErr?.response?.data?.message || t('page.error_loading')
+              orderErr?.response?.data?.message || orderErr?.response?.data?.error || t('page.error_loading')
             );
           }
         } else {
@@ -157,7 +196,7 @@ const PresMeetPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, isAdmin]);
 
   useEffect(() => {
     loadPageData();
@@ -193,6 +232,22 @@ const PresMeetPage: React.FC = () => {
 
   // --- Error state (no event or fatal error) ---
   if (error && !activeEvent && !needsOnboarding) {
+    return (
+      <Container maxW="container.lg" py={6}>
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          <Box>
+            <AlertTitle>{t('page.error_loading')}</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Box>
+        </Alert>
+      </Container>
+    );
+  }
+
+  // --- Permission denied or no order loaded (don't render BookingWizard) ---
+  // Allow admins through even without an order (they need the admin tab)
+  if (error && !order && !needsOnboarding && !isAdmin) {
     return (
       <Container maxW="container.lg" py={6}>
         <Alert status="error" borderRadius="md">
@@ -251,7 +306,7 @@ const PresMeetPage: React.FC = () => {
         <TabPanels>
           {/* Booking Tab */}
           <TabPanel px={0}>
-            {activeEvent && (
+            {activeEvent && order ? (
               <VStack spacing={6} align="stretch">
                 <BookingWizard eventId={activeEvent.event_id} />
 
@@ -283,6 +338,15 @@ const PresMeetPage: React.FC = () => {
                   />
                 )}
               </VStack>
+            ) : (
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Text>
+                  {isAdmin
+                    ? t('page.admin_no_personal_booking', 'Geen persoonlijke booking gevonden. Gebruik het Admin-tabblad om bestellingen te beheren.')
+                    : t('page.error_loading')}
+                </Text>
+              </Alert>
             )}
           </TabPanel>
 

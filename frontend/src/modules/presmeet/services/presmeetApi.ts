@@ -90,7 +90,7 @@ function parseApiError(error: AxiosError<any>): PresMeetApiError | AxiosError {
   if (status === 403) {
     return {
       type: 'AUTHORIZATION_ERROR',
-      message: data?.message || 'You do not have permission to perform this action.',
+      message: data?.message || data?.error || 'You do not have permission to perform this action.',
       status: 403,
     } as AuthorizationError;
   }
