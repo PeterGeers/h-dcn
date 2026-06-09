@@ -104,7 +104,7 @@ const PresMeetPage: React.FC = () => {
       // Find the first open event, fallback to most recent by start_date
       const openEvent = events.find((e) => e.status === 'open');
       const fallbackEvent = events.length > 0
-        ? events.sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
+        ? events.sort((a, b) => (b.start_date || '').localeCompare(a.start_date || ''))[0]
         : null;
       const currentEvent = openEvent || fallbackEvent;
 
