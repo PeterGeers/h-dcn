@@ -346,6 +346,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Environment
+      OpenApiVersion: '3.0'
       BinaryMediaTypes:
         - application/pdf
       Cors:
@@ -1552,7 +1553,7 @@ Resources:
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
           PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl/presmeet/payment/return"
-          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mollie-webhook"
+          MOLLIE_WEBHOOK_URL: !Sub "https://i3if973sp5.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mollie-webhook"
       Events:
         CreatePresMeetPayment:
           Type: Api
