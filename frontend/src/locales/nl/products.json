@@ -21,7 +21,8 @@
     "quantity": "Aantal",
     "price_label": "Prijs:",
     "no_image": "Geen afbeelding beschikbaar",
-    "back": "Terug"
+    "back": "Terug",
+    "variant_fetch_error": "Varianten konden niet worden geladen"
   },
   "card_modal": {
     "select_option_desc": "Kies een maat/optie voor dit product"

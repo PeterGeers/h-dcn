@@ -32,7 +32,7 @@ import { PaymentRecordForm } from './PaymentRecordForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 
 interface PaymentsTabProps {
-  tenant: string;
+  eventFilter: string;
 }
 
 function getPaymentStatusBadge(status: 'paid' | 'partial' | 'unpaid') {
@@ -52,9 +52,9 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
-export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {
+export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter }) => {
   const { aggregates, orderPayments, loading, error, recordPayment } =
-    useAdminPayments(tenant);
+    useAdminPayments(eventFilter);
   const { canMutate } = useAdminPermissions();
 
   if (loading) {
@@ -107,7 +107,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {
           <Thead>
             <Tr>
               <Th color="gray.400">Bestelling ID</Th>
-              <Th color="gray.400">Channel</Th>
+              <Th color="gray.400">Event</Th>
               <Th color="gray.400">Klant</Th>
               <Th color="gray.400" isNumeric>Totaal</Th>
               <Th color="gray.400" isNumeric>Betaald</Th>
@@ -129,8 +129,8 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {
                     {order.order_id.substring(0, 8)}...
                   </Td>
                   <Td>
-                    <Badge colorScheme={order.channel === 'presmeet' ? 'purple' : 'blue'}>
-                      {order.channel}
+                    <Badge colorScheme={order.event_id ? 'purple' : 'blue'}>
+                      {order.event_id || 'Webshop'}
                     </Badge>
                   </Td>
                   <Td color="white">{order.customer}</Td>

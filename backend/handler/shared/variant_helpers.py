@@ -71,7 +71,7 @@ def generate_variant_combinations(
 
 
 def create_default_variant(
-    parent_product_id: str, channel: str
+    parent_product_id: str,
 ) -> Dict[str, Any]:
     """
     Create a Default_Variant record for a newly created product.
@@ -82,7 +82,6 @@ def create_default_variant(
 
     Args:
         parent_product_id: The product_id of the parent product.
-        channel: The channel identifier (e.g., "presmeet", "h-dcn").
 
     Returns:
         A dict representing the Default_Variant DynamoDB record.
@@ -92,7 +91,6 @@ def create_default_variant(
     return {
         "product_id": f"var_{parent_product_id}_default",
         "parent_id": parent_product_id,
-        "channel": channel,
         "name": "Default Variant",
         "is_parent": False,
         "variant_attributes": {},

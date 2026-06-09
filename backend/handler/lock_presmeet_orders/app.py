@@ -89,9 +89,6 @@ def lambda_handler(event, context):
                 if order.get("source") != "presmeet":
                     continue
 
-                if order.get("tenant") != "presmeet":
-                    continue
-
                 # Only lock orders in "submitted" status
                 if order.get("status") != "submitted":
                     continue
@@ -111,7 +108,6 @@ def lambda_handler(event, context):
             # Lock ALL: scan all PresMeet orders, lock all "submitted" ones
             scan_response = orders_table.scan(
                 FilterExpression=Attr("source").eq("presmeet")
-                & Attr("tenant").eq("presmeet")
                 & Attr("status").eq("submitted")
             )
             submitted_orders = scan_response["Items"]
@@ -120,7 +116,6 @@ def lambda_handler(event, context):
             while "LastEvaluatedKey" in scan_response:
                 scan_response = orders_table.scan(
                     FilterExpression=Attr("source").eq("presmeet")
-                    & Attr("tenant").eq("presmeet")
                     & Attr("status").eq("submitted"),
                     ExclusiveStartKey=scan_response["LastEvaluatedKey"],
                 )

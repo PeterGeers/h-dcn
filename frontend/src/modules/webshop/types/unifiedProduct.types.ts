@@ -101,12 +101,6 @@ export interface PurchaseRules {
 
 // --- Unified Product ---
 
-/** Channel identifier for product visibility */
-export type Channel = 'h-dcn' | 'presmeet';
-
-/** @deprecated Use Channel instead */
-export type Tenant = Channel;
-
 /**
  * Unified product interface extending the base Product type with the three
  * new configuration fields and additional catalog/metadata fields.
@@ -114,8 +108,8 @@ export type Tenant = Channel;
 export interface UnifiedProduct extends Product {
   /** Unique product identifier */
   product_id: string;
-  /** Channel controlling visibility (h-dcn or presmeet) */
-  channel: Channel;
+  /** Event linkage: null for general webshop products, event UUID for event-linked products */
+  event_id?: string | null;
   /** Product description */
   description?: string;
   /** Whether the product is active and visible in the webshop */
@@ -153,8 +147,6 @@ export interface VariantRecord {
   product_id: string;
   /** Reference to the parent product */
   parent_id: string;
-  /** Channel matching the parent product */
-  channel: Channel;
   /** Display name (e.g., "Club T-shirt - S / Male") */
   name: string;
   /** Mapping of axis name to selected value for this variant */

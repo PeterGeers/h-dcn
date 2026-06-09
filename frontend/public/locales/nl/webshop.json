@@ -15,7 +15,9 @@
     "save_hint": "Voeg eerst producten toe om te bewaren.",
     "option_label": "Optie",
     "item_total_label": "Aantal items",
-    "total_label": "Totaal"
+    "total_label": "Totaal",
+    "version_conflict": "Versieconflict",
+    "version_conflict_desc": "Je bestelling is door een andere sessie gewijzigd. Ververs de pagina."
   },
   "product": {
     "added": "Product toegevoegd",
@@ -49,7 +51,19 @@
     "test_expiry": "Vervaldatum: Elke toekomstige datum (bijv. 12/34)",
     "test_cvc": "CVC: Elke 3 cijfers (bijv. 123)",
     "test_name": "Naam: Elke naam (bijv. Test Gebruiker)",
-    "test_postal": "Postcode: Elk formaat (bijv. 1234AB)"
+    "test_postal": "Postcode: Elk formaat (bijv. 1234AB)",
+    "no_order_error": "Geen bestelling gevonden. Probeer opnieuw.",
+    "fields_required": "Vul alle verplichte velden in voordat je de bestelling plaatst.",
+    "conflict_error": "De bestelling is ondertussen gewijzigd. Vernieuw en probeer opnieuw.",
+    "submit_error": "Er is een fout opgetreden bij het indienen van de bestelling.",
+    "refresh_retry": "Vernieuwen en opnieuw proberen",
+    "order_placed": "Bestelling geplaatst!",
+    "transfer_instructions": "Maak het bedrag over met de volgende gegevens:",
+    "reference": "Kenmerk",
+    "amount": "Bedrag",
+    "close": "Sluiten",
+    "summary": "Overzicht",
+    "fields_incomplete": "Niet alle velden zijn correct ingevuld:"
   },
   "confirmation": {
     "title": "Orderbevestiging",
@@ -136,6 +150,9 @@
     "max_per_member": "Je hebt nog {{remaining}} stuks beschikbaar (limiet: {{limit}} per lid)",
     "max_per_club": "Je club heeft nog {{remaining}} stuks beschikbaar (limiet: {{limit}} per club)",
     "requires_membership": "Een actief lidmaatschap is vereist om dit product te bestellen"
+  },
+  "common": {
+    "dismiss": "Sluiten"
   },
   "payment": {
     "method_title": "Betaalmethode",

@@ -28,7 +28,7 @@ reports_bucket = os.environ.get('REPORTS_BUCKET_NAME', 'h-dcn-webshop-reports')
 
 # CSV column definitions for order export
 ORDER_CSV_COLUMNS = [
-    'order_id', 'channel', 'customer_name', 'club_name', 'status',
+    'order_id', 'event_id', 'customer_name', 'club_name', 'status',
     'payment_status', 'total_amount', 'amount_paid', 'created_at'
 ]
 
@@ -55,7 +55,7 @@ def lambda_handler(event, context):
 
         # Get query parameters
         query_params = event.get('queryStringParameters') or {}
-        channel_filter = query_params.get('channel')
+        event_id_filter = query_params.get('event_id')
         export_format = query_params.get('format', 'json').lower()
 
         if export_format not in ('json', 'csv'):
@@ -69,17 +69,19 @@ def lambda_handler(event, context):
         except Exception:
             return create_error_response(404, 'No report snapshot available. Please generate a report first.')
 
-        # Apply channel filter
+        # Apply event_id filter
         orders = snapshot_data.get('orders', [])
-        if channel_filter:
-            orders = [o for o in orders if o.get('channel', o.get('tenant')) == channel_filter]
+        if event_id_filter == 'null':
+            orders = [o for o in orders if not o.get('event_id')]
+        elif event_id_filter:
+            orders = [o for o in orders if o.get('event_id') == event_id_filter]
 
         if export_format == 'json':
             # Return JSON export
             export_data = {
                 'generated_at': snapshot_data.get('generated_at'),
                 'exported_at': None,  # Will be set by response
-                'channel_filter': channel_filter,
+                'event_id_filter': event_id_filter,
                 'total_orders': len(orders),
                 'orders': orders,
             }

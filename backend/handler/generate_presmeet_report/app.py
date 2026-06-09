@@ -296,12 +296,12 @@ def lambda_handler(event, context):
 
         # Scan Orders table for all PresMeet records
         orders = scan_all_items(
-            orders_table, Attr("source").eq("presmeet") & Attr("tenant").eq("presmeet")
+            orders_table, Attr("source").eq("presmeet")
         )
 
         # Scan Payments table for all PresMeet records
         payments = scan_all_items(
-            payments_table, Attr("source").eq("presmeet") & Attr("tenant").eq("presmeet")
+            payments_table, Attr("source").eq("presmeet")
         )
 
         # Compute aggregates

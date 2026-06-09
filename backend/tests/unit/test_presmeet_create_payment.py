@@ -100,7 +100,6 @@ def make_order(
         'club_id': club_id,
         'event_id': 'evt-1',
         'event_type': 'presmeet',
-        'channel': 'presmeet',
         'status': status,
         'payment_status': 'unpaid',
         'total_amount': total_amount,

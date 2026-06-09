@@ -20,8 +20,7 @@ import {
 
 interface OrderItem {
   name?: string;
-  naam?: string;
-  selectedOption?: string;
+  variant_attributes?: Record<string, string>;
   quantity: number;
   price?: number;
 }
@@ -208,8 +207,12 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ order }) => {
                 <Tbody>
                   {order.items.map((item, idx) => (
                     <Tr key={idx}>
-                      <Td>{item.name || item.naam}</Td>
-                      <Td>{item.selectedOption || '-'}</Td>
+                      <Td>{item.name}</Td>
+                      <Td>
+                        {item.variant_attributes
+                          ? Object.entries(item.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+                          : '-'}
+                      </Td>
                       <Td>{item.quantity}</Td>
                       <Td>€{Number(item.price || 0).toFixed(2)}</Td>
                       <Td>€{(item.quantity * Number(item.price || 0)).toFixed(2)}</Td>

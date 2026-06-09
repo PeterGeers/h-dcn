@@ -46,34 +46,31 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'admin_get_products')
 
-        # Get optional channel filter from query params
+        # Get optional event_id filter from query params
         query_params = event.get('queryStringParameters') or {}
-        channel_filter = query_params.get('channel')
+        event_id_filter = query_params.get('event_id')
 
         # Query products (parent products only)
-        if channel_filter:
-            response = table.scan(
-                FilterExpression=boto3.dynamodb.conditions.Attr('channel').eq(channel_filter) & boto3.dynamodb.conditions.Attr('is_parent').eq(True)
+        filter_expr = boto3.dynamodb.conditions.Attr('is_parent').eq(True)
+        if event_id_filter == 'null':
+            # Webshop products: event_id is null or not set
+            filter_expr = filter_expr & (
+                boto3.dynamodb.conditions.Attr('event_id').not_exists()
+                | boto3.dynamodb.conditions.Attr('event_id').eq(None)
             )
-        else:
-            response = table.scan(
-                FilterExpression=boto3.dynamodb.conditions.Attr('is_parent').eq(True)
-            )
+        elif event_id_filter:
+            # Event-linked products: filter by specific event_id
+            filter_expr = filter_expr & boto3.dynamodb.conditions.Attr('event_id').eq(event_id_filter)
 
+        response = table.scan(FilterExpression=filter_expr)
         products = response.get('Items', [])
 
         # Handle pagination for large datasets
         while 'LastEvaluatedKey' in response:
-            if channel_filter:
-                response = table.scan(
-                    FilterExpression=boto3.dynamodb.conditions.Attr('channel').eq(channel_filter) & boto3.dynamodb.conditions.Attr('is_parent').eq(True),
-                    ExclusiveStartKey=response['LastEvaluatedKey']
-                )
-            else:
-                response = table.scan(
-                    FilterExpression=boto3.dynamodb.conditions.Attr('is_parent').eq(True),
-                    ExclusiveStartKey=response['LastEvaluatedKey']
-                )
+            response = table.scan(
+                FilterExpression=filter_expr,
+                ExclusiveStartKey=response['LastEvaluatedKey']
+            )
             products.extend(response.get('Items', []))
 
         return {

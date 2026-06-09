@@ -31,10 +31,12 @@ import {
 } from '../types/unifiedProduct.types';
 
 interface Product {
-  id: string;
-  naam: string;
-  prijs: number | string;
-  opties?: string;
+  product_id?: string;
+  id?: string;
+  name?: string;
+  naam?: string;
+  prijs?: number | string;
+  price?: number;
   images?: string | string[];
   image?: string | string[];
   variant_schema?: VariantSchema;
@@ -78,6 +80,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [selectedVariant, setSelectedVariant] = useState<VariantRecord | null>(null);
   const [variants, setVariants] = useState<VariantRecord[]>([]);
   const [loadingVariants, setLoadingVariants] = useState<boolean>(false);
+  const [variantFetchError, setVariantFetchError] = useState<boolean>(false);
   const [hasPurchaseViolation, setHasPurchaseViolation] = useState<boolean>(false);
   const { t } = useTranslation('products');
 
@@ -85,10 +88,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   useEffect(() => {
     if (!product || !isOpen) return;
 
+    const productId = product.product_id || product.id || '';
+
     if (product.variant_schema && Object.keys(product.variant_schema).length > 0) {
       setLoadingVariants(true);
       productService
-        .getVariants(product.id)
+        .getVariants(productId)
         .then((response: any) => {
           const variantData = Array.isArray(response) ? response : response?.data || [];
           setVariants(variantData);
@@ -96,6 +101,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         .catch((err: Error) => {
           console.error('Failed to fetch variants:', err);
           setVariants([]);
+          setVariantFetchError(true);
         })
         .finally(() => {
           setLoadingVariants(false);
@@ -104,7 +110,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       // For products without variant_schema, try to load the default variant
       setLoadingVariants(true);
       productService
-        .getVariants(product.id)
+        .getVariants(productId)
         .then((response: any) => {
           const variantData = Array.isArray(response) ? response : response?.data || [];
           setVariants(variantData);
@@ -118,6 +124,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         })
         .catch(() => {
           setVariants([]);
+          setVariantFetchError(true);
         })
         .finally(() => {
           setLoadingVariants(false);
@@ -128,6 +135,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     setSelectedVariant(null);
     setCurrentImageIndex(0);
     setHasPurchaseViolation(false);
+    setVariantFetchError(false);
   }, [product, isOpen]);
 
   const handleVariantSelect = useCallback((variant: VariantRecord | null) => {
@@ -180,6 +188,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // Determine if add-to-cart should be enabled
   const canAddToCart = (() => {
+    // Disable if variant fetch failed
+    if (variantFetchError) return false;
     // For products with variant_schema, a variant must be resolved
     if (hasVariantSchema && !selectedVariant) return false;
     // For products without variant_schema, allow if default variant is loaded or no variants
@@ -201,11 +211,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleAddToCart = (): void => {
     const cartItem: CartItem = {
-      product_id: product.id,
+      product_id: product.product_id || product.id || '',
       variant_id: selectedVariant?.product_id || '',
       variant_attributes: selectedVariant?.variant_attributes || {},
-      name: product.naam,
-      price: Number(product.prijs),
+      name: product.name || product.naam,
+      price: Number(product.price ?? product.prijs ?? 0),
       quantity: 1,
     };
     onAddToCart(cartItem);
@@ -217,7 +227,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <ModalOverlay />
       <ModalContent mx={{ base: 2, md: 'auto' }} my={{ base: 2, md: 'auto' }}>
         <ModalHeader color="black" fontSize={{ base: 'lg', md: 'xl' }} pr={10}>
-          {product.naam}
+          {product.name || product.naam}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6} px={{ base: 4, md: 6 }}>
@@ -229,7 +239,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   <Box position="relative">
                     <Image
                       src={images[currentImageIndex]}
-                      alt={product.naam}
+                      alt={product.name || product.naam}
                       maxH={{ base: '250px', md: '300px' }}
                       w="full"
                       objectFit="contain"
@@ -285,11 +295,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   <Text fontSize={{ base: 'md', md: 'lg' }}>
                     {t('card.price_label')}{' '}
                     <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>
-                      €{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}
+                      €{(product.price ?? product.prijs) ? Number(product.price ?? product.prijs).toFixed(2) : '0.00'}
                     </Text>
                   </Text>
                   <Text fontSize={{ base: 'sm', md: 'md' }}>
-                    <strong>Product:</strong> {product.naam}
+                    <strong>Product:</strong> {product.name || product.naam}
                   </Text>
                 </VStack>
 
@@ -303,6 +313,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
                           Opties laden...
                         </Text>
                       </Flex>
+                    ) : variantFetchError ? (
+                      <Text color="red.500" fontSize="sm">
+                        {t('card.variant_fetch_error')}
+                      </Text>
                     ) : (
                       <VariantSelector
                         variantSchema={normalizeVariantSchema(product.variant_schema)!}
@@ -311,6 +325,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
                       />
                     )}
                   </Box>
+                )}
+
+                {/* Variant fetch error for products without variant_schema */}
+                {!hasVariantSchema && variantFetchError && (
+                  <Text color="red.500" fontSize="sm">
+                    {t('card.variant_fetch_error')}
+                  </Text>
                 )}
 
                 {/* Purchase rules feedback */}

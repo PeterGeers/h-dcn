@@ -412,7 +412,7 @@ def _order_strategy(order_index):
     return st.fixed_dictionaries({
         "order_id": st.just(f"order-{order_index}"),
         "source": st.just("presmeet"),
-        "tenant": st.just("presmeet"),
+        "event_id": st.just("evt-presmeet-2025"),
         "club_id": st.text(
             alphabet=st.characters(whitelist_categories=('L', 'N')),
             min_size=3,
@@ -440,7 +440,7 @@ def lock_all_batch(orders):
     and transition them to 'locked'. Orders in 'draft' or 'locked' status are unchanged.
 
     Args:
-        orders: List of order dicts with at least 'order_id', 'source', 'tenant', 'status'.
+        orders: List of order dicts with at least 'order_id', 'source', 'event_id', 'status'.
 
     Returns:
         Tuple of (updated_orders, locked_count) where updated_orders is the list
@@ -451,7 +451,7 @@ def lock_all_batch(orders):
 
     for order in orders:
         # Only process presmeet orders (matching the handler's filter)
-        if order.get("source") != "presmeet" or order.get("tenant") != "presmeet":
+        if order.get("source") != "presmeet" or not order.get("event_id"):
             updated_orders.append(order.copy())
             continue
 

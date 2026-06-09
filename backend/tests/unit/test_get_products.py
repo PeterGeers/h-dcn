@@ -1,8 +1,8 @@
 """
 Unit tests for the get_products handler.
 
-Tests tenant-filtered product listing for webshop buyers,
-covering tenant resolution, access validation, and product filtering.
+Tests event_id-filtered product listing for webshop buyers,
+covering access validation and product filtering by event_id.
 """
 
 import json
@@ -31,7 +31,7 @@ def _create_jwt_payload(email, groups):
     return f"{header}.{body}.{sig}"
 
 
-def _build_event(tenant=None, groups=None, email="user@h-dcn.nl"):
+def _build_event(event_id=None, groups=None, email="user@h-dcn.nl"):
     """Build an API Gateway event for the get_products handler."""
     if groups is None:
         groups = ["hdcnLeden"]
@@ -43,8 +43,8 @@ def _build_event(tenant=None, groups=None, email="user@h-dcn.nl"):
         },
         "queryStringParameters": {},
     }
-    if tenant:
-        event["queryStringParameters"]["tenant"] = tenant
+    if event_id is not None:
+        event["queryStringParameters"]["event_id"] = event_id
     return event
 
 
@@ -65,13 +65,13 @@ def producten_table():
             BillingMode='PAY_PER_REQUEST',
         )
 
-        # Seed test products
+        # Seed test products — webshop products (event_id=null)
         table.put_item(Item={
             'product_id': 'prod_hdcn_1',
             'name': 'H-DCN T-shirt',
             'description': 'Club T-shirt',
             'price': Decimal('25.00'),
-            'tenant': 'h-dcn',
+            'event_id': None,
             'is_parent': True,
             'active': True,
             'groep': 'Kleding',
@@ -86,7 +86,7 @@ def producten_table():
             'name': 'H-DCN Pet',
             'description': 'Club cap',
             'price': Decimal('15.00'),
-            'tenant': 'h-dcn',
+            'event_id': None,
             'is_parent': True,
             'active': True,
             'groep': 'Accessoires',
@@ -96,12 +96,13 @@ def producten_table():
             'order_item_fields': None,
             'purchase_rules': None,
         })
+        # Event-linked product (event_id set)
         table.put_item(Item={
             'product_id': 'prod_presmeet_1',
             'name': 'PresMeet Diner',
             'description': 'Dinner reservation',
             'price': Decimal('50.00'),
-            'tenant': 'presmeet',
+            'event_id': 'evt_presmeet_2027',
             'is_parent': True,
             'active': True,
             'groep': 'Events',
@@ -117,7 +118,7 @@ def producten_table():
             'name': 'Old Product',
             'description': 'Inactive',
             'price': Decimal('10.00'),
-            'tenant': 'h-dcn',
+            'event_id': None,
             'is_parent': True,
             'active': False,
             'groep': None,
@@ -128,7 +129,7 @@ def producten_table():
         table.put_item(Item={
             'product_id': 'var_prod_hdcn_1_s',
             'name': 'H-DCN T-shirt - S',
-            'tenant': 'h-dcn',
+            'event_id': None,
             'is_parent': False,
             'parent_id': 'prod_hdcn_1',
             'active': True,
@@ -167,9 +168,10 @@ class TestGetProductsHandler:
         result = handler(event, None)
         assert result['statusCode'] == 200
 
-    def test_returns_hdcn_products_for_hdcn_member(self, producten_table):
+    def test_returns_webshop_products_with_event_id_null(self, producten_table):
+        """Filter by event_id=null returns only webshop products."""
         handler = self._import_handler()
-        event = _build_event(tenant="h-dcn", groups=["hdcnLeden"])
+        event = _build_event(event_id="null", groups=["hdcnLeden"])
         result = handler(event, None)
 
         assert result['statusCode'] == 200
@@ -182,9 +184,10 @@ class TestGetProductsHandler:
         assert 'prod_hdcn_inactive' not in product_ids
         assert 'var_prod_hdcn_1_s' not in product_ids
 
-    def test_returns_presmeet_products_for_presmeet_member(self, producten_table):
+    def test_returns_event_products_with_specific_event_id(self, producten_table):
+        """Filter by specific event_id returns only that event's products."""
         handler = self._import_handler()
-        event = _build_event(tenant="presmeet", groups=["Regio_Pressmeet"])
+        event = _build_event(event_id="evt_presmeet_2027", groups=["Regio_Pressmeet"])
         result = handler(event, None)
 
         assert result['statusCode'] == 200
@@ -192,38 +195,20 @@ class TestGetProductsHandler:
         assert body['total_count'] == 1
         assert body['products'][0]['product_id'] == 'prod_presmeet_1'
 
-    def test_returns_both_tenants_for_dual_role_user(self, producten_table):
+    def test_returns_all_active_products_without_event_id_filter(self, producten_table):
+        """No event_id filter returns all active parent products."""
         handler = self._import_handler()
-        event = _build_event(tenant="h-dcn,presmeet", groups=["hdcnLeden", "Regio_Pressmeet"])
+        event = _build_event(event_id=None, groups=["hdcnLeden", "Regio_Pressmeet"])
         result = handler(event, None)
 
         assert result['statusCode'] == 200
         body = json.loads(result['body'])
+        # All 3 active parent products (webshop + event-linked)
         assert body['total_count'] == 3
-
-    def test_403_when_requesting_unauthorized_tenant(self, producten_table):
-        handler = self._import_handler()
-        # hdcnLeden user trying to access presmeet
-        event = _build_event(tenant="presmeet", groups=["hdcnLeden"])
-        result = handler(event, None)
-
-        assert result['statusCode'] == 403
-        body = json.loads(result['body'])
-        assert body['error'] == 'channel_access_denied'
-
-    def test_no_tenant_param_uses_all_user_tenants(self, producten_table):
-        handler = self._import_handler()
-        event = _build_event(tenant=None, groups=["hdcnLeden"])
-        result = handler(event, None)
-
-        assert result['statusCode'] == 200
-        body = json.loads(result['body'])
-        # Should return only h-dcn products (user only has h-dcn access)
-        assert body['total_count'] == 2
 
     def test_product_fields_included_in_response(self, producten_table):
         handler = self._import_handler()
-        event = _build_event(tenant="h-dcn", groups=["hdcnLeden"])
+        event = _build_event(event_id="null", groups=["hdcnLeden"])
         result = handler(event, None)
 
         body = json.loads(result['body'])
@@ -240,15 +225,14 @@ class TestGetProductsHandler:
         event = {
             "httpMethod": "GET",
             "headers": {},  # No Authorization header
-            "queryStringParameters": {"tenant": "h-dcn"},
+            "queryStringParameters": {},
         }
         result = handler(event, None)
         assert result['statusCode'] == 401
 
     def test_no_webshop_access_returns_403(self, producten_table):
         handler = self._import_handler()
-        # verzoek_lid has no channel mapping → resolve_channels returns empty → 403
-        event = _build_event(tenant="h-dcn", groups=["verzoek_lid"])
+        # verzoek_lid has no product access roles
+        event = _build_event(event_id="null", groups=["verzoek_lid"])
         result = handler(event, None)
-        # verzoek_lid doesn't map to any tenant
         assert result['statusCode'] == 403

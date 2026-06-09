@@ -33,7 +33,7 @@ export const updateProduct = async (id: string, data: Product) => {
   if (!(await ApiService.isAuthenticated())) {
     throw new Error('Authentication required');
   }
-  return ApiService.put(`/update-product/${id}`, data);
+  return ApiService.put(`/admin/products/${id}`, data);
 };
 
 export const deleteProduct = async (id: string) => {

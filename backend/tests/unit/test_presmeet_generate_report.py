@@ -744,3 +744,125 @@ class TestLambdaHandler:
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
         assert body['data']['total_orders'] == 2
+
+
+class TestProductTypeField:
+    """Test that product_type field is used as the primary identifier."""
+
+    def test_product_type_takes_priority_over_product_id(self):
+        """When product_type is set, it should be used regardless of product_id value."""
+        from app import generate_attendees_report
+        orders = [{
+            'order_id': 'ord-100',
+            'club_id': 'club-x',
+            'status': 'submitted',
+            'items': [
+                {
+                    'product_id': 'a1b2c3d4-uuid-no-keywords',
+                    'product_type': 'meeting_ticket',
+                    'item_fields_data': {'name': 'Alice', 'role': 'President'},
+                },
+            ],
+        }]
+        result = generate_attendees_report(orders)
+        assert len(result) == 1
+        assert result[0]['name'] == 'Alice'
+
+    def test_product_type_prevents_false_positive_from_product_id(self):
+        """When product_type is set to something else, product_id string match should NOT apply."""
+        from app import generate_attendees_report
+        orders = [{
+            'order_id': 'ord-101',
+            'club_id': 'club-x',
+            'status': 'submitted',
+            'items': [
+                {
+                    # product_id contains 'meeting' but product_type says it's a party_ticket
+                    'product_id': 'prod-meeting-legacy',
+                    'product_type': 'party_ticket',
+                    'item_fields_data': {'name': 'Bob', 'role': 'Delegate'},
+                },
+            ],
+        }]
+        result = generate_attendees_report(orders)
+        # Should NOT match as attendee since product_type is party_ticket
+        assert len(result) == 0
+
+    def test_fallback_to_product_id_when_no_product_type(self):
+        """When product_type is missing, fallback to product_id string matching."""
+        from app import generate_party_report
+        orders = [{
+            'order_id': 'ord-102',
+            'club_id': 'club-y',
+            'status': 'submitted',
+            'items': [
+                {
+                    'product_id': 'prod-party-2027',
+                    # No product_type field
+                    'item_fields_data': {'name': 'Charlie', 'person_type': 'guest'},
+                },
+            ],
+        }]
+        result = generate_party_report(orders)
+        assert len(result) == 1
+        assert result[0]['name'] == 'Charlie'
+
+    def test_product_type_tshirt(self):
+        """product_type 'tshirt' identifies t-shirt items correctly."""
+        from app import generate_tshirts_report
+        orders = [{
+            'order_id': 'ord-103',
+            'club_id': 'club-z',
+            'status': 'submitted',
+            'items': [
+                {
+                    'product_id': 'uuid-no-keywords',
+                    'product_type': 'tshirt',
+                    'variant_id': 'XL-Female',
+                    'item_fields_data': {'person_name': 'Dana'},
+                },
+            ],
+        }]
+        result = generate_tshirts_report(orders)
+        assert len(result) == 1
+        assert result[0]['person_name'] == 'Dana'
+        assert result[0]['variant'] == 'XL-Female'
+
+    def test_product_type_airport_transfer(self):
+        """product_type 'airport_transfer' identifies transfer items correctly."""
+        from app import generate_pickups_report
+        orders = [{
+            'order_id': 'ord-104',
+            'club_id': 'club-w',
+            'status': 'submitted',
+            'items': [
+                {
+                    'product_id': 'uuid-no-keywords',
+                    'product_type': 'airport_transfer',
+                    'variant_id': 'Pickup-AMS',
+                    'item_fields_data': {'flight_number': 'LH999', 'date': '2027-06-20', 'time': '10:00', 'persons': 3},
+                },
+            ],
+        }]
+        result = generate_pickups_report(orders)
+        assert len(result) == 1
+        assert result[0]['flight'] == 'LH999'
+        assert result[0]['persons'] == 3
+
+    def test_overview_report_groups_by_product_type(self):
+        """Overview report uses product_type when available for grouping counts."""
+        from app import generate_overview_report
+        orders = [{
+            'order_id': 'ord-105',
+            'club_id': 'club-v',
+            'status': 'submitted',
+            'payment_status': 'paid',
+            'items': [
+                {'product_id': 'uuid-1', 'product_type': 'meeting_ticket'},
+                {'product_id': 'uuid-2', 'product_type': 'meeting_ticket'},
+                {'product_id': 'uuid-3', 'product_type': 'party_ticket'},
+            ],
+        }]
+        result = generate_overview_report(orders)
+        assert result['product_counts']['meeting_ticket'] == 2
+        assert result['product_counts']['party_ticket'] == 1

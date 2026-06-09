@@ -70,16 +70,16 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'get_presmeet_config')
 
-        # Query Producten table for PresMeet config records (source = "presmeet_config", tenant = "presmeet")
+        # Query Producten table for PresMeet config records (source = "presmeet_config")
         config_response = producten_table.scan(
-            FilterExpression=Attr('source').eq('presmeet_config') & Attr('tenant').eq('presmeet')
+            FilterExpression=Attr('source').eq('presmeet_config')
         )
         config_items = config_response['Items']
 
         # Handle pagination for large result sets
         while 'LastEvaluatedKey' in config_response:
             config_response = producten_table.scan(
-                FilterExpression=Attr('source').eq('presmeet_config') & Attr('tenant').eq('presmeet'),
+                FilterExpression=Attr('source').eq('presmeet_config'),
                 ExclusiveStartKey=config_response['LastEvaluatedKey']
             )
             config_items.extend(config_response['Items'])

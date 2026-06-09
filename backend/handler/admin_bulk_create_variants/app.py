@@ -80,7 +80,6 @@ def lambda_handler(event, context):
         default_allow_oversell = body.get('allow_oversell', False)
 
         now = datetime.now(timezone.utc).isoformat()
-        tenant = parent.get('tenant', 'h-dcn')
 
         # Create variant records
         created_variants = []
@@ -93,7 +92,6 @@ def lambda_handler(event, context):
             variant = {
                 'product_id': variant_id,
                 'parent_id': product_id,
-                'tenant': tenant,
                 'name': variant_name,
                 'is_parent': False,
                 'variant_attributes': combo,

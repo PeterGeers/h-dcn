@@ -6,13 +6,14 @@ import { useTranslation } from 'react-i18next';
 import ProductFilter from './components/ProductFilter';
 import ProductTable from './components/ProductTable';
 import ProductCard from './components/ProductCard';
-import CartModal from './components/CartModal';
+import DraftOrderModal from './components/DraftOrderModal';
 import CheckoutModal from './components/CheckoutModal';
 import OrdersAdmin from './components/OrdersAdmin';
 import OrderSuccess from './components/OrderSuccess';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
-import { productService, cartService, memberService, orderService } from './services/api';
+import { productService, memberService, orderService } from './services/api';
 import { ApiService } from '../../services/apiService';
+import { VariantSchema } from './types/unifiedProduct.types';
 
 interface User {
   attributes?: {
@@ -26,23 +27,28 @@ interface User {
 }
 
 interface Product {
-  id: string;
-  naam: string;
-  groep: string;
-  subgroep: string;
-  prijs: number;
+  product_id: string;
+  id?: string;
+  name?: string;
+  naam?: string;
+  groep?: string;
+  subgroep?: string;
+  price?: number;
+  prijs?: number | string;
   images?: string[];
-  opties?: string;
+  variant_schema?: VariantSchema;
+  is_parent?: boolean;
+  event_id?: string | null;
+  active?: boolean;
 }
 
 interface CartItem {
   product_id: string;
+  variant_id: string;
+  variant_attributes?: Record<string, string>;
   name?: string;
-  naam?: string;
   price?: number;
   quantity: number;
-  selectedOption?: string;
-  id?: string;
 }
 
 interface Filter {
@@ -87,7 +93,8 @@ function WebshopPage({ user }: WebshopPageProps) {
   const [isProductCardOpen, setIsProductCardOpen] = useState<boolean>(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartId, setCartId] = useState<string | null>(null);
-  const [isCartModalOpen, setIsCartModalOpen] = useState<boolean>(false);
+  const [orderVersion, setOrderVersion] = useState<number>(1);
+  const [isDraftOrderModalOpen, setIsDraftOrderModalOpen] = useState<boolean>(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState<boolean>(false);
   const [showOrdersAdmin, setShowOrdersAdmin] = useState<boolean>(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState<boolean>(false);
@@ -100,34 +107,21 @@ function WebshopPage({ user }: WebshopPageProps) {
 
   const initializeCart = useCallback(async () => {
     try {
-      const savedCartId = localStorage.getItem('hdcn_cart_id');
+      const savedOrderId = localStorage.getItem('hdcn_cart_id');
       
-      if (savedCartId) {
-        try {
-          const cartResponse = await cartService.getCart(savedCartId);
-          if (cartResponse.data && cartResponse.data.items) {
-            setCartId(savedCartId);
-            setCartItems(cartResponse.data.items || []);
-            
-            toast({
-              title: t('cart.restored'),
-              description: t('cart.restored_desc', { count: cartResponse.data.items.length }),
-              status: 'info',
-              duration: 3000,
-            });
-            return;
-          }
-        } catch (error) {
-          localStorage.removeItem('hdcn_cart_id');
-        }
+      if (savedOrderId) {
+        setCartId(savedOrderId);
+        return;
       }
       
-      const response = await cartService.createCart({ customer_id: 'current-user' });
-      const newCartId = response.data?.cartId || response.data?.cart_id;
+      const response = await orderService.createDraft({ event_id: null });
+      const newOrderId = response.data?.order_id;
+      const version = response.data?.version || 1;
       
-      if (newCartId) {
-        setCartId(newCartId);
-        localStorage.setItem('hdcn_cart_id', newCartId);
+      if (newOrderId) {
+        setCartId(newOrderId);
+        setOrderVersion(version);
+        localStorage.setItem('hdcn_cart_id', newOrderId);
       }
     } catch (error) {
       setCartId(null);
@@ -143,35 +137,48 @@ function WebshopPage({ user }: WebshopPageProps) {
   const loadProducts = useCallback(async () => {
     try {
       const response = await productService.scanProducts();
-      setProducts(response.data);
+      const allProducts: Product[] = response.data || [];
+      // Filter to show only webshop products (event_id is null/undefined)
+      const webshopProducts = allProducts.filter(
+        (p: Product) => p.event_id === null || p.event_id === undefined
+      );
+      setProducts(webshopProducts);
     } catch (error) {
       const mockProducts: Product[] = [
         {
-          id: '1',
+          product_id: 'mock-1',
           naam: 'H-DCN T-Shirt',
           groep: 'Kleding',
           subgroep: 'T-shirts',
           prijs: 25.00,
           images: [],
-          opties: 'S,M,L,XL'
+          variant_schema: { 'Maat': ['S', 'M', 'L', 'XL'] },
+          is_parent: true,
+          event_id: null,
+          active: true,
         },
         {
-          id: '2',
+          product_id: 'mock-2',
           naam: 'H-DCN Hoodie',
           groep: 'Kleding',
           subgroep: 'Hoodies',
           prijs: 45.00,
           images: [],
-          opties: 'S,M,L,XL'
+          variant_schema: { 'Maat': ['S', 'M', 'L', 'XL'] },
+          is_parent: true,
+          event_id: null,
+          active: true,
         },
         {
-          id: '3',
+          product_id: 'mock-3',
           naam: 'H-DCN Pet',
           groep: 'Accessoires',
           subgroep: 'Hoofddeksels',
           prijs: 18.00,
           images: [],
-          opties: 'One Size'
+          is_parent: true,
+          event_id: null,
+          active: true,
         }
       ];
       setProducts(mockProducts);
@@ -196,6 +203,9 @@ function WebshopPage({ user }: WebshopPageProps) {
         filtered = filtered.filter(p => p.groep === selectedFilter.group && p.subgroep === selectedFilter.value);
       }
     }
+    
+    // Only show active products
+    filtered = filtered.filter(p => p.active !== false);
     
     setFilteredProducts(filtered);
   }, [products, selectedFilter]);
@@ -306,18 +316,29 @@ function WebshopPage({ user }: WebshopPageProps) {
   const updateCartOnServer = async (newItems: CartItem[]) => {
     if (cartId) {
       try {
-        const totalAmount = newItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
-        const itemCount = newItems.reduce((sum, item) => sum + item.quantity, 0);
+        const itemsData = newItems.map(item => ({
+          product_id: item.product_id,
+          variant_id: item.variant_id,
+          variant_attributes: item.variant_attributes,
+          quantity: item.quantity,
+          unit_price: Number(item.price || 0),
+        }));
         
-        const cartData = {
-          items: newItems,
-          total_amount: totalAmount.toFixed(2),
-          item_count: itemCount
-        };
-        
-        await cartService.updateCartItems(cartId, cartData);
-      } catch (error) {
-        console.error('Failed to sync cart with server:', error);
+        const response = await orderService.updateItems(cartId, { version: orderVersion, items: itemsData });
+        if (response.data?.version) {
+          setOrderVersion(response.data.version);
+        }
+      } catch (error: any) {
+        if (error?.response?.status === 409) {
+          toast({
+            title: t('cart.version_conflict', { defaultValue: 'Versieconflict' }),
+            description: t('cart.version_conflict_desc', { defaultValue: 'Je bestelling is door een andere sessie gewijzigd. Ververs de pagina.' }),
+            status: 'warning',
+            duration: 5000,
+          });
+        } else {
+          console.error('Failed to sync order with server:', error);
+        }
       }
     }
   };
@@ -328,7 +349,7 @@ function WebshopPage({ user }: WebshopPageProps) {
       
       const existingItemIndex = cartItems.findIndex(item => 
         item.product_id === cartItem.product_id && 
-        item.selectedOption === cartItem.selectedOption
+        item.variant_id === cartItem.variant_id
       );
       
       if (existingItemIndex >= 0) {
@@ -425,7 +446,7 @@ function WebshopPage({ user }: WebshopPageProps) {
         duration: 3000,
       });
       
-      setIsCartModalOpen(false);
+      setIsDraftOrderModalOpen(false);
     } catch (error) {
       toast({
         title: t('errors.cart_save_error'),
@@ -439,11 +460,11 @@ function WebshopPage({ user }: WebshopPageProps) {
   const handleClearCart = async () => {
     try {
       if (cartId) {
-        await cartService.clearCart(cartId);
         localStorage.removeItem('hdcn_cart_id');
       }
       setCartItems([]);
       setCartId(null);
+      setOrderVersion(1);
       
       await initializeCart();
       
@@ -524,7 +545,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               </Button>
             </FunctionGuard>
             <Button
-              onClick={() => setIsCartModalOpen(true)}
+              onClick={() => setIsDraftOrderModalOpen(true)}
               colorScheme="orange"
               variant="outline"
               leftIcon={<ViewIcon />}
@@ -587,10 +608,12 @@ function WebshopPage({ user }: WebshopPageProps) {
           />
         )}
 
-        <CartModal
-          isOpen={isCartModalOpen}
-          onClose={() => setIsCartModalOpen(false)}
-          cartItems={cartItems}
+        <DraftOrderModal
+          isOpen={isDraftOrderModalOpen}
+          onClose={() => setIsDraftOrderModalOpen(false)}
+          items={cartItems}
+          orderId={cartId}
+          orderVersion={orderVersion}
           onRemoveItem={handleRemoveFromCart}
           onUpdateQuantity={handleUpdateQuantity}
           onCheckout={() => {
@@ -603,11 +626,19 @@ function WebshopPage({ user }: WebshopPageProps) {
               });
               return;
             }
-            setIsCartModalOpen(false);
+            setIsDraftOrderModalOpen(false);
             setIsCheckoutModalOpen(true);
           }}
-          onSaveCart={handleSaveCart}
-          onClearCart={handleClearCart}
+          onSaveOrder={handleSaveCart}
+          onClearOrder={handleClearCart}
+          onVersionConflict={() => {
+            toast({
+              title: t('cart.version_conflict', { defaultValue: 'Versieconflict' }),
+              description: t('cart.version_conflict_desc', { defaultValue: 'Je bestelling is gewijzigd. Ververs de pagina.' }),
+              status: 'warning',
+              duration: 5000,
+            });
+          }}
         />
 
         <CheckoutModal
@@ -615,7 +646,7 @@ function WebshopPage({ user }: WebshopPageProps) {
           onClose={() => setIsCheckoutModalOpen(false)}
           cartItems={cartItems}
           userEmail={user?.attributes?.email || memberInfo?.email || ''}
-          cartId={cartId || undefined}
+          orderId={cartId || undefined}
           onPaymentSuccess={async (paymentData: PaymentData) => {
             try {
               const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price || 0) * item.quantity), 0);
@@ -625,7 +656,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               console.log('Current member ID:', currentMemberId);
               
               const orderData = {
-                cart_id: cartId,
+                order_id: cartId,
                 customer_id: currentMemberId || memberInfo?.member_id,
                 customer_info: memberInfo || {
                   member_id: currentMemberId,
@@ -640,11 +671,12 @@ function WebshopPage({ user }: WebshopPageProps) {
                 delivery_cost: paymentData.deliveryOption ? parseFloat(paymentData.deliveryOption.cost || '0').toFixed(2) : '0.00',
                 delivery_option: paymentData.deliveryOption || null,
                 items: cartItems.map(item => ({
-                  name: item.name || item.naam,
+                  name: item.name,
                   price: Number(item.price || 0).toFixed(2),
-                  product_id: item.product_id || item.id,
+                  product_id: item.product_id,
+                  variant_id: item.variant_id,
                   quantity: item.quantity,
-                  selectedOption: item.selectedOption || ''
+                  variant_attributes: item.variant_attributes || {}
                 })),
                 item_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
                 orderId: orderId,
@@ -655,7 +687,7 @@ function WebshopPage({ user }: WebshopPageProps) {
               };
               
               try {
-                const response = await orderService.createOrder(orderData);
+                const response = await orderService.createDraft(orderData);
                 console.log('Order API response:', JSON.stringify(response));
                 // Use the backend-generated order_id (UUID) for PDF download
                 if (response.success && response.data?.order_id) {
@@ -678,12 +710,12 @@ function WebshopPage({ user }: WebshopPageProps) {
               
               if (cartId) {
                 try {
-                  await cartService.clearCart(cartId);
                   localStorage.removeItem('hdcn_cart_id');
                   setCartId(null);
+                  setOrderVersion(1);
                   await initializeCart();
                 } catch (error) {
-                  console.error('Failed to clear backend cart:', error);
+                  console.error('Failed to reset draft order state:', error);
                 }
               }
               

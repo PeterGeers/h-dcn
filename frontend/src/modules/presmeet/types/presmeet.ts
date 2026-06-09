@@ -39,7 +39,7 @@ export interface CartItem {
 export interface PresMeetBooking {
   order_id: string;
   club_id: string;
-  tenant: "presmeet";
+  event_id: string;
   source: "presmeet";
   status: OrderStatus;
   payment_status: PaymentStatus;

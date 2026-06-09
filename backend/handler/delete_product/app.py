@@ -67,7 +67,7 @@ def lambda_handler(event, context):
 
         # Delete the product
         response = table.delete_item(
-            Key={'id': product_id},
+            Key={'product_id': product_id},
             ReturnValues='ALL_OLD'
         )
         

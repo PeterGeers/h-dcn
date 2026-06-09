@@ -91,7 +91,6 @@ def aws_env():
             AttributeDefinitions=[
                 {'AttributeName': 'movement_id', 'AttributeType': 'S'},
                 {'AttributeName': 'variant_id', 'AttributeType': 'S'},
-                {'AttributeName': 'tenant', 'AttributeType': 'S'},
                 {'AttributeName': 'created_at', 'AttributeType': 'S'},
             ],
             GlobalSecondaryIndexes=[
@@ -99,14 +98,6 @@ def aws_env():
                     'IndexName': 'variant_id-index',
                     'KeySchema': [
                         {'AttributeName': 'variant_id', 'KeyType': 'HASH'},
-                        {'AttributeName': 'created_at', 'KeyType': 'RANGE'},
-                    ],
-                    'Projection': {'ProjectionType': 'ALL'},
-                },
-                {
-                    'IndexName': 'tenant-index',
-                    'KeySchema': [
-                        {'AttributeName': 'tenant', 'KeyType': 'HASH'},
                         {'AttributeName': 'created_at', 'KeyType': 'RANGE'},
                     ],
                     'Projection': {'ProjectionType': 'ALL'},
@@ -147,12 +138,12 @@ class TestOrderLifecycle:
         # --- Setup: Create a product + default variant ---
         product_id = 'prod_lifecycle_001'
         variant_id = f'var_{product_id}_default'
-        tenant = 'presmeet'
+        event_id = 'evt-presmeet-2025'
 
         # Parent product
         producten_table.put_item(Item={
             'product_id': product_id,
-            'tenant': tenant,
+            'event_id': event_id,
             'name': 'Meeting Ticket',
             'price': Decimal('150'),
             'is_parent': True,
@@ -166,7 +157,7 @@ class TestOrderLifecycle:
         producten_table.put_item(Item={
             'product_id': variant_id,
             'parent_id': product_id,
-            'tenant': tenant,
+            'event_id': event_id,
             'name': 'Default Variant',
             'is_parent': False,
             'variant_attributes': {},
@@ -183,7 +174,7 @@ class TestOrderLifecycle:
         order_id = 'ord_lifecycle_001'
         order = {
             'order_id': order_id,
-            'tenant': tenant,
+            'event_id': event_id,
             'customer_name': 'Jan de Vries',
             'club_name': 'H-DCN Regio Noord',
             'status': 'draft',
@@ -231,7 +222,7 @@ class TestOrderLifecycle:
                 ]
                 reserve_stock(
                     order_items, producten_table, movements_table,
-                    order_id, tenant
+                    order_id
                 )
 
             # Record status transition
@@ -272,7 +263,6 @@ class TestOrderLifecycle:
         assert sale_movements[0]['variant_id'] == variant_id
         assert sale_movements[0]['quantity'] == -2
         assert sale_movements[0]['order_id'] == order_id
-        assert sale_movements[0]['tenant'] == tenant
 
     def test_unlock_transition(self, aws_env):
         """Test the special locked → submitted (unlock) backward transition."""
@@ -302,13 +292,11 @@ class TestProductCRUD:
     def test_create_default_variant_creates_correct_record(self, aws_env):
         """Test that create_default_variant produces a well-formed record."""
         product_id = 'prod_test_001'
-        tenant = 'h-dcn'
 
-        variant = create_default_variant(product_id, tenant)
+        variant = create_default_variant(product_id)
 
         assert variant['product_id'] == f'var_{product_id}_default'
         assert variant['parent_id'] == product_id
-        assert variant['tenant'] == tenant
         assert variant['name'] == 'Default Variant'
         assert variant['is_parent'] is False
         assert variant['variant_attributes'] == {}
@@ -503,7 +491,7 @@ class TestPaymentRecording:
         order_id = 'ord_payment_001'
         orders_table.put_item(Item={
             'order_id': order_id,
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'status': 'order_received',
             'total_amount': Decimal('500'),
             'amount_paid': Decimal('0'),
@@ -550,9 +538,9 @@ class TestPaymentRecording:
 
         # Seed orders
         test_orders = [
-            {'order_id': 'agg_001', 'tenant': 'presmeet', 'total_amount': Decimal('100'), 'amount_paid': Decimal('100'), 'status': 'paid'},
-            {'order_id': 'agg_002', 'tenant': 'presmeet', 'total_amount': Decimal('200'), 'amount_paid': Decimal('50'), 'status': 'order_received'},
-            {'order_id': 'agg_003', 'tenant': 'presmeet', 'total_amount': Decimal('300'), 'amount_paid': Decimal('0'), 'status': 'submitted'},
+            {'order_id': 'agg_001', 'event_id': 'evt-presmeet-2025', 'total_amount': Decimal('100'), 'amount_paid': Decimal('100'), 'status': 'paid'},
+            {'order_id': 'agg_002', 'event_id': 'evt-presmeet-2025', 'total_amount': Decimal('200'), 'amount_paid': Decimal('50'), 'status': 'order_received'},
+            {'order_id': 'agg_003', 'event_id': 'evt-presmeet-2025', 'total_amount': Decimal('300'), 'amount_paid': Decimal('0'), 'status': 'submitted'},
         ]
         for order in test_orders:
             orders_table.put_item(Item=order)
@@ -592,7 +580,7 @@ class TestReportGeneration:
         producten_table.put_item(Item={
             'product_id': variant_id,
             'parent_id': 'prod_report_001',
-            'tenant': 'h-dcn',
+            'event_id': None,
             'is_parent': False,
             'stock': Decimal('100'),
             'sold_count': Decimal('0'),
@@ -601,7 +589,7 @@ class TestReportGeneration:
 
         # Reserve stock (simulates order → paid transition)
         order_items = [{'variant_id': variant_id, 'quantity': 5}]
-        reserve_stock(order_items, producten_table, movements_table, 'ord_rpt_001', 'h-dcn')
+        reserve_stock(order_items, producten_table, movements_table, 'ord_rpt_001')
 
         # Verify movement was created
         response = movements_table.scan()
@@ -610,7 +598,6 @@ class TestReportGeneration:
 
         mov = movements[0]
         assert mov['variant_id'] == variant_id
-        assert mov['tenant'] == 'h-dcn'
         assert mov['type'] == 'sale'
         assert mov['quantity'] == -5
         assert mov['order_id'] == 'ord_rpt_001'
@@ -629,7 +616,6 @@ class TestReportGeneration:
         # Use Decimal for DynamoDB compatibility (boto3 rejects floats)
         movement = create_inbound_movement(
             variant_id='var_inbound_001',
-            tenant='presmeet',
             quantity=25,
             purchase_price_per_unit=Decimal('8.50'),
             supplier_name='Textile BV',
@@ -640,7 +626,6 @@ class TestReportGeneration:
 
         # Verify returned record
         assert movement['variant_id'] == 'var_inbound_001'
-        assert movement['tenant'] == 'presmeet'
         assert movement['type'] == 'inbound'
         assert movement['quantity'] == 25
         assert movement['purchase_price_per_unit'] == Decimal('8.50')
@@ -667,14 +652,14 @@ class TestReportGeneration:
         # Seed some orders
         orders_table.put_item(Item={
             'order_id': 'rpt_ord_001',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'status': 'paid',
             'total_amount': Decimal('300'),
             'amount_paid': Decimal('300'),
         })
         orders_table.put_item(Item={
             'order_id': 'rpt_ord_002',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'status': 'submitted',
             'total_amount': Decimal('150'),
             'amount_paid': Decimal('0'),
@@ -684,7 +669,7 @@ class TestReportGeneration:
         movements_table.put_item(Item={
             'movement_id': 'mov_rpt_001',
             'variant_id': 'var_rpt_v1',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'type': 'inbound',
             'quantity': 50,
             'purchase_price_per_unit': Decimal('10'),
@@ -748,7 +733,7 @@ class TestReportGeneration:
         # Seed orders with items
         orders_table.put_item(Item={
             'order_id': 'csv_ord_001',
-            'tenant': 'h-dcn',
+            'event_id': None,
             'customer_name': 'Test Customer',
             'status': 'paid',
             'total_amount': Decimal('50'),
@@ -766,7 +751,7 @@ class TestReportGeneration:
 
         # Scan and build CSV (simulates admin_export_report logic)
         response = orders_table.scan()
-        orders = [o for o in response['Items'] if o.get('tenant') == 'h-dcn']
+        orders = [o for o in response['Items'] if not o.get('event_id')]
 
         output = io.StringIO()
         writer = csv.writer(output)
@@ -803,7 +788,7 @@ class TestReportGeneration:
             producten_table.put_item(Item={
                 'product_id': vid,
                 'parent_id': f'prod_multi_{i}',
-                'tenant': 'presmeet',
+                'event_id': 'evt-presmeet-2025',
                 'is_parent': False,
                 'stock': Decimal('30'),
                 'sold_count': Decimal('0'),
@@ -815,7 +800,7 @@ class TestReportGeneration:
             {'variant_id': 'var_multi_001', 'quantity': 3},
             {'variant_id': 'var_multi_002', 'quantity': 7},
         ]
-        reserve_stock(order_items, producten_table, movements_table, 'ord_multi_001', 'presmeet')
+        reserve_stock(order_items, producten_table, movements_table, 'ord_multi_001')
 
         # Verify both movements created
         response = movements_table.scan()

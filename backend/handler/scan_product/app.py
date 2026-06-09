@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+from decimal import Decimal
 from botocore.exceptions import ClientError
 
 # Import from shared auth layer (REQUIRED)
@@ -77,12 +78,31 @@ def lambda_handler(event, context):
             )
             items.extend(response['Items'])
 
-        print(f"Products scanned by {user_email} with roles {user_roles} - returned {len(items)} items")
+        # Normalize response: unified field names with fallbacks
+        normalized_items = []
+        for item in items:
+            price_value = item.get('price') if item.get('price') is not None else item.get('prijs')
+            # Convert Decimal to int/float for JSON serialization
+            if isinstance(price_value, Decimal):
+                price_value = int(price_value) if price_value == int(price_value) else float(price_value)
+
+            normalized = {
+                'product_id': item.get('product_id'),
+                'name': item.get('name') or item.get('naam'),
+                'price': price_value,
+                'variant_schema': item.get('variant_schema'),
+                'is_parent': item.get('is_parent'),
+                'event_id': item.get('event_id'),
+                'active': item.get('active'),
+            }
+            normalized_items.append(normalized)
+
+        print(f"Products scanned by {user_email} with roles {user_roles} - returned {len(normalized_items)} items")
 
         return {
             'statusCode': 200,
             'headers': cors_headers(),
-            'body': json.dumps(items, default=str)
+            'body': json.dumps(normalized_items, default=str)
         }
     
     except ClientError as e:

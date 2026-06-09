@@ -6,7 +6,6 @@ export interface VariantRecord {
   product_id: string;
   parent_id: string;
   is_parent: false;
-  channel: string;
   name: string;
   variant_attributes: Record<string, string>;
   price: number;
@@ -16,13 +15,13 @@ export interface VariantRecord {
   active: boolean;
 }
 
-// --- Cart types ---
+// --- Order types ---
 
 export interface ItemFieldsEntry {
   field_values: Record<string, string | number>;
 }
 
-export interface CartItemData {
+export interface OrderItemData {
   product_id: string;
   variant_id?: string;
   variant_attributes?: Record<string, string>;
@@ -31,29 +30,21 @@ export interface CartItemData {
   item_fields_data?: ItemFieldsEntry[];
 }
 
-interface CartData {
-  items?: CartItemData[];
-  club_id?: string;
-  channel?: string;
-  [key: string]: any;
-}
-
-// --- Order types ---
-
-export interface OrderItemData {
-  product_id: string;
-  variant_id?: string;
-  quantity: number;
-  item_fields_data?: ItemFieldsEntry[];
-}
-
 export type PaymentMethod = 'ideal' | 'creditcard' | 'bank_transfer';
 
-interface OrderData {
-  cart_id?: string;
-  payment_method?: PaymentMethod;
+export interface CreateDraftRequest {
+  event_id?: string | null;
   items?: OrderItemData[];
-  [key: string]: any;
+  club_id?: string;
+}
+
+export interface UpdateItemsRequest {
+  version: number;
+  items: OrderItemData[];
+}
+
+export interface PayOrderRequest {
+  payment_method: PaymentMethod;
 }
 
 const validateApiUrl = (url: string): boolean => {
@@ -82,11 +73,13 @@ export const productService = {
     return ApiService.get('/scan-product/');
   },
 
-  getProducts: async (channel?: string) => {
+  getProducts: async (eventId?: string | null) => {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    const endpoint = channel ? `/products?channel=${encodeURIComponent(channel)}` : '/products';
+    const endpoint = eventId
+      ? `/products?event_id=${encodeURIComponent(eventId)}`
+      : '/products?event_id=null';
     return ApiService.get(endpoint);
   },
 
@@ -103,65 +96,105 @@ export const productService = {
     }
     return ApiService.get<VariantRecord[]>(`/products/${sanitizedProductId}/variants`);
   },
-};
 
-export const cartService = {
-  createCart: async (data: CartData) => {
+  getProductById: async (productId: string) => {
+    if (!productId || typeof productId !== 'string') {
+      throw new Error('Invalid product ID');
+    }
+    const sanitizedProductId = productId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedProductId || sanitizedProductId !== productId) {
+      throw new Error('Product ID contains invalid characters');
+    }
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    return ApiService.post('/carts', data);
+    return ApiService.get(`/get-product-byid/${sanitizedProductId}`);
   },
-  getCart: async (cartId: string) => {
-    if (!cartId || typeof cartId !== 'string') {
-      throw new Error('Invalid cart ID');
+
+  updateProduct: async (productId: string, data: Record<string, unknown>) => {
+    if (!productId || typeof productId !== 'string') {
+      throw new Error('Invalid product ID');
     }
-    const sanitizedCartId = cartId.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!sanitizedCartId || sanitizedCartId !== cartId) {
-      throw new Error('Cart ID contains invalid characters');
+    const sanitizedProductId = productId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedProductId || sanitizedProductId !== productId) {
+      throw new Error('Product ID contains invalid characters');
     }
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    return ApiService.get(`/carts/${sanitizedCartId}`);
+    return ApiService.put(`/admin/products/${sanitizedProductId}`, data);
   },
-  updateCartItems: async (cartId: string, cartData: CartData) => {
-    if (!cartId || typeof cartId !== 'string') {
-      throw new Error('Invalid cart ID');
+
+  deleteProduct: async (productId: string) => {
+    if (!productId || typeof productId !== 'string') {
+      throw new Error('Invalid product ID');
     }
-    const sanitizedCartId = cartId.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!sanitizedCartId || sanitizedCartId !== cartId) {
-      throw new Error('Cart ID contains invalid characters');
-    }
-    if (!(await ApiService.isAuthenticated())) {
-      throw new Error('Authentication required');
-    }
-    return ApiService.put(`/carts/${sanitizedCartId}/items`, cartData);
-  },
-  clearCart: async (cartId: string) => {
-    if (!cartId || typeof cartId !== 'string') {
-      throw new Error('Invalid cart ID');
-    }
-    const sanitizedCartId = cartId.replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!sanitizedCartId || sanitizedCartId !== cartId) {
-      throw new Error('Cart ID contains invalid characters');
+    const sanitizedProductId = productId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedProductId || sanitizedProductId !== productId) {
+      throw new Error('Product ID contains invalid characters');
     }
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    return ApiService.delete(`/carts/${sanitizedCartId}`);
+    return ApiService.delete(`/delete-product/${sanitizedProductId}`);
   },
 };
 
 export const orderService = {
-  createOrder: async (data: OrderData) => {
+  createDraft: async (data: CreateDraftRequest) => {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    if (!data.payment_method) {
-      throw new Error('Payment method is required');
-    }
     return ApiService.post('/orders', data);
+  },
+
+  updateItems: async (orderId: string, data: UpdateItemsRequest) => {
+    if (!orderId || typeof orderId !== 'string') {
+      throw new Error('Invalid order ID');
+    }
+    const sanitizedOrderId = orderId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedOrderId || sanitizedOrderId !== orderId) {
+      throw new Error('Order ID contains invalid characters');
+    }
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    return ApiService.put(`/orders/${sanitizedOrderId}/items`, data);
+  },
+
+  submitOrder: async (orderId: string) => {
+    if (!orderId || typeof orderId !== 'string') {
+      throw new Error('Invalid order ID');
+    }
+    const sanitizedOrderId = orderId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedOrderId || sanitizedOrderId !== orderId) {
+      throw new Error('Order ID contains invalid characters');
+    }
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    return ApiService.post(`/orders/${sanitizedOrderId}/submit`, {});
+  },
+
+  payOrder: async (orderId: string, data: PayOrderRequest) => {
+    if (!orderId || typeof orderId !== 'string') {
+      throw new Error('Invalid order ID');
+    }
+    const sanitizedOrderId = orderId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedOrderId || sanitizedOrderId !== orderId) {
+      throw new Error('Order ID contains invalid characters');
+    }
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    return ApiService.post(`/orders/${sanitizedOrderId}/pay`, data);
+  },
+
+  getMyOrders: async () => {
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    return ApiService.get('/orders/my');
   },
 };
 

@@ -85,14 +85,13 @@ class TestAdminLockOrders:
                 ):
                     yield
 
-    def _create_order(self, order_id='order-001', status='submitted', channel='presmeet'):
+    def _create_order(self, order_id='order-001', status='submitted', event_id='event-pm2027'):
         """Helper to create an order in DynamoDB."""
         order = {
             'order_id': order_id,
             'club_id': 'club-amsterdam',
-            'event_id': 'event-pm2027',
+            'event_id': event_id,
             'event_type': 'presmeet',
-            'channel': channel,
             'status': status,
             'payment_status': 'unpaid',
             'total_amount': Decimal('150.00'),
@@ -323,15 +322,15 @@ class TestAdminLockOrders:
         assert body['locked_count'] == 2
         assert body['failed_count'] == 0
 
-    def test_bulk_lock_filters_by_channel(self):
-        """Bulk lock with channel filter only locks matching orders."""
-        self._create_order(order_id='order-001', status='submitted', channel='presmeet')
-        self._create_order(order_id='order-002', status='submitted', channel='h-dcn')
+    def test_bulk_lock_filters_by_event_id(self):
+        """Bulk lock with event_id filter only locks matching orders."""
+        self._create_order(order_id='order-001', status='submitted', event_id='event-pm2027')
+        self._create_order(order_id='order-002', status='submitted', event_id='event-other')
         handler = self._get_handler()
 
         auth_patches = self._mock_admin_auth()
         with auth_patches[0], auth_patches[1]:
-            response = handler(self._make_event(body={'channel': 'presmeet'}), None)
+            response = handler(self._make_event(body={'event_id': 'event-pm2027'}), None)
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
@@ -413,7 +412,6 @@ class TestAdminUnlockOrder:
             'club_id': 'club-amsterdam',
             'event_id': event_id,
             'event_type': 'presmeet',
-            'channel': 'presmeet',
             'status': status,
             'payment_status': 'unpaid',
             'total_amount': Decimal('150.00'),

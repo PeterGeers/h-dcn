@@ -26,7 +26,7 @@ export type OrderStatus =
 
 export interface AdminProduct {
   product_id: string;
-  channel: string;
+  event_id?: string | null;
   name: string;
   description?: string;
   price: number;
@@ -59,7 +59,7 @@ export interface OrderLineItem {
   name: string;
   quantity: number;
   unit_price: number;
-  attributes?: Record<string, string>;
+  variant_attributes?: Record<string, string>;
 }
 
 export interface StatusHistoryEntry {
@@ -81,7 +81,7 @@ export interface PaymentRecord {
 
 export interface AdminOrder {
   order_id: string;
-  channel: string;
+  event_id?: string | null;
   customer_name: string;
   club_name?: string;
   status: OrderStatus;
@@ -106,7 +106,7 @@ export interface AdminOrdersResponse {
 export interface StockMovement {
   movement_id: string;
   variant_id: string;
-  channel: string;
+  event_id?: string | null;
   type: 'inbound' | 'sale';
   quantity: number;
   purchase_price_per_unit?: number | null;
@@ -144,7 +144,7 @@ export interface AddStockRequest {
 }
 
 export interface CreateProductRequest {
-  channel: string;
+  event_id?: string | null;
   name: string;
   description?: string;
   price: number;
@@ -170,8 +170,27 @@ export interface UpdateVariantRequest {
 
 // --- Report Interfaces ---
 
+export type ReportType = 'financial' | 'products' | 'orders' | 'stock_movements';
+
+export type PaymentStatusFilter = 'all' | 'unpaid' | 'partial' | 'paid';
+export type OrderStatusFilter = 'all' | 'draft' | 'submitted' | 'locked' | 'paid';
+
+export interface ReportFilters {
+  reportType: ReportType;
+  eventFilter: string; // "" = all, "webshop" = no event_id, UUID = specific event
+  orderStatus: OrderStatusFilter;
+  paymentStatus: PaymentStatusFilter;
+}
+
 export interface ReportResponse {
   generated_at: string;
+  event_context?: {
+    event_id: string;
+    name: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+  } | null;
   summary: {
     total_orders: number;
     total_revenue: number;
@@ -179,6 +198,7 @@ export interface ReportResponse {
     total_outstanding: number;
     by_product_type?: Record<string, Record<OrderStatus, number>>;
     by_product?: {
+      product_id: string;
       product_name: string;
       items_sold: number;
       revenue: number;
@@ -194,4 +214,7 @@ export interface ReportResponse {
       }[];
     };
   };
+  orders?: AdminOrder[];
+  movements?: StockMovement[];
+  products?: AdminProduct[];
 }

@@ -65,18 +65,17 @@ def lambda_handler(event, context):
         if not event.get('pathParameters') or 'id' not in event['pathParameters']:
             return create_error_response(400, 'Missing product ID')
 
-        id = event['pathParameters']['id']
-        logger.info(f"Fetching product with ID: {id}")
+        product_id = event['pathParameters']['id']
+        logger.info(f"Fetching product with ID: {product_id}")
 
-        # Use id as the key (existing table schema)
         response = table.get_item(
-            Key={'id': id}
+            Key={'product_id': product_id}
         )
 
         if 'Item' not in response:
-            return create_error_response(404, f'Product {id} not found')
+            return create_error_response(404, 'Product not found')
 
-        print(f"Product {id} retrieved by {user_email} with roles {user_roles}")
+        print(f"Product {product_id} retrieved by {user_email} with roles {user_roles}")
 
         return create_success_response(response['Item'])
 

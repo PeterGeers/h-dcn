@@ -31,12 +31,14 @@ export default function Dashboard(): React.ReactElement {
 
   const handleSave = (data: Product) => {
     console.log('Saving product data:', data);
+    const { opties, ...cleanData } = data as any;
     const processedData = {
-      ...data,
-      prijs: data.prijs ? data.prijs.toString() : data.prijs
+      ...cleanData,
+      prijs: cleanData.prijs ? cleanData.prijs.toString() : cleanData.prijs
     };
-    if (data.id) {
-      updateProduct(data.id, processedData)
+    const productId = data.product_id || data.id;
+    if (productId) {
+      updateProduct(productId, processedData)
         .then(() => refresh())
         .catch((error: any) => {
           console.error('Update error:', error.response?.data || error.message);
@@ -122,7 +124,7 @@ export default function Dashboard(): React.ReactElement {
           filteredProducts={filteredProducts}
           onSave={handleSave}
           onDelete={handleDelete}
-          onNew={() => setSelected({ id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '', opties: [] })}
+          onNew={() => setSelected({ product_id: '', id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '' })}
           onClose={() => setSelected(null)}
           onNavigate={setSelected}
         />

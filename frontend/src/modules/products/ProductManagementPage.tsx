@@ -32,10 +32,13 @@ interface User {
 
 interface ProductManagementPageProps {
   user: User;
-  tenant?: string;
+  /** Event filter: "" = all, "webshop" = event_id is null, "<uuid>" = specific event */
+  eventFilter?: string;
 }
 
-export default function ProductManagementPage({ user, tenant }: ProductManagementPageProps) {
+export default function ProductManagementPage({ user, eventFilter }: ProductManagementPageProps) {
+  // Use eventFilter to determine which products to display
+  const activeFilter = eventFilter ?? '';
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
 
@@ -81,15 +84,17 @@ export default function ProductManagementPage({ user, tenant }: ProductManagemen
 
   const handleSave = (data: Product) => {
     // Remove fields that should be managed by the backend
-    const { updated_at, created_at, ...cleanData } = data as any;
+    const { updated_at, created_at, opties, ...cleanData } = data as any;
     
     const processedData = {
       ...cleanData,
       prijs: cleanData.prijs ? cleanData.prijs.toString() : cleanData.prijs
     };
     
-    if (data.id) {
-      updateProduct(data.id, processedData)
+    // Use product_id (unified key) if available, fallback to id
+    const productId = data.product_id || data.id;
+    if (productId) {
+      updateProduct(productId, processedData)
         .then(() => refresh())
         .catch((error: any) => {
           alert('Fout bij opslaan product: ' + (error.response?.data?.error || error.message));
@@ -114,8 +119,17 @@ export default function ProductManagementPage({ user, tenant }: ProductManagemen
 
   const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
   const filteredProducts = products.filter((p: Product) => {
-    // Apply channel filter if provided
-    if (tenant && (p as any).channel && (p as any).channel !== tenant) return false;
+    // Apply event_id filter based on the active event filter
+    if (activeFilter === 'webshop') {
+      // Show only products where event_id is null (generic webshop products)
+      if ((p as any).event_id != null) return false;
+    } else if (activeFilter && activeFilter !== '') {
+      // Show only products linked to a specific event_id
+      if ((p as any).event_id !== activeFilter) return false;
+    }
+    // When activeFilter is "" (Alle), show all products — no event_id filtering
+
+    // Apply group/subgroup filter
     if (!selectedFilter) return true;
     if (selectedFilter.type === 'group') {
       return p.groep === selectedFilter.value;
@@ -268,7 +282,7 @@ export default function ProductManagementPage({ user, tenant }: ProductManagemen
               filteredProducts={filteredProducts}
               onSave={handleSave}
               onDelete={handleDelete}
-              onNew={() => setSelected({ id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '', opties: [] })}
+              onNew={() => setSelected({ product_id: '', id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '' })}
               onClose={() => setSelected(null)}
               onNavigate={setSelected}
               readOnly={false}

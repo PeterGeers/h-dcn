@@ -4,13 +4,11 @@
  * Features:
  * - Loads current active event via presmeetApi.getEvent('presmeet')
  * - Shows OnboardingFlow if user has no club assignment (403 from getOrder)
- * - Tab navigation: Booking (BookingWizard), Admin (AdminRouter)
- * - Admin tab visible to users with management role + region role
- * - BookingWizard handles its own state internally
- * - PaymentPanel, DelegateManager, BookingSummaryPdf below wizard
+ * - Booking wizard: BookingWizard, PaymentPanel, DelegateManager, BookingSummaryPdf
+ * - Admin functionality moved to unified Webshop Beheer page (WebshopManagementPage)
  * - ClubLogoUploader in header
  *
- * Validates: Requirements 5.1, 5.2, 5.3, 10.1, 10.2, 10.5
+ * Validates: Requirements 5.1, 5.2, 5.3, 10.1, 10.2, 10.5, 10.11
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -43,24 +41,7 @@ import OnboardingFlow from './components/OnboardingFlow';
 import PaymentPanel from './components/PaymentPanel';
 import DelegateManager from './components/DelegateManager';
 import BookingSummaryPdf from './components/BookingSummaryPdf';
-import AdminRouter from './admin/AdminRouter';
 import ClubLogoUploader from './components/ClubLogoUploader';
-
-/**
- * Check if the user has admin access for the PresMeet admin tab.
- * Requires BOTH a management role AND a region role:
- * - Management: Products_CRUD, Products_Read, or Webshop_Management
- * - Region: Regio_Pressmeet or Regio_All
- */
-function isPresMeetAdmin(groups: string[]): boolean {
-  const hasManagementRole = groups.some((g) =>
-    ['Products_CRUD', 'Products_Read', 'Webshop_Management'].includes(g)
-  );
-  const hasRegionRole = groups.some((g) =>
-    ['Regio_Pressmeet', 'Regio_All'].includes(g)
-  );
-  return hasManagementRole && hasRegionRole;
-}
 
 /**
  * Check if user has logo upload admin rights.
@@ -85,7 +66,6 @@ const PresMeetPage: React.FC = () => {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const userGroups = (user?.groups as string[]) ?? [];
-  const isAdmin = isPresMeetAdmin(userGroups);
   const isLogoAdmin = isLogoUploadAdmin(userGroups);
 
   /**
@@ -145,8 +125,7 @@ const PresMeetPage: React.FC = () => {
 
         // Admin without personal club gets a special response (not a real order)
         if (orderData && (orderData as any).admin_no_club) {
-          // Admin has no personal booking — they'll use the admin tab
-          // Don't set order, just proceed to render with admin tab available
+          // Admin has no personal booking — they can manage orders via Webshop Beheer
         } else {
           setOrder(orderData);
 
@@ -162,11 +141,7 @@ const PresMeetPage: React.FC = () => {
           // 403 — check specific error message
           const msg = orderErr.message?.toLowerCase() || '';
           if (msg.includes('club') || msg.includes('assignment')) {
-            // Admin users don't need club assignment to access admin tab
-            if (!isAdmin) {
-              setNeedsOnboarding(true);
-            }
-            // For admins: skip order loading, allow admin tab access
+            setNeedsOnboarding(true);
           } else if (msg.includes('presmeet access required')) {
             // User lacks Regio_Pressmeet or Regio_All
             setError(orderErr.message);
@@ -177,9 +152,7 @@ const PresMeetPage: React.FC = () => {
           // Fallback: check raw 403 response message
           const msg = (orderErr?.response?.data?.message || orderErr?.response?.data?.error || '').toLowerCase();
           if (msg.includes('club') || msg.includes('assignment')) {
-            if (!isAdmin) {
-              setNeedsOnboarding(true);
-            }
+            setNeedsOnboarding(true);
           } else {
             setError(
               orderErr?.response?.data?.message || orderErr?.response?.data?.error || t('page.error_loading')
@@ -196,7 +169,7 @@ const PresMeetPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t, isAdmin]);
+  }, [t]);
 
   useEffect(() => {
     loadPageData();
@@ -246,8 +219,7 @@ const PresMeetPage: React.FC = () => {
   }
 
   // --- Permission denied or no order loaded (don't render BookingWizard) ---
-  // Allow admins through even without an order (they need the admin tab)
-  if (error && !order && !needsOnboarding && !isAdmin) {
+  if (error && !order && !needsOnboarding) {
     return (
       <Container maxW="container.lg" py={6}>
         <Alert status="error" borderRadius="md">
@@ -300,7 +272,6 @@ const PresMeetPage: React.FC = () => {
       <Tabs colorScheme="orange" variant="enclosed">
         <TabList>
           <Tab>{t('page.tab_booking')}</Tab>
-          {isAdmin && <Tab>{t('page.tab_admin')}</Tab>}
         </TabList>
 
         <TabPanels>
@@ -342,20 +313,11 @@ const PresMeetPage: React.FC = () => {
               <Alert status="info" borderRadius="md">
                 <AlertIcon />
                 <Text>
-                  {isAdmin
-                    ? t('page.admin_no_personal_booking', 'Geen persoonlijke booking gevonden. Gebruik het Admin-tabblad om bestellingen te beheren.')
-                    : t('page.error_loading')}
+                  {t('page.error_loading')}
                 </Text>
               </Alert>
             )}
           </TabPanel>
-
-          {/* Admin Tab (conditionally rendered) */}
-          {isAdmin && (
-            <TabPanel px={0}>
-              <AdminRouter />
-            </TabPanel>
-          )}
         </TabPanels>
       </Tabs>
     </Container>

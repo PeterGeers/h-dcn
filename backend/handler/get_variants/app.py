@@ -1,51 +1,54 @@
-import json
-import os
 import boto3
-from boto3.dynamodb.conditions import Key
+import os
+import json
+import logging
+from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
     from shared.auth_utils import (
         extract_user_credentials,
+        validate_permissions_with_regions,
         cors_headers,
         handle_options_request,
         create_error_response,
         create_success_response,
         log_successful_access
     )
-    from shared.channel_resolver import resolve_channels, validate_channel_access
     print("Using shared auth layer")
 except ImportError as e:
+    # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("get_variants")
+    # Exit early - the fallback handler will handle all requests
     import sys
     sys.exit(0)
 
+table_name = str(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
 dynamodb = boto3.resource('dynamodb')
-table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
 table = dynamodb.Table(table_name)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
+def convert_decimals(obj):
+    """Convert Decimal objects to int or float for JSON serialization."""
+    if isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    elif isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    return obj
 
 
 def lambda_handler(event, context):
-    """
-    GET /products/{id}/variants
-
-    Fetches all variant records for a parent product using the
-    parent_id-index GSI. Validates channel access before returning results.
-
-    Path parameters:
-        id - The parent product_id
-
-    Returns:
-        200: List of variant records with stock, variant_attributes,
-             allow_oversell, price, and active status
-        400: Missing product ID
-        403: Channel access denied
-        404: Parent product not found
-        500: Internal server error
-    """
     try:
         # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
@@ -56,6 +59,7 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
+        # Log successful access
         log_successful_access(user_email, user_roles, 'get_variants')
 
         # Get product ID from path parameters
@@ -64,77 +68,44 @@ def lambda_handler(event, context):
         if not product_id:
             return create_error_response(400, 'Product ID is required')
 
-        # Fetch parent product to validate tenant access
+        # Verify parent product exists
         parent_response = table.get_item(Key={'product_id': product_id})
         if 'Item' not in parent_response:
-            return create_error_response(404, f'Product {product_id} not found')
+            return create_error_response(404, 'Product not found')
 
         parent = parent_response['Item']
 
-        # Validate that it's actually a parent product
+        # Verify this is a parent product, not a variant
         if parent.get('is_parent') is False:
-            return create_error_response(
-                400, 'The specified ID is a variant, not a parent product'
-            )
+            return create_error_response(400, 'Cannot get variants for a variant record. Use the parent product ID.')
 
-        # Resolve user channels from Cognito groups and validate access
-        user_channels = resolve_channels(user_roles)
-        product_channel = parent.get('channel', parent.get('tenant', 'h-dcn'))
-
-        channel_error = validate_channel_access(product_channel, user_channels)
-        if channel_error:
-            return channel_error
-
-        # Query variants using parent_id-index GSI
+        # Scan for variant records with parent_id matching the product_id
         variants = []
-        query_kwargs = {
-            'IndexName': 'parent_id-index',
-            'KeyConditionExpression': Key('parent_id').eq(product_id),
+        scan_kwargs = {
+            'FilterExpression': Attr('parent_id').eq(product_id)
         }
 
-        response = table.query(**query_kwargs)
-        variants.extend(response.get('Items', []))
-
-        # Handle pagination
-        while 'LastEvaluatedKey' in response:
-            query_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
-            response = table.query(**query_kwargs)
+        while True:
+            response = table.scan(**scan_kwargs)
             variants.extend(response.get('Items', []))
 
-        # Shape the response with all variant records
-        variant_records = []
-        for variant in variants:
-            record = {
-                'product_id': variant.get('product_id'),
-                'parent_id': variant.get('parent_id'),
-                'name': variant.get('name', ''),
-                'variant_attributes': variant.get('variant_attributes', {}),
-                'stock': int(variant.get('stock', 0)),
-                'sold_count': int(variant.get('sold_count', 0)),
-                'allow_oversell': variant.get('allow_oversell', False),
-                'active': variant.get('active', True),
-            }
-            # Include price (convert Decimal to float for JSON)
-            price = variant.get('price')
-            if price is not None:
-                record['price'] = float(price)
+            # Handle pagination
+            if 'LastEvaluatedKey' in response:
+                scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
             else:
-                record['price'] = None
-            variant_records.append(record)
+                break
 
-        return {
-            'statusCode': 200,
-            'headers': cors_headers(),
-            'body': json.dumps({
-                'product_id': product_id,
-                'variants': variant_records,
-                'total_count': len(variant_records)
-            })
-        }
+        logger.info(f"Found {len(variants)} variants for product {product_id}")
+
+        return create_success_response(convert_decimals({
+            'product_id': product_id,
+            'variants': variants,
+            'total_count': len(variants)
+        }))
 
     except ClientError as e:
-        print(f"DynamoDB error in get_variants: {str(e)}")
+        logger.error(f"DynamoDB error: {e}")
         return create_error_response(500, f'Database error: {str(e)}')
     except Exception as e:
-        print(f"Unexpected error in get_variants: {str(e)}")
+        logger.error(f"Unexpected error: {e}")
         return create_error_response(500, 'Internal server error')

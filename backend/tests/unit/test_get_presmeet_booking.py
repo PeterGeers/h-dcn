@@ -127,7 +127,7 @@ class TestGetPresMeetBookingAccess:
         booking = {
             'order_id': 'order-123',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'amsterdam',
             'status': 'draft',
             'items': [{'product_type': 'meeting_ticket', 'attributes': {'name': 'Jan', 'role': 'President'}}],
@@ -165,7 +165,7 @@ class TestGetPresMeetBookingAccess:
         booking = {
             'order_id': 'order-own',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'amsterdam',
             'status': 'draft',
             'items': [],
@@ -194,7 +194,7 @@ class TestGetPresMeetBookingAdmin:
         booking = {
             'order_id': 'order-789',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'rotterdam',
             'status': 'submitted',
             'items': [{'product_type': 'meeting_ticket', 'attributes': {'name': 'Piet', 'role': 'VP'}}],
@@ -232,7 +232,7 @@ class TestGetPresMeetBookingAdmin:
         booking = {
             'order_id': 'order-admin',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'utrecht',
             'status': 'draft',
             'items': [],
@@ -256,7 +256,7 @@ class TestGetPresMeetBookingAdmin:
         booking = {
             'order_id': 'order-wm',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'eindhoven',
             'status': 'locked',
             'items': [],
@@ -279,7 +279,7 @@ class TestGetPresMeetBookingAdmin:
         booking = {
             'order_id': 'order-ra',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'groningen',
             'status': 'submitted',
             'items': [],
@@ -306,7 +306,7 @@ class TestGetPresMeetBookingPagination:
         booking = {
             'order_id': 'order-page',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'amsterdam',
             'status': 'draft',
             'items': [],
@@ -339,7 +339,7 @@ class TestGetPresMeetBookingMultipleOrders:
         booking_a = {
             'order_id': 'order-a',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'amsterdam',
             'status': 'draft',
             'items': [],
@@ -349,7 +349,7 @@ class TestGetPresMeetBookingMultipleOrders:
         booking_b = {
             'order_id': 'order-b',
             'source': 'presmeet',
-            'tenant': 'presmeet',
+            'event_id': 'evt-presmeet-2025',
             'club_id': 'amsterdam',
             'status': 'submitted',
             'items': [{'product_type': 'meeting_ticket'}],

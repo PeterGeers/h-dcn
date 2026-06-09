@@ -462,6 +462,21 @@ def build_addresses_html(customer_info: dict, shipping_address: Optional[dict],
     <hr class="separator" />'''
 
 
+def format_variant_attributes(variant_attributes) -> str:
+    """Format variant_attributes dict as a readable string for PDF display.
+
+    Args:
+        variant_attributes: A dict like {"Maat": "M", "Kleur": "Zwart"} or None.
+
+    Returns:
+        Formatted string like "Maat: M, Kleur: Zwart", or '-' if empty/None.
+    """
+    if not variant_attributes or not isinstance(variant_attributes, dict):
+        return '-'
+    parts = [f"{key}: {value}" for key, value in variant_attributes.items() if value]
+    return ', '.join(parts) if parts else '-'
+
+
 def build_products_table_html(items: list, delivery_option: Optional[dict],
                               delivery_cost: Optional[str],
                               locale: str = 'nl') -> str:
@@ -469,6 +484,11 @@ def build_products_table_html(items: list, delivery_option: Optional[dict],
 
     Table has light grey header (#F9FAFB), right-aligned numeric columns.
     Delivery section appears ABOVE the products table when present.
+
+    Uses unified field names with backward compatibility:
+    - name (fallback: naam)
+    - unit_price (fallback: price)
+    - variant_attributes (fallback: selectedOption)
     """
     shipping_label = get_pdf_text('shipping', locale)
     product_label = get_pdf_text('product', locale)
@@ -493,19 +513,27 @@ def build_products_table_html(items: list, delivery_option: Optional[dict],
 
 '''
 
-    # Product rows
+    # Product rows — unified field names with backward compatibility
     product_rows_html = ''
     for item in items:
+        # name with fallback to naam
         item_name = item.get('name') or item.get('naam', '')
-        selected_option = item.get('selectedOption') or '-'
+        # variant_attributes dict with fallback to selectedOption string
+        variant_attrs = item.get('variant_attributes')
+        if variant_attrs and isinstance(variant_attrs, dict):
+            variant_display = format_variant_attributes(variant_attrs)
+        else:
+            # Backward compat: fall back to legacy selectedOption
+            variant_display = item.get('selectedOption') or '-'
+        # unit_price with fallback to price
+        unit_price = item.get('unit_price') if item.get('unit_price') is not None else item.get('price', 0)
         quantity = item.get('quantity', 0)
-        price = item.get('price', 0)
-        line_total = float(quantity) * float(price)
+        line_total = float(quantity) * float(unit_price)
         product_rows_html += f'''            <tr>
                 <td>{item_name}</td>
-                <td>{selected_option}</td>
+                <td>{variant_display}</td>
                 <td class="right">{quantity}</td>
-                <td class="right">{format_euro(price, locale)}</td>
+                <td class="right">{format_euro(unit_price, locale)}</td>
                 <td class="right">{format_euro(line_total, locale)}</td>
             </tr>
 '''

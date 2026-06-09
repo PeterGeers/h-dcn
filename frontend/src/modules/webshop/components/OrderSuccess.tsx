@@ -5,8 +5,7 @@ import OrderConfirmation from './OrderConfirmation';
 
 interface OrderItem {
   name?: string;
-  naam?: string;
-  selectedOption?: string;
+  variant_attributes?: Record<string, string>;
   quantity: number;
   price?: number;
 }

@@ -2,13 +2,13 @@
  * OrdersTab Component
  *
  * Displays all orders in a Chakra Table with columns for Order ID,
- * Tenant badge, Customer/Club name, Status badge, Payment status badge,
+ * Event badge, Customer/Club name, Status badge, Payment status badge,
  * Total, Paid, Outstanding, Created date, and Submitted date.
  *
  * Clickable rows open the OrderDetailDrawer for full order details
  * and state transition controls.
  *
- * Validates: Requirements 4.3, 4.4, 4.5, 4.6, 4.11, 4.12
+ * Validates: Requirements 4.3, 4.4, 4.5, 4.6, 4.11, 4.12, 12.6
  */
 
 import React, { useState } from 'react';
@@ -33,8 +33,8 @@ import { OrderDetailDrawer } from './OrderDetailDrawer';
 import { AdminOrder } from '../types/admin.types';
 
 export interface OrdersTabProps {
-  /** Active tenant filter value (empty string = all) */
-  tenant: string;
+  /** Active event filter value (empty string = all, "webshop" = no event) */
+  eventFilter: string;
 }
 
 const PAYMENT_STATUS_COLOR: Record<string, string> = {
@@ -60,8 +60,17 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
-export const OrdersTab: React.FC<OrdersTabProps> = ({ tenant }) => {
-  const { orders, loading, error, refetch } = useAdminOrders(tenant);
+/**
+ * Derive a display label for event_id on orders.
+ */
+function getEventLabel(eventId?: string | null): string {
+  if (!eventId) return 'Webshop';
+  return eventId;
+}
+
+export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter }) => {
+  // eventFilter prop is interpreted as event_id filter from parent EventFilter
+  const { orders, loading, error, refetch } = useAdminOrders(eventFilter);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
@@ -112,7 +121,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ tenant }) => {
           <Thead>
             <Tr>
               <Th>Order ID</Th>
-              <Th>Channel</Th>
+              <Th>Event</Th>
               <Th>Klant / Club</Th>
               <Th>Status</Th>
               <Th>Betaling</Th>
@@ -138,10 +147,10 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ tenant }) => {
                 </Td>
                 <Td>
                   <Badge
-                    colorScheme={order.channel === 'presmeet' ? 'purple' : 'blue'}
+                    colorScheme={order.event_id ? 'purple' : 'blue'}
                     fontSize="xs"
                   >
-                    {order.channel}
+                    {getEventLabel(order.event_id)}
                   </Badge>
                 </Td>
                 <Td>
@@ -180,7 +189,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ tenant }) => {
           isOpen={isOpen}
           onClose={handleDrawerClose}
           onOrderUpdated={handleOrderUpdated}
-          tenant={tenant}
+          eventFilter={eventFilter}
         />
       )}
     </Box>

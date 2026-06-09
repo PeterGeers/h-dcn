@@ -16,6 +16,7 @@ import {
   HStack,
   Divider,
 } from '@chakra-ui/react';
+import { RepeatIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import { validateItemFields, ItemFieldError } from './ItemFieldsForm';
@@ -32,10 +33,8 @@ import { processDeliveryOptions, getDefaultDeliveryOptions } from '../utils/deli
 interface CartItem {
   product_id?: string;
   name?: string;
-  naam?: string;
   price?: number;
   quantity: number;
-  selectedOption?: string;
   variant_id?: string;
   variant_attributes?: Record<string, string>;
   item_fields_data?: ItemFieldsEntry[];
@@ -54,6 +53,8 @@ interface CheckoutModalProps {
   cartItems: CartItem[];
   onPaymentSuccess: (paymentData: any) => void;
   userEmail: string;
+  orderId?: string;
+  /** @deprecated Use orderId instead */
   cartId?: string;
 }
 
@@ -63,6 +64,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cartItems,
   onPaymentSuccess,
   userEmail,
+  orderId,
   cartId,
 }) => {
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +76,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [itemFieldErrors, setItemFieldErrors] = useState<ItemFieldError[]>([]);
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState<string>('');
+  const [conflictError, setConflictError] = useState<boolean>(false);
   const { t } = useTranslation('webshop');
+
+  // Use orderId prop, fall back to cartId for backward compat
+  const activeOrderId = orderId || cartId;
 
   const totalAmount = cartItems.reduce(
     (sum, item) => sum + (Number(item.price || 0) * item.quantity),
@@ -109,7 +115,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     if (isOpen) {
       loadDeliveryOptions();
-      // Check for payment return status from URL params
       checkPaymentReturn();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,12 +123,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const checkPaymentReturn = useCallback(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const status = urlParams.get('payment_status');
-    const orderId = urlParams.get('order_id');
+    const returnOrderId = urlParams.get('order_id');
 
     if (status) {
       const result = handlePaymentReturn(
         status as any,
-        orderId
+        returnOrderId
       );
       setPaymentReturn(result);
       // Clean up URL params
@@ -152,14 +157,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return allErrors.length === 0;
   };
 
+  /**
+   * Submit the draft order and then initiate payment.
+   * Flow: submitOrder → payOrder → handle response (redirect or transfer instructions).
+   * Handles 409 Conflict by showing refresh+retry UI.
+   */
   const handleSubmit = async () => {
     setError(null);
+    setConflictError(false);
+
+    if (!activeOrderId) {
+      setError(t('checkout.no_order_error', { defaultValue: 'Geen bestelling gevonden. Probeer opnieuw.' }));
+      return;
+    }
 
     // Validate item fields before submission
     if (itemsWithFields.length > 0) {
       const isValid = validateAllItemFields();
       if (!isValid) {
-        setError('Vul alle verplichte velden in voordat je de bestelling plaatst.');
+        setError(t('checkout.fields_required', { defaultValue: 'Vul alle verplichte velden in voordat je de bestelling plaatst.' }));
         return;
       }
     }
@@ -167,62 +183,67 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setIsProcessing(true);
 
     try {
-      // Build order items with item_fields_data
-      const orderItems = cartItems.map((item) => ({
-        product_id: item.product_id || '',
-        variant_id: item.variant_id || '',
-        quantity: item.quantity,
-        item_fields_data: item.item_fields_data || undefined,
-      }));
+      // Step 1: Submit the draft order (validates all items)
+      const submitResponse = await orderService.submitOrder(activeOrderId);
 
-      const orderData: any = {
-        cart_id: cartId,
-        payment_method: paymentMethod,
-        items: orderItems,
-      };
+      if (!submitResponse.success) {
+        // Check for 409 Conflict (order was modified)
+        const statusCode = (submitResponse as any).status || (submitResponse as any).statusCode;
+        const errorMessage = submitResponse.error || '';
 
-      // Add delivery option if selected
-      if (selectedDelivery && deliveryOption) {
-        orderData.delivery_option = deliveryOption;
-      }
+        if (statusCode === 409 || errorMessage.toLowerCase().includes('conflict') || errorMessage.toLowerCase().includes('version')) {
+          setConflictError(true);
+          setError(t('checkout.conflict_error', {
+            defaultValue: 'De bestelling is ondertussen gewijzigd. Vernieuw en probeer opnieuw.',
+          }));
+          setIsProcessing(false);
+          return;
+        }
 
-      const response = await orderService.createOrder(orderData);
-
-      if (!response.success) {
-        setError(response.error || 'Er is een fout opgetreden bij het plaatsen van de bestelling.');
+        setError(submitResponse.error || t('checkout.submit_error', { defaultValue: 'Er is een fout opgetreden bij het indienen van de bestelling.' }));
         setIsProcessing(false);
         return;
       }
 
-      const data = response.data;
+      // Step 2: Initiate payment on the submitted order
+      const payResponse = await orderService.payOrder(activeOrderId, {
+        payment_method: paymentMethod,
+      });
+
+      if (!payResponse.success) {
+        setError(payResponse.error || t('checkout.payment_error_desc', { defaultValue: 'Er is een probleem opgetreden.' }));
+        setIsProcessing(false);
+        return;
+      }
+
+      const payData = payResponse.data;
 
       // Handle Mollie redirect for online payments (ideal / creditcard)
-      if (data?.checkout_url) {
-        handleMollieRedirect(data.checkout_url);
+      if (payData?.checkout_url) {
+        handleMollieRedirect(payData.checkout_url);
         // Browser will redirect, no further action needed
         return;
       }
 
       // Handle bank transfer response
-      if (paymentMethod === 'bank_transfer' && data?.transfer_instructions) {
-        setTransferInstructions(data.transfer_instructions);
+      if (paymentMethod === 'bank_transfer' && payData?.transfer_instructions) {
+        setTransferInstructions(payData.transfer_instructions);
         setSuccess(true);
         setIsProcessing(false);
 
-        // Notify parent of success
         onPaymentSuccess({
           paymentMethodId: 'bank_transfer',
           amount: finalTotal,
           items: cartItems,
           deliveryOption: deliveryOption || null,
-          orderId: data.order_id,
+          orderId: activeOrderId,
           paymentMethod: 'bank_transfer',
-          transferInstructions: data.transfer_instructions,
+          transferInstructions: payData.transfer_instructions,
         });
         return;
       }
 
-      // Fallback: order created successfully without redirect
+      // Fallback: order submitted + payment initiated successfully
       setSuccess(true);
       setIsProcessing(false);
       onPaymentSuccess({
@@ -230,13 +251,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         amount: finalTotal,
         items: cartItems,
         deliveryOption: deliveryOption || null,
-        orderId: data?.order_id,
+        orderId: activeOrderId,
         paymentMethod,
       });
     } catch (err: any) {
-      setError(err?.message || 'Er is een fout opgetreden bij het plaatsen van de bestelling.');
+      // Check for 409 Conflict in exception (axios throws on 4xx)
+      const status = err?.response?.status || err?.status;
+      if (status === 409) {
+        setConflictError(true);
+        setError(t('checkout.conflict_error', {
+          defaultValue: 'De bestelling is ondertussen gewijzigd. Vernieuw en probeer opnieuw.',
+        }));
+        setIsProcessing(false);
+        return;
+      }
+
+      setError(err?.message || t('checkout.submit_error', { defaultValue: 'Er is een fout opgetreden bij het indienen van de bestelling.' }));
       setIsProcessing(false);
     }
+  };
+
+  /**
+   * Handle 409 conflict: refresh order state and retry submit+pay.
+   */
+  const handleConflictRetry = async () => {
+    setConflictError(false);
+    setError(null);
+    // Re-attempt submit+pay (parent component should have refreshed order state)
+    await handleSubmit();
   };
 
   const handleRetry = () => {
@@ -244,6 +286,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null);
     setSuccess(false);
     setTransferInstructions(undefined);
+    setConflictError(false);
   };
 
   const handleClose = () => {
@@ -253,6 +296,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setPaymentReturn(undefined);
     setTransferInstructions(undefined);
     setItemFieldErrors([]);
+    setConflictError(false);
     onClose();
   };
 
@@ -268,7 +312,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {error && (
             <Alert status="error" mb={4} bg="red.600" color="white">
               <AlertIcon />
-              {error}
+              <Box flex="1">
+                <Text>{error}</Text>
+                {conflictError && (
+                  <Button
+                    size="sm"
+                    mt={2}
+                    leftIcon={<RepeatIcon />}
+                    colorScheme="orange"
+                    onClick={handleConflictRetry}
+                    isLoading={isProcessing}
+                  >
+                    {t('checkout.refresh_retry', { defaultValue: 'Vernieuwen en opnieuw proberen' })}
+                  </Button>
+                )}
+              </Box>
             </Alert>
           )}
 
@@ -289,13 +347,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {success && transferInstructions && (
             <Alert status="info" mb={4} borderRadius="md" flexDirection="column" alignItems="flex-start" p={4}>
               <AlertIcon />
-              <Text fontWeight="bold" mb={2}>Bestelling geplaatst!</Text>
+              <Text fontWeight="bold" mb={2}>
+                {t('checkout.order_placed', { defaultValue: 'Bestelling geplaatst!' })}
+              </Text>
               <Text mb={2}>
-                Maak het bedrag over met de volgende gegevens:
+                {t('checkout.transfer_instructions', { defaultValue: 'Maak het bedrag over met de volgende gegevens:' })}
               </Text>
               <VStack align="flex-start" spacing={1}>
                 <Text>
-                  <Text as="span" fontWeight="bold">Kenmerk:</Text>{' '}
+                  <Text as="span" fontWeight="bold">
+                    {t('checkout.reference', { defaultValue: 'Kenmerk' })}:
+                  </Text>{' '}
                   {transferInstructions.reference}
                 </Text>
                 <Text>
@@ -303,12 +365,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {transferInstructions.iban}
                 </Text>
                 <Text>
-                  <Text as="span" fontWeight="bold">Bedrag:</Text>{' '}
+                  <Text as="span" fontWeight="bold">
+                    {t('checkout.amount', { defaultValue: 'Bedrag' })}:
+                  </Text>{' '}
                   €{transferInstructions.amount.toFixed(2)}
                 </Text>
               </VStack>
               <Button mt={4} colorScheme="orange" onClick={handleClose}>
-                Sluiten
+                {t('checkout.close', { defaultValue: 'Sluiten' })}
               </Button>
             </Alert>
           )}
@@ -329,12 +393,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Order summary */}
               <Box>
                 <Text fontWeight="bold" mb={2}>
-                  Overzicht
+                  {t('checkout.summary', { defaultValue: 'Overzicht' })}
                 </Text>
                 {cartItems.map((item, idx) => (
                   <HStack key={idx} justify="space-between" mb={1}>
                     <Text fontSize="sm">
-                      {item.name || item.naam} x {item.quantity}
+                      {item.name} x {item.quantity}
                     </Text>
                     <Text fontSize="sm">
                       €{(Number(item.price || 0) * item.quantity).toFixed(2)}
@@ -349,7 +413,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <AlertIcon />
                   <Box>
                     <Text fontWeight="bold" fontSize="sm">
-                      Niet alle velden zijn correct ingevuld:
+                      {t('checkout.fields_incomplete', { defaultValue: 'Niet alle velden zijn correct ingevuld:' })}
                     </Text>
                     {itemFieldErrors.slice(0, 5).map((err, idx) => (
                       <Text key={idx} fontSize="xs">

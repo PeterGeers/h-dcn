@@ -126,7 +126,6 @@ def lambda_handler(event, context):
         payment_record = {
             "payment_id": payment_id,
             "source": "presmeet",
-            "tenant": "presmeet",
             "order_id": order_id,
             "club_id": club_id,
             "amount": amount_decimal,
@@ -183,7 +182,6 @@ def lambda_handler(event, context):
         response_payment = {
             "payment_id": payment_id,
             "source": "presmeet",
-            "tenant": "presmeet",
             "order_id": order_id,
             "club_id": club_id,
             "amount": float(amount_decimal),

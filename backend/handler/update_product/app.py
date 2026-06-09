@@ -67,7 +67,7 @@ def lambda_handler(event, context):
         expression_attribute_values = {}
 
         for key, value in data.items():
-            if key == 'id':
+            if key == 'product_id':
                 continue  # Don't update the primary key
 
             # Convert image to array if it's a string
@@ -88,7 +88,7 @@ def lambda_handler(event, context):
         update_expression = "SET " + ", ".join(update_expression_parts)
 
         table.update_item(
-            Key={'id': product_id},
+            Key={'product_id': product_id},
             UpdateExpression=update_expression,
             ExpressionAttributeNames=expression_attribute_names,
             ExpressionAttributeValues=expression_attribute_values

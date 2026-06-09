@@ -94,16 +94,23 @@ export interface Member {
   aanmeldingsjaar?: number | null;
 }
 
+/** Maps axis names to their possible values (e.g., {"Maat": ["S","M","L","XL"]}) */
+export type VariantSchema = Record<string, string[]>;
+
 export interface Product {
-  id: string;
-  name: string;
-  naam?: string;
-  price: number;
-  prijs?: string | number;
-  category: string;
-  groep?: string;
-  subgroep?: string;
-  opties?: any[];
+  product_id: string;
+  id?: string; // backward compat (legacy references)
+  name?: string;
+  naam?: string; // backward compat
+  price?: number;
+  prijs?: string | number; // backward compat
+  category?: string;
+  groep?: string; // backward compat
+  subgroep?: string; // backward compat
+  variant_schema?: VariantSchema;
+  is_parent?: boolean;
+  event_id?: string | null;
+  active?: boolean;
 }
 
 export interface Event {

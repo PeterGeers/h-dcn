@@ -96,7 +96,6 @@ function createOrder(overrides: Partial<Order> = {}): Order {
     club_id: 'club-amsterdam',
     event_id: 'event-pm2027',
     event_type: 'presmeet',
-    channel: 'presmeet',
     status: 'draft',
     payment_status: 'unpaid',
     total_amount: 150.0,

@@ -559,22 +559,7 @@ Resources:
             Path: /scan-product/
             Method: get
 
-  UpdateProductFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/update_product
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        UpdatePost:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /update-product/{id}
-            Method: put
+
 
   # Member Management Functions
   CreateMemberFunction:
@@ -988,59 +973,7 @@ Resources:
             Path: /memberships/{id}
             Method: delete
 
-  # Cart Functions
-  CreateCartFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/create_cart
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        CreateCart:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /carts
-            Method: post
 
-  GetCartFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/get_cart
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        GetCart:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /carts/{cart_id}
-            Method: get
-
-
-
-  ClearCartFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/clear_cart
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        ClearCart:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /carts/{cart_id}
-            Method: delete
 
   # Order Functions
   CreateOrderFunction:
@@ -1068,6 +1001,50 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /orders
+            Method: post
+
+  # --- Unified Order: Update Order Items ---
+  UpdateOrderItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/update_order_items
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+      Events:
+        UpdateOrderItems:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{id}/items
+            Method: put
+
+  # --- Unified Order: Submit Order ---
+  SubmitOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/submit_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+      Events:
+        SubmitOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{id}/submit
             Method: post
 
   GetOrdersFunction:
@@ -1130,13 +1107,43 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
       Events:
         GetCustomerOrders:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /orders/customer/{customer_id}
+            Path: /orders/my
             Method: get
+
+  PayOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/pay_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_WEBHOOK_URL: ""
+          PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl"
+      Events:
+        PayOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{id}/pay
+            Method: post
 
   # Order PDF Generation Function
   GenerateOrderPdfFunction:
@@ -1290,22 +1297,7 @@ Resources:
             Description: "Hourly check for event status transitions (auto-open, auto-close, auto-lock)"
             Enabled: true
 
-  UpdateCartItemsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/update_cart_items
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
-      Events:
-        UpdateCartItems:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /carts/{cart_id}/items
-            Method: put
+
 
   # Generic S3 File Manager Function
   S3FileManagerFunction:
@@ -1455,83 +1447,7 @@ Resources:
                 Resource:
                   - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
 
-  # --- PresMeet v3: Get Order ---
-  PresMeetGetOrderFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/presmeet_get_order
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        GetPresMeetOrder:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/orders
-            Method: get
 
-  # --- PresMeet v3: Upsert Order ---
-  PresMeetUpsertOrderFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/presmeet_upsert_order
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        UpsertPresMeetOrder:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/orders/{id}
-            Method: put
-
-  # --- PresMeet v3: Submit Order ---
-  PresMeetSubmitOrderFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/presmeet_submit_order
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        SubmitPresMeetOrder:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/orders/{id}/submit
-            Method: post
 
   # --- PresMeet v3: Create Payment ---
   PresMeetCreatePaymentFunction:

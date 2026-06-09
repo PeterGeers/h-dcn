@@ -60,10 +60,10 @@ const adminClient = createAdminClient();
 // --- Product Endpoints ---
 
 export const getAdminProducts = async (
-  channel?: string
+  eventId?: string
 ): Promise<AdminProduct[]> => {
   const params: Record<string, string> = {};
-  if (channel) params.channel = channel;
+  if (eventId) params.event_id = eventId;
   const response = await adminClient.get('/admin/products', { params });
   // Backend returns {products: [...], total_count: N}
   const data = response.data;
@@ -143,11 +143,11 @@ export const getStockMovements = async (
 // --- Order Endpoints ---
 
 export const getAdminOrders = async (
-  channel?: string,
+  eventId?: string,
   status?: string
 ): Promise<AdminOrdersResponse> => {
   const params: Record<string, string> = {};
-  if (channel) params.channel = channel;
+  if (eventId) params.event_id = eventId;
   if (status) params.status = status;
   const response = await adminClient.get('/admin/orders', { params });
   // Backend returns {orders: [...], total_count: N}
@@ -165,9 +165,9 @@ export const updateOrderStatus = async (
   );
 };
 
-export const lockOrders = async (channel?: string): Promise<void> => {
+export const lockOrders = async (eventId?: string): Promise<void> => {
   const params: Record<string, string> = {};
-  if (channel) params.channel = channel;
+  if (eventId) params.event_id = eventId;
   await adminClient.post('/admin/orders/lock', null, { params });
 };
 
@@ -180,10 +180,10 @@ export const unlockOrder = async (orderId: string): Promise<void> => {
 // --- Payment Endpoints ---
 
 export const getAdminPayments = async (
-  channel?: string
+  eventId?: string
 ): Promise<any> => {
   const params: Record<string, string> = {};
-  if (channel) params.channel = channel;
+  if (eventId) params.event_id = eventId;
   const response = await adminClient.get('/admin/payments', { params });
   // Backend returns {aggregates: {...}, order_payments: [...], total_count: N}
   return response.data;
@@ -197,29 +197,43 @@ export const recordPayment = async (
 
 // --- Report Endpoints ---
 
-export const generateReport = async (channel?: string): Promise<void> => {
-  const params: Record<string, string> = {};
-  if (channel) params.channel = channel;
-  await adminClient.post('/admin/reports/generate', null, { params });
+export interface GenerateReportParams {
+  event_id?: string;
+  report_type?: string;
+  order_status?: string;
+  payment_status?: string;
+}
+
+export const generateReport = async (params?: GenerateReportParams): Promise<void> => {
+  const queryParams: Record<string, string> = {};
+  if (params?.event_id) queryParams.event_id = params.event_id;
+  if (params?.report_type) queryParams.report_type = params.report_type;
+  if (params?.order_status && params.order_status !== 'all') queryParams.order_status = params.order_status;
+  if (params?.payment_status && params.payment_status !== 'all') queryParams.payment_status = params.payment_status;
+  await adminClient.post('/admin/reports/generate', null, { params: queryParams });
 };
 
-export const getReport = async (
-  channel?: string
-): Promise<ReportResponse> => {
-  const params: Record<string, string> = {};
-  if (channel) params.channel = channel;
-  const response = await adminClient.get<ReportResponse>('/admin/reports', { params });
+export const getReport = async (params?: GenerateReportParams): Promise<ReportResponse> => {
+  const queryParams: Record<string, string> = {};
+  if (params?.event_id) queryParams.event_id = params.event_id;
+  if (params?.report_type) queryParams.report_type = params.report_type;
+  if (params?.order_status && params.order_status !== 'all') queryParams.order_status = params.order_status;
+  if (params?.payment_status && params.payment_status !== 'all') queryParams.payment_status = params.payment_status;
+  const response = await adminClient.get<ReportResponse>('/admin/reports', { params: queryParams });
   return response.data;
 };
 
 export const exportReport = async (
-  channel?: string,
-  format: 'csv' | 'json' = 'json'
+  format: 'csv' | 'json' = 'json',
+  params?: GenerateReportParams
 ): Promise<Blob> => {
-  const params: Record<string, string> = { format };
-  if (channel) params.channel = channel;
+  const queryParams: Record<string, string> = { format };
+  if (params?.event_id) queryParams.event_id = params.event_id;
+  if (params?.report_type) queryParams.report_type = params.report_type;
+  if (params?.order_status && params.order_status !== 'all') queryParams.order_status = params.order_status;
+  if (params?.payment_status && params.payment_status !== 'all') queryParams.payment_status = params.payment_status;
   const response = await adminClient.get('/admin/reports/export', {
-    params,
+    params: queryParams,
     responseType: 'blob',
   });
   return response.data;

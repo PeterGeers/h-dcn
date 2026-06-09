@@ -84,7 +84,6 @@ def lambda_handler(event, context):
         variant = {
             'product_id': variant_id,
             'parent_id': product_id,
-            'tenant': parent.get('tenant', 'h-dcn'),
             'name': body.get('name', ''),
             'is_parent': False,
             'variant_attributes': variant_attributes,

@@ -2,12 +2,11 @@
 Property-Based Tests for Webshop Product Unification
 
 Tests the core backend logic for the unified webshop pipeline using Hypothesis.
-Covers all 27 correctness properties from the design document:
+Covers correctness properties from the design document:
 - Variant generation and resolution
 - Purchase rules enforcement
 - Stock reservation
 - Cart structure
-- Tenant derivation and access
 - Item fields validation and persistence
 - Migration correctness
 - Payment and order lifecycle
@@ -50,7 +49,6 @@ from shared.item_fields_validator import (
     validate_item_fields_data,
     validate_field_value,
 )
-from shared.channel_resolver import resolve_channels, validate_channel_access
 from shared.stock_reservation import (
     reserve_stock_for_order,
     InsufficientStockError,
@@ -121,13 +119,6 @@ def order_item_fields_definition_strategy():
         "required": st.booleans(),
     })
     return st.lists(field_def, min_size=1, max_size=5, unique_by=lambda f: f["id"])
-
-
-def cognito_groups_strategy():
-    """Generate sets of Cognito groups."""
-    known_groups = ["hdcnLeden", "Regio_Pressmeet", "Regio_All", "admin",
-                    "verzoek_lid", "webmaster", "Regio_Noord"]
-    return st.lists(st.sampled_from(known_groups), min_size=0, max_size=4, unique=True)
 
 
 # =============================================================================
@@ -627,70 +618,6 @@ class TestProperty10CartItemStructure:
             }
             assert "selectedOption" not in cart_item
             assert cart_item["variant_id"].startswith("var_")
-
-
-# =============================================================================
-# Property 11: Tenant role derivation
-# Feature: webshop-product-unification, Property 11
-# =============================================================================
-
-class TestProperty11TenantRoleDerivation:
-    """
-    **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.7**
-
-    hdcnLeden→h-dcn, Regio_Pressmeet/Regio_All→presmeet, union of grants.
-    """
-
-    @given(groups=cognito_groups_strategy())
-    @settings(max_examples=50)
-    def test_tenant_derivation(self, groups):
-        tenants = resolve_channels(groups)
-
-        expected = set()
-        if "hdcnLeden" in groups:
-            expected.add("h-dcn")
-        if "Regio_Pressmeet" in groups or "Regio_All" in groups:
-            expected.add("presmeet")
-
-        assert tenants == expected
-
-    @given(groups=cognito_groups_strategy())
-    @settings(max_examples=50)
-    def test_no_relevant_groups_yields_empty(self, groups):
-        relevant = {"hdcnLeden", "Regio_Pressmeet", "Regio_All"}
-        has_relevant = any(g in relevant for g in groups)
-        tenants = resolve_channels(groups)
-
-        if not has_relevant:
-            assert tenants == set()
-
-
-# =============================================================================
-# Property 12: Tenant access enforcement
-# Feature: webshop-product-unification, Property 12
-# =============================================================================
-
-class TestProperty12TenantAccessEnforcement:
-    """
-    **Validates: Requirements 7.6**
-
-    Requesting inaccessible tenant returns 403.
-    """
-
-    @given(
-        requested=st.sampled_from(["h-dcn", "presmeet"]),
-        groups=cognito_groups_strategy(),
-    )
-    @settings(max_examples=50)
-    def test_tenant_access_enforcement(self, requested, groups):
-        user_channels = resolve_channels(groups)
-        result = validate_channel_access(requested, user_channels)
-
-        if requested in user_channels:
-            assert result is None
-        else:
-            assert result is not None
-            assert result["statusCode"] == 403
 
 
 # =============================================================================

@@ -1,13 +1,16 @@
 """
-GET /products — Channel-filtered product listing for webshop buyers.
+GET /products — Event-filtered product listing for webshop buyers.
 
-Returns active parent products filtered by the requested channel parameter,
-validated against the user's Cognito group claims.
+Returns active parent products filtered by event_id parameter.
+Products with event_id=null are webshop products, products with a specific
+event_id are event-linked products.
 
 Query Parameters:
-    channel (required): Comma-separated channel values (e.g. "h-dcn" or "h-dcn,presmeet")
+    event_id (optional): Filter by event_id. Use "null" for webshop products,
+                         or a specific event_id for event-linked products.
+                         If omitted, returns all accessible products.
 
-Requirements: 7.1–7.7, 2.1–2.3
+Requirements: 7.1–7.7, 2.1–2.3, 12.2
 """
 
 import json
@@ -25,7 +28,6 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.channel_resolver import resolve_channels, validate_channel_access
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -50,47 +52,36 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Derive accessible channels from Cognito group claims.
-        # Channel resolution IS the access control for this endpoint:
-        # users without any qualifying role get an empty channel set → 403.
-        user_channels = resolve_channels(user_roles)
+        # Access control: user must have at least one qualifying role
+        has_webshop_access = 'hdcnLeden' in user_roles
+        has_presmeet_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All'))
 
-        # Get requested channel from query parameters
+        if not has_webshop_access and not has_presmeet_access:
+            return create_error_response(403, 'No product access',
+                details={'error': 'access_denied',
+                         'details': {'message': 'No qualifying role for product access'}})
+
+        # Get event_id filter from query parameters
         query_params = event.get('queryStringParameters') or {}
-        requested_channel = query_params.get('channel')
-
-        # If no channel parameter provided, use all user channels
-        if not requested_channel:
-            if not user_channels:
-                return create_error_response(403, 'No channel access',
-                    details={'error': 'channel_access_denied',
-                             'details': {'requested_channel': '',
-                                         'allowed_channels': []}})
-            requested_channel = ','.join(sorted(user_channels))
-
-        # Validate requested channel against user access
-        access_error = validate_channel_access(requested_channel, user_channels)
-        if access_error:
-            return access_error
-
-        # Parse the validated channel values
-        channels = [t.strip() for t in requested_channel.split(',') if t.strip()]
+        requested_event_id = query_params.get('event_id')
 
         log_successful_access(user_email, user_roles, 'get_products')
 
-        # Build filter: is_parent=true, active=true, channel in requested channels
-        if len(channels) == 1:
-            filter_expr = (
-                Attr('is_parent').eq(True) &
-                Attr('active').eq(True) &
-                Attr('channel').eq(channels[0])
-            )
-        else:
-            filter_expr = (
-                Attr('is_parent').eq(True) &
-                Attr('active').eq(True) &
-                Attr('channel').is_in(channels)
-            )
+        # Build filter: is_parent=true, active=true, optionally filtered by event_id
+        filter_expr = (
+            Attr('is_parent').eq(True) &
+            Attr('active').eq(True)
+        )
+
+        if requested_event_id is not None:
+            if requested_event_id == 'null' or requested_event_id == '':
+                # Webshop products: event_id is null or not set
+                filter_expr = filter_expr & (
+                    Attr('event_id').not_exists() | Attr('event_id').eq(None)
+                )
+            else:
+                # Event-linked products: filter by specific event_id
+                filter_expr = filter_expr & Attr('event_id').eq(requested_event_id)
 
         # Scan with filter
         response = table.scan(FilterExpression=filter_expr)
@@ -112,7 +103,7 @@ def lambda_handler(event, context):
                 'name': product.get('name'),
                 'description': product.get('description'),
                 'price': product.get('price'),
-                'channel': product.get('channel'),
+                'event_id': product.get('event_id'),
                 'groep': product.get('groep'),
                 'subgroep': product.get('subgroep'),
                 'images': product.get('images', []),
@@ -129,7 +120,7 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'products': result,
                 'total_count': len(result),
-                'channels': channels,
+                'event_id': requested_event_id,
             }, default=str)
         }
 

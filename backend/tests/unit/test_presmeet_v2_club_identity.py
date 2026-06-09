@@ -343,7 +343,6 @@ class TestProperty13ClubAssignmentUniqueness:
             'email': email,
             'status': 'presmeet',
             'lidmaatschap': 'overig',
-            'tenant': 'presmeet',
         }
         if club_id:
             item['club_id'] = club_id

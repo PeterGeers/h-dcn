@@ -75,7 +75,7 @@ _cart_item_strategy = st.fixed_dictionaries({
 _order_strategy = st.fixed_dictionaries({
     'order_id': st.uuids().map(str),
     'source': st.just('presmeet'),
-    'tenant': st.just('presmeet'),
+    'event_id': st.just('evt-presmeet-2025'),
     'club_id': st.text(min_size=3, max_size=15, alphabet=st.characters(whitelist_categories=('L', 'Nd'))),
     'club_name': _club_name_strategy,
     'status': _status_strategy,

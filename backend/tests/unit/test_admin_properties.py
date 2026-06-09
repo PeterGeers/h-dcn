@@ -15,10 +15,11 @@ from hypothesis import given, settings, assume, note
 from hypothesis import strategies as st
 
 # Add the handler directory to sys.path so we can import from handler.shared.*
+# Insert AFTER the auth layer path (which conftest.py puts at position 0)
 _backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _handler_dir = os.path.join(_backend_dir, "handler")
 if _handler_dir not in sys.path:
-    sys.path.insert(0, _handler_dir)
+    sys.path.append(_handler_dir)
 
 from shared.order_state_machine import (
     ORDERED_STATES,
@@ -300,10 +301,9 @@ class TestProperty10StockReservationTargetsVariants:
             max_size=10,
         ),
         order_id=st.from_regex(r'ord_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
     )
     @settings(max_examples=50)
-    def test_reserve_stock_calls_update_on_variant_ids(self, items: list, order_id: str, tenant: str):
+    def test_reserve_stock_calls_update_on_variant_ids(self, items: list, order_id: str):
         """
         **Validates: Requirements 4.15, 3.1, 3.8**
 
@@ -313,7 +313,7 @@ class TestProperty10StockReservationTargetsVariants:
         mock_producten_table = MagicMock()
         mock_movements_table = MagicMock()
 
-        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
+        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, 'webshop')
 
         # Verify update_item was called exactly once per item
         assert mock_producten_table.update_item.call_count == len(items)
@@ -337,10 +337,9 @@ class TestProperty10StockReservationTargetsVariants:
             max_size=5,
         ),
         order_id=st.from_regex(r'ord_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
     )
     @settings(max_examples=50)
-    def test_reserve_stock_never_targets_parent_product(self, items: list, order_id: str, tenant: str):
+    def test_reserve_stock_never_targets_parent_product(self, items: list, order_id: str):
         """
         **Validates: Requirements 4.15, 3.1, 3.8**
 
@@ -349,7 +348,7 @@ class TestProperty10StockReservationTargetsVariants:
         mock_producten_table = MagicMock()
         mock_movements_table = MagicMock()
 
-        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
+        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, 'webshop')
 
         for call_args in mock_producten_table.update_item.call_args_list:
             key = call_args[1]['Key']
@@ -377,7 +376,6 @@ class TestProperty18InboundStockMovementConsistency:
 
     @given(
         variant_id=st.from_regex(r'var_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
         quantity=st.integers(min_value=1, max_value=10000),
         price_per_unit=st.floats(min_value=0.01, max_value=99999.99, allow_nan=False, allow_infinity=False),
         supplier_name=st.text(min_size=1, max_size=100, alphabet=st.characters(whitelist_categories=('L', 'N', 'Zs'))),
@@ -386,7 +384,7 @@ class TestProperty18InboundStockMovementConsistency:
     )
     @settings(max_examples=50)
     def test_inbound_movement_fields_correct(
-        self, variant_id, tenant, quantity, price_per_unit, supplier_name, recorded_by, reference
+        self, variant_id, quantity, price_per_unit, supplier_name, recorded_by, reference
     ):
         """
         **Validates: Requirements 9.3, 9.4**
@@ -397,7 +395,6 @@ class TestProperty18InboundStockMovementConsistency:
 
         movement = create_inbound_movement(
             variant_id=variant_id,
-            channel=tenant,
             quantity=quantity,
             purchase_price_per_unit=price_per_unit,
             supplier_name=supplier_name,
@@ -417,9 +414,6 @@ class TestProperty18InboundStockMovementConsistency:
 
         # Verify variant_id matches
         assert movement['variant_id'] == variant_id
-
-        # Verify channel matches
-        assert movement['channel'] == tenant
 
         # Verify quantity is positive
         assert movement['quantity'] == quantity
@@ -456,10 +450,9 @@ class TestProperty19SaleMovementAutoCreation:
             max_size=10,
         ),
         order_id=st.from_regex(r'ord_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
     )
     @settings(max_examples=50)
-    def test_sale_movements_created_per_line_item(self, items: list, order_id: str, tenant: str):
+    def test_sale_movements_created_per_line_item(self, items: list, order_id: str):
         """
         **Validates: Requirements 9.5**
 
@@ -468,7 +461,7 @@ class TestProperty19SaleMovementAutoCreation:
         mock_producten_table = MagicMock()
         mock_movements_table = MagicMock()
 
-        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
+        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, 'webshop')
 
         # Verify exactly one put_item call per line item
         assert mock_movements_table.put_item.call_count == len(items), (
@@ -689,23 +682,21 @@ class TestProperty16DefaultVariantAutoCreationAndRemoval:
 
     @given(
         parent_id=st.from_regex(r'prod_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
     )
     @settings(max_examples=50)
-    def test_default_variant_has_correct_fields(self, parent_id: str, tenant: str):
+    def test_default_variant_has_correct_fields(self, parent_id: str):
         """
         **Validates: Requirements 2.5, 3.1, 3.7**
 
         create_default_variant produces correct default values.
         """
-        variant = create_default_variant(parent_id, tenant)
+        variant = create_default_variant(parent_id)
 
         assert variant['variant_attributes'] == {}
         assert variant['stock'] == 0
         assert variant['sold_count'] == 0
         assert variant['allow_oversell'] is False
         assert variant['parent_id'] == parent_id
-        assert variant['channel'] == tenant
         assert variant['is_parent'] is False
 
         note(f"Default variant for {parent_id}: product_id={variant['product_id']}")
@@ -870,29 +861,29 @@ class TestProperty15OversellControlPerVariant:
 
 
 # =============================================================================
-# Property 2: Tenant Filter Correctness (Task 21.1)
+# Property 2: Event_ID Filter Correctness (Task 21.1)
 # =============================================================================
 
 
-def filter_records_by_tenant(records: list, tenant_filter: str) -> list:
+def filter_records_by_event_id(records: list, event_id_filter: str) -> list:
     """
-    Pure filter function that simulates tenant filtering logic.
+    Pure filter function that simulates event_id filtering logic.
 
-    When tenant_filter is "all" or empty, all records are returned.
-    Otherwise, only records whose 'tenant' field matches the filter are returned.
+    When event_id_filter is "all" or empty, all records are returned.
+    Otherwise, only records whose 'event_id' field matches the filter are returned.
     """
-    if not tenant_filter or tenant_filter == "all":
+    if not event_id_filter or event_id_filter == "all":
         return records
-    return [r for r in records if r.get('tenant') == tenant_filter]
+    return [r for r in records if r.get('event_id') == event_id_filter]
 
 
-class TestProperty2TenantFilterCorrectness:
+class TestProperty2EventIdFilterCorrectness:
     """
-    # Feature: admin-product-management, Property 2: Tenant Filter Correctness
+    # Feature: admin-product-management, Property 2: Event_ID Filter Correctness
 
     **Validates: Requirements 2.3, 4.4, 5.7, 8.3, 8.4**
 
-    For any collection of records with a `tenant` field and any selected filter
+    For any collection of records with an `event_id` field and any selected filter
     value, the filtered result contains only records matching the filter. When
     "all" is selected, all records are returned.
     """
@@ -900,50 +891,50 @@ class TestProperty2TenantFilterCorrectness:
     @given(
         records=st.lists(
             st.fixed_dictionaries({
-                'tenant': st.sampled_from(['presmeet', 'h-dcn']),
+                'event_id': st.sampled_from(['evt-presmeet-2027', None]),
                 'id': st.from_regex(r'[a-z]{3}_[a-z0-9]{6}', fullmatch=True),
             }),
             min_size=0,
             max_size=30,
         ),
-        tenant_filter=st.sampled_from(['presmeet', 'h-dcn']),
+        event_id_filter=st.sampled_from(['evt-presmeet-2027', None]),
     )
     @settings(max_examples=50)
-    def test_filtered_result_contains_only_matching_records(self, records: list, tenant_filter: str):
+    def test_filtered_result_contains_only_matching_records(self, records: list, event_id_filter: str):
         """
         **Validates: Requirements 2.3, 4.4, 5.7, 8.3, 8.4**
 
-        When a specific tenant filter is applied, all returned records have
-        a tenant field equal to the filter value.
+        When a specific event_id filter is applied, all returned records have
+        an event_id field equal to the filter value.
         """
-        result = filter_records_by_tenant(records, tenant_filter)
+        result = filter_records_by_event_id(records, event_id_filter)
 
         for record in result:
-            note(f"Record tenant={record['tenant']}, filter={tenant_filter}")
-            assert record['tenant'] == tenant_filter, (
-                f"Record with tenant={record['tenant']} found in results "
-                f"when filter was '{tenant_filter}'"
+            note(f"Record event_id={record['event_id']}, filter={event_id_filter}")
+            assert record['event_id'] == event_id_filter, (
+                f"Record with event_id={record['event_id']} found in results "
+                f"when filter was '{event_id_filter}'"
             )
 
     @given(
         records=st.lists(
             st.fixed_dictionaries({
-                'tenant': st.sampled_from(['presmeet', 'h-dcn']),
+                'event_id': st.sampled_from(['evt-presmeet-2027', None]),
                 'id': st.from_regex(r'[a-z]{3}_[a-z0-9]{6}', fullmatch=True),
             }),
             min_size=0,
             max_size=30,
         ),
-        tenant_filter=st.sampled_from(['all', '']),
+        event_id_filter=st.sampled_from(['all', '']),
     )
     @settings(max_examples=50)
-    def test_all_filter_returns_all_records(self, records: list, tenant_filter: str):
+    def test_all_filter_returns_all_records(self, records: list, event_id_filter: str):
         """
         **Validates: Requirements 2.3, 4.4, 5.7, 8.3, 8.4**
 
         When "all" or empty string is selected, all records are returned unchanged.
         """
-        result = filter_records_by_tenant(records, tenant_filter)
+        result = filter_records_by_event_id(records, event_id_filter)
 
         note(f"Input count={len(records)}, output count={len(result)}")
         assert len(result) == len(records)
@@ -952,26 +943,26 @@ class TestProperty2TenantFilterCorrectness:
     @given(
         records=st.lists(
             st.fixed_dictionaries({
-                'tenant': st.sampled_from(['presmeet', 'h-dcn']),
+                'event_id': st.sampled_from(['evt-presmeet-2027', None]),
                 'id': st.from_regex(r'[a-z]{3}_[a-z0-9]{6}', fullmatch=True),
             }),
             min_size=0,
             max_size=30,
         ),
-        tenant_filter=st.sampled_from(['presmeet', 'h-dcn']),
+        event_id_filter=st.sampled_from(['evt-presmeet-2027', None]),
     )
     @settings(max_examples=50)
-    def test_filtered_count_matches_matching_records(self, records: list, tenant_filter: str):
+    def test_filtered_count_matches_matching_records(self, records: list, event_id_filter: str):
         """
         **Validates: Requirements 2.3, 4.4, 5.7, 8.3, 8.4**
 
         The number of filtered results equals the number of records
-        whose tenant field matches the filter.
+        whose event_id field matches the filter.
         """
-        result = filter_records_by_tenant(records, tenant_filter)
-        expected_count = sum(1 for r in records if r['tenant'] == tenant_filter)
+        result = filter_records_by_event_id(records, event_id_filter)
+        expected_count = sum(1 for r in records if r['event_id'] == event_id_filter)
 
-        note(f"Filter={tenant_filter}, expected={expected_count}, got={len(result)}")
+        note(f"Filter={event_id_filter}, expected={expected_count}, got={len(result)}")
         assert len(result) == expected_count
 
 
@@ -1072,123 +1063,4 @@ class TestProperty17CartAlwaysLinksToVariant:
             )
 
 
-# =============================================================================
-# Property 20: Stock Movement Tenant Consistency (Task 21.3)
-# =============================================================================
 
-
-class TestProperty20StockMovementTenantConsistency:
-    """
-    # Feature: admin-product-management, Property 20: Stock Movement Tenant Consistency
-
-    **Validates: Requirements 9.3, 9.8**
-
-    For any stock movement record, its `tenant` field equals the `tenant` field
-    of the variant it references. Both create_inbound_movement and reserve_stock
-    use the provided tenant for all movement records.
-    """
-
-    @given(
-        variant_id=st.from_regex(r'var_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
-        quantity=st.integers(min_value=1, max_value=1000),
-        price_per_unit=st.floats(min_value=0.01, max_value=9999.99, allow_nan=False, allow_infinity=False),
-        supplier_name=st.text(min_size=1, max_size=50, alphabet=st.characters(whitelist_categories=('L', 'N', 'Zs'))),
-        recorded_by=st.from_regex(r'[a-z]+@[a-z]+\.[a-z]{2,3}', fullmatch=True),
-    )
-    @settings(max_examples=50)
-    def test_inbound_movement_uses_provided_tenant(
-        self, variant_id, tenant, quantity, price_per_unit, supplier_name, recorded_by
-    ):
-        """
-        **Validates: Requirements 9.3, 9.8**
-
-        create_inbound_movement stores the provided channel value in the
-        movement record, matching the variant's channel.
-        """
-        mock_movements_table = MagicMock()
-
-        movement = create_inbound_movement(
-            variant_id=variant_id,
-            channel=tenant,
-            quantity=quantity,
-            purchase_price_per_unit=price_per_unit,
-            supplier_name=supplier_name,
-            recorded_by=recorded_by,
-            reference=None,
-            movements_table=mock_movements_table,
-        )
-
-        note(f"Movement channel={movement['channel']}, expected={tenant}")
-        assert movement['channel'] == tenant, (
-            f"Inbound movement channel mismatch: got {movement['channel']}, expected {tenant}"
-        )
-
-    @given(
-        items=st.lists(
-            st.fixed_dictionaries({
-                'variant_id': st.from_regex(r'var_[a-z0-9]{6,12}', fullmatch=True),
-                'quantity': st.integers(min_value=1, max_value=50),
-            }),
-            min_size=1,
-            max_size=10,
-        ),
-        order_id=st.from_regex(r'ord_[a-z0-9]{6,12}', fullmatch=True),
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
-    )
-    @settings(max_examples=50)
-    def test_reserve_stock_movements_use_provided_tenant(self, items: list, order_id: str, tenant: str):
-        """
-        **Validates: Requirements 9.3, 9.8**
-
-        reserve_stock creates sale movement records with the provided channel
-        value for all line items.
-        """
-        mock_producten_table = MagicMock()
-        mock_movements_table = MagicMock()
-
-        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
-
-        # Every put_item call should have the correct channel
-        for put_call in mock_movements_table.put_item.call_args_list:
-            item_record = put_call[1]['Item'] if 'Item' in put_call[1] else put_call[0][0]
-            note(f"Sale movement channel={item_record['channel']}, expected={tenant}")
-            assert item_record['channel'] == tenant, (
-                f"Sale movement channel mismatch: got {item_record['channel']}, expected {tenant}"
-            )
-
-    @given(
-        tenant=st.sampled_from(['presmeet', 'h-dcn']),
-        items=st.lists(
-            st.fixed_dictionaries({
-                'variant_id': st.from_regex(r'var_[a-z0-9]{6,12}', fullmatch=True),
-                'quantity': st.integers(min_value=1, max_value=20),
-            }),
-            min_size=1,
-            max_size=5,
-        ),
-        order_id=st.from_regex(r'ord_[a-z0-9]{6,12}', fullmatch=True),
-    )
-    @settings(max_examples=50)
-    def test_all_movements_share_same_tenant(self, tenant: str, items: list, order_id: str):
-        """
-        **Validates: Requirements 9.3, 9.8**
-
-        All movement records created in a single reserve_stock call share
-        the same channel value — ensuring consistency across the batch.
-        """
-        mock_producten_table = MagicMock()
-        mock_movements_table = MagicMock()
-
-        reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
-
-        channels_seen = set()
-        for put_call in mock_movements_table.put_item.call_args_list:
-            item_record = put_call[1]['Item'] if 'Item' in put_call[1] else put_call[0][0]
-            channels_seen.add(item_record['channel'])
-
-        note(f"Channels seen: {channels_seen}")
-        assert len(channels_seen) == 1, (
-            f"Expected all movements to have same channel, got: {channels_seen}"
-        )
-        assert tenant in channels_seen

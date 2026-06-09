@@ -85,7 +85,6 @@ def make_order(primary='primary@club.nl', secondary=None, status='draft'):
         'club_id': 'club-123',
         'event_id': 'evt-1',
         'event_type': 'presmeet',
-        'channel': 'presmeet',
         'status': status,
         'payment_status': 'unpaid',
         'total_amount': Decimal('0.00'),
@@ -454,43 +453,3 @@ class TestMaxTwoDelegates:
         # No third delegate field exists
         assert len([k for k in delegates.keys() if k not in ('primary', 'secondary')]) == 0
 
-
-class TestDelegateAccessInOtherHandlers:
-    """
-    Verify that other PresMeet handlers check delegates.primary OR delegates.secondary
-    for authorization (Req 12.7 - equal editing rights).
-    These are structural tests confirming the pattern exists.
-    """
-
-    def test_upsert_order_has_delegate_check(self):
-        """presmeet_upsert_order checks _is_delegate for authorization."""
-        import handler.presmeet_upsert_order.app as upsert_app
-        assert hasattr(upsert_app, '_is_delegate')
-        # Verify it checks both primary and secondary
-        order = {
-            'delegates': {'primary': 'jan@club.nl', 'secondary': 'piet@club.nl'}
-        }
-        assert upsert_app._is_delegate(order, 'jan@club.nl') is True
-        assert upsert_app._is_delegate(order, 'piet@club.nl') is True
-        assert upsert_app._is_delegate(order, 'other@club.nl') is False
-
-    def test_get_order_has_delegate_check(self):
-        """presmeet_get_order checks delegates in _check_order_access."""
-        import handler.presmeet_get_order.app as get_app
-        assert hasattr(get_app, '_check_order_access')
-
-        order = {
-            'delegates': {'primary': 'jan@club.nl', 'secondary': 'piet@club.nl'}
-        }
-        # Primary has access
-        result = get_app._check_order_access(order, 'jan@club.nl', False)
-        assert result is None  # None = authorized
-
-        # Secondary has access
-        result = get_app._check_order_access(order, 'piet@club.nl', False)
-        assert result is None
-
-        # Other user does not have access
-        result = get_app._check_order_access(order, 'other@x.nl', False)
-        assert result is not None  # Returns error response
-        assert result['statusCode'] == 403

@@ -86,7 +86,6 @@ function createOrder(overrides: Partial<Order> = {}): Order {
     club_id: 'club-abc',
     event_id: 'event-456',
     event_type: 'presmeet',
-    channel: 'presmeet',
     status: 'submitted',
     payment_status: 'unpaid',
     total_amount: 450.0,

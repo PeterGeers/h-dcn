@@ -1,9 +1,9 @@
 """
 Unit tests for the get_variants handler.
 
-Tests fetching variant records for a parent product via the
-parent_id-index GSI, tenant access validation, and error cases.
-(Requirements 6.2, 15.3)
+Tests fetching variant records for a parent product via scan with
+FilterExpression on parent_id, and error cases.
+(Requirements 4.4, 12.3)
 """
 
 import json
@@ -21,11 +21,11 @@ _layers_path = os.path.abspath(os.path.join(
 if _layers_path not in sys.path:
     sys.path.insert(0, _layers_path)
 
-# Add handler to path
+# Add handler to path (after auth layer to avoid shadowing shared.*)
 _handler_path = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', 'handler'))
 if _handler_path not in sys.path:
-    sys.path.insert(0, _handler_path)
+    sys.path.append(_handler_path)
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def aws_env():
 
 @pytest.fixture
 def dynamodb_table(aws_env):
-    """Create mocked DynamoDB Producten table with parent_id-index GSI."""
+    """Create mocked DynamoDB Producten table."""
     with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 
@@ -50,16 +50,6 @@ def dynamodb_table(aws_env):
             KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[
                 {'AttributeName': 'product_id', 'AttributeType': 'S'},
-                {'AttributeName': 'parent_id', 'AttributeType': 'S'},
-            ],
-            GlobalSecondaryIndexes=[
-                {
-                    'IndexName': 'parent_id-index',
-                    'KeySchema': [
-                        {'AttributeName': 'parent_id', 'KeyType': 'HASH'},
-                    ],
-                    'Projection': {'ProjectionType': 'ALL'},
-                }
             ],
             BillingMode='PAY_PER_REQUEST'
         )
@@ -74,11 +64,10 @@ def setup_data(dynamodb_table):
     dynamodb_table.put_item(Item={
         'product_id': 'prod_shirt01',
         'is_parent': True,
-        'parent_id': 'NONE',
-        'tenant': 'h-dcn',
         'name': 'Club T-shirt',
         'price': Decimal('25.00'),
         'active': True,
+        'event_id': None,
         'variant_schema': {'Maat': ['S', 'M', 'L']},
     })
 
@@ -87,7 +76,6 @@ def setup_data(dynamodb_table):
         'product_id': 'var_prod_shirt01_s',
         'is_parent': False,
         'parent_id': 'prod_shirt01',
-        'tenant': 'h-dcn',
         'name': 'Club T-shirt - S',
         'variant_attributes': {'Maat': 'S'},
         'price': Decimal('25.00'),
@@ -101,7 +89,6 @@ def setup_data(dynamodb_table):
         'product_id': 'var_prod_shirt01_m',
         'is_parent': False,
         'parent_id': 'prod_shirt01',
-        'tenant': 'h-dcn',
         'name': 'Club T-shirt - M',
         'variant_attributes': {'Maat': 'M'},
         'price': Decimal('25.00'),
@@ -115,7 +102,6 @@ def setup_data(dynamodb_table):
         'product_id': 'var_prod_shirt01_l',
         'is_parent': False,
         'parent_id': 'prod_shirt01',
-        'tenant': 'h-dcn',
         'name': 'Club T-shirt - L',
         'variant_attributes': {'Maat': 'L'},
         'price': Decimal('30.00'),
@@ -125,21 +111,20 @@ def setup_data(dynamodb_table):
         'active': False,
     })
 
-    # Create a presmeet product (should not be accessible to h-dcn only users)
+    # Create another parent product without variants
     dynamodb_table.put_item(Item={
-        'product_id': 'prod_presmeet01',
+        'product_id': 'prod_empty',
         'is_parent': True,
-        'parent_id': 'NONE',
-        'tenant': 'presmeet',
-        'name': 'PresMeet Ticket',
-        'price': Decimal('100.00'),
+        'name': 'Empty Product',
+        'price': Decimal('10.00'),
         'active': True,
+        'event_id': None,
     })
 
     return dynamodb_table
 
 
-def _make_event(product_id, user_roles=None):
+def _make_event(product_id):
     """Build a mock API Gateway event."""
     return {
         'httpMethod': 'GET',
@@ -205,17 +190,6 @@ class TestGetVariantsSuccess:
            return_value=('buyer@h-dcn.nl', ['hdcnLeden'], None))
     def test_product_with_no_variants(self, mock_auth, mock_log, setup_data):
         """Should return empty list when no variants exist for parent."""
-        # Create a parent product without variants
-        setup_data.put_item(Item={
-            'product_id': 'prod_empty',
-            'is_parent': True,
-            'parent_id': 'NONE',
-            'tenant': 'h-dcn',
-            'name': 'Empty Product',
-            'price': Decimal('10.00'),
-            'active': True,
-        })
-
         import get_variants.app as handler_module
         handler_module.table = setup_data
 
@@ -228,43 +202,6 @@ class TestGetVariantsSuccess:
         body = json.loads(response['body'])
         assert body['variants'] == []
         assert body['total_count'] == 0
-
-
-class TestGetVariantsTenantAccess:
-    """Tests for tenant access validation."""
-
-    @patch('get_variants.app.log_successful_access')
-    @patch('get_variants.app.extract_user_credentials',
-           return_value=('buyer@h-dcn.nl', ['hdcnLeden'], None))
-    def test_tenant_access_denied(self, mock_auth, mock_log, setup_data):
-        """Should return 403 when user lacks access to product's tenant."""
-        import get_variants.app as handler_module
-        handler_module.table = setup_data
-
-        from get_variants.app import lambda_handler
-
-        # hdcnLeden user trying to access presmeet product
-        event = _make_event('prod_presmeet01')
-        response = lambda_handler(event, {})
-
-        assert response['statusCode'] == 403
-        body = json.loads(response['body'])
-        assert body['error'] == 'tenant_access_denied'
-
-    @patch('get_variants.app.log_successful_access')
-    @patch('get_variants.app.extract_user_credentials',
-           return_value=('admin@h-dcn.nl', ['hdcnLeden', 'Regio_Pressmeet'], None))
-    def test_dual_tenant_access_allowed(self, mock_auth, mock_log, setup_data):
-        """User with both tenant roles can access presmeet products."""
-        import get_variants.app as handler_module
-        handler_module.table = setup_data
-
-        from get_variants.app import lambda_handler
-
-        event = _make_event('prod_presmeet01')
-        response = lambda_handler(event, {})
-
-        assert response['statusCode'] == 200
 
 
 class TestGetVariantsErrors:

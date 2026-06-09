@@ -10,19 +10,33 @@ import {
   Box
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { VariantSchema } from '../types/unifiedProduct.types';
 
 interface Product {
-  id: string;
-  naam: string;
+  product_id: string;
+  id?: string;
+  name?: string;
+  naam?: string;
   groep?: string;
   subgroep?: string;
-  prijs: number | string;
-  opties?: string;
+  price?: number;
+  prijs?: number | string;
+  variant_schema?: VariantSchema;
 }
 
 interface ProductTableProps {
   products: Product[];
   onProductSelect: (product: Product) => void;
+}
+
+/** Format variant schema for display in the table */
+function formatVariantSummary(schema?: VariantSchema): string {
+  if (!schema || Object.keys(schema).length === 0) {
+    return 'Standaard';
+  }
+  return Object.entries(schema)
+    .map(([axis, values]) => `${axis}: ${values.join(', ')}`)
+    .join(' | ');
 }
 
 const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }) => {
@@ -47,33 +61,37 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
           </Tr>
         </Thead>
         <Tbody>
-          {products.map((product, index) => (
-            <Tr
-              key={product.id}
-              cursor="pointer"
-              _hover={{ bg: 'orange.500', color: 'white' }}
-              onClick={() => onProductSelect(product)}
-              color="white"
-            >
-              <Td fontWeight="medium" fontSize={{ base: 'xs', md: 'sm' }}>
-                {product.naam}
-              </Td>
-              <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                <Text isTruncated maxW="100px">{product.groep}</Text>
-              </Td>
-              <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
-                <Text isTruncated maxW="100px">{product.subgroep}</Text>
-              </Td>
-              <Td fontSize={{ base: 'xs', md: 'sm' }} isNumeric>
-                €{product.prijs ? Number(product.prijs).toFixed(2) : '0.00'}
-              </Td>
-              <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                <Box maxW="150px">
-                  <Text noOfLines={2}>{product.opties}</Text>
-                </Box>
-              </Td>
-            </Tr>
-          ))}
+          {products.map((product) => {
+            const displayName = product.name || product.naam || '';
+            const displayPrice = product.price ?? product.prijs;
+            return (
+              <Tr
+                key={product.product_id || product.id}
+                cursor="pointer"
+                _hover={{ bg: 'orange.500', color: 'white' }}
+                onClick={() => onProductSelect(product)}
+                color="white"
+              >
+                <Td fontWeight="medium" fontSize={{ base: 'xs', md: 'sm' }}>
+                  {displayName}
+                </Td>
+                <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
+                  <Text isTruncated maxW="100px">{product.groep}</Text>
+                </Td>
+                <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
+                  <Text isTruncated maxW="100px">{product.subgroep}</Text>
+                </Td>
+                <Td fontSize={{ base: 'xs', md: 'sm' }} isNumeric>
+                  €{displayPrice ? Number(displayPrice).toFixed(2) : '0.00'}
+                </Td>
+                <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
+                  <Box maxW="150px">
+                    <Text noOfLines={2}>{formatVariantSummary(product.variant_schema)}</Text>
+                  </Box>
+                </Td>
+              </Tr>
+            );
+          })}
         </Tbody>
       </Table>
     </Box>

@@ -49,7 +49,6 @@ export interface Order {
   club_id: string;
   event_id: string;
   event_type: string;
-  channel: string;
   status: OrderStatus;
   payment_status: PaymentStatus;
   total_amount: number;
@@ -117,7 +116,7 @@ export interface PurchaseRules {
 export interface Product {
   product_id: string;
   name: string;
-  channel: string;
+  event_id?: string | null;
   event_type: string;
   price: number;
   order_item_fields: OrderItemField[];

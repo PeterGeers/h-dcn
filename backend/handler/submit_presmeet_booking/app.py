@@ -16,7 +16,7 @@ try:
         log_successful_access,
     )
     from shared.club_identity import get_club_id, has_presmeet_access
-    from shared.presmeet_validation import validate_order_submission
+    from shared.presmeet_validation import validate_submission as validate_order_submission
 
     _IMPORTS_AVAILABLE = True
 except ImportError as e:
@@ -136,12 +136,12 @@ def lambda_handler(event, context):
             )
             config_items.extend(config_response["Items"])
 
-        # Build config dict keyed by product_type
-        config = {}
+        # Build products dict keyed by product_id for validation
+        products = {}
         for item in config_items:
-            product_type = item.get("product_type")
-            if product_type:
-                config[product_type] = item
+            product_id = item.get("product_id")
+            if product_id:
+                products[product_id] = item
 
         # Load event from Events table
         events_response = events_table.scan(
@@ -159,8 +159,22 @@ def lambda_handler(event, context):
         # Get the active event (first match, or empty dict)
         presmeet_event = event_items[0] if event_items else {}
 
+        # Load all event orders for constraint validation
+        all_event_orders = []
+        if presmeet_event.get("event_id"):
+            all_orders_resp = orders_table.scan(
+                FilterExpression=Attr("source").eq("presmeet")
+            )
+            all_event_orders = all_orders_resp["Items"]
+            while "LastEvaluatedKey" in all_orders_resp:
+                all_orders_resp = orders_table.scan(
+                    FilterExpression=Attr("source").eq("presmeet"),
+                    ExclusiveStartKey=all_orders_resp["LastEvaluatedKey"],
+                )
+                all_event_orders.extend(all_orders_resp["Items"])
+
         # Run full submission validation
-        errors = validate_order_submission(order, config, presmeet_event)
+        errors = validate_order_submission(order, presmeet_event, products, all_event_orders)
 
         # If validation fails, return 400 with error list, keep order in "draft"
         if errors:

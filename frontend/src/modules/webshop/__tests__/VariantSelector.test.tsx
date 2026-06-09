@@ -61,7 +61,6 @@ function createVariant(
   return {
     product_id: `var_${attrStr}`,
     parent_id: 'prod_test',
-    channel: 'h-dcn',
     name: `Test - ${attrStr}`,
     variant_attributes: attributes,
     price: 25.0,

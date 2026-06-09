@@ -90,9 +90,8 @@ def lambda_handler(event, context):
         # Reserve stock if transitioning to 'paid'
         if target_status == 'paid':
             order_items = order.get('items', [])
-            tenant = order.get('tenant', 'h-dcn')
             if order_items:
-                reserve_stock(order_items, producten_table, movements_table, order_id, tenant)
+                reserve_stock(order_items, producten_table, movements_table, order_id)
 
         # Update order with optimistic locking on current status
         try:

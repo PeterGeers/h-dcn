@@ -48,14 +48,19 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'admin_get_payments')
 
-        # Get optional channel filter from query params
+        # Get optional event_id filter from query params
         query_params = event.get('queryStringParameters') or {}
-        channel_filter = query_params.get('channel')
+        event_id_filter = query_params.get('event_id')
 
-        # Scan orders with optional channel filter
+        # Scan orders with optional event_id filter
         scan_kwargs = {}
-        if channel_filter:
-            scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('channel').eq(channel_filter)
+        if event_id_filter == 'null':
+            scan_kwargs['FilterExpression'] = (
+                boto3.dynamodb.conditions.Attr('event_id').not_exists()
+                | boto3.dynamodb.conditions.Attr('event_id').eq(None)
+            )
+        elif event_id_filter:
+            scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('event_id').eq(event_id_filter)
 
         response = orders_table.scan(**scan_kwargs)
         orders = response.get('Items', [])
@@ -85,7 +90,7 @@ def lambda_handler(event, context):
 
             order_payments.append({
                 'order_id': order.get('order_id'),
-                'channel': order.get('channel', order.get('tenant')),
+                'event_id': order.get('event_id'),
                 'customer_name': order.get('customer_name', ''),
                 'total_amount': total_amount,
                 'amount_paid': amount_paid,

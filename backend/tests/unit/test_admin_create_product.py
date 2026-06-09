@@ -97,7 +97,7 @@ def test_create_simple_product_with_default_variant(producten_table):
     """Product without variant_schema gets a Default_Variant."""
     import app as handler_module
 
-    event = _make_event({'name': 'Simple Product', 'price': 15, 'tenant': 'h-dcn'})
+    event = _make_event({'name': 'Simple Product', 'price': 15, 'event_id': None})
 
     with _auth_patches():
         response = handler_module.lambda_handler(event, {})
@@ -115,7 +115,7 @@ def test_create_product_with_variant_schema(producten_table):
     event = _make_event({
         'name': 'T-Shirt',
         'price': 25,
-        'tenant': 'h-dcn',
+        'event_id': None,
         'variant_schema': {
             'Maat': ['S', 'M', 'L'],
             'Gender': ['Male', 'Female']
@@ -141,7 +141,7 @@ def test_create_product_with_order_item_fields(producten_table):
     event = _make_event({
         'name': 'Event Ticket',
         'price': 50,
-        'tenant': 'presmeet',
+        'event_id': 'evt-presmeet-2025',
         'order_item_fields': [
             {
                 'id': 'attendee_name',
@@ -169,7 +169,7 @@ def test_create_product_with_purchase_rules(producten_table):
     event = _make_event({
         'name': 'Limited Edition',
         'price': 100,
-        'tenant': 'h-dcn',
+        'event_id': None,
         'purchase_rules': {
             'max_per_order': 2,
             'max_per_member': 1,
@@ -195,7 +195,7 @@ def test_create_product_with_catalog_fields(producten_table):
     event = _make_event({
         'name': 'Club Shirt',
         'price': 30,
-        'tenant': 'h-dcn',
+        'event_id': None,
         'groep': 'Kleding',
         'subgroep': 'T-shirts',
         'images': ['https://s3.example.com/img1.jpg', 'https://s3.example.com/img2.jpg']
@@ -269,7 +269,7 @@ def test_all_three_fields_together(producten_table):
     event = _make_event({
         'name': 'PresMeet Full Product',
         'price': 75,
-        'tenant': 'presmeet',
+        'event_id': 'evt-presmeet-2025',
         'variant_schema': {'Gender': ['Male', 'Female']},
         'order_item_fields': [
             {'id': 'name', 'label': 'Name', 'type': 'text', 'required': True}

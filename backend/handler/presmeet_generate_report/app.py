@@ -226,8 +226,7 @@ def generate_attendees_report(orders):
     for order in orders:
         club_id = order.get('club_id', '')
         for item in order.get('items', []):
-            product_id = item.get('product_id', '')
-            if 'meeting' in product_id.lower() or item.get('product_type', '') == 'meeting_ticket':
+            if _is_product_type(item, 'meeting_ticket', 'meeting'):
                 fields = item.get('item_fields_data', {})
                 attendees.append({
                     'name': fields.get('name', ''),
@@ -245,8 +244,7 @@ def generate_party_report(orders):
     for order in orders:
         club_id = order.get('club_id', '')
         for item in order.get('items', []):
-            product_id = item.get('product_id', '')
-            if 'party' in product_id.lower() or item.get('product_type', '') == 'party_ticket':
+            if _is_product_type(item, 'party_ticket', 'party'):
                 fields = item.get('item_fields_data', {})
                 party_guests.append({
                     'name': fields.get('name', ''),
@@ -264,8 +262,7 @@ def generate_tshirts_report(orders):
     for order in orders:
         club_id = order.get('club_id', '')
         for item in order.get('items', []):
-            product_id = item.get('product_id', '')
-            if 'tshirt' in product_id.lower() or item.get('product_type', '') == 'tshirt':
+            if _is_product_type(item, 'tshirt', 'tshirt'):
                 fields = item.get('item_fields_data', {})
                 tshirts.append({
                     'person_name': fields.get('person_name', ''),
@@ -293,8 +290,7 @@ def _generate_transfer_report(orders, direction):
     for order in orders:
         club_id = order.get('club_id', '')
         for item in order.get('items', []):
-            product_id = item.get('product_id', '')
-            if 'transfer' in product_id.lower() or item.get('product_type', '') == 'airport_transfer':
+            if _is_product_type(item, 'airport_transfer', 'transfer'):
                 variant_id = item.get('variant_id', '')
                 # Variant encodes direction (e.g. "Pickup-AMS", "Dropoff-RTM")
                 if direction.lower() in variant_id.lower():
@@ -355,7 +351,7 @@ def generate_financial_report(orders):
 
 def generate_overview_report(orders):
     """Summary counts per product type + payment status breakdown."""
-    product_counts = {}
+    product_type_counts = {}
     payment_breakdown = {'unpaid': 0, 'partial': 0, 'paid': 0}
     status_breakdown = {'draft': 0, 'submitted': 0, 'locked': 0}
 
@@ -370,14 +366,14 @@ def generate_overview_report(orders):
         if s in status_breakdown:
             status_breakdown[s] += 1
 
-        # Product type counts
+        # Product type counts - use product_type when available, fallback to product_id
         for item in order.get('items', []):
-            product_id = item.get('product_id', 'unknown')
-            product_counts[product_id] = product_counts.get(product_id, 0) + 1
+            key = item.get('product_type') or item.get('product_id', 'unknown')
+            product_type_counts[key] = product_type_counts.get(key, 0) + 1
 
     return {
         'total_orders': len(orders),
-        'product_counts': product_counts,
+        'product_counts': product_type_counts,
         'payment_status_breakdown': payment_breakdown,
         'order_status_breakdown': status_breakdown
     }
@@ -439,6 +435,23 @@ def _get_headers_for_type(report_type):
         'dropoffs': ['flight', 'date', 'time', 'persons', 'club', 'order_id', 'status'],
     }
     return headers_map.get(report_type, [])
+
+
+def _is_product_type(item, product_type_value, fallback_keyword):
+    """Check if an order item matches a product type.
+
+    Uses the `product_type` field as the primary identifier.
+    Falls back to string-matching on `product_id` for backward compatibility
+    with orders that don't have product_type set.
+    """
+    # Primary: use product_type field
+    item_product_type = item.get('product_type', '')
+    if item_product_type:
+        return item_product_type == product_type_value
+
+    # Fallback: string-match on product_id for legacy orders without product_type
+    product_id = item.get('product_id', '')
+    return fallback_keyword in product_id.lower()
 
 
 def _to_int(value):

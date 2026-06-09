@@ -101,17 +101,18 @@ def _lock_single_order(order_id, user_email):
 
 
 def _lock_bulk_orders(body, user_email):
-    """Lock all submitted orders, optionally filtered by channel."""
-    channel_filter = body.get('channel') or body.get('tenant')
+    """Lock all submitted orders, optionally filtered by event_id."""
+    event_id_filter = body.get('event_id')
 
-    # Find all submitted orders (optionally filtered by channel)
+    # Find all submitted orders (optionally filtered by event_id)
     filter_expr = boto3.dynamodb.conditions.Attr('status').eq('submitted')
-    if channel_filter:
-        # Support both 'channel' and legacy 'tenant' field for backward compatibility
+    if event_id_filter == 'null':
         filter_expr = filter_expr & (
-            boto3.dynamodb.conditions.Attr('channel').eq(channel_filter)
-            | boto3.dynamodb.conditions.Attr('tenant').eq(channel_filter)
+            boto3.dynamodb.conditions.Attr('event_id').not_exists()
+            | boto3.dynamodb.conditions.Attr('event_id').eq(None)
         )
+    elif event_id_filter:
+        filter_expr = filter_expr & boto3.dynamodb.conditions.Attr('event_id').eq(event_id_filter)
 
     response = table.scan(FilterExpression=filter_expr)
     submitted_orders = response.get('Items', [])

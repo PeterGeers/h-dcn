@@ -10,20 +10,15 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
-  Tabs,
-  TabList,
-  Tab,
 } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/useAuth';
-import { Tenant } from '../types/unifiedProduct.types';
-import { HDCNGroup } from '../../../types/user';
 
 interface Product {
   groep?: string;
   subgroep?: string;
-  tenant?: Tenant;
+  event_id?: string | null;
   active?: boolean;
 }
 
@@ -46,86 +41,24 @@ interface ProductFilterProps {
   products: Product[];
   selectedFilter: Filter | null;
   onFilterChange: (filter: Filter | null) => void;
-  /** Currently selected tenant for filtering (controlled by parent or internal state) */
-  selectedTenant?: Tenant | null;
-  /** Callback when user switches tenant tab */
-  onTenantChange?: (tenant: Tenant | null) => void;
-}
-
-/**
- * Derive accessible tenants from user's Cognito group claims.
- * - hdcnLeden → 'h-dcn'
- * - Regio_Pressmeet or Regio_All → 'presmeet'
- */
-function resolveTenants(groups: HDCNGroup[]): Tenant[] {
-  const tenants: Set<Tenant> = new Set();
-
-  for (const group of groups) {
-    if (group === 'hdcnLeden') {
-      tenants.add('h-dcn');
-    }
-    if (group === 'Regio_Pressmeet' || group === 'Regio_All') {
-      tenants.add('presmeet');
-    }
-  }
-
-  return Array.from(tenants);
 }
 
 const ProductFilter: React.FC<ProductFilterProps> = ({
   products,
   selectedFilter,
   onFilterChange,
-  selectedTenant: controlledTenant,
-  onTenantChange,
 }) => {
   const { t } = useTranslation('products');
   const { user } = useAuth();
 
-  // Derive accessible tenants from user's Cognito roles
-  const userTenants = useMemo(() => {
-    const groups = user?.groups ?? [];
-    return resolveTenants(groups);
-  }, [user]);
-
-  // Internal tenant state when not controlled by parent
-  const [internalTenant, setInternalTenant] = React.useState<Tenant | null>(null);
-
-  const activeTenant = controlledTenant !== undefined ? controlledTenant : internalTenant;
-
-  const handleTenantChange = useCallback(
-    (tenant: Tenant | null) => {
-      if (onTenantChange) {
-        onTenantChange(tenant);
-      } else {
-        setInternalTenant(tenant);
-      }
-      // Reset filter when tenant changes
-      onFilterChange(null);
-    },
-    [onTenantChange, onFilterChange]
-  );
-
-  // Filter products by user's accessible tenants and optionally active tenant tab
+  // Filter products: only show active webshop products (event_id is null)
   const visibleProducts = useMemo(() => {
-    if (userTenants.length === 0) return [];
-
     return products.filter((product) => {
       // Only show active products (default to true if not specified)
       if (product.active === false) return false;
-
-      // If product has no tenant, include for backward compat with legacy products
-      if (!product.tenant) return true;
-
-      // Product must belong to one of the user's accessible tenants
-      if (!userTenants.includes(product.tenant)) return false;
-
-      // If a specific tenant tab is selected, filter to that tenant
-      if (activeTenant && product.tenant !== activeTenant) return false;
-
       return true;
     });
-  }, [products, userTenants, activeTenant]);
+  }, [products]);
 
   // Build groep/subgroep filter structure from visible products
   const filterStructure = useMemo(() => {
@@ -238,8 +171,8 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
     return t('filter.group', { defaultValue: 'Filter' });
   };
 
-  // No tenant access — show info message
-  if (userTenants.length === 0) {
+  // No user — show info message
+  if (!user) {
     return (
       <Box bg="gray.800" borderRadius="md" mb={4} color="white" w={{ base: 'full', lg: '300px' }}>
         <Alert status="info" bg="gray.700" borderRadius="md" color="white">
@@ -252,47 +185,8 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
     );
   }
 
-  const tenantTabIndex = activeTenant
-    ? userTenants.indexOf(activeTenant)
-    : -1;
-
-  const tenantLabels: Record<Tenant, string> = {
-    'h-dcn': 'H-DCN',
-    'presmeet': 'PresMeet',
-  };
-
   return (
     <Box bg="gray.800" borderRadius="md" mb={4} color="white" w={{ base: 'full', lg: '300px' }}>
-      {/* Tenant tabs — only shown when user has access to multiple tenants */}
-      {userTenants.length > 1 && (
-        <Box px={2} pt={2}>
-          <Tabs
-            variant="soft-rounded"
-            colorScheme="orange"
-            size="sm"
-            index={tenantTabIndex === -1 ? userTenants.length : tenantTabIndex}
-            onChange={(index) => {
-              if (index >= userTenants.length) {
-                handleTenantChange(null);
-              } else {
-                handleTenantChange(userTenants[index]);
-              }
-            }}
-          >
-            <TabList>
-              {userTenants.map((tenant) => (
-                <Tab key={tenant} color="gray.300" _selected={{ color: 'white', bg: 'orange.500' }}>
-                  {tenantLabels[tenant]}
-                </Tab>
-              ))}
-              <Tab color="gray.300" _selected={{ color: 'white', bg: 'orange.500' }}>
-                {t('filter.all', { defaultValue: 'Alles' })}
-              </Tab>
-            </TabList>
-          </Tabs>
-        </Box>
-      )}
-
       {/* Group/subgroup filter */}
       <Button
         onClick={onToggle}

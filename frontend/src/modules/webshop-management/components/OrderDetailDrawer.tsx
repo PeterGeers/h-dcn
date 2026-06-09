@@ -2,13 +2,13 @@
  * OrderDetailDrawer Component
  *
  * Chakra Drawer showing full order details including:
- * - Line items table (product_type, name, attributes, quantity, unit_price)
+ * - Line items table (product_type, name, variant_attributes, quantity, unit_price)
  * - Payment history (amount, date, description, recorded_by)
  * - Status transition history (from → to, timestamp, triggered_by)
  * - State transition controls (Next Status, Lock, Unlock, Lock ALL)
  * - Role-based action gating for Products_Read-only users
  *
- * Validates: Requirements 4.6, 4.7, 4.8, 4.9, 4.10, 4.13, 4.14, 4.17, 7.2
+ * Validates: Requirements 4.6, 4.7, 4.8, 4.9, 4.10, 4.13, 4.14, 4.17, 7.2, 12.6
  */
 
 import React, { useState } from 'react';
@@ -56,7 +56,7 @@ export interface OrderDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderUpdated: () => void;
-  tenant: string;
+  eventFilter: string;
 }
 
 /**
@@ -109,12 +109,22 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
+/**
+ * Format variant_attributes as a readable string (e.g., "Maat: M, Kleur: Zwart")
+ */
+function formatVariantAttributes(attrs?: Record<string, string>): string {
+  if (!attrs || Object.keys(attrs).length === 0) return '—';
+  return Object.entries(attrs)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(', ');
+}
+
 export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   order,
   isOpen,
   onClose,
   onOrderUpdated,
-  tenant,
+  eventFilter,
 }) => {
   const { canMutate } = useAdminPermissions();
   const toast = useToast();
@@ -210,7 +220,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   const handleLockAll = async () => {
     setLoadingAction('lockAll');
     try {
-      await lockOrders(tenant || undefined);
+      await lockOrders(eventFilter || undefined);
       toast({
         title: 'Alle bestellingen vergrendeld',
         description: 'Alle ingediende bestellingen zijn vergrendeld.',
@@ -256,9 +266,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               <HStack spacing={4} mb={2}>
                 <StatusBadge status={order.status} />
                 <Badge
-                  colorScheme={order.channel === 'presmeet' ? 'purple' : 'blue'}
+                  colorScheme={order.event_id ? 'purple' : 'blue'}
                 >
-                  {order.channel}
+                  {order.event_id || 'Webshop'}
                 </Badge>
               </HStack>
               <Text fontSize="sm">
@@ -374,7 +384,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                     <Tr>
                       <Th>Type</Th>
                       <Th>Naam</Th>
-                      <Th>Attributen</Th>
+                      <Th>Varianten</Th>
                       <Th isNumeric>Aantal</Th>
                       <Th isNumeric>Prijs</Th>
                     </Tr>
@@ -389,11 +399,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                         </Td>
                         <Td fontSize="sm">{item.name}</Td>
                         <Td fontSize="xs">
-                          {item.attributes
-                            ? Object.entries(item.attributes)
-                                .map(([k, v]) => `${k}: ${v}`)
-                                .join(', ')
-                            : '—'}
+                          {formatVariantAttributes(item.variant_attributes)}
                         </Td>
                         <Td isNumeric fontSize="sm">{item.quantity}</Td>
                         <Td isNumeric fontSize="sm">

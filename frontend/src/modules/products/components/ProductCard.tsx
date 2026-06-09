@@ -1,15 +1,17 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
+import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge, Select } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
 import { useState, useEffect } from 'react';
-import { Product } from '../../../types';
+import { Product, Event as HDCNEvent } from '../../../types';
 import VariantSchemaEditor from './VariantSchemaEditor';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
 import { PRODUCT_CATEGORIES } from '../config/productCategories';
+import { getAuthHeadersForGet } from '../../../utils/authHeaders';
+import { API_URLS } from '../../../config/api';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -85,11 +87,6 @@ const schema = Yup.object().shape({
     otherwise: (schema) => schema.notRequired()
   }),
   prijs: Yup.number().required('Prijs is verplicht').min(0, 'Prijs moet 0 of hoger zijn'),
-  opties: Yup.string().test('opties-validation', 'Opties moet leeg zijn of minimaal 2 waarden bevatten gescheiden door komma\'s', function(value) {
-    if (!value || value.trim() === '') return true;
-    const parts = value.split(',').map(part => part.trim()).filter(part => part.length > 0);
-    return parts.length >= 2;
-  }),
   images: Yup.array().of(Yup.string()).nullable(),
 });
 
@@ -99,6 +96,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
   const { isOpen: isCategoryModalOpen, onOpen: onCategoryModalOpen, onClose: onCategoryModalClose } = useDisclosure();
   const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
+  const [events, setEvents] = useState<HDCNEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState<boolean>(false);
+  const [variantSchemaHasErrors, setVariantSchemaHasErrors] = useState<boolean>(false);
 
   useEffect(() => {
     // Use hardcoded product categories
@@ -108,6 +108,26 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   useEffect(() => {
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
   }, [product]);
+
+  // Fetch events for the event_id selector
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true);
+      try {
+        const headers = await getAuthHeadersForGet();
+        const response = await fetch(API_URLS.events(), { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setEvents(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
 
   const CategoryDisplay = ({ groep, subgroep, onClick }: { groep: string; subgroep: string; onClick: () => void }) => {
     const displayText = groep && subgroep 
@@ -379,14 +399,19 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           })(),
           groep: product.groep || '',
           subgroep: product.subgroep || '',
-          opties: product.opties || '',
+          event_id: product.event_id || '',
           nietInWinkel: (product as any).nietInWinkel || false,
           variant_schema: (product as any).variant_schema || undefined,
           order_item_fields: (product as any).order_item_fields || undefined,
           purchase_rules: (product as any).purchase_rules || undefined,
         }}
         validationSchema={schema}
-        onSubmit={(values) => onSave(values)}
+        onSubmit={(values) => {
+          if (variantSchemaHasErrors) return;
+          // Remove opties from payload, ensure variant_schema is included
+          const { opties, ...cleanValues } = values as any;
+          onSave(cleanValues);
+        }}
       >
         {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
           // Store the setFieldValue function for use in the modal
@@ -473,10 +498,28 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
 
-              {/* Options field */}
-              <FormControl isInvalid={!!(errors.opties && touched.opties)}>
-                <Field name="opties" as={Input} placeholder="Opties (gescheiden door komma's)" color="white" bg="gray.600" borderColor={errors.opties && touched.opties ? 'red.500' : 'gray.500'} isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
-                <FormErrorMessage>{errors.opties as string}</FormErrorMessage>
+              {/* Event selector */}
+              <FormControl>
+                <Select
+                  value={values.event_id || ''}
+                  onChange={(e) => setFieldValue('event_id', e.target.value || null)}
+                  placeholder="Geen event (webshop product)"
+                  bg="gray.600"
+                  color="white"
+                  borderColor="gray.500"
+                  isDisabled={readOnly}
+                  size="sm"
+                  _placeholder={{ color: 'gray.300' }}
+                >
+                  {events.map((event) => (
+                    <option key={event.event_id} value={event.event_id || ''} style={{ background: '#2D3748', color: 'white' }}>
+                      {event.title || event.naam || event.event_id}
+                    </option>
+                  ))}
+                </Select>
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {eventsLoading ? 'Events laden...' : `Event koppeling (${events.length} events)`}
+                </Text>
               </FormControl>
 
               {/* Checkbox */}
@@ -523,14 +566,39 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               )}
 
               {/* Variant Schema Editor - collapsible */}
-              {!readOnly && (
-                <CollapsibleSection title="Variant Schema" defaultOpen={!!values.variant_schema && Object.keys(values.variant_schema).length > 0}>
-                  <VariantSchemaEditor
-                    value={values.variant_schema || {}}
-                    onChange={(schema: VariantSchema) => setFieldValue('variant_schema', Object.keys(schema).length > 0 ? schema : undefined)}
-                  />
-                </CollapsibleSection>
-              )}
+              <CollapsibleSection title="Variant Schema" defaultOpen={!!values.variant_schema && Object.keys(values.variant_schema).length > 0}>
+                <VariantSchemaEditor
+                  value={values.variant_schema || {}}
+                  onChange={(schema: VariantSchema) => {
+                    setFieldValue('variant_schema', Object.keys(schema).length > 0 ? schema : undefined);
+                    // Validate variant schema errors
+                    const axes = Object.entries(schema);
+                    let hasErrors = false;
+                    if (axes.length > 0) {
+                      const totalCombinations = axes.reduce((product, [, vals]) => product * (vals.length || 1), 1);
+                      if (totalCombinations > 100) hasErrors = true;
+                      const axisNames = axes.map(([name]) => name.trim().toLowerCase());
+                      axes.forEach(([name, vals], index) => {
+                        if (!name.trim()) hasErrors = true;
+                        const dupIdx = axisNames.indexOf(name.trim().toLowerCase());
+                        if (dupIdx !== -1 && dupIdx !== index) hasErrors = true;
+                        const trimmedValues = vals.map((v) => v.trim().toLowerCase());
+                        vals.forEach((val, vIndex) => {
+                          if (!val.trim()) hasErrors = true;
+                          const dupVIdx = trimmedValues.indexOf(val.trim().toLowerCase());
+                          if (dupVIdx !== -1 && dupVIdx !== vIndex) hasErrors = true;
+                        });
+                      });
+                    }
+                    setVariantSchemaHasErrors(hasErrors);
+                  }}
+                />
+                {variantSchemaHasErrors && (
+                  <Text fontSize="xs" color="red.500" mt={1}>
+                    Los variant schema fouten op voordat u opslaat
+                  </Text>
+                )}
+              </CollapsibleSection>
 
               {/* Order Item Fields Editor - collapsible */}
               {!readOnly && (
@@ -565,8 +633,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   input.type = 'file';
                   input.accept = 'image/*';
                   input.multiple = true;
-                  input.onchange = async (e: Event) => {
-                    const target = e.target as HTMLInputElement;
+                  input.onchange = async (e) => {
+                    const target = (e as any).target as HTMLInputElement;
                     const files = Array.from(target.files || []);
                     if (files.length > 0) {
                       try {
@@ -632,6 +700,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     size="sm"
                     type="submit"
                     aria-label="Opslaan"
+                    isDisabled={variantSchemaHasErrors}
                     _hover={{ bg: 'orange.600' }}
                   />
                 )}

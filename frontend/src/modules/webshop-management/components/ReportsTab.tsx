@@ -1,30 +1,21 @@
 /**
- * ReportsTab — Displays report summary, export controls, and tenant-specific metrics.
+ * ReportsTab — Unified reporting interface for Webshop Management.
  *
- * - Summary stats: Total Orders, Total Revenue, Total Paid, Total Outstanding
- * - Generation timestamp display
- * - Refresh button to regenerate report
- * - Export controls (CSV / JSON) respecting tenant filter
- * - PresMeet-specific: counts per product_type by order status
- * - H-DCN-specific: orders, items sold, revenue by product
+ * Features:
+ * - Report type selector: Financial, Products, Orders, Stock Movements
+ * - Respects primary event filter from parent (All, Webshop, specific event)
+ * - Additional filters: order status, payment status
+ * - Export controls (CSV / JSON)
+ * - Event context display when event filter is active
  *
- * Validates: Requirements 6.1, 6.2, 6.3
+ * Validates: Requirements 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7,
+ * 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14
  */
 
 import React, { useState } from 'react';
 import {
   Box,
   Button,
-  Stat,
-  StatLabel,
-  StatNumber,
-  SimpleGrid,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   Spinner,
   Alert,
   AlertIcon,
@@ -34,17 +25,43 @@ import {
   RadioGroup,
   Stack,
   Tooltip,
+  Select,
+  SimpleGrid,
+  Badge,
 } from '@chakra-ui/react';
 import { useAdminReports } from '../hooks/useAdminReports';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
-import { OrderStatus } from '../types/admin.types';
+import { useEventFilter, EventOption } from '../hooks/useEventFilter';
+import {
+  ReportType,
+  OrderStatusFilter,
+  PaymentStatusFilter,
+} from '../types/admin.types';
+import { FinancialReport } from './reports/FinancialReport';
+import { ProductsReport } from './reports/ProductsReport';
+import { OrdersReport } from './reports/OrdersReport';
+import { StockMovementsReport } from './reports/StockMovementsReport';
 
 interface ReportsTabProps {
-  tenant: string;
+  eventFilter: string;
 }
 
-function formatCurrency(amount: number): string {
+// Exported utility functions for sub-components
+export function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
+}
+
+export function formatDate(dateStr?: string): string {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleDateString('nl-NL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
 function formatTimestamp(isoString: string): string {
@@ -62,226 +79,204 @@ function formatTimestamp(isoString: string): string {
   }
 }
 
-export const ReportsTab: React.FC<ReportsTabProps> = ({ tenant }) => {
-  const { report, loading, refreshing, error, refresh, exportData } =
-    useAdminReports(tenant);
-  const { canMutate, canExport } = useAdminPermissions();
+const REPORT_TYPE_LABELS: Record<ReportType, string> = {
+  financial: 'Financieel',
+  products: 'Producten',
+  orders: 'Bestellingen',
+  stock_movements: 'Voorraadmutaties',
+};
+
+const ORDER_STATUS_OPTIONS: { value: OrderStatusFilter; label: string }[] = [
+  { value: 'all', label: 'Alle' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'submitted', label: 'Ingediend' },
+  { value: 'locked', label: 'Vergrendeld' },
+  { value: 'paid', label: 'Betaald' },
+];
+
+const PAYMENT_STATUS_OPTIONS: { value: PaymentStatusFilter; label: string }[] = [
+  { value: 'all', label: 'Alle' },
+  { value: 'unpaid', label: 'Onbetaald' },
+  { value: 'partial', label: 'Deels betaald' },
+  { value: 'paid', label: 'Betaald' },
+];
+
+export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter }) => {
+  const [reportType, setReportType] = useState<ReportType>('financial');
+  const [orderStatus, setOrderStatus] = useState<OrderStatusFilter>('all');
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatusFilter>('all');
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
 
-  if (loading) {
-    return (
-      <Box p={4} textAlign="center">
-        <Spinner size="lg" color="orange.400" />
-      </Box>
-    );
-  }
+  const { report, loading, refreshing, error, refresh, exportData } =
+    useAdminReports(eventFilter, reportType, orderStatus, paymentStatus);
+  const { canMutate, canExport } = useAdminPermissions();
+  const { events } = useEventFilter();
 
-  if (error) {
-    return (
-      <Alert status="error" borderRadius="md">
-        <AlertIcon />
-        {error}
-      </Alert>
-    );
-  }
-
-  if (!report) {
-    return (
-      <Box p={4} bg="gray.800" borderRadius="md" textAlign="center">
-        <Text color="gray.400" mb={4}>
-          Nog geen rapport gegenereerd.
-        </Text>
-        <Tooltip label="Products_CRUD vereist" isDisabled={canMutate} hasArrow>
-          <Button
-            colorScheme="orange"
-            onClick={refresh}
-            isLoading={refreshing}
-            isDisabled={!canMutate}
-            loadingText="Genereren..."
-          >
-            Rapport genereren
-          </Button>
-        </Tooltip>
-      </Box>
-    );
-  }
-
-  const { summary, generated_at } = report;
+  // Resolve event context for display
+  const activeEvent: EventOption | undefined = eventFilter && eventFilter !== 'webshop'
+    ? events.find((e) => e.event_id === eventFilter)
+    : undefined;
 
   return (
     <Box>
-      {/* Summary Stats */}
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={4}>
-        <Stat bg="gray.700" p={4} borderRadius="md">
-          <StatLabel color="gray.300">Totaal Bestellingen</StatLabel>
-          <StatNumber color="white">{summary.total_orders}</StatNumber>
-        </Stat>
-        <Stat bg="gray.700" p={4} borderRadius="md">
-          <StatLabel color="gray.300">Totale Omzet</StatLabel>
-          <StatNumber color="white">{formatCurrency(summary.total_revenue)}</StatNumber>
-        </Stat>
-        <Stat bg="gray.700" p={4} borderRadius="md">
-          <StatLabel color="gray.300">Totaal Betaald</StatLabel>
-          <StatNumber color="green.300">{formatCurrency(summary.total_paid)}</StatNumber>
-        </Stat>
-        <Stat bg="gray.700" p={4} borderRadius="md">
-          <StatLabel color="gray.300">Totaal Openstaand</StatLabel>
-          <StatNumber color="red.300">{formatCurrency(summary.total_outstanding)}</StatNumber>
-        </Stat>
-      </SimpleGrid>
-
-      {/* Timestamp + Refresh */}
-      <HStack justify="space-between" mb={4}>
-        <Text color="gray.400" fontSize="sm">
-          Rapport gegenereerd op: {formatTimestamp(generated_at)}
-        </Text>
-        <Tooltip label="Products_CRUD vereist" isDisabled={canMutate} hasArrow>
-          <Button
-            colorScheme="orange"
-            variant="outline"
+      {/* Report Type Selector */}
+      <HStack spacing={4} mb={4} flexWrap="wrap">
+        <Box>
+          <Text fontSize="xs" color="gray.400" mb={1}>Rapporttype</Text>
+          <Select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as ReportType)}
             size="sm"
-            onClick={refresh}
-            isLoading={refreshing}
-            isDisabled={!canMutate}
-            loadingText="Vernieuwen..."
+            maxW="200px"
           >
-            Vernieuw Data
-          </Button>
-        </Tooltip>
+            {Object.entries(REPORT_TYPE_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </Select>
+        </Box>
+        <Box>
+          <Text fontSize="xs" color="gray.400" mb={1}>Order status</Text>
+          <Select
+            value={orderStatus}
+            onChange={(e) => setOrderStatus(e.target.value as OrderStatusFilter)}
+            size="sm"
+            maxW="160px"
+          >
+            {ORDER_STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </Select>
+        </Box>
+        <Box>
+          <Text fontSize="xs" color="gray.400" mb={1}>Betaalstatus</Text>
+          <Select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value as PaymentStatusFilter)}
+            size="sm"
+            maxW="160px"
+          >
+            {PAYMENT_STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </Select>
+        </Box>
       </HStack>
 
-      {/* Export Controls */}
-      <Box bg="gray.700" p={4} borderRadius="md" mb={6}>
-        <Text fontSize="md" fontWeight="bold" color="white" mb={3}>
-          Exporteer rapport
-        </Text>
-        <HStack spacing={4}>
+      {/* Event Context */}
+      {activeEvent && (
+        <Box bg="purple.900" borderRadius="md" p={3} mb={4}>
+          <HStack spacing={3}>
+            <Badge colorScheme="purple" fontSize="xs">Evenement</Badge>
+            <Text color="white" fontSize="sm" fontWeight="medium">
+              {activeEvent.name}
+            </Text>
+          </HStack>
+          {report?.event_context && (
+            <HStack spacing={4} mt={2}>
+              {report.event_context.location && (
+                <Text color="gray.300" fontSize="xs">
+                  Locatie: {report.event_context.location}
+                </Text>
+              )}
+              {report.event_context.start_date && (
+                <Text color="gray.300" fontSize="xs">
+                  Van: {formatDate(report.event_context.start_date)}
+                </Text>
+              )}
+              {report.event_context.end_date && (
+                <Text color="gray.300" fontSize="xs">
+                  Tot: {formatDate(report.event_context.end_date)}
+                </Text>
+              )}
+            </HStack>
+          )}
+        </Box>
+      )}
+
+      {/* Actions bar: Refresh + Export */}
+      <HStack justify="space-between" mb={4} flexWrap="wrap" spacing={4}>
+        <HStack spacing={2}>
+          <Tooltip label="Products_CRUD vereist" isDisabled={canMutate} hasArrow>
+            <Button
+              colorScheme="orange"
+              size="sm"
+              onClick={refresh}
+              isLoading={refreshing}
+              isDisabled={!canMutate}
+              loadingText="Genereren..."
+            >
+              Rapport genereren
+            </Button>
+          </Tooltip>
+          {report && (
+            <Text color="gray.400" fontSize="xs">
+              Gegenereerd: {formatTimestamp(report.generated_at)}
+            </Text>
+          )}
+        </HStack>
+
+        <HStack spacing={3}>
           <RadioGroup
             value={exportFormat}
             onChange={(val) => setExportFormat(val as 'csv' | 'json')}
           >
-            <Stack direction="row" spacing={4}>
-              <Radio value="csv" colorScheme="orange">
-                <Text color="white">CSV</Text>
+            <Stack direction="row" spacing={3}>
+              <Radio value="csv" colorScheme="orange" size="sm">
+                <Text color="white" fontSize="sm">CSV</Text>
               </Radio>
-              <Radio value="json" colorScheme="orange">
-                <Text color="white">JSON</Text>
+              <Radio value="json" colorScheme="orange" size="sm">
+                <Text color="white" fontSize="sm">JSON</Text>
               </Radio>
             </Stack>
           </RadioGroup>
-          <Tooltip
-            label="Products_Export vereist"
-            isDisabled={canExport}
-            hasArrow
-          >
+          <Tooltip label="Products_Export vereist" isDisabled={canExport} hasArrow>
             <Button
               colorScheme="orange"
+              variant="outline"
               size="sm"
               onClick={() => exportData(exportFormat)}
-              isDisabled={!canExport}
+              isDisabled={!canExport || !report}
             >
               Download
             </Button>
           </Tooltip>
         </HStack>
-      </Box>
+      </HStack>
 
-      {/* Tenant-specific metrics */}
-      {tenant === 'presmeet' && summary.by_product_type && (
-        <PresMeetMetrics byProductType={summary.by_product_type} />
+      {/* Loading State */}
+      {loading && (
+        <Box p={8} textAlign="center">
+          <Spinner size="lg" color="orange.400" />
+          <Text mt={2} color="gray.400">Rapport laden...</Text>
+        </Box>
       )}
 
-      {tenant === 'h-dcn' && summary.by_product && (
-        <HdcnMetrics byProduct={summary.by_product} />
+      {/* Error State */}
+      {error && !loading && (
+        <Alert status="error" borderRadius="md" mb={4}>
+          <AlertIcon />
+          {error}
+        </Alert>
       )}
-    </Box>
-  );
-};
 
-// --- PresMeet Metrics (Task 18.4) ---
+      {/* No Report Yet */}
+      {!loading && !error && !report && (
+        <Box p={8} bg="gray.800" borderRadius="md" textAlign="center">
+          <Text color="gray.400">
+            Nog geen rapport gegenereerd. Klik op "Rapport genereren" om te starten.
+          </Text>
+        </Box>
+      )}
 
-interface PresMeetMetricsProps {
-  byProductType: Record<string, Record<OrderStatus, number>>;
-}
-
-const PRESMEET_STATUS_COLUMNS: OrderStatus[] = ['draft', 'submitted', 'locked'];
-
-const PresMeetMetrics: React.FC<PresMeetMetricsProps> = ({ byProductType }) => {
-  const productTypes = Object.keys(byProductType);
-
-  if (productTypes.length === 0) return null;
-
-  return (
-    <Box bg="gray.800" borderRadius="md" p={4} mb={4}>
-      <Text fontSize="md" fontWeight="bold" color="white" mb={3}>
-        PresMeet — Aantallen per producttype
-      </Text>
-      <Table variant="simple" size="sm">
-        <Thead>
-          <Tr>
-            <Th color="gray.400">Producttype</Th>
-            {PRESMEET_STATUS_COLUMNS.map((status) => (
-              <Th key={status} color="gray.400" isNumeric>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </Th>
-            ))}
-          </Tr>
-        </Thead>
-        <Tbody>
-          {productTypes.map((type) => (
-            <Tr key={type}>
-              <Td color="white">{type}</Td>
-              {PRESMEET_STATUS_COLUMNS.map((status) => (
-                <Td key={status} color="white" isNumeric>
-                  {byProductType[type]?.[status] ?? 0}
-                </Td>
-              ))}
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-    </Box>
-  );
-};
-
-// --- H-DCN Metrics (Task 18.5) ---
-
-interface HdcnMetricsProps {
-  byProduct: {
-    product_name: string;
-    items_sold: number;
-    revenue: number;
-  }[];
-}
-
-const HdcnMetrics: React.FC<HdcnMetricsProps> = ({ byProduct }) => {
-  if (byProduct.length === 0) return null;
-
-  const totalOrders = byProduct.reduce((sum, p) => sum + p.items_sold, 0); // eslint-disable-line @typescript-eslint/no-unused-vars
-
-  return (
-    <Box bg="gray.800" borderRadius="md" p={4} mb={4}>
-      <Text fontSize="md" fontWeight="bold" color="white" mb={3}>
-        H-DCN Webshop — Verkoop per product
-      </Text>
-      <Table variant="simple" size="sm">
-        <Thead>
-          <Tr>
-            <Th color="gray.400">Product</Th>
-            <Th color="gray.400" isNumeric>Items verkocht</Th>
-            <Th color="gray.400" isNumeric>Omzet</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {byProduct.map((product, idx) => (
-            <Tr key={idx}>
-              <Td color="white">{product.product_name}</Td>
-              <Td color="white" isNumeric>{product.items_sold}</Td>
-              <Td color="white" isNumeric>{formatCurrency(product.revenue)}</Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
+      {/* Report Content */}
+      {!loading && report && (
+        <Box>
+          {reportType === 'financial' && <FinancialReport report={report} />}
+          {reportType === 'products' && <ProductsReport report={report} />}
+          {reportType === 'orders' && <OrdersReport report={report} />}
+          {reportType === 'stock_movements' && <StockMovementsReport report={report} />}
+        </Box>
+      )}
     </Box>
   );
 };

@@ -3,8 +3,7 @@ import { FALLBACK_LOGO_BASE64 } from './logoBase64';
 
 interface OrderItem {
   name?: string;
-  naam?: string;
-  selectedOption?: string;
+  variant_attributes?: Record<string, string>;
   quantity: number;
   price?: number;
   [key: string]: any;
@@ -69,15 +68,20 @@ export const generateOrderConfirmationHTML = (orderData: OrderData, logoBase64: 
     });
   };
 
-  const itemsHTML = orderData.items.map((item: OrderItem) => `
+  const itemsHTML = orderData.items.map((item: OrderItem) => {
+    const variantDisplay = item.variant_attributes
+      ? Object.entries(item.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+      : '-';
+    return `
     <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(item.name || item.naam)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(item.selectedOption) || '-'}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(item.name)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(variantDisplay)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(item.quantity || 0)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">€${Number(item.price || 0).toFixed(2)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">€${(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `
 <!DOCTYPE html>
@@ -321,11 +325,14 @@ export const generateOrderConfirmationPDF = async (orderData: OrderData): Promis
       checkNewPage(12);
       xPos = margin;
       
-      const productName = (item.name || item.naam).substring(0, 35);
+      const productName = (item.name || '').substring(0, 35);
       pdf.text(productName, xPos, yPosition);
       xPos += colWidths[0];
       
-      pdf.text(item.selectedOption || '-', xPos, yPosition);
+      const variantText = item.variant_attributes
+        ? Object.entries(item.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+        : '-';
+      pdf.text(variantText.substring(0, 25), xPos, yPosition);
       xPos += colWidths[1];
       
       pdf.text(item.quantity.toString(), xPos + colWidths[2], yPosition, { align: 'right' });

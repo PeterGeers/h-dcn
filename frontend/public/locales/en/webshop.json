@@ -49,7 +49,19 @@
     "test_expiry": "Expiry date: Any future date (e.g. 12/34)",
     "test_cvc": "CVC: Any 3 digits (e.g. 123)",
     "test_name": "Name: Any name (e.g. Test User)",
-    "test_postal": "Postcode: Any format (e.g. 1234AB)"
+    "test_postal": "Postcode: Any format (e.g. 1234AB)",
+    "no_order_error": "No order found. Please try again.",
+    "fields_required": "Please fill in all required fields before placing the order.",
+    "conflict_error": "The order has been modified. Please refresh and try again.",
+    "submit_error": "An error occurred while submitting the order.",
+    "refresh_retry": "Refresh and retry",
+    "order_placed": "Order placed!",
+    "transfer_instructions": "Please transfer the amount using the following details:",
+    "reference": "Reference",
+    "amount": "Amount",
+    "close": "Close",
+    "summary": "Summary",
+    "fields_incomplete": "Not all fields have been filled in correctly:"
   },
   "confirmation": {
     "title": "Order Confirmation",

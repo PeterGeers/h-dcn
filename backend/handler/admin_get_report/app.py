@@ -45,9 +45,9 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'admin_get_report')
 
-        # Get optional tenant filter from query params
+        # Get optional event_id filter from query params
         query_params = event.get('queryStringParameters') or {}
-        tenant_filter = query_params.get('tenant')
+        event_id_filter = query_params.get('event_id')
 
         # Read latest snapshot from S3
         s3_key = 'reports/latest_snapshot.json'
@@ -60,15 +60,21 @@ def lambda_handler(event, context):
             print(f"Error reading S3 snapshot: {str(s3_err)}")
             return create_error_response(404, 'No report snapshot available. Please generate a report first.')
 
-        # Apply tenant filter if specified
-        if tenant_filter:
-            # Filter orders by tenant
+        # Apply event_id filter if specified
+        if event_id_filter:
+            # Filter orders by event_id
             orders = snapshot_data.get('orders', [])
-            filtered_orders = [o for o in orders if o.get('tenant') == tenant_filter]
+            if event_id_filter == 'null':
+                filtered_orders = [o for o in orders if not o.get('event_id')]
+            else:
+                filtered_orders = [o for o in orders if o.get('event_id') == event_id_filter]
 
-            # Filter movements by tenant
+            # Filter movements by event_id
             movements = snapshot_data.get('movements', [])
-            filtered_movements = [m for m in movements if m.get('tenant') == tenant_filter]
+            if event_id_filter == 'null':
+                filtered_movements = [m for m in movements if not m.get('event_id')]
+            else:
+                filtered_movements = [m for m in movements if m.get('event_id') == event_id_filter]
 
             # Recalculate summary for filtered data
             total_revenue = sum(float(o.get('total_amount', 0)) for o in filtered_orders)
@@ -82,26 +88,27 @@ def lambda_handler(event, context):
                 'total_paid': total_paid,
                 'total_outstanding': total_revenue - total_paid,
             }
-            snapshot_data['filtered_by_tenant'] = tenant_filter
+            snapshot_data['filtered_by_event_id'] = event_id_filter
 
-            # Filter by_tenant to only include the requested tenant
-            by_tenant = snapshot_data.get('by_tenant', {})
-            if tenant_filter in by_tenant:
-                snapshot_data['by_tenant'] = {tenant_filter: by_tenant[tenant_filter]}
+            # Filter by_event to only include the requested event
+            by_event = snapshot_data.get('by_event', {})
+            event_key = event_id_filter if event_id_filter != 'null' else 'webshop'
+            if event_key in by_event:
+                snapshot_data['by_event'] = {event_key: by_event[event_key]}
             else:
-                snapshot_data['by_tenant'] = {}
+                snapshot_data['by_event'] = {}
 
         # Remove raw orders/movements from response for lighter payload
         result = {
             'generated_at': snapshot_data.get('generated_at'),
             'summary': snapshot_data.get('summary', {}),
-            'by_tenant': snapshot_data.get('by_tenant', {}),
+            'by_event': snapshot_data.get('by_event', {}),
             'by_status': snapshot_data.get('by_status', {}),
             'stock_movements': snapshot_data.get('stock_movements', {}),
         }
 
-        if tenant_filter:
-            result['filtered_by_tenant'] = tenant_filter
+        if event_id_filter:
+            result['filtered_by_event_id'] = event_id_filter
 
         return create_success_response(result)
 

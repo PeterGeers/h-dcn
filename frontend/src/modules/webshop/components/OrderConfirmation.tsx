@@ -6,8 +6,7 @@ import { downloadOrderPdf } from '../services/pdfDownloadService';
 
 interface OrderItem {
   name?: string;
-  naam?: string;
-  selectedOption?: string;
+  variant_attributes?: Record<string, string>;
   quantity: number;
   price?: number;
 }
@@ -216,8 +215,12 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
         <tbody>
           {orderData.items.map((item, index) => (
             <tr key={index}>
-              <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{item.name || item.naam}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{item.selectedOption || '-'}</td>
+              <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{item.name}</td>
+              <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>
+                {item.variant_attributes
+                  ? Object.entries(item.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+                  : '-'}
+              </td>
               <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>{item.quantity}</td>
               <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>€{Number(item.price || 0).toFixed(2)}</td>
               <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>€{(item.quantity * Number(item.price || 0)).toFixed(2)}</td>

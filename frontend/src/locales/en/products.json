@@ -21,7 +21,8 @@
     "quantity": "Quantity",
     "price_label": "Price:",
     "no_image": "No image available",
-    "back": "Back"
+    "back": "Back",
+    "variant_fetch_error": "Variants could not be loaded"
   },
   "card_modal": {
     "select_option_desc": "Choose a size/option for this product"

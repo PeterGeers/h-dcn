@@ -70,7 +70,7 @@ def lambda_handler(event, context):
         
         # Create item with generated ID and timestamp
         item = {
-            'id': product_id,
+            'product_id': product_id,
             'createdAt': datetime.now().isoformat(), 
             **product
         }
@@ -80,7 +80,7 @@ def lambda_handler(event, context):
         print(f"Product {product_id} created by {user_email} with roles {user_roles}")
 
         return create_success_response({
-            "id": product_id,
+            "product_id": product_id,
             "message": "Product created successfully"
         }, 201)
         

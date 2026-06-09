@@ -20,7 +20,7 @@ const mockProducts: Product[] = [
   {
     product_id: 'prod-meeting',
     name: 'Meeting Ticket PM2027',
-    channel: 'presmeet',
+    event_id: 'evt-pm2027',
     event_type: 'presmeet',
     price: 50,
     order_item_fields: [
@@ -33,7 +33,7 @@ const mockProducts: Product[] = [
   {
     product_id: 'prod-party',
     name: 'Party Ticket PM2027',
-    channel: 'presmeet',
+    event_id: 'evt-pm2027',
     event_type: 'presmeet',
     price: 99.5,
     order_item_fields: [
@@ -46,7 +46,7 @@ const mockProducts: Product[] = [
   {
     product_id: 'prod-tshirt',
     name: 'T-Shirt PM2027',
-    channel: 'presmeet',
+    event_id: 'evt-pm2027',
     event_type: 'presmeet',
     price: 25,
     order_item_fields: [

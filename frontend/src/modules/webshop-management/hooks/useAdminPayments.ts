@@ -20,7 +20,7 @@ export interface PaymentAggregates {
 
 export interface OrderPaymentSummary {
   order_id: string;
-  channel: string;
+  event_id: string | null;
   customer: string;
   total: number;
   paid: number;
@@ -39,9 +39,9 @@ export interface UseAdminPaymentsReturn {
 
 /**
  * Hook for managing payment data in the admin Payments tab.
- * Loads payment aggregates and per-order payment summaries filtered by channel.
+ * Loads payment aggregates and per-order payment summaries filtered by event.
  */
-export function useAdminPayments(channel: string): UseAdminPaymentsReturn {
+export function useAdminPayments(eventFilter: string): UseAdminPaymentsReturn {
   const [aggregates, setAggregates] = useState<PaymentAggregates>({
     totalCharged: 0,
     totalPaid: 0,
@@ -55,7 +55,7 @@ export function useAdminPayments(channel: string): UseAdminPaymentsReturn {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAdminPayments(channel || undefined);
+      const data = await getAdminPayments(eventFilter || undefined);
       // The API returns payment records — aggregate them client-side
       // The backend returns a response with aggregates and order details
       // Adapt based on actual API response shape
@@ -71,7 +71,7 @@ export function useAdminPayments(channel: string): UseAdminPaymentsReturn {
 
         const summaries: OrderPaymentSummary[] = (response.order_payments || []).map((order: any) => ({
           order_id: order.order_id,
-          channel: order.channel || order.tenant || '',
+          event_id: order.event_id ?? null,
           customer: order.customer_name || '',
           total: order.total_amount ?? 0,
           paid: order.amount_paid ?? 0,
@@ -97,7 +97,7 @@ export function useAdminPayments(channel: string): UseAdminPaymentsReturn {
     } finally {
       setLoading(false);
     }
-  }, [channel]);
+  }, [eventFilter]);
 
   useEffect(() => {
     fetchPayments();

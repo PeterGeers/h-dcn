@@ -1,10 +1,15 @@
 /**
- * ProductsTab — Wraps the existing ProductManagementPage with a tenant filter header.
+ * ProductsTab — Wraps the existing ProductManagementPage with event-based filtering.
  *
  * This embeds the full existing product management UI (with group/subgroup filters,
  * edit modal, create/delete functionality) inside the Webshop Beheer tab.
  *
- * Validates: Requirements 2.1, 2.3, 1.4
+ * Filter values from EventFilter:
+ * - "" (empty) = "Alle" — show all products
+ * - "webshop" = show products where event_id is null
+ * - "<event_id>" = show products linked to that specific event
+ *
+ * Validates: Requirements 2.1, 2.3, 10.5, 12.6
  */
 
 import React, { useMemo } from 'react';
@@ -13,10 +18,10 @@ import { useAuth } from '../../../hooks/useAuth';
 import ProductManagementPage from '../../products/ProductManagementPage';
 
 export interface ProductsTabProps {
-  tenant: string;
+  eventFilter: string;
 }
 
-export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
+export const ProductsTab: React.FC<ProductsTabProps> = ({ eventFilter }) => {
   const { user } = useAuth();
 
   // Build the user object that ProductManagementPage expects
@@ -44,7 +49,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({ tenant }) => {
 
   return (
     <Box>
-      <ProductManagementPage user={productPageUser} tenant={tenant || undefined} />
+      <ProductManagementPage user={productPageUser} eventFilter={eventFilter || undefined} />
     </Box>
   );
 };

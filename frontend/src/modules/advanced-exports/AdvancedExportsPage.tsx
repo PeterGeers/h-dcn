@@ -4,6 +4,7 @@ import { scanProducts } from '../products/api/productApi';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
+import { formatVariantSchemaForCsv } from './formatVariantSchema';
 
 interface User {
   attributes?: {
@@ -57,14 +58,16 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
     const activeProducts = products.filter(p => (p.price || p.prijs) > 0);
     
     // Create CSV export
-    const csvHeaders = ['ID', 'Naam', 'Groep', 'Subgroep', 'Prijs', 'Opties'];
+    const csvHeaders = ['ID', 'Naam', 'Groep', 'Subgroep', 'Prijs', 'Varianten'];
     const csvData = activeProducts.map(p => [
-      p.id,
+      p.product_id || p.id,
       p.naam || p.name,
       p.groep || p.category,
       p.subgroep || '',
       p.prijs || p.price,
-      Array.isArray(p.opties) ? p.opties.join(';') : p.opties || ''
+      p.variant_schema
+        ? formatVariantSchemaForCsv(p.variant_schema)
+        : 'Standaard'
     ]);
     
     const csvContent = [csvHeaders, ...csvData]

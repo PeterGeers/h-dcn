@@ -3,11 +3,11 @@
  *
  * Features:
  * - Tab navigation: Producten, Bestellingen, Betalingen, Rapporten
- * - Shared channel filter state via useChannelFilter hook
+ * - Shared event filter state via useEventFilter hook
  * - Independent of PresMeet onboarding flow (no club_id or OnboardingFlow dependency)
  * - Accessible to users with Products_CRUD, Products_Read, or Products_Export roles
  *
- * Validates: Requirements 1.3, 1.7, 8.1, 8.2
+ * Validates: Requirements 1.3, 1.7, 8.1, 8.2, 10.5, 12.6, 12.10
  */
 
 import React from 'react';
@@ -21,15 +21,15 @@ import {
   TabPanel,
   HStack,
 } from '@chakra-ui/react';
-import { ChannelFilter } from './components/TenantFilter';
+import { EventFilter } from './components/EventFilter';
 import { ProductsTab } from './components/ProductsTab';
 import { OrdersTab } from './components/OrdersTab';
 import { PaymentsTab } from './components/PaymentsTab';
 import { ReportsTab } from './components/ReportsTab';
-import { useChannelFilter } from './hooks/useTenantFilter';
+import { useEventFilter } from './hooks/useEventFilter';
 
 const WebshopManagementPage: React.FC = () => {
-  const { channel, setChannel } = useChannelFilter();
+  const { eventFilter, setEventFilter, events, loadingEvents } = useEventFilter();
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -37,7 +37,12 @@ const WebshopManagementPage: React.FC = () => {
         <Heading size="lg" color="orange.400">
           Webshop Beheer
         </Heading>
-        <ChannelFilter value={channel} onChange={setChannel} />
+        <EventFilter
+          value={eventFilter}
+          onChange={setEventFilter}
+          events={events}
+          loading={loadingEvents}
+        />
       </HStack>
 
       <Tabs colorScheme="orange" variant="enclosed">
@@ -49,24 +54,24 @@ const WebshopManagementPage: React.FC = () => {
         </TabList>
 
         <TabPanels>
-          {/* Products Tab */}
+          {/* Products Tab — displays ALL products in single interface, filtered by event */}
           <TabPanel px={0}>
-            <ProductsTab tenant={channel} />
+            <ProductsTab eventFilter={eventFilter} />
           </TabPanel>
 
           {/* Orders Tab */}
           <TabPanel px={0}>
-            <OrdersTab tenant={channel} />
+            <OrdersTab eventFilter={eventFilter} />
           </TabPanel>
 
           {/* Payments Tab */}
           <TabPanel px={0}>
-            <PaymentsTab tenant={channel} />
+            <PaymentsTab eventFilter={eventFilter} />
           </TabPanel>
 
           {/* Reports Tab */}
           <TabPanel px={0}>
-            <ReportsTab tenant={channel} />
+            <ReportsTab eventFilter={eventFilter} />
           </TabPanel>
         </TabPanels>
       </Tabs>

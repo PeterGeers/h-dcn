@@ -199,15 +199,15 @@ export async function getEvent(eventType: string = 'presmeet'): Promise<Event[]>
 }
 
 /**
- * Get products for a given channel (e.g., 'presmeet').
+ * Get products for a given event by event_id.
  * Optionally filter by product_ids from the event definition.
  */
 export async function getProducts(
-  channel: string = 'presmeet',
+  eventId: string,
   productIds?: string[]
 ): Promise<Product[]> {
   const response = await presmeetClient.get<Product[]>('/products', {
-    params: { channel },
+    params: { event_id: eventId },
   });
   if (productIds && productIds.length > 0) {
     return response.data.filter((p) => productIds.includes(p.product_id));

@@ -86,14 +86,14 @@ def lambda_handler(event, context):
 
         # Query Orders table for PresMeet booking matching club_id
         scan_response = orders_table.scan(
-            FilterExpression=Attr('source').eq('presmeet') & Attr('tenant').eq('presmeet') & Attr('club_id').eq(club_id)
+            FilterExpression=Attr('source').eq('presmeet') & Attr('club_id').eq(club_id)
         )
         items = scan_response['Items']
 
         # Handle pagination for large result sets
         while 'LastEvaluatedKey' in scan_response:
             scan_response = orders_table.scan(
-                FilterExpression=Attr('source').eq('presmeet') & Attr('tenant').eq('presmeet') & Attr('club_id').eq(club_id),
+                FilterExpression=Attr('source').eq('presmeet') & Attr('club_id').eq(club_id),
                 ExclusiveStartKey=scan_response['LastEvaluatedKey']
             )
             items.extend(scan_response['Items'])

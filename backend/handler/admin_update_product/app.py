@@ -41,7 +41,7 @@ table = dynamodb.Table(table_name)
 UPDATABLE_FIELDS = [
     'name', 'description', 'category', 'price', 'active',
     'min_per_club', 'max_per_club', 'required_attributes',
-    'image_url', 'tenant', 'groep', 'subgroep', 'images',
+    'image_url', 'event_id', 'groep', 'subgroep', 'images',
     'order_item_fields', 'purchase_rules'
 ]
 
@@ -148,7 +148,7 @@ def lambda_handler(event, context):
         new_variants = []
         if variant_schema_changed:
             new_variants = _regenerate_variants(
-                product_id, body.get('variant_schema'), existing.get('tenant', 'h-dcn')
+                product_id, body.get('variant_schema')
             )
             variants_regenerated = True
 
@@ -244,7 +244,7 @@ def _has_variant_schema_changed(body: dict, existing: dict) -> bool:
     return new_normalized != existing_normalized
 
 
-def _regenerate_variants(product_id: str, new_schema, tenant: str) -> list:
+def _regenerate_variants(product_id: str, new_schema) -> list:
     """
     Delete all existing variants for a product and regenerate from new schema.
 
@@ -259,11 +259,11 @@ def _regenerate_variants(product_id: str, new_schema, tenant: str) -> list:
     # 2. Generate new variants
     if new_schema:
         new_variants = generate_variant_combinations(
-            new_schema, product_id, tenant
+            new_schema, product_id
         )
     else:
         # No schema = create Default_Variant
-        new_variants = [create_default_variant(product_id, tenant)]
+        new_variants = [create_default_variant(product_id)]
 
     # 3. Batch write new variants
     _batch_write_variants(new_variants)

@@ -1,174 +1,131 @@
-import json
-import boto3
-from datetime import datetime
+"""
+Get customer orders handler for H-DCN.
 
-# Import from shared auth layer (REQUIRED)
+GET /orders/my — Returns all orders belonging to the authenticated user (read-only).
+Displays order status, items, totals, and payment status.
+Supports both webshop orders (event_id null) and event orders (event_id set).
+
+Requirements: 7.14, 7.15
+"""
+
+import json
+import os
+import logging
+from decimal import Decimal
+
+import boto3
+from boto3.dynamodb.conditions import Attr
+
+# Import from shared auth layer
 try:
     from shared.auth_utils import (
         extract_user_credentials,
-        validate_permissions_with_regions,
         cors_headers,
         handle_options_request,
         create_error_response,
         create_success_response,
-        log_successful_access
     )
-    print("Using shared auth layer")
+    print("Using shared auth layer for get_customer_orders")
 except ImportError as e:
-    # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("get_customer_orders")
-    # Exit early - the fallback handler will handle all requests
     import sys
     sys.exit(0)
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# DynamoDB resources
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Orders')
+orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
+members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
-def log_customer_order_audit(event_type, customer_id, user_email, user_roles, additional_data=None):
-    """
-    Log customer order operations for comprehensive audit trail
-    
-    Args:
-        event_type (str): Type of customer order event (ACCESS, ACCESS_DENIED)
-        customer_id (str): ID of the customer whose orders are being accessed
-        user_email (str): Email of the user performing the action
-        user_roles (list): List of user's roles
-        additional_data (dict): Additional data to include in audit log
-    """
+
+def _json_serialize(obj):
+    """Custom JSON serializer for Decimal and other non-standard types."""
+    if isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _get_member_id(user_email):
+    """Resolve member_id from user email. Returns (member_id, error_response)."""
     try:
-        from datetime import datetime
-        
-        audit_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'event_type': f'CUSTOMER_ORDER_{event_type}',
-            'customer_id': customer_id,
-            'user_email': user_email,
-            'user_roles': user_roles,
-            'severity': 'INFO',
-            'requires_review': False
-        }
-        
-        # Add additional data if provided
-        if additional_data:
-            audit_entry.update(additional_data)
-        
-        # Determine if this requires review
-        if event_type in ['ACCESS_DENIED'] or additional_data.get('security_violation'):
-            audit_entry['requires_review'] = True
-            audit_entry['severity'] = additional_data.get('severity', 'WARN')
-        
-        # Log as structured JSON for monitoring systems
-        print(f"CUSTOMER_ORDER_AUDIT: {json.dumps(audit_entry)}")
-        
-        # Human-readable log
-        action_desc = {
-            'ACCESS': 'accessed',
-            'ACCESS_DENIED': 'access denied'
-        }.get(event_type, 'processed')
-        
-        print(f"Customer {customer_id} orders {action_desc} by user {user_email}")
-            
+        response = members_table.scan(
+            FilterExpression=Attr('email').eq(user_email.lower()),
+            ProjectionExpression='member_id',
+        )
+        items = response.get('Items', [])
+        if not items:
+            return None, create_error_response(404, 'Member record not found')
+        member_id = items[0].get('member_id')
+        if not member_id:
+            return None, create_error_response(500, 'Member record missing member_id')
+        return member_id, None
     except Exception as e:
-        print(f"Error logging customer order audit: {str(e)}")
-        # Don't fail the operation if logging fails
-
-# REMOVED: Custom JWT parsing function - now using shared auth system
-# This function has been replaced by extract_user_credentials from shared.auth_utils
+        logger.error(f"Error looking up member for {user_email}: {e}")
+        return None, create_error_response(500, 'Error looking up member information')
 
 
 def lambda_handler(event, context):
+    """Main handler for GET /orders/my."""
     try:
-        # Handle OPTIONS request
+        # Handle OPTIONS request (CORS preflight)
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
-        
-        # Extract user credentials
+
+        # Authentication — any authenticated user can view their own orders
         user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
             return auth_error
-        
-        # Validate user has webshop access permission (hdcnLeden role)
-        if 'hdcnLeden' not in user_roles:
-            return {
-                'statusCode': 403,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Access denied: webshop access requires hdcnLeden role',
-                    'required_role': 'hdcnLeden',
-                    'user_roles': user_roles
-                })
-            }
-        
-        customer_id = event['pathParameters']['customer_id']
-        
-        # Check if user has administrative role to view any customer's orders
-        has_admin_role = any(role in user_roles for role in ['Members_CRUD_All', 'Webshop_Management'])
-        
-        if not has_admin_role:
-            # Regular users can only access orders if they match the customer_id
-            # We need to validate that the customer_id corresponds to the authenticated user
-            # This requires looking up the user's member_id from their email
-            members_table = dynamodb.Table('Members')
-            try:
-                member_response = members_table.scan(
-                    FilterExpression=boto3.dynamodb.conditions.Attr('email').eq(user_email.lower())
-                )
-                
-                if not member_response['Items']:
-                    return {
-                        'statusCode': 403,
-                        'headers': cors_headers(),
-                        'body': json.dumps({
-                            'error': 'Access denied: Member record not found for authenticated user',
-                            'user_email': user_email
-                        })
-                    }
-                
-                user_member_id = member_response['Items'][0].get('member_id')
-                
-                # Check if the requested customer_id matches the user's member_id
-                if customer_id != user_member_id:
-                    log_customer_order_audit('ACCESS_DENIED', customer_id, user_email, user_roles, {
-                        'requested_customer_id': customer_id,
-                        'user_member_id': user_member_id,
-                        'security_violation': True,
-                        'severity': 'CRITICAL'
-                    })
-                    return {
-                        'statusCode': 403,
-                        'headers': cors_headers(),
-                        'body': json.dumps({'error': 'Access denied: You can only access your own orders'})
-                    }
-                    
-            except Exception as e:
-                print(f"Error validating customer access for user {user_email}: {str(e)}")
-                return {
-                    'statusCode': 500,
-                    'headers': cors_headers(),
-                    'body': json.dumps({'error': 'Error validating customer access'})
-                }
-        
-        response = table.query(
-            IndexName='CustomerOrdersIndex',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('customer_id').eq(customer_id)
+
+        # Resolve member_id from user email
+        member_id, member_error = _get_member_id(user_email)
+        if member_error:
+            return member_error
+
+        # Scan Orders table for records matching this member_id
+        filter_expr = Attr('member_id').eq(member_id)
+
+        response = orders_table.scan(FilterExpression=filter_expr)
+        orders = response.get('Items', [])
+
+        # Handle pagination
+        while 'LastEvaluatedKey' in response:
+            response = orders_table.scan(
+                FilterExpression=filter_expr,
+                ExclusiveStartKey=response['LastEvaluatedKey'],
+            )
+            orders.extend(response.get('Items', []))
+
+        # Sort by created_at descending (newest first)
+        orders.sort(key=lambda o: o.get('created_at', ''), reverse=True)
+
+        # Shape the response to include relevant fields
+        result_orders = []
+        for order in orders:
+            result_orders.append({
+                'order_id': order.get('order_id'),
+                'event_id': order.get('event_id'),
+                'status': order.get('status'),
+                'payment_status': order.get('payment_status'),
+                'items': order.get('items', []),
+                'total_amount': order.get('total_amount', 0),
+                'total_paid': order.get('total_paid', 0),
+                'created_at': order.get('created_at'),
+                'updated_at': order.get('updated_at'),
+            })
+
+        return create_success_response(
+            json.loads(json.dumps({
+                'orders': result_orders,
+                'total_count': len(result_orders),
+            }, default=_json_serialize))
         )
-        
-        orders = response['Items']
-        
-        # Log customer orders access for comprehensive audit trail
-        access_type = "admin" if has_admin_role else "owner"
-        log_customer_order_audit('ACCESS', customer_id, user_email, user_roles, {
-            'access_type': access_type,
-            'order_count': len(orders),
-            'total_order_value': sum(float(order.get('total_amount', 0)) for order in orders if order.get('total_amount')),
-            'admin_roles': [role for role in user_roles if role in ['Members_CRUD_All', 'Webshop_Management']] if has_admin_role else []
-        })
-        
-        return create_success_response(orders)
-    except KeyError as e:
-        return create_error_response(400, f'Missing required parameter: {str(e)}')
+
     except Exception as e:
-        print(f"Error retrieving customer orders: {str(e)}")
+        logger.error(f"Error retrieving customer orders: {str(e)}", exc_info=True)
         return create_error_response(500, 'Internal server error')

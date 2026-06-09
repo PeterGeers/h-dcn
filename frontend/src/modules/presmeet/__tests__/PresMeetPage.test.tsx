@@ -1,10 +1,10 @@
 /**
- * PresMeetPage unit tests — Admin role check visibility.
+ * PresMeetPage unit tests — Validates that Admin tab is no longer present.
  *
- * Tests that only users with the correct management role + region role combo
- * see the Admin tab in the PresMeet page.
+ * Admin functionality has been moved to the unified Webshop Beheer page
+ * (WebshopManagementPage). The PresMeet page only contains the booking wizard.
  *
- * Validates: Requirements 5.1, 5.3
+ * Validates: Requirements 10.5, 10.11, 12.6
  */
 
 import React from 'react';
@@ -14,22 +14,15 @@ import '@testing-library/jest-dom';
 // Mock react-i18next
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, any>) => {
+    t: (key: string, fallback?: string) => {
       const translations: Record<string, string> = {
         'page.title': "Presidents' Meeting",
         'page.title_booking': "Presidents' Meeting Booking",
         'page.error_loading': 'Error loading PresMeet',
         'page.tab_booking': 'Booking',
-        'page.tab_overview': 'Overview',
         'page.tab_admin': 'Admin',
       };
-      let result = translations[key] ?? key;
-      if (params) {
-        Object.entries(params).forEach(([k, v]) => {
-          result = result.replace(`{{${k}}}`, String(v));
-        });
-      }
-      return result;
+      return translations[key] ?? fallback ?? key;
     },
     i18n: { language: 'en', changeLanguage: jest.fn() },
   }),
@@ -41,54 +34,47 @@ jest.mock('../../../context/AuthProvider', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-// Mock usePresMeetBooking to provide default state (not loading, no onboarding)
-jest.mock('../hooks/usePresMeetBooking', () => ({
-  usePresMeetBooking: () => ({
-    config: { event: { start_date: '2025-09-01', end_date: '2025-09-03' }, product_types: [] },
-    booking: null,
-    formData: { delegates: [], guests: [], transfers: [] },
-    productTypes: [],
-    isLoading: false,
-    isSaving: false,
-    isSubmitting: false,
-    error: null,
-    needsOnboarding: false,
-    loadBooking: jest.fn(),
-    reloadAll: jest.fn(),
-    saveBooking: jest.fn(),
-    submitBooking: jest.fn(),
-    initiatePayment: jest.fn(),
-  }),
+// Mock presmeetApi
+jest.mock('../services/presmeetApi', () => ({
+  presmeetApi: {
+    getEvent: jest.fn().mockResolvedValue([
+      {
+        event_id: 'pm2027',
+        event_type: 'presmeet',
+        name: 'PresMeet 2027',
+        status: 'open',
+        start_date: '2027-06-01',
+        end_date: '2027-06-03',
+        registration_open: '',
+        registration_close: '',
+        payment_deadline: '',
+        product_ids: [],
+        constraints: [],
+        created_at: '',
+        created_by: '',
+      },
+    ]),
+    getOrder: jest.fn().mockResolvedValue({
+      order_id: 'order-1',
+      club_id: 'club-1',
+      event_id: 'pm2027',
+      status: 'draft',
+      items: [],
+    }),
+    getProducts: jest.fn().mockResolvedValue([]),
+  },
+  isAuthorizationError: jest.fn().mockReturnValue(false),
 }));
 
 // Mock child components to avoid rendering their internals
-jest.mock('../components/BookingForm', () => () => <div data-testid="booking-form">BookingForm</div>);
-jest.mock('../components/BookingOverview', () => () => <div data-testid="booking-overview">BookingOverview</div>);
-jest.mock('../components/AdminDashboard', () => () => <div data-testid="admin-dashboard">AdminDashboard</div>);
+jest.mock('../components/BookingWizard', () => () => <div data-testid="booking-wizard">BookingWizard</div>);
 jest.mock('../components/OnboardingFlow', () => () => <div data-testid="onboarding-flow">OnboardingFlow</div>);
+jest.mock('../components/PaymentPanel', () => () => <div data-testid="payment-panel">PaymentPanel</div>);
+jest.mock('../components/DelegateManager', () => () => <div data-testid="delegate-manager">DelegateManager</div>);
+jest.mock('../components/BookingSummaryPdf', () => () => <div data-testid="booking-pdf">BookingSummaryPdf</div>);
 jest.mock('../components/ClubLogoUploader', () => ({ clubId, isAdmin }: any) => (
-  <div data-testid="club-logo-uploader" data-club-id={clubId} data-is-admin={isAdmin}>ClubLogo</div>
+  <div data-testid="club-logo-uploader">ClubLogo</div>
 ));
-
-// Mock Chakra UI components to render testable HTML
-jest.mock('@chakra-ui/react', () => ({
-  Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  Container: ({ children }: any) => <div>{children}</div>,
-  Heading: ({ children }: any) => <h1>{children}</h1>,
-  Flex: ({ children }: any) => <div data-testid="flex-heading">{children}</div>,
-  Tabs: ({ children }: any) => <div>{children}</div>,
-  TabList: ({ children }: any) => <div role="tablist">{children}</div>,
-  TabPanels: ({ children }: any) => <div>{children}</div>,
-  Tab: ({ children }: any) => <button role="tab">{children}</button>,
-  TabPanel: ({ children }: any) => <div role="tabpanel">{children}</div>,
-  Spinner: () => <span data-testid="spinner">Loading...</span>,
-  Center: ({ children }: any) => <div>{children}</div>,
-  Alert: ({ children }: any) => <div role="alert">{children}</div>,
-  AlertIcon: () => <span />,
-  AlertTitle: ({ children }: any) => <strong>{children}</strong>,
-  AlertDescription: ({ children }: any) => <span>{children}</span>,
-  Text: ({ children }: any) => <span>{children}</span>,
-}));
 
 // Import the component under test AFTER mocks are set up
 import PresMeetPage from '../PresMeetPage';
@@ -103,62 +89,31 @@ function setupAuth(groups: string[]) {
   });
 }
 
-describe('PresMeetPage — Admin tab visibility', () => {
+describe('PresMeetPage — Admin tab removed (unified in Webshop Beheer)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('shows Admin tab for user with Products_CRUD + Regio_Pressmeet', () => {
+  it('does NOT render Admin tab for user with Products_CRUD + Regio_Pressmeet', () => {
+    setupAuth(['hdcnLeden', 'Products_CRUD', 'Regio_Pressmeet']);
+    const { container } = render(<PresMeetPage />);
+
+    // At no point during rendering (loading or loaded) should Admin appear
+    expect(container.textContent).not.toContain('Admin');
+  });
+
+  it('does NOT render Admin tab for user with Webshop_Management + Regio_All', () => {
+    setupAuth(['hdcnLeden', 'Webshop_Management', 'Regio_All']);
+    const { container } = render(<PresMeetPage />);
+
+    expect(container.textContent).not.toContain('Admin');
+  });
+
+  it('does not render AdminDashboard or AdminRouter component', () => {
     setupAuth(['hdcnLeden', 'Products_CRUD', 'Regio_Pressmeet']);
     render(<PresMeetPage />);
 
-    const tabs = screen.getAllByRole('tab');
-    const tabTexts = tabs.map((t) => t.textContent);
-    expect(tabTexts).toContain('Admin');
-  });
-
-  it('shows Admin tab for user with Products_Read + Regio_Pressmeet', () => {
-    setupAuth(['hdcnLeden', 'Products_Read', 'Regio_Pressmeet']);
-    render(<PresMeetPage />);
-
-    const tabs = screen.getAllByRole('tab');
-    const tabTexts = tabs.map((t) => t.textContent);
-    expect(tabTexts).toContain('Admin');
-  });
-
-  it('shows Admin tab for user with Webshop_Management + Regio_All', () => {
-    setupAuth(['hdcnLeden', 'Webshop_Management', 'Regio_All']);
-    render(<PresMeetPage />);
-
-    const tabs = screen.getAllByRole('tab');
-    const tabTexts = tabs.map((t) => t.textContent);
-    expect(tabTexts).toContain('Admin');
-  });
-
-  it('does NOT show Admin tab for user with Products_CRUD but NO region role', () => {
-    setupAuth(['hdcnLeden', 'Products_CRUD']);
-    render(<PresMeetPage />);
-
-    const tabs = screen.getAllByRole('tab');
-    const tabTexts = tabs.map((t) => t.textContent);
-    expect(tabTexts).not.toContain('Admin');
-  });
-
-  it('does NOT show Admin tab for user with Regio_Pressmeet but NO management role', () => {
-    setupAuth(['hdcnLeden', 'Regio_Pressmeet']);
-    render(<PresMeetPage />);
-
-    const tabs = screen.getAllByRole('tab');
-    const tabTexts = tabs.map((t) => t.textContent);
-    expect(tabTexts).not.toContain('Admin');
-  });
-
-  it('does NOT show Admin tab for user with no relevant roles', () => {
-    setupAuth(['hdcnLeden']);
-    render(<PresMeetPage />);
-
-    const tabs = screen.getAllByRole('tab');
-    const tabTexts = tabs.map((t) => t.textContent);
-    expect(tabTexts).not.toContain('Admin');
+    // AdminRouter and AdminDashboard should never be rendered
+    expect(screen.queryByTestId('admin-dashboard')).not.toBeInTheDocument();
   });
 });
