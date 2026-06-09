@@ -26,7 +26,6 @@ import {
   Stack,
   Tooltip,
   Select,
-  SimpleGrid,
   Badge,
 } from '@chakra-ui/react';
 import { useAdminReports } from '../hooks/useAdminReports';

@@ -22,7 +22,7 @@ import {
   StatNumber,
   Divider,
 } from '@chakra-ui/react';
-import { ReportResponse, AdminProduct, AdminOrder } from '../../types/admin.types';
+import { ReportResponse } from '../../types/admin.types';
 import { formatCurrency } from '../ReportsTab';
 
 interface ProductsReportProps {

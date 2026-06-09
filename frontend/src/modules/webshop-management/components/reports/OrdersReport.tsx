@@ -37,7 +37,7 @@ const PAYMENT_STATUS_COLOR: Record<string, string> = {
 };
 
 export const OrdersReport: React.FC<OrdersReportProps> = ({ report }) => {
-  const { orders = [], summary } = report;
+  const { orders = [] } = report;
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
   const totalPaid = orders.reduce((sum, o) => sum + o.amount_paid, 0);
