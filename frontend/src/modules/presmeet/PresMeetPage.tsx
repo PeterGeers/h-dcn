@@ -158,6 +158,8 @@ const PresMeetPage: React.FC = () => {
               orderErr?.response?.data?.message || orderErr?.response?.data?.error || t('page.error_loading')
             );
           }
+        } else if (orderErr?.response?.status === 404) {
+          // No order exists yet — valid state, show empty booking
         } else {
           throw orderErr;
         }
@@ -277,36 +279,40 @@ const PresMeetPage: React.FC = () => {
         <TabPanels>
           {/* Booking Tab */}
           <TabPanel px={0}>
-            {activeEvent && order ? (
+            {activeEvent ? (
               <VStack spacing={6} align="stretch">
                 <BookingWizard eventId={activeEvent.event_id} />
 
-                <Divider />
+                {order && (
+                  <>
+                    <Divider />
 
-                {/* Payment Panel */}
-                {order && order.status !== 'draft' && (
-                  <PaymentPanel
-                    order={order}
-                    onPaymentInitiated={reloadOrder}
-                  />
-                )}
+                    {/* Payment Panel */}
+                    {order.status !== 'draft' && (
+                      <PaymentPanel
+                        order={order}
+                        onPaymentInitiated={reloadOrder}
+                      />
+                    )}
 
-                {/* Delegate Manager */}
-                {order && user?.email && (
-                  <DelegateManager
-                    order={order}
-                    currentUserEmail={user.email}
-                    onDelegateChange={reloadOrder}
-                  />
-                )}
+                    {/* Delegate Manager */}
+                    {user?.email && (
+                      <DelegateManager
+                        order={order}
+                        currentUserEmail={user.email}
+                        onDelegateChange={reloadOrder}
+                      />
+                    )}
 
-                {/* PDF Download */}
-                {order && activeEvent && products.length > 0 && (
-                  <BookingSummaryPdf
-                    order={order}
-                    event={activeEvent}
-                    products={products}
-                  />
+                    {/* PDF Download */}
+                    {products.length > 0 && (
+                      <BookingSummaryPdf
+                        order={order}
+                        event={activeEvent}
+                        products={products}
+                      />
+                    )}
+                  </>
                 )}
               </VStack>
             ) : (

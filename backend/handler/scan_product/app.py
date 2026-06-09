@@ -94,6 +94,9 @@ def lambda_handler(event, context):
                 'is_parent': item.get('is_parent'),
                 'event_id': item.get('event_id'),
                 'active': item.get('active'),
+                'groep': item.get('groep'),
+                'subgroep': item.get('subgroep'),
+                'images': item.get('images', []),
             }
             normalized_items.append(normalized)
 
