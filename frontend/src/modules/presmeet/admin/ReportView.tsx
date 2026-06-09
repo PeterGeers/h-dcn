@@ -103,16 +103,6 @@ const REPORT_COLUMNS: Record<ReportType, ColumnDef[]> = {
   ],
 };
 
-const REPORT_LABELS: Record<ReportType, string> = {
-  attendees: 'Attendees',
-  party: 'Party Guests',
-  tshirts: 'T-Shirts',
-  pickups: 'Pickups',
-  dropoffs: 'Dropoffs',
-  financial: 'Financial',
-  overview: 'Overview',
-};
-
 /** Translation key map for report labels */
 const REPORT_LABEL_KEYS: Record<ReportType, string> = {
   attendees: 'reports.type_attendees',
@@ -237,7 +227,7 @@ const ReportView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [eventId, reportType, statusFilter, paymentStatusFilter]);
+  }, [eventId, reportType, statusFilter, paymentStatusFilter, t]);
 
   useEffect(() => {
     loadReport();

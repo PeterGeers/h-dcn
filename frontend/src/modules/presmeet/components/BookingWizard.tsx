@@ -160,14 +160,6 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
 
   // --- Person management ---
 
-  const getMaxPersonsForProduct = useCallback(
-    (productId: string): number => {
-      const product = products.find((p) => p.product_id === productId);
-      return product?.purchase_rules.max_per_club ?? Infinity;
-    },
-    [products]
-  );
-
   /** Overall max persons = max of all product max_per_club values */
   const maxPersons = useMemo(() => {
     if (products.length === 0) return 0;
@@ -327,6 +319,27 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
     );
   }, [fieldErrors, personErrors]);
 
+  /**
+   * Map a flat item_index (from the backend error response) back to
+   * the person/product indices in our form state.
+   */
+  const mapItemIndexToPersonProduct = useCallback(
+    (itemIndex: number): { personIdx: number; productIdx: number } | null => {
+      let currentIndex = 0;
+      for (let pIdx = 0; pIdx < formState.persons.length; pIdx++) {
+        const person = formState.persons[pIdx];
+        for (let prodIdx = 0; prodIdx < person.products.length; prodIdx++) {
+          if (currentIndex === itemIndex) {
+            return { personIdx: pIdx, productIdx: prodIdx };
+          }
+          currentIndex++;
+        }
+      }
+      return null;
+    },
+    [formState]
+  );
+
   // --- Submit logic (Requirement 11.9) ---
 
   const handleSubmit = useCallback(async () => {
@@ -407,28 +420,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [order, formState, products, version, validateFormForSubmit, toast]);
-
-  /**
-   * Map a flat item_index (from the backend error response) back to
-   * the person/product indices in our form state.
-   */
-  const mapItemIndexToPersonProduct = useCallback(
-    (itemIndex: number): { personIdx: number; productIdx: number } | null => {
-      let currentIndex = 0;
-      for (let pIdx = 0; pIdx < formState.persons.length; pIdx++) {
-        const person = formState.persons[pIdx];
-        for (let prodIdx = 0; prodIdx < person.products.length; prodIdx++) {
-          if (currentIndex === itemIndex) {
-            return { personIdx: pIdx, productIdx: prodIdx };
-          }
-          currentIndex++;
-        }
-      }
-      return null;
-    },
-    [formState]
-  );
+  }, [order, formState, products, version, validateFormForSubmit, toast, mapItemIndexToPersonProduct]);
 
   // Clear validation errors when user edits form
   const handleUpdatePersonWithClear = useCallback(

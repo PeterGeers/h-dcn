@@ -94,7 +94,7 @@ const EventDashboard: React.FC = () => {
     };
 
     loadEvents();
-  }, [toast]);
+  }, [toast, t]);
 
   // Load dashboard data when selected event changes
   const loadDashboardData = useCallback(async () => {
@@ -129,7 +129,7 @@ const EventDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedEventId, events]);
+  }, [selectedEventId, events, t]);
 
   useEffect(() => {
     loadDashboardData();
