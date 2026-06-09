@@ -1,17 +1,19 @@
 /**
- * PresMeetPage — Main page for the PresMeet booking module.
+ * PresMeetPage — Main page for the PresMeet booking module (v3).
  *
  * Features:
- * - Tab navigation: Booking, Overview, Admin
- * - Admin tab visible to users with management role + region role (v2 logic)
- * - Uses usePresMeetBooking hook for state management
- * - Uses useAuth from AuthProvider context for user role detection
- * - Shows OnboardingFlow if user has no club_id assigned
+ * - Loads current active event via presmeetApi.getEvent('presmeet')
+ * - Shows OnboardingFlow if user has no club assignment (403 from getOrder)
+ * - Tab navigation: Booking (BookingWizard), Admin (AdminRouter)
+ * - Admin tab visible to users with management role + region role
+ * - BookingWizard handles its own state internally
+ * - PaymentPanel, DelegateManager, BookingSummaryPdf below wizard
+ * - ClubLogoUploader in header
  *
  * Validates: Requirements 5.1, 5.2, 5.3, 10.1, 10.2, 10.5
  */
 
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -29,14 +31,19 @@ import {
   AlertDescription,
   Text,
   Flex,
+  VStack,
+  Divider,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthProvider';
-import { usePresMeetBooking } from './hooks/usePresMeetBooking';
-import BookingForm from './components/BookingForm';
-import BookingOverview from './components/BookingOverview';
-import AdminDashboard from './components/AdminDashboard';
+import { presmeetApi, isAuthorizationError } from './services/presmeetApi';
+import { Event, Order, Product } from './types/presmeet.types';
+import BookingWizard from './components/BookingWizard';
 import OnboardingFlow from './components/OnboardingFlow';
+import PaymentPanel from './components/PaymentPanel';
+import DelegateManager from './components/DelegateManager';
+import BookingSummaryPdf from './components/BookingSummaryPdf';
+import AdminRouter from './admin/AdminRouter';
 import ClubLogoUploader from './components/ClubLogoUploader';
 
 /**
@@ -68,28 +75,114 @@ function isLogoUploadAdmin(groups: string[]): boolean {
 const PresMeetPage: React.FC = () => {
   const { t } = useTranslation('presmeet');
   const { user } = useAuth();
-  const {
-    config,
-    booking,
-    formData,
-    productTypes,
-    isLoading,
-    error,
-    needsOnboarding,
-    loadBooking,
-    reloadAll,
-  } = usePresMeetBooking();
 
-  const userGroups = user?.groups ?? [];
+  // Page-level state
+  const [activeEvent, setActiveEvent] = useState<Event | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  const userGroups = (user?.groups as string[]) ?? [];
   const isAdmin = isPresMeetAdmin(userGroups);
   const isLogoAdmin = isLogoUploadAdmin(userGroups);
-  const clubId = booking?.club_id;
 
-  // Handle onboarding completion: reload all state to show the booking form
-  const handleOnboardingComplete = async (_clubId: string) => {
-    await reloadAll();
-  };
+  /**
+   * Load the active event and attempt to load the order.
+   * If getOrder returns 403 with "Missing club assignment", show onboarding.
+   */
+  const loadPageData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    setNeedsOnboarding(false);
 
+    try {
+      // Get all presmeet events
+      const events = await presmeetApi.getEvent('presmeet');
+
+      // Find the first open event, fallback to most recent by start_date
+      const openEvent = events.find((e) => e.status === 'open');
+      const fallbackEvent = events.length > 0
+        ? events.sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
+        : null;
+      const currentEvent = openEvent || fallbackEvent;
+
+      if (!currentEvent) {
+        setError(t('page.no_event'));
+        setIsLoading(false);
+        return;
+      }
+
+      setActiveEvent(currentEvent);
+
+      // Try to load the order for this event
+      try {
+        const orderData = await presmeetApi.getOrder(currentEvent.event_id);
+        setOrder(orderData);
+
+        // Load products for the event
+        const eventProducts = await presmeetApi.getProducts(
+          'presmeet',
+          currentEvent.product_ids
+        );
+        setProducts(eventProducts);
+      } catch (orderErr: any) {
+        if (isAuthorizationError(orderErr)) {
+          // 403 — likely missing club assignment
+          const msg = orderErr.message?.toLowerCase() || '';
+          if (msg.includes('club') || msg.includes('assignment')) {
+            setNeedsOnboarding(true);
+          } else {
+            setError(orderErr.message);
+          }
+        } else if (orderErr?.response?.status === 403) {
+          // Fallback: check raw 403 response message
+          const msg = orderErr?.response?.data?.message?.toLowerCase() || '';
+          if (msg.includes('club') || msg.includes('assignment')) {
+            setNeedsOnboarding(true);
+          } else {
+            setError(
+              orderErr?.response?.data?.message || t('page.error_loading')
+            );
+          }
+        } else {
+          throw orderErr;
+        }
+      }
+    } catch (err: any) {
+      const message =
+        err?.message || err?.response?.data?.message || t('page.error_loading');
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadPageData();
+  }, [loadPageData]);
+
+  /** After onboarding completes, reload page data */
+  const handleOnboardingComplete = useCallback(
+    async (_clubId: string) => {
+      await loadPageData();
+    },
+    [loadPageData]
+  );
+
+  /** Reload order (used after delegate changes or payment) */
+  const reloadOrder = useCallback(async () => {
+    if (!activeEvent) return;
+    try {
+      const orderData = await presmeetApi.getOrder(activeEvent.event_id);
+      setOrder(orderData);
+    } catch {
+      // Silently fail — the user can retry
+    }
+  }, [activeEvent]);
+
+  // --- Loading state ---
   if (isLoading) {
     return (
       <Center h="300px">
@@ -98,7 +191,8 @@ const PresMeetPage: React.FC = () => {
     );
   }
 
-  if (error && !config && !needsOnboarding) {
+  // --- Error state (no event or fatal error) ---
+  if (error && !activeEvent && !needsOnboarding) {
     return (
       <Container maxW="container.lg" py={6}>
         <Alert status="error" borderRadius="md">
@@ -112,17 +206,23 @@ const PresMeetPage: React.FC = () => {
     );
   }
 
-  // Show onboarding flow if user has no club_id assigned
+  // --- Onboarding flow (no club assignment) ---
   if (needsOnboarding) {
     return (
       <Container maxW="container.xl" py={6}>
         <Heading size="lg" color="orange.400" mb={6}>
           {t('page.title')}
         </Heading>
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
+        <OnboardingFlow
+          onComplete={handleOnboardingComplete}
+          eventId={activeEvent?.event_id}
+        />
       </Container>
     );
   }
+
+  // --- Main booking page ---
+  const clubId = order?.club_id;
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -145,41 +245,51 @@ const PresMeetPage: React.FC = () => {
       <Tabs colorScheme="orange" variant="enclosed">
         <TabList>
           <Tab>{t('page.tab_booking')}</Tab>
-          <Tab>{t('page.tab_overview')}</Tab>
           {isAdmin && <Tab>{t('page.tab_admin')}</Tab>}
         </TabList>
 
         <TabPanels>
-          {/* Booking Form Tab */}
+          {/* Booking Tab */}
           <TabPanel px={0}>
-            <BookingForm
-              config={productTypes}
-              eventStartDate={config?.event?.start_date}
-              eventEndDate={config?.event?.end_date}
-              existingBooking={booking}
-              initialFormData={formData}
-              onSaved={loadBooking}
-              onSubmitted={loadBooking}
-            />
-          </TabPanel>
+            {activeEvent && (
+              <VStack spacing={6} align="stretch">
+                <BookingWizard eventId={activeEvent.event_id} />
 
-          {/* Overview Tab */}
-          <TabPanel px={0}>
-            <BookingOverview
-              items={booking?.items ?? []}
-              status={booking?.status ?? 'draft'}
-              paymentStatus={booking?.payment_status ?? 'unpaid'}
-              totalPaid={0}
-              clubName={booking?.club_id ?? ''}
-              clubId={booking?.club_id ?? ''}
-              submittedAt={booking?.submitted_at ?? null}
-            />
+                <Divider />
+
+                {/* Payment Panel */}
+                {order && order.status !== 'draft' && (
+                  <PaymentPanel
+                    order={order}
+                    onPaymentInitiated={reloadOrder}
+                  />
+                )}
+
+                {/* Delegate Manager */}
+                {order && user?.email && (
+                  <DelegateManager
+                    order={order}
+                    currentUserEmail={user.email}
+                    onDelegateChange={reloadOrder}
+                  />
+                )}
+
+                {/* PDF Download */}
+                {order && activeEvent && products.length > 0 && (
+                  <BookingSummaryPdf
+                    order={order}
+                    event={activeEvent}
+                    products={products}
+                  />
+                )}
+              </VStack>
+            )}
           </TabPanel>
 
           {/* Admin Tab (conditionally rendered) */}
           {isAdmin && (
             <TabPanel px={0}>
-              <AdminDashboard isAdmin={isAdmin} />
+              <AdminRouter />
             </TabPanel>
           )}
         </TabPanels>
