@@ -34,7 +34,7 @@ import argparse
 import sys
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import boto3
@@ -193,7 +193,7 @@ EVENT_PM2027 = {
             "product_id": PRODUCT_ID_PARTY,
         },
     ],
-    "created_at": datetime.utcnow().isoformat(),
+    "created_at": datetime.now(timezone.utc).isoformat(),
     "created_by": "seed_script",
 }
 
@@ -318,9 +318,9 @@ def cleanup_products(dynamodb, dry_run: bool) -> int:
 
     deleted = 0
     for item in items:
-        product_id = item.get("product_id")
+        product_id = item.get("product_id") or item.get("id")
         if product_id:
-            table.delete_item(Key={"product_id": product_id})
+            table.delete_item(Key={"id": product_id})
             deleted += 1
             print(f"     ✅ Deleted product: {product_id}")
 
@@ -380,6 +380,8 @@ def seed_products(dynamodb, dry_run: bool) -> int:
         else:
             # Filter out None values (variant_schema=None should not be stored)
             item = {k: v for k, v in product.items() if v is not None}
+            # DynamoDB key is 'id', ensure it's set (same value as product_id)
+            item["id"] = product_id
             table.put_item(Item=item)
             print(f"     ✅ Created: {product_id} — {name} (€{price})")
 
