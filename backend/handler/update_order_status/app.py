@@ -61,7 +61,7 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'update_order_status')
         
-        order_id = event['pathParameters']['order_id']
+        order_id = event['pathParameters'].get('id') or event['pathParameters'].get('order_id')
         data = json.loads(event['body']) if event['body'] else {}
         
         # Get existing order to validate ownership

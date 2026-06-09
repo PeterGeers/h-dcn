@@ -104,7 +104,7 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'get_order_byid')
         
-        order_id = event['pathParameters']['order_id']
+        order_id = event['pathParameters'].get('id') or event['pathParameters'].get('order_id')
         
         response = table.get_item(Key={'order_id': order_id})
         

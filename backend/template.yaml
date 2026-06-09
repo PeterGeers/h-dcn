@@ -1078,7 +1078,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /orders/{order_id}
+            Path: /orders/{id}
             Method: get
 
   UpdateOrderStatusFunction:
@@ -1095,7 +1095,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /orders/{order_id}/status
+            Path: /orders/{id}/status
             Method: put
 
   GetCustomerOrdersFunction:
@@ -1168,7 +1168,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /orders/{order_id}/pdf
+            Path: /orders/{id}/pdf
             Method: get
 
   # IAM Role for PDF Generator Lambda (DynamoDB + S3 read access)

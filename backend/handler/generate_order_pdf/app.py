@@ -661,7 +661,7 @@ def lambda_handler(event, context):
 
         # Extract and validate order_id from path parameters
         path_params = event.get('pathParameters') or {}
-        order_id = path_params.get('order_id', '')
+        order_id = path_params.get('id') or path_params.get('order_id', '')
 
         if not order_id or not order_id.strip():
             return create_error_response(400, 'Invalid order_id format')
