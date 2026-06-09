@@ -8,20 +8,23 @@ Key design decisions:
 - Always returns 200 for valid webhook calls (Mollie requirement)
 - Uses shared.mollie_client.get_payment() to fetch current payment status
 - Uses shared.stock_reservation.reserve_stock_for_order() when paid
-- Idempotent: uses mollie_payment_id as lookup key, guards stock reservation
-  with conditional update (stock_reserved field on order)
+- Supports TWO lookup paths:
+  1. Payments table (PresMeet flow): mollie_payment_id → payment record → order
+  2. Orders table (legacy webshop flow): mollie_payment_id directly on order
+- Idempotent: guards stock reservation with conditional update (stock_reserved field)
 - Only transitions order state forward (never backward): open → paid, open → failed
 
-Requirements: 9.6, 9.7, 9.11
+Requirements: 7.3, 7.4, 9.6, 9.7, 9.11
 """
 
 import json
 import os
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import boto3
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, Key
 
 # Import shared utilities
 try:
@@ -46,6 +49,7 @@ logger.setLevel(logging.INFO)
 # DynamoDB resources
 dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
+payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
 
 # Payment statuses that indicate a terminal failure
@@ -99,12 +103,45 @@ def _extract_payment_id(event: dict) -> str | None:
     return None
 
 
+def _find_payment_record(mollie_payment_id: str) -> dict | None:
+    """
+    Find a payment record in the Payments table by mollie_payment_id.
+
+    Uses a scan with filter since there's no GSI on mollie_payment_id.
+
+    Returns:
+        The payment record, or None if not found.
+    """
+    try:
+        response = payments_table.scan(
+            FilterExpression=Attr('mollie_payment_id').eq(mollie_payment_id)
+        )
+        items = response.get('Items', [])
+
+        while 'LastEvaluatedKey' in response:
+            response = payments_table.scan(
+                FilterExpression=Attr('mollie_payment_id').eq(mollie_payment_id),
+                ExclusiveStartKey=response['LastEvaluatedKey']
+            )
+            items.extend(response.get('Items', []))
+
+        if items:
+            return items[0]
+        return None
+    except Exception as e:
+        logger.error(
+            "Error finding payment record by mollie_payment_id %s: %s",
+            mollie_payment_id, str(e)
+        )
+        return None
+
+
 def _find_order_by_mollie_payment_id(mollie_payment_id: str) -> dict | None:
     """
     Find an order by scanning the Orders table for mollie_payment_id.
 
-    Args:
-        mollie_payment_id: The Mollie payment ID to look up.
+    This is the legacy webshop lookup path where mollie_payment_id is stored
+    directly on the order record.
 
     Returns:
         The order record, or None if not found.
@@ -115,7 +152,6 @@ def _find_order_by_mollie_payment_id(mollie_payment_id: str) -> dict | None:
         )
         items = response.get('Items', [])
 
-        # Handle pagination
         while 'LastEvaluatedKey' in response:
             response = orders_table.scan(
                 FilterExpression=Attr('mollie_payment_id').eq(mollie_payment_id),
@@ -127,27 +163,233 @@ def _find_order_by_mollie_payment_id(mollie_payment_id: str) -> dict | None:
             return items[0]
         return None
     except Exception as e:
-        logger.error("Error finding order by mollie_payment_id %s: %s", mollie_payment_id, str(e))
+        logger.error(
+            "Error finding order by mollie_payment_id %s: %s",
+            mollie_payment_id, str(e)
+        )
         return None
+
+
+def _get_order(order_id: str) -> dict | None:
+    """Fetch an order by order_id."""
+    try:
+        response = orders_table.get_item(Key={'order_id': order_id})
+        return response.get('Item')
+    except Exception as e:
+        logger.error("Error fetching order %s: %s", order_id, str(e))
+        return None
+
+
+def _get_all_payments_for_order(order_id: str) -> list:
+    """
+    Get all payment records for a given order from the Payments table.
+
+    Returns:
+        List of payment records for the order.
+    """
+    try:
+        response = payments_table.scan(
+            FilterExpression=Attr('order_id').eq(order_id)
+        )
+        items = response.get('Items', [])
+
+        while 'LastEvaluatedKey' in response:
+            response = payments_table.scan(
+                FilterExpression=Attr('order_id').eq(order_id),
+                ExclusiveStartKey=response['LastEvaluatedKey']
+            )
+            items.extend(response.get('Items', []))
+
+        return items
+    except Exception as e:
+        logger.error("Error fetching payments for order %s: %s", order_id, str(e))
+        return []
+
+
+def _calculate_total_paid(payments: list) -> Decimal:
+    """
+    Calculate total paid from all payment records with status "paid".
+
+    Returns:
+        Sum of amounts for all paid payment records.
+    """
+    total = Decimal('0')
+    for payment in payments:
+        if payment.get('status') == 'paid':
+            total += Decimal(str(payment.get('amount', 0)))
+    return total
+
+
+def _determine_payment_status(total_paid: Decimal, total_amount: Decimal) -> str:
+    """
+    Determine payment_status based on total_paid vs order total.
+
+    Returns:
+        "paid" if total_paid >= total_amount (and total_amount > 0)
+        "partial" if 0 < total_paid < total_amount
+        "unpaid" otherwise
+    """
+    if total_amount > 0 and total_paid >= total_amount:
+        return 'paid'
+    elif total_paid > 0:
+        return 'partial'
+    return 'unpaid'
+
+
+def _update_payment_record_status(payment_id: str, new_status: str) -> None:
+    """Update a payment record's status in the Payments table."""
+    try:
+        payments_table.update_item(
+            Key={'payment_id': payment_id},
+            UpdateExpression='SET #s = :status, updated_at = :now',
+            ExpressionAttributeNames={'#s': 'status'},
+            ExpressionAttributeValues={
+                ':status': new_status,
+                ':now': _now_iso(),
+            }
+        )
+        logger.info("Payment record %s updated to status '%s'", payment_id, new_status)
+    except Exception as e:
+        logger.error("Error updating payment record %s: %s", payment_id, str(e))
+        raise
+
+
+def _update_order_payment_totals(
+    order_id: str, total_paid: Decimal, payment_status: str
+) -> None:
+    """
+    Update an order's total_paid and payment_status.
+
+    This is used for the PresMeet flow where payment tracking is via the
+    Payments table rather than directly on the order.
+    """
+    try:
+        orders_table.update_item(
+            Key={'order_id': order_id},
+            UpdateExpression=(
+                'SET total_paid = :total_paid, '
+                'payment_status = :payment_status, '
+                'updated_at = :now'
+            ),
+            ExpressionAttributeValues={
+                ':total_paid': total_paid,
+                ':payment_status': payment_status,
+                ':now': _now_iso(),
+            }
+        )
+        logger.info(
+            "Order %s updated: total_paid=%s, payment_status=%s",
+            order_id, total_paid, payment_status
+        )
+    except Exception as e:
+        logger.error("Error updating order %s payment totals: %s", order_id, str(e))
+        raise
+
+
+def _handle_presmeet_payment(
+    mollie_payment_id: str, mollie_status: str, payment_record: dict
+) -> dict:
+    """
+    Handle payment callback for PresMeet orders (Payments table flow).
+
+    1. Update payment record status in Payments table
+    2. Fetch all payments for the order
+    3. Recalculate total_paid (sum of all "paid" payments)
+    4. Determine and update order payment_status
+    5. Trigger stock reservation if transitioning to "paid"
+
+    Returns:
+        Response body dict.
+    """
+    payment_id = payment_record['payment_id']
+    order_id = payment_record['order_id']
+
+    # Map Mollie status to our payment record status
+    if mollie_status == 'paid':
+        new_payment_status = 'paid'
+    elif mollie_status in FAILED_STATUSES:
+        new_payment_status = 'failed'
+    else:
+        # Intermediate status (open, pending) — no update needed
+        logger.info(
+            "Mollie payment %s has intermediate status '%s', no update for PresMeet payment",
+            mollie_payment_id, mollie_status
+        )
+        return {'status': 'ok', 'detail': 'intermediate status, no update'}
+
+    # Step 1: Update payment record status
+    _update_payment_record_status(payment_id, new_payment_status)
+
+    # Step 2: Fetch the order
+    order = _get_order(order_id)
+    if not order:
+        logger.warning("Order %s not found for payment %s", order_id, payment_id)
+        return {'status': 'error', 'reason': 'order not found for payment'}
+
+    # Step 3: Fetch all payments for this order and recalculate total_paid
+    all_payments = _get_all_payments_for_order(order_id)
+    total_paid = _calculate_total_paid(all_payments)
+
+    # Step 4: Determine payment_status
+    total_amount = Decimal(str(order.get('total_amount', 0)))
+    payment_status = _determine_payment_status(total_paid, total_amount)
+
+    previous_payment_status = order.get('payment_status', 'unpaid')
+
+    # Step 5: Update order with new totals
+    _update_order_payment_totals(order_id, total_paid, payment_status)
+
+    # Step 6: Trigger stock reservation if transitioning to "paid"
+    if payment_status == 'paid' and previous_payment_status != 'paid':
+        _trigger_stock_reservation_with_guard(order)
+
+    logger.info(
+        "PresMeet payment processed: order=%s, total_paid=%s, status=%s→%s",
+        order_id, total_paid, previous_payment_status, payment_status
+    )
+
+    return {'status': 'ok', 'flow': 'presmeet'}
+
+
+def _trigger_stock_reservation_with_guard(order: dict) -> None:
+    """
+    Trigger stock reservation with idempotency guard (stock_reserved flag).
+
+    Uses conditional update to ensure stock is only reserved once.
+    """
+    order_id = order['order_id']
+
+    try:
+        orders_table.update_item(
+            Key={'order_id': order_id},
+            UpdateExpression='SET stock_reserved = :true_val',
+            ConditionExpression=(
+                'attribute_not_exists(stock_reserved) OR stock_reserved = :false_val'
+            ),
+            ExpressionAttributeValues={
+                ':true_val': True,
+                ':false_val': False,
+            }
+        )
+        # Condition passed — safe to reserve stock
+        _trigger_stock_reservation(order)
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        logger.info(
+            "Order %s already has stock_reserved=true (idempotent)", order_id
+        )
 
 
 def _can_transition_to_paid(current_status: str) -> bool:
     """Check if order can transition to paid (only forward transitions)."""
-    # Already paid — idempotent, no action needed
     if current_status in TERMINAL_PAID_STATUSES:
         return False
-    # Already marked as failed — we still allow transition to paid
-    # (Mollie may retry and succeed after initial failure report)
-    # Only "paid" is truly terminal for the paid path
     return True
 
 
 def _can_transition_to_failed(current_status: str) -> bool:
     """Check if order can transition to payment_failed (only forward transitions)."""
-    # Already paid — never go backward
     if current_status in TERMINAL_PAID_STATUSES:
         return False
-    # Already failed — idempotent
     if current_status in TERMINAL_FAILED_STATUSES:
         return False
     return True
@@ -156,10 +398,6 @@ def _can_transition_to_failed(current_status: str) -> bool:
 def _update_order_to_paid(order: dict) -> bool:
     """
     Update order payment_status to "paid" with conditional guard on stock_reserved.
-
-    Uses a conditional update to ensure stock reservation is only triggered once:
-    - Sets payment_status = "paid"
-    - Sets stock_reserved = true (only if not already true)
 
     Returns:
         True if update succeeded (stock reservation should proceed),
@@ -188,7 +426,6 @@ def _update_order_to_paid(order: dict) -> bool:
         logger.info("Order %s payment_status updated to 'paid'", order_id)
         return True
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
-        # stock_reserved is already True — order was already processed
         logger.info("Order %s already has stock_reserved=true (idempotent)", order_id)
         return False
     except Exception as e:
@@ -229,7 +466,6 @@ def _trigger_stock_reservation(order: dict) -> None:
         logger.warning("Order %s has no items, skipping stock reservation", order_id)
         return
 
-    # Build order_items list for stock_reservation module
     order_items = []
     for item in items:
         variant_id = item.get('variant_id')
@@ -256,8 +492,6 @@ def _trigger_stock_reservation(order: dict) -> None:
                 order_id, result['variant_id'], result['quantity'], result['status']
             )
     except InsufficientStockError as e:
-        # Log but don't fail the webhook — payment is confirmed, stock issue
-        # needs admin attention
         logger.error(
             "Insufficient stock during reservation for order %s: variant=%s, "
             "available=%d, requested=%d",
@@ -269,6 +503,49 @@ def _trigger_stock_reservation(order: dict) -> None:
         )
 
 
+def _handle_legacy_webshop_payment(
+    mollie_payment_id: str, mollie_status: str, order: dict
+) -> dict:
+    """
+    Handle payment callback for legacy webshop orders (mollie_payment_id on order).
+
+    This is the original flow where mollie_payment_id is stored directly on the
+    order record.
+
+    Returns:
+        Response body dict.
+    """
+    order_id = order['order_id']
+    current_payment_status = order.get('payment_status', '')
+
+    if mollie_status == 'paid':
+        if _can_transition_to_paid(current_payment_status):
+            should_reserve = _update_order_to_paid(order)
+            if should_reserve:
+                _trigger_stock_reservation(order)
+        else:
+            logger.info(
+                "Order %s already in terminal status '%s', skipping paid transition",
+                order_id, current_payment_status
+            )
+
+    elif mollie_status in FAILED_STATUSES:
+        if _can_transition_to_failed(current_payment_status):
+            _update_order_to_failed(order)
+        else:
+            logger.info(
+                "Order %s in status '%s', cannot transition to failed",
+                order_id, current_payment_status
+            )
+    else:
+        logger.info(
+            "Mollie payment %s has intermediate status '%s', no order update",
+            mollie_payment_id, mollie_status
+        )
+
+    return {'status': 'ok', 'flow': 'webshop'}
+
+
 def lambda_handler(event, context):
     """
     Mollie webhook handler.
@@ -276,7 +553,9 @@ def lambda_handler(event, context):
     - No Cognito auth (public endpoint called by Mollie)
     - Receives Mollie payment ID via form-encoded or JSON POST body
     - Fetches payment status from Mollie API via shared.mollie_client
-    - Updates order payment_status and triggers stock reservation if paid
+    - Supports two lookup paths:
+      1. Payments table (PresMeet): updates payment record + recalculates order totals
+      2. Orders table (webshop): updates order payment_status directly
     - Always returns 200 to Mollie (Mollie requirement)
     - Idempotent: re-processing same payment ID produces same final state
     """
@@ -302,12 +581,11 @@ def lambda_handler(event, context):
 
         logger.info("Processing Mollie webhook for payment: %s", mollie_payment_id)
 
-        # Fetch current payment status from Mollie API using shared client
+        # Fetch current payment status from Mollie API
         try:
             mollie_payment = get_payment(mollie_payment_id)
         except MollieError as e:
             logger.error("Failed to fetch Mollie payment %s: %s", mollie_payment_id, e.reason)
-            # Return 200 to prevent Mollie from retrying endlessly
             return {
                 'statusCode': 200,
                 'headers': cors_headers(),
@@ -317,56 +595,44 @@ def lambda_handler(event, context):
         mollie_status = mollie_payment.get('status', '')
         logger.info("Mollie payment %s status: %s", mollie_payment_id, mollie_status)
 
-        # Find our order by mollie_payment_id
-        order = _find_order_by_mollie_payment_id(mollie_payment_id)
-        if not order:
-            logger.warning("No order found for mollie_payment_id %s", mollie_payment_id)
+        # Path 1: Check Payments table first (PresMeet flow)
+        payment_record = _find_payment_record(mollie_payment_id)
+        if payment_record:
+            logger.info(
+                "Found payment record %s in Payments table (PresMeet flow)",
+                payment_record['payment_id']
+            )
+            result = _handle_presmeet_payment(
+                mollie_payment_id, mollie_status, payment_record
+            )
             return {
                 'statusCode': 200,
                 'headers': cors_headers(),
-                'body': json.dumps({'status': 'ignored', 'reason': 'order not found'})
+                'body': json.dumps(result)
             }
 
-        order_id = order['order_id']
-        current_payment_status = order.get('payment_status', '')
-        logger.info(
-            "Order %s current payment_status: %s", order_id, current_payment_status
-        )
-
-        # Process based on Mollie payment status
-        if mollie_status == 'paid':
-            if _can_transition_to_paid(current_payment_status):
-                # Update order to paid with conditional guard on stock_reserved
-                should_reserve = _update_order_to_paid(order)
-                if should_reserve:
-                    # Trigger stock reservation (only once due to conditional update)
-                    _trigger_stock_reservation(order)
-            else:
-                logger.info(
-                    "Order %s already in terminal status '%s', skipping paid transition",
-                    order_id, current_payment_status
-                )
-
-        elif mollie_status in FAILED_STATUSES:
-            if _can_transition_to_failed(current_payment_status):
-                _update_order_to_failed(order)
-            else:
-                logger.info(
-                    "Order %s in status '%s', cannot transition to failed",
-                    order_id, current_payment_status
-                )
-
-        else:
-            # Other statuses (open, pending, authorized): log but don't change order
+        # Path 2: Check Orders table (legacy webshop flow)
+        order = _find_order_by_mollie_payment_id(mollie_payment_id)
+        if order:
             logger.info(
-                "Mollie payment %s has intermediate status '%s', no order update",
-                mollie_payment_id, mollie_status
+                "Found order %s via mollie_payment_id in Orders table (webshop flow)",
+                order['order_id']
             )
+            result = _handle_legacy_webshop_payment(
+                mollie_payment_id, mollie_status, order
+            )
+            return {
+                'statusCode': 200,
+                'headers': cors_headers(),
+                'body': json.dumps(result)
+            }
 
+        # Neither path found a match
+        logger.warning("No payment record or order found for mollie_payment_id %s", mollie_payment_id)
         return {
             'statusCode': 200,
             'headers': cors_headers(),
-            'body': json.dumps({'status': 'ok'})
+            'body': json.dumps({'status': 'ignored', 'reason': 'order not found'})
         }
 
     except Exception as e:

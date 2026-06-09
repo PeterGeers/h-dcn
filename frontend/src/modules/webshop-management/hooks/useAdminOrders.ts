@@ -3,7 +3,7 @@
  *
  * Data fetching hook for admin order management.
  * Fetches orders from the /admin/orders endpoint with optional
- * tenant and status filtering. Provides loading state, error handling,
+ * channel and status filtering. Provides loading state, error handling,
  * and a refetch function for refreshing data after mutations.
  *
  * Validates: Requirements 4.3, 4.4, 4.5
@@ -25,13 +25,13 @@ export interface UseAdminOrdersReturn {
 }
 
 /**
- * Fetches admin orders with optional tenant and status filtering.
+ * Fetches admin orders with optional channel and status filtering.
  *
- * @param tenant - Filter by tenant value (empty string or undefined = all tenants)
+ * @param channel - Filter by channel value (empty string or undefined = all channels)
  * @param status - Filter by order status (optional)
  */
 export function useAdminOrders(
-  tenant?: string,
+  channel?: string,
   status?: string
 ): UseAdminOrdersReturn {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -43,7 +43,7 @@ export function useAdminOrders(
     setError(null);
     try {
       const response = await getAdminOrders(
-        tenant || undefined,
+        channel || undefined,
         status || undefined
       );
       setOrders(response.orders);
@@ -55,7 +55,7 @@ export function useAdminOrders(
     } finally {
       setLoading(false);
     }
-  }, [tenant, status]);
+  }, [channel, status]);
 
   useEffect(() => {
     fetchOrders();

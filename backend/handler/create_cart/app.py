@@ -15,7 +15,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.tenant_resolver import resolve_tenants
+    from shared.channel_resolver import resolve_channels
     from shared.club_identity import get_club_id
     print("Using shared auth layer")
 except ImportError as e:
@@ -181,30 +181,30 @@ def lambda_handler(event, context):
         
         body = json.loads(event['body'])
         
-        # Derive tenant from Cognito group membership
-        user_tenants = resolve_tenants(user_roles)
-        # Use requested tenant from body, or default to first available tenant
-        tenant = body.get('tenant')
-        if tenant:
-            if tenant not in user_tenants:
-                return create_error_response(403, 'Tenant access denied', {
+        # Derive channel from Cognito group membership
+        user_channels = resolve_channels(user_roles)
+        # Use requested channel from body, or default to first available channel
+        channel = body.get('channel')
+        if channel:
+            if channel not in user_channels:
+                return create_error_response(403, 'Channel access denied', {
                     'details': {
-                        'requested_tenant': tenant,
-                        'allowed_tenants': sorted(user_tenants)
+                        'requested_channel': channel,
+                        'allowed_channels': sorted(user_channels)
                     }
                 })
         else:
-            # Default to h-dcn if available, otherwise first tenant
-            tenant = 'h-dcn' if 'h-dcn' in user_tenants else (
-                next(iter(sorted(user_tenants))) if user_tenants else None
+            # Default to h-dcn if available, otherwise first channel
+            channel = 'h-dcn' if 'h-dcn' in user_channels else (
+                next(iter(sorted(user_channels))) if user_channels else None
             )
 
-        if not tenant:
-            return create_error_response(403, 'No tenant access available')
+        if not channel:
+            return create_error_response(403, 'No channel access available')
 
         # Derive club_id for PresMeet users (from Member record)
         club_id = None
-        if tenant == 'presmeet':
+        if channel == 'presmeet':
             club_id = get_club_id(user_email)
 
         # Validate items if provided
@@ -239,7 +239,7 @@ def lambda_handler(event, context):
             'cart_id': cart_id,
             'customer_id': body['customer_id'],
             'user_email': user_email,
-            'tenant': tenant,
+            'channel': channel,
             'items': cart_items,
             'total_amount': total_amount,
             'created_at': datetime.now().isoformat(),
@@ -255,7 +255,7 @@ def lambda_handler(event, context):
         # Log cart creation for comprehensive audit trail
         log_cart_audit('CREATE', cart_id, user_email, user_roles, {
             'customer_id': body['customer_id'],
-            'tenant': tenant,
+            'channel': channel,
             'club_id': club_id,
             'total_amount': str(total_amount),
             'item_count': len(cart_items),

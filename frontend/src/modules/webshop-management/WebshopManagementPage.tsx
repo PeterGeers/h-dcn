@@ -3,7 +3,7 @@
  *
  * Features:
  * - Tab navigation: Producten, Bestellingen, Betalingen, Rapporten
- * - Shared tenant filter state via useTenantFilter hook
+ * - Shared channel filter state via useChannelFilter hook
  * - Independent of PresMeet onboarding flow (no club_id or OnboardingFlow dependency)
  * - Accessible to users with Products_CRUD, Products_Read, or Products_Export roles
  *
@@ -21,15 +21,15 @@ import {
   TabPanel,
   HStack,
 } from '@chakra-ui/react';
-import { TenantFilter } from './components/TenantFilter';
+import { ChannelFilter } from './components/TenantFilter';
 import { ProductsTab } from './components/ProductsTab';
 import { OrdersTab } from './components/OrdersTab';
 import { PaymentsTab } from './components/PaymentsTab';
 import { ReportsTab } from './components/ReportsTab';
-import { useTenantFilter } from './hooks/useTenantFilter';
+import { useChannelFilter } from './hooks/useTenantFilter';
 
 const WebshopManagementPage: React.FC = () => {
-  const { tenant, setTenant } = useTenantFilter();
+  const { channel, setChannel } = useChannelFilter();
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -37,7 +37,7 @@ const WebshopManagementPage: React.FC = () => {
         <Heading size="lg" color="orange.400">
           Webshop Beheer
         </Heading>
-        <TenantFilter value={tenant} onChange={setTenant} />
+        <ChannelFilter value={channel} onChange={setChannel} />
       </HStack>
 
       <Tabs colorScheme="orange" variant="enclosed">
@@ -51,22 +51,22 @@ const WebshopManagementPage: React.FC = () => {
         <TabPanels>
           {/* Products Tab */}
           <TabPanel px={0}>
-            <ProductsTab tenant={tenant} />
+            <ProductsTab tenant={channel} />
           </TabPanel>
 
           {/* Orders Tab */}
           <TabPanel px={0}>
-            <OrdersTab tenant={tenant} />
+            <OrdersTab tenant={channel} />
           </TabPanel>
 
           {/* Payments Tab */}
           <TabPanel px={0}>
-            <PaymentsTab tenant={tenant} />
+            <PaymentsTab tenant={channel} />
           </TabPanel>
 
           {/* Reports Tab */}
           <TabPanel px={0}>
-            <ReportsTab tenant={tenant} />
+            <ReportsTab tenant={channel} />
           </TabPanel>
         </TabPanels>
       </Tabs>

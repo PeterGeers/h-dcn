@@ -44,7 +44,7 @@ try:
     from shared.purchase_rules_engine import validate_purchase_rules
     from shared.item_fields_validator import validate_item_fields_data
     from shared.mollie_client import create_payment, MollieError, SUPPORTED_METHODS
-    from shared.tenant_resolver import resolve_tenants
+    from shared.channel_resolver import resolve_channels
     from shared.club_identity import get_club_id
     print("Using shared auth layer for create_order")
 except ImportError as e:
@@ -149,7 +149,7 @@ def lambda_handler(event, context):
 
         # Resolve club_id (for PresMeet orders)
         club_id = cart_data.get('club_id') or get_club_id(user_email)
-        tenant = cart_data.get('tenant', 'h-dcn')
+        channel = cart_data.get('channel', cart_data.get('tenant', 'h-dcn'))
 
         # Fetch product data for all line items
         products, fetch_error = _fetch_products(items, locale)
@@ -225,13 +225,13 @@ def lambda_handler(event, context):
         if is_persistent and persistent_order:
             return _update_persistent_order(
                 persistent_order, items, products, payment_method,
-                member_id, user_email, club_id, tenant, body, locale, event
+                member_id, user_email, club_id, channel, body, locale, event
             )
 
         # Create new order
         return _create_new_order(
             items, products, payment_method, member_id, user_email,
-            club_id, tenant, cart_id, body, locale, is_persistent, event
+            club_id, channel, cart_id, body, locale, is_persistent, event
         )
 
     except json.JSONDecodeError:
@@ -359,7 +359,7 @@ def _validate_stock(variant_id, quantity, locale):
 
 
 def _create_new_order(items, products, payment_method, member_id, user_email,
-                      club_id, tenant, cart_id, body, locale, is_persistent, event=None):
+                      club_id, channel, cart_id, body, locale, is_persistent, event=None):
     """Create a new order record and handle payment."""
     order_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -375,8 +375,8 @@ def _create_new_order(items, products, payment_method, member_id, user_email,
         'user_email': user_email,
         'member_id': member_id,
         'cart_id': cart_id,
-        'tenant': tenant,
-        'source': 'presmeet' if tenant == 'presmeet' else 'webshop',
+        'channel': channel,
+        'source': 'presmeet' if channel == 'presmeet' else 'webshop',
         'status': 'submitted',
         'payment_method': payment_method,
         'items': order_items,
@@ -502,7 +502,7 @@ def _find_persistent_order(club_id, product_id):
 
 
 def _update_persistent_order(existing_order, items, products, payment_method,
-                             member_id, user_email, club_id, tenant, body, locale, event=None):
+                             member_id, user_email, club_id, channel, body, locale, event=None):
     """Update an existing persistent order with optimistic locking."""
     order_id = existing_order['order_id']
     current_version = int(existing_order.get('version', 1))

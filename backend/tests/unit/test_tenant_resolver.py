@@ -1,8 +1,8 @@
 """
-Unit tests for shared.tenant_resolver module.
+Unit tests for shared.channel_resolver backward-compatible aliases.
 
-Tests resolve_tenants() and validate_tenant_access() covering the
-tenant-to-role mapping and access enforcement logic.
+Tests that the old resolve_tenants() and validate_tenant_access() names
+still work via the aliases defined in shared/__init__.py.
 """
 
 import json
@@ -13,7 +13,7 @@ import os
 # Ensure shared layer is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python')))
 
-from shared.tenant_resolver import resolve_tenants, validate_tenant_access
+from shared.channel_resolver import resolve_channels as resolve_tenants, validate_channel_access as validate_tenant_access
 
 
 class TestResolveTenants:
@@ -81,9 +81,9 @@ class TestValidateTenantAccess:
         assert result is not None
         assert result["statusCode"] == 403
         body = json.loads(result["body"])
-        assert body["error"] == "tenant_access_denied"
-        assert "presmeet" in body["details"]["requested_tenant"]
-        assert "h-dcn" in body["details"]["allowed_tenants"]
+        assert body["error"] == "channel_access_denied"
+        assert "presmeet" in body["details"]["requested_channel"]
+        assert "h-dcn" in body["details"]["allowed_channels"]
 
     def test_partial_denied_returns_403(self):
         """If one of the requested tenants is not allowed, deny."""
@@ -91,8 +91,8 @@ class TestValidateTenantAccess:
         assert result is not None
         assert result["statusCode"] == 403
         body = json.loads(result["body"])
-        assert body["error"] == "tenant_access_denied"
-        assert "presmeet" in body["details"]["requested_tenant"]
+        assert body["error"] == "channel_access_denied"
+        assert "presmeet" in body["details"]["requested_channel"]
 
     def test_empty_requested_returns_403(self):
         result = validate_tenant_access("", {"h-dcn"})

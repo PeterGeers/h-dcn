@@ -107,7 +107,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {
           <Thead>
             <Tr>
               <Th color="gray.400">Bestelling ID</Th>
-              <Th color="gray.400">Tenant</Th>
+              <Th color="gray.400">Channel</Th>
               <Th color="gray.400">Klant</Th>
               <Th color="gray.400" isNumeric>Totaal</Th>
               <Th color="gray.400" isNumeric>Betaald</Th>
@@ -129,8 +129,8 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ tenant }) => {
                     {order.order_id.substring(0, 8)}...
                   </Td>
                   <Td>
-                    <Badge colorScheme={order.tenant === 'presmeet' ? 'purple' : 'blue'}>
-                      {order.tenant}
+                    <Badge colorScheme={order.channel === 'presmeet' ? 'purple' : 'blue'}>
+                      {order.channel}
                     </Badge>
                   </Td>
                   <Td color="white">{order.customer}</Td>

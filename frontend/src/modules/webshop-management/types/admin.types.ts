@@ -26,7 +26,7 @@ export type OrderStatus =
 
 export interface AdminProduct {
   product_id: string;
-  tenant: string;
+  channel: string;
   name: string;
   description?: string;
   price: number;
@@ -81,7 +81,7 @@ export interface PaymentRecord {
 
 export interface AdminOrder {
   order_id: string;
-  tenant: string;
+  channel: string;
   customer_name: string;
   club_name?: string;
   status: OrderStatus;
@@ -106,7 +106,7 @@ export interface AdminOrdersResponse {
 export interface StockMovement {
   movement_id: string;
   variant_id: string;
-  tenant: string;
+  channel: string;
   type: 'inbound' | 'sale';
   quantity: number;
   purchase_price_per_unit?: number | null;
@@ -144,7 +144,7 @@ export interface AddStockRequest {
 }
 
 export interface CreateProductRequest {
-  tenant: string;
+  channel: string;
   name: string;
   description?: string;
   price: number;

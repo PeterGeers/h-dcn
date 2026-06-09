@@ -60,10 +60,10 @@ const adminClient = createAdminClient();
 // --- Product Endpoints ---
 
 export const getAdminProducts = async (
-  tenant?: string
+  channel?: string
 ): Promise<AdminProduct[]> => {
   const params: Record<string, string> = {};
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   const response = await adminClient.get('/admin/products', { params });
   // Backend returns {products: [...], total_count: N}
   const data = response.data;
@@ -143,11 +143,11 @@ export const getStockMovements = async (
 // --- Order Endpoints ---
 
 export const getAdminOrders = async (
-  tenant?: string,
+  channel?: string,
   status?: string
 ): Promise<AdminOrdersResponse> => {
   const params: Record<string, string> = {};
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   if (status) params.status = status;
   const response = await adminClient.get('/admin/orders', { params });
   // Backend returns {orders: [...], total_count: N}
@@ -165,9 +165,9 @@ export const updateOrderStatus = async (
   );
 };
 
-export const lockOrders = async (tenant?: string): Promise<void> => {
+export const lockOrders = async (channel?: string): Promise<void> => {
   const params: Record<string, string> = {};
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   await adminClient.post('/admin/orders/lock', null, { params });
 };
 
@@ -180,10 +180,10 @@ export const unlockOrder = async (orderId: string): Promise<void> => {
 // --- Payment Endpoints ---
 
 export const getAdminPayments = async (
-  tenant?: string
+  channel?: string
 ): Promise<any> => {
   const params: Record<string, string> = {};
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   const response = await adminClient.get('/admin/payments', { params });
   // Backend returns {aggregates: {...}, order_payments: [...], total_count: N}
   return response.data;
@@ -197,27 +197,27 @@ export const recordPayment = async (
 
 // --- Report Endpoints ---
 
-export const generateReport = async (tenant?: string): Promise<void> => {
+export const generateReport = async (channel?: string): Promise<void> => {
   const params: Record<string, string> = {};
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   await adminClient.post('/admin/reports/generate', null, { params });
 };
 
 export const getReport = async (
-  tenant?: string
+  channel?: string
 ): Promise<ReportResponse> => {
   const params: Record<string, string> = {};
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   const response = await adminClient.get<ReportResponse>('/admin/reports', { params });
   return response.data;
 };
 
 export const exportReport = async (
-  tenant?: string,
+  channel?: string,
   format: 'csv' | 'json' = 'json'
 ): Promise<Blob> => {
   const params: Record<string, string> = { format };
-  if (tenant) params.tenant = tenant;
+  if (channel) params.channel = channel;
   const response = await adminClient.get('/admin/reports/export', {
     params,
     responseType: 'blob',

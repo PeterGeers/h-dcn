@@ -209,7 +209,7 @@ class TestGetProductsHandler:
 
         assert result['statusCode'] == 403
         body = json.loads(result['body'])
-        assert body['error'] == 'tenant_access_denied'
+        assert body['error'] == 'channel_access_denied'
 
     def test_no_tenant_param_uses_all_user_tenants(self, producten_table):
         handler = self._import_handler()
@@ -247,7 +247,7 @@ class TestGetProductsHandler:
 
     def test_no_webshop_access_returns_403(self, producten_table):
         handler = self._import_handler()
-        # verzoek_lid has no tenant mapping → resolve_tenants returns empty → 403
+        # verzoek_lid has no channel mapping → resolve_channels returns empty → 403
         event = _build_event(tenant="h-dcn", groups=["verzoek_lid"])
         result = handler(event, None)
         # verzoek_lid doesn't map to any tenant

@@ -1,18 +1,20 @@
 /**
- * useTenantFilter Hook
+ * useChannelFilter Hook
  *
- * Custom React hook for managing tenant filter state.
- * Persists the selected tenant to localStorage so the selection
+ * Custom React hook for managing channel filter state.
+ * Persists the selected channel to localStorage so the selection
  * is preserved across page navigations and refreshes.
  */
 
 import { useState, useCallback } from 'react';
 
-const STORAGE_KEY = 'webshop-management-tenant-filter';
+const STORAGE_KEY = 'webshop-management-channel-filter';
 
-function getInitialTenant(): string {
+function getInitialChannel(): string {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    // Check new key first, fall back to legacy key
+    const stored = localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem('webshop-management-tenant-filter');
     if (stored === 'presmeet' || stored === 'h-dcn') {
       return stored;
     }
@@ -22,24 +24,24 @@ function getInitialTenant(): string {
   return '';
 }
 
-export interface UseTenantFilterReturn {
-  /** Currently selected tenant (empty string means "all") */
-  tenant: string;
-  /** Update the selected tenant */
-  setTenant: (value: string) => void;
+export interface UseChannelFilterReturn {
+  /** Currently selected channel (empty string means "all") */
+  channel: string;
+  /** Update the selected channel */
+  setChannel: (value: string) => void;
 }
 
 /**
- * Manages tenant filter state with localStorage persistence.
- * Returns the current tenant value and a setter function.
+ * Manages channel filter state with localStorage persistence.
+ * Returns the current channel value and a setter function.
  *
- * An empty string ("") represents "all tenants" (no filter applied).
+ * An empty string ("") represents "all channels" (no filter applied).
  */
-export function useTenantFilter(): UseTenantFilterReturn {
-  const [tenant, setTenantState] = useState<string>(getInitialTenant);
+export function useChannelFilter(): UseChannelFilterReturn {
+  const [channel, setChannelState] = useState<string>(getInitialChannel);
 
-  const setTenant = useCallback((value: string) => {
-    setTenantState(value);
+  const setChannel = useCallback((value: string) => {
+    setChannelState(value);
     try {
       if (value) {
         localStorage.setItem(STORAGE_KEY, value);
@@ -51,7 +53,13 @@ export function useTenantFilter(): UseTenantFilterReturn {
     }
   }, []);
 
-  return { tenant, setTenant };
+  return { channel, setChannel };
 }
 
-export default useTenantFilter;
+/** @deprecated Use useChannelFilter instead */
+export function useTenantFilter(): { tenant: string; setTenant: (value: string) => void } {
+  const { channel, setChannel } = useChannelFilter();
+  return { tenant: channel, setTenant: setChannel };
+}
+
+export default useChannelFilter;

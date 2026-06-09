@@ -50,7 +50,7 @@ from shared.item_fields_validator import (
     validate_item_fields_data,
     validate_field_value,
 )
-from shared.tenant_resolver import resolve_tenants, validate_tenant_access
+from shared.channel_resolver import resolve_channels, validate_channel_access
 from shared.stock_reservation import (
     reserve_stock_for_order,
     InsufficientStockError,
@@ -644,7 +644,7 @@ class TestProperty11TenantRoleDerivation:
     @given(groups=cognito_groups_strategy())
     @settings(max_examples=50)
     def test_tenant_derivation(self, groups):
-        tenants = resolve_tenants(groups)
+        tenants = resolve_channels(groups)
 
         expected = set()
         if "hdcnLeden" in groups:
@@ -659,7 +659,7 @@ class TestProperty11TenantRoleDerivation:
     def test_no_relevant_groups_yields_empty(self, groups):
         relevant = {"hdcnLeden", "Regio_Pressmeet", "Regio_All"}
         has_relevant = any(g in relevant for g in groups)
-        tenants = resolve_tenants(groups)
+        tenants = resolve_channels(groups)
 
         if not has_relevant:
             assert tenants == set()
@@ -683,10 +683,10 @@ class TestProperty12TenantAccessEnforcement:
     )
     @settings(max_examples=50)
     def test_tenant_access_enforcement(self, requested, groups):
-        user_tenants = resolve_tenants(groups)
-        result = validate_tenant_access(requested, user_tenants)
+        user_channels = resolve_channels(groups)
+        result = validate_channel_access(requested, user_channels)
 
-        if requested in user_tenants:
+        if requested in user_channels:
             assert result is None
         else:
             assert result is not None

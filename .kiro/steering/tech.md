@@ -22,6 +22,8 @@
 - **PDF generation**: jsPDF + jspdf-autotable
 - **Payments**: Stripe (react-stripe-js)
 - **Testing**: Jest + React Testing Library
+- **i18n**: react-i18next with 8 languages (nl, en, de, fr, es, it, da, sv). Namespace per module (e.g., `presmeet`, `auth`, `common`). All user-facing strings must use `useTranslation()` with translation keys — never hardcoded text. Translation files at `frontend/src/locales/{lang}/{namespace}.json`.
+  > **Important:** Always use `npx react-scripts test` (or `npm test`) — never `npx jest`
 
 ## CI/CD
 
@@ -45,7 +47,6 @@
 - Exceptions: test files, generated files, configuration files with extensive mappings
 
 **Frontend**: split components, extract hooks, move utils. **Backend**: split modules, extract helpers, use service layer, separate blueprint files.
-
 
 ## Common Commands
 

@@ -46,14 +46,14 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'admin_get_products')
 
-        # Get optional tenant filter from query params
+        # Get optional channel filter from query params
         query_params = event.get('queryStringParameters') or {}
-        tenant_filter = query_params.get('tenant')
+        channel_filter = query_params.get('channel')
 
         # Query products (parent products only)
-        if tenant_filter:
+        if channel_filter:
             response = table.scan(
-                FilterExpression=boto3.dynamodb.conditions.Attr('tenant').eq(tenant_filter) & boto3.dynamodb.conditions.Attr('is_parent').eq(True)
+                FilterExpression=boto3.dynamodb.conditions.Attr('channel').eq(channel_filter) & boto3.dynamodb.conditions.Attr('is_parent').eq(True)
             )
         else:
             response = table.scan(
@@ -64,9 +64,9 @@ def lambda_handler(event, context):
 
         # Handle pagination for large datasets
         while 'LastEvaluatedKey' in response:
-            if tenant_filter:
+            if channel_filter:
                 response = table.scan(
-                    FilterExpression=boto3.dynamodb.conditions.Attr('tenant').eq(tenant_filter) & boto3.dynamodb.conditions.Attr('is_parent').eq(True),
+                    FilterExpression=boto3.dynamodb.conditions.Attr('channel').eq(channel_filter) & boto3.dynamodb.conditions.Attr('is_parent').eq(True),
                     ExclusiveStartKey=response['LastEvaluatedKey']
                 )
             else:

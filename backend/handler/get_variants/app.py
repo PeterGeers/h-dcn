@@ -14,7 +14,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.tenant_resolver import resolve_tenants, validate_tenant_access
+    from shared.channel_resolver import resolve_channels, validate_channel_access
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     GET /products/{id}/variants
 
     Fetches all variant records for a parent product using the
-    parent_id-index GSI. Validates tenant access before returning results.
+    parent_id-index GSI. Validates channel access before returning results.
 
     Path parameters:
         id - The parent product_id
@@ -42,7 +42,7 @@ def lambda_handler(event, context):
         200: List of variant records with stock, variant_attributes,
              allow_oversell, price, and active status
         400: Missing product ID
-        403: Tenant access denied
+        403: Channel access denied
         404: Parent product not found
         500: Internal server error
     """
@@ -77,13 +77,13 @@ def lambda_handler(event, context):
                 400, 'The specified ID is a variant, not a parent product'
             )
 
-        # Resolve user tenants from Cognito groups and validate access
-        user_tenants = resolve_tenants(user_roles)
-        product_tenant = parent.get('tenant', 'h-dcn')
+        # Resolve user channels from Cognito groups and validate access
+        user_channels = resolve_channels(user_roles)
+        product_channel = parent.get('channel', parent.get('tenant', 'h-dcn'))
 
-        tenant_error = validate_tenant_access(product_tenant, user_tenants)
-        if tenant_error:
-            return tenant_error
+        channel_error = validate_channel_access(product_channel, user_channels)
+        if channel_error:
+            return channel_error
 
         # Query variants using parent_id-index GSI
         variants = []

@@ -1,7 +1,7 @@
 """
 Unit tests for the create_cart handler.
 
-Tests the unified cart creation logic: tenant derivation, club_id support,
+Tests the unified cart creation logic: channel derivation, club_id support,
 variant_id references (not selectedOption), and item validation.
 (Requirements 6.1, 6.3, 6.5, 12.5)
 """
@@ -106,10 +106,10 @@ def mock_auth():
 
 
 class TestCreateCartTenant:
-    """Tests for tenant field on cart record."""
+    """Tests for channel field on cart record."""
 
     def test_cart_created_with_tenant_hdcn(self, dynamodb_tables, mock_auth):
-        """Cart for hdcnLeden user gets tenant 'h-dcn'."""
+        """Cart for hdcnLeden user gets channel 'h-dcn'."""
         import importlib
         import handler.create_cart.app as handler_module
         importlib.reload(handler_module)
@@ -128,16 +128,16 @@ class TestCreateCartTenant:
         # Verify the record in DynamoDB
         carts_table = dynamodb_tables['carts']
         item = carts_table.get_item(Key={'cart_id': cart_id})['Item']
-        assert item['tenant'] == 'h-dcn'
+        assert item['channel'] == 'h-dcn'
 
     def test_cart_created_with_tenant_presmeet(self, dynamodb_tables, mock_auth):
-        """Cart for PresMeet user gets tenant 'presmeet' and club_id."""
+        """Cart for PresMeet user gets channel 'presmeet' and club_id."""
         import importlib
         import handler.create_cart.app as handler_module
         importlib.reload(handler_module)
 
         event = _make_event(
-            body={'customer_id': 'cust_456', 'tenant': 'presmeet'},
+            body={'customer_id': 'cust_456', 'channel': 'presmeet'},
             user_email='presmeet@example.com',
             user_roles=['Regio_Pressmeet']
         )
@@ -151,17 +151,17 @@ class TestCreateCartTenant:
         # Verify the record in DynamoDB
         carts_table = dynamodb_tables['carts']
         item = carts_table.get_item(Key={'cart_id': cart_id})['Item']
-        assert item['tenant'] == 'presmeet'
+        assert item['channel'] == 'presmeet'
         assert item['club_id'] == 'NL001'
 
     def test_tenant_access_denied_for_wrong_tenant(self, dynamodb_tables, mock_auth):
-        """User requesting a tenant they don't have access to gets 403."""
+        """User requesting a channel they don't have access to gets 403."""
         import importlib
         import handler.create_cart.app as handler_module
         importlib.reload(handler_module)
 
         event = _make_event(
-            body={'customer_id': 'cust_789', 'tenant': 'presmeet'},
+            body={'customer_id': 'cust_789', 'channel': 'presmeet'},
             user_roles=['hdcnLeden']  # Only has h-dcn access
         )
         
@@ -284,7 +284,7 @@ class TestCreateCartEmptyItems:
         item = carts_table.get_item(Key={'cart_id': cart_id})['Item']
         assert item['items'] == []
         assert item['total_amount'] == Decimal('0')
-        assert item['tenant'] == 'h-dcn'
+        assert item['channel'] == 'h-dcn'
 
 
 class TestValidateCartItems:

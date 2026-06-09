@@ -219,6 +219,64 @@ aws iam get-group --group-name Developers --profile personal
 aws iam list-group-policies --group-name Developers --profile personal
 ```
 
+---
+
+## DynamoDB Global Secondary Indexes (Managed Outside CloudFormation)
+
+DynamoDB tables are managed outside CloudFormation. GSIs are added via standalone boto3 scripts.
+
+### Orders Table — `event-club-index`
+
+| Property   | Value                                 |
+| ---------- | ------------------------------------- |
+| Table      | Orders                                |
+| GSI Name   | event-club-index                      |
+| PK         | `event_id` (S)                        |
+| SK         | `club_id` (S)                         |
+| Projection | ALL                                   |
+| Billing    | PAY_PER_REQUEST (inherits from table) |
+
+**Purpose:** Enables efficient queries for:
+
+- Finding an order by club_id + event_id (used by `presmeet_get_order`)
+- Listing all orders for a given event (used by submit validation and reports)
+
+**Script:** `backend/scripts/create_event_club_gsi.py`
+
+**Usage:**
+
+```bash
+# Preview what would be created (no changes)
+python backend/scripts/create_event_club_gsi.py --dry-run
+
+# Create the GSI
+python backend/scripts/create_event_club_gsi.py --profile nonprofit-deploy
+
+# Check GSI status
+python backend/scripts/create_event_club_gsi.py --status
+
+# Create and wait until ACTIVE
+python backend/scripts/create_event_club_gsi.py --wait
+```
+
+**Query patterns supported by this GSI:**
+
+```python
+# Find a specific club's order for an event
+table.query(
+    IndexName="event-club-index",
+    KeyConditionExpression=Key("event_id").eq(event_id) & Key("club_id").eq(club_id)
+)
+
+# List all orders for an event
+table.query(
+    IndexName="event-club-index",
+    KeyConditionExpression=Key("event_id").eq(event_id)
+)
+```
+
+---
+
 ### budget-alarms.yaml
 
 Configures AWS Budget with €80/month threshold and alert notifications.

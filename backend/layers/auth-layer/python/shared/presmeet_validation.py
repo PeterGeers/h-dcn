@@ -1,464 +1,335 @@
 """
-Shared validation utilities for PresMeet event registration module.
-Provides schema-driven product attribute validation, pricing calculations,
-and order submission validation.
+PresMeet v3 validation module for event registration orders.
+
+Provides schema-driven validation for order submissions:
+- validate_item_fields: validates each item's fields against the product's
+  order_item_fields definition (required fields, type constraints, options)
+- validate_purchase_rules: enforces per-club min/max limits from product
+  purchase_rules
+- validate_submission: orchestrates field + purchase_rules + event_constraints
+  validation, returning ALL errors (not just first)
+
+Error format:
+    Each error is a dict with:
+    - item_index (int or None): zero-based index of the item causing the error
+    - field (str or None): the field_id that failed, or product_id for rule errors
+    - message (str): human-readable description of the violation
 """
 
-import re
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
+
+from shared.event_constraints import validate_event_constraints
 
 
-# Allowed product types
-VALID_PRODUCT_TYPES = {"meeting_ticket", "party_ticket", "tshirt", "airport_transfer"}
-
-# Pricing rules (per item)
-PRICING = {
-    "meeting_ticket": Decimal("50.00"),
-    "party_ticket": Decimal("99.50"),
-    "tshirt": Decimal("25.00"),
-    "airport_transfer": Decimal("5.00"),  # per person
-}
-
-# Default attribute schemas (used when no config is provided)
-DEFAULT_ATTRIBUTE_SCHEMAS = {
-    "meeting_ticket": {
-        "name": {
-            "type": "string",
-            "required": True,
-            "min_length": 1,
-            "max_length": 100,
-        },
-        "role": {
-            "type": "string",
-            "required": True,
-            "min_length": 1,
-            "max_length": 100,
-        },
-    },
-    "party_ticket": {
-        "name": {
-            "type": "string",
-            "required": True,
-            "min_length": 1,
-            "max_length": 100,
-        },
-        "person_type": {
-            "type": "string",
-            "required": True,
-            "enum": ["delegate", "guest"],
-        },
-    },
-    "tshirt": {
-        "name": {
-            "type": "string",
-            "required": True,
-            "min_length": 1,
-            "max_length": 100,
-        },
-        "gender": {
-            "type": "string",
-            "required": True,
-            "enum": ["male", "female"],
-        },
-        "size": {
-            "type": "string",
-            "required": True,
-            "enum": ["S", "M", "L", "XL", "XXL", "3XL", "4XL"],
-        },
-    },
-    "airport_transfer": {
-        "direction": {
-            "type": "string",
-            "required": True,
-            "enum": ["pickup", "dropoff"],
-        },
-        "airport": {
-            "type": "string",
-            "required": True,
-            "enum": ["AMS", "RTM", "EIN"],
-        },
-        "flight": {
-            "type": "string",
-            "required": True,
-            "min_length": 2,
-            "max_length": 10,
-        },
-        "date": {
-            "type": "string",
-            "required": True,
-        },
-        "time": {
-            "type": "string",
-            "required": True,
-        },
-        "persons": {
-            "type": "integer",
-            "required": True,
-            "minimum": 1,
-            "maximum": 50,
-        },
-    },
-}
-
-
-def validate_product_type(product_type: str) -> tuple:
+def validate_item_fields(
+    items: List[Dict[str, Any]],
+    products: Dict[str, Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     """
-    Validate product_type is in the allowed set.
+    Validate each item's field data against its product's order_item_fields.
+
+    For each item, looks up the product by product_id and validates:
+    - All required fields are present and non-empty
+    - Text fields are strings
+    - Select fields have a value from the allowed options list
+    - Number fields are numeric and within min/max bounds
+    - Date fields are non-empty strings
 
     Args:
-        product_type: The product type string to validate.
+        items: The order's items array. Each item has product_id and
+            item_fields_data (dict of field_id -> value).
+        products: Dict mapping product_id -> product record. Each product
+            has an order_item_fields array of field definitions.
 
     Returns:
-        tuple: (is_valid: bool, error_message: str | None)
-    """
-    if product_type in VALID_PRODUCT_TYPES:
-        return (True, None)
-    return (False, f"Invalid product_type '{product_type}'. Allowed values: {sorted(VALID_PRODUCT_TYPES)}")
-
-
-def validate_attributes(product_type: str, attributes: dict, config: dict) -> list:
-    """
-    Validate attributes against the product_type schema defined in config.
-
-    The config should contain a 'required_attributes' key with the schema definition.
-    If config is empty or missing 'required_attributes', falls back to DEFAULT_ATTRIBUTE_SCHEMAS.
-
-    Args:
-        product_type: The product type for which to validate attributes.
-        attributes: The attributes dict to validate.
-        config: The product type config dict containing 'required_attributes' schema.
-
-    Returns:
-        list: List of error dicts, each with 'field', 'message', and 'constraint' keys.
-              Empty list if validation passes.
+        List of error dicts. Empty list if all fields are valid.
     """
     errors = []
 
-    # Get the schema from config or fall back to defaults
-    schema = None
-    if config and "required_attributes" in config:
-        schema = config["required_attributes"]
-    elif product_type in DEFAULT_ATTRIBUTE_SCHEMAS:
-        schema = DEFAULT_ATTRIBUTE_SCHEMAS[product_type]
-
-    if schema is None:
-        return errors
-
-    # Ensure attributes is a dict
-    if not isinstance(attributes, dict):
-        errors.append({
-            "field": "_attributes",
-            "message": "Attributes must be a JSON object",
-            "constraint": "type",
-        })
-        return errors
-
-    # Validate each field in the schema
-    for field_name, field_schema in schema.items():
-        is_required = field_schema.get("required", False)
-        field_type = field_schema.get("type")
-        value = attributes.get(field_name)
-
-        # Check required
-        if is_required and (value is None or (isinstance(value, str) and field_name not in attributes)):
-            if field_name not in attributes:
-                errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' is required",
-                    "constraint": "required",
-                })
-                continue
-
-        # Skip further validation if field is not present and not required
-        if field_name not in attributes:
-            continue
-
-        value = attributes[field_name]
-
-        # Check if value is None for a required field
-        if value is None and is_required:
+    for item_index, item in enumerate(items):
+        product_id = item.get("product_id")
+        if not product_id:
             errors.append({
-                "field": field_name,
-                "message": f"Field '{field_name}' is required",
-                "constraint": "required",
+                "item_index": item_index,
+                "field": "product_id",
+                "message": "Item ontbreekt een product_id",
             })
             continue
 
-        if value is None:
+        product = products.get(product_id)
+        if not product:
+            errors.append({
+                "item_index": item_index,
+                "field": "product_id",
+                "message": f"Onbekend product: {product_id}",
+            })
             continue
 
-        # Type validation
-        if field_type == "string":
-            if not isinstance(value, str):
-                errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be a string, got {type(value).__name__}",
-                    "constraint": "type",
-                })
+        field_definitions = product.get("order_item_fields", [])
+        if not field_definitions:
+            continue
+
+        fields_data = item.get("item_fields_data", {}) or {}
+
+        for field_def in field_definitions:
+            field_id = field_def.get("id")
+            if not field_id:
                 continue
-        elif field_type == "integer":
-            # Accept int or Decimal (DynamoDB stores all numbers as Decimal)
-            if isinstance(value, Decimal):
-                # Convert Decimal to int if it's a whole number
-                if value == int(value):
-                    value = int(value)
-                    attributes[field_name] = value  # Update in place for downstream checks
-                else:
-                    errors.append({
-                        "field": field_name,
-                        "message": f"Field '{field_name}' must be an integer, got decimal with fractional part",
-                        "constraint": "type",
-                    })
-                    continue
-            elif not isinstance(value, int) or isinstance(value, bool):
+
+            value = fields_data.get(field_id)
+            field_type = field_def.get("type", "text")
+            required = field_def.get("required", False)
+            label = field_def.get("label", field_id)
+
+            # Check required
+            if required and _is_empty(value, field_type):
                 errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be an integer, got {type(value).__name__}",
-                    "constraint": "type",
+                    "item_index": item_index,
+                    "field": field_id,
+                    "message": f"Veld '{label}' is verplicht",
                 })
                 continue
 
-        # Enum validation
-        if "enum" in field_schema:
-            allowed = field_schema["enum"]
-            if value not in allowed:
-                errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be one of {allowed}, got '{value}'",
-                    "constraint": "enum",
-                })
+            # Skip further validation if value is empty and not required
+            if _is_empty(value, field_type):
+                continue
 
-        # String length validations
-        if field_type == "string" and isinstance(value, str):
-            if "min_length" in field_schema and len(value) < field_schema["min_length"]:
+            # Type-specific validation
+            field_error = _validate_field_type(value, field_def)
+            if field_error:
                 errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be at least {field_schema['min_length']} characters, got {len(value)}",
-                    "constraint": "min_length",
-                })
-            if "max_length" in field_schema and len(value) > field_schema["max_length"]:
-                errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be at most {field_schema['max_length']} characters, got {len(value)}",
-                    "constraint": "max_length",
-                })
-
-        # Integer range validations
-        if field_type == "integer" and isinstance(value, int) and not isinstance(value, bool):
-            if "minimum" in field_schema and value < field_schema["minimum"]:
-                errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be at least {field_schema['minimum']}, got {value}",
-                    "constraint": "minimum",
-                })
-            if "maximum" in field_schema and value > field_schema["maximum"]:
-                errors.append({
-                    "field": field_name,
-                    "message": f"Field '{field_name}' must be at most {field_schema['maximum']}, got {value}",
-                    "constraint": "maximum",
+                    "item_index": item_index,
+                    "field": field_id,
+                    "message": field_error,
                 })
 
     return errors
 
 
-def calculate_cart_total(items: list) -> Decimal:
+def validate_purchase_rules(
+    items: List[Dict[str, Any]],
+    products: Dict[str, Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     """
-    Calculate the cart total from a list of cart items using pricing rules.
+    Validate item counts per product against purchase_rules (min/max per club).
 
-    Pricing:
-    - meeting_ticket: €50.00 per item
-    - party_ticket: €99.50 per item
-    - tshirt: €25.00 per item
-    - airport_transfer: persons × €5.00 per item
+    Counts items per product_id in the order, then checks against each
+    product's purchase_rules.min_per_club and purchase_rules.max_per_club.
 
     Args:
-        items: List of cart item dicts, each with 'product_type' and 'attributes'.
+        items: The order's items array.
+        products: Dict mapping product_id -> product record with purchase_rules.
 
     Returns:
-        Decimal: The total amount.
-    """
-    total = Decimal("0.00")
-
-    for item in items:
-        product_type = item.get("product_type")
-        if product_type not in PRICING:
-            continue
-
-        if product_type == "airport_transfer":
-            # Price is per person for airport transfers
-            attributes = item.get("attributes", {})
-            persons = attributes.get("persons", 1)
-            if isinstance(persons, int) and persons > 0:
-                total += PRICING["airport_transfer"] * Decimal(str(persons))
-            else:
-                # Default to 1 person if invalid
-                total += PRICING["airport_transfer"]
-        else:
-            total += PRICING[product_type]
-
-    return total
-
-
-def calculate_outstanding_balance(order_total: Decimal, payments: list) -> Decimal:
-    """
-    Calculate the outstanding balance for an order.
-
-    Returns max(0, order_total - sum(payment amounts)).
-
-    Args:
-        order_total: The total order amount (Decimal).
-        payments: List of payment dicts, each with an 'amount' field.
-
-    Returns:
-        Decimal: The outstanding balance (minimum €0.00).
-    """
-    total_paid = Decimal("0.00")
-    for payment in payments:
-        amount = payment.get("amount", 0)
-        if isinstance(amount, (int, float)):
-            total_paid += Decimal(str(amount))
-        elif isinstance(amount, Decimal):
-            total_paid += amount
-
-    balance = order_total - total_paid
-    return max(Decimal("0.00"), balance)
-
-
-def validate_order_submission(order: dict, config: dict, event: dict) -> list:
-    """
-    Full submission validation for a PresMeet order.
-
-    Validates:
-    - Attribute schemas for all items
-    - Min/max per club counts per product_type
-    - Airport transfer date ranges (within event dates)
-
-    Args:
-        order: The order dict containing 'items' list.
-        config: Dict mapping product_type to config (with required_attributes,
-                max_per_club, min_per_club).
-        event: Event dict with 'start_date' and 'end_date' (ISO format strings).
-
-    Returns:
-        list: List of error dicts. Empty if submission is valid.
+        List of error dicts. Empty list if all purchase rules pass.
     """
     errors = []
+
+    # Count items per product_id
+    counts: Dict[str, int] = {}
+    for item in items:
+        product_id = item.get("product_id")
+        if product_id:
+            counts[product_id] = counts.get(product_id, 0) + 1
+
+    # Check each product's rules
+    for product_id, product in products.items():
+        purchase_rules = product.get("purchase_rules") or {}
+        count = counts.get(product_id, 0)
+        product_name = product.get("name", product_id)
+
+        # max_per_club check
+        max_per_club = purchase_rules.get("max_per_club")
+        if max_per_club is not None:
+            max_val = _to_int(max_per_club)
+            if max_val is not None and count > max_val:
+                errors.append({
+                    "item_index": None,
+                    "field": product_id,
+                    "message": (
+                        f"Maximum {max_val} items toegestaan voor "
+                        f"'{product_name}', maar {count} gevonden"
+                    ),
+                })
+
+        # min_per_club check
+        min_per_club = purchase_rules.get("min_per_club")
+        if min_per_club is not None:
+            min_val = _to_int(min_per_club)
+            if min_val is not None and min_val > 0 and count < min_val:
+                errors.append({
+                    "item_index": None,
+                    "field": product_id,
+                    "message": (
+                        f"Minimaal {min_val} items vereist voor "
+                        f"'{product_name}', maar {count} gevonden"
+                    ),
+                })
+
+    return errors
+
+
+def validate_submission(
+    order: Dict[str, Any],
+    event: Dict[str, Any],
+    products: Dict[str, Dict[str, Any]],
+    all_event_orders: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Orchestrate full submission validation: fields + purchase_rules + event constraints.
+
+    Runs all three validation checks and returns ALL errors combined.
+
+    Args:
+        order: The order being submitted, with items array and club_id.
+        event: The event record with constraints array.
+        products: Dict mapping product_id -> product record.
+        all_event_orders: All orders for this event (any status).
+
+    Returns:
+        List of all validation error dicts. Empty list means submission is valid.
+    """
     items = order.get("items", [])
+    club_id = order.get("club_id")
+    all_errors = []
 
-    # Count items per product_type
-    type_counts = {}
-    for item in items:
-        pt = item.get("product_type")
-        if pt:
-            type_counts[pt] = type_counts.get(pt, 0) + 1
+    # 1. Validate item fields
+    field_errors = validate_item_fields(items, products)
+    all_errors.extend(field_errors)
 
-    # Validate each item's attributes against schema
-    for i, item in enumerate(items):
-        product_type = item.get("product_type")
-        attributes = item.get("attributes", {})
-        item_id = item.get("item_id", f"item_{i}")
+    # 2. Validate purchase rules
+    rule_errors = validate_purchase_rules(items, products)
+    all_errors.extend(rule_errors)
 
-        if not product_type:
-            errors.append({
-                "item_id": item_id,
-                "field": "product_type",
-                "message": "Product type is required",
-                "constraint": "required",
-            })
-            continue
-
-        # Validate product_type
-        is_valid, error_msg = validate_product_type(product_type)
-        if not is_valid:
-            errors.append({
-                "item_id": item_id,
-                "field": "product_type",
-                "message": error_msg,
-                "constraint": "enum",
-            })
-            continue
-
-        # Get config for this product_type
-        type_config = config.get(product_type, {})
-        attr_errors = validate_attributes(product_type, attributes, type_config)
-        for err in attr_errors:
-            err["item_id"] = item_id
-            errors.append(err)
-
-        # Validate airport_transfer date within event range
-        if product_type == "airport_transfer" and event:
-            transfer_date = attributes.get("date")
-            start_date = event.get("start_date")
-            end_date = event.get("end_date")
-
-            if transfer_date and start_date and end_date:
-                if transfer_date < start_date or transfer_date > end_date:
-                    errors.append({
-                        "item_id": item_id,
-                        "field": "date",
-                        "message": f"Transfer date '{transfer_date}' must be within event dates ({start_date} to {end_date})",
-                        "constraint": "date_range",
-                    })
-
-    # Validate min/max per club counts
-    for product_type, type_config in config.items():
-        count = type_counts.get(product_type, 0)
-
-        # Max per club
-        max_per_club = type_config.get("max_per_club")
-        if max_per_club is not None and count > max_per_club:
-            errors.append({
-                "field": "product_type",
-                "product_type": product_type,
-                "message": f"Maximum {max_per_club} {product_type} items allowed per club, got {count}",
-                "constraint": "max_per_club",
+    # 3. Validate event constraints
+    event_constraints = event.get("constraints", [])
+    if event_constraints:
+        constraint_errors = validate_event_constraints(
+            order_items=items,
+            event_constraints=event_constraints,
+            all_event_orders=all_event_orders,
+            current_club_id=club_id,
+        )
+        # Convert constraint errors to our standard format
+        for ce in constraint_errors:
+            all_errors.append({
+                "item_index": None,
+                "field": ce.get("constraint_key"),
+                "message": ce.get("message", "Capaciteitslimiet overschreden"),
             })
 
-        # Min per club
-        min_per_club = type_config.get("min_per_club")
-        if min_per_club is not None and min_per_club > 0 and count < min_per_club:
-            errors.append({
-                "field": "product_type",
-                "product_type": product_type,
-                "message": f"Minimum {min_per_club} {product_type} items required per club, got {count}",
-                "constraint": "min_per_club",
-            })
-
-    return errors
+    return all_errors
 
 
-def extract_club_id(user_roles: list) -> str | None:
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
+
+
+def _is_empty(value: Any, field_type: str) -> bool:
+    """Check if a value is considered empty for a given field type."""
+    if value is None:
+        return True
+
+    if field_type in ("text", "select", "date"):
+        if isinstance(value, str):
+            return value.strip() == ""
+        return True
+
+    if field_type == "number":
+        if isinstance(value, (int, float, Decimal)):
+            return False
+        if isinstance(value, str):
+            try:
+                float(value)
+                return False
+            except (ValueError, TypeError):
+                return True
+        return True
+
+    return value is None or value == ""
+
+
+def _validate_field_type(value: Any, field_def: Dict[str, Any]) -> Optional[str]:
     """
-    Extract club_id from Cognito group list.
+    Validate a field value against its type constraints.
 
-    .. deprecated::
-        Use `shared.club_identity.get_club_id` instead. Club identity is now
-        stored on the Member record, not in Cognito groups.
-
-    Looks for the first group matching the pattern 'club_*' and returns
-    the part after the 'club_' prefix.
-
-    Args:
-        user_roles: List of Cognito group names.
-
-    Returns:
-        str | None: The club_id (without 'club_' prefix) or None if not found.
+    Returns None if valid, or an error message string.
     """
-    import warnings
-    warnings.warn(
-        "extract_club_id is deprecated; use shared.club_identity.get_club_id instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    field_type = field_def.get("type", "text")
+    label = field_def.get("label", field_def.get("id", "?"))
 
-    if not user_roles:
+    if field_type == "text":
+        if not isinstance(value, str):
+            return f"Veld '{label}' moet tekst zijn"
         return None
 
-    for role in user_roles:
-        if isinstance(role, str) and role.startswith("club_"):
-            # Extract the club_id part after 'club_'
-            club_id = role[5:]  # len("club_") == 5
-            if club_id:  # Ensure there's something after the prefix
-                return club_id
+    elif field_type == "select":
+        options = field_def.get("options", [])
+        if not isinstance(value, str):
+            return f"Veld '{label}' moet tekst zijn"
+        if options and value not in options:
+            return (
+                f"Veld '{label}': ongeldige keuze '{value}'. "
+                f"Toegestane waarden: {', '.join(options)}"
+            )
+        return None
 
+    elif field_type == "number":
+        numeric_value = _to_numeric(value)
+        if numeric_value is None:
+            return f"Veld '{label}' moet een getal zijn"
+
+        min_val = field_def.get("min")
+        if min_val is not None:
+            min_numeric = _to_numeric(min_val)
+            if min_numeric is not None and numeric_value < min_numeric:
+                return f"Veld '{label}' moet minimaal {min_val} zijn"
+
+        max_val = field_def.get("max")
+        if max_val is not None:
+            max_numeric = _to_numeric(max_val)
+            if max_numeric is not None and numeric_value > max_numeric:
+                return f"Veld '{label}' mag maximaal {max_val} zijn"
+
+        return None
+
+    elif field_type == "date":
+        if not isinstance(value, str):
+            return f"Veld '{label}' moet een datum zijn"
+        if value.strip() == "":
+            return f"Veld '{label}' is verplicht"
+        return None
+
+    return None
+
+
+def _to_int(value: Any) -> Optional[int]:
+    """Convert a value to int, handling Decimal from DynamoDB."""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, Decimal):
+        return int(value)
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def _to_numeric(value: Any) -> Optional[float]:
+    """Convert a value to float for numeric comparisons."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
     return None

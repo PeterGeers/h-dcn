@@ -150,12 +150,12 @@ def lambda_handler(event, context):
         # Generate product ID
         product_id = f"prod_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc).isoformat()
-        tenant = body.get('tenant', 'h-dcn')
+        channel = body.get('channel', body.get('tenant', 'h-dcn'))
 
         # Build product record (parent)
         product = {
             'product_id': product_id,
-            'tenant': tenant,
+            'channel': channel,
             'name': body.get('name'),
             'description': body.get('description', ''),
             'category': body.get('category', ''),
@@ -191,7 +191,7 @@ def lambda_handler(event, context):
         variants_created = []
         if variant_schema:
             # Generate variants from variant_schema
-            variants = generate_variant_combinations(variant_schema, product_id, tenant)
+            variants = generate_variant_combinations(variant_schema, product_id, channel)
             # Inherit price from parent
             if body.get('price') is not None:
                 for v in variants:
@@ -200,7 +200,7 @@ def lambda_handler(event, context):
             variants_created = variants
         else:
             # No variant_schema — create Default_Variant
-            default_variant = create_default_variant(product_id, tenant)
+            default_variant = create_default_variant(product_id, channel)
             # Inherit price from parent if set
             if body.get('price') is not None:
                 default_variant['price'] = body['price']

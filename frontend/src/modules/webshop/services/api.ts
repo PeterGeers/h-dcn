@@ -6,7 +6,7 @@ export interface VariantRecord {
   product_id: string;
   parent_id: string;
   is_parent: false;
-  tenant: string;
+  channel: string;
   name: string;
   variant_attributes: Record<string, string>;
   price: number;
@@ -34,7 +34,7 @@ export interface CartItemData {
 interface CartData {
   items?: CartItemData[];
   club_id?: string;
-  tenant?: string;
+  channel?: string;
   [key: string]: any;
 }
 
@@ -82,11 +82,11 @@ export const productService = {
     return ApiService.get('/scan-product/');
   },
 
-  getProducts: async (tenant?: string) => {
+  getProducts: async (channel?: string) => {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    const endpoint = tenant ? `/products?tenant=${encodeURIComponent(tenant)}` : '/products';
+    const endpoint = channel ? `/products?channel=${encodeURIComponent(channel)}` : '/products';
     return ApiService.get(endpoint);
   },
 

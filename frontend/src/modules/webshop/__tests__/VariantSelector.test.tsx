@@ -61,7 +61,7 @@ function createVariant(
   return {
     product_id: `var_${attrStr}`,
     parent_id: 'prod_test',
-    tenant: 'h-dcn',
+    channel: 'h-dcn',
     name: `Test - ${attrStr}`,
     variant_attributes: attributes,
     price: 25.0,

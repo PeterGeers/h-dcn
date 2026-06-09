@@ -43,6 +43,7 @@ jest.mock('react-i18next', () => ({
         'onboarding.assigning': 'Assigning...',
         'onboarding.search_clubs': 'Search clubs...',
         'onboarding.no_search_results': 'No clubs found matching your search.',
+        'onboarding.retry': 'Retry',
       };
       let result = translations[key] ?? key;
       if (params) {
@@ -241,6 +242,38 @@ describe('OnboardingFlow', () => {
     expect(screen.getByText('Internal server error')).toBeInTheDocument();
   });
 
+  it('shows retry button on fetch error and retries successfully', async () => {
+    // First call fails
+    mockGetClubRegistry.mockResolvedValueOnce({
+      success: false,
+      error: 'Network error',
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} />);
+    });
+
+    expect(screen.getByText('Failed to load clubs')).toBeInTheDocument();
+    const retryButton = screen.getByText('Retry');
+    expect(retryButton).toBeInTheDocument();
+
+    // Second call succeeds
+    mockGetClubRegistry.mockResolvedValueOnce({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      fireEvent.click(retryButton);
+    });
+
+    // Should show club list after successful retry
+    await waitFor(() => {
+      expect(screen.getByText('Select Your Club')).toBeInTheDocument();
+    });
+    expect(screen.getByText('HD Club Amsterdam')).toBeInTheDocument();
+  });
+
   it('shows "Choose a different club" button after 409 and allows retry', async () => {
     mockGetClubRegistry.mockResolvedValue({
       success: true,
@@ -348,5 +381,51 @@ describe('OnboardingFlow', () => {
     });
 
     expect(screen.getByText('HD Club Amsterdam')).toBeInTheDocument();
+  });
+
+  it('skips onboarding and calls onComplete immediately when userClubId is provided', () => {
+    mockGetClubRegistry.mockReturnValue(new Promise(() => {}));
+
+    render(<OnboardingFlow onComplete={onComplete} userClubId="existing-club" />);
+
+    expect(onComplete).toHaveBeenCalledWith('existing-club');
+  });
+
+  it('renders nothing when userClubId is provided', () => {
+    mockGetClubRegistry.mockReturnValue(new Promise(() => {}));
+
+    const { container } = render(
+      <OnboardingFlow onComplete={onComplete} userClubId="existing-club" />
+    );
+
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('shows onboarding when userClubId is null', async () => {
+    mockGetClubRegistry.mockResolvedValue({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} userClubId={null} />);
+    });
+
+    expect(screen.getByText('Select Your Club')).toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('shows onboarding when userClubId is undefined', async () => {
+    mockGetClubRegistry.mockResolvedValue({
+      success: true,
+      data: mockRegistry,
+    });
+
+    await act(async () => {
+      render(<OnboardingFlow onComplete={onComplete} />);
+    });
+
+    expect(screen.getByText('Select Your Club')).toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
   });
 });

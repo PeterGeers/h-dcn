@@ -28,7 +28,7 @@ export interface UseAdminReportsReturn {
  * Hook for managing report data in the admin Reports tab.
  * Loads snapshot, triggers regeneration, and handles export downloads.
  */
-export function useAdminReports(tenant: string): UseAdminReportsReturn {
+export function useAdminReports(channel: string): UseAdminReportsReturn {
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,7 +38,7 @@ export function useAdminReports(tenant: string): UseAdminReportsReturn {
     setLoading(true);
     setError(null);
     try {
-      const data = await getReport(tenant || undefined);
+      const data = await getReport(channel || undefined);
       setReport(data);
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -50,7 +50,7 @@ export function useAdminReports(tenant: string): UseAdminReportsReturn {
     } finally {
       setLoading(false);
     }
-  }, [tenant]);
+  }, [channel]);
 
   useEffect(() => {
     loadReport();
@@ -60,25 +60,25 @@ export function useAdminReports(tenant: string): UseAdminReportsReturn {
     setRefreshing(true);
     setError(null);
     try {
-      await generateReport(tenant || undefined);
+      await generateReport(channel || undefined);
       await loadReport();
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Fout bij vernieuwen rapport');
     } finally {
       setRefreshing(false);
     }
-  }, [tenant, loadReport]);
+  }, [channel, loadReport]);
 
   const exportData = useCallback(async (format: 'csv' | 'json') => {
     try {
-      const blob = await exportReport(tenant || undefined, format);
+      const blob = await exportReport(channel || undefined, format);
       // Trigger download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const extension = format === 'csv' ? 'csv' : 'json';
-      const tenantLabel = tenant || 'all';
-      link.download = `rapport-${tenantLabel}-${new Date().toISOString().split('T')[0]}.${extension}`;
+      const channelLabel = channel || 'all';
+      link.download = `rapport-${channelLabel}-${new Date().toISOString().split('T')[0]}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -86,7 +86,7 @@ export function useAdminReports(tenant: string): UseAdminReportsReturn {
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Fout bij exporteren rapport');
     }
-  }, [tenant]);
+  }, [channel]);
 
   return {
     report,

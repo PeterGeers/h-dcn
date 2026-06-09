@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 
-def reserve_stock(order_items: list, producten_table, movements_table, order_id: str, tenant: str) -> None:
+def reserve_stock(order_items: list, producten_table, movements_table, order_id: str, channel: str) -> None:
     """
     Decrement stock and increment sold_count when an order transitions to 'paid'.
     Stock is ALWAYS on variant records — including Default_Variants for simple products.
@@ -21,7 +21,7 @@ def reserve_stock(order_items: list, producten_table, movements_table, order_id:
         producten_table: DynamoDB Table resource for Producten.
         movements_table: DynamoDB Table resource for StockMovements.
         order_id: The order ID triggering the stock reservation.
-        tenant: The tenant value for the order (e.g., 'presmeet', 'h-dcn').
+        channel: The channel value for the order (e.g., 'presmeet', 'h-dcn').
     """
     for item in order_items:
         variant_id = item['variant_id']
@@ -38,7 +38,7 @@ def reserve_stock(order_items: list, producten_table, movements_table, order_id:
         movements_table.put_item(Item={
             'movement_id': f'mov_{uuid.uuid4().hex[:12]}',
             'variant_id': variant_id,
-            'tenant': tenant,
+            'channel': channel,
             'type': 'sale',
             'quantity': -quantity,
             'purchase_price_per_unit': None,
@@ -53,7 +53,7 @@ def reserve_stock(order_items: list, producten_table, movements_table, order_id:
 
 def create_inbound_movement(
     variant_id: str,
-    tenant: str,
+    channel: str,
     quantity: int,
     purchase_price_per_unit: float,
     supplier_name: str,
@@ -66,7 +66,7 @@ def create_inbound_movement(
 
     Args:
         variant_id: The variant receiving stock.
-        tenant: Tenant value matching the variant's tenant.
+        channel: Channel value matching the variant's channel.
         quantity: Positive integer quantity being added.
         purchase_price_per_unit: Cost per unit in euros.
         supplier_name: Name of the supplier.
@@ -82,7 +82,7 @@ def create_inbound_movement(
     movement = {
         'movement_id': f'mov_{uuid.uuid4().hex[:12]}',
         'variant_id': variant_id,
-        'tenant': tenant,
+        'channel': channel,
         'type': 'inbound',
         'quantity': quantity,
         'purchase_price_per_unit': purchase_price_per_unit,

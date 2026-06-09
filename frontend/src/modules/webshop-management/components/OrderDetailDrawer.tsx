@@ -256,9 +256,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               <HStack spacing={4} mb={2}>
                 <StatusBadge status={order.status} />
                 <Badge
-                  colorScheme={order.tenant === 'presmeet' ? 'purple' : 'blue'}
+                  colorScheme={order.channel === 'presmeet' ? 'purple' : 'blue'}
                 >
-                  {order.tenant}
+                  {order.channel}
                 </Badge>
               </HStack>
               <Text fontSize="sm">

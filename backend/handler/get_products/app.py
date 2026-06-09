@@ -1,11 +1,11 @@
 """
-GET /products — Tenant-filtered product listing for webshop buyers.
+GET /products — Channel-filtered product listing for webshop buyers.
 
-Returns active parent products filtered by the requested tenant parameter,
+Returns active parent products filtered by the requested channel parameter,
 validated against the user's Cognito group claims.
 
 Query Parameters:
-    tenant (required): Comma-separated tenant values (e.g. "h-dcn" or "h-dcn,presmeet")
+    channel (required): Comma-separated channel values (e.g. "h-dcn" or "h-dcn,presmeet")
 
 Requirements: 7.1–7.7, 2.1–2.3
 """
@@ -25,7 +25,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.tenant_resolver import resolve_tenants, validate_tenant_access
+    from shared.channel_resolver import resolve_channels, validate_channel_access
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -50,46 +50,46 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Derive accessible tenants from Cognito group claims.
-        # Tenant resolution IS the access control for this endpoint:
-        # users without any qualifying role get an empty tenant set → 403.
-        user_tenants = resolve_tenants(user_roles)
+        # Derive accessible channels from Cognito group claims.
+        # Channel resolution IS the access control for this endpoint:
+        # users without any qualifying role get an empty channel set → 403.
+        user_channels = resolve_channels(user_roles)
 
-        # Get requested tenant from query parameters
+        # Get requested channel from query parameters
         query_params = event.get('queryStringParameters') or {}
-        requested_tenant = query_params.get('tenant')
+        requested_channel = query_params.get('channel')
 
-        # If no tenant parameter provided, use all user tenants
-        if not requested_tenant:
-            if not user_tenants:
-                return create_error_response(403, 'No tenant access',
-                    details={'error': 'tenant_access_denied',
-                             'details': {'requested_tenant': '',
-                                         'allowed_tenants': []}})
-            requested_tenant = ','.join(sorted(user_tenants))
+        # If no channel parameter provided, use all user channels
+        if not requested_channel:
+            if not user_channels:
+                return create_error_response(403, 'No channel access',
+                    details={'error': 'channel_access_denied',
+                             'details': {'requested_channel': '',
+                                         'allowed_channels': []}})
+            requested_channel = ','.join(sorted(user_channels))
 
-        # Validate requested tenant against user access
-        access_error = validate_tenant_access(requested_tenant, user_tenants)
+        # Validate requested channel against user access
+        access_error = validate_channel_access(requested_channel, user_channels)
         if access_error:
             return access_error
 
-        # Parse the validated tenant values
-        tenants = [t.strip() for t in requested_tenant.split(',') if t.strip()]
+        # Parse the validated channel values
+        channels = [t.strip() for t in requested_channel.split(',') if t.strip()]
 
         log_successful_access(user_email, user_roles, 'get_products')
 
-        # Build filter: is_parent=true, active=true, tenant in requested tenants
-        if len(tenants) == 1:
+        # Build filter: is_parent=true, active=true, channel in requested channels
+        if len(channels) == 1:
             filter_expr = (
                 Attr('is_parent').eq(True) &
                 Attr('active').eq(True) &
-                Attr('tenant').eq(tenants[0])
+                Attr('channel').eq(channels[0])
             )
         else:
             filter_expr = (
                 Attr('is_parent').eq(True) &
                 Attr('active').eq(True) &
-                Attr('tenant').is_in(tenants)
+                Attr('channel').is_in(channels)
             )
 
         # Scan with filter
@@ -112,7 +112,7 @@ def lambda_handler(event, context):
                 'name': product.get('name'),
                 'description': product.get('description'),
                 'price': product.get('price'),
-                'tenant': product.get('tenant'),
+                'channel': product.get('channel'),
                 'groep': product.get('groep'),
                 'subgroep': product.get('subgroep'),
                 'images': product.get('images', []),
@@ -129,7 +129,7 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'products': result,
                 'total_count': len(result),
-                'tenants': tenants,
+                'channels': channels,
             }, default=str)
         }
 

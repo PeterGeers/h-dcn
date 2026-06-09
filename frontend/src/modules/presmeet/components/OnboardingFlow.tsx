@@ -50,10 +50,15 @@ export function filterClubs(
 }
 
 export interface OnboardingFlowProps {
+  /** Callback invoked when a club is successfully assigned */
   onComplete: (clubId: string) => void;
+  /** Event ID for delegate conflict checking (passed to backend) */
+  eventId?: string;
+  /** If user already has a club_id, skip onboarding and call onComplete immediately */
+  userClubId?: string | null;
 }
 
-const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
+const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, eventId, userClubId }) => {
   const { t } = useTranslation('presmeet');
   const toast = useToast();
 
@@ -71,6 +76,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   } | null>(null);
 
   const logosTransitioned = useRef(false);
+  const skippedRef = useRef(false);
+
+  // 19.6: Skip onboarding if user already has a club_id
+  useEffect(() => {
+    if (userClubId && !skippedRef.current) {
+      skippedRef.current = true;
+      onComplete(userClubId);
+    }
+  }, [userClubId, onComplete]);
 
   // Shrink logos on scroll or after a timer
   const shrinkLogos = useCallback(() => {
@@ -159,6 +173,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     setSelectedClubId(null);
   };
 
+  // --- Skip render if user already has a club ---
+  if (userClubId) {
+    return null;
+  }
+
   // --- Loading state ---
   if (loading) {
     return (
@@ -171,15 +190,33 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     );
   }
 
-  // --- Fetch error state ---
+  // --- Fetch error state with retry ---
   if (fetchError) {
     return (
       <Alert status="error" borderRadius="md">
         <AlertIcon />
-        <Box>
+        <Box flex="1">
           <AlertTitle>{t('onboarding.load_failed')}</AlertTitle>
           <AlertDescription>{fetchError}</AlertDescription>
         </Box>
+        <Button
+          size="sm"
+          ml={4}
+          onClick={() => {
+            setFetchError(null);
+            setLoading(true);
+            presmeetService.getClubRegistry().then((response) => {
+              if (response.success && response.data) {
+                setRegistry(response.data);
+              } else {
+                setFetchError(response.error || 'Failed to load club registry');
+              }
+              setLoading(false);
+            });
+          }}
+        >
+          {t('onboarding.retry')}
+        </Button>
       </Alert>
     );
   }

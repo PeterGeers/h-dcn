@@ -81,13 +81,13 @@ def lambda_handler(event, context):
         if variant.get('parent_id') != product_id:
             return create_error_response(400, 'Variant does not belong to the specified product')
 
-        tenant = variant.get('tenant', 'h-dcn')
+        tenant = variant.get('channel', variant.get('tenant', 'h-dcn'))
         reference = body.get('reference')
 
         # Create inbound stock movement record
         movement = create_inbound_movement(
             variant_id=variant_id,
-            tenant=tenant,
+            channel=tenant,
             quantity=quantity,
             purchase_price_per_unit=purchase_price_per_unit,
             supplier_name=supplier_name,

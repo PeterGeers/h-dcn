@@ -6,8 +6,28 @@
 
 # Use of google mail vs AWS SES
 
-Requirement 6: Cross-Item Validation  what about products constraint and event constraints
+Presmeet booking form
+Booking last row:
+Geschat totaal
+€822.50
 
+3 deelnemer(s) · 5 feestticket(s) · 5 t-shirt(s) · 2 transfer(s)
+
+Overview omly 2 party tickets (Tickets for meeting attendees, that select attending party, not included)
+Feestticket
+
+€199.00
+
+Item	Prijs
+Astrid YYYYY	€99.50
+Henk YYYY	€99.50
+
+Eindtotaal	€524.00
+Totaal betaald	€0.00
+Resterend saldo	€524.00
+
+
+  
 # Prepare for demo
 ##  different functions by user type,
 -- different user screen by member type

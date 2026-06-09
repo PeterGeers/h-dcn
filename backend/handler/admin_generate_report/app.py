@@ -74,15 +74,15 @@ def lambda_handler(event, context):
         total_paid = sum(float(o.get('amount_paid', 0)) for o in orders)
         total_outstanding = total_revenue - total_paid
 
-        # Per-tenant breakdown
-        tenants = {}
+        # Per-channel breakdown
+        channels = {}
         for order in orders:
-            tenant = order.get('tenant', 'unknown')
-            if tenant not in tenants:
-                tenants[tenant] = {'order_count': 0, 'revenue': 0, 'paid': 0}
-            tenants[tenant]['order_count'] += 1
-            tenants[tenant]['revenue'] += float(order.get('total_amount', 0))
-            tenants[tenant]['paid'] += float(order.get('amount_paid', 0))
+            channel = order.get('channel', order.get('tenant', 'unknown'))
+            if channel not in channels:
+                channels[channel] = {'order_count': 0, 'revenue': 0, 'paid': 0}
+            channels[channel]['order_count'] += 1
+            channels[channel]['revenue'] += float(order.get('total_amount', 0))
+            channels[channel]['paid'] += float(order.get('amount_paid', 0))
 
         # Per-status breakdown
         status_counts = {}
@@ -105,7 +105,7 @@ def lambda_handler(event, context):
                 'total_paid': total_paid,
                 'total_outstanding': total_outstanding,
             },
-            'by_tenant': tenants,
+            'by_channel': channels,
             'by_status': status_counts,
             'stock_movements': {
                 'inbound_count': inbound_count,
@@ -140,7 +140,7 @@ def lambda_handler(event, context):
         return create_success_response({
             'generated_at': now,
             'summary': snapshot['summary'],
-            'by_tenant': tenants,
+            'by_channel': channels,
             'by_status': status_counts,
             's3_key': s3_key,
             'message': 'Report generated successfully'

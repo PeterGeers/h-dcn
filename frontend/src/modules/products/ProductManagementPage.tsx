@@ -114,8 +114,8 @@ export default function ProductManagementPage({ user, tenant }: ProductManagemen
 
   const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
   const filteredProducts = products.filter((p: Product) => {
-    // Apply tenant filter if provided
-    if (tenant && (p as any).tenant && (p as any).tenant !== tenant) return false;
+    // Apply channel filter if provided
+    if (tenant && (p as any).channel && (p as any).channel !== tenant) return false;
     if (!selectedFilter) return true;
     if (selectedFilter.type === 'group') {
       return p.groep === selectedFilter.value;

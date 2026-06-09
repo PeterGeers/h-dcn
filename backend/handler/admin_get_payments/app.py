@@ -48,14 +48,14 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'admin_get_payments')
 
-        # Get optional tenant filter from query params
+        # Get optional channel filter from query params
         query_params = event.get('queryStringParameters') or {}
-        tenant_filter = query_params.get('tenant')
+        channel_filter = query_params.get('channel')
 
-        # Scan orders with optional tenant filter
+        # Scan orders with optional channel filter
         scan_kwargs = {}
-        if tenant_filter:
-            scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('tenant').eq(tenant_filter)
+        if channel_filter:
+            scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('channel').eq(channel_filter)
 
         response = orders_table.scan(**scan_kwargs)
         orders = response.get('Items', [])
@@ -85,7 +85,7 @@ def lambda_handler(event, context):
 
             order_payments.append({
                 'order_id': order.get('order_id'),
-                'tenant': order.get('tenant'),
+                'channel': order.get('channel', order.get('tenant')),
                 'customer_name': order.get('customer_name', ''),
                 'total_amount': total_amount,
                 'amount_paid': amount_paid,

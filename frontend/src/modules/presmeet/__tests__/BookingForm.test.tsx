@@ -216,7 +216,7 @@ describe('BookingForm', () => {
         existingBooking={{
           order_id: 'order-1',
           club_id: 'club_123',
-          tenant: 'presmeet',
+          channel: 'presmeet',
           source: 'presmeet',
           status: 'locked',
           payment_status: 'unpaid',

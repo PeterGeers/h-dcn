@@ -50,13 +50,13 @@ def lambda_handler(event, context):
 
         # Get optional query param filters
         query_params = event.get('queryStringParameters') or {}
-        tenant_filter = query_params.get('tenant')
+        channel_filter = query_params.get('channel')
         status_filter = query_params.get('status')
 
         # Build filter expression
         filter_conditions = []
-        if tenant_filter:
-            filter_conditions.append(boto3.dynamodb.conditions.Attr('tenant').eq(tenant_filter))
+        if channel_filter:
+            filter_conditions.append(boto3.dynamodb.conditions.Attr('channel').eq(channel_filter))
         if status_filter:
             filter_conditions.append(boto3.dynamodb.conditions.Attr('status').eq(status_filter))
 

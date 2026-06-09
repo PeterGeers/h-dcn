@@ -112,7 +112,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ tenant }) => {
           <Thead>
             <Tr>
               <Th>Order ID</Th>
-              <Th>Tenant</Th>
+              <Th>Channel</Th>
               <Th>Klant / Club</Th>
               <Th>Status</Th>
               <Th>Betaling</Th>
@@ -138,10 +138,10 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ tenant }) => {
                 </Td>
                 <Td>
                   <Badge
-                    colorScheme={order.tenant === 'presmeet' ? 'purple' : 'blue'}
+                    colorScheme={order.channel === 'presmeet' ? 'purple' : 'blue'}
                     fontSize="xs"
                   >
-                    {order.tenant}
+                    {order.channel}
                   </Badge>
                 </Td>
                 <Td>

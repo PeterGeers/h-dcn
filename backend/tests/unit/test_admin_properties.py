@@ -397,7 +397,7 @@ class TestProperty18InboundStockMovementConsistency:
 
         movement = create_inbound_movement(
             variant_id=variant_id,
-            tenant=tenant,
+            channel=tenant,
             quantity=quantity,
             purchase_price_per_unit=price_per_unit,
             supplier_name=supplier_name,
@@ -418,8 +418,8 @@ class TestProperty18InboundStockMovementConsistency:
         # Verify variant_id matches
         assert movement['variant_id'] == variant_id
 
-        # Verify tenant matches
-        assert movement['tenant'] == tenant
+        # Verify channel matches
+        assert movement['channel'] == tenant
 
         # Verify quantity is positive
         assert movement['quantity'] == quantity
@@ -705,7 +705,7 @@ class TestProperty16DefaultVariantAutoCreationAndRemoval:
         assert variant['sold_count'] == 0
         assert variant['allow_oversell'] is False
         assert variant['parent_id'] == parent_id
-        assert variant['tenant'] == tenant
+        assert variant['channel'] == tenant
         assert variant['is_parent'] is False
 
         note(f"Default variant for {parent_id}: product_id={variant['product_id']}")
@@ -1103,14 +1103,14 @@ class TestProperty20StockMovementTenantConsistency:
         """
         **Validates: Requirements 9.3, 9.8**
 
-        create_inbound_movement stores the provided tenant value in the
-        movement record, matching the variant's tenant.
+        create_inbound_movement stores the provided channel value in the
+        movement record, matching the variant's channel.
         """
         mock_movements_table = MagicMock()
 
         movement = create_inbound_movement(
             variant_id=variant_id,
-            tenant=tenant,
+            channel=tenant,
             quantity=quantity,
             purchase_price_per_unit=price_per_unit,
             supplier_name=supplier_name,
@@ -1119,9 +1119,9 @@ class TestProperty20StockMovementTenantConsistency:
             movements_table=mock_movements_table,
         )
 
-        note(f"Movement tenant={movement['tenant']}, expected={tenant}")
-        assert movement['tenant'] == tenant, (
-            f"Inbound movement tenant mismatch: got {movement['tenant']}, expected {tenant}"
+        note(f"Movement channel={movement['channel']}, expected={tenant}")
+        assert movement['channel'] == tenant, (
+            f"Inbound movement channel mismatch: got {movement['channel']}, expected {tenant}"
         )
 
     @given(
@@ -1141,7 +1141,7 @@ class TestProperty20StockMovementTenantConsistency:
         """
         **Validates: Requirements 9.3, 9.8**
 
-        reserve_stock creates sale movement records with the provided tenant
+        reserve_stock creates sale movement records with the provided channel
         value for all line items.
         """
         mock_producten_table = MagicMock()
@@ -1149,12 +1149,12 @@ class TestProperty20StockMovementTenantConsistency:
 
         reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
 
-        # Every put_item call should have the correct tenant
+        # Every put_item call should have the correct channel
         for put_call in mock_movements_table.put_item.call_args_list:
             item_record = put_call[1]['Item'] if 'Item' in put_call[1] else put_call[0][0]
-            note(f"Sale movement tenant={item_record['tenant']}, expected={tenant}")
-            assert item_record['tenant'] == tenant, (
-                f"Sale movement tenant mismatch: got {item_record['tenant']}, expected {tenant}"
+            note(f"Sale movement channel={item_record['channel']}, expected={tenant}")
+            assert item_record['channel'] == tenant, (
+                f"Sale movement channel mismatch: got {item_record['channel']}, expected {tenant}"
             )
 
     @given(
@@ -1175,20 +1175,20 @@ class TestProperty20StockMovementTenantConsistency:
         **Validates: Requirements 9.3, 9.8**
 
         All movement records created in a single reserve_stock call share
-        the same tenant value — ensuring consistency across the batch.
+        the same channel value — ensuring consistency across the batch.
         """
         mock_producten_table = MagicMock()
         mock_movements_table = MagicMock()
 
         reserve_stock(items, mock_producten_table, mock_movements_table, order_id, tenant)
 
-        tenants_seen = set()
+        channels_seen = set()
         for put_call in mock_movements_table.put_item.call_args_list:
             item_record = put_call[1]['Item'] if 'Item' in put_call[1] else put_call[0][0]
-            tenants_seen.add(item_record['tenant'])
+            channels_seen.add(item_record['channel'])
 
-        note(f"Tenants seen: {tenants_seen}")
-        assert len(tenants_seen) == 1, (
-            f"Expected all movements to have same tenant, got: {tenants_seen}"
+        note(f"Channels seen: {channels_seen}")
+        assert len(channels_seen) == 1, (
+            f"Expected all movements to have same channel, got: {channels_seen}"
         )
-        assert tenant in tenants_seen
+        assert tenant in channels_seen

@@ -1266,6 +1266,29 @@ Resources:
             Path: /events/{event_id}
             Method: delete
 
+  # Event Status Scheduler - auto-open, auto-close, auto-lock (Req 4.4, 4.5, 4.6)
+  EventStatusSchedulerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/event_status_scheduler
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 60
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+      Events:
+        ScheduleRule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+            Description: "Hourly check for event status transitions (auto-open, auto-close, auto-lock)"
+            Enabled: true
+
   UpdateCartItemsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1431,34 +1454,11 @@ Resources:
                 Resource:
                   - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
 
-  # --- PresMeet: Get Config ---
-  GetPresMeetConfigFunction:
+  # --- PresMeet v3: Get Order ---
+  PresMeetGetOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: handler/get_presmeet_config
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        GetPresMeetConfig:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/config
-            Method: get
-
-  # --- PresMeet: Save Booking ---
-  SavePresMeetBookingFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/save_presmeet_booking
+      CodeUri: handler/presmeet_get_order
       Handler: app.lambda_handler
       Runtime: python3.11
       Layers:
@@ -1467,21 +1467,50 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
           PRODUCTEN_TABLE_NAME: !Ref Table
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
-        SavePresMeetBooking:
+        GetPresMeetOrder:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /presmeet/booking
+            Path: /presmeet/orders
+            Method: get
+
+  # --- PresMeet v3: Upsert Order ---
+  PresMeetUpsertOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/presmeet_upsert_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt PresMeetRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        UpsertPresMeetOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /presmeet/orders/{id}
             Method: put
 
-  # --- PresMeet: Get Booking ---
-  GetPresMeetBookingFunction:
+  # --- PresMeet v3: Submit Order ---
+  PresMeetSubmitOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: handler/get_presmeet_booking
+      CodeUri: handler/presmeet_submit_order
       Handler: app.lambda_handler
       Runtime: python3.11
       Layers:
@@ -1490,66 +1519,24 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        GetPresMeetBooking:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/booking
-            Method: get
-
-  # --- PresMeet: Submit Booking ---
-  SubmitPresMeetBookingFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/submit_presmeet_booking
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
           EVENTS_TABLE_NAME: !Ref EventsTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        SubmitPresMeetBooking:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/booking/submit
-            Method: post
-
-  # --- PresMeet: Validate Cart ---
-  ValidatePresMeetCartFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/validate_presmeet_cart
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
           PRODUCTEN_TABLE_NAME: !Ref Table
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
-        ValidatePresMeetCart:
+        SubmitPresMeetOrder:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /presmeet/booking/validate
+            Path: /presmeet/orders/{id}/submit
             Method: post
 
-  # --- PresMeet: Create Payment ---
-  CreatePresMeetPaymentFunction:
+  # --- PresMeet v3: Create Payment ---
+  PresMeetCreatePaymentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: handler/create_presmeet_payment
+      CodeUri: handler/presmeet_create_payment
       Handler: app.lambda_handler
       Runtime: python3.11
       Layers:
@@ -1558,15 +1545,75 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MEMBERS_TABLE_NAME: !Ref MembersTable
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl/presmeet/payment/return"
+          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mollie-webhook"
       Events:
         CreatePresMeetPayment:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /presmeet/payment
+            Path: /presmeet/orders/{id}/pay
+            Method: post
+
+  # --- PresMeet v3: Generate Report ---
+  PresMeetGenerateReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/presmeet_generate_report
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 256
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt PresMeetRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+          S3_REPORTS_BUCKET: !Ref S3ReportsBucket
+      Events:
+        GeneratePresMeetReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /presmeet/reports/{type}
+            Method: get
+
+  # --- PresMeet v3: Manage Delegates ---
+  PresMeetManageDelegatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/presmeet_manage_delegates
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt PresMeetRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        ManageDelegates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /presmeet/orders/{id}/delegates
             Method: post
 
   # --- PresMeet: Mollie Webhook (PUBLIC - no Cognito auth) ---
@@ -1600,121 +1647,6 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /mollie-webhook
             Method: post
-
-  # --- PresMeet: Manual Payment (Admin) ---
-  ManualPresMeetPaymentFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/manual_presmeet_payment
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        ManualPresMeetPayment:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/admin/payment
-            Method: post
-
-  # --- PresMeet: Lock Orders (Admin) ---
-  LockPresMeetOrdersFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/lock_presmeet_orders
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        LockPresMeetOrders:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/admin/lock
-            Method: post
-
-  # --- PresMeet: Unlock Order (Admin) ---
-  UnlockPresMeetOrderFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/unlock_presmeet_order
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        UnlockPresMeetOrder:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/admin/unlock/{order_id}
-            Method: post
-
-  # --- PresMeet: Generate Report (Admin) ---
-  GeneratePresMeetReportFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/generate_presmeet_report
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Timeout: 30
-      MemorySize: 256
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          S3_REPORTS_BUCKET: !Ref S3ReportsBucket
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        GeneratePresMeetReport:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/admin/report/generate
-            Method: post
-
-  # --- PresMeet: Get Report (Admin) ---
-  GetPresMeetReportFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/get_presmeet_report
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          S3_REPORTS_BUCKET: !Ref S3ReportsBucket
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        GetPresMeetReport:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/admin/report
-            Method: get
 
   # --- PresMeet: Get Club Registry (Onboarding) ---
   GetClubRegistryFunction:
