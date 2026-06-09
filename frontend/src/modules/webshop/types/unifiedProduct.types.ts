@@ -16,6 +16,33 @@ import { Product } from '../../../types';
 /** Maps axis names to their possible values (e.g., { "Maat": ["S", "M", "L"] }) */
 export type VariantSchema = Record<string, string[]>;
 
+/** Array-of-axes format used by PresMeet products (e.g., [{name: "Size", values: ["S","M","L"]}]) */
+export type VariantSchemaAxes = Array<{ name: string; values: string[] }>;
+
+/**
+ * Normalize variant_schema to the Record format expected by VariantSelector.
+ * Handles both formats:
+ * - Record format (h-dcn products): { "Maat": ["S", "M", "L"] } → returned as-is
+ * - Array format (presmeet products): [{name: "Size", values: ["S","M","L"]}] → converted
+ */
+export function normalizeVariantSchema(
+  schema: VariantSchema | VariantSchemaAxes | null | undefined
+): VariantSchema | null {
+  if (!schema) return null;
+  if (Array.isArray(schema)) {
+    // Array-of-axes format → convert to Record
+    const result: VariantSchema = {};
+    for (const axis of schema) {
+      if (axis.name && Array.isArray(axis.values)) {
+        result[axis.name] = axis.values;
+      }
+    }
+    return Object.keys(result).length > 0 ? result : null;
+  }
+  // Already in Record format
+  return schema;
+}
+
 // --- Order Item Fields ---
 
 /** Supported field types for per-item data collection */

@@ -27,6 +27,7 @@ import {
   VariantSchema,
   VariantRecord,
   PurchaseRules,
+  normalizeVariantSchema,
 } from '../types/unifiedProduct.types';
 
 interface Product {
@@ -304,7 +305,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                       </Flex>
                     ) : (
                       <VariantSelector
-                        variantSchema={product.variant_schema!}
+                        variantSchema={normalizeVariantSchema(product.variant_schema)!}
                         variants={variants}
                         onVariantSelect={handleVariantSelect}
                       />

@@ -67,6 +67,8 @@ PRODUCTS = [
         "name": "Meeting Ticket PM2027",
         "channel": "presmeet",
         "event_type": "presmeet",
+        "is_parent": True,
+        "active": True,
         "price": Decimal("50.00"),
         "order_item_fields": [
             {"id": "name", "label": "Naam", "type": "text", "required": True},
@@ -91,6 +93,8 @@ PRODUCTS = [
         "name": "Party Ticket PM2027",
         "channel": "presmeet",
         "event_type": "presmeet",
+        "is_parent": True,
+        "active": True,
         "price": Decimal("25.00"),
         "order_item_fields": [
             {"id": "name", "label": "Naam", "type": "text", "required": True},
@@ -113,6 +117,8 @@ PRODUCTS = [
         "name": "T-Shirt PM2027",
         "channel": "presmeet",
         "event_type": "presmeet",
+        "is_parent": True,
+        "active": True,
         "price": Decimal("25.00"),
         "order_item_fields": [
             {"id": "person_name", "label": "Naam persoon", "type": "text", "required": True},
@@ -131,6 +137,8 @@ PRODUCTS = [
         "name": "Airport Transfer PM2027",
         "channel": "presmeet",
         "event_type": "presmeet",
+        "is_parent": True,
+        "active": True,
         "price": Decimal("25.00"),
         "order_item_fields": [
             {"id": "flight_number", "label": "Vluchtnummer", "type": "text", "required": True},
