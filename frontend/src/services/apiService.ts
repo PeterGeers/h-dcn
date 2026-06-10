@@ -19,7 +19,7 @@ export interface ApiResponse<T = any> {
 }
 
 export class ApiService {
-  private static baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod';
+  private static baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://44sw408alh.execute-api.eu-west-1.amazonaws.com/prod';
 
   /**
    * Check if user has a valid Amplify session.
