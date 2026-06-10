@@ -231,7 +231,7 @@ def _validate_and_price_items(items):
 
         # Fallback to parent product price
         if unit_price is None:
-            unit_price = product.get('price')
+            unit_price = product.get('price') or product.get('prijs')
 
         # Reject if price is null, empty, or zero
         if not unit_price or Decimal(str(unit_price)) == 0:

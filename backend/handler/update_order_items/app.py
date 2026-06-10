@@ -220,7 +220,7 @@ def _process_items(items):
             )
 
         # Get price: reject if null/empty/zero
-        price = product.get('price')
+        price = product.get('price') or product.get('prijs')
         if price is None or price == '' or price == 0:
             return None, create_error_response(
                 400, 'Product has no configured price', {'product_id': product_id}
