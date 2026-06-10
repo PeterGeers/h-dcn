@@ -290,7 +290,6 @@ def _create_draft_order(event_id, member_id, user_email, club_id, items):
 
     order = {
         'order_id': str(uuid.uuid4()),
-        'event_id': event_id,
         'status': 'draft',
         'payment_status': 'unpaid',
         'member_id': member_id,
@@ -303,6 +302,10 @@ def _create_draft_order(event_id, member_id, user_email, club_id, items):
         'created_at': now,
         'updated_at': now,
     }
+
+    # Only include event_id if it has a value (DynamoDB GSI key cannot be NULL)
+    if event_id:
+        order['event_id'] = event_id
 
     return order
 
