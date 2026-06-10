@@ -38,6 +38,19 @@
     "add_product": "Aggiungi prodotto",
     "edit_product": "Modifica prodotto",
     "delete_product": "Elimina prodotto",
-    "delete_confirm": "Sei sicuro di voler eliminare questo prodotto?"
+    "delete_confirm": "Sei sicuro di voler eliminare questo prodotto?",
+    "show_inactive": "Mostra prodotti inattivi",
+    "deactivate": "Disattivare",
+    "deactivate_confirm_title": "Disattiva prodotto",
+    "deactivate_confirm_body": "Sei sicuro di voler disattivare questo prodotto? Non sarà più visibile nel negozio.",
+    "deactivate_pending_orders_warning": "Attenzione: questo prodotto ha ordini in sospeso. La disattivazione potrebbe influire su questi ordini.",
+    "hard_delete": "Elimina definitivamente",
+    "hard_delete_confirm_title": "Elimina prodotto definitivamente",
+    "hard_delete_confirm_body": "Sei sicuro di voler eliminare definitivamente questo prodotto? Questa azione non può essere annullata.",
+    "hard_delete_error_has_orders": "Questo prodotto non può essere eliminato perché ha ordini associati.",
+    "activate": "Attivare",
+    "inactive_badge": "Inattivo",
+    "confirm": "Conferma",
+    "cancel": "Annulla"
   }
 }

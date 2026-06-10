@@ -51,7 +51,20 @@
     "test_expiry": "Utgångsdatum: Valfritt framtida datum (t.ex. 12/34)",
     "test_cvc": "CVC: Valfria 3 siffror (t.ex. 123)",
     "test_name": "Namn: Valfritt namn (t.ex. Testanvändare)",
-    "test_postal": "Postnummer: Valfritt format (t.ex. 1234AB)"
+    "test_postal": "Postnummer: Valfritt format (t.ex. 1234AB)",
+    "no_order_error": "Ingen beställning hittades. Försök igen.",
+    "fields_required": "Fyll i alla obligatoriska fält innan du lägger beställningen.",
+    "conflict_error": "Beställningen har ändrats under tiden. Uppdatera och försök igen.",
+    "submit_error": "Ett fel uppstod vid inskickning av beställningen.",
+    "refresh_retry": "Uppdatera och försök igen",
+    "order_placed": "Beställning lagd!",
+    "order_number_label": "Ordernummer",
+    "transfer_instructions": "Överför beloppet med följande uppgifter:",
+    "reference": "Referens",
+    "amount": "Belopp",
+    "close": "Stäng",
+    "summary": "Sammanfattning",
+    "fields_incomplete": "Alla fält är inte korrekt ifyllda:"
   },
   "confirmation": {
     "title": "Orderbekräftelse",
@@ -90,6 +103,23 @@
     "success": "Beställning genomförd!",
     "order_number": "Ordernummer",
     "back_to_webshop": "Tillbaka till webbshopen"
+  },
+  "orders_admin": {
+    "title": "Beställningar",
+    "loading": "Laddar beställningar...",
+    "no_orders": "Inga beställningar hittades.",
+    "filter_all": "Alla betalningsstatusar",
+    "status_unpaid": "Obetald",
+    "status_pending": "Väntande",
+    "status_awaiting_payment": "Väntar på betalning",
+    "status_paid": "Betald",
+    "col_order_number": "Ordernummer",
+    "col_customer": "Kund",
+    "col_status": "Status",
+    "col_payment_status": "Betalningsstatus",
+    "col_invoice": "Faktura",
+    "col_total": "Totalt",
+    "col_date": "Datum"
   },
   "access": {
     "no_access_title": "Ingen åtkomst till webbshopen!",

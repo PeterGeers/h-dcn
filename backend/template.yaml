@@ -131,6 +131,11 @@ Parameters:
     Default: "h-dcn-webshop-reports"
     Description: "S3 bucket name for webshop admin report storage"
 
+  CountersTable:
+    Type: String
+    Default: "Counters"
+    Description: "DynamoDB table name for atomic counters (order numbers, invoice numbers). Managed externally."
+
 Globals:
   Function:
     Timeout: 10
@@ -397,6 +402,16 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembershipsTable}/index/*"
+        - PolicyName: CountersTableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                  - dynamodb:GetItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
         - PolicyName: S3AnalyticsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -1040,6 +1055,7 @@ Resources:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
           PRODUCTEN_TABLE_NAME: !Ref Table
+          COUNTERS_TABLE_NAME: !Ref CountersTable
       Events:
         SubmitOrder:
           Type: Api
@@ -1409,6 +1425,16 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
+        - PolicyName: CountersTableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                  - dynamodb:GetItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
         - PolicyName: PresMeetS3ReportsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -1551,6 +1577,7 @@ Resources:
           ORDERS_TABLE_NAME: !Ref OrdersTable
           PRODUCTEN_TABLE_NAME: !Ref Table
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          COUNTERS_TABLE_NAME: !Ref CountersTable
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
       Events:
         MollieWebhookLegacy:
@@ -1564,6 +1591,29 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /mollie-webhook
+            Method: post
+
+  # --- Admin: Confirm Bank Transfer Payment ---
+  AdminConfirmPaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_confirm_payment
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COUNTERS_TABLE_NAME: !Ref CountersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminConfirmPayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders/{id}/confirm-payment
             Method: post
 
   # --- PresMeet: Get Club Registry (Onboarding) ---
@@ -1677,6 +1727,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}/index/*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StockMovementsTableName}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${StockMovementsTableName}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
         - PolicyName: AdminWebshopS3ReportsAccess
           PolicyDocument:
             Version: '2012-10-17'

@@ -16,6 +16,167 @@ import re
 from typing import Any, Dict, List, Optional
 
 
+def validate_item_fields(
+    order_item_fields: List[Dict[str, Any]],
+    item_fields_data: Optional[List[Dict[str, Any]]],
+    quantity: int,
+) -> List[Dict[str, Any]]:
+    """
+    Validate submitted item_fields_data against the product's order_item_fields
+    definition. Returns ALL validation errors (not just the first).
+
+    This is the primary validation entry point used by submit_order and
+    update_order_items handlers.
+
+    Checks:
+    1. item_fields_data count matches quantity
+    2. Each required field in each entry has a non-empty value
+    3. Type-specific validation (email pattern, number min/max, select options,
+       date format)
+
+    Args:
+        order_item_fields: The product's order_item_fields definition array.
+            Each entry: {id, label, type, required, options?, validation?}
+        item_fields_data: List of field data entries, one per item unit.
+            Each entry: {field_values: {field_id: value, ...}} or direct dict.
+        quantity: The ordered quantity for this line item.
+
+    Returns:
+        List of error dicts. Empty list if validation passes.
+        Each error: {"item_index": int, "field_id": str, "message": str}
+    """
+    errors: List[Dict[str, Any]] = []
+
+    # Check if item_fields_data is missing entirely
+    if item_fields_data is None:
+        errors.append({
+            "item_index": 0,
+            "field_id": "item_fields_data",
+            "message": f"Expected {quantity} entries, got 0",
+        })
+        return errors
+
+    # Check count matches quantity
+    actual_count = len(item_fields_data)
+    if actual_count != quantity:
+        errors.append({
+            "item_index": 0,
+            "field_id": "item_fields_data",
+            "message": f"Expected {quantity} entries, got {actual_count}",
+        })
+        return errors
+
+    # Validate each entry against field definitions
+    for item_index, entry in enumerate(item_fields_data):
+        # Support both {"field_values": {...}} wrapper and direct dict
+        if isinstance(entry, dict) and "field_values" in entry:
+            field_values = entry["field_values"]
+        else:
+            field_values = entry if isinstance(entry, dict) else {}
+
+        for field_def in order_item_fields:
+            field_id = field_def.get("id", "")
+            if not field_id:
+                continue
+
+            value = field_values.get(field_id)
+            field_type = field_def.get("type", "text")
+            required = field_def.get("required", False)
+            label = field_def.get("label", field_id)
+
+            # Check required constraint
+            if required and _is_empty_for_type(value, field_type):
+                errors.append({
+                    "item_index": item_index,
+                    "field_id": field_id,
+                    "message": f"Required field is empty",
+                })
+                continue
+
+            # Skip further validation if value is empty and not required
+            if _is_empty_for_type(value, field_type):
+                continue
+
+            # Type-specific validation
+            type_error = _validate_field_for_type(value, field_def)
+            if type_error:
+                errors.append({
+                    "item_index": item_index,
+                    "field_id": field_id,
+                    "message": type_error,
+                })
+
+    return errors
+
+
+def _validate_field_for_type(value: Any, field_def: Dict[str, Any]) -> Optional[str]:
+    """
+    Type-specific validation returning a human-readable error message or None.
+
+    Delegates to type-specific validators for email, number, select, date.
+    """
+    field_type = field_def.get("type", "text")
+    validation = field_def.get("validation", {}) or {}
+    options = field_def.get("options", [])
+
+    if field_type == "email":
+        if not isinstance(value, str):
+            return "Invalid email format"
+        email_pattern = r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_pattern, value):
+            return "Invalid email format"
+
+    elif field_type == "number":
+        numeric_value = _to_numeric(value)
+        if numeric_value is None:
+            return "Invalid number"
+        minimum = validation.get("minimum") or validation.get("min")
+        if minimum is not None:
+            try:
+                if numeric_value < float(minimum):
+                    return f"Value must be at least {minimum}"
+            except (TypeError, ValueError):
+                pass
+        maximum = validation.get("maximum") or validation.get("max")
+        if maximum is not None:
+            try:
+                if numeric_value > float(maximum):
+                    return f"Value must be at most {maximum}"
+            except (TypeError, ValueError):
+                pass
+
+    elif field_type == "select":
+        if options and value not in options:
+            return f"Value must be one of: {', '.join(str(o) for o in options)}"
+
+    elif field_type == "date":
+        if not isinstance(value, str) or not value.strip():
+            return "Invalid date format"
+        # Basic date format validation (YYYY-MM-DD)
+        date_pattern = r"^\d{4}-\d{2}-\d{2}$"
+        if not re.match(date_pattern, value.strip()):
+            return "Invalid date format"
+
+    # text type: no type-specific validation beyond required check
+    return None
+
+
+def _to_numeric(value: Any) -> Optional[float]:
+    """Convert a value to a float, returning None if not possible."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
+    # Support Decimal
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def validate_item_fields_data(
     item_fields_data: Optional[List[Dict[str, Any]]],
     order_item_fields_definition: List[Dict[str, Any]],

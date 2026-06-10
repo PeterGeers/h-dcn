@@ -3,6 +3,7 @@ import os
 import uuid
 import boto3
 from datetime import datetime, timezone
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -17,7 +18,10 @@ try:
     )
     from shared.variant_helpers import (
         create_default_variant,
-        generate_variant_combinations,
+    )
+    from shared.variant_sync import (
+        sync_schema_to_variants,
+        MaxCombinationsExceeded,
     )
     from shared.product_validation import (
         validate_product,
@@ -81,11 +85,18 @@ def _validate_catalog_fields(body):
     return errors
 
 
-def _batch_write_variants(variants):
-    """Write variant records to DynamoDB using batch_writer."""
-    with table.batch_writer() as batch:
-        for variant in variants:
-            batch.put_item(Item=variant)
+def _json_serialize(obj):
+    """Custom JSON serializer for Decimal and other non-standard types."""
+    if isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _serialize_response(data):
+    """Convert response dict for JSON (Decimal → int/float)."""
+    return json.loads(json.dumps(data, default=_json_serialize))
 
 
 def lambda_handler(event, context):
@@ -152,6 +163,10 @@ def lambda_handler(event, context):
         now = datetime.now(timezone.utc).isoformat()
         event_id = body.get('event_id', None)
 
+        # Ensure price is stored as numeric Decimal
+        raw_price = body.get('price')
+        price = Decimal(str(raw_price)) if raw_price is not None else None
+
         # Build product record (parent)
         product = {
             'product_id': product_id,
@@ -161,8 +176,8 @@ def lambda_handler(event, context):
             'category': body.get('category', ''),
             'is_parent': True,
             'parent_id': None,
-            'price': body.get('price'),
-            'active': body.get('active', True),
+            'price': price,
+            'active': True,
             'min_per_club': body.get('min_per_club'),
             'max_per_club': body.get('max_per_club'),
             'required_attributes': body.get('required_attributes'),
@@ -189,30 +204,46 @@ def lambda_handler(event, context):
 
         # Generate variants based on variant_schema or create Default_Variant
         variants_created = []
+        sync_result = None
         if variant_schema:
-            # Generate variants from variant_schema
-            variants = generate_variant_combinations(variant_schema, product_id)
-            # Inherit price from parent
-            if body.get('price') is not None:
-                for v in variants:
-                    v['price'] = body['price']
-            _batch_write_variants(variants)
-            variants_created = variants
+            # Use variant_sync to generate and write variants (top-down sync)
+            try:
+                parent_price = price if price is not None else Decimal('0')
+                sync_result = sync_schema_to_variants(
+                    table, product_id, variant_schema, parent_price
+                )
+            except MaxCombinationsExceeded as e:
+                # Product was already written, but variants failed — clean up
+                table.delete_item(Key={'product_id': product_id})
+                return create_error_response(400, 'Too many variant combinations', {
+                    'count': e.count,
+                    'max': e.max,
+                })
         else:
             # No variant_schema — create Default_Variant
             default_variant = create_default_variant(product_id)
             # Inherit price from parent if set
-            if body.get('price') is not None:
-                default_variant['price'] = body['price']
+            if price is not None:
+                default_variant['price'] = price
             table.put_item(Item=default_variant)
             variants_created = [default_variant]
 
-        return create_success_response({
+        response_data = {
             'product': product,
-            'variants': variants_created,
-            'variant_count': len(variants_created),
-            'message': 'Product created successfully'
-        })
+            'message': 'Product created successfully',
+        }
+        if sync_result:
+            response_data['variant_sync'] = {
+                'created': sync_result.created,
+                'preserved': sync_result.preserved,
+                'deactivated': sync_result.deactivated,
+            }
+            response_data['variant_count'] = sync_result.created
+        else:
+            response_data['variants'] = variants_created
+            response_data['variant_count'] = len(variants_created)
+
+        return create_success_response(_serialize_response(response_data))
 
     except json.JSONDecodeError:
         return create_error_response(400, 'Invalid JSON in request body')

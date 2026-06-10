@@ -37,12 +37,13 @@ def aws_env():
     os.environ['ORDERS_TABLE_NAME'] = 'Orders'
     os.environ['PAYMENTS_TABLE_NAME'] = 'Payments'
     os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten'
+    os.environ['COUNTERS_TABLE_NAME'] = 'Counters'
     os.environ['MOLLIE_API_KEY'] = 'test_xxx'
 
 
 @pytest.fixture
 def dynamodb_tables(aws_env):
-    """Create mocked Orders, Payments, and Producten DynamoDB tables."""
+    """Create mocked Orders, Payments, Producten, and Counters DynamoDB tables."""
     with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 
@@ -67,14 +68,22 @@ def dynamodb_tables(aws_env):
             BillingMode='PAY_PER_REQUEST',
         )
 
-        yield {'orders': orders, 'payments': payments, 'producten': producten}
+        counters = dynamodb.create_table(
+            TableName='Counters',
+            KeySchema=[{'AttributeName': 'counter_id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'counter_id', 'AttributeType': 'S'}],
+            BillingMode='PAY_PER_REQUEST',
+        )
+
+        yield {'orders': orders, 'payments': payments, 'producten': producten, 'counters': counters}
 
 
 def _create_order(orders_table, order_id, mollie_payment_id=None, payment_status='pending',
-                  items=None, stock_reserved=False, total_amount=50, total_paid=0):
+                  status='submitted', items=None, stock_reserved=False, total_amount=50, total_paid=0):
     """Helper to insert an order record."""
     order = {
         'order_id': order_id,
+        'status': status,
         'payment_status': payment_status,
         'user_email': 'test@h-dcn.nl',
         'total_amount': Decimal(str(total_amount)),
@@ -191,9 +200,10 @@ class TestLegacyWebshopPaidStatus:
 
     @patch('shared.mollie_client.get_payment')
     def test_paid_updates_order_and_reserves_stock(self, mock_get_payment, dynamodb_tables):
-        """When Mollie reports paid, order transitions to paid and stock is reserved."""
+        """When Mollie reports paid, order transitions to paid/confirmed and stock is reserved."""
         mock_get_payment.return_value = {'id': 'tr_paid001', 'status': 'paid'}
-        _create_order(dynamodb_tables['orders'], 'ord_paid', 'tr_paid001', payment_status='pending')
+        _create_order(dynamodb_tables['orders'], 'ord_paid', 'tr_paid001',
+                      payment_status='pending', status='submitted')
         _create_variant(dynamodb_tables['producten'], 'var_001', stock=10, sold_count=0)
 
         import importlib
@@ -208,7 +218,11 @@ class TestLegacyWebshopPaidStatus:
         # Verify order updated
         order = dynamodb_tables['orders'].get_item(Key={'order_id': 'ord_paid'})['Item']
         assert order['payment_status'] == 'paid'
+        assert order['status'] == 'confirmed'
         assert order['stock_reserved'] == True
+        assert 'paid_at' in order
+        assert 'invoice_number' in order
+        assert order['invoice_number'].startswith('F-')
 
         # Verify stock was decremented
         variant = dynamodb_tables['producten'].get_item(Key={'product_id': 'var_001'})['Item']
@@ -221,10 +235,11 @@ class TestLegacyWebshopFailedStatus:
 
     @pytest.mark.parametrize('mollie_status', ['failed', 'expired', 'cancelled'])
     @patch('shared.mollie_client.get_payment')
-    def test_failed_updates_order_to_payment_failed(self, mock_get_payment, mollie_status, dynamodb_tables):
-        """When Mollie reports failed/expired/cancelled, order goes to payment_failed."""
+    def test_failed_updates_payment_to_unpaid_keeps_order_submitted(self, mock_get_payment, mollie_status, dynamodb_tables):
+        """When Mollie reports failed/expired/cancelled, payment_status goes to unpaid, order stays submitted."""
         mock_get_payment.return_value = {'id': 'tr_fail', 'status': mollie_status}
-        _create_order(dynamodb_tables['orders'], 'ord_fail', 'tr_fail', payment_status='pending')
+        _create_order(dynamodb_tables['orders'], 'ord_fail', 'tr_fail',
+                      payment_status='pending', status='submitted')
 
         import importlib
         import handler.mollie_webhook.app as webhook_module
@@ -236,13 +251,15 @@ class TestLegacyWebshopFailedStatus:
         assert response['statusCode'] == 200
 
         order = dynamodb_tables['orders'].get_item(Key={'order_id': 'ord_fail'})['Item']
-        assert order['payment_status'] == 'payment_failed'
+        assert order['payment_status'] == 'unpaid'
+        assert order['status'] == 'submitted'
 
     @patch('shared.mollie_client.get_payment')
     def test_failed_does_not_reserve_stock(self, mock_get_payment, dynamodb_tables):
         """Failed payments should never trigger stock reservation."""
         mock_get_payment.return_value = {'id': 'tr_nores', 'status': 'failed'}
-        _create_order(dynamodb_tables['orders'], 'ord_nores', 'tr_nores', payment_status='pending')
+        _create_order(dynamodb_tables['orders'], 'ord_nores', 'tr_nores',
+                      payment_status='pending', status='submitted')
         _create_variant(dynamodb_tables['producten'], 'var_001', stock=10, sold_count=0)
 
         import importlib
@@ -497,7 +514,8 @@ class TestIdempotency:
     def test_duplicate_paid_webhook_does_not_double_reserve(self, mock_get_payment, dynamodb_tables):
         """Processing the same paid webhook twice doesn't decrement stock twice."""
         mock_get_payment.return_value = {'id': 'tr_idem', 'status': 'paid'}
-        _create_order(dynamodb_tables['orders'], 'ord_idem', 'tr_idem', payment_status='pending')
+        _create_order(dynamodb_tables['orders'], 'ord_idem', 'tr_idem',
+                      payment_status='pending', status='submitted')
         _create_variant(dynamodb_tables['producten'], 'var_001', stock=10, sold_count=0)
 
         import importlib
@@ -529,7 +547,7 @@ class TestForwardOnlyTransitions:
         mock_get_payment.return_value = {'id': 'tr_nofail', 'status': 'failed'}
         _create_order(
             dynamodb_tables['orders'], 'ord_nofail', 'tr_nofail',
-            payment_status='paid', stock_reserved=True
+            payment_status='paid', status='confirmed', stock_reserved=True
         )
 
         import importlib
@@ -541,9 +559,10 @@ class TestForwardOnlyTransitions:
 
         assert response['statusCode'] == 200
 
-        # Order remains paid
+        # Order remains paid/confirmed
         order = dynamodb_tables['orders'].get_item(Key={'order_id': 'ord_nofail'})['Item']
         assert order['payment_status'] == 'paid'
+        assert order['status'] == 'confirmed'
 
 
 class TestAlwaysReturns200:

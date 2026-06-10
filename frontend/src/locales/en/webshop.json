@@ -58,6 +58,7 @@
     "submit_error": "An error occurred while submitting the order.",
     "refresh_retry": "Refresh and retry",
     "order_placed": "Order placed!",
+    "order_number_label": "Order number",
     "transfer_instructions": "Please transfer the amount using the following details:",
     "reference": "Reference",
     "amount": "Amount",
@@ -102,6 +103,23 @@
     "success": "Order placed successfully!",
     "order_number": "Order number",
     "back_to_webshop": "Back to webshop"
+  },
+  "orders_admin": {
+    "title": "Orders",
+    "loading": "Loading orders...",
+    "no_orders": "No orders found.",
+    "filter_all": "All payment statuses",
+    "status_unpaid": "Unpaid",
+    "status_pending": "Pending",
+    "status_awaiting_payment": "Awaiting payment",
+    "status_paid": "Paid",
+    "col_order_number": "Order number",
+    "col_customer": "Customer",
+    "col_status": "Status",
+    "col_payment_status": "Payment status",
+    "col_invoice": "Invoice",
+    "col_total": "Total",
+    "col_date": "Date"
   },
   "access": {
     "no_access_title": "No access to webshop!",

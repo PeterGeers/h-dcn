@@ -25,14 +25,16 @@ export interface UseAdminOrdersReturn {
 }
 
 /**
- * Fetches admin orders with optional event_id and status filtering.
+ * Fetches admin orders with optional event_id, status, and payment_status filtering.
  *
  * @param eventId - Filter by event_id value (empty string or undefined = all, "webshop" = event_id is null)
  * @param status - Filter by order status (optional)
+ * @param paymentStatus - Filter by payment status (optional)
  */
 export function useAdminOrders(
   eventId?: string,
-  status?: string
+  status?: string,
+  paymentStatus?: string
 ): UseAdminOrdersReturn {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,7 +46,8 @@ export function useAdminOrders(
     try {
       const response = await getAdminOrders(
         eventId || undefined,
-        status || undefined
+        status || undefined,
+        paymentStatus || undefined
       );
       setOrders(response.orders);
     } catch (err: unknown) {
@@ -55,7 +58,7 @@ export function useAdminOrders(
     } finally {
       setLoading(false);
     }
-  }, [eventId, status]);
+  }, [eventId, status, paymentStatus]);
 
   useEffect(() => {
     fetchOrders();

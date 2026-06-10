@@ -81,11 +81,13 @@ export interface PaymentRecord {
 
 export interface AdminOrder {
   order_id: string;
+  order_number?: string;
+  invoice_number?: string;
   event_id?: string | null;
   customer_name: string;
   club_name?: string;
   status: OrderStatus;
-  payment_status: 'paid' | 'partial' | 'unpaid';
+  payment_status: 'paid' | 'partial' | 'unpaid' | 'pending' | 'awaiting_payment';
   total_amount: number;
   amount_paid: number;
   outstanding: number;

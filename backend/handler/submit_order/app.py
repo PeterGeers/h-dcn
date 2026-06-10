@@ -2,15 +2,17 @@
 Unified submit_order handler for H-DCN orders.
 
 POST /orders/{id}/submit — Validates and submits a draft order:
-1. Verify order exists and is in "draft" status
-2. For each item:
+1. Validate state transition draft→submitted via order_state_machine
+2. Generate human-readable order_number via number_generator
+3. For each item:
    - Verify product_id exists in Producten table
    - If variant_id present: verify variant exists and variant.parent_id == product_id
-   - Validate required item_fields_data against product's order_item_fields
-3. On success: set status to "submitted", record submitted_at timestamp
-4. On failure: return 400 with structured errors [{item_index, field, message}]
+   - Validate required item_fields_data against product's order_item_fields (strict)
+   - Validate purchase_rules server-side
+4. On success: set status to "submitted", store order_number, record submitted_at
+5. On failure: return 400 with structured errors [{item_index, field, message}]
 
-Requirements: 7.1, 7.10, 10.8, 10.9
+Requirements: 1.2, 3.1, 3.2, 3.3, 5.5, 6.3, 6.4, 6.5
 """
 
 import json
@@ -33,7 +35,10 @@ try:
         create_success_response,
         log_successful_access,
     )
-    from shared.item_fields_validator import validate_item_fields_data
+    from shared.order_state_machine import transition_order, InvalidTransitionError
+    from shared.number_generator import generate_order_number, CounterWriteError
+    from shared.item_fields_validator import validate_item_fields
+    from shared.purchase_rules_engine import validate_purchase_rules as check_purchase_rules
     print("Using shared auth layer for submit_order")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -49,6 +54,9 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
+counters_table = dynamodb.Table(os.environ.get('COUNTERS_TABLE_NAME', 'Counters'))
+memberships_table_name = os.environ.get('MEMBERSHIPS_TABLE_NAME', 'Memberships')
+memberships_table = dynamodb.Table(memberships_table_name)
 
 
 def _json_serialize(obj):
@@ -101,14 +109,16 @@ def lambda_handler(event, context):
                 'order_id': order_id,
             })
 
-        # Validate order status — only draft orders can be submitted
+        # Validate state transition draft→submitted via state machine
         current_status = order.get('status', 'draft')
-        if current_status != 'draft':
-            return create_error_response(
-                400,
-                f'Cannot submit order with status "{current_status}". '
-                f'Only draft orders can be submitted.'
-            )
+        try:
+            transition_order(current_status, 'submitted')
+        except InvalidTransitionError as e:
+            return create_error_response(400, str(e), {
+                'current': e.current,
+                'target': e.target,
+                'allowed': e.allowed,
+            })
 
         # Validate all order items
         items = order.get('items', [])
@@ -117,7 +127,7 @@ def lambda_handler(event, context):
                 400, 'Cannot submit order with no items'
             )
 
-        validation_errors = _validate_order_items(items)
+        validation_errors = _validate_order_items(items, order)
 
         if validation_errors:
             return {
@@ -129,6 +139,15 @@ def lambda_handler(event, context):
                     'error_count': len(validation_errors),
                 }, default=_json_serialize),
             }
+
+        # Generate order number
+        try:
+            order_number = generate_order_number(counters_table)
+        except CounterWriteError as e:
+            logger.error(f"Failed to generate order number: {e}")
+            return create_error_response(
+                500, 'Failed to generate order number. Please retry.'
+            )
 
         # All validations passed — submit the order
         now = datetime.now(timezone.utc).isoformat()
@@ -144,7 +163,7 @@ def lambda_handler(event, context):
             Key={'order_id': order_id},
             UpdateExpression=(
                 'SET #status = :submitted, submitted_at = :now, '
-                'updated_at = :now, '
+                'updated_at = :now, order_number = :order_number, '
                 'status_history = list_append('
                 'if_not_exists(status_history, :empty_list), :history_entry)'
             ),
@@ -153,6 +172,7 @@ def lambda_handler(event, context):
             ExpressionAttributeValues={
                 ':submitted': 'submitted',
                 ':now': now,
+                ':order_number': order_number,
                 ':history_entry': [history_entry],
                 ':empty_list': [],
             },
@@ -161,10 +181,14 @@ def lambda_handler(event, context):
 
         updated_order = updated.get('Attributes', {})
 
-        logger.info(f"Order {order_id} submitted successfully by {user_email}")
+        logger.info(
+            f"Order {order_id} submitted successfully by {user_email} "
+            f"(order_number={order_number})"
+        )
 
         return create_success_response({
             'order_id': order_id,
+            'order_number': order_number,
             'status': 'submitted',
             'submitted_at': now,
         })
@@ -176,7 +200,12 @@ def lambda_handler(event, context):
     except json.JSONDecodeError:
         return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
-        logger.error(f"Error submitting order {path_params.get('id', 'unknown')}: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error submitting order "
+            f"{(event.get('pathParameters') or {}).get('id', 'unknown')}: "
+            f"{str(e)}",
+            exc_info=True,
+        )
         return create_error_response(500, 'Internal server error')
 
 
@@ -190,14 +219,15 @@ def _get_order(order_id):
         return None
 
 
-def _validate_order_items(items):
+def _validate_order_items(items, order):
     """
     Validate all items in an order for submission.
 
     For each item:
     - Verify product_id exists in Producten table
     - If variant_id present: verify variant exists and parent_id matches product_id
-    - Validate required item_fields_data against product's order_item_fields
+    - Validate required item_fields_data against product's order_item_fields (strict)
+    - Validate purchase_rules server-side
 
     Returns list of error dicts [{item_index, field, message}], empty if valid.
     """
@@ -246,14 +276,27 @@ def _validate_order_items(items):
                     ),
                 })
 
-        # Validate item_fields_data if product has order_item_fields
+        # Validate item_fields_data if product has order_item_fields (strict)
         order_item_fields = product.get('order_item_fields')
         if order_item_fields:
             item_fields_data = item.get('item_fields_data')
-            field_errors = _validate_item_fields(
+            field_errors = _validate_item_fields_strict(
                 item_fields_data, order_item_fields, quantity, idx
             )
             errors.extend(field_errors)
+
+        # Validate purchase_rules server-side
+        purchase_rules = product.get('purchase_rules')
+        if purchase_rules:
+            rule_error = _validate_purchase_rules_for_item(
+                purchase_rules, product_id, quantity, order
+            )
+            if rule_error:
+                errors.append({
+                    'item_index': idx,
+                    'field': 'purchase_rules',
+                    'message': rule_error,
+                })
 
     return errors
 
@@ -268,52 +311,59 @@ def _get_product(product_id):
         return None
 
 
-def _validate_item_fields(item_fields_data, order_item_fields, quantity, item_index):
+def _validate_item_fields_strict(item_fields_data, order_item_fields, quantity, item_index):
     """
     Validate item_fields_data against the product's order_item_fields definition.
 
-    Uses the shared item_fields_validator for detailed field-level validation.
+    Uses the shared validate_item_fields for strict validation (all errors returned).
     Converts validation errors into the submit_order error format:
     [{item_index, field, message}]
     """
     errors = []
 
-    # Use shared validator
-    validation_result = validate_item_fields_data(
-        item_fields_data, order_item_fields, quantity, line_item_index=item_index
-    )
+    # Use strict shared validator (returns list of all errors)
+    field_errors = validate_item_fields(order_item_fields, item_fields_data, quantity)
 
-    if validation_result:
-        error_type = validation_result.get('error', '')
-        details = validation_result.get('details', {})
-
-        if error_type == 'item_fields_count_mismatch':
-            errors.append({
-                'item_index': item_index,
-                'field': 'item_fields_data',
-                'message': (
-                    f"Expected {details.get('expected', quantity)} entries, "
-                    f"got {details.get('actual', 0)}"
-                ),
-            })
-        elif error_type == 'item_fields_validation_error':
-            field_id = details.get('field_id', 'unknown')
-            constraint = details.get('constraint', 'invalid')
-            sub_item_index = details.get('item_index', 0)
-            errors.append({
-                'item_index': item_index,
-                'field': field_id,
-                'message': (
-                    f"Field '{field_id}' validation failed: {constraint} "
-                    f"(entry {sub_item_index})"
-                ),
-            })
-        else:
-            # Generic validation error
-            errors.append({
-                'item_index': item_index,
-                'field': 'item_fields_data',
-                'message': str(validation_result),
-            })
+    for err in field_errors:
+        errors.append({
+            'item_index': item_index,
+            'field': err.get('field_id', 'item_fields_data'),
+            'message': err.get('message', 'Validation failed'),
+        })
 
     return errors
+
+
+def _validate_purchase_rules_for_item(purchase_rules, product_id, quantity, order):
+    """
+    Server-side check of purchase_rules for a single item.
+
+    Uses the purchase_rules_engine orchestrator which queries DynamoDB for
+    existing member/club counts.
+
+    Returns error message string if violated, None if passes.
+    """
+    member_id = order.get('member_id')
+    club_id = order.get('club_id')
+
+    context = {
+        'quantity': quantity,
+        'product_id': product_id,
+        'member_id': member_id or '',
+        'club_id': club_id,
+        'orders_table': orders_table,
+        'memberships_table': memberships_table,
+    }
+
+    violation = check_purchase_rules(purchase_rules, context)
+    if violation:
+        details = violation.get('details', {})
+        rule = details.get('rule', 'unknown')
+        limit = details.get('limit', '?')
+        current = details.get('current_total', details.get('remaining_allowed', '?'))
+        return (
+            f"Purchase rule violated: {rule} "
+            f"(limit={limit}, current={current}, requested={quantity})"
+        )
+
+    return None

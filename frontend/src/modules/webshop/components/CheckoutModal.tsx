@@ -77,6 +77,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState<string>('');
   const [conflictError, setConflictError] = useState<boolean>(false);
+  const [orderNumber, setOrderNumber] = useState<string | undefined>(undefined);
   const { t } = useTranslation('webshop');
 
   // Use orderId prop, fall back to cartId for backward compat
@@ -205,6 +206,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         return;
       }
 
+      // Capture order_number from submit response
+      const submittedOrderNumber = submitResponse.data?.order_number;
+      if (submittedOrderNumber) {
+        setOrderNumber(submittedOrderNumber);
+      }
+
       // Step 2: Initiate payment on the submitted order
       const payResponse = await orderService.payOrder(activeOrderId, {
         payment_method: paymentMethod,
@@ -237,6 +244,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           items: cartItems,
           deliveryOption: deliveryOption || null,
           orderId: activeOrderId,
+          orderNumber: submittedOrderNumber,
           paymentMethod: 'bank_transfer',
           transferInstructions: payData.transfer_instructions,
         });
@@ -252,6 +260,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         items: cartItems,
         deliveryOption: deliveryOption || null,
         orderId: activeOrderId,
+        orderNumber: submittedOrderNumber,
         paymentMethod,
       });
     } catch (err: any) {
@@ -287,6 +296,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setSuccess(false);
     setTransferInstructions(undefined);
     setConflictError(false);
+    setOrderNumber(undefined);
   };
 
   const handleClose = () => {
@@ -297,6 +307,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setTransferInstructions(undefined);
     setItemFieldErrors([]);
     setConflictError(false);
+    setOrderNumber(undefined);
     onClose();
   };
 
@@ -350,6 +361,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <Text fontWeight="bold" mb={2}>
                 {t('checkout.order_placed', { defaultValue: 'Bestelling geplaatst!' })}
               </Text>
+              {orderNumber && (
+                <Box mb={3} p={3} bg="orange.100" borderRadius="md" width="full">
+                  <Text fontSize="sm" color="gray.600">
+                    {t('checkout.order_number_label', { defaultValue: 'Bestelnummer' })}
+                  </Text>
+                  <Text fontSize="xl" fontWeight="bold" color="orange.700">
+                    {orderNumber}
+                  </Text>
+                </Box>
+              )}
               <Text mb={2}>
                 {t('checkout.transfer_instructions', { defaultValue: 'Maak het bedrag over met de volgende gegevens:' })}
               </Text>
@@ -379,11 +400,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Success without bank transfer (should not normally appear since Mollie redirects) */}
           {success && !transferInstructions && (
-            <Alert status="success" mb={4} bg="green.600" color="white">
-              <AlertIcon />
-              {t('checkout.payment_processing', {
-                defaultValue: 'Bestelling succesvol geplaatst!',
-              })}
+            <Alert status="success" mb={4} bg="green.600" color="white" flexDirection="column" alignItems="flex-start" p={4}>
+              <HStack mb={2}>
+                <AlertIcon />
+                <Text fontWeight="bold">
+                  {t('checkout.payment_processing', {
+                    defaultValue: 'Bestelling succesvol geplaatst!',
+                  })}
+                </Text>
+              </HStack>
+              {orderNumber && (
+                <Box p={3} bg="green.700" borderRadius="md" width="full">
+                  <Text fontSize="sm" color="green.200">
+                    {t('checkout.order_number_label', { defaultValue: 'Bestelnummer' })}
+                  </Text>
+                  <Text fontSize="xl" fontWeight="bold" color="white">
+                    {orderNumber}
+                  </Text>
+                </Box>
+              )}
             </Alert>
           )}
 

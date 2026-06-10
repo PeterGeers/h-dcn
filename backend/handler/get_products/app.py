@@ -67,10 +67,11 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'get_products')
 
-        # Build filter: is_parent=true, active=true, optionally filtered by event_id
+        # Build filter: is_parent=true, active!=false (includes products without active field)
+        # Products with active=false are excluded; products with active=true OR no active field are included
         filter_expr = (
             Attr('is_parent').eq(True) &
-            Attr('active').eq(True)
+            (Attr('active').ne(False) | Attr('active').not_exists())
         )
 
         if requested_event_id is not None:

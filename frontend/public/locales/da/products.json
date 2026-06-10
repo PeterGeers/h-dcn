@@ -38,6 +38,19 @@
     "add_product": "Tilføj produkt",
     "edit_product": "Rediger produkt",
     "delete_product": "Slet produkt",
-    "delete_confirm": "Er du sikker på, at du vil slette dette produkt?"
+    "delete_confirm": "Er du sikker på, at du vil slette dette produkt?",
+    "show_inactive": "Vis inaktive produkter",
+    "deactivate": "Deaktiver",
+    "deactivate_confirm_title": "Deaktiver produkt",
+    "deactivate_confirm_body": "Er du sikker på, at du vil deaktivere dette produkt? Det vil ikke længere være synligt i webshoppen.",
+    "deactivate_pending_orders_warning": "Bemærk: dette produkt har ventende ordrer. Deaktivering kan påvirke disse ordrer.",
+    "hard_delete": "Slet permanent",
+    "hard_delete_confirm_title": "Slet produkt permanent",
+    "hard_delete_confirm_body": "Er du sikker på, at du vil slette dette produkt permanent? Denne handling kan ikke fortrydes.",
+    "hard_delete_error_has_orders": "Dette produkt kan ikke slettes, fordi det har tilknyttede ordrer.",
+    "activate": "Aktiver",
+    "inactive_badge": "Inaktiv",
+    "confirm": "Bekræft",
+    "cancel": "Annuller"
   }
 }

@@ -60,6 +60,7 @@
     "submit_error": "Er is een fout opgetreden bij het indienen van de bestelling.",
     "refresh_retry": "Vernieuwen en opnieuw proberen",
     "order_placed": "Bestelling geplaatst!",
+    "order_number_label": "Bestelnummer",
     "transfer_instructions": "Maak het bedrag over met de volgende gegevens:",
     "reference": "Kenmerk",
     "amount": "Bedrag",
@@ -104,6 +105,23 @@
     "success": "Bestelling succesvol geplaatst!",
     "order_number": "Ordernummer",
     "back_to_webshop": "Terug naar webshop"
+  },
+  "orders_admin": {
+    "title": "Bestellingen",
+    "loading": "Bestellingen laden...",
+    "no_orders": "Geen bestellingen gevonden.",
+    "filter_all": "Alle betaalstatussen",
+    "status_unpaid": "Onbetaald",
+    "status_pending": "In behandeling",
+    "status_awaiting_payment": "Wacht op betaling",
+    "status_paid": "Betaald",
+    "col_order_number": "Ordernummer",
+    "col_customer": "Klant",
+    "col_status": "Status",
+    "col_payment_status": "Betaalstatus",
+    "col_invoice": "Factuur",
+    "col_total": "Totaal",
+    "col_date": "Datum"
   },
   "access": {
     "no_access_title": "Geen toegang tot webshop!",

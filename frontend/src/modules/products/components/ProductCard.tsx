@@ -12,6 +12,7 @@ import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/type
 import { PRODUCT_CATEGORIES } from '../config/productCategories';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
+import { updateVariantSchema, addVariantToProduct, removeVariantFromProduct } from '../api/productApi';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -591,6 +592,22 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                       });
                     }
                     setVariantSchemaHasErrors(hasErrors);
+                  }}
+                  productId={product.product_id || product.id}
+                  onSyncSchema={async (schema: VariantSchema) => {
+                    const productId = product.product_id || product.id;
+                    if (!productId) return;
+                    await updateVariantSchema(productId, schema);
+                  }}
+                  onAddVariant={async (variantAttributes: Record<string, string>) => {
+                    const productId = product.product_id || product.id;
+                    if (!productId) return;
+                    await addVariantToProduct(productId, variantAttributes);
+                  }}
+                  onRemoveVariant={async (variantAttributes: Record<string, string>) => {
+                    const productId = product.product_id || product.id;
+                    if (!productId) return;
+                    await removeVariantFromProduct(productId, variantAttributes);
                   }}
                 />
                 {variantSchemaHasErrors && (

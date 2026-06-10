@@ -49,7 +49,20 @@
     "test_expiry": "Date d'expiration : Toute date future (ex. 12/34)",
     "test_cvc": "CVC : 3 chiffres (ex. 123)",
     "test_name": "Nom : N'importe quel nom (ex. Utilisateur Test)",
-    "test_postal": "Code postal : Tout format (ex. 1234AB)"
+    "test_postal": "Code postal : Tout format (ex. 1234AB)",
+    "no_order_error": "Aucune commande trouvée. Veuillez réessayer.",
+    "fields_required": "Veuillez remplir tous les champs obligatoires avant de passer la commande.",
+    "conflict_error": "La commande a été modifiée entre-temps. Actualisez et réessayez.",
+    "submit_error": "Une erreur est survenue lors de la soumission de la commande.",
+    "refresh_retry": "Actualiser et réessayer",
+    "order_placed": "Commande passée !",
+    "order_number_label": "Numéro de commande",
+    "transfer_instructions": "Veuillez transférer le montant avec les informations suivantes :",
+    "reference": "Référence",
+    "amount": "Montant",
+    "close": "Fermer",
+    "summary": "Récapitulatif",
+    "fields_incomplete": "Tous les champs ne sont pas correctement remplis :"
   },
   "confirmation": {
     "title": "Confirmation de commande",
@@ -88,6 +101,23 @@
     "success": "Commande passée avec succès !",
     "order_number": "Numéro de commande",
     "back_to_webshop": "Retour à la boutique"
+  },
+  "orders_admin": {
+    "title": "Commandes",
+    "loading": "Chargement des commandes...",
+    "no_orders": "Aucune commande trouvée.",
+    "filter_all": "Tous les statuts de paiement",
+    "status_unpaid": "Non payé",
+    "status_pending": "En attente",
+    "status_awaiting_payment": "En attente de paiement",
+    "status_paid": "Payé",
+    "col_order_number": "Numéro de commande",
+    "col_customer": "Client",
+    "col_status": "Statut",
+    "col_payment_status": "Statut de paiement",
+    "col_invoice": "Facture",
+    "col_total": "Total",
+    "col_date": "Date"
   },
   "access": {
     "no_access_title": "Pas d'accès à la boutique !",

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Box,
   VStack,
@@ -13,18 +13,29 @@ import {
   TagLabel,
   TagCloseButton,
   Badge,
+  Divider,
+  Select,
+  useToast,
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon, ArrowUpIcon, ArrowDownIcon } from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon, ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@chakra-ui/icons';
 import { VariantSchema } from '../../webshop/types/unifiedProduct.types';
 
 const MAX_AXES = 5;
 const MAX_VALUES_PER_AXIS = 20;
 const MAX_COMBINATIONS = 100;
 
-interface VariantSchemaEditorProps {
+export interface VariantSchemaEditorProps {
   value: VariantSchema;
   onChange: (schema: VariantSchema) => void;
   errors?: Record<string, string>;
+  /** Product ID - required for bidirectional sync API calls */
+  productId?: string;
+  /** Called when schema is saved (top-down sync). If provided, shows a "Sync varianten" button. */
+  onSyncSchema?: (schema: VariantSchema) => Promise<void>;
+  /** Called to add a single variant (bottom-up sync). */
+  onAddVariant?: (variantAttributes: Record<string, string>) => Promise<void>;
+  /** Called to remove a single variant (bottom-up sync). */
+  onRemoveVariant?: (variantAttributes: Record<string, string>) => Promise<void>;
 }
 
 /**
@@ -32,11 +43,19 @@ interface VariantSchemaEditorProps {
  * Allows admins to add up to 5 axes, each with up to 20 values.
  * Validates axis name uniqueness, value uniqueness per axis,
  * and displays an error when total combinations exceed 100.
+ *
+ * Supports bidirectional sync:
+ * - Top-down: editing the schema and clicking "Sync varianten" regenerates variants via API
+ * - Bottom-up: adding/removing individual variants updates the schema via API
  */
 const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
   value,
   onChange,
   errors,
+  productId,
+  onSyncSchema,
+  onAddVariant,
+  onRemoveVariant,
 }) => {
   const axes = useMemo(() => Object.entries(value), [value]);
 
@@ -252,6 +271,27 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
           Maximaal {MAX_AXES} assen
         </Text>
       )}
+
+      {/* Top-down sync button: save schema and regenerate variants */}
+      {onSyncSchema && axes.length > 0 && !combinationsExceeded && (
+        <SyncSchemaButton
+          schema={value}
+          onSyncSchema={onSyncSchema}
+          hasErrors={Object.keys(validationErrors).length > 0}
+        />
+      )}
+
+      {/* Bottom-up variant management: add/remove individual variants */}
+      {(onAddVariant || onRemoveVariant) && axes.length > 0 && (
+        <>
+          <Divider />
+          <VariantActionPanel
+            schema={value}
+            onAddVariant={onAddVariant}
+            onRemoveVariant={onRemoveVariant}
+          />
+        </>
+      )}
     </VStack>
   );
 };
@@ -300,6 +340,194 @@ const ValueInput: React.FC<ValueInputProps> = ({ axisIndex, onAdd, error }) => {
       </HStack>
       {error && <FormErrorMessage fontSize="xs">{error}</FormErrorMessage>}
     </FormControl>
+  );
+};
+
+/**
+ * Button that triggers top-down schema sync (regenerates variants from schema).
+ */
+interface SyncSchemaButtonProps {
+  schema: VariantSchema;
+  onSyncSchema: (schema: VariantSchema) => Promise<void>;
+  hasErrors: boolean;
+}
+
+const SyncSchemaButton: React.FC<SyncSchemaButtonProps> = ({ schema, onSyncSchema, hasErrors }) => {
+  const [isSyncing, setIsSyncing] = useState(false);
+  const toast = useToast();
+
+  const handleSync = async () => {
+    if (hasErrors) return;
+    setIsSyncing(true);
+    try {
+      await onSyncSchema(schema);
+      toast({
+        title: 'Varianten gesynchroniseerd',
+        description: 'Het variant schema is opgeslagen en de varianten zijn bijgewerkt.',
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Sync mislukt',
+        description: err?.response?.data?.error || err?.message || 'Onbekende fout',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      colorScheme="teal"
+      onClick={handleSync}
+      isLoading={isSyncing}
+      loadingText="Synchroniseren..."
+      isDisabled={hasErrors}
+    >
+      Sync varianten
+    </Button>
+  );
+};
+
+/**
+ * Panel for adding/removing individual variants (bottom-up sync).
+ * Users select one value per axis to define a specific variant combination.
+ */
+interface VariantActionPanelProps {
+  schema: VariantSchema;
+  onAddVariant?: (variantAttributes: Record<string, string>) => Promise<void>;
+  onRemoveVariant?: (variantAttributes: Record<string, string>) => Promise<void>;
+}
+
+const VariantActionPanel: React.FC<VariantActionPanelProps> = ({
+  schema,
+  onAddVariant,
+  onRemoveVariant,
+}) => {
+  const axes = Object.entries(schema);
+  const [selectedValues, setSelectedValues] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useToast();
+
+  const allAxesSelected = axes.length > 0 && axes.every(([name]) => !!selectedValues[name]);
+
+  const handleSelectValue = (axisName: string, value: string) => {
+    setSelectedValues((prev) => ({ ...prev, [axisName]: value }));
+  };
+
+  const handleAddVariant = async () => {
+    if (!onAddVariant || !allAxesSelected) return;
+    setIsSubmitting(true);
+    try {
+      await onAddVariant(selectedValues);
+      toast({
+        title: 'Variant toegevoegd',
+        description: Object.entries(selectedValues).map(([k, v]) => `${k}: ${v}`).join(', '),
+        status: 'success',
+        duration: 3000,
+      });
+      setSelectedValues({});
+    } catch (err: any) {
+      toast({
+        title: 'Toevoegen mislukt',
+        description: err?.response?.data?.error || err?.message || 'Onbekende fout',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveVariant = async () => {
+    if (!onRemoveVariant || !allAxesSelected) return;
+    setIsSubmitting(true);
+    try {
+      await onRemoveVariant(selectedValues);
+      toast({
+        title: 'Variant verwijderd',
+        description: Object.entries(selectedValues).map(([k, v]) => `${k}: ${v}`).join(', '),
+        status: 'success',
+        duration: 3000,
+      });
+      setSelectedValues({});
+    } catch (err: any) {
+      toast({
+        title: 'Verwijderen mislukt',
+        description: err?.response?.data?.error || err?.message || 'Onbekende fout',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Don't show panel if all axes have empty values
+  if (axes.every(([, values]) => values.length === 0)) return null;
+
+  return (
+    <Box p={3} borderWidth="1px" borderRadius="md" borderColor="gray.300" bg="gray.50">
+      <Text fontSize="sm" fontWeight="bold" mb={2} color="gray.700">
+        Individuele variant toevoegen/verwijderen
+      </Text>
+      <Text fontSize="xs" color="gray.500" mb={3}>
+        Selecteer een waarde per as om een specifieke variant te beheren.
+      </Text>
+
+      <VStack align="stretch" spacing={2} mb={3}>
+        {axes.map(([axisName, values]) => (
+          values.length > 0 && (
+            <HStack key={axisName} spacing={2}>
+              <Text fontSize="sm" minW="80px" color="gray.600">{axisName}:</Text>
+              <Select
+                size="sm"
+                placeholder="Kies..."
+                value={selectedValues[axisName] || ''}
+                onChange={(e) => handleSelectValue(axisName, e.target.value)}
+              >
+                {values.map((val) => (
+                  <option key={val} value={val}>{val}</option>
+                ))}
+              </Select>
+            </HStack>
+          )
+        ))}
+      </VStack>
+
+      <HStack spacing={2}>
+        {onAddVariant && (
+          <Button
+            size="sm"
+            colorScheme="green"
+            leftIcon={<AddIcon />}
+            onClick={handleAddVariant}
+            isDisabled={!allAxesSelected || isSubmitting}
+            isLoading={isSubmitting}
+            loadingText="Bezig..."
+          >
+            Variant toevoegen
+          </Button>
+        )}
+        {onRemoveVariant && (
+          <Button
+            size="sm"
+            colorScheme="red"
+            leftIcon={<MinusIcon />}
+            onClick={handleRemoveVariant}
+            isDisabled={!allAxesSelected || isSubmitting}
+            isLoading={isSubmitting}
+            loadingText="Bezig..."
+          >
+            Variant verwijderen
+          </Button>
+        )}
+      </HStack>
+    </Box>
   );
 };
 

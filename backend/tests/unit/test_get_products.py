@@ -136,6 +136,18 @@ def producten_table():
             'variant_attributes': {'Maat': 'S'},
             'stock': 10,
         })
+        # Legacy product without 'active' field — should still appear (backward compatibility)
+        table.put_item(Item={
+            'product_id': 'prod_hdcn_legacy',
+            'name': 'Legacy Product',
+            'description': 'No active field',
+            'price': Decimal('12.00'),
+            'event_id': None,
+            'is_parent': True,
+            'groep': 'Overig',
+            'subgroep': None,
+            'images': [],
+        })
 
         yield table
 
@@ -169,17 +181,18 @@ class TestGetProductsHandler:
         assert result['statusCode'] == 200
 
     def test_returns_webshop_products_with_event_id_null(self, producten_table):
-        """Filter by event_id=null returns only webshop products."""
+        """Filter by event_id=null returns only webshop products (including legacy without active field)."""
         handler = self._import_handler()
         event = _build_event(event_id="null", groups=["hdcnLeden"])
         result = handler(event, None)
 
         assert result['statusCode'] == 200
         body = json.loads(result['body'])
-        assert body['total_count'] == 2
+        assert body['total_count'] == 3
         product_ids = [p['product_id'] for p in body['products']]
         assert 'prod_hdcn_1' in product_ids
         assert 'prod_hdcn_2' in product_ids
+        assert 'prod_hdcn_legacy' in product_ids
         # Inactive and variant should not appear
         assert 'prod_hdcn_inactive' not in product_ids
         assert 'var_prod_hdcn_1_s' not in product_ids
@@ -196,15 +209,15 @@ class TestGetProductsHandler:
         assert body['products'][0]['product_id'] == 'prod_presmeet_1'
 
     def test_returns_all_active_products_without_event_id_filter(self, producten_table):
-        """No event_id filter returns all active parent products."""
+        """No event_id filter returns all active parent products (including legacy without active field)."""
         handler = self._import_handler()
         event = _build_event(event_id=None, groups=["hdcnLeden", "Regio_Pressmeet"])
         result = handler(event, None)
 
         assert result['statusCode'] == 200
         body = json.loads(result['body'])
-        # All 3 active parent products (webshop + event-linked)
-        assert body['total_count'] == 3
+        # All 3 active parent products + 1 legacy product without active field
+        assert body['total_count'] == 4
 
     def test_product_fields_included_in_response(self, producten_table):
         handler = self._import_handler()
@@ -236,3 +249,25 @@ class TestGetProductsHandler:
         event = _build_event(event_id="null", groups=["verzoek_lid"])
         result = handler(event, None)
         assert result['statusCode'] == 403
+
+    def test_inactive_products_excluded(self, producten_table):
+        """Products with active=false are excluded from customer-facing listing."""
+        handler = self._import_handler()
+        event = _build_event(event_id=None, groups=["hdcnLeden", "Regio_Pressmeet"])
+        result = handler(event, None)
+
+        assert result['statusCode'] == 200
+        body = json.loads(result['body'])
+        product_ids = [p['product_id'] for p in body['products']]
+        assert 'prod_hdcn_inactive' not in product_ids
+
+    def test_legacy_products_without_active_field_included(self, producten_table):
+        """Products without an active field are included (backward compatibility)."""
+        handler = self._import_handler()
+        event = _build_event(event_id="null", groups=["hdcnLeden"])
+        result = handler(event, None)
+
+        assert result['statusCode'] == 200
+        body = json.loads(result['body'])
+        product_ids = [p['product_id'] for p in body['products']]
+        assert 'prod_hdcn_legacy' in product_ids

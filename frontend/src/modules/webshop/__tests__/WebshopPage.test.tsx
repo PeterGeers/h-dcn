@@ -54,6 +54,16 @@ jest.mock('../../../components/common/FunctionGuard', () => ({
   FunctionGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+// Mock useAdminOrders hook (avoids axios ESM import issue in test environment)
+jest.mock('../../webshop-management/hooks/useAdminOrders', () => ({
+  useAdminOrders: () => ({
+    orders: [],
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
 describe('WebshopPage', () => {
   it('renders without crashing', () => {
     const mockUser = {

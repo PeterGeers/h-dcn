@@ -40,6 +40,19 @@
     "add_product": "Product Toevoegen",
     "edit_product": "Product Bewerken",
     "delete_product": "Product Verwijderen",
-    "delete_confirm": "Weet je zeker dat je dit product wilt verwijderen?"
+    "delete_confirm": "Weet je zeker dat je dit product wilt verwijderen?",
+    "show_inactive": "Toon inactieve producten",
+    "deactivate": "Deactiveren",
+    "deactivate_confirm_title": "Product deactiveren",
+    "deactivate_confirm_body": "Weet je zeker dat je dit product wilt deactiveren? Het wordt niet meer zichtbaar in de webshop.",
+    "deactivate_pending_orders_warning": "Let op: dit product heeft openstaande bestellingen. Deactiveren kan invloed hebben op deze bestellingen.",
+    "hard_delete": "Permanent verwijderen",
+    "hard_delete_confirm_title": "Product permanent verwijderen",
+    "hard_delete_confirm_body": "Weet je zeker dat je dit product permanent wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "hard_delete_error_has_orders": "Dit product kan niet verwijderd worden omdat er bestellingen aan gekoppeld zijn.",
+    "activate": "Activeren",
+    "inactive_badge": "Inactief",
+    "confirm": "Bevestigen",
+    "cancel": "Annuleren"
   }
 }

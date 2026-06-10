@@ -51,7 +51,20 @@
     "test_expiry": "Udløbsdato: En vilkårlig fremtidig dato (f.eks. 12/34)",
     "test_cvc": "CVC: Vilkårlige 3 cifre (f.eks. 123)",
     "test_name": "Navn: Et vilkårligt navn (f.eks. Testbruger)",
-    "test_postal": "Postnummer: Vilkårligt format (f.eks. 1234AB)"
+    "test_postal": "Postnummer: Vilkårligt format (f.eks. 1234AB)",
+    "no_order_error": "Ingen bestilling fundet. Prøv igen.",
+    "fields_required": "Udfyld alle obligatoriske felter, før du afgiver bestillingen.",
+    "conflict_error": "Bestillingen er blevet ændret i mellemtiden. Opdater og prøv igen.",
+    "submit_error": "Der opstod en fejl ved indsendelse af bestillingen.",
+    "refresh_retry": "Opdater og prøv igen",
+    "order_placed": "Bestilling afgivet!",
+    "order_number_label": "Ordrenummer",
+    "transfer_instructions": "Overfør beløbet med følgende oplysninger:",
+    "reference": "Reference",
+    "amount": "Beløb",
+    "close": "Luk",
+    "summary": "Oversigt",
+    "fields_incomplete": "Ikke alle felter er udfyldt korrekt:"
   },
   "confirmation": {
     "title": "Ordrebekræftelse",
@@ -90,6 +103,23 @@
     "success": "Bestilling gennemført!",
     "order_number": "Ordrenummer",
     "back_to_webshop": "Tilbage til webshop"
+  },
+  "orders_admin": {
+    "title": "Bestillinger",
+    "loading": "Indlæser bestillinger...",
+    "no_orders": "Ingen bestillinger fundet.",
+    "filter_all": "Alle betalingsstatusser",
+    "status_unpaid": "Ubetalt",
+    "status_pending": "Afventer",
+    "status_awaiting_payment": "Afventer betaling",
+    "status_paid": "Betalt",
+    "col_order_number": "Ordrenummer",
+    "col_customer": "Kunde",
+    "col_status": "Status",
+    "col_payment_status": "Betalingsstatus",
+    "col_invoice": "Faktura",
+    "col_total": "Total",
+    "col_date": "Dato"
   },
   "access": {
     "no_access_title": "Ingen adgang til webshop!",

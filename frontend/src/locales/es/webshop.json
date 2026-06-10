@@ -51,7 +51,20 @@
     "test_expiry": "Fecha de caducidad: Cualquier fecha futura (ej. 12/34)",
     "test_cvc": "CVC: Cualquier 3 dígitos (ej. 123)",
     "test_name": "Nombre: Cualquier nombre (ej. Usuario Prueba)",
-    "test_postal": "Código postal: Cualquier formato (ej. 1234AB)"
+    "test_postal": "Código postal: Cualquier formato (ej. 1234AB)",
+    "no_order_error": "No se encontró ningún pedido. Inténtalo de nuevo.",
+    "fields_required": "Rellena todos los campos obligatorios antes de realizar el pedido.",
+    "conflict_error": "El pedido ha sido modificado. Actualiza e inténtalo de nuevo.",
+    "submit_error": "Se produjo un error al enviar el pedido.",
+    "refresh_retry": "Actualizar y reintentar",
+    "order_placed": "¡Pedido realizado!",
+    "order_number_label": "Número de pedido",
+    "transfer_instructions": "Transfiere el importe con los siguientes datos:",
+    "reference": "Referencia",
+    "amount": "Importe",
+    "close": "Cerrar",
+    "summary": "Resumen",
+    "fields_incomplete": "No todos los campos se han rellenado correctamente:"
   },
   "confirmation": {
     "title": "Confirmación de pedido",
@@ -90,6 +103,23 @@
     "success": "Pedido realizado correctamente!",
     "order_number": "Número de pedido",
     "back_to_webshop": "Volver a la tienda"
+  },
+  "orders_admin": {
+    "title": "Pedidos",
+    "loading": "Cargando pedidos...",
+    "no_orders": "No se encontraron pedidos.",
+    "filter_all": "Todos los estados de pago",
+    "status_unpaid": "No pagado",
+    "status_pending": "Pendiente",
+    "status_awaiting_payment": "Esperando pago",
+    "status_paid": "Pagado",
+    "col_order_number": "Número de pedido",
+    "col_customer": "Cliente",
+    "col_status": "Estado",
+    "col_payment_status": "Estado de pago",
+    "col_invoice": "Factura",
+    "col_total": "Total",
+    "col_date": "Fecha"
   },
   "access": {
     "no_access_title": "Sin acceso a la tienda!",

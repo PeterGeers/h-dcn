@@ -89,6 +89,23 @@
     "order_number": "Bestellnummer",
     "back_to_webshop": "Zurück zum Webshop"
   },
+  "orders_admin": {
+    "title": "Bestellungen",
+    "loading": "Bestellungen laden...",
+    "no_orders": "Keine Bestellungen gefunden.",
+    "filter_all": "Alle Zahlungsstatus",
+    "status_unpaid": "Unbezahlt",
+    "status_pending": "Ausstehend",
+    "status_awaiting_payment": "Warte auf Zahlung",
+    "status_paid": "Bezahlt",
+    "col_order_number": "Bestellnummer",
+    "col_customer": "Kunde",
+    "col_status": "Status",
+    "col_payment_status": "Zahlungsstatus",
+    "col_invoice": "Rechnung",
+    "col_total": "Gesamt",
+    "col_date": "Datum"
+  },
   "access": {
     "no_access_title": "Kein Zugang zum Webshop!",
     "no_access_desc": "Sie haben keinen Zugang zum H-DCN Webshop. Nur Mitglieder können den Webshop nutzen. Kontaktieren Sie den Administrator, wenn Sie glauben, dass dies ein Fehler ist."

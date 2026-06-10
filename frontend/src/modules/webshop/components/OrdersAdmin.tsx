@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Button,
   VStack,
   Text,
   Table,
@@ -11,219 +10,158 @@ import {
   Th,
   Td,
   Badge,
-  useToast,
-  Collapse,
-  useDisclosure,
+  Select,
   HStack,
-  Divider
+  Spinner,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
+import { useAdminOrders } from '../../webshop-management/hooks/useAdminOrders';
+import { AdminOrder } from '../../webshop-management/types/admin.types';
 
-interface OrderItem {
-  name?: string;
-  variant_attributes?: Record<string, string>;
-  quantity: number;
-  price?: number;
+const PAYMENT_STATUS_COLOR: Record<string, string> = {
+  paid: 'green',
+  partial: 'yellow',
+  unpaid: 'red',
+  pending: 'orange',
+  awaiting_payment: 'blue',
+};
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleDateString('nl-NL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
-interface CustomerInfo {
-  name?: string;
-  voornaam?: string;
-  achternaam?: string;
-  straat?: string;
-  postcode?: string;
-  woonplaats?: string;
-  email?: string;
-  phone?: string;
-}
-
-interface DeliveryOption {
-  label: string;
-}
-
-interface Order {
-  orderId: string;
-  timestamp: string;
-  total_amount: string;
-  item_count: number;
-  delivery_option?: DeliveryOption;
-  customer_info?: CustomerInfo;
-  customer_id?: string;
-  payment_method_id?: string;
-  delivery_cost?: string;
-  subtotal_amount?: string;
-  items: OrderItem[];
-}
-
-interface OrderItemComponentProps {
-  order: Order;
+function formatCurrency(amount: number): string {
+  return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
 const OrdersAdmin: React.FC = () => {
-  const [localOrders, setLocalOrders] = useState<Order[]>([]);
-  const toast = useToast();
+  const { t } = useTranslation('webshop');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('');
 
-  const loadLocalOrders = useCallback(() => {
-    try {
-      const ordersData = localStorage.getItem('hdcn_orders') || '[]';
-      const orders = JSON.parse(ordersData);
-      if (Array.isArray(orders)) {
-        setLocalOrders(orders);
-      } else {
-        console.warn('Invalid orders data format, resetting to empty array');
-        localStorage.removeItem('hdcn_orders');
-        setLocalOrders([]);
-      }
-    } catch (error) {
-      console.error('Failed to parse local orders:', error);
-      localStorage.removeItem('hdcn_orders');
-      setLocalOrders([]);
-      toast({
-        title: 'Lokale orders data beschadigd',
-        description: 'Orders data is gereset.',
-        status: 'warning',
-        duration: 3000,
-      });
-    }
-  }, [toast]);
+  const { orders, loading, error } = useAdminOrders(
+    undefined,
+    undefined,
+    paymentStatusFilter || undefined
+  );
 
-  useEffect(() => {
-    loadLocalOrders();
-  }, [loadLocalOrders]);
+  if (loading) {
+    return (
+      <Box p={6} bg="white" borderRadius="md" textAlign="center">
+        <Spinner size="lg" color="orange.400" />
+        <Text mt={2} color="gray.600">{t('orders_admin.loading')}</Text>
+      </Box>
+    );
+  }
 
-  const clearLocalOrders = (): void => {
-    localStorage.removeItem('hdcn_orders');
-    setLocalOrders([]);
-    toast({
-      title: 'Lokale orders gewist',
-      status: 'info',
-      duration: 2000,
-    });
-  };
+  if (error) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <AlertIcon />
+        {error}
+      </Alert>
+    );
+  }
 
   return (
     <Box p={6} bg="white" borderRadius="md" color="black">
       <VStack spacing={4} align="stretch">
-        <Text fontSize="xl" fontWeight="bold">Lokaal Opgeslagen Orders</Text>
-        
-        <Button onClick={clearLocalOrders} colorScheme="red" size="sm" alignSelf="flex-start">
-          Wis Lokale Orders
-        </Button>
+        <HStack justify="space-between" align="center">
+          <Text fontSize="xl" fontWeight="bold">
+            {t('orders_admin.title')}
+          </Text>
+          <Select
+            placeholder={t('orders_admin.filter_all')}
+            value={paymentStatusFilter}
+            onChange={(e) => setPaymentStatusFilter(e.target.value)}
+            maxW="220px"
+            size="sm"
+          >
+            <option value="unpaid">{t('orders_admin.status_unpaid')}</option>
+            <option value="pending">{t('orders_admin.status_pending')}</option>
+            <option value="awaiting_payment">{t('orders_admin.status_awaiting_payment')}</option>
+            <option value="paid">{t('orders_admin.status_paid')}</option>
+          </Select>
+        </HStack>
 
-        {localOrders.length === 0 ? (
-          <Text>Geen lokale orders gevonden</Text>
+        {orders.length === 0 ? (
+          <Text color="gray.500">{t('orders_admin.no_orders')}</Text>
         ) : (
-          <VStack spacing={4} align="stretch">
-            {localOrders.map((order, index) => (
-              <OrderItemComponent key={index} order={order} />
-            ))}
-          </VStack>
+          <Box overflowX="auto">
+            <Table variant="simple" size="sm">
+              <Thead>
+                <Tr>
+                  <Th>{t('orders_admin.col_order_number')}</Th>
+                  <Th>{t('orders_admin.col_customer')}</Th>
+                  <Th>{t('orders_admin.col_status')}</Th>
+                  <Th>{t('orders_admin.col_payment_status')}</Th>
+                  <Th>{t('orders_admin.col_invoice')}</Th>
+                  <Th isNumeric>{t('orders_admin.col_total')}</Th>
+                  <Th>{t('orders_admin.col_date')}</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {orders.map((order: AdminOrder) => (
+                  <Tr
+                    key={order.order_id}
+                    bg={order.invoice_number ? 'green.50' : undefined}
+                  >
+                    <Td>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {order.order_number || order.order_id.slice(0, 12) + '…'}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <Text fontSize="sm">{order.customer_name}</Text>
+                      {order.club_name && (
+                        <Text fontSize="xs" color="gray.500">
+                          {order.club_name}
+                        </Text>
+                      )}
+                    </Td>
+                    <Td>
+                      <Badge fontSize="xs" colorScheme="blue">
+                        {order.status}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <Badge
+                        fontSize="xs"
+                        colorScheme={PAYMENT_STATUS_COLOR[order.payment_status] || 'gray'}
+                      >
+                        {t(`orders_admin.status_${order.payment_status}`, order.payment_status)}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      {order.invoice_number ? (
+                        <Badge colorScheme="purple" fontSize="xs">
+                          {order.invoice_number}
+                        </Badge>
+                      ) : (
+                        <Text fontSize="xs" color="gray.400">—</Text>
+                      )}
+                    </Td>
+                    <Td isNumeric fontSize="sm">
+                      {formatCurrency(order.total_amount)}
+                    </Td>
+                    <Td fontSize="xs">{formatDate(order.created_at)}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         )}
       </VStack>
-    </Box>
-  );
-};
-
-const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ order }) => {
-  const { isOpen, onToggle } = useDisclosure();
-
-  return (
-    <Box borderWidth={1} borderRadius="md" p={4} bg="gray.50">
-      <HStack justify="space-between" cursor="pointer" onClick={onToggle}>
-        <VStack align="start" spacing={1}>
-          <Text fontWeight="bold">{order.orderId}</Text>
-          <Text fontSize="sm" color="gray.600">
-            {new Date(order.timestamp).toLocaleString()}
-          </Text>
-        </VStack>
-        <VStack align="end" spacing={1}>
-          <Text fontWeight="bold">€{order.total_amount}</Text>
-          <HStack>
-            <Badge colorScheme="orange">Lokaal</Badge>
-            <Text fontSize="sm">{order.item_count} items</Text>
-          </HStack>
-          {order.delivery_option && (
-            <Text fontSize="xs" color="gray.600">{order.delivery_option.label}</Text>
-          )}
-        </VStack>
-        <Text>{isOpen ? '▼' : '▶'}</Text>
-      </HStack>
-      
-      <Collapse in={isOpen}>
-        <Box mt={4}>
-          <Divider mb={3} />
-          
-          <VStack align="stretch" spacing={3}>
-            <Box>
-              <Text fontWeight="bold" mb={2}>Besteller:</Text>
-              {order.customer_info ? (
-                <VStack align="start" spacing={1}>
-                  <Text fontWeight="bold">{order.customer_info.name || `${order.customer_info.voornaam} ${order.customer_info.achternaam}`}</Text>
-                  <Text>{order.customer_info.straat}</Text>
-                  <Text>{order.customer_info.postcode} {order.customer_info.woonplaats}</Text>
-                  {order.customer_info.email && <Text fontSize="sm">{order.customer_info.email}</Text>}
-                  {order.customer_info.phone && <Text fontSize="sm">{order.customer_info.phone}</Text>}
-                  <Text fontSize="sm" color="gray.600">ID: {order.customer_id}</Text>
-                  <Text fontSize="sm" color="gray.600">Betaling: {order.payment_method_id}</Text>
-                </VStack>
-              ) : (
-                <VStack align="start" spacing={1}>
-                  <Text>Klant ID: {order.customer_id}</Text>
-                  <Text>Betaling: {order.payment_method_id}</Text>
-                </VStack>
-              )}
-            </Box>
-            
-            {order.delivery_option && (
-              <Box>
-                <Text fontWeight="bold" mb={2}>Levering:</Text>
-                <VStack align="start" spacing={1}>
-                  <Text>{order.delivery_option.label}</Text>
-                  <Text>Kosten: €{order.delivery_cost}</Text>
-                </VStack>
-              </Box>
-            )}
-            
-            <Box>
-              <Text fontWeight="bold" mb={2}>Totalen:</Text>
-              <VStack align="start" spacing={1}>
-                <Text>Subtotaal: €{order.subtotal_amount || order.total_amount}</Text>
-                {order.delivery_cost && <Text>Verzending: €{order.delivery_cost}</Text>}
-                <Text fontWeight="bold">Totaal: €{order.total_amount}</Text>
-              </VStack>
-            </Box>
-            
-            <Box>
-              <Text fontWeight="bold" mb={2}>Producten:</Text>
-              <Table size="sm" variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Product</Th>
-                    <Th>Optie</Th>
-                    <Th>Aantal</Th>
-                    <Th>Prijs</Th>
-                    <Th>Totaal</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {order.items.map((item, idx) => (
-                    <Tr key={idx}>
-                      <Td>{item.name}</Td>
-                      <Td>
-                        {item.variant_attributes
-                          ? Object.entries(item.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
-                          : '-'}
-                      </Td>
-                      <Td>{item.quantity}</Td>
-                      <Td>€{Number(item.price || 0).toFixed(2)}</Td>
-                      <Td>€{(item.quantity * Number(item.price || 0)).toFixed(2)}</Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
-          </VStack>
-        </Box>
-      </Collapse>
     </Box>
   );
 };

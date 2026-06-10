@@ -53,6 +53,7 @@ try:
         StockReservationError,
         InsufficientStockError,
     )
+    from shared.order_state_machine import transition_payment, InvalidTransitionError
     print("Using shared auth layer for pay_order")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -192,12 +193,30 @@ def lambda_handler(event, context):
         else:
             redirect_url = f"{REDIRECT_BASE_URL}/webshop?order_id={order_id}&payment=complete"
 
+        # Transition payment_status using state machine
+        current_payment_status = order.get('payment_status', 'unpaid')
+        is_bank_transfer = (method == 'banktransfer')
+
+        if is_bank_transfer:
+            target_payment_status = 'awaiting_payment'
+        else:
+            target_payment_status = 'pending'
+
+        try:
+            transition_payment(current_payment_status, target_payment_status)
+        except InvalidTransitionError as e:
+            return create_error_response(400, 'Invalid payment status transition', {
+                'current': e.current,
+                'target': e.target,
+                'allowed': e.allowed,
+            })
+
         # Create Mollie payment (or mock if no valid API key)
         mollie_api_key = os.environ.get('MOLLIE_API_KEY', '')
         use_mock = not mollie_api_key or not mollie_api_key.startswith(('test_', 'live_'))
 
         if use_mock:
-            # Mock mode: simulate successful payment without Mollie
+            # Mock mode: simulate payment initiation without Mollie
             logger.info(f"MOCK PAYMENT: No valid Mollie API key, simulating payment for order {order_id}")
             mock_payment_id = f"tr_mock_{uuid.uuid4().hex[:8]}"
 
@@ -205,11 +224,18 @@ def lambda_handler(event, context):
             payment_id = str(uuid.uuid4())
             now = datetime.now(timezone.utc).isoformat()
 
+            # Bank transfers in mock mode: do NOT mark as paid (Req 2.6)
+            # They stay in awaiting_payment until admin confirms receipt
+            if is_bank_transfer:
+                payment_record_status = 'open'
+            else:
+                payment_record_status = 'paid'
+
             payment_record = {
                 'payment_id': payment_id,
                 'order_id': order_id,
                 'amount': outstanding,
-                'status': 'paid',
+                'status': payment_record_status,
                 'provider': 'mock',
                 'method': method,
                 'mollie_payment_id': mock_payment_id,
@@ -223,28 +249,63 @@ def lambda_handler(event, context):
 
             payments_table.put_item(Item=payment_record)
 
-            # Mark order as paid
-            orders_table.update_item(
-                Key={'order_id': order_id},
-                UpdateExpression='SET #s = :paid, payment_status = :paid, total_paid = :amount, updated_at = :now',
-                ExpressionAttributeNames={'#s': 'status'},
-                ExpressionAttributeValues={
-                    ':paid': 'paid',
-                    ':amount': outstanding,
-                    ':now': now,
-                },
-            )
+            if is_bank_transfer:
+                # Bank transfer: update payment_status to awaiting_payment, do NOT mark as paid
+                orders_table.update_item(
+                    Key={'order_id': order_id},
+                    UpdateExpression='SET payment_status = :ps, updated_at = :now',
+                    ExpressionAttributeValues={
+                        ':ps': target_payment_status,
+                        ':now': now,
+                    },
+                )
+                logger.info(
+                    f"MOCK PAYMENT: Order {order_id} payment_status set to "
+                    f"'awaiting_payment' (bank transfer - awaiting admin confirmation)"
+                )
 
-            logger.info(f"MOCK PAYMENT: Order {order_id} marked as paid (mock mode)")
+                # Build transfer instructions with order_number as reference (Req 3.7)
+                order_number = order.get('order_number', order_id[:8])
+                transfer_instructions = {
+                    'reference': order_number,
+                    'amount': float(outstanding),
+                    'bank_name': 'H-DCN',
+                }
 
-            return create_success_response({
-                'payment_id': payment_id,
-                'checkout_url': None,
-                'amount': float(outstanding),
-                'method': method,
-                'mock': True,
-                'message': 'Payment simulated (no Mollie key configured)',
-            }, status_code=201)
+                return create_success_response({
+                    'payment_id': payment_id,
+                    'checkout_url': None,
+                    'amount': float(outstanding),
+                    'method': method,
+                    'mock': True,
+                    'payment_status': 'awaiting_payment',
+                    'transfer_instructions': transfer_instructions,
+                    'message': 'Bank transfer initiated (awaiting payment confirmation)',
+                }, status_code=201)
+            else:
+                # Online payment (iDEAL, credit card): mark as paid in mock mode
+                orders_table.update_item(
+                    Key={'order_id': order_id},
+                    UpdateExpression='SET #s = :confirmed, payment_status = :paid, total_paid = :amount, updated_at = :now',
+                    ExpressionAttributeNames={'#s': 'status'},
+                    ExpressionAttributeValues={
+                        ':confirmed': 'confirmed',
+                        ':paid': 'paid',
+                        ':amount': outstanding,
+                        ':now': now,
+                    },
+                )
+
+                logger.info(f"MOCK PAYMENT: Order {order_id} marked as paid (mock mode, online payment)")
+
+                return create_success_response({
+                    'payment_id': payment_id,
+                    'checkout_url': None,
+                    'amount': float(outstanding),
+                    'method': method,
+                    'mock': True,
+                    'message': 'Payment simulated (no Mollie key configured)',
+                }, status_code=201)
 
         try:
             mollie_result = create_payment(
@@ -290,8 +351,8 @@ def lambda_handler(event, context):
 
         payments_table.put_item(Item=payment_record)
 
-        # Store mollie_payment_id on the order for webhook lookup
-        _update_order_mollie_id(order_id, mollie_result['mollie_payment_id'])
+        # Store mollie_payment_id on the order and update payment_status
+        _update_order_payment_initiated(order_id, mollie_result['mollie_payment_id'], target_payment_status)
 
         # Check if this payment covers full outstanding (will transition to "paid")
         # Stock reservation will be triggered by the webhook on payment confirmation
@@ -305,18 +366,32 @@ def lambda_handler(event, context):
             )
 
         logger.info(
-            "Created payment %s for order %s, amount=%s EUR, mollie_id=%s",
-            payment_id, order_id, amount_str, mollie_result['mollie_payment_id']
+            "Created payment %s for order %s, amount=%s EUR, mollie_id=%s, payment_status=%s",
+            payment_id, order_id, amount_str, mollie_result['mollie_payment_id'],
+            target_payment_status
         )
 
-        # Return checkout URL to frontend
-        return create_success_response({
+        # Build response
+        response_data = {
             'payment_id': payment_id,
             'checkout_url': mollie_result['checkout_url'],
             'amount': float(outstanding),
             'method': method,
             'mollie_payment_id': mollie_result['mollie_payment_id'],
-        }, status_code=201)
+            'payment_status': target_payment_status,
+        }
+
+        # For bank transfers, include transfer instructions with order_number as reference (Req 3.7)
+        if is_bank_transfer:
+            order_number = order.get('order_number', order_id[:8])
+            response_data['transfer_instructions'] = {
+                'reference': order_number,
+                'amount': float(outstanding),
+                'bank_name': 'H-DCN',
+            }
+
+        # Return checkout URL to frontend
+        return create_success_response(response_data, status_code=201)
 
     except json.JSONDecodeError:
         return create_error_response(400, 'Invalid JSON in request body')
@@ -373,14 +448,15 @@ def _check_payment_authorization(order, user_email, user_roles, is_admin):
     return create_error_response(403, 'Access denied: You cannot pay this order')
 
 
-def _update_order_mollie_id(order_id, mollie_payment_id):
-    """Store the Mollie payment ID on the order for webhook lookup."""
+def _update_order_payment_initiated(order_id, mollie_payment_id, payment_status):
+    """Store the Mollie payment ID and updated payment_status on the order."""
     try:
         orders_table.update_item(
             Key={'order_id': order_id},
-            UpdateExpression='SET mollie_payment_id = :mid, updated_at = :now',
+            UpdateExpression='SET mollie_payment_id = :mid, payment_status = :ps, updated_at = :now',
             ExpressionAttributeValues={
                 ':mid': mollie_payment_id,
+                ':ps': payment_status,
                 ':now': datetime.now(timezone.utc).isoformat(),
             }
         )

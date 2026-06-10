@@ -35,6 +35,12 @@ try:
         StockReservationError,
         InsufficientStockError,
     )
+    from shared.order_state_machine import (
+        transition_payment,
+        transition_order,
+        InvalidTransitionError,
+    )
+    from shared.number_generator import generate_invoice_number, CounterWriteError
     print("Using shared auth layer for mollie_webhook")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -51,13 +57,10 @@ dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
+counters_table = dynamodb.Table(os.environ.get('COUNTERS_TABLE_NAME', 'Counters'))
 
 # Payment statuses that indicate a terminal failure
 FAILED_STATUSES = ("failed", "expired", "cancelled")
-
-# Order payment statuses that are already terminal (no backward transitions)
-TERMINAL_PAID_STATUSES = ("paid",)
-TERMINAL_FAILED_STATUSES = ("payment_failed",)
 
 
 def _now_iso() -> str:
@@ -379,79 +382,6 @@ def _trigger_stock_reservation_with_guard(order: dict) -> None:
         )
 
 
-def _can_transition_to_paid(current_status: str) -> bool:
-    """Check if order can transition to paid (only forward transitions)."""
-    if current_status in TERMINAL_PAID_STATUSES:
-        return False
-    return True
-
-
-def _can_transition_to_failed(current_status: str) -> bool:
-    """Check if order can transition to payment_failed (only forward transitions)."""
-    if current_status in TERMINAL_PAID_STATUSES:
-        return False
-    if current_status in TERMINAL_FAILED_STATUSES:
-        return False
-    return True
-
-
-def _update_order_to_paid(order: dict) -> bool:
-    """
-    Update order payment_status to "paid" with conditional guard on stock_reserved.
-
-    Returns:
-        True if update succeeded (stock reservation should proceed),
-        False if order was already paid/reserved (idempotent).
-    """
-    order_id = order['order_id']
-
-    try:
-        orders_table.update_item(
-            Key={'order_id': order_id},
-            UpdateExpression=(
-                'SET payment_status = :paid, '
-                'stock_reserved = :true_val, '
-                'updated_at = :now'
-            ),
-            ConditionExpression=(
-                'attribute_not_exists(stock_reserved) OR stock_reserved = :false_val'
-            ),
-            ExpressionAttributeValues={
-                ':paid': 'paid',
-                ':true_val': True,
-                ':false_val': False,
-                ':now': _now_iso(),
-            }
-        )
-        logger.info("Order %s payment_status updated to 'paid'", order_id)
-        return True
-    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
-        logger.info("Order %s already has stock_reserved=true (idempotent)", order_id)
-        return False
-    except Exception as e:
-        logger.error("Error updating order %s to paid: %s", order_id, str(e))
-        raise
-
-
-def _update_order_to_failed(order: dict) -> None:
-    """Update order payment_status to 'payment_failed'."""
-    order_id = order['order_id']
-
-    try:
-        orders_table.update_item(
-            Key={'order_id': order_id},
-            UpdateExpression='SET payment_status = :status, updated_at = :now',
-            ExpressionAttributeValues={
-                ':status': 'payment_failed',
-                ':now': _now_iso(),
-            }
-        )
-        logger.info("Order %s payment_status updated to 'payment_failed'", order_id)
-    except Exception as e:
-        logger.error("Error updating order %s to payment_failed: %s", order_id, str(e))
-        raise
-
-
 def _trigger_stock_reservation(order: dict) -> None:
     """
     Trigger stock reservation for all items in the order.
@@ -509,34 +439,132 @@ def _handle_legacy_webshop_payment(
     """
     Handle payment callback for legacy webshop orders (mollie_payment_id on order).
 
-    This is the original flow where mollie_payment_id is stored directly on the
-    order record.
+    Uses the two-axis state machine for validated transitions:
+    - On paid: transition_payment(pending→paid), transition_order(submitted→confirmed),
+      generate invoice number, set paid_at
+    - On failed: transition_payment(pending→unpaid), keep order status as submitted
+    - Duplicate webhooks (already paid) are silently ignored
 
     Returns:
         Response body dict.
     """
     order_id = order['order_id']
-    current_payment_status = order.get('payment_status', '')
+    current_payment_status = order.get('payment_status', 'unpaid')
+    current_order_status = order.get('status', 'submitted')
 
     if mollie_status == 'paid':
-        if _can_transition_to_paid(current_payment_status):
-            should_reserve = _update_order_to_paid(order)
-            if should_reserve:
-                _trigger_stock_reservation(order)
-        else:
+        # Idempotency: if already paid, silently skip
+        if current_payment_status == 'paid':
             logger.info(
-                "Order %s already in terminal status '%s', skipping paid transition",
-                order_id, current_payment_status
+                "Order %s already paid, ignoring duplicate webhook", order_id
             )
+            return {'status': 'ok', 'detail': 'already paid', 'flow': 'webshop'}
+
+        # Validate and execute payment status transition
+        try:
+            new_payment_status = transition_payment(current_payment_status, 'paid')
+        except InvalidTransitionError as e:
+            logger.warning(
+                "Order %s: invalid payment transition %s→paid (allowed: %s)",
+                order_id, e.current, e.allowed
+            )
+            return {'status': 'ok', 'detail': 'invalid payment transition', 'flow': 'webshop'}
+
+        # Validate and execute order status transition
+        try:
+            new_order_status = transition_order(current_order_status, 'confirmed')
+        except InvalidTransitionError as e:
+            logger.warning(
+                "Order %s: invalid order transition %s→confirmed (allowed: %s)",
+                order_id, e.current, e.allowed
+            )
+            # Still update payment status even if order transition fails
+            new_order_status = current_order_status
+
+        # Generate invoice number
+        invoice_number = None
+        try:
+            invoice_number = generate_invoice_number(counters_table)
+            logger.info("Generated invoice number %s for order %s", invoice_number, order_id)
+        except CounterWriteError as e:
+            logger.error(
+                "Failed to generate invoice number for order %s: %s", order_id, str(e)
+            )
+            # Continue without invoice number — can be assigned later by admin
+
+        # Build update expression
+        now = _now_iso()
+        update_expr_parts = [
+            'payment_status = :payment_status',
+            '#s = :order_status',
+            'paid_at = :paid_at',
+            'stock_reserved = :true_val',
+            'updated_at = :now',
+        ]
+        expr_attr_values = {
+            ':payment_status': new_payment_status,
+            ':order_status': new_order_status,
+            ':paid_at': now,
+            ':true_val': True,
+            ':false_val': False,
+            ':now': now,
+        }
+        expr_attr_names = {'#s': 'status'}
+
+        if invoice_number:
+            update_expr_parts.append('invoice_number = :invoice_number')
+            expr_attr_values[':invoice_number'] = invoice_number
+
+        update_expression = 'SET ' + ', '.join(update_expr_parts)
+
+        # Use conditional update for idempotency (stock_reserved guard)
+        try:
+            orders_table.update_item(
+                Key={'order_id': order_id},
+                UpdateExpression=update_expression,
+                ConditionExpression=(
+                    'attribute_not_exists(stock_reserved) OR stock_reserved = :false_val'
+                ),
+                ExpressionAttributeNames=expr_attr_names,
+                ExpressionAttributeValues=expr_attr_values,
+            )
+            logger.info(
+                "Order %s updated: payment_status=%s, status=%s, invoice=%s",
+                order_id, new_payment_status, new_order_status, invoice_number
+            )
+            # Trigger stock reservation
+            _trigger_stock_reservation(order)
+        except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+            logger.info("Order %s already has stock_reserved=true (idempotent)", order_id)
 
     elif mollie_status in FAILED_STATUSES:
-        if _can_transition_to_failed(current_payment_status):
-            _update_order_to_failed(order)
-        else:
-            logger.info(
-                "Order %s in status '%s', cannot transition to failed",
-                order_id, current_payment_status
+        # Validate payment transition to unpaid
+        try:
+            new_payment_status = transition_payment(current_payment_status, 'unpaid')
+        except InvalidTransitionError as e:
+            logger.warning(
+                "Order %s: invalid payment transition %s→unpaid (allowed: %s)",
+                order_id, e.current, e.allowed
             )
+            return {'status': 'ok', 'detail': 'invalid payment transition', 'flow': 'webshop'}
+
+        # Update payment status to unpaid, keep order status as submitted
+        try:
+            orders_table.update_item(
+                Key={'order_id': order_id},
+                UpdateExpression='SET payment_status = :status, updated_at = :now',
+                ExpressionAttributeValues={
+                    ':status': new_payment_status,
+                    ':now': _now_iso(),
+                }
+            )
+            logger.info(
+                "Order %s payment failed: payment_status=%s, order status unchanged (%s)",
+                order_id, new_payment_status, current_order_status
+            )
+        except Exception as e:
+            logger.error("Error updating order %s to unpaid: %s", order_id, str(e))
+
     else:
         logger.info(
             "Mollie payment %s has intermediate status '%s', no order update",

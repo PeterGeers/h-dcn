@@ -49,7 +49,20 @@
     "test_expiry": "Data di scadenza: Qualsiasi data futura (es. 12/34)",
     "test_cvc": "CVC: Qualsiasi 3 cifre (es. 123)",
     "test_name": "Nome: Qualsiasi nome (es. Utente Test)",
-    "test_postal": "Codice postale: Qualsiasi formato (es. 1234AB)"
+    "test_postal": "Codice postale: Qualsiasi formato (es. 1234AB)",
+    "no_order_error": "Nessun ordine trovato. Riprova.",
+    "fields_required": "Compila tutti i campi obbligatori prima di effettuare l'ordine.",
+    "conflict_error": "L'ordine è stato modificato nel frattempo. Aggiorna e riprova.",
+    "submit_error": "Si è verificato un errore durante l'invio dell'ordine.",
+    "refresh_retry": "Aggiorna e riprova",
+    "order_placed": "Ordine effettuato!",
+    "order_number_label": "Numero ordine",
+    "transfer_instructions": "Trasferisci l'importo con i seguenti dati:",
+    "reference": "Causale",
+    "amount": "Importo",
+    "close": "Chiudi",
+    "summary": "Riepilogo",
+    "fields_incomplete": "Non tutti i campi sono compilati correttamente:"
   },
   "confirmation": {
     "title": "Conferma ordine",
@@ -88,6 +101,23 @@
     "success": "Ordine effettuato con successo!",
     "order_number": "Numero ordine",
     "back_to_webshop": "Torna al negozio"
+  },
+  "orders_admin": {
+    "title": "Ordini",
+    "loading": "Caricamento ordini...",
+    "no_orders": "Nessun ordine trovato.",
+    "filter_all": "Tutti gli stati di pagamento",
+    "status_unpaid": "Non pagato",
+    "status_pending": "In sospeso",
+    "status_awaiting_payment": "In attesa di pagamento",
+    "status_paid": "Pagato",
+    "col_order_number": "Numero ordine",
+    "col_customer": "Cliente",
+    "col_status": "Stato",
+    "col_payment_status": "Stato pagamento",
+    "col_invoice": "Fattura",
+    "col_total": "Totale",
+    "col_date": "Data"
   },
   "access": {
     "no_access_title": "Nessun accesso al negozio!",

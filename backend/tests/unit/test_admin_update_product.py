@@ -99,11 +99,21 @@ def _seed_variant(table, variant_id, parent_id='prod_test123', **overrides):
 
 
 def _create_table(dynamodb):
-    """Create the Producten table."""
+    """Create the Producten table with parent_id-index GSI."""
     table = dynamodb.create_table(
         TableName='Producten',
         KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
-        AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
+        AttributeDefinitions=[
+            {'AttributeName': 'product_id', 'AttributeType': 'S'},
+            {'AttributeName': 'parent_id', 'AttributeType': 'S'},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                'IndexName': 'parent_id-index',
+                'KeySchema': [{'AttributeName': 'parent_id', 'KeyType': 'HASH'}],
+                'Projection': {'ProjectionType': 'ALL'},
+            }
+        ],
         BillingMode='PAY_PER_REQUEST'
     )
     table.meta.client.get_waiter('table_exists').wait(TableName='Producten')
@@ -347,7 +357,7 @@ class TestAdminUpdateProductVariantRegeneration:
     @patch('app.validate_permissions_with_regions')
     @patch('app.log_successful_access')
     def test_variant_schema_change_regenerates_variants(self, mock_log, mock_validate, mock_extract):
-        """Changing variant_schema deletes old variants and creates new ones."""
+        """Changing variant_schema syncs variants: preserves unchanged, creates new."""
         mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
         mock_validate.return_value = (True, None, {})
 
@@ -363,33 +373,48 @@ class TestAdminUpdateProductVariantRegeneration:
         import app
         app.table = table
 
-        # Update with new schema
+        # Update with new schema (adds L and XL)
         new_schema = {'Maat': ['S', 'M', 'L', 'XL']}
         event = _make_event('prod_test123', {'variant_schema': new_schema})
         response = app.lambda_handler(event, None)
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert body['variants_regenerated'] is True
-        assert body['variant_count'] == 4  # S, M, L, XL
+        assert body['variants_synced'] is True
+        # S and M preserved, L and XL created
+        assert body['sync_result']['preserved'] == 2
+        assert body['sync_result']['created'] == 2
+        assert body['sync_result']['deactivated'] == 0
 
-        # Verify old variants were deleted and new ones created
+        # Verify variants exist
         scan_result = table.scan(
             FilterExpression=boto3.dynamodb.conditions.Attr('parent_id').eq('prod_test123')
         )
         variants = scan_result['Items']
         assert len(variants) == 4
 
-        # All new variants should have stock = 0
-        for v in variants:
-            assert v['stock'] == 0
+        # Preserved variants keep their stock
+        preserved_stocks = {
+            v['variant_attributes']['Maat']: int(v['stock'])
+            for v in variants
+            if v['variant_attributes'].get('Maat') in ('S', 'M')
+        }
+        assert preserved_stocks == {'S': 10, 'M': 5}
+
+        # New variants have stock = 0
+        new_stocks = {
+            v['variant_attributes']['Maat']: int(v['stock'])
+            for v in variants
+            if v['variant_attributes'].get('Maat') in ('L', 'XL')
+        }
+        assert new_stocks == {'L': 0, 'XL': 0}
 
     @mock_aws
     @patch('app.extract_user_credentials')
     @patch('app.validate_permissions_with_regions')
     @patch('app.log_successful_access')
-    def test_removing_variant_schema_creates_default_variant(self, mock_log, mock_validate, mock_extract):
-        """Setting variant_schema to empty creates a Default_Variant."""
+    def test_removing_variant_schema_deactivates_variants(self, mock_log, mock_validate, mock_extract):
+        """Setting variant_schema to empty deactivates existing variants."""
         mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
         mock_validate.return_value = (True, None, {})
 
@@ -410,23 +435,18 @@ class TestAdminUpdateProductVariantRegeneration:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert body['variants_regenerated'] is True
-        assert body['variant_count'] == 1  # Default variant
-
-        # Verify default variant was created
-        scan_result = table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr('parent_id').eq('prod_test123')
-        )
-        variants = scan_result['Items']
-        assert len(variants) == 1
-        assert variants[0]['variant_attributes'] == {}
+        assert body['variants_synced'] is True
+        # Empty schema → 0 desired combinations → all existing deactivated
+        assert body['sync_result']['deactivated'] == 2
+        assert body['sync_result']['created'] == 0
+        assert body['sync_result']['preserved'] == 0
 
     @mock_aws
     @patch('app.extract_user_credentials')
     @patch('app.validate_permissions_with_regions')
     @patch('app.log_successful_access')
     def test_same_variant_schema_no_regeneration(self, mock_log, mock_validate, mock_extract):
-        """Updating with the same variant_schema doesn't regenerate."""
+        """Updating with the same variant_schema doesn't trigger sync."""
         mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
         mock_validate.return_value = (True, None, {})
 
@@ -446,8 +466,8 @@ class TestAdminUpdateProductVariantRegeneration:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        # Same schema = no regeneration
-        assert 'variants_regenerated' not in body
+        # Same schema = no sync triggered
+        assert 'variants_synced' not in body
 
         # Verify existing variants still have their original stock
         scan_result = table.scan(
@@ -463,7 +483,7 @@ class TestAdminUpdateProductVariantRegeneration:
     @patch('app.validate_permissions_with_regions')
     @patch('app.log_successful_access')
     def test_update_without_variant_schema_no_regeneration(self, mock_log, mock_validate, mock_extract):
-        """Updating other fields without variant_schema doesn't regenerate."""
+        """Updating other fields without variant_schema doesn't trigger sync."""
         mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
         mock_validate.return_value = (True, None, {})
 
@@ -481,7 +501,7 @@ class TestAdminUpdateProductVariantRegeneration:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert 'variants_regenerated' not in body
+        assert 'variants_synced' not in body
         assert body['product']['name'] == 'Updated Name'
 
     @mock_aws
@@ -489,7 +509,7 @@ class TestAdminUpdateProductVariantRegeneration:
     @patch('app.validate_permissions_with_regions')
     @patch('app.log_successful_access')
     def test_multi_axis_variant_schema_regeneration(self, mock_log, mock_validate, mock_extract):
-        """Multi-axis schema generates correct number of combinations."""
+        """Multi-axis schema generates correct number of combinations via sync."""
         mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
         mock_validate.return_value = (True, None, {})
 
@@ -509,17 +529,19 @@ class TestAdminUpdateProductVariantRegeneration:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert body['variants_regenerated'] is True
-        assert body['variant_count'] == 6
+        assert body['variants_synced'] is True
+        assert body['sync_result']['created'] == 6
 
-        # Verify all 6 were created
+        # Verify all 6 were created (default variant with empty attrs is kept/skipped)
         scan_result = table.scan(
             FilterExpression=boto3.dynamodb.conditions.Attr('parent_id').eq('prod_test123')
         )
         variants = scan_result['Items']
-        assert len(variants) == 6
+        # 6 new variants + 1 default variant (with empty attributes, not deactivated by sync)
+        active_with_attrs = [v for v in variants if v.get('variant_attributes') and v.get('active', True)]
+        assert len(active_with_attrs) == 6
 
-        # Verify all have stock = 0
-        for v in variants:
+        # New variants have stock = 0
+        for v in active_with_attrs:
             assert v['stock'] == 0
             assert v['is_parent'] is False

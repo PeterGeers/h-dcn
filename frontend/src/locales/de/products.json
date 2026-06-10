@@ -40,6 +40,19 @@
     "add_product": "Produkt hinzufügen",
     "edit_product": "Produkt bearbeiten",
     "delete_product": "Produkt löschen",
-    "delete_confirm": "Sind Sie sicher, dass Sie dieses Produkt löschen möchten?"
+    "delete_confirm": "Sind Sie sicher, dass Sie dieses Produkt löschen möchten?",
+    "show_inactive": "Inaktive Produkte anzeigen",
+    "deactivate": "Deaktivieren",
+    "deactivate_confirm_title": "Produkt deaktivieren",
+    "deactivate_confirm_body": "Sind Sie sicher, dass Sie dieses Produkt deaktivieren möchten? Es wird im Webshop nicht mehr sichtbar sein.",
+    "deactivate_pending_orders_warning": "Achtung: Dieses Produkt hat offene Bestellungen. Das Deaktivieren kann diese Bestellungen beeinflussen.",
+    "hard_delete": "Dauerhaft löschen",
+    "hard_delete_confirm_title": "Produkt dauerhaft löschen",
+    "hard_delete_confirm_body": "Sind Sie sicher, dass Sie dieses Produkt dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "hard_delete_error_has_orders": "Dieses Produkt kann nicht gelöscht werden, da Bestellungen damit verknüpft sind.",
+    "activate": "Aktivieren",
+    "inactive_badge": "Inaktiv",
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen"
   }
 }

@@ -144,11 +144,13 @@ export const getStockMovements = async (
 
 export const getAdminOrders = async (
   eventId?: string,
-  status?: string
+  status?: string,
+  paymentStatus?: string
 ): Promise<AdminOrdersResponse> => {
   const params: Record<string, string> = {};
   if (eventId) params.event_id = eventId;
   if (status) params.status = status;
+  if (paymentStatus) params.payment_status = paymentStatus;
   const response = await adminClient.get('/admin/orders', { params });
   // Backend returns {orders: [...], total_count: N}
   const data = response.data;

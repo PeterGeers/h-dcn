@@ -51,7 +51,8 @@
     "test_expiry": "Ablaufdatum: Beliebiges zukünftiges Datum (z.B. 12/34)",
     "test_cvc": "CVC: Beliebige 3 Ziffern (z.B. 123)",
     "test_name": "Name: Beliebiger Name (z.B. Test Benutzer)",
-    "test_postal": "Postleitzahl: Beliebiges Format (z.B. 1234AB)"
+    "test_postal": "Postleitzahl: Beliebiges Format (z.B. 1234AB)",
+    "order_number_label": "Bestellnummer"
   },
   "confirmation": {
     "title": "Bestellbestätigung",
@@ -90,6 +91,23 @@
     "success": "Bestellung erfolgreich aufgegeben!",
     "order_number": "Bestellnummer",
     "back_to_webshop": "Zurück zum Webshop"
+  },
+  "orders_admin": {
+    "title": "Bestellungen",
+    "loading": "Bestellungen laden...",
+    "no_orders": "Keine Bestellungen gefunden.",
+    "filter_all": "Alle Zahlungsstatus",
+    "status_unpaid": "Unbezahlt",
+    "status_pending": "Ausstehend",
+    "status_awaiting_payment": "Warte auf Zahlung",
+    "status_paid": "Bezahlt",
+    "col_order_number": "Bestellnummer",
+    "col_customer": "Kunde",
+    "col_status": "Status",
+    "col_payment_status": "Zahlungsstatus",
+    "col_invoice": "Rechnung",
+    "col_total": "Gesamt",
+    "col_date": "Datum"
   },
   "access": {
     "no_access_title": "Kein Zugang zum Webshop!",

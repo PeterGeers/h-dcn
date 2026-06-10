@@ -38,6 +38,19 @@
     "add_product": "Lägg till produkt",
     "edit_product": "Redigera produkt",
     "delete_product": "Ta bort produkt",
-    "delete_confirm": "Är du säker på att du vill ta bort denna produkt?"
+    "delete_confirm": "Är du säker på att du vill ta bort denna produkt?",
+    "show_inactive": "Visa inaktiva produkter",
+    "deactivate": "Inaktivera",
+    "deactivate_confirm_title": "Inaktivera produkt",
+    "deactivate_confirm_body": "Är du säker på att du vill inaktivera denna produkt? Den kommer inte längre att vara synlig i webbshopen.",
+    "deactivate_pending_orders_warning": "Obs: denna produkt har väntande beställningar. Inaktivering kan påverka dessa beställningar.",
+    "hard_delete": "Ta bort permanent",
+    "hard_delete_confirm_title": "Ta bort produkt permanent",
+    "hard_delete_confirm_body": "Är du säker på att du vill ta bort denna produkt permanent? Denna åtgärd kan inte ångras.",
+    "hard_delete_error_has_orders": "Denna produkt kan inte tas bort eftersom den har associerade beställningar.",
+    "activate": "Aktivera",
+    "inactive_badge": "Inaktiv",
+    "confirm": "Bekräfta",
+    "cancel": "Avbryt"
   }
 }

@@ -38,6 +38,19 @@
     "add_product": "Add Product",
     "edit_product": "Edit Product",
     "delete_product": "Delete Product",
-    "delete_confirm": "Are you sure you want to delete this product?"
+    "delete_confirm": "Are you sure you want to delete this product?",
+    "show_inactive": "Show inactive products",
+    "deactivate": "Deactivate",
+    "deactivate_confirm_title": "Deactivate product",
+    "deactivate_confirm_body": "Are you sure you want to deactivate this product? It will no longer be visible in the webshop.",
+    "deactivate_pending_orders_warning": "Warning: this product has pending orders. Deactivating may affect these orders.",
+    "hard_delete": "Permanently delete",
+    "hard_delete_confirm_title": "Permanently delete product",
+    "hard_delete_confirm_body": "Are you sure you want to permanently delete this product? This action cannot be undone.",
+    "hard_delete_error_has_orders": "This product cannot be deleted because it has associated orders.",
+    "activate": "Activate",
+    "inactive_badge": "Inactive",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   }
 }

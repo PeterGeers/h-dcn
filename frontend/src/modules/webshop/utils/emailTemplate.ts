@@ -24,8 +24,9 @@ interface DeliveryOption {
   [key: string]: any;
 }
 
-interface OrderData {
+export interface OrderData {
   orderId: string;
+  order_number?: string;
   timestamp: string;
   items: OrderItem[];
   customer_info?: CustomerInfo;
@@ -117,8 +118,14 @@ export const generateOrderConfirmationHTML = (orderData: OrderData, logoBase64: 
       <div class="subtitle">Orderbevestiging</div>
     </div>
 
+    ${orderData.order_number ? `
     <div class="info-row">
       <span><strong>Ordernummer:</strong></span>
+      <span style="font-size: 18px; font-weight: bold;">${escapeHtml(orderData.order_number)}</span>
+    </div>
+    ` : ''}
+    <div class="info-row">
+      <span><strong>Referentie:</strong></span>
       <span>${escapeHtml(orderData.orderId)}</span>
     </div>
     <div class="info-row">
@@ -190,7 +197,7 @@ export const generateOrderConfirmationHTML = (orderData: OrderData, logoBase64: 
     <div class="footer">
       <p>Bedankt voor uw bestelling bij H-DCN Webshop!</p>
       <p>Voor vragen over uw bestelling kunt u contact opnemen via email of telefoon.</p>
-      <p><strong>Ordernummer: ${orderData.orderId}</strong></p>
+      <p><strong>Ordernummer: ${orderData.order_number || orderData.orderId}</strong></p>
     </div>
   </div>
 </body>
@@ -210,7 +217,7 @@ export const generateOrderConfirmationPDF = async (orderData: OrderData): Promis
     const addHeader = (): number => {
       pdf.setFontSize(10);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(`Ordernummer: ${orderData.orderId}`, margin, 20);
+      pdf.text(`Ordernummer: ${orderData.order_number || orderData.orderId}`, margin, 20);
       return 35;
     };
     
@@ -218,7 +225,7 @@ export const generateOrderConfirmationPDF = async (orderData: OrderData): Promis
       pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
       pdf.text(`Pagina ${pageNum}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-      pdf.text(`H-DCN Webshop - Orderbevestiging ${orderData.orderId}`, margin, pageHeight - 10);
+      pdf.text(`H-DCN Webshop - Orderbevestiging ${orderData.order_number || orderData.orderId}`, margin, pageHeight - 10);
     };
     
     const checkNewPage = (neededHeight: number): boolean => {
@@ -240,9 +247,24 @@ export const generateOrderConfirmationPDF = async (orderData: OrderData): Promis
     pdf.text('Orderbevestiging', pageWidth / 2, yPosition + 20, { align: 'center' });
     yPosition += 35;
     
-    pdf.setFontSize(12);
-    pdf.text(`Ordernummer: ${orderData.orderId}`, margin, yPosition);
-    yPosition += 8;
+    // Display order_number prominently if available
+    if (orderData.order_number) {
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(`Ordernummer: ${orderData.order_number}`, margin, yPosition);
+      pdf.setFont(undefined, 'normal');
+      yPosition += 10;
+      
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Referentie: ${orderData.orderId}`, margin, yPosition);
+      pdf.setTextColor(0, 0, 0);
+      yPosition += 8;
+    } else {
+      pdf.setFontSize(12);
+      pdf.text(`Ordernummer: ${orderData.orderId}`, margin, yPosition);
+      yPosition += 8;
+    }
     
     const formatDate = (timestamp: string): string => {
       return new Date(timestamp).toLocaleDateString('nl-NL', {
@@ -364,7 +386,7 @@ export const generateOrderConfirmationPDF = async (orderData: OrderData): Promis
     
     addFooter((pdf as any).internal.getNumberOfPages());
     
-    pdf.save(`orderbevestiging-${orderData.orderId}.pdf`);
+    pdf.save(`orderbevestiging-${orderData.order_number || orderData.orderId}.pdf`);
     
     return true;
   } catch (error) {

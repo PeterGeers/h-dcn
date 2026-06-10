@@ -72,7 +72,19 @@ def producten_table():
         table = dynamodb.create_table(
             TableName='Producten',
             KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
-            AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
+            AttributeDefinitions=[
+                {'AttributeName': 'product_id', 'AttributeType': 'S'},
+                {'AttributeName': 'parent_id', 'AttributeType': 'S'},
+            ],
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'parent_id-index',
+                    'KeySchema': [
+                        {'AttributeName': 'parent_id', 'KeyType': 'HASH'},
+                    ],
+                    'Projection': {'ProjectionType': 'ALL'},
+                }
+            ],
             BillingMode='PAY_PER_REQUEST'
         )
 
@@ -109,7 +121,7 @@ def test_create_simple_product_with_default_variant(producten_table):
 
 
 def test_create_product_with_variant_schema(producten_table):
-    """Product with variant_schema generates correct number of variants."""
+    """Product with variant_schema generates correct number of variants via sync."""
     import app as handler_module
 
     event = _make_event({
@@ -129,9 +141,9 @@ def test_create_product_with_variant_schema(producten_table):
     assert response['statusCode'] == 200
     # 3 sizes * 2 genders = 6 variants
     assert body['variant_count'] == 6
-    for variant in body['variants']:
-        assert 'Maat' in variant['variant_attributes']
-        assert 'Gender' in variant['variant_attributes']
+    assert body['variant_sync']['created'] == 6
+    assert body['variant_sync']['preserved'] == 0
+    assert body['variant_sync']['deactivated'] == 0
 
 
 def test_create_product_with_order_item_fields(producten_table):
@@ -289,6 +301,7 @@ def test_all_three_fields_together(producten_table):
     body = json.loads(response['body'])
     assert response['statusCode'] == 200
     assert body['variant_count'] == 2
+    assert body['variant_sync']['created'] == 2
     product = body['product']
     assert product['variant_schema'] == {'Gender': ['Male', 'Female']}
     assert product['order_item_fields'][0]['id'] == 'name'

@@ -336,7 +336,8 @@ class TestSuccessfulSubmission:
     @patch.object(app, '_get_order', return_value=SAMPLE_DRAFT_ORDER)
     @patch.object(app, '_get_product')
     @patch.object(app.orders_table, 'update_item')
-    def test_successful_submit_returns_200(self, mock_update, mock_product, mock_order):
+    @patch('handler.submit_order.app.generate_order_number', return_value='H-250115-001')
+    def test_successful_submit_returns_200(self, mock_gen, mock_update, mock_product, mock_order):
         def side_effect(pid):
             if pid == 'prod-001':
                 return SAMPLE_PRODUCT
@@ -356,11 +357,13 @@ class TestSuccessfulSubmission:
         body = json.loads(response['body'])
         assert body['status'] == 'submitted'
         assert 'submitted_at' in body
+        assert body['order_number'] == 'H-250115-001'
 
     @patch.object(app, '_get_order', return_value=SAMPLE_DRAFT_ORDER)
     @patch.object(app, '_get_product')
     @patch.object(app.orders_table, 'update_item')
-    def test_submit_records_status_history(self, mock_update, mock_product, mock_order):
+    @patch('handler.submit_order.app.generate_order_number', return_value='H-250115-002')
+    def test_submit_records_status_history(self, mock_gen, mock_update, mock_product, mock_order):
         def side_effect(pid):
             if pid == 'prod-001':
                 return SAMPLE_PRODUCT
@@ -377,18 +380,20 @@ class TestSuccessfulSubmission:
         event = make_event(token=token, path_params={'id': 'ord-100'})
         lambda_handler(event, None)
 
-        # Verify the update_item call includes status_history
+        # Verify the update_item call includes status_history and order_number
         call_kwargs = mock_update.call_args[1]
         expr_values = call_kwargs['ExpressionAttributeValues']
         history_entry = expr_values[':history_entry'][0]
         assert history_entry['from'] == 'draft'
         assert history_entry['to'] == 'submitted'
         assert history_entry['by'] == 'user@example.nl'
+        assert expr_values[':order_number'] == 'H-250115-002'
 
     @patch.object(app, '_get_order')
     @patch.object(app, '_get_product')
     @patch.object(app.orders_table, 'update_item')
-    def test_order_without_variant_id_submits_ok(self, mock_update, mock_product, mock_order):
+    @patch('handler.submit_order.app.generate_order_number', return_value='H-250115-003')
+    def test_order_without_variant_id_submits_ok(self, mock_gen, mock_update, mock_product, mock_order):
         """An order item without a variant_id (no variant selection) submits fine."""
         order_no_variant = {
             **SAMPLE_DRAFT_ORDER,

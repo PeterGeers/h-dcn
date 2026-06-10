@@ -25,6 +25,11 @@ try:
         generate_variant_combinations,
         create_default_variant
     )
+    from shared.variant_sync import (
+        sync_schema_to_variants,
+        sync_variant_to_schema,
+        MaxCombinationsExceeded
+    )
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -44,9 +49,6 @@ UPDATABLE_FIELDS = [
     'image_url', 'event_id', 'groep', 'subgroep', 'images',
     'order_item_fields', 'purchase_rules'
 ]
-
-# Maximum batch size for DynamoDB batch_write_item
-_DYNAMO_BATCH_SIZE = 25
 
 
 def lambda_handler(event, context):
@@ -100,7 +102,11 @@ def lambda_handler(event, context):
                 'Cannot update a variant with this endpoint. Use the variant update endpoint.'
             )
 
-        # Determine if variant_schema is being changed
+        # Detect variant action (bottom-up: add/remove variant)
+        variant_action = body.pop('variant_action', None)
+        variant_attributes = body.pop('variant_attributes', None)
+
+        # Determine if variant_schema is being changed (top-down)
         variant_schema_changed = _has_variant_schema_changed(body, existing)
 
         # Build update expression for simple fields
@@ -122,43 +128,67 @@ def lambda_handler(event, context):
             expression_names['#variant_schema'] = 'variant_schema'
             expression_values[':variant_schema'] = body['variant_schema']
 
-        if not update_parts:
+        # If only a variant action is provided (no other fields), still allow it
+        has_field_updates = bool(update_parts)
+        if not has_field_updates and not variant_action:
             return create_error_response(400, 'No updatable fields provided')
 
-        # Always update updated_at
-        update_parts.append('#updated_at = :updated_at')
-        expression_names['#updated_at'] = 'updated_at'
-        expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
+        # Always update updated_at when there are field updates
+        if has_field_updates:
+            update_parts.append('#updated_at = :updated_at')
+            expression_names['#updated_at'] = 'updated_at'
+            expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
 
-        update_expression = 'SET ' + ', '.join(update_parts)
+            update_expression = 'SET ' + ', '.join(update_parts)
 
-        # Update the parent product record
-        updated = table.update_item(
-            Key={'product_id': product_id},
-            UpdateExpression=update_expression,
-            ExpressionAttributeNames=expression_names,
-            ExpressionAttributeValues=expression_values,
-            ReturnValues='ALL_NEW'
-        )
-
-        updated_product = updated.get('Attributes', {})
-
-        # Handle variant regeneration if variant_schema changed
-        variants_regenerated = False
-        new_variants = []
-        if variant_schema_changed:
-            new_variants = _regenerate_variants(
-                product_id, body.get('variant_schema')
+            # Update the parent product record
+            updated = table.update_item(
+                Key={'product_id': product_id},
+                UpdateExpression=update_expression,
+                ExpressionAttributeNames=expression_names,
+                ExpressionAttributeValues=expression_values,
+                ReturnValues='ALL_NEW'
             )
-            variants_regenerated = True
+            updated_product = updated.get('Attributes', {})
+        else:
+            updated_product = existing
+
+        # Handle top-down sync: variant_schema changed → sync_schema_to_variants
+        sync_result = None
+        if variant_schema_changed:
+            parent_price = Decimal(str(body.get('price', existing.get('price', 0))))
+            try:
+                sync_result = sync_schema_to_variants(
+                    table, product_id, body['variant_schema'], parent_price
+                )
+            except MaxCombinationsExceeded as e:
+                return create_error_response(400, str(e), {
+                    'count': e.count,
+                    'max': e.max
+                })
+
+        # Handle bottom-up sync: variant add/remove → sync_variant_to_schema
+        updated_schema = None
+        if variant_action and variant_attributes:
+            if variant_action in ('add_variant', 'remove_variant'):
+                updated_schema = sync_variant_to_schema(
+                    table, product_id, variant_attributes
+                )
 
         result = {
             'product': _convert_decimals(updated_product),
             'message': 'Product updated successfully'
         }
-        if variants_regenerated:
-            result['variants_regenerated'] = True
-            result['variant_count'] = len(new_variants)
+        if sync_result:
+            result['variants_synced'] = True
+            result['sync_result'] = {
+                'created': sync_result.created,
+                'preserved': sync_result.preserved,
+                'deactivated': sync_result.deactivated,
+            }
+        if updated_schema is not None:
+            result['variant_schema_updated'] = True
+            result['variant_schema'] = updated_schema
 
         return create_success_response(result)
 
@@ -242,80 +272,3 @@ def _has_variant_schema_changed(body: dict, existing: dict) -> bool:
     existing_normalized = existing_schema if existing_schema else None
 
     return new_normalized != existing_normalized
-
-
-def _regenerate_variants(product_id: str, new_schema) -> list:
-    """
-    Delete all existing variants for a product and regenerate from new schema.
-
-    If new_schema is empty/None, creates a Default_Variant.
-    Otherwise generates variants from the schema with stock reset to 0.
-
-    Returns the list of new variant records created.
-    """
-    # 1. Find and delete all existing variants for this parent
-    _delete_existing_variants(product_id)
-
-    # 2. Generate new variants
-    if new_schema:
-        new_variants = generate_variant_combinations(
-            new_schema, product_id
-        )
-    else:
-        # No schema = create Default_Variant
-        new_variants = [create_default_variant(product_id)]
-
-    # 3. Batch write new variants
-    _batch_write_variants(new_variants)
-
-    return new_variants
-
-
-def _delete_existing_variants(product_id: str) -> None:
-    """
-    Query and delete all variant records for a parent product.
-
-    Uses scan with filter on parent_id (variants have is_parent=False
-    and parent_id set to the parent product_id).
-    """
-    # Query variants by scanning for parent_id match
-    # Note: In production, a GSI on parent_id would be more efficient
-    variants_to_delete = []
-    scan_kwargs = {
-        'FilterExpression': boto3.dynamodb.conditions.Attr('parent_id').eq(product_id)
-    }
-
-    done = False
-    start_key = None
-    while not done:
-        if start_key:
-            scan_kwargs['ExclusiveStartKey'] = start_key
-        response = table.scan(**scan_kwargs)
-        variants_to_delete.extend(response.get('Items', []))
-        start_key = response.get('LastEvaluatedKey')
-        if not start_key:
-            done = True
-
-    # Batch delete existing variants
-    if variants_to_delete:
-        _batch_delete_variants(variants_to_delete)
-
-
-def _batch_delete_variants(variants: list) -> None:
-    """Delete variant records in batches of 25."""
-    for i in range(0, len(variants), _DYNAMO_BATCH_SIZE):
-        batch = variants[i:i + _DYNAMO_BATCH_SIZE]
-        with table.batch_writer() as writer:
-            for variant in batch:
-                writer.delete_item(
-                    Key={'product_id': variant['product_id']}
-                )
-
-
-def _batch_write_variants(variants: list) -> None:
-    """Write variant records in batches of 25."""
-    for i in range(0, len(variants), _DYNAMO_BATCH_SIZE):
-        batch = variants[i:i + _DYNAMO_BATCH_SIZE]
-        with table.batch_writer() as writer:
-            for variant in batch:
-                writer.put_item(Item=variant)
