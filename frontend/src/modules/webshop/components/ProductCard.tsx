@@ -95,7 +95,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
       productService
         .getVariants(productId)
         .then((response: any) => {
-          const variantData = Array.isArray(response) ? response : response?.data || [];
+          const variantData = Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data?.variants)
+              ? response.data.variants
+              : [];
           setVariants(variantData);
         })
         .catch((err: Error) => {
@@ -112,7 +116,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
       productService
         .getVariants(productId)
         .then((response: any) => {
-          const variantData = Array.isArray(response) ? response : response?.data || [];
+          const variantData = Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data?.variants)
+              ? response.data.variants
+              : [];
           setVariants(variantData);
           // Auto-select default variant (variant with empty variant_attributes)
           const defaultVariant = variantData.find(
