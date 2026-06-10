@@ -2,6 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   H-DCN Backend - Serverless API
+# Deploy trigger: order handlers (CreateOrder, UpdateOrderItems, PayOrder)
 
 # IMPORTANT: DynamoDB tables, Cognito User Pool, and S3 data buckets are managed
 # OUTSIDE this template (created manually/via scripts). They are referenced via
