@@ -22,7 +22,8 @@
     "price_label": "Prijs:",
     "no_image": "Geen afbeelding beschikbaar",
     "back": "Terug",
-    "variant_fetch_error": "Varianten konden niet worden geladen"
+    "variant_fetch_error": "Varianten konden niet worden geladen",
+    "sold_out": "Uitverkocht"
   },
   "card_modal": {
     "select_option_desc": "Kies een maat/optie voor dit product"

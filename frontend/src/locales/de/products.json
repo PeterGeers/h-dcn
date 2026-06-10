@@ -21,7 +21,9 @@
     "quantity": "Menge",
     "price_label": "Preis:",
     "no_image": "Kein Bild verfügbar",
-    "back": "Zurück"
+    "back": "Zurück",
+    "variant_fetch_error": "Varianten konnten nicht geladen werden",
+    "sold_out": "Ausverkauft"
   },
   "card_modal": {
     "select_option_desc": "Wählen Sie eine Größe/Option für dieses Produkt"

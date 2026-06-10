@@ -21,7 +21,9 @@
     "quantity": "Antal",
     "price_label": "Pris:",
     "no_image": "Ingen bild tillgänglig",
-    "back": "Tillbaka"
+    "back": "Tillbaka",
+    "variant_fetch_error": "Varianter kunde inte laddas",
+    "sold_out": "Slutsåld"
   },
   "card_modal": {
     "select_option_desc": "Välj en storlek/alternativ för denna produkt"

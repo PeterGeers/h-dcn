@@ -342,6 +342,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   </Text>
                 )}
 
+                {/* Sold out message for products without variant_schema */}
+                {!hasVariantSchema && isOutOfStock && (
+                  <Text color="red.500" fontSize="sm" fontWeight="bold">
+                    {t('card.sold_out')}
+                  </Text>
+                )}
+
                 {/* Purchase rules feedback */}
                 {product.purchase_rules && (
                   <PurchaseRulesFeedback

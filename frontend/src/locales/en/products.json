@@ -22,7 +22,8 @@
     "price_label": "Price:",
     "no_image": "No image available",
     "back": "Back",
-    "variant_fetch_error": "Variants could not be loaded"
+    "variant_fetch_error": "Variants could not be loaded",
+    "sold_out": "Sold out"
   },
   "card_modal": {
     "select_option_desc": "Choose a size/option for this product"

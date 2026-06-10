@@ -21,7 +21,9 @@
     "quantity": "Antal",
     "price_label": "Pris:",
     "no_image": "Intet billede tilgængeligt",
-    "back": "Tilbage"
+    "back": "Tilbage",
+    "variant_fetch_error": "Varianter kunne ikke indlæses",
+    "sold_out": "Udsolgt"
   },
   "card_modal": {
     "select_option_desc": "Vælg en størrelse/mulighed for dette produkt"
