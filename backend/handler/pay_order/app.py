@@ -192,7 +192,60 @@ def lambda_handler(event, context):
         else:
             redirect_url = f"{REDIRECT_BASE_URL}/webshop?order_id={order_id}&payment=complete"
 
-        # Create Mollie payment
+        # Create Mollie payment (or mock if no valid API key)
+        mollie_api_key = os.environ.get('MOLLIE_API_KEY', '')
+        use_mock = not mollie_api_key or not mollie_api_key.startswith(('test_', 'live_'))
+
+        if use_mock:
+            # Mock mode: simulate successful payment without Mollie
+            logger.info(f"MOCK PAYMENT: No valid Mollie API key, simulating payment for order {order_id}")
+            mock_payment_id = f"tr_mock_{uuid.uuid4().hex[:8]}"
+
+            # Store payment record
+            payment_id = str(uuid.uuid4())
+            now = datetime.now(timezone.utc).isoformat()
+
+            payment_record = {
+                'payment_id': payment_id,
+                'order_id': order_id,
+                'amount': outstanding,
+                'status': 'paid',
+                'provider': 'mock',
+                'method': method,
+                'mollie_payment_id': mock_payment_id,
+                'created_at': now,
+                'created_by': user_email,
+            }
+            if order.get('club_id'):
+                payment_record['club_id'] = order['club_id']
+            if variant_items:
+                payment_record['variant_items'] = variant_items
+
+            payments_table.put_item(Item=payment_record)
+
+            # Mark order as paid
+            orders_table.update_item(
+                Key={'order_id': order_id},
+                UpdateExpression='SET #s = :paid, payment_status = :paid, total_paid = :amount, updated_at = :now',
+                ExpressionAttributeNames={'#s': 'status'},
+                ExpressionAttributeValues={
+                    ':paid': 'paid',
+                    ':amount': outstanding,
+                    ':now': now,
+                },
+            )
+
+            logger.info(f"MOCK PAYMENT: Order {order_id} marked as paid (mock mode)")
+
+            return create_success_response({
+                'payment_id': payment_id,
+                'checkout_url': None,
+                'amount': float(outstanding),
+                'method': method,
+                'mock': True,
+                'message': 'Payment simulated (no Mollie key configured)',
+            }, status_code=201)
+
         try:
             mollie_result = create_payment(
                 amount=amount_str,
