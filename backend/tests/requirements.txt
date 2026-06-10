@@ -3,4 +3,4 @@ pytest-mock
 boto3
 moto
 requests
-concurrent-futures
+hypothesis
