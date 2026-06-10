@@ -11,6 +11,14 @@ Description: >
 
 
 Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - prod
+      - test
+    Description: "Deployment stage - determines CORS origins and environment-specific configuration"
+
   # EXISTING USER POOL - DO NOT CREATE NEW ONES!
   ExistingUserPoolId:
     Type: String
@@ -136,6 +144,15 @@ Parameters:
     Default: "Counters"
     Description: "DynamoDB table name for atomic counters (order numbers, invoice numbers). Managed externally."
 
+Mappings:
+  StageConfig:
+    prod:
+      CorsOrigin: "https://portal.h-dcn.nl"
+      OrganizationWebsite: "https://portal.h-dcn.nl"
+    test:
+      CorsOrigin: "https://testportal.h-dcn.nl"
+      OrganizationWebsite: "https://testportal.h-dcn.nl"
+
 Globals:
   Function:
     Timeout: 10
@@ -148,12 +165,15 @@ Globals:
         DYNAMODB_TABLE: !Ref Table
         REGION_NAME: !Ref Region
         PYTHONPATH: /opt/python
+        CORS_ALLOWED_ORIGIN: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
   Api:
     TracingEnabled: True
     Cors:
       AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
-      AllowOrigin: "'*'"
+      AllowOrigin: !Sub
+        - "'${Origin}'"
+        - Origin: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
       AllowCredentials: false
 
 Resources:
@@ -358,7 +378,9 @@ Resources:
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
-        AllowOrigin: "'*'"
+        AllowOrigin: !Sub
+          - "'${Origin}'"
+          - Origin: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
         AllowCredentials: false
 
   # IAM Role for DynamoDB access (updated for GSI)
@@ -2143,6 +2165,12 @@ Resources:
             Method: get
 
 Outputs:
+  ApiUrl:
+    Description: "API Gateway invoke URL for this stage"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
+
   ApiBaseUrl:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"

@@ -14,6 +14,14 @@ on:
         required: false
         default: 'h-dcn'
         type: string
+      stage:
+        description: 'Deployment stage (prod or test)'
+        required: false
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - test
 
 permissions:
   id-token: write
@@ -44,6 +52,44 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install test dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          if [ -f tests/requirements.txt ]; then
+            pip install -r tests/requirements.txt
+          fi
+
+      - name: Run backend tests
+        working-directory: backend
+        timeout-minutes: 10
+        run: |
+          pytest tests/ --tb=short --junitxml=test-results.xml
+
+      - name: Output test summary
+        if: always()
+        working-directory: backend
+        run: |
+          if [ -f test-results.xml ]; then
+            echo "## Backend Test Results" >> $GITHUB_STEP_SUMMARY
+            TESTS=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('test-results.xml')
+          root = tree.getroot()
+          tests = root.attrib.get('tests', '0')
+          failures = root.attrib.get('failures', '0')
+          errors = root.attrib.get('errors', '0')
+          passed = int(tests) - int(failures) - int(errors)
+          print(f'| Metric | Count |')
+          print(f'|--------|-------|')
+          print(f'| Total  | {tests} |')
+          print(f'| Passed | {passed} |')
+          print(f'| Failed | {failures} |')
+          print(f'| Errors | {errors} |')
+          ")
+            echo "$TESTS" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v2
         with:
@@ -62,24 +108,54 @@ jobs:
       - name: SAM Deploy
         working-directory: backend
         run: |
-          sam deploy \
-            --stack-name ${{ inputs.stack_name || 'h-dcn' }} \
-            --region eu-west-1 \
-            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --resolve-s3 \
-            --resolve-image-repos \
-            --no-confirm-changeset \
-            --no-fail-on-empty-changeset \
-            --parameter-overrides \
-              Environment=prod \
-              Table=Producten \
-              Region=eu-west-1 \
-              MembersTable=Members \
-              PaymentsTable=Payments \
-              EventsTable=Events \
-              MembershipsTable=Memberships \
-              CartsTable=Carts \
-              OrdersTable=Orders \
-              ParametersTable=Parameters \
-              ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
-              ExistingUserPoolClientId=6jhvk853b0lfg9q1m861qs0cug
+          STAGE="${{ inputs.stage || 'prod' }}"
+          STACK="${{ inputs.stack_name || 'h-dcn' }}"
+
+          if [ "$STAGE" = "test" ]; then
+            sam deploy \
+              --stack-name "$STACK" \
+              --region eu-west-1 \
+              --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+              --resolve-s3 \
+              --resolve-image-repos \
+              --no-confirm-changeset \
+              --no-fail-on-empty-changeset \
+              --parameter-overrides \
+                Stage=test \
+                Environment=prod \
+                Table=Producten-Test \
+                Region=eu-west-1 \
+                MembersTable=Members-Test \
+                PaymentsTable=Payments-Test \
+                EventsTable=Events-Test \
+                MembershipsTable=Memberships-Test \
+                CartsTable=Carts-Test \
+                OrdersTable=Orders-Test \
+                CountersTable=Counters-Test \
+                StockMovementsTableName=StockMovements-Test \
+                ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
+                ExistingUserPoolClientId=6jhvk853b0lfg9q1m861qs0cug
+          else
+            sam deploy \
+              --stack-name "$STACK" \
+              --region eu-west-1 \
+              --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+              --resolve-s3 \
+              --resolve-image-repos \
+              --no-confirm-changeset \
+              --no-fail-on-empty-changeset \
+              --parameter-overrides \
+                Stage=prod \
+                Environment=prod \
+                Table=Producten \
+                Region=eu-west-1 \
+                MembersTable=Members \
+                PaymentsTable=Payments \
+                EventsTable=Events \
+                MembershipsTable=Memberships \
+                CartsTable=Carts \
+                OrdersTable=Orders \
+                ParametersTable=Parameters \
+                ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
+                ExistingUserPoolClientId=6jhvk853b0lfg9q1m861qs0cug
+          fi

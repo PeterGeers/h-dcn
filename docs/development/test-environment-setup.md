@@ -77,13 +77,42 @@ cd ..
 
 ## Daily Workflow
 
-### Making Changes
+### Frontend Changes
 
 1. Edit your frontend code
 2. Test locally: `npm start` (localhost:3000)
 3. Build: `npm run build`
 4. Deploy: `.\deploy-test-frontend.ps1`
 5. Test at: `https://testportal.h-dcn.nl`
+
+### Backend Test Workflow
+
+1. Make backend changes
+2. Run tests locally: `.\run-tests.ps1`
+3. Deploy test stack:
+   ```bash
+   sam deploy \
+     --stack-name h-dcn-test \
+     --region eu-west-1 \
+     --profile nonprofit-deploy \
+     --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+     --resolve-s3 \
+     --no-confirm-changeset \
+     --no-fail-on-empty-changeset \
+     --parameter-overrides \
+       Stage=test \
+       Table=Producten-Test \
+       MembersTable=Members-Test \
+       PaymentsTable=Payments-Test \
+       EventsTable=Events-Test \
+       MembershipsTable=Memberships-Test \
+       CartsTable=Carts-Test \
+       OrdersTable=Orders-Test \
+       CountersTable=Counters-Test \
+       StockMovementsTableName=StockMovements-Test
+   ```
+4. Seed test data (if needed): `python scripts/seed-test-data.py`
+5. Verify at: `https://testportal.h-dcn.nl`
 
 ### Benefits
 
@@ -94,34 +123,136 @@ cd ..
 
 ## Backend Configuration
 
-You'll also need to update your backend to support the test domain:
+The backend uses a **Stage-parameterized** approach. The same SAM template (`backend/template.yaml`) supports both production and test via a `Stage` parameter and `Mappings` section — no template forking or `!If [IsProduction, ...]` conditions needed.
 
-### SAM Template Updates
+### Stage Parameter and Mappings
 
-Add test environment variables:
+The SAM template defines:
+
+- A `Stage` parameter with allowed values `prod` and `test` (default: `prod`)
+- A `StageConfig` mapping that resolves stage-dependent values:
 
 ```yaml
-Environment:
-  Variables:
-    WEBAUTHN_RP_ID: !If [IsProduction, "portal.h-dcn.nl", "testportal.h-dcn.nl"]
-    FRONTEND_URL:
-      !If [
-        IsProduction,
-        "https://portal.h-dcn.nl",
-        "https://testportal.h-dcn.nl",
-      ]
+Mappings:
+  StageConfig:
+    prod:
+      CorsOrigin: "https://portal.h-dcn.nl"
+      OrganizationWebsite: "https://portal.h-dcn.nl"
+    test:
+      CorsOrigin: "https://testportal.h-dcn.nl"
+      OrganizationWebsite: "https://testportal.h-dcn.nl"
 ```
 
-### CORS Updates
+The CORS origin and organization website are resolved at deploy time based on the `Stage` parameter.
 
-Update CORS headers to include test domain:
+### CORS Configuration
+
+CORS is handled via the `CORS_ALLOWED_ORIGIN` environment variable, set per-stage in the SAM template globals:
+
+```yaml
+Globals:
+  Function:
+    Environment:
+      Variables:
+        CORS_ALLOWED_ORIGIN: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
+```
+
+The `cors_headers()` function in `shared/auth_utils.py` reads this environment variable:
 
 ```python
-headers = {
-    'Access-Control-Allow-Origin': 'https://testportal.h-dcn.nl',
-    # ... other headers
-}
+import os
+
+def cors_headers():
+    allowed_origin = os.environ.get('CORS_ALLOWED_ORIGIN', '*')
+    return {
+        "Access-Control-Allow-Origin": allowed_origin,
+        "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE,PATCH",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,...",
+        "Access-Control-Allow-Credentials": "false"
+    }
 ```
+
+When `CORS_ALLOWED_ORIGIN` is not set (e.g., local development), it falls back to `*`.
+
+### Test Stack Deployment
+
+Deploy the test stack as a separate CloudFormation stack (`h-dcn-test`) pointing to isolated `-Test` DynamoDB tables:
+
+```bash
+sam deploy \
+  --stack-name h-dcn-test \
+  --region eu-west-1 \
+  --profile nonprofit-deploy \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --resolve-s3 \
+  --no-confirm-changeset \
+  --no-fail-on-empty-changeset \
+  --parameter-overrides \
+    Stage=test \
+    Table=Producten-Test \
+    MembersTable=Members-Test \
+    PaymentsTable=Payments-Test \
+    EventsTable=Events-Test \
+    MembershipsTable=Memberships-Test \
+    CartsTable=Carts-Test \
+    OrdersTable=Orders-Test \
+    CountersTable=Counters-Test \
+    StockMovementsTableName=StockMovements-Test
+```
+
+This creates its own API Gateway (the `ApiUrl` output gives you the invoke URL to configure as `REACT_APP_API_BASE_URL` for the test frontend). It shares the existing Cognito pool (`eu-west-1_fcUkvwjH5`) — test users are isolated by prefix.
+
+### Test Data Seeding
+
+Seed the `-Test` tables with representative data using the seed script:
+
+```bash
+# Seed all test tables with deterministic data
+python scripts/seed-test-data.py
+
+# Clear all test tables first, then seed fresh data
+python scripts/seed-test-data.py --clear
+```
+
+The script uses the `nonprofit-deploy` AWS profile and:
+
+- Creates test users in the shared Cognito pool (skip if they already exist)
+- Populates each `-Test` DynamoDB table with ≥5 items of synthetic data
+- Uses deterministic `SEED-{table}-{index}` partition keys (idempotent on re-run)
+- Handles missing tables gracefully (prints error, skips, continues)
+
+### Test User Accounts
+
+Five dedicated test users are provisioned in the shared Cognito pool. They only have data in the `-Test` DynamoDB tables — no production data impact.
+
+| Username         | Email                           | Role / Purpose   | Password    |
+| ---------------- | ------------------------------- | ---------------- | ----------- |
+| `test-admin`     | webmaster+testadmin@h-dcn.nl    | Full admin       | `Test1234!` |
+| `test-lid`       | peter+testlid@pgeers.nl         | Regular member   | `Test1234!` |
+| `test-treasurer` | peter+testtreasurer@jabaki.nl   | Treasurer        | `Test1234!` |
+| `test-presmeet`  | pjageers+testpresmeet@gmail.com | PresMeet contact | `Test1234!` |
+| `test-readonly`  | pjageers+testreadonly@gmail.com | Read-only        | `Test1234!` |
+
+### Local Test Runner
+
+Run all tests (backend + frontend) with a single command from the project root:
+
+```powershell
+# Run both backend and frontend tests
+.\run-tests.ps1
+
+# Run with coverage reporting
+.\run-tests.ps1 -Coverage
+```
+
+The script:
+
+- Runs `pytest tests/ --tb=short` from `backend/`
+- Runs `npm test -- --watchAll=false` from `frontend/`
+- Always executes both suites (no short-circuit on first failure)
+- Prints a summary table with suite name, result, and exit code
+- Exits 0 only if both suites pass
+- With `-Coverage`: adds `--cov=handler --cov-report=term-missing` to backend, `--coverage` to frontend
 
 ## Troubleshooting
 

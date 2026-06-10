@@ -43,6 +43,27 @@ jobs:
         working-directory: frontend
         run: npm install
 
+      - name: Run tests
+        working-directory: frontend
+        timeout-minutes: 10
+        run: |
+          npm test -- --watchAll=false --ci 2>&1 | tee test-output.txt
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          echo "## Frontend Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          # Extract test summary line if available
+          SUMMARY=$(grep -E "^Tests:|^Test Suites:" test-output.txt || true)
+          if [ -n "$SUMMARY" ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          exit $TEST_EXIT_CODE
+
       - name: Generate .env
         working-directory: frontend
         run: |

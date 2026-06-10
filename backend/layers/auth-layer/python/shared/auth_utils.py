@@ -6,6 +6,7 @@ Version: 2.1.1 - Fixed regional access for users with both hdcnLeden and regiona
 
 import json
 import base64
+import os
 from datetime import datetime
 
 
@@ -556,10 +557,13 @@ def log_role_structure_validation(user_email, user_roles, validation_result, val
 
 def cors_headers():
     """
-    Standard CORS headers for all API responses - matches template.yaml Global CORS configuration
+    Standard CORS headers for all API responses - matches template.yaml Global CORS configuration.
+    Reads CORS_ALLOWED_ORIGIN from environment (set per-stage by SAM template).
+    Falls back to '*' when env var is not set (backward compatibility for local development).
     """
+    allowed_origin = os.environ.get('CORS_ALLOWED_ORIGIN', '*')
     return {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": allowed_origin,
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE,PATCH",
         "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language",
         "Access-Control-Allow-Credentials": "false"
