@@ -1,0 +1,201 @@
+name: Nightly Test Suite
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # Every day at 04:00 UTC (06:00 CET)
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: read
+
+concurrency:
+  group: nightly-tests
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend Tests (Full Suite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install -r tests/requirements.txt
+
+      - name: Run full test suite
+        working-directory: backend
+        continue-on-error: true
+        run: |
+          pytest tests/ \
+            --tb=short \
+            --junitxml=test-results.xml \
+            -v \
+            2>&1 | tee test-output.txt
+
+      - name: Generate test report
+        if: always()
+        working-directory: backend
+        run: |
+          python -c "
+          import xml.etree.ElementTree as ET
+          import json
+          from datetime import datetime
+
+          tree = ET.parse('test-results.xml')
+          root = tree.getroot()
+
+          total = int(root.attrib.get('tests', '0'))
+          failures = int(root.attrib.get('failures', '0'))
+          errors = int(root.attrib.get('errors', '0'))
+          skipped = int(root.attrib.get('skipped', '0'))
+          passed = total - failures - errors - skipped
+
+          # Collect failed tests
+          failed_tests = []
+          for testcase in root.iter('testcase'):
+              failure = testcase.find('failure')
+              error = testcase.find('error')
+              if failure is not None or error is not None:
+                  msg = ''
+                  if failure is not None:
+                      msg = failure.attrib.get('message', '')[:200]
+                  elif error is not None:
+                      msg = error.attrib.get('message', '')[:200]
+                  failed_tests.append({
+                      'classname': testcase.attrib.get('classname', ''),
+                      'name': testcase.attrib.get('name', ''),
+                      'file': testcase.attrib.get('file', ''),
+                      'message': msg
+                  })
+
+          report = {
+              'date': datetime.utcnow().isoformat() + 'Z',
+              'summary': {
+                  'total': total,
+                  'passed': passed,
+                  'failed': failures,
+                  'errors': errors,
+                  'skipped': skipped
+              },
+              'failed_tests': failed_tests
+          }
+
+          with open('test-report.json', 'w') as f:
+              json.dump(report, f, indent=2)
+
+          # Print summary
+          print(f'Total: {total}, Passed: {passed}, Failed: {failures}, Errors: {errors}, Skipped: {skipped}')
+          if failed_tests:
+              print(f'\nFailed tests ({len(failed_tests)}):')
+              for t in failed_tests:
+                  print(f'  - {t[\"classname\"]}::{t[\"name\"]}')
+                  if t['message']:
+                      print(f'    {t[\"message\"][:100]}')
+          "
+
+      - name: Output to job summary
+        if: always()
+        working-directory: backend
+        run: |
+          if [ -f test-report.json ]; then
+            echo "## 🧪 Nightly Backend Test Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            python -c "
+          import json
+          with open('test-report.json') as f:
+              report = json.load(f)
+          s = report['summary']
+          print(f'**Date:** {report[\"date\"]}')
+          print()
+          print(f'| Metric | Count |')
+          print(f'|--------|-------|')
+          print(f'| Total  | {s[\"total\"]} |')
+          print(f'| ✅ Passed | {s[\"passed\"]} |')
+          print(f'| ❌ Failed | {s[\"failed\"]} |')
+          print(f'| 💥 Errors | {s[\"errors\"]} |')
+          print(f'| ⏭️ Skipped | {s[\"skipped\"]} |')
+          print()
+          if report['failed_tests']:
+              print('### Failed Tests')
+              print()
+              for t in report['failed_tests']:
+                  print(f'- \`{t[\"classname\"]}::{t[\"name\"]}\`')
+                  if t['message']:
+                      print(f'  > {t[\"message\"][:150]}')
+          else:
+              print('### ✅ All tests passed!')
+          " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: |
+            backend/test-results.xml
+            backend/test-report.json
+            backend/test-output.txt
+          retention-days: 30
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Run tests
+        working-directory: frontend
+        continue-on-error: true
+        run: |
+          npm test -- --watchAll=false --ci --forceExit 2>&1 | tee test-output.txt
+          echo $? > exit-code.txt
+
+      - name: Output to job summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 🧪 Nightly Frontend Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f test-output.txt ]; then
+            SUMMARY=$(grep -E "^Tests:|^Test Suites:" test-output.txt || echo "No summary found")
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-report
+          path: |
+            frontend/test-output.txt
+          retention-days: 30
