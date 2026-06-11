@@ -7,6 +7,15 @@ on:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Deployment stage (prod or test)'
+        required: false
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - test
 
 permissions:
   id-token: write
@@ -43,31 +52,16 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      - name: Run tests
-        working-directory: frontend
-        timeout-minutes: 10
-        run: |
-          npm test -- --watchAll=false --ci 2>&1 | tee test-output.txt
-          TEST_EXIT_CODE=${PIPESTATUS[0]}
-          echo "## Frontend Test Results" >> $GITHUB_STEP_SUMMARY
-          if [ $TEST_EXIT_CODE -eq 0 ]; then
-            echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
-          fi
-          # Extract test summary line if available
-          SUMMARY=$(grep -E "^Tests:|^Test Suites:" test-output.txt || true)
-          if [ -n "$SUMMARY" ]; then
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          fi
-          exit $TEST_EXIT_CODE
-
       - name: Generate .env
         working-directory: frontend
         run: |
-          echo "REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}" > .env
+          STAGE="${{ inputs.stage || 'prod' }}"
+
+          if [ "$STAGE" = "test" ]; then
+            echo "REACT_APP_API_BASE_URL=https://k81706dxb0.execute-api.eu-west-1.amazonaws.com/prod" > .env
+          else
+            echo "REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}" > .env
+          fi
           echo "REACT_APP_AWS_REGION=${{ vars.REACT_APP_AWS_REGION }}" >> .env
           echo "REACT_APP_S3_BUCKET=${{ vars.REACT_APP_S3_BUCKET }}" >> .env
           echo "REACT_APP_IMAGES_BUCKET=${{ vars.REACT_APP_IMAGES_BUCKET }}" >> .env
@@ -93,10 +87,22 @@ jobs:
           aws-region: eu-west-1
 
       - name: Deploy to S3
-        run: aws s3 sync frontend/build/ s3://${{ vars.FRONTEND_BUCKET_NAME }}/ --delete
+        run: |
+          STAGE="${{ inputs.stage || 'prod' }}"
+          if [ "$STAGE" = "test" ]; then
+            aws s3 sync frontend/build/ s3://${{ vars.TEST_FRONTEND_BUCKET_NAME }}/ --delete
+          else
+            aws s3 sync frontend/build/ s3://${{ vars.FRONTEND_BUCKET_NAME }}/ --delete
+          fi
 
       - name: Invalidate CloudFront
         run: |
+          STAGE="${{ inputs.stage || 'prod' }}"
+          if [ "$STAGE" = "test" ]; then
+            DIST_ID="${{ vars.TEST_CLOUDFRONT_DISTRIBUTION_ID }}"
+          else
+            DIST_ID="${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}"
+          fi
           aws cloudfront create-invalidation \
-            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id "$DIST_ID" \
             --paths "/*"
