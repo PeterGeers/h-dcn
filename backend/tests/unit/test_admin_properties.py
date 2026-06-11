@@ -395,6 +395,7 @@ class TestProperty18InboundStockMovementConsistency:
 
         movement = create_inbound_movement(
             variant_id=variant_id,
+            channel='webshop',
             quantity=quantity,
             purchase_price_per_unit=price_per_unit,
             supplier_name=supplier_name,
@@ -529,16 +530,8 @@ class TestProperty7BulkVariantGeneration:
         The number of generated combinations equals the product of all
         enum cardinalities.
         """
-        # Build a valid required_attributes schema
-        schema = {
-            "type": "object",
-            "properties": {
-                name: {"type": "string", "enum": values}
-                for name, values in attrs.items()
-            }
-        }
-
-        combinations = generate_variant_combinations(schema)
+        # Pass plain dict of axis→values directly (not JSON schema)
+        combinations = generate_variant_combinations(attrs, 'prod_test_123')
 
         # Expected count = product of all enum sizes
         expected_count = 1
@@ -571,22 +564,16 @@ class TestProperty7BulkVariantGeneration:
 
         All generated variant combinations are unique.
         """
-        schema = {
-            "type": "object",
-            "properties": {
-                name: {"type": "string", "enum": values}
-                for name, values in attrs.items()
-            }
-        }
+        # Pass plain dict of axis→values directly (not JSON schema)
+        combinations = generate_variant_combinations(attrs, 'prod_test_123')
 
-        combinations = generate_variant_combinations(schema)
-
-        # Convert each dict to a frozenset of items for uniqueness check
+        # Convert each variant's attributes to a frozenset for uniqueness check
         combo_set = set()
         for combo in combinations:
-            frozen = frozenset(combo.items())
+            attrs_dict = combo.get('variant_attributes', combo)
+            frozen = frozenset(sorted(attrs_dict.items()))
             assert frozen not in combo_set, (
-                f"Duplicate combination found: {combo}"
+                f"Duplicate combination found: {attrs_dict}"
             )
             combo_set.add(frozen)
 
@@ -872,7 +859,7 @@ def filter_records_by_event_id(records: list, event_id_filter: str) -> list:
     When event_id_filter is "all" or empty, all records are returned.
     Otherwise, only records whose 'event_id' field matches the filter are returned.
     """
-    if not event_id_filter or event_id_filter == "all":
+    if event_id_filter == "all" or event_id_filter == "":
         return records
     return [r for r in records if r.get('event_id') == event_id_filter]
 

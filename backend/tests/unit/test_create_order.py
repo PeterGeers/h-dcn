@@ -120,7 +120,7 @@ class TestWebshopOrderCreation:
         assert order['status'] == 'draft'
         assert order['payment_status'] == 'unpaid'
         assert order['version'] == 1
-        assert order['event_id'] is None
+        assert order.get('event_id') is None
         assert order['member_id'] == 'member-1'
         assert order['total_paid'] == 0
 

@@ -1,0 +1,684 @@
+{
+  "date": "2026-06-11T11:05:43.339398Z",
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failed_tests": [
+    {
+      "classname": "tests.unit.test_admin_properties.TestProperty18InboundStockMovementConsistency",
+      "name": "test_inbound_movement_fields_correct",
+      "file": "",
+      "message": "TypeError: create_inbound_movement() missing 1 required positional argument: 'channel'\nFalsifying example: test_inbound_movement_fields_correct(\n    # The test always failed when commented parts were "
+    },
+    {
+      "classname": "tests.unit.test_admin_properties.TestProperty7BulkVariantGeneration",
+      "name": "test_generates_correct_cartesian_product_count",
+      "file": "",
+      "message": "TypeError: generate_variant_combinations() missing 1 required positional argument: 'parent_product_id'\nFalsifying example: test_generates_correct_cartesian_product_count(\n    self=<tests.unit.test_adm"
+    },
+    {
+      "classname": "tests.unit.test_admin_properties.TestProperty7BulkVariantGeneration",
+      "name": "test_all_combinations_are_unique",
+      "file": "",
+      "message": "TypeError: generate_variant_combinations() missing 1 required positional argument: 'parent_product_id'\nFalsifying example: test_all_combinations_are_unique(\n    self=<tests.unit.test_admin_properties."
+    },
+    {
+      "classname": "tests.unit.test_admin_properties.TestProperty2EventIdFilterCorrectness",
+      "name": "test_filtered_result_contains_only_matching_records",
+      "file": "",
+      "message": "AssertionError: Record with event_id=evt-presmeet-2027 found in results when filter was 'None'\nassert 'evt-presmeet-2027' == None\nFalsifying example: test_filtered_result_contains_only_matching_record"
+    },
+    {
+      "classname": "tests.unit.test_admin_properties.TestProperty2EventIdFilterCorrectness",
+      "name": "test_filtered_count_matches_matching_records",
+      "file": "",
+      "message": "AssertionError: assert 1 == 0\n +  where 1 = len([{'event_id': 'evt-presmeet-2027', 'id': 'aaa_000000'}])\nFalsifying example: test_filtered_count_matches_matching_records(\n    self=<tests.unit.test_adm"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_missing_order_id_returns_400",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_missing_order_id_returns_400(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_admin_record_payment_properti"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_non_numeric_amount_returns_400",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_non_numeric_amount_returns_400(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_admin_record_payment_proper"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_amount_outside_range_returns_400",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_amount_outside_range_returns_400(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_admin_record_payment_prop"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_missing_date_returns_400",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_missing_date_returns_400(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_admin_record_payment_properties.T"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_invalid_date_format_returns_400",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_invalid_date_format_returns_400(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_admin_record_payment_prope"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_missing_order_id_does_not_modify_db",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_missing_order_id_does_not_modify_db(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_admin_record_payment_p"
+    },
+    {
+      "classname": "tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation",
+      "name": "test_invalid_amount_does_not_modify_db",
+      "file": "",
+      "message": "assert 500 == 400\nFalsifying example: test_invalid_amount_does_not_modify_db(\n    self=<tests.unit.test_admin_record_payment_properties.TestProperty7PaymentHandlerInputValidation object at 0x7fa803a1a"
+    },
+    {
+      "classname": "tests.unit.test_create_order.TestWebshopOrderCreation",
+      "name": "test_creates_draft_order_for_webshop",
+      "file": "",
+      "message": "KeyError: 'event_id'"
+    },
+    {
+      "classname": "tests.unit.test_migrate_channel_to_event_id.TestTransformChannelsToEventIds",
+      "name": "test_transforms_presmeet_product",
+      "file": "",
+      "message": "assert 0 == 1"
+    },
+    {
+      "classname": "tests.unit.test_migrate_channel_to_event_id.TestTransformChannelsToEventIds",
+      "name": "test_transforms_hdcn_product",
+      "file": "",
+      "message": "assert 0 == 1"
+    },
+    {
+      "classname": "tests.unit.test_migrate_channel_to_event_id.TestTransformChannelsToEventIds",
+      "name": "test_presmeet_product_not_in_any_event",
+      "file": "",
+      "message": "assert 0 == 1"
+    },
+    {
+      "classname": "tests.unit.test_migrate_channel_to_event_id.TestTransformChannelsToEventIds",
+      "name": "test_dry_run_does_not_modify",
+      "file": "",
+      "message": "assert 0 == 1"
+    },
+    {
+      "classname": "tests.unit.test_migrate_channel_to_event_id.TestTransformChannelsToEventIds",
+      "name": "test_multiple_products_mixed_channels",
+      "file": "",
+      "message": "assert 0 == 2"
+    },
+    {
+      "classname": "tests.unit.test_migrate_products.TestMigrateIntegration",
+      "name": "test_error_handling_continues_processing",
+      "file": "",
+      "message": "assert 2 == 1\n +  where 2 = MigrationSummary(total_scanned=2, products_migrated=2, variants_created=4, products_skipped=0, orders_deleted=0, carts_deleted=0, payments_deleted=0, channel_transformation"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_apply_filters_status",
+      "file": "",
+      "message": "ImportError: cannot import name 'apply_filters' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_apply_filters_payment_status",
+      "file": "",
+      "message": "ImportError: cannot import name 'apply_filters' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_apply_filters_all_all",
+      "file": "",
+      "message": "ImportError: cannot import name 'apply_filters' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_apply_filters_combined",
+      "file": "",
+      "message": "ImportError: cannot import name 'apply_filters' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_apply_filters_no_match",
+      "file": "",
+      "message": "ImportError: cannot import name 'apply_filters' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_build_metadata",
+      "file": "",
+      "message": "ImportError: cannot import name 'build_metadata' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_attendees_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_attendees_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_party_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_party_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_tshirts_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_tshirts_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_pickups_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_pickups_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_dropoffs_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_dropoffs_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_financial_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_financial_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestReportHelpers",
+      "name": "test_generate_overview_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_overview_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestCsvFormat",
+      "name": "test_csv_attendees",
+      "file": "",
+      "message": "ImportError: cannot import name 'format_as_csv' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestCsvFormat",
+      "name": "test_csv_financial",
+      "file": "",
+      "message": "ImportError: cannot import name 'format_as_csv' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestCsvFormat",
+      "name": "test_csv_overview",
+      "file": "",
+      "message": "ImportError: cannot import name 'format_as_csv' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestCsvFormat",
+      "name": "test_csv_empty_report",
+      "file": "",
+      "message": "ImportError: cannot import name 'format_as_csv' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestCsvFormat",
+      "name": "test_csv_pickups_headers",
+      "file": "",
+      "message": "ImportError: cannot import name 'format_as_csv' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_successful_json_report",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_csv_format_response",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_permission_denied_no_webshop_management",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_permission_denied_no_regio_pressmeet",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_invalid_report_type",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_missing_event_id",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_event_not_found",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_invalid_status_filter",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_invalid_payment_status_filter",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_invalid_format",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_financial_report_json",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_overview_report_json",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_status_filter_applied",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_payment_status_filter_applied",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_regio_all_grants_access",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestLambdaHandler",
+      "name": "test_paginated_query",
+      "file": "",
+      "message": "AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py'> does not have the attribute 'validate_permissions_with_regions'"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestProductTypeField",
+      "name": "test_product_type_takes_priority_over_product_id",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_attendees_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestProductTypeField",
+      "name": "test_product_type_prevents_false_positive_from_product_id",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_attendees_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestProductTypeField",
+      "name": "test_fallback_to_product_id_when_no_product_type",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_party_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestProductTypeField",
+      "name": "test_product_type_tshirt",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_tshirts_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestProductTypeField",
+      "name": "test_product_type_airport_transfer",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_pickups_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_presmeet_generate_report.TestProductTypeField",
+      "name": "test_overview_report_groups_by_product_type",
+      "file": "",
+      "message": "ImportError: cannot import name 'generate_overview_report' from 'app' (/home/runner/work/h-dcn/h-dcn/backend/handler/get_products/app.py)"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_channel_removed_and_event_id_set",
+      "file": "",
+      "message": "ExceptionGroup: Hypothesis found 2 distinct failures. (2 sub-exceptions)"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_non_presmeet_channels_get_null_event_id",
+      "file": "",
+      "message": "AssertionError: assert 'channel' not in {'channel': 'h-dcn', 'is_parent': True, 'name': 'Test Product', 'product_id': 'prod_6daf95f0', ...}\nFalsifying example: test_non_presmeet_channels_get_null_even"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_presmeet_products_linked_to_event_get_correct_event_id",
+      "file": "",
+      "message": "assert 0 == 1\nFalsifying example: test_presmeet_products_linked_to_event_get_correct_event_id(\n    self=<tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation object a"
+    },
+    {
+      "classname": "tests.unit.test_property_order_handlers.TestProperty13OrderValidationPipeline",
+      "name": "test_submit_accepts_valid_variant_parent_match",
+      "file": "",
+      "message": "AssertionError: Expected 200 for valid variant, got 500: {\"error\": \"Failed to generate order number. Please retry.\"}\nassert 500 == 200\nFalsifying example: test_submit_accepts_valid_variant_parent_matc"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_normalized_response_includes_all_required_fields",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_normalized_response_includes_all_required_fields(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7fa80277a"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_naam_fallback_for_name",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_naam_fallback_for_name(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7fa80277b910>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_prijs_fallback_for_price",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_prijs_fallback_for_price(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7fa80277b7d0>,\n    product={'product_id"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_products_without_is_parent_are_normalized",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_products_without_is_parent_are_normalized(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7fa80277b850>,\n "
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_only_parent_and_legacy_records_returned",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_only_parent_and_legacy_records_returned(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_property_scan_prod"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_legacy_records_without_is_parent_included",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_legacy_records_without_is_parent_included(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_property_scan_pr"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_migration_source_records_excluded_regardless_of_is_parent",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_migration_source_records_excluded_regardless_of_is_parent(\n    self=<tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering object at 0x7fa8"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_returns_unified_fields",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_naam_fallback_for_name",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_prijs_fallback_for_price",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_name_preferred_over_naam",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_price_preferred_over_prijs",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_excludes_variant_records",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_excludes_migration_source_records",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_includes_records_without_is_parent",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_groep_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_subgroep_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_images_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_all_three_fields_present_together",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_existing_seven_fields_are_returned",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_existing_seven_fields_are_returned(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7fa8028d36d0>,\n    product={'"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_product_id_preserved_exactly",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_product_id_preserved_exactly(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7fa8028d0890>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_decimal_to_number_conversion",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_decimal_to_number_conversion(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7fa8028d3e10>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_name_fallback_logic_preserved",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_name_fallback_logic_preserved(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7fa80296e2d0>,\n    product={'product_id'"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_is_parent_and_active_preserved",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_is_parent_and_active_preserved(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7fa802959a90>,\n    product={'product_id"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestAuthentication",
+      "name": "test_missing_auth_header_returns_401",
+      "file": "",
+      "message": "assert 404 == 401"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestAuthentication",
+      "name": "test_no_member_access_returns_403",
+      "file": "",
+      "message": "assert 404 == 403"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestSuccessfulSubmission",
+      "name": "test_successful_submit_returns_200",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestSuccessfulSubmission",
+      "name": "test_submit_records_status_history",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestSuccessfulSubmission",
+      "name": "test_order_without_variant_id_submits_ok",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestHandlerBasics",
+      "name": "test_rejects_missing_version",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestHandlerBasics",
+      "name": "test_rejects_missing_items",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestHandlerBasics",
+      "name": "test_rejects_invalid_json",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestOptimisticLocking",
+      "name": "test_rejects_stale_version",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestOptimisticLocking",
+      "name": "test_accepts_correct_version",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestOptimisticLocking",
+      "name": "test_handles_conditional_check_failure",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestPriceFetching",
+      "name": "test_fetches_price_from_product",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestPriceFetching",
+      "name": "test_rejects_null_price",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestPriceFetching",
+      "name": "test_rejects_zero_price",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestPriceFetching",
+      "name": "test_rejects_empty_price",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestPriceFetching",
+      "name": "test_product_not_found",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestVariantValidation",
+      "name": "test_validates_variant_parent_match",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestVariantValidation",
+      "name": "test_rejects_variant_parent_mismatch",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestVariantValidation",
+      "name": "test_rejects_nonexistent_variant",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestDraftAcceptsIncomplete",
+      "name": "test_accepts_items_without_product_id",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestDraftAcceptsIncomplete",
+      "name": "test_accepts_empty_items_list",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestDraftAcceptsIncomplete",
+      "name": "test_accepts_partial_item_fields_data",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestOrderAccess",
+      "name": "test_rejects_non_draft_order",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestOrderAccess",
+      "name": "test_rejects_other_users_order",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    },
+    {
+      "classname": "tests.unit.test_update_order_items.TestOrderAccess",
+      "name": "test_order_not_found",
+      "file": "",
+      "message": "failed on setup with \"AttributeError: <module 'app' from '/home/runner/work/h-dcn/h-dcn/backend/handler/update_event/app.py'> does not have the attribute 'orders_table'\""
+    }
+  ]
+}
