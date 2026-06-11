@@ -96,6 +96,7 @@ jobs:
           fi
 
       - name: Invalidate CloudFront
+        if: ${{ inputs.stage != 'test' || vars.TEST_CLOUDFRONT_DISTRIBUTION_ID != 'PENDING_CERT_VALIDATION' }}
         run: |
           STAGE="${{ inputs.stage || 'prod' }}"
           if [ "$STAGE" = "test" ]; then
