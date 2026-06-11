@@ -77,42 +77,67 @@ cd ..
 
 ## Daily Workflow
 
+### CI/CD Deployment via GitHub Actions
+
+The preferred way to deploy to the test environment is via GitHub Actions (from the `test-staging-environment` branch):
+
+```bash
+# Deploy backend to test stack
+gh workflow run "Deploy Backend" --ref test-staging-environment -f stack_name=h-dcn-test -f stage=test
+
+# Deploy frontend to test environment
+gh workflow run "Deploy Frontend" --ref test-staging-environment -f stage=test
+
+# Run full test suite against the branch
+gh workflow run "Full Test Suite" --ref test-staging-environment
+```
+
+Or use the GitHub Actions UI: Actions → select workflow → Run workflow → select branch `test-staging-environment`.
+
 ### Frontend Changes
 
 1. Edit your frontend code
 2. Test locally: `npm start` (localhost:3000)
-3. Build: `npm run build`
-4. Deploy: `.\deploy-test-frontend.ps1`
+3. Commit and push to `test-staging-environment` branch
+4. Deploy: `gh workflow run "Deploy Frontend" --ref test-staging-environment -f stage=test`
 5. Test at: `https://testportal.h-dcn.nl`
 
 ### Backend Test Workflow
 
 1. Make backend changes
 2. Run tests locally: `.\run-tests.ps1`
-3. Deploy test stack:
-   ```bash
-   sam deploy \
-     --stack-name h-dcn-test \
-     --region eu-west-1 \
-     --profile nonprofit-deploy \
-     --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-     --resolve-s3 \
-     --no-confirm-changeset \
-     --no-fail-on-empty-changeset \
-     --parameter-overrides \
-       Stage=test \
-       Table=Producten-Test \
-       MembersTable=Members-Test \
-       PaymentsTable=Payments-Test \
-       EventsTable=Events-Test \
-       MembershipsTable=Memberships-Test \
-       CartsTable=Carts-Test \
-       OrdersTable=Orders-Test \
-       CountersTable=Counters-Test \
-       StockMovementsTableName=StockMovements-Test
-   ```
-4. Seed test data (if needed): `python scripts/seed-test-data.py`
-5. Verify at: `https://testportal.h-dcn.nl`
+3. Commit and push to `test-staging-environment` branch
+4. Deploy: `gh workflow run "Deploy Backend" --ref test-staging-environment -f stack_name=h-dcn-test -f stage=test`
+5. Seed test data (if needed): `python scripts/seed-test-data.py`
+6. Verify at: `https://testportal.h-dcn.nl`
+
+### Manual Deploy (without CI)
+
+If you need to deploy locally without GitHub Actions:
+
+```bash
+cd backend
+sam build
+sam deploy \
+  --stack-name h-dcn-test \
+  --region eu-west-1 \
+  --profile nonprofit-deploy \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --resolve-s3 \
+  --no-confirm-changeset \
+  --no-fail-on-empty-changeset \
+  --parameter-overrides \
+    Stage=test \
+    Table=Producten-Test \
+    MembersTable=Members-Test \
+    PaymentsTable=Payments-Test \
+    EventsTable=Events-Test \
+    MembershipsTable=Memberships-Test \
+    CartsTable=Carts-Test \
+    OrdersTable=Orders-Test \
+    CountersTable=Counters-Test \
+    StockMovementsTableName=StockMovements-Test
+```
 
 ### Benefits
 

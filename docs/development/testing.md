@@ -568,69 +568,60 @@ All files |   82.5  |   71.3   |   78.9  |   82.5  |
 
 ---
 
-## CI Pipeline Requirements
+## CI Pipeline & Test Workflows
 
-### Current Setup (GitHub Actions)
+### GitHub Actions Workflows
 
-Tests are triggered on push to `main` (path-filtered):
+| Workflow        | File                  | Trigger                                         | What it does                                                                           |
+| --------------- | --------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Deploy Backend  | `deploy-backend.yml`  | Push to main (`backend/**`), workflow_dispatch  | Secret scan → SAM build → SAM deploy. Supports `stage` input (prod/test).              |
+| Deploy Frontend | `deploy-frontend.yml` | Push to main (`frontend/**`), workflow_dispatch | Secret scan → npm build → S3 deploy → CloudFront invalidation. Supports `stage` input. |
+| Full Test Suite | `nightly-tests.yml`   | Manual (`workflow_dispatch`) only               | Runs full backend (pytest) + frontend (Jest) tests. Uploads report as artifact.        |
 
-| Workflow              | Trigger Path  | Test Step                       |
-| --------------------- | ------------- | ------------------------------- |
-| `deploy-backend.yml`  | `backend/**`  | SAM build (implicit validation) |
-| `deploy-frontend.yml` | `frontend/**` | `npm install` + `npm run build` |
+### Why Tests Are Not in the Deploy Workflow
 
-### Requirements for Merge
+The full test suite takes 60+ minutes (1400+ tests). Running it as a gate before every deploy would make deployments impractical. Instead:
 
-1. **All tests must pass** — no merging with failing tests
-2. **Secret scanning** — GitGuardian runs on every push (blocks on detected secrets)
-3. **Build must succeed** — SAM build (backend) and npm build (frontend) must complete
+- **Deploy workflows** only run secret scanning + build validation (fast, <5 min)
+- **Full Test Suite** is run manually when you want a health check (before releases, after big changes)
+- **Local testing** is done with `.\run-tests.ps1` before pushing
 
-### Adding Test Steps to CI
+### Running the Full Test Suite
 
-To add explicit test execution to the CI pipeline, add these steps before the build/deploy steps:
+```bash
+# On main
+gh workflow run "Full Test Suite"
 
-**Backend (add to `deploy-backend.yml`):**
-
-```yaml
-- name: Install test dependencies
-  working-directory: backend
-  run: pip install -r tests/requirements.txt
-
-- name: Run tests
-  working-directory: backend
-  run: pytest tests/ --tb=short
-
-- name: Check coverage
-  working-directory: backend
-  run: pytest --cov=handler --cov-report=term-missing --cov-fail-under=85
+# On a feature branch (e.g., test-staging-environment)
+gh workflow run "Full Test Suite" --ref test-staging-environment
 ```
 
-**Frontend (add to `deploy-frontend.yml`):**
+Results appear in the GitHub Actions summary with pass/fail counts and a list of failed tests. Full reports are downloadable as artifacts (kept 30 days).
 
-```yaml
-- name: Run tests
-  working-directory: frontend
-  run: npm test -- --watchAll=false --ci
+### Deploying to the Test Stack
 
-- name: Check coverage
-  working-directory: frontend
-  run: npm test -- --coverage --watchAll=false --ci --coverageThreshold='{"global":{"lines":80}}'
+```bash
+# Backend → test stack
+gh workflow run "Deploy Backend" --ref test-staging-environment -f stack_name=h-dcn-test -f stage=test
+
+# Frontend → test environment
+gh workflow run "Deploy Frontend" --ref test-staging-environment -f stage=test
 ```
+
+### Requirements for Merging to Main
+
+1. **Secret scanning passes** — GitGuardian runs on every push
+2. **Build succeeds** — SAM build (backend) and npm build (frontend) must complete
+3. **Local tests pass** — run `.\run-tests.ps1` before pushing
 
 ### Local Pre-Merge Checklist
 
-Before pushing to `main`, run locally:
+```powershell
+# Run both backend and frontend tests
+.\run-tests.ps1
 
-```bash
-# Backend
-cd backend
-pytest tests/ --tb=short
-pytest --cov=handler --cov-report=term-missing
-
-# Frontend
-cd frontend
-npm test -- --watchAll=false
-npm test -- --coverage --watchAll=false
+# With coverage
+.\run-tests.ps1 -Coverage
 ```
 
 ---
