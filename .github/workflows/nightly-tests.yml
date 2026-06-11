@@ -1,8 +1,6 @@
-name: Nightly Test Suite
+name: Full Test Suite
 
 on:
-  schedule:
-    - cron: '0 3 * * *'  # Every day at 03:00 UTC
   workflow_dispatch:
 
 permissions:
