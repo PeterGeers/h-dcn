@@ -18,6 +18,7 @@ Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
 """
 
 import json
+import os
 import boto3
 from datetime import datetime
 from decimal import Decimal
@@ -45,7 +46,7 @@ except ImportError as e:
 
 # Initialize DynamoDB client
 dynamodb = boto3.resource('dynamodb')
-MEMBERS_TABLE_NAME = 'Members'
+MEMBERS_TABLE_NAME = os.environ.get('MEMBERS_TABLE_NAME', 'Members')
 table = dynamodb.Table(MEMBERS_TABLE_NAME)
 
 
