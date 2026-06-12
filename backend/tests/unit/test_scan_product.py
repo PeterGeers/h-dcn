@@ -12,6 +12,7 @@ Tests:
 import json
 import os
 import sys
+import importlib.util
 import pytest
 import boto3
 from unittest.mock import patch
@@ -24,18 +25,28 @@ _layers_path = os.path.abspath(
 if _layers_path not in sys.path:
     sys.path.insert(0, _layers_path)
 
-# Ensure handler is importable
-_handler_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'scan_product')
+# Path to the handler module (used for explicit import)
+_handler_file = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'scan_product', 'app.py')
 )
-if _handler_path not in sys.path:
-    sys.path.insert(0, _handler_path)
 
 # Set environment before importing handler
 os.environ['DYNAMODB_TABLE'] = 'Producten'
 os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
 os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+
+
+def _load_handler():
+    """Load the scan_product handler module by file path, bypassing sys.path."""
+    # Remove any cached 'app' module
+    if 'app' in sys.modules:
+        del sys.modules['app']
+    spec = importlib.util.spec_from_file_location('app', _handler_file)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules['app'] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _make_event():
@@ -67,7 +78,7 @@ def _auth_patches():
 
 @pytest.fixture
 def producten_table():
-    """Create a mocked Producten DynamoDB table."""
+    """Create a mocked Producten DynamoDB table and load the handler."""
     with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         table = dynamodb.create_table(
@@ -77,23 +88,7 @@ def producten_table():
             BillingMode='PAY_PER_REQUEST'
         )
 
-        # Ensure handler path is first in sys.path (critical for full-suite runs)
-        handler_base = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
-        )
-        handler_base_n = os.path.normpath(handler_base) + os.sep
-        sys.path[:] = [
-            p for p in sys.path
-            if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
-            and os.path.normpath(p) != os.path.normpath(handler_base)
-        ]
-        sys.path.insert(0, _handler_path)
-
-        # Clear stale app module cache
-        if 'app' in sys.modules:
-            del sys.modules['app']
-
-        import app as handler_module
+        handler_module = _load_handler()
         yield table, handler_module
 
 
@@ -213,7 +208,6 @@ class TestScanProductFiltering:
         """Excludes records where is_parent is explicitly false."""
         table, handler = producten_table
 
-        # Parent product (should be included)
         table.put_item(Item={
             'product_id': 'parent-001',
             'name': 'T-shirt',
@@ -222,7 +216,6 @@ class TestScanProductFiltering:
             'active': True,
         })
 
-        # Variant record (should be excluded)
         table.put_item(Item={
             'product_id': 'variant-001',
             'name': 'T-shirt - L',
@@ -242,7 +235,6 @@ class TestScanProductFiltering:
         """Excludes records where source equals migration."""
         table, handler = producten_table
 
-        # Normal product (should be included)
         table.put_item(Item={
             'product_id': 'normal-001',
             'name': 'Normal Product',
@@ -251,7 +243,6 @@ class TestScanProductFiltering:
             'active': True,
         })
 
-        # Migration source record (should be excluded)
         table.put_item(Item={
             'product_id': 'migration-001',
             'name': 'Migrated Record',
@@ -271,7 +262,6 @@ class TestScanProductFiltering:
         """Includes records where is_parent attribute does not exist."""
         table, handler = producten_table
 
-        # Legacy record without is_parent field (should be included)
         table.put_item(Item={
             'product_id': 'legacy-001',
             'naam': 'Legacy Product',

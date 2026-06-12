@@ -15,6 +15,7 @@ after the fix is applied.
 """
 
 import json
+import importlib.util
 import os
 import sys
 from decimal import Decimal
@@ -33,18 +34,26 @@ _layers_path = os.path.abspath(
 if _layers_path not in sys.path:
     sys.path.insert(0, _layers_path)
 
-# Ensure handler is importable
-_handler_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'scan_product')
+# Path to the handler module (used for explicit import)
+_handler_file = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'scan_product', 'app.py')
 )
-if _handler_path not in sys.path:
-    sys.path.insert(0, _handler_path)
 
 # Set environment before importing handler
 os.environ['DYNAMODB_TABLE'] = 'Producten'
 os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
 os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+
+def _load_handler():
+    """Load the scan_product handler module by file path, bypassing sys.path."""
+    if 'app' in sys.modules:
+        del sys.modules['app']
+    spec = importlib.util.spec_from_file_location('app', _handler_file)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules['app'] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 # =============================================================================
@@ -205,18 +214,7 @@ class TestScanProductPreservation:
             item = {k: v for k, v in product.items() if v is not None}
             table.put_item(Item=item)
 
-            handler_base = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
-            )
-            handler_base_n = os.path.normpath(handler_base) + os.sep
-            sys.path[:] = [
-                p for p in sys.path
-                if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
-                and os.path.normpath(p) != os.path.normpath(handler_base)
-            ]
-            sys.path.insert(0, _handler_path)
-
-            import app as handler_module
+            handler_module = _load_handler()
 
             with _auth_patches():
                 response = handler_module.lambda_handler(_make_event(), {})
@@ -255,18 +253,7 @@ class TestScanProductPreservation:
             item = {k: v for k, v in product.items() if v is not None}
             table.put_item(Item=item)
 
-            handler_base = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
-            )
-            handler_base_n = os.path.normpath(handler_base) + os.sep
-            sys.path[:] = [
-                p for p in sys.path
-                if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
-                and os.path.normpath(p) != os.path.normpath(handler_base)
-            ]
-            sys.path.insert(0, _handler_path)
-
-            import app as handler_module
+            handler_module = _load_handler()
 
             with _auth_patches():
                 response = handler_module.lambda_handler(_make_event(), {})
@@ -298,18 +285,7 @@ class TestScanProductPreservation:
             item = {k: v for k, v in product.items() if v is not None}
             table.put_item(Item=item)
 
-            handler_base = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
-            )
-            handler_base_n = os.path.normpath(handler_base) + os.sep
-            sys.path[:] = [
-                p for p in sys.path
-                if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
-                and os.path.normpath(p) != os.path.normpath(handler_base)
-            ]
-            sys.path.insert(0, _handler_path)
-
-            import app as handler_module
+            handler_module = _load_handler()
 
             with _auth_patches():
                 response = handler_module.lambda_handler(_make_event(), {})
@@ -363,18 +339,7 @@ class TestScanProductPreservation:
             item = {k: v for k, v in product.items() if v is not None}
             table.put_item(Item=item)
 
-            handler_base = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
-            )
-            handler_base_n = os.path.normpath(handler_base) + os.sep
-            sys.path[:] = [
-                p for p in sys.path
-                if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
-                and os.path.normpath(p) != os.path.normpath(handler_base)
-            ]
-            sys.path.insert(0, _handler_path)
-
-            import app as handler_module
+            handler_module = _load_handler()
 
             with _auth_patches():
                 response = handler_module.lambda_handler(_make_event(), {})
@@ -411,18 +376,7 @@ class TestScanProductPreservation:
             item = {k: v for k, v in product.items() if v is not None}
             table.put_item(Item=item)
 
-            handler_base = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
-            )
-            handler_base_n = os.path.normpath(handler_base) + os.sep
-            sys.path[:] = [
-                p for p in sys.path
-                if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
-                and os.path.normpath(p) != os.path.normpath(handler_base)
-            ]
-            sys.path.insert(0, _handler_path)
-
-            import app as handler_module
+            handler_module = _load_handler()
 
             with _auth_patches():
                 response = handler_module.lambda_handler(_make_event(), {})
