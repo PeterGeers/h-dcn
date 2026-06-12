@@ -23,6 +23,9 @@ from botocore.exceptions import ClientError
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'update_order_items'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python'))
 
+# Used by conftest.py to ensure correct handler path during full-suite runs
+_handler_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'update_order_items'))
+
 
 @pytest.fixture
 def mock_dynamodb():

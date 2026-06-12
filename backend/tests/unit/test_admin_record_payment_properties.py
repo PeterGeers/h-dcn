@@ -74,6 +74,11 @@ def _invoke_handler(event: dict) -> dict:
     """Import and invoke the handler fresh (avoids module caching issues)."""
     if 'app' in sys.modules:
         del sys.modules['app']
+    # Ensure our handler dir is first in sys.path
+    if sys.path[0] != _handler_dir:
+        if _handler_dir in sys.path:
+            sys.path.remove(_handler_dir)
+        sys.path.insert(0, _handler_dir)
     import app
     importlib.reload(app)
     return app.lambda_handler(event, None)

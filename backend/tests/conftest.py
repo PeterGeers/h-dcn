@@ -27,17 +27,49 @@ def pytest_collectstart(collector):
     if 'app' in sys.modules:
         del sys.modules['app']
 
+    # Also remove stale handler paths from previous test modules
+    handler_base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'handler'))
+    # Use os.sep-normalized comparison to work on both Windows and Linux
+    handler_base_normalized = os.path.normpath(handler_base) + os.sep
+    sys.path[:] = [
+        p for p in sys.path
+        if not (os.path.normpath(p) + os.sep).startswith(handler_base_normalized)
+        and os.path.normpath(p) != os.path.normpath(handler_base)
+    ]
+
 
 def pytest_runtest_setup(item):
     """
-    Clear cached 'app' module before each test runs.
+    Clear cached 'app' module before each test runs and ensure the correct
+    handler directory is at the front of sys.path.
 
     This handles the case where `from app import ...` is done inside test
     methods (not at module level), ensuring each test uses the correct
     handler's app module based on its sys.path setup.
+
+    Also cleans up stale handler paths from previous test modules to prevent
+    cross-contamination when tests are run in the full suite.
     """
     if 'app' in sys.modules:
         del sys.modules['app']
+
+    # Remove all handler directories from sys.path, then let each test
+    # re-add its own. This prevents stale paths from earlier tests causing
+    # the wrong app.py to be imported.
+    handler_base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'handler'))
+    handler_base_normalized = os.path.normpath(handler_base) + os.sep
+    sys.path[:] = [
+        p for p in sys.path
+        if not (os.path.normpath(p) + os.sep).startswith(handler_base_normalized)
+        and os.path.normpath(p) != os.path.normpath(handler_base)
+    ]
+
+    # Re-add handler path if the test module defines _handler_path or _handler_dir
+    test_module = item.module if hasattr(item, 'module') else None
+    if test_module:
+        handler_path = getattr(test_module, '_handler_path', None) or getattr(test_module, '_handler_dir', None)
+        if handler_path and handler_path not in sys.path:
+            sys.path.insert(0, handler_path)
 
 @pytest.fixture
 def aws_credentials():

@@ -82,11 +82,17 @@ def producten_table():
             BillingMode='PAY_PER_REQUEST'
         )
 
-        # Ensure handler path is first in sys.path
-        if sys.path[0] != _handler_path:
-            if _handler_path in sys.path:
-                sys.path.remove(_handler_path)
-            sys.path.insert(0, _handler_path)
+        # Ensure handler path is first in sys.path (critical for full-suite runs)
+        handler_base = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..', 'handler')
+        )
+        handler_base_n = os.path.normpath(handler_base) + os.sep
+        sys.path[:] = [
+            p for p in sys.path
+            if not (os.path.normpath(p) + os.sep).startswith(handler_base_n)
+            and os.path.normpath(p) != os.path.normpath(handler_base)
+        ]
+        sys.path.insert(0, _handler_path)
 
         # Clear stale app module cache
         if 'app' in sys.modules:
