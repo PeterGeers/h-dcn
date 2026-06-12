@@ -28,7 +28,7 @@ except ImportError as e:
 
 # Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Members')
+table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
 def lambda_handler(event, context):
     """

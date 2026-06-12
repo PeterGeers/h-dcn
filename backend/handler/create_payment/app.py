@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 import uuid
 import base64
@@ -27,8 +28,8 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-payments_table = dynamodb.Table('Payments')
-orders_table = dynamodb.Table('Orders')
+payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
+orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 
 def validate_payment_amount(payment_amount, order_data, locale=None):
     """

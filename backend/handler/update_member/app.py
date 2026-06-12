@@ -441,7 +441,7 @@ def cors_headers():
     }
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Members')
+table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
 # REMOVED: Custom JWT parsing function - now using shared auth system
 # This function has been replaced by extract_user_credentials from shared.auth_utils

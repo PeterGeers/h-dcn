@@ -626,6 +626,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
       Events:
         GetMembers:
           Type: Api
@@ -665,6 +668,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
       Events:
         GetMemberById:
           Type: Api
@@ -715,6 +721,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
       Events:
         UpdateMember:
           Type: Api
@@ -732,6 +741,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
       Events:
         DeleteMember:
           Type: Api
@@ -750,6 +762,10 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
       Events:
         CreatePayment:
           Type: Api
@@ -767,6 +783,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
       Events:
         GetPayments:
           Type: Api
@@ -784,6 +803,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
       Events:
         GetPaymentById:
           Type: Api
@@ -818,6 +840,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
       Events:
         DeletePayment:
           Type: Api
@@ -835,6 +860,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
       Events:
         GetMemberPayments:
           Type: Api
@@ -876,6 +904,7 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE: Events
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         GetEvents:
           Type: Api
@@ -935,6 +964,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
       Events:
         GetMemberships:
           Type: Api
@@ -952,6 +984,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
       Events:
         CreateMembership:
           Type: Api
@@ -969,6 +1004,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
       Events:
         GetMembershipById:
           Type: Api
@@ -986,6 +1024,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
       Events:
         UpdateMembership:
           Type: Api
@@ -1003,6 +1044,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
       Events:
         DeleteMembership:
           Type: Api
@@ -1095,6 +1139,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
       Events:
         GetOrders:
           Type: Api
@@ -1112,6 +1159,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
       Events:
         GetOrderById:
           Type: Api
@@ -1265,6 +1315,9 @@ Resources:
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         GetEventById:
           Type: Api

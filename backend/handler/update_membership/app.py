@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 from datetime import datetime
 
@@ -22,7 +23,7 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Memberships')
+table = dynamodb.Table(os.environ.get('MEMBERSHIPS_TABLE_NAME', 'Memberships'))
 
 def lambda_handler(event, context):
     try:

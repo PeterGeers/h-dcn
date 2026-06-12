@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 from decimal import Decimal
 
@@ -22,7 +23,7 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Events')
+table = dynamodb.Table(os.environ.get('EVENTS_TABLE_NAME', 'Events'))
 
 def convert_decimals(obj):
     if isinstance(obj, list):

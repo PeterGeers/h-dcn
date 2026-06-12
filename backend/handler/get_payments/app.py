@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 from datetime import datetime
 
@@ -24,7 +25,7 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Payments')
+table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
 
 def log_payment_audit(event_type, payment_id, user_email, user_roles, additional_data=None):
     """

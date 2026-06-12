@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 
 # Import authentication utilities from shared layer or fallback
@@ -23,7 +24,7 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Members')
+table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
 def lambda_handler(event, context):
     try:

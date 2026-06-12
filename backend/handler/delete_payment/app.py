@@ -1,4 +1,5 @@
 import json
+import os
 import boto3
 from datetime import datetime
 
@@ -24,7 +25,7 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('Payments')
+table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
 
 # REMOVED: Custom JWT parsing function - now using shared auth system
 # This function has been replaced by extract_user_credentials from shared.auth_utils
