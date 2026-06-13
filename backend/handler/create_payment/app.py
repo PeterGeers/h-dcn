@@ -1,286 +1,292 @@
+"""
+Unified Create Payment handler.
+Handles Mollie payment creation for both webshop and event orders.
+Replaces: create_presmeet_payment.
+
+POST /booking/{id}/pay
+
+Logic:
+  1. Extract credentials, resolve member_id from email
+  2. Get order_id from path parameters
+  3. Load order by order_id from Orders table
+  4. Verify ownership: order's member_id must match authenticated member,
+     or user is admin, or user is a delegate (for club-scoped orders)
+  5. Verify order status is "submitted"
+  6. Calculate outstanding balance from order items
+  7. Create Mollie payment for outstanding balance
+  8. Store payment record in Payments table with source_id from order
+  9. Return Mollie checkout URL for frontend redirect
+"""
+
 import json
 import os
-import boto3
 import uuid
-import base64
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
+from decimal import Decimal
 
-# Import from shared auth layer (REQUIRED)
+import boto3
+from boto3.dynamodb.conditions import Attr
+
 try:
     from shared.auth_utils import (
         extract_user_credentials,
         validate_permissions_with_regions,
-        cors_headers,
-        handle_options_request,
-        create_error_response,
         create_success_response,
-        log_successful_access
+        create_error_response,
+        handle_options_request,
+        log_successful_access,
     )
-    from shared.i18n.locale_resolver import resolve_request_locale
-    print("Using shared auth layer")
+    from shared.mollie_client import create_payment, MollieError
 except ImportError as e:
-    # Built-in smart fallback - no local auth_fallback.py needed
-    print(f"⚠️ Shared auth unavailable: {str(e)}")
+    print(f"Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("create_payment")
-    # Exit early - the fallback handler will handle all requests
     import sys
     sys.exit(0)
 
-dynamodb = boto3.resource('dynamodb')
-payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# DynamoDB resources
+dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
+payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
+members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
+producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
 
-def validate_payment_amount(payment_amount, order_data, locale=None):
+# Payment configuration
+REDIRECT_BASE_URL = os.environ.get(
+    'PAYMENT_REDIRECT_URL', 'https://portal.h-dcn.nl/booking'
+)
+WEBHOOK_URL = os.environ.get('MOLLIE_WEBHOOK_URL', '')
+
+# Supported payment methods
+SUPPORTED_METHODS = ('ideal', 'creditcard', 'banktransfer')
+DEFAULT_METHOD = 'ideal'
+
+
+def _resolve_member_id(user_email):
     """
-    Validate payment amount against order total
-    
-    Args:
-        payment_amount (float): Amount being paid
-        order_data (dict): Order data containing total amount
-        locale (str): Optional locale for localized error messages
-        
-    Returns:
-        tuple: (is_valid, error_response)
-               If valid: (True, None)
-               If invalid: (False, error_response_dict)
+    Resolve member_id from the Members table by email scan.
+    Returns (member_record, error_response) tuple.
     """
     try:
-        if not order_data:
-            # No order to validate against - allow payment (e.g., membership fees)
-            return True, None
-        
-        order_total = order_data.get('total_amount')
-        if order_total is None:
-            # Order has no total amount - log warning but allow payment
-            print(f"WARNING: Order {order_data.get('order_id')} has no total_amount field")
-            return True, None
-        
-        # Convert to float for comparison
-        try:
-            payment_amount_float = float(payment_amount)
-            order_total_float = float(order_total)
-        except (ValueError, TypeError):
-            return False, create_error_response(400, 'Invalid payment amount or order total format', {
-                'payment_amount': payment_amount,
-                'order_total': order_total
-            }, error_key='validation_error', locale=locale)
-        
-        # Allow some tolerance for rounding differences (1 cent)
-        tolerance = 0.01
-        amount_difference = abs(payment_amount_float - order_total_float)
-        
-        if amount_difference > tolerance:
-            # Log potential fraud attempt
-            print(f"SECURITY ALERT: Payment amount mismatch - Payment: {payment_amount_float}, Order: {order_total_float}, Difference: {amount_difference}")
-            return False, create_error_response(400, 'Payment amount does not match order total', {
-                'payment_amount': payment_amount_float,
-                'order_total': order_total_float,
-                'difference': amount_difference,
-                'order_id': order_data.get('order_id')
-            }, error_key='validation_error', locale=locale)
-        
-        return True, None
-        
+        response = members_table.scan(
+            FilterExpression=Attr('email').eq(user_email),
+            ProjectionExpression='member_id, club_id, member_type, allowed_events'
+        )
+        items = response.get('Items', [])
+        if not items:
+            return None, create_error_response(404, 'Member record not found')
+        return items[0], None
     except Exception as e:
-        print(f"Error validating payment amount: {str(e)}")
-        return False, create_error_response(500, 'Error validating payment amount',
-                                            error_key='internal_error', locale=locale)
+        logger.error(f"Error resolving member: {str(e)}")
+        return None, create_error_response(500, 'Failed to resolve member record')
 
-def log_payment_audit(event_type, payment_id, user_email, user_roles, additional_data=None):
-    """
-    Log payment operations for comprehensive audit trail
-    
-    Args:
-        event_type (str): Type of payment event (CREATE, UPDATE, ACCESS, DELETE)
-        payment_id (str): ID of the payment
-        user_email (str): Email of the user performing the action
-        user_roles (list): List of user's roles
-        additional_data (dict): Additional data to include in audit log
-    """
-    try:
-        audit_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'event_type': f'PAYMENT_{event_type}',
-            'payment_id': payment_id,
-            'user_email': user_email,
-            'user_roles': user_roles,
-            'severity': 'INFO',
-            'requires_review': False
-        }
-        
-        # Add additional data if provided
-        if additional_data:
-            audit_entry.update(additional_data)
-        
-        # Determine if this requires review
-        if event_type in ['UPDATE', 'DELETE'] or (additional_data and additional_data.get('payment_amount', 0) > 1000):
-            audit_entry['requires_review'] = True
-            audit_entry['severity'] = 'WARN'
-        
-        # Log as structured JSON for monitoring systems
-        print(f"PAYMENT_AUDIT: {json.dumps(audit_entry)}")
-        
-        # Human-readable log
-        action_desc = {
-            'CREATE': 'created',
-            'UPDATE': 'updated', 
-            'ACCESS': 'accessed',
-            'DELETE': 'deleted'
-        }.get(event_type, 'processed')
-        
-        print(f"Payment {payment_id} {action_desc} by user {user_email}")
-        
-        # Special logging for high-value payments
-        payment_amount = additional_data.get('payment_amount') if additional_data else None
-        if payment_amount and isinstance(payment_amount, (int, float)) and payment_amount > 1000:
-            print(f"HIGH VALUE PAYMENT: Payment {payment_id} has amount {payment_amount} - review recommended")
-            
-    except Exception as e:
-        print(f"Error logging payment audit: {str(e)}")
-        # Don't fail the payment operation if logging fails
 
-def validate_order_ownership(order_id, user_email, locale=None):
-    """
-    Validate that the order belongs to the authenticated user
-    
-    Args:
-        order_id (str): ID of the order to validate
-        user_email (str): Email of the authenticated user
-        locale (str): Optional locale for localized error messages
-        
-    Returns:
-        tuple: (is_valid, order_data, error_response)
-               If valid: (True, order_dict, None)
-               If invalid: (False, None, error_response_dict)
-    """
+def _get_order(order_id):
+    """Fetch order from Orders table by order_id."""
     try:
-        if not order_id:
-            return True, None, None  # Payment without order is allowed (e.g., membership fees)
-        
-        # Get order from database
         response = orders_table.get_item(Key={'order_id': order_id})
-        
-        if 'Item' not in response:
-            return False, None, create_error_response(404, 'Order not found', {
-                'order_id': order_id
-            }, error_key='order_not_found', locale=locale)
-        
-        order = response['Item']
-        order_user_email = order.get('user_email')
-        
-        # Validate order ownership
-        if not order_user_email:
-            # Log security issue - order without owner
-            print(f"SECURITY WARNING: Order {order_id} has no user_email - potential data integrity issue")
-            return False, None, create_error_response(400, 'Order ownership cannot be verified', {
-                'order_id': order_id
-            }, error_key='validation_error', locale=locale)
-        
-        if order_user_email.lower() != user_email.lower():
-            # Log unauthorized order access attempt
-            print(f"SECURITY ALERT: User {user_email} attempted to create payment for order {order_id} owned by {order_user_email}")
-            return False, None, create_error_response(403, 'Access denied: You can only create payments for your own orders', {
-                'order_id': order_id
-            }, error_key='forbidden', locale=locale)
-        
-        return True, order, None
-        
+        return response.get('Item')
     except Exception as e:
-        print(f"Error validating order ownership for order {order_id}: {str(e)}")
-        return False, None, create_error_response(500, 'Error validating order ownership',
-                                                  error_key='internal_error', locale=locale)
+        logger.error(f"Error fetching order {order_id}: {e}")
+        return None
+
+
+def _is_admin(user_roles, user_email):
+    """Check if user has admin-level access."""
+    is_authorized, _, _ = validate_permissions_with_regions(
+        user_roles, ['products_create'], user_email, None
+    )
+    return is_authorized
+
+
+def _calculate_order_total(order):
+    """
+    Calculate the total amount for an order from its items.
+    Each item should have a unit_price and quantity (or line_total).
+    Returns total as Decimal.
+    """
+    items = order.get('items', [])
+    total = Decimal('0')
+
+    for item in items:
+        line_total = item.get('line_total')
+        if line_total is not None:
+            total += Decimal(str(line_total))
+        else:
+            unit_price = Decimal(str(item.get('unit_price', 0)))
+            quantity = int(item.get('quantity', 1))
+            total += unit_price * quantity
+
+    return total
+
+
+def _parse_body(event):
+    """Parse JSON request body, return dict or None."""
+    body = event.get('body')
+    if not body:
+        return None
+    try:
+        return json.loads(body)
+    except (json.JSONDecodeError, TypeError):
+        return None
 
 
 def lambda_handler(event, context):
+    """Main handler for POST /booking/{id}/pay."""
     try:
         # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
-        
-        # Resolve locale from Accept-Language header
-        locale = resolve_request_locale(event)
-        
-        # Extract user credentials
+
+        # 1. Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
             return auth_error
-        
-        # DUAL ACCESS PATTERN: Admin access OR user access to create own payments
-        
-        # First check if user has admin permissions for payment creation
-        required_permissions = ['products_create']
-        is_admin_authorized, admin_error_response, regional_info = validate_permissions_with_regions(
-            user_roles, required_permissions, user_email, None
+
+        # Validate basic permissions (any authenticated member)
+        is_authorized, error_response, _ = validate_permissions_with_regions(
+            user_roles, ['events_read'], user_email, None
         )
-        
-        # If not admin, check if user has basic webshop access (hdcnLeden) for own payments
-        has_webshop_access = 'hdcnLeden' in user_roles
-        
-        if not is_admin_authorized and not has_webshop_access:
-            return create_error_response(403, 'Access denied: Requires admin permissions or hdcnLeden role for own payments', {
-                'required_admin_permissions': required_permissions,
-                'required_user_role': 'hdcnLeden',
-                'user_roles': user_roles
-            }, error_key='forbidden', locale=locale)
-        
-        # Log successful access
-        log_successful_access(user_email, user_roles, 'create_payment')
-        
-        body = json.loads(event['body'])
-        
-        # Extract order_id from request body for validation
-        order_id = body.get('order_id')
-        payment_amount = body.get('amount')
-        
-        # Validate order ownership if order_id is provided
-        order_valid, order_data, order_error = validate_order_ownership(order_id, user_email, locale=locale)
-        if not order_valid:
-            return order_error
-        
-        # Validate payment amount against order total
-        amount_valid, amount_error = validate_payment_amount(payment_amount, order_data, locale=locale)
-        if not amount_valid:
-            return amount_error
-        
+        if not is_authorized:
+            return error_response
+
+        # 2. Get order_id from path parameters
+        path_params = event.get('pathParameters') or {}
+        order_id = path_params.get('id') or path_params.get('order_id')
+        if not order_id:
+            return create_error_response(400, 'Order ID is required')
+
+        # Parse request body for optional method
+        body = _parse_body(event)
+        method = body.get('method', DEFAULT_METHOD) if body else DEFAULT_METHOD
+
+        if method not in SUPPORTED_METHODS:
+            return create_error_response(400, f'Unsupported payment method: {method}', {
+                'supported_methods': list(SUPPORTED_METHODS),
+            })
+
+        # 3. Resolve member record from email
+        member_record, member_error = _resolve_member_id(user_email)
+        if member_error:
+            return member_error
+
+        member_id = member_record['member_id']
+
+        # Determine admin status
+        admin = _is_admin(user_roles, user_email)
+
+        # 4. Load order by order_id
+        order = _get_order(order_id)
+        if not order:
+            return create_error_response(404, 'Order not found')
+
+        # 5. Verify ownership
+        order_member_id = order.get('member_id')
+
+        if order_member_id != member_id and not admin:
+            # For club-scoped orders, also check delegate access
+            delegates = order.get('delegates', {})
+            is_delegate = member_id in [
+                delegates.get('primary_member_id'),
+                delegates.get('secondary_member_id'),
+            ]
+            if not is_delegate:
+                return create_error_response(
+                    403, 'Access denied: not the order owner'
+                )
+
+        # 6. Verify order status is "submitted"
+        current_status = order.get('status', 'draft')
+        if current_status != 'submitted':
+            return create_error_response(
+                409,
+                f'Cannot pay order in "{current_status}" status. '
+                f'Order must be submitted first.'
+            )
+
+        # 7. Calculate outstanding balance
+        total_amount = _calculate_order_total(order)
+        total_paid = Decimal(str(order.get('total_paid', 0)))
+        outstanding = total_amount - total_paid
+
+        if outstanding <= 0:
+            return create_error_response(400, 'No outstanding balance', {
+                'total_amount': float(total_amount),
+                'total_paid': float(total_paid),
+                'outstanding': float(outstanding),
+            })
+
+        # Format amount for Mollie (2 decimal string)
+        amount_str = f"{outstanding:.2f}"
+
+        # Build payment description
+        source_id = order.get('source_id', 'unknown')
+        if source_id == 'webshop':
+            description = f"H-DCN Webshop - Order {order_id[:8]}"
+        else:
+            description = f"H-DCN Event Booking - Order {order_id[:8]}"
+
+        # Build redirect URL
+        redirect_url = f"{REDIRECT_BASE_URL}?order_id={order_id}&payment=complete"
+
+        # 8. Create Mollie payment
+        try:
+            mollie_result = create_payment(
+                amount=amount_str,
+                description=description,
+                redirect_url=redirect_url,
+                webhook_url=WEBHOOK_URL if WEBHOOK_URL else None,
+                method=method if method != 'banktransfer' else None,
+            )
+        except MollieError as e:
+            logger.error(f"Mollie API error for order {order_id}: {e.reason}")
+            return create_error_response(502, 'Payment provider error', {
+                'details': {
+                    'provider': 'mollie',
+                    'reason': e.reason,
+                },
+            })
+
+        # 9. Store payment record in Payments table
         payment_id = str(uuid.uuid4())
-        payment = {
-            'payment_id': payment_id, 
-            'payment_date': datetime.now().isoformat(),
-            'user_email': user_email,  # Link payment to authenticated user
-            'created_by': user_email,  # Track who created the payment
-            **body
-        }
-        
-        # Add order information if order was validated
-        if order_data:
-            payment['verified_order_id'] = order_id
-            payment['order_user_email'] = order_data.get('user_email')
-            payment['order_member_id'] = order_data.get('member_id')
-        
-        payments_table.put_item(Item=payment)
-        
-        # Log payment creation for comprehensive audit trail
-        log_payment_audit('CREATE', payment_id, user_email, user_roles, {
+        now = datetime.now(timezone.utc).isoformat()
+
+        payment_record = {
+            'payment_id': payment_id,
             'order_id': order_id,
-            'payment_amount': payment_amount,
-            'order_total': order_data.get('total_amount') if order_data else None,
-            'amount_validated': order_data is not None,
-            'verified_order': order_data is not None,
-            'payment_method': body.get('payment_method', 'unknown'),
-            'order_member_id': order_data.get('member_id') if order_data else None,
-            'is_admin_create': is_admin_authorized
-        })
-        
+            'source_id': source_id,
+            'member_id': member_id,
+            'amount': outstanding,
+            'status': 'pending',
+            'provider': 'mollie',
+            'method': method,
+            'mollie_payment_id': mollie_result['mollie_payment_id'],
+            'created_at': now,
+        }
+
+        payments_table.put_item(Item=payment_record)
+        logger.info(
+            f"Created payment {payment_id} for order {order_id}, "
+            f"amount={amount_str} EUR, "
+            f"mollie_id={mollie_result['mollie_payment_id']}, "
+            f"source_id={source_id}"
+        )
+
+        log_successful_access(user_email, user_roles, 'create_payment')
+
+        # 10. Return checkout URL to frontend
         return create_success_response({
-            'payment_id': payment_id, 
-            'message': 'Payment created successfully'
-        })
-        
-    except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body',
-                                     error_key='invalid_input', locale=locale)
+            'payment_id': payment_id,
+            'checkout_url': mollie_result['checkout_url'],
+            'amount': float(outstanding),
+            'method': method,
+            'mollie_payment_id': mollie_result['mollie_payment_id'],
+        }, status_code=201)
+
     except Exception as e:
-        print(f"Error creating payment: {str(e)}")
-        return create_error_response(500, 'Internal server error',
-                                     error_key='internal_error', locale=locale)
+        logger.error(f"Error in create_payment handler: {str(e)}", exc_info=True)
+        return create_error_response(500, 'Internal server error')

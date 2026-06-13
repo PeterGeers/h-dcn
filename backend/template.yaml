@@ -1106,6 +1106,33 @@ Resources:
             Path: /booking/{id}/submit
             Method: post
 
+  # --- Unified Order: Create Payment (event booking + webshop) ---
+  CreatePaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/create_payment
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_WEBHOOK_URL: ""
+          PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl/booking"
+      Events:
+        CreatePayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/pay
+            Method: post
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
