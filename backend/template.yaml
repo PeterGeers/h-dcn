@@ -1133,6 +1133,50 @@ Resources:
             Path: /booking/{id}/pay
             Method: post
 
+  # --- Unified Order: Lock Orders (admin — bulk lock by source_id) ---
+  LockOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/lock_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        LockOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/booking/lock
+            Method: post
+
+  # --- Unified Order: Unlock Order (admin — single order unlock) ---
+  UnlockOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/lock_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        UnlockOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/booking/{id}/unlock
+            Method: post
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
