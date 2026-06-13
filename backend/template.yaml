@@ -1082,6 +1082,30 @@ Resources:
             Path: /booking
             Method: get
 
+  # --- Unified Order: Submit Order (event booking + webshop) ---
+  SubmitOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/submit_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+      Events:
+        SubmitOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/submit
+            Method: post
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:

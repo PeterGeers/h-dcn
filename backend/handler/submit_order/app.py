@@ -1,18 +1,31 @@
 """
-Unified submit_order handler for H-DCN orders.
+Unified order submission handler.
+Handles both webshop and event-scoped orders.
+Replaces: submit_presmeet_booking + webshop submit_order.
 
-POST /orders/{id}/submit — Validates and submits a draft order:
-1. Validate state transition draft→submitted via order_state_machine
-2. Generate human-readable order_number via number_generator
-3. For each item:
-   - Verify product_id exists in Producten table
-   - If variant_id present: verify variant exists and variant.parent_id == product_id
-   - Validate required item_fields_data against product's order_item_fields (strict)
-   - Validate purchase_rules server-side
-4. On success: set status to "submitted", store order_number, record submitted_at
-5. On failure: return 400 with structured errors [{item_index, field, message}]
+POST /orders/{order_id}/submit
 
-Requirements: 1.2, 3.1, 3.2, 3.3, 5.5, 6.3, 6.4, 6.5
+Logic:
+  1. Extract credentials, resolve member_id from email
+  2. Get order_id from path parameters
+  3. Load order by order_id from Orders table
+  4. Verify ownership: order's member_id must match authenticated member (or admin)
+  5. Determine source: read source_id from the order record
+
+  6. If source_id is an event UUID:
+     - Load event record → get product_ids[] and constraints[]
+     - Load products by IDs from Producten table
+     - Apply event constraints validation (validate_submission)
+     - Query all orders for this source via event-member-index
+
+  7. If source_id == "webshop":
+     - Load products from catalog (only ones in order items)
+     - No event constraints to apply
+     - Basic validation only (items have valid product_ids, required fields)
+
+  8. Validate order items against product definitions
+  9. If validation passes: update order status to "submitted", increment version
+  10. If validation fails: return 400 with validation errors
 """
 
 import json
@@ -22,24 +35,30 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import boto3
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Key, Attr
 
-# Import from shared auth layer
 try:
     from shared.auth_utils import (
         extract_user_credentials,
         validate_permissions_with_regions,
-        cors_headers,
-        handle_options_request,
-        create_error_response,
         create_success_response,
+        create_error_response,
+        handle_options_request,
         log_successful_access,
     )
-    from shared.order_state_machine import transition_order, InvalidTransitionError
-    from shared.number_generator import generate_order_number, CounterWriteError
-    from shared.item_fields_validator import validate_item_fields
-    from shared.purchase_rules_engine import validate_purchase_rules as check_purchase_rules
-    print("Using shared auth layer for submit_order")
+    from shared.event_access import has_event_access
+    try:
+        from shared.event_validation import (
+            validate_item_fields,
+            validate_purchase_rules,
+            validate_submission,
+        )
+    except ImportError:
+        from shared.presmeet_validation import (
+            validate_item_fields,
+            validate_purchase_rules,
+            validate_submission,
+        )
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
@@ -51,162 +70,47 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # DynamoDB resources
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
+events_table = dynamodb.Table(os.environ.get('EVENTS_TABLE_NAME', 'Events'))
+members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
-counters_table = dynamodb.Table(os.environ.get('COUNTERS_TABLE_NAME', 'Counters'))
-memberships_table_name = os.environ.get('MEMBERSHIPS_TABLE_NAME', 'Memberships')
-memberships_table = dynamodb.Table(memberships_table_name)
+
+GSI_NAME = 'event-member-index'
 
 
-def _json_serialize(obj):
-    """Custom JSON serializer for Decimal objects from DynamoDB."""
-    if isinstance(obj, Decimal):
+def convert_decimals(obj):
+    """Convert Decimal objects to int or float for JSON serialization."""
+    if isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    elif isinstance(obj, Decimal):
         if obj % 1 == 0:
             return int(obj)
-        return float(obj)
-    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+        else:
+            return float(obj)
+    else:
+        return obj
 
 
-def lambda_handler(event, context):
-    """Main handler for POST /orders/{id}/submit."""
+def _resolve_member_id(user_email):
+    """
+    Resolve member_id from the Members table by email scan.
+    Returns (member_record, error_response) tuple.
+    """
     try:
-        if event.get('httpMethod') == 'OPTIONS':
-            return handle_options_request()
-
-        # Authentication
-        user_email, user_roles, auth_error = extract_user_credentials(event)
-        if auth_error:
-            return auth_error
-
-        # Access check: any authenticated member or admin
-        is_admin, _, _ = validate_permissions_with_regions(
-            user_roles, ['products_create'], user_email, None
+        response = members_table.scan(
+            FilterExpression=Attr('email').eq(user_email),
+            ProjectionExpression='member_id, club_id, member_type, allowed_events'
         )
-        has_member_access = 'hdcnLeden' in user_roles
-        has_presmeet_access = any(
-            r in user_roles for r in ('Regio_Pressmeet', 'Regio_All')
-        )
-
-        if not is_admin and not has_member_access and not has_presmeet_access:
-            return create_error_response(
-                403, 'Access denied: Requires webshop or PresMeet access'
-            )
-
-        log_successful_access(user_email, user_roles, 'submit_order')
-
-        # Extract order_id from path parameters
-        path_params = event.get('pathParameters') or {}
-        order_id = path_params.get('id')
-
-        if not order_id:
-            return create_error_response(400, 'Order ID is required')
-
-        # Fetch order
-        order = _get_order(order_id)
-        if not order:
-            return create_error_response(404, 'Order not found', {
-                'order_id': order_id,
-            })
-
-        # Validate state transition draft→submitted via state machine
-        current_status = order.get('status', 'draft')
-        try:
-            transition_order(current_status, 'submitted')
-        except InvalidTransitionError as e:
-            return create_error_response(400, str(e), {
-                'current': e.current,
-                'target': e.target,
-                'allowed': e.allowed,
-            })
-
-        # Validate all order items
-        items = order.get('items', [])
+        items = response.get('Items', [])
         if not items:
-            return create_error_response(
-                400, 'Cannot submit order with no items'
-            )
-
-        validation_errors = _validate_order_items(items, order)
-
-        if validation_errors:
-            return {
-                'statusCode': 400,
-                'headers': cors_headers(),
-                'body': json.dumps({
-                    'error': 'Validation failed',
-                    'errors': validation_errors,
-                    'error_count': len(validation_errors),
-                }, default=_json_serialize),
-            }
-
-        # Generate order number
-        try:
-            order_number = generate_order_number(counters_table)
-        except CounterWriteError as e:
-            logger.error(f"Failed to generate order number: {e}")
-            return create_error_response(
-                500, 'Failed to generate order number. Please retry.'
-            )
-
-        # All validations passed — submit the order
-        now = datetime.now(timezone.utc).isoformat()
-        history_entry = {
-            'from': current_status,
-            'to': 'submitted',
-            'at': now,
-            'by': user_email,
-            'source': 'user',
-        }
-
-        updated = orders_table.update_item(
-            Key={'order_id': order_id},
-            UpdateExpression=(
-                'SET #status = :submitted, submitted_at = :now, '
-                'updated_at = :now, order_number = :order_number, '
-                'status_history = list_append('
-                'if_not_exists(status_history, :empty_list), :history_entry)'
-            ),
-            ConditionExpression=Attr('status').eq('draft'),
-            ExpressionAttributeNames={'#status': 'status'},
-            ExpressionAttributeValues={
-                ':submitted': 'submitted',
-                ':now': now,
-                ':order_number': order_number,
-                ':history_entry': [history_entry],
-                ':empty_list': [],
-            },
-            ReturnValues='ALL_NEW',
-        )
-
-        updated_order = updated.get('Attributes', {})
-
-        logger.info(
-            f"Order {order_id} submitted successfully by {user_email} "
-            f"(order_number={order_number})"
-        )
-
-        return create_success_response({
-            'order_id': order_id,
-            'order_number': order_number,
-            'status': 'submitted',
-            'submitted_at': now,
-        })
-
-    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
-        return create_error_response(
-            409, 'Order status was modified concurrently. Please retry.'
-        )
-    except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+            return None, create_error_response(404, 'Member record not found')
+        return items[0], None
     except Exception as e:
-        logger.error(
-            f"Error submitting order "
-            f"{(event.get('pathParameters') or {}).get('id', 'unknown')}: "
-            f"{str(e)}",
-            exc_info=True,
-        )
-        return create_error_response(500, 'Internal server error')
+        logger.error(f"Error resolving member: {str(e)}")
+        return None, create_error_response(500, 'Failed to resolve member record')
 
 
 def _get_order(order_id):
@@ -219,151 +123,236 @@ def _get_order(order_id):
         return None
 
 
-def _validate_order_items(items, order):
-    """
-    Validate all items in an order for submission.
-
-    For each item:
-    - Verify product_id exists in Producten table
-    - If variant_id present: verify variant exists and parent_id matches product_id
-    - Validate required item_fields_data against product's order_item_fields (strict)
-    - Validate purchase_rules server-side
-
-    Returns list of error dicts [{item_index, field, message}], empty if valid.
-    """
-    errors = []
-
-    for idx, item in enumerate(items):
-        product_id = item.get('product_id')
-        variant_id = item.get('variant_id')
-        quantity = int(item.get('quantity', 1))
-
-        # Validate product_id is present
-        if not product_id:
-            errors.append({
-                'item_index': idx,
-                'field': 'product_id',
-                'message': 'Product ID is required',
-            })
-            continue
-
-        # Fetch product from Producten table
-        product = _get_product(product_id)
-        if not product:
-            errors.append({
-                'item_index': idx,
-                'field': 'product_id',
-                'message': f'Product not found: {product_id}',
-            })
-            continue
-
-        # Validate variant_id if present
-        if variant_id:
-            variant = _get_product(variant_id)
-            if not variant:
-                errors.append({
-                    'item_index': idx,
-                    'field': 'variant_id',
-                    'message': f'Variant not found: {variant_id}',
-                })
-            elif variant.get('parent_id') != product_id:
-                errors.append({
-                    'item_index': idx,
-                    'field': 'variant_id',
-                    'message': (
-                        f'Variant {variant_id} does not belong to '
-                        f'product {product_id}'
-                    ),
-                })
-
-        # Validate item_fields_data if product has order_item_fields (strict)
-        order_item_fields = product.get('order_item_fields')
-        if order_item_fields:
-            item_fields_data = item.get('item_fields_data')
-            field_errors = _validate_item_fields_strict(
-                item_fields_data, order_item_fields, quantity, idx
-            )
-            errors.extend(field_errors)
-
-        # Validate purchase_rules server-side
-        purchase_rules = product.get('purchase_rules')
-        if purchase_rules:
-            rule_error = _validate_purchase_rules_for_item(
-                purchase_rules, product_id, quantity, order
-            )
-            if rule_error:
-                errors.append({
-                    'item_index': idx,
-                    'field': 'purchase_rules',
-                    'message': rule_error,
-                })
-
-    return errors
-
-
-def _get_product(product_id):
-    """Fetch a product/variant record by product_id. Returns item or None."""
+def _get_event(event_id):
+    """Load an event record by event_id. Returns None if not found."""
     try:
-        response = producten_table.get_item(Key={'product_id': product_id})
+        response = events_table.get_item(Key={'event_id': event_id})
         return response.get('Item')
-    except Exception as e:
-        logger.error(f"Error fetching product {product_id}: {e}")
+    except Exception:
         return None
 
 
-def _validate_item_fields_strict(item_fields_data, order_item_fields, quantity, item_index):
+def _get_products_by_ids(product_ids):
     """
-    Validate item_fields_data against the product's order_item_fields definition.
-
-    Uses the shared validate_item_fields for strict validation (all errors returned).
-    Converts validation errors into the submit_order error format:
-    [{item_index, field, message}]
+    Load products by a list of product_ids from Producten table.
+    Returns dict mapping product_id -> product record.
     """
-    errors = []
+    products = {}
+    for product_id in product_ids:
+        try:
+            response = producten_table.get_item(Key={'product_id': product_id})
+            item = response.get('Item')
+            if item:
+                products[product_id] = item
+        except Exception as e:
+            logger.warning(f"Error fetching product {product_id}: {e}")
+    return products
 
-    # Use strict shared validator (returns list of all errors)
-    field_errors = validate_item_fields(order_item_fields, item_fields_data, quantity)
 
-    for err in field_errors:
-        errors.append({
-            'item_index': item_index,
-            'field': err.get('field_id', 'item_fields_data'),
-            'message': err.get('message', 'Validation failed'),
-        })
+def _get_products_for_items(items):
+    """
+    Load products referenced by order items.
+    Returns dict mapping product_id -> product record.
+    """
+    product_ids = set()
+    for item in items:
+        pid = item.get('product_id')
+        if pid:
+            product_ids.add(pid)
+    return _get_products_by_ids(list(product_ids))
 
+
+def _query_all_orders_for_source(source_id):
+    """Query GSI with source_id only (PK-only, returns all orders for this source)."""
+    items = []
+    response = orders_table.query(
+        IndexName=GSI_NAME,
+        KeyConditionExpression=Key('source_id').eq(source_id)
+    )
+    items.extend(response.get('Items', []))
+    while response.get('LastEvaluatedKey'):
+        response = orders_table.query(
+            IndexName=GSI_NAME,
+            KeyConditionExpression=Key('source_id').eq(source_id),
+            ExclusiveStartKey=response['LastEvaluatedKey']
+        )
+        items.extend(response.get('Items', []))
+    return items
+
+
+def _is_admin(user_roles, user_email):
+    """Check if user has admin-level access."""
+    is_authorized, _, _ = validate_permissions_with_regions(
+        user_roles, ['products_create'], user_email, None
+    )
+    return is_authorized
+
+
+def _validate_webshop_items(items, products):
+    """
+    Basic validation for webshop orders:
+    - Items have valid product_ids that exist
+    - Required fields are present (via validate_item_fields)
+    """
+    errors = validate_item_fields(items, products)
+    rule_errors = validate_purchase_rules(items, products)
+    errors.extend(rule_errors)
     return errors
 
 
-def _validate_purchase_rules_for_item(purchase_rules, product_id, quantity, order):
-    """
-    Server-side check of purchase_rules for a single item.
+def lambda_handler(event, context):
+    """POST /orders/{order_id}/submit"""
+    try:
+        # Handle OPTIONS (CORS preflight)
+        if event.get('httpMethod') == 'OPTIONS':
+            return handle_options_request()
 
-    Uses the purchase_rules_engine orchestrator which queries DynamoDB for
-    existing member/club counts.
+        # 1. Extract user credentials
+        user_email, user_roles, auth_error = extract_user_credentials(event)
+        if auth_error:
+            return auth_error
 
-    Returns error message string if violated, None if passes.
-    """
-    member_id = order.get('member_id')
-    club_id = order.get('club_id')
+        # Validate basic permissions (any authenticated member)
+        is_authorized, error_response, _ = validate_permissions_with_regions(
+            user_roles, ['events_read'], user_email, None
+        )
+        if not is_authorized:
+            return error_response
 
-    context = {
-        'quantity': quantity,
-        'product_id': product_id,
-        'member_id': member_id or '',
-        'club_id': club_id,
-        'orders_table': orders_table,
-        'memberships_table': memberships_table,
-    }
+        # 2. Get order_id from path parameters
+        path_params = event.get('pathParameters') or {}
+        order_id = path_params.get('id') or path_params.get('order_id')
+        if not order_id:
+            return create_error_response(400, 'Order ID is required')
 
-    violation = check_purchase_rules(purchase_rules, context)
-    if violation:
-        details = violation.get('details', {})
-        rule = details.get('rule', 'unknown')
-        limit = details.get('limit', '?')
-        current = details.get('current_total', details.get('remaining_allowed', '?'))
-        return (
-            f"Purchase rule violated: {rule} "
-            f"(limit={limit}, current={current}, requested={quantity})"
+        # 3. Resolve member record from email
+        member_record, member_error = _resolve_member_id(user_email)
+        if member_error:
+            return member_error
+
+        member_id = member_record['member_id']
+
+        # 4. Load order by order_id
+        order = _get_order(order_id)
+        if not order:
+            return create_error_response(404, 'Order not found')
+
+        # 5. Verify ownership: order's member_id must match authenticated member (or admin)
+        order_member_id = order.get('member_id')
+        admin = _is_admin(user_roles, user_email)
+
+        if order_member_id != member_id and not admin:
+            # For club-scoped orders, also check delegate access
+            delegates = order.get('delegates', {})
+            is_delegate = member_id in [
+                delegates.get('primary_member_id'),
+                delegates.get('secondary_member_id'),
+            ]
+            if not is_delegate:
+                return create_error_response(403, 'Access denied: not the order owner')
+
+        # 6. Verify order is in draft status
+        current_status = order.get('status', 'draft')
+        if current_status != 'draft':
+            return create_error_response(
+                409, f'Cannot submit order in "{current_status}" status'
+            )
+
+        # 7. Check items exist
+        items = order.get('items', [])
+        if not items:
+            return create_error_response(400, 'Cannot submit order with no items')
+
+        # 8. Determine source and validate accordingly
+        source_id = order.get('source_id')
+        if not source_id:
+            return create_error_response(400, 'Order missing source_id')
+
+        validation_errors = []
+
+        if source_id == 'webshop':
+            # --- Webshop source ---
+            if 'hdcnLeden' not in user_roles and not admin:
+                return create_error_response(403, 'Member access required for webshop')
+
+            # Load products referenced by order items
+            products = _get_products_for_items(items)
+
+            # Basic validation: item fields + purchase rules
+            validation_errors = _validate_webshop_items(items, products)
+
+        else:
+            # --- Event source (UUID) ---
+            event_record = _get_event(source_id)
+            if not event_record:
+                return create_error_response(404, 'Event not found')
+
+            # Check event access
+            if not has_event_access(member_id, source_id) and not admin:
+                return create_error_response(403, 'Event access required')
+
+            # Check event status
+            event_status = event_record.get('status')
+            if event_status != 'open':
+                return create_error_response(403, 'Registration is not open')
+
+            # Load products via event's product_ids[]
+            event_product_ids = event_record.get('product_ids', [])
+            products = _get_products_by_ids(event_product_ids)
+
+            # Query all orders for this source for constraint validation
+            all_source_orders = _query_all_orders_for_source(source_id)
+
+            # Full event validation: fields + purchase rules + event constraints
+            validation_errors = validate_submission(
+                order, event_record, products, all_source_orders
+            )
+
+        # 9. If validation fails: return 400 with errors
+        if validation_errors:
+            return create_error_response(
+                400,
+                'Validation failed',
+                {'errors': convert_decimals(validation_errors)}
+            )
+
+        # 10. Validation passed — submit the order with optimistic locking (version check)
+        now = datetime.now(timezone.utc).isoformat()
+        current_version = order.get('version', 1)
+
+        try:
+            updated = orders_table.update_item(
+                Key={'order_id': order_id},
+                UpdateExpression=(
+                    'SET #status = :submitted, submitted_at = :now, '
+                    'updated_at = :now, version = :new_version'
+                ),
+                ConditionExpression=(
+                    Attr('status').eq('draft') & Attr('version').eq(current_version)
+                ),
+                ExpressionAttributeNames={'#status': 'status'},
+                ExpressionAttributeValues={
+                    ':submitted': 'submitted',
+                    ':now': now,
+                    ':new_version': current_version + 1,
+                },
+                ReturnValues='ALL_NEW',
+            )
+        except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+            return create_error_response(
+                409, 'Order was modified concurrently. Please reload and retry.'
+            )
+
+        updated_order = updated.get('Attributes', {})
+
+        log_successful_access(user_email, user_roles, 'submit_order')
+        logger.info(
+            f"Order {order_id} submitted by {user_email} "
+            f"(source={source_id}, version={current_version + 1})"
         )
 
-    return None
+        return create_success_response(convert_decimals(updated_order))
+
+    except Exception as e:
+        logger.error(f"Error in submit_order handler: {str(e)}", exc_info=True)
+        return create_error_response(500, 'Internal server error')
