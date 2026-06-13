@@ -1199,6 +1199,48 @@ Resources:
             Path: /admin/booking/{id}/unlock
             Method: post
 
+  # --- Unified Order: Manage Event Access (admin — grant/revoke access) ---
+  ManageEventAccessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/manage_event_access
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        ManageEventAccess:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/access
+            Method: post
+
+  # --- Unified Order: List Event Access (admin — list members with access) ---
+  ListEventAccessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/manage_event_access
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        ListEventAccess:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/access
+            Method: get
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
