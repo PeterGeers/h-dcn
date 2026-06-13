@@ -60,14 +60,14 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Access check: admin OR webshop member (hdcnLeden / Regio_Pressmeet / Regio_All)
+        # Access check: admin OR member (hdcnLeden / event_participant / Regio_All)
         is_admin_authorized, _, _ = validate_permissions_with_regions(
             user_roles, ['products_create'], user_email, None
         )
         has_webshop_access = 'hdcnLeden' in user_roles
-        has_presmeet_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All'))
+        has_event_booking_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant'))
 
-        if not is_admin_authorized and not has_webshop_access and not has_presmeet_access:
+        if not is_admin_authorized and not has_webshop_access and not has_event_booking_access:
             return create_error_response(403, 'Access denied: Requires webshop or event access')
 
         log_successful_access(user_email, user_roles, 'update_order_items')

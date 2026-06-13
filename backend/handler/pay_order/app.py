@@ -46,7 +46,7 @@ try:
         create_success_response,
         log_successful_access,
     )
-    from shared.club_identity import get_club_id
+    from shared.event_access import get_club_id
     from shared.mollie_client import create_payment, MollieError
     from shared.stock_reservation import (
         reserve_stock_for_order,
@@ -92,16 +92,16 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Access check: any authenticated member (hdcnLeden) or admin
+        # Access check: any authenticated member (hdcnLeden) or event participant or admin
         is_admin, _, _ = validate_permissions_with_regions(
             user_roles, ['Products_CRUD'], user_email, None
         )
         has_member_access = 'hdcnLeden' in user_roles
-        has_presmeet_access = any(
-            r in user_roles for r in ('Regio_Pressmeet', 'Regio_All')
+        has_event_booking_access = any(
+            r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant')
         )
 
-        if not is_admin and not has_member_access and not has_presmeet_access:
+        if not is_admin and not has_member_access and not has_event_booking_access:
             return create_error_response(403, 'Access denied: Requires membership access')
 
         log_successful_access(user_email, user_roles, 'pay_order')
@@ -189,7 +189,7 @@ def lambda_handler(event, context):
 
         # Build redirect URL based on order type
         if event_id:
-            redirect_url = f"{REDIRECT_BASE_URL}/presmeet?order_id={order_id}&payment=complete"
+            redirect_url = f"{REDIRECT_BASE_URL}/booking?order_id={order_id}&payment=complete"
         else:
             redirect_url = f"{REDIRECT_BASE_URL}/webshop?order_id={order_id}&payment=complete"
 

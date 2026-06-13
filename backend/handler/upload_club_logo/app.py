@@ -16,7 +16,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.club_identity import get_club_id
+    from shared.event_access import get_club_id
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")

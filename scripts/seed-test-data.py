@@ -55,7 +55,6 @@ TEST_USERS = [
             "Events_Read",
             "Events_Export",
             "Regio_All",
-            "Regio_Pressmeet",
             "hdcnLeden",
         ],
     },
@@ -64,8 +63,7 @@ TEST_USERS = [
         "email": "peter+testlid@pgeers.nl",
         "groups": [
             "hdcnLeden",
-            "Regio_Pressmeet",
-            "club_test_presmeet",
+            "event_participant",
         ],
     },
     {
@@ -78,10 +76,10 @@ TEST_USERS = [
         ],
     },
     {
-        "username": "test-presmeet",
+        "username": "test-event-participant",
         "email": "pjageers+testpresmeet@gmail.com",
         "groups": [
-            "Regio_Pressmeet",
+            "event_participant",
             "hdcnLeden",
         ],
     },
@@ -135,6 +133,8 @@ def generate_seed_data() -> dict:
             "status": "Actief",
             "lidmaatschap": "Gewoon lid",
             "telefoon": "+31600000001",
+            "member_type": "hdcn_member",
+            "allowed_events": ["SEED-events-001", "SEED-events-003"],
         },
         {
             "member_id": "SEED-members-002",
@@ -145,6 +145,8 @@ def generate_seed_data() -> dict:
             "status": "Actief",
             "lidmaatschap": "Gewoon lid",
             "telefoon": "+31600000002",
+            "member_type": "hdcn_member",
+            "allowed_events": ["SEED-events-001"],
         },
         {
             "member_id": "SEED-members-003",
@@ -155,6 +157,8 @@ def generate_seed_data() -> dict:
             "status": "Inactief",
             "lidmaatschap": "Erelid",
             "telefoon": "+31600000003",
+            "member_type": "hdcn_member",
+            "allowed_events": [],
         },
         {
             "member_id": "SEED-members-004",
@@ -165,6 +169,8 @@ def generate_seed_data() -> dict:
             "status": "Inactief",
             "lidmaatschap": "Gewoon lid",
             "telefoon": "+31600000004",
+            "member_type": "hdcn_member",
+            "allowed_events": [],
         },
         {
             "member_id": "SEED-members-005",
@@ -175,6 +181,9 @@ def generate_seed_data() -> dict:
             "status": "Actief",
             "lidmaatschap": "Gewoon lid",
             "telefoon": "+31600000005",
+            "member_type": "event_participant",
+            "allowed_events": ["SEED-events-001", "SEED-events-002"],
+            "club_id": "test-external-club",
         },
     ]
 

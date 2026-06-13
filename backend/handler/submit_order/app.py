@@ -47,18 +47,11 @@ try:
         log_successful_access,
     )
     from shared.event_access import has_event_access
-    try:
-        from shared.event_validation import (
-            validate_item_fields,
-            validate_purchase_rules,
-            validate_submission,
-        )
-    except ImportError:
-        from shared.presmeet_validation import (
-            validate_item_fields,
-            validate_purchase_rules,
-            validate_submission,
-        )
+    from shared.event_validation import (
+        validate_item_fields,
+        validate_purchase_rules,
+        validate_submission,
+    )
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler

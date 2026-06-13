@@ -8,7 +8,7 @@ import sys
 import importlib
 
 # Ensure the auth layer path is available for all tests, so that
-# handlers importing from `shared.presmeet_validation` (etc.) can resolve correctly.
+# handlers importing from `shared.event_validation` (etc.) can resolve correctly.
 # This must come before the backend/shared/ path to take priority.
 _layers_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'layers', 'auth-layer', 'python'))
 if _layers_path not in sys.path:

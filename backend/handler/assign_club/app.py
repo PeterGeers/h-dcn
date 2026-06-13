@@ -21,7 +21,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.club_identity import get_club_id, is_presmeet_admin, has_presmeet_access
+    from shared.event_access import get_club_id, is_presmeet_admin, has_presmeet_access
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")

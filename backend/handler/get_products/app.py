@@ -54,9 +54,9 @@ def lambda_handler(event, context):
 
         # Access control: user must have at least one qualifying role
         has_webshop_access = 'hdcnLeden' in user_roles
-        has_presmeet_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All'))
+        has_event_booking_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant'))
 
-        if not has_webshop_access and not has_presmeet_access:
+        if not has_webshop_access and not has_event_booking_access:
             return create_error_response(403, 'No product access',
                 details={'error': 'access_denied',
                          'details': {'message': 'No qualifying role for product access'}})

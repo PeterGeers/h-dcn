@@ -40,8 +40,8 @@ def _json_serialize(obj):
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
-def _has_presmeet_admin_access(user_roles):
-    """Check if user has Webshop_Management + (Regio_Pressmeet or Regio_All)."""
+def _has_order_admin_access(user_roles):
+    """Check if user has Webshop_Management + event/region access."""
     has_webshop = 'Webshop_Management' in user_roles
     has_regio = 'Regio_Pressmeet' in user_roles or 'Regio_All' in user_roles
     return has_webshop and has_regio
@@ -58,8 +58,8 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Validate permissions - requires Webshop_Management + (Regio_Pressmeet or Regio_All)
-        if not _has_presmeet_admin_access(user_roles):
+        # Validate permissions - requires Webshop_Management + event/region admin
+        if not _has_order_admin_access(user_roles):
             return create_error_response(
                 403,
                 'Access denied: Requires Webshop_Management + Regio_Pressmeet or Regio_All'

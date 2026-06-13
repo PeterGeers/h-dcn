@@ -117,17 +117,17 @@ Parameters:
     Description: "Google OAuth 2.0 Client Secret for Workspace SSO"
     Default: ""
 
-  # PresMeet Configuration
+  # Mollie Configuration
   MollieApiKey:
     Type: String
     NoEcho: true
-    Description: "Mollie API key for PresMeet payment processing"
+    Description: "Mollie API key for payment processing"
     Default: ""
 
   S3ReportsBucket:
     Type: String
     Default: "h-dcn-reports"
-    Description: "S3 bucket name for PresMeet report storage"
+    Description: "S3 bucket name for report storage"
 
   StockMovementsTableName:
     Type: String
@@ -464,6 +464,31 @@ Resources:
                   - cognito-idp:AdminListGroupsForUser
                 Resource:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
+        - PolicyName: S3ReportsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${S3ReportsBucket}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${S3ReportsBucket}"
+        - PolicyName: S3LogoUploadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
 
   # IAM Role for Cognito Admin access
   CognitoAdminRole:
@@ -753,7 +778,7 @@ Resources:
             Method: delete
 
   # Payment Functions
-  CreatePaymentFunction:
+  AdminCreatePaymentFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: handler/create_payment
@@ -1290,8 +1315,8 @@ Resources:
             Path: /orders/{id}/items
             Method: put
 
-  # --- Unified Order: Submit Order ---
-  SubmitOrderFunction:
+  # --- Webshop: Submit Order ---
+  WebshopSubmitOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: handler/submit_order
@@ -1640,185 +1665,14 @@ Resources:
             Method: get
 
   # ============================================================
-  # PresMeet Lambda Functions and IAM Role
+  # Event Booking Support Functions (Mollie webhook, club onboarding)
   # ============================================================
 
-  # IAM Role for PresMeet Lambda functions (DynamoDB + S3 reports + Cognito read)
-  PresMeetRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
-      Policies:
-        - PolicyName: PresMeetDynamoDBAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Scan
-                  - dynamodb:Query
-                Resource:
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CartsTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CartsTable}/index/*"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PaymentsTable}/index/*"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}/index/*"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
-        - PolicyName: CountersTableAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:UpdateItem
-                  - dynamodb:GetItem
-                Resource:
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
-        - PolicyName: PresMeetS3ReportsAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                  - s3:DeleteObject
-                Resource:
-                  - !Sub "arn:aws:s3:::${S3ReportsBucket}/presmeet/*"
-              - Effect: Allow
-                Action:
-                  - s3:ListBucket
-                Resource:
-                  - !Sub "arn:aws:s3:::${S3ReportsBucket}"
-                Condition:
-                  StringLike:
-                    "s3:prefix": "presmeet/*"
-        - PolicyName: PresMeetCognitoReadAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - cognito-idp:AdminGetUser
-                  - cognito-idp:AdminListGroupsForUser
-                Resource:
-                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
-        - PolicyName: PresMeetLogoUploadAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource:
-                  - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
 
 
 
-  # --- PresMeet v3: Create Payment ---
-  PresMeetCreatePaymentFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/presmeet_create_payment
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
-          PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl/presmeet/payment/return"
-          MOLLIE_WEBHOOK_URL: !Sub "https://i3if973sp5.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mollie-webhook"
-      Events:
-        CreatePresMeetPayment:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/orders/{id}/pay
-            Method: post
 
-  # --- PresMeet v3: Generate Report ---
-  PresMeetGenerateReportFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/presmeet_generate_report
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Timeout: 30
-      MemorySize: 256
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-          S3_REPORTS_BUCKET: !Ref S3ReportsBucket
-      Events:
-        GeneratePresMeetReport:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/reports/{type}
-            Method: get
-
-  # --- PresMeet v3: Manage Delegates ---
-  PresMeetManageDelegatesFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: handler/presmeet_manage_delegates
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
-      Environment:
-        Variables:
-          ORDERS_TABLE_NAME: !Ref OrdersTable
-          EVENTS_TABLE_NAME: !Ref EventsTable
-          PRODUCTEN_TABLE_NAME: !Ref Table
-          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
-          MEMBERS_TABLE_NAME: !Ref MembersTable
-          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
-      Events:
-        ManageDelegates:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/orders/{id}/delegates
-            Method: post
-
-  # --- PresMeet: Mollie Webhook (PUBLIC - no Cognito auth) ---
+  # --- Mollie Webhook (PUBLIC - no Cognito auth) ---
   # NOTE: This endpoint has no Cognito authorizer. Authentication is handled
   # within the handler via Mollie signature verification.
   MollieWebhookFunction:
@@ -1829,7 +1683,7 @@ Resources:
       Runtime: python3.11
       Layers:
         - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
+      Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
@@ -1838,12 +1692,6 @@ Resources:
           COUNTERS_TABLE_NAME: !Ref CountersTable
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
       Events:
-        MollieWebhookLegacy:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /presmeet/webhook/mollie
-            Method: post
         MollieWebhook:
           Type: Api
           Properties:
@@ -1874,7 +1722,7 @@ Resources:
             Path: /admin/orders/{id}/confirm-payment
             Method: post
 
-  # --- PresMeet: Get Club Registry (Onboarding) ---
+  # --- Get Club Registry (Onboarding) ---
   GetClubRegistryFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1883,7 +1731,7 @@ Resources:
       Runtime: python3.11
       Layers:
         - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
+      Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
           REPORTS_BUCKET_NAME: !Ref S3ReportsBucket
@@ -1897,7 +1745,7 @@ Resources:
             Path: /presmeet/clubs
             Method: get
 
-  # --- PresMeet: Assign Club (Onboarding) ---
+  # --- Assign Club (Onboarding) ---
   AssignClubFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1906,7 +1754,7 @@ Resources:
       Runtime: python3.11
       Layers:
         - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
+      Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
           REPORTS_BUCKET_NAME: !Ref S3ReportsBucket
@@ -1920,7 +1768,7 @@ Resources:
             Path: /presmeet/clubs/assign
             Method: post
 
-  # --- PresMeet: Upload Club Logo ---
+  # --- Upload Club Logo ---
   UploadClubLogoFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1931,7 +1779,7 @@ Resources:
       MemorySize: 256
       Layers:
         - !Ref AuthLayer
-      Role: !GetAtt PresMeetRole.Arn
+      Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
           MEMBERS_TABLE_NAME: !Ref MembersTable
