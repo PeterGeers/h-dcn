@@ -56,21 +56,21 @@ def tables():
             BillingMode='PAY_PER_REQUEST',
         )
 
-        # Create Orders table with GSI event-club-index
+        # Create Orders table with GSI event-member-index
         orders_table = dynamodb.create_table(
             TableName='Orders',
             KeySchema=[{'AttributeName': 'order_id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[
                 {'AttributeName': 'order_id', 'AttributeType': 'S'},
-                {'AttributeName': 'event_id', 'AttributeType': 'S'},
-                {'AttributeName': 'club_id', 'AttributeType': 'S'},
+                {'AttributeName': 'source_id', 'AttributeType': 'S'},
+                {'AttributeName': 'member_id', 'AttributeType': 'S'},
             ],
             GlobalSecondaryIndexes=[
                 {
-                    'IndexName': 'event-club-index',
+                    'IndexName': 'event-member-index',
                     'KeySchema': [
-                        {'AttributeName': 'event_id', 'KeyType': 'HASH'},
-                        {'AttributeName': 'club_id', 'KeyType': 'RANGE'},
+                        {'AttributeName': 'source_id', 'KeyType': 'HASH'},
+                        {'AttributeName': 'member_id', 'KeyType': 'RANGE'},
                     ],
                     'Projection': {'ProjectionType': 'ALL'},
                 }
@@ -108,12 +108,12 @@ def _put_event(table, event_id, status, reg_open=None, reg_close=None):
     table.put_item(Item=item)
 
 
-def _put_order(table, order_id, event_id, club_id, status, status_history=None):
+def _put_order(table, order_id, event_id, member_id, status, status_history=None):
     """Helper to insert an order record."""
     item = {
         'order_id': order_id,
-        'event_id': event_id,
-        'club_id': club_id,
+        'source_id': event_id,
+        'member_id': member_id,
         'status': status,
         'total_amount': 100,
         'items': [],
@@ -250,8 +250,8 @@ class TestAutoLockOrders:
 
         today = date.today().isoformat()
         _put_event(tables['events'], 'evt-close', 'open', reg_close=today)
-        _put_order(tables['orders'], 'ord-1', 'evt-close', 'club-a', 'submitted')
-        _put_order(tables['orders'], 'ord-2', 'evt-close', 'club-b', 'submitted')
+        _put_order(tables['orders'], 'ord-1', 'evt-close', 'member-a', 'submitted')
+        _put_order(tables['orders'], 'ord-2', 'evt-close', 'member-b', 'submitted')
 
         result = handler_module.lambda_handler({}, {})
 
@@ -269,7 +269,7 @@ class TestAutoLockOrders:
 
         today = date.today().isoformat()
         _put_event(tables['events'], 'evt-hist', 'open', reg_close=today)
-        _put_order(tables['orders'], 'ord-hist', 'evt-hist', 'club-c', 'submitted')
+        _put_order(tables['orders'], 'ord-hist', 'evt-hist', 'member-c', 'submitted')
 
         handler_module.lambda_handler({}, {})
 
@@ -289,7 +289,7 @@ class TestAutoLockOrders:
 
         today = date.today().isoformat()
         _put_event(tables['events'], 'evt-draft', 'open', reg_close=today)
-        _put_order(tables['orders'], 'ord-draft', 'evt-draft', 'club-d', 'draft')
+        _put_order(tables['orders'], 'ord-draft', 'evt-draft', 'member-d', 'draft')
 
         result = handler_module.lambda_handler({}, {})
 
@@ -303,7 +303,7 @@ class TestAutoLockOrders:
 
         today = date.today().isoformat()
         _put_event(tables['events'], 'evt-already', 'open', reg_close=today)
-        _put_order(tables['orders'], 'ord-locked', 'evt-already', 'club-e', 'locked',
+        _put_order(tables['orders'], 'ord-locked', 'evt-already', 'member-e', 'locked',
                    status_history=[{'from': 'submitted', 'to': 'locked', 'at': '2024-01-01', 'by': 'admin', 'source': 'manual'}])
 
         result = handler_module.lambda_handler({}, {})
@@ -324,7 +324,7 @@ class TestAutoLockOrders:
         existing_history = [
             {'from': 'draft', 'to': 'submitted', 'at': '2024-01-10', 'by': 'user@club.nl', 'source': 'delegate'}
         ]
-        _put_order(tables['orders'], 'ord-pres', 'evt-pres', 'club-f', 'submitted',
+        _put_order(tables['orders'], 'ord-pres', 'evt-pres', 'member-f', 'submitted',
                    status_history=existing_history)
 
         handler_module.lambda_handler({}, {})
@@ -376,7 +376,7 @@ class TestNonAffectedEvents:
         _put_event(tables['events'], 'evt-c', 'draft', reg_open='2099-01-01')
         _put_event(tables['events'], 'evt-d', 'open', reg_close='2099-01-01')
 
-        _put_order(tables['orders'], 'ord-b1', 'evt-b', 'club-x', 'submitted')
+        _put_order(tables['orders'], 'ord-b1', 'evt-b', 'member-x', 'submitted')
 
         result = handler_module.lambda_handler({}, {})
 

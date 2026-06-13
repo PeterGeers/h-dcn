@@ -24,8 +24,8 @@ orders_table_name = os.environ.get('ORDERS_TABLE_NAME', 'Orders')
 events_table = dynamodb.Table(events_table_name)
 orders_table = dynamodb.Table(orders_table_name)
 
-# GSI used to find orders by event_id
-EVENT_CLUB_INDEX = 'event-club-index'
+# GSI used to find orders by source_id (which holds event_id for event orders)
+EVENT_MEMBER_INDEX = 'event-member-index'
 
 
 def lambda_handler(event, context):
@@ -124,15 +124,15 @@ def _auto_lock_orders(event_id):
     """
     Find all submitted orders for the given event and lock them.
 
-    Uses the event-club-index GSI to find orders by event_id,
-    then filters for status=submitted.
+    Uses the event-member-index GSI to find orders by source_id
+    (which holds the event_id for event orders), then filters for status=submitted.
 
     Returns the count of orders locked.
     """
     locked_count = 0
     query_kwargs = {
-        'IndexName': EVENT_CLUB_INDEX,
-        'KeyConditionExpression': 'event_id = :eid',
+        'IndexName': EVENT_MEMBER_INDEX,
+        'KeyConditionExpression': 'source_id = :eid',
         'ExpressionAttributeValues': {':eid': event_id},
     }
 
