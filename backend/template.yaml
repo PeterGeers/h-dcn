@@ -1058,6 +1058,30 @@ Resources:
 
 
   # Order Functions
+
+  # --- Unified Order: Get/Create Order (event booking + webshop) ---
+  GetOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_order
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        GetOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking
+            Method: get
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
