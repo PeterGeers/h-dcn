@@ -1133,6 +1133,28 @@ Resources:
             Path: /booking/{id}/pay
             Method: post
 
+  # --- Unified Order: Manage Delegates (club-scoped orders) ---
+  ManageDelegatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/manage_delegates
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        ManageDelegates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/delegates
+            Method: post
+
   # --- Unified Order: Lock Orders (admin — bulk lock by source_id) ---
   LockOrdersFunction:
     Type: AWS::Serverless::Function

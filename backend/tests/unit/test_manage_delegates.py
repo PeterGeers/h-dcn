@@ -1,0 +1,503 @@
+"""
+Unit Tests for manage_delegates Lambda Handler.
+
+Tests the delegate management endpoint:
+- POST /booking/{id}/delegates
+
+Test cases:
+- Returns 400 when order is not club-scoped (no delegates field)
+- Returns 403 when requester is not primary delegate or admin
+- Successfully adds secondary delegate
+- Successfully removes secondary delegate
+- Returns 400 when target member doesn't exist
+- Returns 400 when target member has different club_id
+"""
+
+import importlib.util
+import json
+import os
+import sys
+
+import boto3
+import pytest
+from moto import mock_aws
+from unittest.mock import patch
+
+# ---------------------------------------------------------------------------
+# Environment setup (must be set before module import)
+# ---------------------------------------------------------------------------
+
+os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
+os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+os.environ['ORDERS_TABLE_NAME'] = 'Orders'
+os.environ['MEMBERS_TABLE_NAME'] = 'Members'
+
+# Path to the handler under test
+_handler_file = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'manage_delegates', 'app.py')
+)
+
+
+def _load_handler():
+    """Load handler module by file path, bypassing sys.path."""
+    if 'app' in sys.modules:
+        del sys.modules['app']
+    spec = importlib.util.spec_from_file_location('app', _handler_file)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules['app'] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+# ---------------------------------------------------------------------------
+# Test data
+# ---------------------------------------------------------------------------
+
+TEST_PRIMARY_MEMBER_ID = 'mem-primary-001'
+TEST_SECONDARY_MEMBER_ID = 'mem-secondary-002'
+TEST_TARGET_MEMBER_ID = 'mem-target-003'
+TEST_OTHER_CLUB_MEMBER_ID = 'mem-other-club-004'
+TEST_ADMIN_EMAIL = 'admin@h-dcn.nl'
+TEST_PRIMARY_EMAIL = 'primary@h-dcn.nl'
+TEST_NON_DELEGATE_EMAIL = 'outsider@h-dcn.nl'
+TEST_CLUB_ID = 'club-abc-123'
+TEST_ORDER_ID = 'order-001'
+
+
+def _make_event(order_id=TEST_ORDER_ID, body=None, method='POST'):
+    """Create API Gateway event for POST /booking/{id}/delegates."""
+    return {
+        'httpMethod': method,
+        'headers': {'Authorization': 'Bearer test-token'},
+        'queryStringParameters': None,
+        'pathParameters': {'id': order_id} if order_id else None,
+        'body': json.dumps(body) if body else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Auth patches
+# ---------------------------------------------------------------------------
+
+def _primary_delegate_auth():
+    """Return patch.multiple for primary delegate user."""
+    return patch.multiple(
+        'app',
+        extract_user_credentials=lambda event: (TEST_PRIMARY_EMAIL, ['hdcnLeden'], None),
+        validate_permissions_with_regions=lambda roles, perms, email, region: (
+            (False, {'statusCode': 403, 'body': json.dumps({'error': 'Access denied'})}, {})
+            if 'events_crud' in perms
+            else (True, None, {})
+        ),
+        log_successful_access=lambda *a, **kw: None,
+    )
+
+
+def _admin_auth():
+    """Return patch.multiple for admin user (events_crud permission)."""
+    return patch.multiple(
+        'app',
+        extract_user_credentials=lambda event: (TEST_ADMIN_EMAIL, ['hdcnLeden', 'Events_CRUD'], None),
+        validate_permissions_with_regions=lambda roles, perms, email, region: (True, None, {}),
+        log_successful_access=lambda *a, **kw: None,
+    )
+
+
+def _non_delegate_auth():
+    """Return patch.multiple for a user who is neither primary delegate nor admin."""
+    return patch.multiple(
+        'app',
+        extract_user_credentials=lambda event: (TEST_NON_DELEGATE_EMAIL, ['hdcnLeden'], None),
+        validate_permissions_with_regions=lambda roles, perms, email, region: (
+            (False, {'statusCode': 403, 'body': json.dumps({'error': 'Access denied'})}, {})
+            if 'events_crud' in perms
+            else (True, None, {})
+        ),
+        log_successful_access=lambda *a, **kw: None,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def setup_tables():
+    """Create mocked DynamoDB tables and load handler inside mock_aws context."""
+    with mock_aws():
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+
+        # Orders table
+        orders_table = dynamodb.create_table(
+            TableName='Orders',
+            KeySchema=[{'AttributeName': 'order_id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[
+                {'AttributeName': 'order_id', 'AttributeType': 'S'},
+                {'AttributeName': 'source_id', 'AttributeType': 'S'},
+                {'AttributeName': 'member_id', 'AttributeType': 'S'},
+            ],
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'event-member-index',
+                    'KeySchema': [
+                        {'AttributeName': 'source_id', 'KeyType': 'HASH'},
+                        {'AttributeName': 'member_id', 'KeyType': 'RANGE'},
+                    ],
+                    'Projection': {'ProjectionType': 'ALL'},
+                }
+            ],
+            BillingMode='PAY_PER_REQUEST',
+        )
+
+        # Members table
+        members_table = dynamodb.create_table(
+            TableName='Members',
+            KeySchema=[{'AttributeName': 'member_id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'member_id', 'AttributeType': 'S'}],
+            BillingMode='PAY_PER_REQUEST',
+        )
+
+        # Seed members
+        members_table.put_item(Item={
+            'member_id': TEST_PRIMARY_MEMBER_ID,
+            'email': TEST_PRIMARY_EMAIL,
+            'club_id': TEST_CLUB_ID,
+            'member_type': 'hdcn_member',
+            'allowed_events': [],
+        })
+        members_table.put_item(Item={
+            'member_id': TEST_TARGET_MEMBER_ID,
+            'email': 'target@h-dcn.nl',
+            'club_id': TEST_CLUB_ID,
+            'member_type': 'hdcn_member',
+            'allowed_events': [],
+        })
+        members_table.put_item(Item={
+            'member_id': TEST_OTHER_CLUB_MEMBER_ID,
+            'email': 'otherclub@h-dcn.nl',
+            'club_id': 'club-different-999',
+            'member_type': 'hdcn_member',
+            'allowed_events': [],
+        })
+        members_table.put_item(Item={
+            'member_id': 'mem-non-delegate-005',
+            'email': TEST_NON_DELEGATE_EMAIL,
+            'club_id': TEST_CLUB_ID,
+            'member_type': 'hdcn_member',
+            'allowed_events': [],
+        })
+        members_table.put_item(Item={
+            'member_id': 'mem-admin-006',
+            'email': TEST_ADMIN_EMAIL,
+            'club_id': TEST_CLUB_ID,
+            'member_type': 'hdcn_member',
+            'allowed_events': [],
+        })
+
+        # Load handler inside mock context
+        handler = _load_handler()
+
+        yield {
+            'orders': orders_table,
+            'members': members_table,
+            'handler': handler,
+        }
+
+
+def _seed_club_order(orders_table, order_id=TEST_ORDER_ID, primary_member_id=TEST_PRIMARY_MEMBER_ID,
+                     secondary_member_id=None, club_id=TEST_CLUB_ID):
+    """Seed a club-scoped order with delegates."""
+    delegates = {'primary_member_id': primary_member_id}
+    if secondary_member_id:
+        delegates['secondary_member_id'] = secondary_member_id
+
+    orders_table.put_item(Item={
+        'order_id': order_id,
+        'source_id': 'evt-test-event-uuid',
+        'member_id': primary_member_id,
+        'club_id': club_id,
+        'status': 'draft',
+        'items': [],
+        'delegates': delegates,
+        'version': 1,
+        'created_at': '2025-01-10T08:00:00+00:00',
+        'updated_at': '2025-01-15T10:30:00+00:00',
+    })
+
+
+def _seed_member_order(orders_table, order_id='order-member-001'):
+    """Seed a member-scoped order (no delegates field)."""
+    orders_table.put_item(Item={
+        'order_id': order_id,
+        'source_id': 'evt-member-event-uuid',
+        'member_id': TEST_PRIMARY_MEMBER_ID,
+        'status': 'draft',
+        'items': [],
+        'version': 1,
+        'created_at': '2025-01-10T08:00:00+00:00',
+        'updated_at': '2025-01-15T10:30:00+00:00',
+    })
+
+
+# ---------------------------------------------------------------------------
+# Tests: Order not club-scoped
+# ---------------------------------------------------------------------------
+
+class TestNotClubScoped:
+    """Tests that non-club-scoped orders cannot use delegate management."""
+
+    def test_returns_400_when_order_has_no_delegates(self, setup_tables):
+        """Member-scoped order (no delegates field) returns 400."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_member_order(orders_table, order_id='order-member-001')
+
+        with _primary_delegate_auth():
+            event = _make_event(
+                order_id='order-member-001',
+                body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID}
+            )
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'club' in body.get('error', '').lower()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Authorization
+# ---------------------------------------------------------------------------
+
+class TestAuthorization:
+    """Tests for delegate management access control."""
+
+    def test_returns_403_when_requester_is_not_primary_or_admin(self, setup_tables):
+        """Non-primary, non-admin user cannot manage delegates."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _non_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 403
+        body = json.loads(response['body'])
+        assert 'primary delegate' in body.get('error', '').lower() or 'admin' in body.get('error', '').lower()
+
+    def test_admin_can_manage_delegates(self, setup_tables):
+        """Admin (events_crud) can manage delegates even if not primary."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _admin_auth():
+            event = _make_event(body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['delegates']['secondary_member_id'] == TEST_TARGET_MEMBER_ID
+
+
+# ---------------------------------------------------------------------------
+# Tests: Add secondary delegate
+# ---------------------------------------------------------------------------
+
+class TestAddDelegate:
+    """Tests for adding a secondary delegate."""
+
+    def test_successfully_adds_secondary_delegate(self, setup_tables):
+        """Primary delegate can add a secondary delegate from the same club."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['delegates']['secondary_member_id'] == TEST_TARGET_MEMBER_ID
+        assert 'added' in body['message'].lower()
+
+    def test_returns_400_when_target_member_not_found(self, setup_tables):
+        """Cannot add a member that doesn't exist."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': 'nonexistent-member-id'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'not found' in body.get('error', '').lower()
+
+    def test_returns_400_when_target_member_has_different_club(self, setup_tables):
+        """Cannot add a member from a different club."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': TEST_OTHER_CLUB_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'club' in body.get('error', '').lower()
+
+    def test_returns_400_when_adding_primary_as_secondary(self, setup_tables):
+        """Cannot add the primary delegate as secondary."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': TEST_PRIMARY_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'primary' in body.get('error', '').lower()
+
+    def test_returns_400_when_target_already_secondary(self, setup_tables):
+        """Cannot add a member who is already the secondary delegate."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, secondary_member_id=TEST_TARGET_MEMBER_ID)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'already' in body.get('error', '').lower()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Remove secondary delegate
+# ---------------------------------------------------------------------------
+
+class TestRemoveDelegate:
+    """Tests for removing a secondary delegate."""
+
+    def test_successfully_removes_secondary_delegate(self, setup_tables):
+        """Primary delegate can remove the secondary delegate."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, secondary_member_id=TEST_SECONDARY_MEMBER_ID)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'remove'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert 'secondary_member_id' not in body['order'].get('delegates', {})
+        assert 'removed' in body['message'].lower()
+
+    def test_returns_400_when_no_secondary_to_remove(self, setup_tables):
+        """Cannot remove secondary when none exists."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)  # no secondary
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'remove'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'no secondary' in body.get('error', '').lower()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Input validation
+# ---------------------------------------------------------------------------
+
+class TestInputValidation:
+    """Tests for request body validation."""
+
+    def test_invalid_action_returns_400(self, setup_tables):
+        """Invalid action value returns 400."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invalid_action', 'member_id': 'x'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'action' in body.get('error', '').lower()
+
+    def test_add_without_member_id_returns_400(self, setup_tables):
+        """Add action without member_id returns 400."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'member_id' in body.get('error', '').lower()
+
+    def test_invalid_json_returns_400(self, setup_tables):
+        """Invalid JSON body returns 400."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = {
+                'httpMethod': 'POST',
+                'headers': {'Authorization': 'Bearer test-token'},
+                'queryStringParameters': None,
+                'pathParameters': {'id': TEST_ORDER_ID},
+                'body': 'not valid json {{{',
+            }
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'json' in body.get('error', '').lower()
+
+    def test_order_not_found_returns_404(self, setup_tables):
+        """Non-existent order returns 404."""
+        handler = setup_tables['handler']
+
+        with _primary_delegate_auth():
+            event = _make_event(
+                order_id='nonexistent-order',
+                body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID}
+            )
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 404
+
+
+# ---------------------------------------------------------------------------
+# Tests: OPTIONS preflight
+# ---------------------------------------------------------------------------
+
+class TestCORS:
+    """Tests for CORS preflight handling."""
+
+    def test_options_request_returns_200(self, setup_tables):
+        """OPTIONS request returns 200 for CORS preflight."""
+        handler = setup_tables['handler']
+        response = handler.lambda_handler(
+            {'httpMethod': 'OPTIONS', 'headers': {}, 'body': None},
+            None
+        )
+        assert response['statusCode'] == 200
