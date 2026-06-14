@@ -69,8 +69,14 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
   const [isRemoving, setIsRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isPrimary =
-    currentUserEmail.toLowerCase() === order.delegates.primary.toLowerCase();
+  // Handle both old format (delegates.primary = email) and new format (delegates.primary_member_id = id)
+  const primaryDelegate = order.delegates?.primary || order.delegates?.primary_member_id || '';
+  const secondaryDelegate = order.delegates?.secondary || order.delegates?.secondary_member_id || null;
+
+  const isPrimary = primaryDelegate
+    ? currentUserEmail.toLowerCase() === primaryDelegate.toLowerCase() ||
+      order.member_id === primaryDelegate  // In new format, primary_member_id matches order.member_id
+    : true; // If no delegate info, assume current user is primary
 
   const handleAddDelegate = async () => {
     const trimmedEmail = email.trim();
@@ -113,6 +119,11 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
     }
   };
 
+  // Don't render for member-scoped orders (no delegates)
+  if (!order.delegates) {
+    return null;
+  }
+
   return (
     <Box p={4} borderWidth={1} borderRadius="md">
       <VStack spacing={4} align="stretch">
@@ -124,7 +135,7 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
             {t('delegate_manager.primary')}
           </Badge>
           <Text fontSize="sm">
-            {order.delegates.primary}
+            {primaryDelegate}
             {isPrimary && (
               <Text as="span" color="gray.500" ml={1}>
                 {t('delegate_manager.you')}
@@ -138,9 +149,9 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
           <Badge colorScheme="gray" fontSize="xs">
             {t('delegate_manager.secondary')}
           </Badge>
-          {order.delegates.secondary ? (
+          {secondaryDelegate ? (
             <HStack spacing={2} flex={1} justify="space-between">
-              <Text fontSize="sm">{order.delegates.secondary}</Text>
+              <Text fontSize="sm">{secondaryDelegate}</Text>
               {isPrimary && (
                 <Button
                   size="xs"
@@ -163,7 +174,7 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
         </HStack>
 
         {/* Add secondary delegate (primary only) */}
-        {isPrimary && !order.delegates.secondary && (
+        {isPrimary && !secondaryDelegate && (
           <Box>
             <Text fontSize="xs" color="gray.500" mb={2}>
               {t('delegate_manager.add_description')}
