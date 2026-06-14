@@ -28,7 +28,7 @@ const EffectiveLimits: React.FC<EffectiveLimitsProps> = ({
       </Text>
       <VStack spacing={1} align="stretch">
         {products.map((product) => {
-          const maxPerClub = product.purchase_rules.max_per_club ?? Infinity;
+          const maxPerClub = product.purchase_rules?.max_per_club ?? Infinity;
           // Find event constraint for this product
           const constraint = constraints.find((c) => c.product_id === product.product_id);
           const eventRemaining = constraint ? constraint.max : Infinity;
