@@ -194,13 +194,15 @@ export async function pay(orderId: string): Promise<PaymentInitiationResponse> {
 }
 
 /**
- * Get events by event_type filter.
+ * Get events, optionally filtered by event_type.
  * Uses the existing /events endpoint.
  */
-export async function getEvent(eventType: string = 'presmeet'): Promise<Event[]> {
-  const response = await presmeetClient.get<Event[]>('/events', {
-    params: { event_type: eventType },
-  });
+export async function getEvent(eventType?: string): Promise<Event[]> {
+  const params: Record<string, string> = {};
+  if (eventType) {
+    params.event_type = eventType;
+  }
+  const response = await presmeetClient.get<Event[]>('/events', { params });
   return response.data;
 }
 

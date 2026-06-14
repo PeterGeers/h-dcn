@@ -49,6 +49,7 @@ const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCom
 const NewMemberApplication = lazy(() => import('./pages/NewMemberApplication')) as any;
 const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) as any;
 const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as any;
+const EventBookingPage = lazy(() => import('./modules/presmeet/EventBookingPage')) as any;
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
 
 /**
@@ -176,6 +177,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
             <Route path="/presmeet" element={<PresMeetPage />} />
+            <Route path="/events/:eventId/booking" element={<EventBookingPage />} />
             <Route path="/webshop_management" element={<WebshopManagementGuard />} />
             <Route path="/test/passkey" element={<PasskeyTest />} />
             <Route path="/test/browser-compatibility" element={<BrowserCompatibilityTest />} />

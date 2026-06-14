@@ -111,7 +111,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
 
     try {
       // Load event(s) and find the one matching our eventId
-      const events = await presmeetApi.getEvent('presmeet');
+      const events = await presmeetApi.getEvent();
       const currentEvent = events.find((e) => e.event_id === eventId);
 
       if (!currentEvent) {
@@ -123,7 +123,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
 
       // Load products linked to this event
       const eventProducts = await presmeetApi.getProducts(
-        'presmeet',
+        eventId,
         currentEvent.product_ids
       );
       setProducts(eventProducts);

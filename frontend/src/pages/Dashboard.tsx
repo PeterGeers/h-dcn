@@ -6,6 +6,85 @@ import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { membershipService } from '../utils/membershipService';
 import { useAuth } from '../context/AuthProvider';
+import { presmeetApi } from '../modules/presmeet/services/presmeetApi';
+
+/**
+ * EventBookingCard — Displays a card for each event the user has access to.
+ * Fetches events from the API and navigates to /events/:eventId/booking.
+ */
+function EventBookingCard({ navigate }: { navigate: (path: string) => void }) {
+  const { t } = useTranslation('dashboard');
+  const [events, setEvents] = useState<Array<{ event_id: string; name: string; status: string }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchEvents() {
+      try {
+        const allEvents = await presmeetApi.getEvent();
+        if (!cancelled) {
+          // Show open events preferentially
+          const relevantEvents = allEvents.filter(
+            (e) => e.status === 'open'
+          );
+          setEvents(relevantEvents.length > 0 ? relevantEvents : allEvents.slice(0, 3));
+        }
+      } catch (err) {
+        // If events can't be loaded, show nothing
+        console.warn('Could not fetch events for dashboard', err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+    fetchEvents();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (isLoading) {
+    return null; // Don't show a loading spinner on dashboard for this card
+  }
+
+  if (events.length === 0) {
+    return null; // No events to show
+  }
+
+  // If there's exactly one event, show a single card that navigates directly
+  if (events.length === 1) {
+    const event = events[0];
+    return (
+      <AppCard
+        key={`event-${event.event_id}`}
+        app={{
+          id: `event-${event.event_id}`,
+          title: event.name || t('cards.presmeet_title'),
+          description: t('cards.presmeet_desc'),
+          icon: '🏍️',
+          path: `/events/${event.event_id}/booking`,
+        }}
+        onClick={() => navigate(`/events/${event.event_id}/booking`)}
+      />
+    );
+  }
+
+  // If multiple events, show a card for each
+  return (
+    <>
+      {events.map((event) => (
+        <AppCard
+          key={`event-${event.event_id}`}
+          app={{
+            id: `event-${event.event_id}`,
+            title: event.name || 'Event Booking',
+            description: t('cards.presmeet_desc'),
+            icon: '🏍️',
+            path: `/events/${event.event_id}/booking`,
+          }}
+          onClick={() => navigate(`/events/${event.event_id}/booking`)}
+        />
+      ))}
+    </>
+  );
+}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -243,22 +322,12 @@ function Dashboard() {
             />
           </FunctionGuard>
           
-          {/* Presidents' Meeting - Only for users with Regio_Pressmeet or Regio_All */}
+          {/* Event Booking - For all members with hdcnLeden, shows events user has access to */}
           <FunctionGuard 
             user={functionGuardUser} 
-            requiredRoles={['Regio_Pressmeet', 'Regio_All']}
+            requiredRoles={['hdcnLeden', 'event_participant']}
           >
-            <AppCard 
-              key="presmeet"
-              app={{
-                id: 'presmeet',
-                title: t('cards.presmeet_title'),
-                description: t('cards.presmeet_desc'),
-                icon: '🏍️',
-                path: '/presmeet'
-              }}
-              onClick={() => navigate('/presmeet')}
-            />
+            <EventBookingCard navigate={navigate} />
           </FunctionGuard>
           
           {/* Administrative modules - Only for users with specific admin roles */}

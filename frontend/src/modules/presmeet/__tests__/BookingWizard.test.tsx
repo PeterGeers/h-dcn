@@ -326,7 +326,7 @@ describe('BookingWizard', () => {
     render(<BookingWizard eventId="evt-1" />);
 
     await waitFor(() => {
-      expect(mockedGetProducts).toHaveBeenCalledWith('presmeet', ['prod-meeting', 'prod-party']);
+      expect(mockedGetProducts).toHaveBeenCalledWith('evt-1', ['prod-meeting', 'prod-party']);
     });
   });
 });

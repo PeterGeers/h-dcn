@@ -1,17 +1,17 @@
 /**
- * PresMeetPage — Main page for the PresMeet booking module (v3).
+ * EventBookingPage — Generic event booking page that reads event_id from URL params.
  *
- * Features:
- * - Loads current active event via presmeetApi.getEvent('presmeet')
- * - Shows OnboardingFlow if user has no club assignment (403 from getOrder)
- * - Booking wizard: BookingWizard, PaymentPanel, DelegateManager, BookingSummaryPdf
- * - Admin functionality moved to unified Webshop Beheer page (WebshopManagementPage)
- * - ClubLogoUploader in header
+ * Route: /events/:eventId/booking
  *
- * Validates: Requirements 5.1, 5.2, 5.3, 10.1, 10.2, 10.5, 10.11
+ * This component replaces the hardcoded presmeet event detection by accepting the
+ * event_id directly from the route. It loads the event, order, and products using
+ * the unified booking API endpoints.
+ *
+ * Validates: Requirements 6.7, 10.8
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -45,7 +45,6 @@ import ClubLogoUploader from './components/ClubLogoUploader';
 
 /**
  * Check if user has logo upload admin rights.
- * Only requires Products_CRUD or Webshop_Management role (no region needed).
  */
 function isLogoUploadAdmin(groups: string[]): boolean {
   return groups.some((g) =>
@@ -53,9 +52,10 @@ function isLogoUploadAdmin(groups: string[]): boolean {
   );
 }
 
-const PresMeetPage: React.FC = () => {
+const EventBookingPage: React.FC = () => {
   const { t } = useTranslation('presmeet');
   const { user } = useAuth();
+  const { eventId } = useParams<{ eventId: string }>();
 
   // Page-level state
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
@@ -69,72 +69,80 @@ const PresMeetPage: React.FC = () => {
   const isLogoAdmin = isLogoUploadAdmin(userGroups);
 
   /**
-   * Load the active event and attempt to load the order.
-   * If getOrder returns 403 with "Missing club assignment", show onboarding.
-   *
-   * Event detection is no longer hardcoded — it fetches open events and picks
-   * the first one. For direct event access, use /events/:eventId/booking instead.
+   * Load the event by ID and attempt to load the order.
+   * The event_id comes from the URL route param, not from hardcoded detection.
    */
   const loadPageData = useCallback(async () => {
+    if (!eventId) {
+      setError('No event ID provided in URL');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setNeedsOnboarding(false);
 
     try {
-      // Fetch all events and find an open one (no hardcoded event_type filter)
+      // Load event info — try fetching events and find the one matching our eventId
       let currentEvent: Event | null = null;
 
       try {
         const events = await presmeetApi.getEvent();
-        const openEvent = events.find((e) => e.status === 'open');
-        const fallbackEvent = events.length > 0
-          ? events.sort((a, b) => (b.start_date || '').localeCompare(a.start_date || ''))[0]
-          : null;
-        currentEvent = openEvent || fallbackEvent || null;
+        currentEvent = events.find((e) => e.event_id === eventId) || null;
       } catch (eventErr: any) {
-        // If 403 on events endpoint, we cannot determine which event to load
-        console.warn('Could not fetch events (likely permission issue)');
+        // If events endpoint fails (permission issue), construct minimal event from ID
+        console.warn('Could not fetch events, proceeding with event_id from URL');
       }
 
+      // If we couldn't find the event from events list, construct a minimal placeholder
+      // The order endpoint will validate the event_id server-side
       if (!currentEvent) {
-        setError('No active event found. Please use the event link from the dashboard.');
-        setIsLoading(false);
-        return;
+        currentEvent = {
+          event_id: eventId,
+          event_type: '',
+          name: '',
+          location: '',
+          status: 'open',
+          start_date: '',
+          end_date: '',
+          registration_open: '',
+          registration_close: '',
+          payment_deadline: '',
+          product_ids: [],
+          constraints: [],
+          created_at: '',
+          created_by: '',
+        };
       }
 
       setActiveEvent(currentEvent);
 
       // Try to load the order for this event
       try {
-        const orderData = await presmeetApi.getOrder(currentEvent.event_id);
+        const orderData = await presmeetApi.getOrder(eventId);
 
-        // Admin without personal club gets a special response (not a real order)
         if (orderData && (orderData as any).admin_no_club) {
-          // Admin has no personal booking — they can manage orders via Webshop Beheer
+          // Admin has no personal booking
         } else {
           setOrder(orderData);
 
           // Load products for the event
           const eventProducts = await presmeetApi.getProducts(
-            currentEvent.event_id,
+            eventId,
             currentEvent.product_ids
           );
           setProducts(eventProducts);
         }
       } catch (orderErr: any) {
         if (isAuthorizationError(orderErr)) {
-          // 403 — check specific error message
           const msg = orderErr.message?.toLowerCase() || '';
           if (msg.includes('club') || msg.includes('assignment')) {
             setNeedsOnboarding(true);
-          } else if (msg.includes('presmeet access required')) {
-            // User lacks Regio_Pressmeet or Regio_All
-            setError(orderErr.message);
           } else {
             setError(orderErr.message);
           }
         } else if (orderErr?.response?.status === 403) {
-          // Fallback: check raw 403 response message
           const msg = (orderErr?.response?.data?.message || orderErr?.response?.data?.error || '').toLowerCase();
           if (msg.includes('club') || msg.includes('assignment')) {
             setNeedsOnboarding(true);
@@ -144,7 +152,7 @@ const PresMeetPage: React.FC = () => {
             );
           }
         } else if (orderErr?.response?.status === 404) {
-          // No order exists yet — valid state, show empty booking
+          // No order exists yet — valid state
         } else {
           throw orderErr;
         }
@@ -156,7 +164,7 @@ const PresMeetPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [eventId, t]);
 
   useEffect(() => {
     loadPageData();
@@ -172,14 +180,14 @@ const PresMeetPage: React.FC = () => {
 
   /** Reload order (used after delegate changes or payment) */
   const reloadOrder = useCallback(async () => {
-    if (!activeEvent) return;
+    if (!eventId) return;
     try {
-      const orderData = await presmeetApi.getOrder(activeEvent.event_id);
+      const orderData = await presmeetApi.getOrder(eventId);
       setOrder(orderData);
     } catch {
       // Silently fail — the user can retry
     }
-  }, [activeEvent]);
+  }, [eventId]);
 
   // --- Loading state ---
   if (isLoading) {
@@ -190,22 +198,22 @@ const PresMeetPage: React.FC = () => {
     );
   }
 
-  // --- Error state (no event or fatal error) ---
-  if (error && !activeEvent && !needsOnboarding) {
+  // --- No event ID ---
+  if (!eventId) {
     return (
       <Container maxW="container.lg" py={6}>
         <Alert status="error" borderRadius="md">
           <AlertIcon />
           <Box>
-            <AlertTitle>{t('page.error_loading')}</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertTitle>Missing Event</AlertTitle>
+            <AlertDescription>No event ID was provided in the URL.</AlertDescription>
           </Box>
         </Alert>
       </Container>
     );
   }
 
-  // --- Permission denied or no order loaded (don't render BookingWizard) ---
+  // --- Error state ---
   if (error && !order && !needsOnboarding) {
     return (
       <Container maxW="container.lg" py={6}>
@@ -225,11 +233,11 @@ const PresMeetPage: React.FC = () => {
     return (
       <Container maxW="container.xl" py={6}>
         <Heading size="lg" color="orange.400" mb={6}>
-          {t('page.title')}
+          {activeEvent?.name || t('page.title')}
         </Heading>
         <OnboardingFlow
           onComplete={handleOnboardingComplete}
-          eventId={activeEvent?.event_id}
+          eventId={eventId}
         />
       </Container>
     );
@@ -237,6 +245,7 @@ const PresMeetPage: React.FC = () => {
 
   // --- Main booking page ---
   const clubId = order?.club_id;
+  const eventTitle = activeEvent?.name || t('page.title_booking');
 
   return (
     <Container maxW="container.xl" py={6}>
@@ -245,7 +254,7 @@ const PresMeetPage: React.FC = () => {
           <ClubLogoUploader clubId={clubId} isAdmin={isLogoAdmin} />
         )}
         <Heading size="lg" color="orange.400">
-          {t('page.title_booking')}
+          {eventTitle}
         </Heading>
       </Flex>
 
@@ -262,7 +271,6 @@ const PresMeetPage: React.FC = () => {
         </TabList>
 
         <TabPanels>
-          {/* Booking Tab */}
           <TabPanel px={0}>
             {activeEvent ? (
               <VStack spacing={6} align="stretch">
@@ -272,7 +280,6 @@ const PresMeetPage: React.FC = () => {
                   <>
                     <Divider />
 
-                    {/* Payment Panel */}
                     {order.status !== 'draft' && (
                       <PaymentPanel
                         order={order}
@@ -280,7 +287,6 @@ const PresMeetPage: React.FC = () => {
                       />
                     )}
 
-                    {/* Delegate Manager */}
                     {user?.email && (
                       <DelegateManager
                         order={order}
@@ -289,7 +295,6 @@ const PresMeetPage: React.FC = () => {
                       />
                     )}
 
-                    {/* PDF Download */}
                     {products.length > 0 && (
                       <BookingSummaryPdf
                         order={order}
@@ -303,9 +308,7 @@ const PresMeetPage: React.FC = () => {
             ) : (
               <Alert status="info" borderRadius="md">
                 <AlertIcon />
-                <Text>
-                  {t('page.error_loading')}
-                </Text>
+                <Text>{t('page.error_loading')}</Text>
               </Alert>
             )}
           </TabPanel>
@@ -315,4 +318,4 @@ const PresMeetPage: React.FC = () => {
   );
 };
 
-export default PresMeetPage;
+export default EventBookingPage;
