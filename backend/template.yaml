@@ -924,7 +924,7 @@ Resources:
       Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
-          DYNAMODB_TABLE: Events
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         CreateEvent:
           Type: Api
@@ -1582,7 +1582,7 @@ Resources:
       Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
-          DYNAMODB_TABLE: Events
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         UpdateEvent:
           Type: Api
