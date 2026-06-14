@@ -217,7 +217,7 @@ export async function getProducts(
   sourceId: string,
   productIds?: string[]
 ): Promise<Product[]> {
-  const response = await presmeetClient.get<Product[]>('/products');
+  const response = await presmeetClient.get<Product[]>('/scan-product/');
   if (productIds && productIds.length > 0) {
     return response.data.filter((p) => productIds.includes(p.product_id));
   }
