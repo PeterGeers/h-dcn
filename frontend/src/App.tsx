@@ -51,6 +51,7 @@ const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) 
 const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as any;
 const EventBookingPage = lazy(() => import('./modules/presmeet/EventBookingPage')) as any;
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
+const EventLandingPage = lazy(() => import('./modules/events/EventLandingPage')) as any;
 
 /**
  * Route guard for /webshop_management.
@@ -203,6 +204,17 @@ function App() {
                     <p>Current URL: {window.location.href}</p>
                     <p>Hash: {window.location.hash}</p>
                   </div>
+                } />
+
+                {/* Public event landing page — no AuthGuard required */}
+                <Route path="/events/:slug/info" element={
+                  <Suspense fallback={
+                    <Center h="100vh">
+                      <Spinner size="xl" color="orange.400" />
+                    </Center>
+                  }>
+                    <EventLandingPage />
+                  </Suspense>
                 } />
                 
                 {/* All other routes require group access guard */}
