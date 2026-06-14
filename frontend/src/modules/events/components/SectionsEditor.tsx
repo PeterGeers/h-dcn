@@ -6,7 +6,6 @@ import {
   FormLabel,
   Input,
   Textarea,
-  Select,
   Button,
   IconButton,
   Text,

@@ -45,7 +45,7 @@ const EventRegisterPage: React.FC = () => {
   const { t: tEvent } = useTranslation('eventBooking');
   const { t: tAuth } = useTranslation('auth');
   const { i18n } = useTranslation();
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Event data state
   const [event, setEvent] = useState<PublicEventData | null>(null);
