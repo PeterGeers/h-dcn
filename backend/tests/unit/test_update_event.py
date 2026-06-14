@@ -575,3 +575,107 @@ class TestAuthAndEdgeCases:
 
         response = handler_module.lambda_handler(event, {})
         assert response['statusCode'] == 200
+
+
+# ---------------------------------------------------------------------------
+# Tests: Landing page slug uniqueness (26.3)
+# ---------------------------------------------------------------------------
+
+class TestSlugUniqueness:
+    """Tests for landing_page slug uniqueness validation."""
+
+    def test_slug_accepted_when_unique(self, events_table):
+        """A unique slug is accepted on update."""
+        import app as handler_module
+
+        event = _make_event({
+            'landing_page': {'enabled': True, 'slug': 'unique-slug-2027', 'hero_image_url': '', 'tagline': '', 'registration_label': '', 'logos': [], 'sections': []}
+        })
+
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, {})
+
+        assert response['statusCode'] == 200
+        item = events_table.get_item(Key={'event_id': 'test-event-1'})['Item']
+        assert item['landing_page']['slug'] == 'unique-slug-2027'
+
+    def test_slug_collision_returns_409(self, events_table):
+        """A slug already used by another event returns 409."""
+        import app as handler_module
+
+        # Create another event with an enabled landing page slug
+        _seed_event(events_table, event_id='other-event', landing_page={
+            'enabled': True,
+            'slug': 'taken-slug',
+            'hero_image_url': '',
+            'tagline': '',
+            'registration_label': '',
+            'logos': [],
+            'sections': [],
+        })
+
+        # Try to use same slug on our test event
+        event = _make_event({
+            'landing_page': {'enabled': True, 'slug': 'taken-slug', 'hero_image_url': '', 'tagline': '', 'registration_label': '', 'logos': [], 'sections': []}
+        })
+
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, {})
+
+        assert response['statusCode'] == 409
+        body = json.loads(response['body'])
+        assert 'taken-slug' in body['error']
+
+    def test_slug_allowed_when_same_event_owns_it(self, events_table):
+        """An event can keep its own slug without triggering a collision."""
+        import app as handler_module
+
+        # Set the slug on the test event itself first
+        events_table.update_item(
+            Key={'event_id': 'test-event-1'},
+            UpdateExpression='SET landing_page = :lp',
+            ExpressionAttributeValues={':lp': {
+                'enabled': True,
+                'slug': 'my-own-slug',
+                'hero_image_url': '',
+                'tagline': '',
+                'registration_label': '',
+                'logos': [],
+                'sections': [],
+            }},
+        )
+
+        # Update the same event with the same slug — should be fine
+        event = _make_event({
+            'landing_page': {'enabled': True, 'slug': 'my-own-slug', 'hero_image_url': '', 'tagline': 'Updated', 'registration_label': '', 'logos': [], 'sections': []}
+        })
+
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, {})
+
+        assert response['statusCode'] == 200
+
+    def test_slug_not_checked_when_landing_page_disabled(self, events_table):
+        """Slug uniqueness is not enforced when landing page is disabled."""
+        import app as handler_module
+
+        # Create another event with same slug (but enabled)
+        _seed_event(events_table, event_id='other-event', landing_page={
+            'enabled': True,
+            'slug': 'shared-slug',
+            'hero_image_url': '',
+            'tagline': '',
+            'registration_label': '',
+            'logos': [],
+            'sections': [],
+        })
+
+        # Use same slug but with enabled=False — should not trigger collision
+        event = _make_event({
+            'landing_page': {'enabled': False, 'slug': 'shared-slug', 'hero_image_url': '', 'tagline': '', 'registration_label': '', 'logos': [], 'sections': []}
+        })
+
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, {})
+
+        assert response['statusCode'] == 200

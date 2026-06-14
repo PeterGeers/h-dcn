@@ -109,6 +109,28 @@ def validate_constraints(constraints):
     return errors
 
 
+def _check_slug_uniqueness(slug, exclude_event_id=None):
+    """
+    Check if a landing_page slug is already used by another event.
+    Returns an error response if a collision is found, None otherwise.
+    """
+    response = table.scan(
+        FilterExpression='landing_page.slug = :slug AND landing_page.enabled = :enabled',
+        ExpressionAttributeValues={
+            ':slug': slug,
+            ':enabled': True,
+        },
+        ProjectionExpression='event_id',
+    )
+    for item in response.get('Items', []):
+        if item['event_id'] != exclude_event_id:
+            return create_error_response(
+                409,
+                f'Slug "{slug}" is already in use by another event'
+            )
+    return None
+
+
 def lambda_handler(event, context):
     try:
         # Handle OPTIONS request
@@ -177,6 +199,15 @@ def lambda_handler(event, context):
         if 'location' in body and body['location'] and len(body['location']) > 300:
             return create_error_response(400, 'location must be at most 300 characters')
 
+        # Validate landing_page slug uniqueness if provided
+        if 'landing_page' in body:
+            landing_page = body['landing_page']
+            if isinstance(landing_page, dict) and landing_page.get('enabled') and landing_page.get('slug'):
+                slug = landing_page['slug']
+                slug_error = _check_slug_uniqueness(slug, event_id)
+                if slug_error:
+                    return slug_error
+
         # Build update expression
         update_expression = "SET updated_at = :updated_at"
         expression_values = {':updated_at': datetime.utcnow().isoformat()}
@@ -186,7 +217,7 @@ def lambda_handler(event, context):
         updatable_fields = [
             'name', 'event_type', 'location', 'start_date', 'end_date',
             'registration_open', 'registration_close', 'payment_deadline',
-            'constraints', 'product_ids'
+            'constraints', 'product_ids', 'landing_page'
         ]
 
         for key, value in body.items():

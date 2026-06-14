@@ -135,6 +135,15 @@ export interface Event {
   opmerkingen?: string;
   betaalstatus?: string;
   factuurnummer?: string;
+  landing_page?: {
+    enabled: boolean;
+    slug: string;
+    hero_image_url: string;
+    tagline: string;
+    registration_label: string;
+    logos: Array<{ name: string; logo_url: string }>;
+    sections: Array<{ type: string; title: string; content?: string; items?: Array<{ name: string; logo_url: string }> }>;
+  };
 }
 
 export interface ApiResponse<T> {
