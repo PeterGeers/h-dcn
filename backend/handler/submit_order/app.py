@@ -52,6 +52,7 @@ try:
         validate_purchase_rules,
         validate_submission,
     )
+    from shared.number_generator import generate_order_number
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
@@ -68,6 +69,7 @@ orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 events_table = dynamodb.Table(os.environ.get('EVENTS_TABLE_NAME', 'Events'))
 members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
+counters_table = dynamodb.Table(os.environ.get('COUNTERS_TABLE_NAME', 'Counters'))
 
 GSI_NAME = 'event-member-index'
 
@@ -205,12 +207,8 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Validate basic permissions (any authenticated member)
-        is_authorized, error_response, _ = validate_permissions_with_regions(
-            user_roles, ['events_read'], user_email, None
-        )
-        if not is_authorized:
-            return error_response
+        # No broad permission check — access controlled by order ownership
+        # and event access (has_event_access) checked below.
 
         # 2. Get order_id from path parameters
         path_params = event.get('pathParameters') or {}
@@ -313,12 +311,16 @@ def lambda_handler(event, context):
         now = datetime.now(timezone.utc).isoformat()
         current_version = order.get('version', 1)
 
+        # Generate order number
+        order_number = generate_order_number(counters_table)
+
         try:
             updated = orders_table.update_item(
                 Key={'order_id': order_id},
                 UpdateExpression=(
                     'SET #status = :submitted, submitted_at = :now, '
-                    'updated_at = :now, version = :new_version'
+                    'updated_at = :now, version = :new_version, '
+                    'order_number = :order_number'
                 ),
                 ConditionExpression=(
                     Attr('status').eq('draft') & Attr('version').eq(current_version)
@@ -328,6 +330,7 @@ def lambda_handler(event, context):
                     ':submitted': 'submitted',
                     ':now': now,
                     ':new_version': current_version + 1,
+                    ':order_number': order_number,
                 },
                 ReturnValues='ALL_NEW',
             )

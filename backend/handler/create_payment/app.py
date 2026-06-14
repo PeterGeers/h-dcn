@@ -147,12 +147,8 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Validate basic permissions (any authenticated member)
-        is_authorized, error_response, _ = validate_permissions_with_regions(
-            user_roles, ['events_read'], user_email, None
-        )
-        if not is_authorized:
-            return error_response
+        # No broad permission check — access controlled by order ownership
+        # (verified below via member_id match or delegate check).
 
         # 2. Get order_id from path parameters
         path_params = event.get('pathParameters') or {}

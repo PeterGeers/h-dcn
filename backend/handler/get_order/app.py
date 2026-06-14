@@ -157,12 +157,11 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        # Validate basic permissions (any authenticated member)
-        is_authorized, error_response, _ = validate_permissions_with_regions(
-            user_roles, ['events_read'], user_email, None
-        )
-        if not is_authorized:
-            return error_response
+        # No broad permission check here — access is controlled per-source:
+        # - Webshop: requires hdcnLeden group (checked below)
+        # - Events: requires has_event_access(member_id, event_id) (checked below)
+        # This allows event_participant users to access their allowed events
+        # without needing events_read admin permission.
 
         # 2. Get source_id from query params
         query_params = event.get('queryStringParameters') or {}

@@ -366,7 +366,12 @@ def validate_permissions(user_roles, required_permissions, user_email=None, reso
                 'carts_create', 'carts_read', 'carts_update', 'carts_delete',
                 'orders_create', 'orders_read_own', 'payments_create', 'payments_read_own'
             ],
-            'verzoek_lid': ['members_self_read', 'members_self_create', 'members_self_update']  # Applicants can only manage their application
+            'verzoek_lid': ['members_self_read', 'members_self_create', 'members_self_update'],  # Applicants can only manage their application
+            'event_participant': [
+                'profile_read', 'profile_update_own',
+                'members_self_read', 'members_self_update',
+                'events_read', 'events_list'
+            ]  # External event participants with limited portal access
             # Note: Region roles (Regio_*) don't grant permissions by themselves
         }
         
