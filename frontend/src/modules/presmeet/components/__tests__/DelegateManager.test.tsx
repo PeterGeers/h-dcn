@@ -93,6 +93,8 @@ jest.mock('@chakra-ui/icons', () => ({
 function createOrder(overrides: Partial<Order> = {}): Order {
   return {
     order_id: 'order-123',
+    source_id: 'event-pm2027',
+    member_id: 'member-1',
     club_id: 'club-amsterdam',
     event_id: 'event-pm2027',
     event_type: 'presmeet',

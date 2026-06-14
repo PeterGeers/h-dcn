@@ -1,17 +1,20 @@
 /**
- * PresMeet v3 API Client
+ * PresMeet v3 API Client (Updated for Unified Booking Endpoints)
  *
- * Uses Axios with an auth interceptor for all PresMeet endpoints.
+ * Uses Axios with an auth interceptor for all booking endpoints.
  * Handles 409 (version conflict) and 403 (authorization) errors
  * with structured error types.
  *
- * Endpoints:
- * - GET  /presmeet/orders?event_id=X        → get/create order
- * - PUT  /presmeet/orders/{id}              → save draft
- * - POST /presmeet/orders/{id}/submit       → validate + submit
- * - POST /presmeet/orders/{id}/pay          → initiate Mollie payment
- * - GET  /presmeet/reports/{type}?event_id=X → reports
- * - GET  /events?event_type=presmeet        → get events
+ * Unified Endpoints:
+ * - GET  /booking?source_id={event_id|webshop}  → get/create order
+ * - PUT  /orders/{id}/items                     → save draft (update items)
+ * - POST /booking/{id}/submit                   → validate + submit
+ * - POST /booking/{id}/pay                      → initiate Mollie payment
+ * - POST /booking/{id}/delegates                → manage delegates
+ * - POST /admin/booking/lock?source_id={id}     → lock orders
+ * - GET  /admin/reports?source_id={id}          → reports
+ * - GET  /events?event_type=X                   → get events
+ * - GET  /products                              → get products
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
@@ -140,18 +143,21 @@ const presmeetClient = createPresMeetClient();
 // --- API Methods ---
 
 /**
- * Get or create a PresMeet order for the user's club and specified event.
- * If no order exists, the backend creates a new draft order.
+ * Get or create an order for the given source.
+ * Uses the unified /booking endpoint with source_id parameter.
+ *
+ * @param sourceId - event UUID or "webshop"
  */
-export async function getOrder(eventId: string): Promise<Order> {
-  const response = await presmeetClient.get<Order>('/presmeet/orders', {
-    params: { event_id: eventId },
+export async function getOrder(sourceId: string): Promise<Order> {
+  const response = await presmeetClient.get<Order>('/booking', {
+    params: { source_id: sourceId },
   });
   return response.data;
 }
 
 /**
- * Save draft order (PUT). Sends items and current version for optimistic locking.
+ * Save draft order items (PUT). Sends items and current version for optimistic locking.
+ * Uses the unified /orders/{id}/items endpoint.
  * May throw VersionConflictError (409) if version has changed.
  */
 export async function saveOrder(
@@ -159,7 +165,7 @@ export async function saveOrder(
   data: SaveOrderRequest
 ): Promise<Order> {
   const response = await presmeetClient.put<Order>(
-    `/presmeet/orders/${encodeURIComponent(orderId)}`,
+    `/orders/${encodeURIComponent(orderId)}/items`,
     data
   );
   return response.data;
@@ -171,7 +177,7 @@ export async function saveOrder(
  */
 export async function submitOrder(orderId: string): Promise<Order> {
   const response = await presmeetClient.post<Order>(
-    `/presmeet/orders/${encodeURIComponent(orderId)}/submit`
+    `/booking/${encodeURIComponent(orderId)}/submit`
   );
   return response.data;
 }
@@ -182,13 +188,13 @@ export async function submitOrder(orderId: string): Promise<Order> {
  */
 export async function pay(orderId: string): Promise<PaymentInitiationResponse> {
   const response = await presmeetClient.post<PaymentInitiationResponse>(
-    `/presmeet/orders/${encodeURIComponent(orderId)}/pay`
+    `/booking/${encodeURIComponent(orderId)}/pay`
   );
   return response.data;
 }
 
 /**
- * Get a PresMeet event by event_type filter.
+ * Get events by event_type filter.
  * Uses the existing /events endpoint.
  */
 export async function getEvent(eventType: string = 'presmeet'): Promise<Event[]> {
@@ -199,16 +205,17 @@ export async function getEvent(eventType: string = 'presmeet'): Promise<Event[]>
 }
 
 /**
- * Get products for a given event by event_id.
- * Optionally filter by product_ids from the event definition.
+ * Get products by their IDs from the event's product_ids list.
+ * Fetches all products and filters by the event's product_ids.
+ *
+ * @param sourceId - the event_id (source_id) for context (unused in API call but kept for interface)
+ * @param productIds - array of product_ids from the event record to filter by
  */
 export async function getProducts(
-  eventId: string,
+  sourceId: string,
   productIds?: string[]
 ): Promise<Product[]> {
-  const response = await presmeetClient.get<Product[]>('/products', {
-    params: { event_id: eventId },
-  });
+  const response = await presmeetClient.get<Product[]>('/products');
   if (productIds && productIds.length > 0) {
     return response.data.filter((p) => productIds.includes(p.product_id));
   }
@@ -216,16 +223,16 @@ export async function getProducts(
 }
 
 /**
- * Get report data for a specific event and report type.
+ * Get report data for a specific source and report type.
  * Supports filtering by order status and payment status.
  */
 export async function getReport(params: ReportParams): Promise<ReportResponse> {
   const { type, event_id, status, payment_status, format } = params;
   const response = await presmeetClient.get<ReportResponse>(
-    `/presmeet/reports/${encodeURIComponent(type)}`,
+    `/admin/reports/${encodeURIComponent(type)}`,
     {
       params: {
-        event_id,
+        source_id: event_id,
         ...(status && { status }),
         ...(payment_status && { payment_status }),
         ...(format && { format }),
@@ -237,17 +244,18 @@ export async function getReport(params: ReportParams): Promise<ReportResponse> {
 
 /**
  * Manage delegates on an order (add or remove secondary delegate).
- * - action "add": requires email of existing portal user with PresMeet access
+ * Uses the unified /booking/{id}/delegates endpoint.
+ * - action "add": requires email of existing portal user with event access
  * - action "remove": removes the current secondary delegate
  *
- * Possible errors: 404 (user not found), 403 (no PresMeet access), 400 (already assigned)
+ * Possible errors: 404 (user not found), 403 (no event access), 400 (already assigned)
  */
 export async function manageDelegates(
   orderId: string,
   data: { action: 'add'; email: string } | { action: 'remove' }
 ): Promise<Order> {
   const response = await presmeetClient.post<Order>(
-    `/presmeet/orders/${encodeURIComponent(orderId)}/delegates`,
+    `/booking/${encodeURIComponent(orderId)}/delegates`,
     data
   );
   return response.data;
@@ -272,7 +280,9 @@ export const presmeetApi = {
 
 export const presmeetService = {
   getConfig: (): Promise<ApiResponse<PresMeetConfig>> => {
-    return ApiService.get<PresMeetConfig>('/presmeet/config');
+    // Legacy: config endpoint removed — products are fetched by event's product_ids now
+    // Return empty config for backward compatibility during transition
+    return Promise.resolve({ success: true, data: {} as PresMeetConfig });
   },
 
   getBooking: (clubId?: string): Promise<ApiResponse<PresMeetBooking>> => {
@@ -314,11 +324,11 @@ export const presmeetService = {
   },
 
   lockOrders: (orderIds?: string[]): Promise<ApiResponse<void>> => {
-    return ApiService.post<void>('/presmeet/admin/lock', { order_ids: orderIds });
+    return ApiService.post<void>('/admin/booking/lock', { order_ids: orderIds });
   },
 
   unlockOrder: (orderId: string): Promise<ApiResponse<void>> => {
-    return ApiService.post<void>(`/presmeet/admin/unlock/${encodeURIComponent(orderId)}`);
+    return ApiService.post<void>(`/admin/booking/${encodeURIComponent(orderId)}/unlock`);
   },
 
   recordPayment: (data: ManualPayment): Promise<ApiResponse<void>> => {

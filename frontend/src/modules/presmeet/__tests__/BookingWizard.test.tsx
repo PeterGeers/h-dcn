@@ -127,6 +127,8 @@ const mockProducts: Product[] = [
 
 const mockOrder: Order = {
   order_id: 'ord-1',
+  source_id: 'evt-1',
+  member_id: 'member-1',
   club_id: 'club-1',
   event_id: 'evt-1',
   event_type: 'presmeet',

@@ -83,6 +83,8 @@ const mockedPay = presmeetApi.pay as jest.MockedFunction<typeof presmeetApi.pay>
 function createOrder(overrides: Partial<Order> = {}): Order {
   return {
     order_id: 'order-123',
+    source_id: 'event-456',
+    member_id: 'member-1',
     club_id: 'club-abc',
     event_id: 'event-456',
     event_type: 'presmeet',

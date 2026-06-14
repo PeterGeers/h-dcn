@@ -34,6 +34,8 @@ export interface OrderItem {
 export interface Delegate {
   primary: string;
   secondary: string | null;
+  primary_member_id?: string;
+  secondary_member_id?: string;
 }
 
 export interface StatusHistoryEntry {
@@ -46,21 +48,23 @@ export interface StatusHistoryEntry {
 
 export interface Order {
   order_id: string;
-  club_id: string;
-  event_id: string;
-  event_type: string;
+  source_id: string;
+  member_id: string;
+  club_id?: string;
+  event_id?: string;
+  event_type?: string;
   status: OrderStatus;
-  payment_status: PaymentStatus;
-  total_amount: number;
-  total_paid: number;
+  payment_status?: PaymentStatus;
+  total_amount?: number;
+  total_paid?: number;
   items: OrderItem[];
-  delegates: Delegate;
+  delegates?: Delegate;
   version: number;
-  status_history: StatusHistoryEntry[];
+  status_history?: StatusHistoryEntry[];
   created_at: string;
   updated_at: string;
-  submitted_at: string | null;
-  created_by: string;
+  submitted_at?: string | null;
+  created_by?: string;
 }
 
 // --- Event Models ---
