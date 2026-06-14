@@ -1,0 +1,119 @@
+{
+  "page": {
+    "title": "Prenotazione evento",
+    "title_booking": "Prenotazione evento",
+    "error_loading": "Errore nel caricamento dell'evento",
+    "tab_booking": "Prenotazione",
+    "tab_overview": "Panoramica",
+    "tab_admin": "Admin"
+  },
+  "booking": {
+    "title": "Prenotazione evento",
+    "addPerson": "Aggiungi persona",
+    "addFirstPerson": "Aggiungi prima persona",
+    "submit": "Invia prenotazione",
+    "save": "Salva bozza",
+    "saving": "Salvataggio...",
+    "lastSaved": "Ultimo salvataggio: {{time}}",
+    "retry": "Riprova",
+    "loading": "Caricamento dati prenotazione...",
+    "loadFailedTitle": "Impossibile caricare la prenotazione",
+    "noEventOrOrder": "Nessun dato di evento o ordine disponibile.",
+    "lockedMessage": "Questa prenotazione è bloccata. Contattare gli organizzatori per modifiche.",
+    "noPersonsYet": "Nessuna persona aggiunta. Aggiungi un delegato o un ospite per iniziare.",
+    "estimatedTotal": "Totale stimato",
+    "status": {
+      "draft": "Bozza",
+      "submitted": "Inviato",
+      "locked": "Bloccato"
+    }
+  },
+  "form": {
+    "delegates": "Delegati",
+    "delegateN": "Delegato {{n}}",
+    "guests": "Ospiti",
+    "guestN": "Ospite {{n}}",
+    "products": "Prodotti",
+    "name": "Nome",
+    "role": "Ruolo",
+    "gender": "Genere",
+    "size": "Taglia",
+    "male": "Maschio",
+    "female": "Femmina",
+    "placeholderName": "Nome completo",
+    "placeholderRole": "es. Presidente, Segretario",
+    "addDelegate": "Aggiungi delegato",
+    "addGuest": "Aggiungi ospite",
+    "removeDelegate": "Rimuovi delegato {{n}}",
+    "removeGuest": "Rimuovi ospite {{n}}",
+    "maxReached": "(max {{count}} raggiunto)",
+    "attendParty": "Partecipa alla festa",
+    "orderTshirt": "Ordina t-shirt"
+  },
+  "errors": {
+    "notFound": "Prenotazione non trovata",
+    "noAccess": "Non hai accesso a questo evento",
+    "clubRequired": "Assegnazione club richiesta per questo evento",
+    "registrationClosed": "Le iscrizioni sono chiuse",
+    "loadFailed": "Impossibile caricare i dati",
+    "networkError": "Si è verificato un errore di rete",
+    "saveFailed": "Salvataggio fallito",
+    "submitFailed": "Invio fallito",
+    "validationErrors": "Correggi gli errori evidenziati prima di inviare"
+  },
+  "landing": {
+    "registerButton": "Registrati ora",
+    "goToBooking": "Vai alla prenotazione",
+    "registrationClosed": "Le iscrizioni sono chiuse",
+    "alreadyRegistered": "Sei già registrato",
+    "loginToRegister": "Accedi per registrarti",
+    "welcomeBack": "Bentornato"
+  },
+  "admin": {
+    "manageAccess": "Gestisci accesso",
+    "grantAccess": "Concedi accesso",
+    "revokeAccess": "Revoca accesso",
+    "bulkGrant": "Concessione in massa",
+    "grant": "Concedi",
+    "loadingAccess": "Caricamento lista accessi...",
+    "membersWithAccess": "membri con accesso",
+    "noMembersWithAccess": "Nessun membro ha ancora accesso a questo evento.",
+    "emailOrMemberId": "E-mail o ID membro",
+    "selected": "selezionato/i",
+    "membersUpdated": "membri aggiornati",
+    "accessGranted": "Accesso concesso",
+    "accessRevoked": "Accesso revocato",
+    "grantFailed": "Concessione fallita",
+    "revokeFailed": "Revoca fallita",
+    "bulkGrantSuccess": "Accesso in massa concesso",
+    "bulkGrantFailed": "Concessione in massa fallita",
+    "bulkRevokeSuccess": "Accesso in massa revocato",
+    "bulkRevokeFailed": "Revoca in massa fallita",
+    "colMemberId": "ID membro",
+    "colEmail": "E-mail",
+    "colMemberType": "Tipo",
+    "colActions": "Azioni"
+  },
+  "selfService": {
+    "title": "I miei eventi",
+    "noEvents": "Non hai ancora accesso a nessun evento.",
+    "goToBooking": "Vai alla prenotazione",
+    "profile": "Profilo",
+    "eventAccess": "Accesso evento"
+  },
+  "payment": {
+    "title": "Pagamento",
+    "totalAmount": "Importo totale",
+    "totalPaid": "Totale pagato",
+    "remainingBalance": "Saldo residuo",
+    "payNow": "Paga ora ({{amount}})",
+    "fullyPaid": "✓ Interamente pagato",
+    "submitBeforePay": "L'ordine deve essere inviato prima del pagamento"
+  },
+  "submit": {
+    "success": "La tua prenotazione è stata inviata con successo.",
+    "failed": "Invio fallito — correggi i seguenti errori:",
+    "button": "Invia prenotazione",
+    "buttonResubmit": "Reinvia prenotazione"
+  }
+}

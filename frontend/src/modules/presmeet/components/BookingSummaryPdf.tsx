@@ -215,7 +215,7 @@ const BookingSummaryPdf: React.FC<BookingSummaryPdfProps> = ({
   event,
   products,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
 
   const handleDownload = useCallback(() => {
     generateBookingSummaryPdf(order, event, products, t);

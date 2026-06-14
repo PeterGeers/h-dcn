@@ -49,7 +49,7 @@ const DelegateSection: React.FC<DelegateSectionProps> = ({
   errors,
   isDisabled = false,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const canAdd = delegates.length < maxDelegates;
 
   const handleAdd = () => {

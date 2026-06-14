@@ -1,9 +1,8 @@
 {
-  "_deprecated": "This namespace is deprecated. Use 'eventBooking' namespace instead. Will be removed in a future release.",
   "page": {
-    "title": "Presidents' Meeting",
-    "title_booking": "Presidents' Meeting Booking",
-    "error_loading": "Error loading PresMeet",
+    "title": "Event Booking",
+    "title_booking": "Event Booking",
+    "error_loading": "Error loading event",
     "admin_no_personal_booking": "No personal booking found. Use the Admin tab to manage orders.",
     "tab_booking": "Booking",
     "tab_overview": "Overview",
@@ -50,7 +49,7 @@
   },
   "onboarding": {
     "select_club": "Select Your Club",
-    "select_club_desc": "Choose the club you represent for the Presidents' Meeting.",
+    "select_club_desc": "Choose the club you represent for this event.",
     "search_clubs": "Search clubs...",
     "no_search_results": "No clubs match your search.",
     "loading_clubs": "Loading available clubs...",
@@ -63,7 +62,7 @@
     "club_already_assigned": "Club Already Assigned",
     "already_assigned_desc": "{{clubName}} already has a registered representative.",
     "current_contact": "Current contact",
-    "contact_admin": "If you believe this is incorrect, please contact the PresMeet administrator to reassign the club.",
+    "contact_admin": "If you believe this is incorrect, please contact the administrator to reassign the club.",
     "choose_different": "Choose a different club",
     "no_logo": "No logo",
     "already_assigned": "Already assigned",
@@ -202,7 +201,7 @@
     "add_description": "Add a secondary delegate who can also manage this booking"
   },
   "admin": {
-    "dashboard_title": "PresMeet Event Dashboard",
+    "dashboard_title": "Event Dashboard",
     "select_event": "Select Event",
     "select_event_placeholder": "Select an event...",
     "registration_progress": "Registration Progress",
@@ -218,13 +217,36 @@
     "loading_dashboard": "Loading dashboard data...",
     "failed_load_events": "Failed to load events",
     "failed_load_dashboard": "Failed to load dashboard data. Please try again.",
-    "no_events": "No PresMeet events found. Create an event to get started.",
+    "no_events": "No events found. Create an event to get started.",
     "draft_orders": "Draft Orders",
     "submitted_orders": "Submitted Orders",
     "locked_orders": "Locked Orders",
     "unpaid_orders": "Unpaid Orders",
     "partially_paid": "Partially Paid",
-    "fully_paid": "Fully Paid"
+    "fully_paid": "Fully Paid",
+    "manageAccess": "Manage Access",
+    "grantAccess": "Grant Access",
+    "revokeAccess": "Revoke Access",
+    "bulkGrant": "Bulk Grant",
+    "grant": "Grant",
+    "loadingAccess": "Loading access list...",
+    "membersWithAccess": "members with access",
+    "noMembersWithAccess": "No members have access to this event yet.",
+    "emailOrMemberId": "Email or member ID",
+    "selected": "selected",
+    "membersUpdated": "members updated",
+    "accessGranted": "Access granted",
+    "accessRevoked": "Access revoked",
+    "grantFailed": "Grant failed",
+    "revokeFailed": "Revoke failed",
+    "bulkGrantSuccess": "Bulk access granted",
+    "bulkGrantFailed": "Bulk grant failed",
+    "bulkRevokeSuccess": "Bulk access revoked",
+    "bulkRevokeFailed": "Bulk revoke failed",
+    "colMemberId": "Member ID",
+    "colEmail": "Email",
+    "colMemberType": "Type",
+    "colActions": "Actions"
   },
   "reports": {
     "title": "{{type}} Report",
@@ -275,5 +297,27 @@
     "filter_unpaid": "Unpaid",
     "filter_partial": "Partial",
     "filter_paid": "Paid"
+  },
+  "errors": {
+    "notFound": "Booking not found",
+    "noAccess": "You don't have access to this event",
+    "clubRequired": "Club assignment required for this event",
+    "registrationClosed": "Registration is closed",
+    "loadFailed": "Could not load data"
+  },
+  "landing": {
+    "registerButton": "Register Now",
+    "goToBooking": "Go to Booking",
+    "registrationClosed": "Registration is closed",
+    "alreadyRegistered": "You are already registered",
+    "loginToRegister": "Log in to register",
+    "welcomeBack": "Welcome back"
+  },
+  "selfService": {
+    "title": "My Events",
+    "noEvents": "You don't have access to any events yet.",
+    "goToBooking": "Go to booking",
+    "profile": "Profile",
+    "eventAccess": "Event Access"
   }
 }

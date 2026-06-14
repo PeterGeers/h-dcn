@@ -1,0 +1,119 @@
+{
+  "page": {
+    "title": "Evenemangbokning",
+    "title_booking": "Evenemangbokning",
+    "error_loading": "Fel vid laddning av evenemang",
+    "tab_booking": "Bokning",
+    "tab_overview": "Översikt",
+    "tab_admin": "Admin"
+  },
+  "booking": {
+    "title": "Evenemangbokning",
+    "addPerson": "Lägg till person",
+    "addFirstPerson": "Lägg till första person",
+    "submit": "Skicka bokning",
+    "save": "Spara utkast",
+    "saving": "Sparar...",
+    "lastSaved": "Senast sparad: {{time}}",
+    "retry": "Försök igen",
+    "loading": "Laddar bokningsdata...",
+    "loadFailedTitle": "Kunde inte ladda bokningen",
+    "noEventOrOrder": "Inga evenemang- eller orderdata tillgängliga.",
+    "lockedMessage": "Denna bokning är låst. Kontakta arrangörerna för ändringar.",
+    "noPersonsYet": "Inga personer tillagda än. Lägg till en delegat eller gäst för att börja.",
+    "estimatedTotal": "Uppskattat totalt",
+    "status": {
+      "draft": "Utkast",
+      "submitted": "Inskickad",
+      "locked": "Låst"
+    }
+  },
+  "form": {
+    "delegates": "Delegater",
+    "delegateN": "Delegat {{n}}",
+    "guests": "Gäster",
+    "guestN": "Gäst {{n}}",
+    "products": "Produkter",
+    "name": "Namn",
+    "role": "Roll",
+    "gender": "Kön",
+    "size": "Storlek",
+    "male": "Man",
+    "female": "Kvinna",
+    "placeholderName": "Fullständigt namn",
+    "placeholderRole": "t.ex. Ordförande, Sekreterare",
+    "addDelegate": "Lägg till delegat",
+    "addGuest": "Lägg till gäst",
+    "removeDelegate": "Ta bort delegat {{n}}",
+    "removeGuest": "Ta bort gäst {{n}}",
+    "maxReached": "(max {{count}} nått)",
+    "attendParty": "Delta i festen",
+    "orderTshirt": "Beställ t-shirt"
+  },
+  "errors": {
+    "notFound": "Bokning hittades inte",
+    "noAccess": "Du har inte tillgång till detta evenemang",
+    "clubRequired": "Klubbtilldelning krävs för detta evenemang",
+    "registrationClosed": "Registreringen är stängd",
+    "loadFailed": "Kunde inte ladda data",
+    "networkError": "Ett nätverksfel uppstod",
+    "saveFailed": "Sparande misslyckades",
+    "submitFailed": "Inskickning misslyckades",
+    "validationErrors": "Vänligen åtgärda markerade fel innan du skickar"
+  },
+  "landing": {
+    "registerButton": "Registrera nu",
+    "goToBooking": "Gå till bokning",
+    "registrationClosed": "Registreringen är stängd",
+    "alreadyRegistered": "Du är redan registrerad",
+    "loginToRegister": "Logga in för att registrera",
+    "welcomeBack": "Välkommen tillbaka"
+  },
+  "admin": {
+    "manageAccess": "Hantera åtkomst",
+    "grantAccess": "Bevilja åtkomst",
+    "revokeAccess": "Återkalla åtkomst",
+    "bulkGrant": "Massbevilja",
+    "grant": "Bevilja",
+    "loadingAccess": "Laddar åtkomstlista...",
+    "membersWithAccess": "medlemmar med åtkomst",
+    "noMembersWithAccess": "Inga medlemmar har ännu åtkomst till detta evenemang.",
+    "emailOrMemberId": "E-post eller medlems-ID",
+    "selected": "valda",
+    "membersUpdated": "medlemmar uppdaterade",
+    "accessGranted": "Åtkomst beviljad",
+    "accessRevoked": "Åtkomst återkallad",
+    "grantFailed": "Beviljande misslyckades",
+    "revokeFailed": "Återkallande misslyckades",
+    "bulkGrantSuccess": "Massåtkomst beviljad",
+    "bulkGrantFailed": "Massbeviljande misslyckades",
+    "bulkRevokeSuccess": "Massåtkomst återkallad",
+    "bulkRevokeFailed": "Massåterkallande misslyckades",
+    "colMemberId": "Medlems-ID",
+    "colEmail": "E-post",
+    "colMemberType": "Typ",
+    "colActions": "Åtgärder"
+  },
+  "selfService": {
+    "title": "Mina evenemang",
+    "noEvents": "Du har inte åtkomst till några evenemang ännu.",
+    "goToBooking": "Gå till bokning",
+    "profile": "Profil",
+    "eventAccess": "Evenemangsåtkomst"
+  },
+  "payment": {
+    "title": "Betalning",
+    "totalAmount": "Totalt belopp",
+    "totalPaid": "Totalt betalt",
+    "remainingBalance": "Återstående saldo",
+    "payNow": "Betala nu ({{amount}})",
+    "fullyPaid": "✓ Helt betalt",
+    "submitBeforePay": "Beställningen måste skickas innan betalning"
+  },
+  "submit": {
+    "success": "Din bokning har skickats.",
+    "failed": "Inskickning misslyckades — vänligen åtgärda följande fel:",
+    "button": "Skicka bokning",
+    "buttonResubmit": "Skicka bokning igen"
+  }
+}

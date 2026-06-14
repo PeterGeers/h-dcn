@@ -53,7 +53,7 @@ const GuestSection: React.FC<GuestSectionProps> = ({
   errors,
   isDisabled = false,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
 
   // Guests always get a party ticket, so party limit applies
   const remainingPartySlots = maxPartyTotal - currentPartyCount;

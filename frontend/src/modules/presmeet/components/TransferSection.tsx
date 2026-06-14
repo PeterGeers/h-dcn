@@ -54,7 +54,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
   errors,
   isDisabled = false,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
 
   const AIRPORTS: { value: Airport; label: string }[] = [
     { value: 'AMS', label: t('transfers.airport_ams') },

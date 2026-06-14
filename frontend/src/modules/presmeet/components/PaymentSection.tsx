@@ -65,7 +65,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   totalPaid,
   payments = [],
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 

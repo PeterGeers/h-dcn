@@ -109,7 +109,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   onSaved,
   onSubmitted,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const toast = useToast();
 
   const [formData, setFormData] = useState<BookingFormData>(

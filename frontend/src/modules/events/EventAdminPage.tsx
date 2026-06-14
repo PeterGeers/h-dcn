@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, VStack, HStack, Heading, Tabs, TabList, TabPanels, Tab, TabPanel,
-  Spinner, Text, Alert, AlertIcon, Button
+  Spinner, Text, Alert, AlertIcon, Button, Select
 } from '@chakra-ui/react';
 import EventList from './components/EventList';
 import FinanceModule from './components/FinanceModule';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import EventAccessManager from './components/EventAccessManager';
 import { getAuthHeadersForGet } from '../../utils/authHeaders';
 import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
@@ -43,6 +44,7 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   const [loading, setLoading] = useState(true);
   const [permissionManager, setPermissionManager] = useState<FunctionPermissionManager | null>(null);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [selectedAccessEventId, setSelectedAccessEventId] = useState<string>('');
   const { handleError } = useErrorHandler();
 
   useEffect(() => {
@@ -284,6 +286,11 @@ function EventAdminPage({ user }: EventAdminPageProps) {
                 Analytics
               </Tab>
             )}
+            {hasEventsFullAccess && (
+              <Tab color="orange.400" _selected={{ bg: 'orange.400', color: 'black' }}>
+                Toegangsbeheer
+              </Tab>
+            )}
           </TabList>
 
           <TabPanels>
@@ -333,6 +340,38 @@ function EventAdminPage({ user }: EventAdminPageProps) {
                 />
               </FunctionGuard>
             </TabPanel>
+            {hasEventsFullAccess && (
+              <TabPanel p={0} pt={6}>
+                <VStack spacing={4} align="stretch">
+                  <Select
+                    placeholder="Selecteer een evenement..."
+                    value={selectedAccessEventId}
+                    onChange={(e) => setSelectedAccessEventId(e.target.value)}
+                    bg="gray.700"
+                    color="white"
+                    borderColor="gray.600"
+                  >
+                    {events.map((evt) => (
+                      <option key={evt.event_id} value={evt.event_id}>
+                        {evt.name || evt.event_id}
+                      </option>
+                    ))}
+                  </Select>
+                  {selectedAccessEventId ? (
+                    <EventAccessManager
+                      eventId={selectedAccessEventId}
+                      eventName={events.find((e) => e.event_id === selectedAccessEventId)?.name}
+                    />
+                  ) : (
+                    <Box p={4} bg="gray.800" borderRadius="md" textAlign="center">
+                      <Text color="gray.400">
+                        Selecteer een evenement om toegang te beheren.
+                      </Text>
+                    </Box>
+                  )}
+                </VStack>
+              </TabPanel>
+            )}
           </TabPanels>
         </Tabs>
       </VStack>

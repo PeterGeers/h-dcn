@@ -42,7 +42,7 @@ export interface PaymentPanelProps {
 // --- Component ---
 
 const PaymentPanel: React.FC<PaymentPanelProps> = ({ order, onPaymentInitiated }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 

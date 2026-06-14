@@ -1,9 +1,8 @@
 {
-  "_deprecated": "This namespace is deprecated. Use 'eventBooking' namespace instead. Will be removed in a future release.",
   "page": {
-    "title": "Presidents' Meeting",
-    "title_booking": "Presidents' Meeting Booking",
-    "error_loading": "Fout bij laden PresMeet",
+    "title": "Evenement Booking",
+    "title_booking": "Evenement Booking",
+    "error_loading": "Fout bij laden evenement",
     "admin_no_personal_booking": "Geen persoonlijke booking gevonden. Gebruik het Admin-tabblad om bestellingen te beheren.",
     "tab_booking": "Booking",
     "tab_overview": "Overzicht",
@@ -50,7 +49,7 @@
   },
   "onboarding": {
     "select_club": "Selecteer uw club",
-    "select_club_desc": "Kies de club die u vertegenwoordigt bij de Presidents' Meeting.",
+    "select_club_desc": "Kies de club die u vertegenwoordigt bij dit evenement.",
     "search_clubs": "Zoek clubs...",
     "no_search_results": "Geen clubs gevonden voor uw zoekopdracht.",
     "loading_clubs": "Beschikbare clubs laden...",
@@ -63,7 +62,7 @@
     "club_already_assigned": "Club al toegewezen",
     "already_assigned_desc": "{{clubName}} heeft al een geregistreerde vertegenwoordiger.",
     "current_contact": "Huidige contactpersoon",
-    "contact_admin": "Als u denkt dat dit niet klopt, neem dan contact op met de PresMeet-beheerder om de club opnieuw toe te wijzen.",
+    "contact_admin": "Als u denkt dat dit niet klopt, neem dan contact op met de beheerder om de club opnieuw toe te wijzen.",
     "choose_different": "Kies een andere club",
     "no_logo": "Geen logo",
     "already_assigned": "Al toegewezen",
@@ -202,7 +201,7 @@
     "add_description": "Voeg een secondary delegate toe die ook deze booking kan beheren"
   },
   "admin": {
-    "dashboard_title": "PresMeet Event Dashboard",
+    "dashboard_title": "Event Dashboard",
     "select_event": "Selecteer evenement",
     "select_event_placeholder": "Selecteer een evenement...",
     "registration_progress": "Registratievoortgang",
@@ -218,13 +217,36 @@
     "loading_dashboard": "Dashboard gegevens laden...",
     "failed_load_events": "Kon evenementen niet laden",
     "failed_load_dashboard": "Kon dashboard gegevens niet laden. Probeer het opnieuw.",
-    "no_events": "Geen PresMeet evenementen gevonden. Maak een evenement aan om te beginnen.",
+    "no_events": "Geen evenementen gevonden. Maak een evenement aan om te beginnen.",
     "draft_orders": "Concept bestellingen",
     "submitted_orders": "Ingediende bestellingen",
     "locked_orders": "Vergrendelde bestellingen",
     "unpaid_orders": "Onbetaalde bestellingen",
     "partially_paid": "Deels betaald",
-    "fully_paid": "Volledig betaald"
+    "fully_paid": "Volledig betaald",
+    "manageAccess": "Toegangsbeheer",
+    "grantAccess": "Toegang verlenen",
+    "revokeAccess": "Toegang intrekken",
+    "bulkGrant": "Bulk toegang verlenen",
+    "grant": "Verlenen",
+    "loadingAccess": "Toegangslijst laden...",
+    "membersWithAccess": "leden met toegang",
+    "noMembersWithAccess": "Nog geen leden hebben toegang tot dit evenement.",
+    "emailOrMemberId": "E-mailadres of lid-ID",
+    "selected": "geselecteerd",
+    "membersUpdated": "leden bijgewerkt",
+    "accessGranted": "Toegang verleend",
+    "accessRevoked": "Toegang ingetrokken",
+    "grantFailed": "Verlenen mislukt",
+    "revokeFailed": "Intrekken mislukt",
+    "bulkGrantSuccess": "Bulk toegang verleend",
+    "bulkGrantFailed": "Bulk verlenen mislukt",
+    "bulkRevokeSuccess": "Bulk toegang ingetrokken",
+    "bulkRevokeFailed": "Bulk intrekken mislukt",
+    "colMemberId": "Lid-ID",
+    "colEmail": "E-mail",
+    "colMemberType": "Type",
+    "colActions": "Acties"
   },
   "reports": {
     "title": "{{type}} Rapport",
@@ -275,5 +297,27 @@
     "filter_unpaid": "Onbetaald",
     "filter_partial": "Deels betaald",
     "filter_paid": "Betaald"
+  },
+  "errors": {
+    "notFound": "Booking niet gevonden",
+    "noAccess": "Je hebt geen toegang tot dit evenement",
+    "clubRequired": "Clubtoewijzing vereist voor dit evenement",
+    "registrationClosed": "Registratie is gesloten",
+    "loadFailed": "Kon gegevens niet laden"
+  },
+  "landing": {
+    "registerButton": "Nu registreren",
+    "goToBooking": "Ga naar Booking",
+    "registrationClosed": "Registratie is gesloten",
+    "alreadyRegistered": "U bent al geregistreerd",
+    "loginToRegister": "Log in om u te registreren",
+    "welcomeBack": "Welkom terug"
+  },
+  "selfService": {
+    "title": "Mijn Evenementen",
+    "noEvents": "Je hebt nog geen toegang tot evenementen.",
+    "goToBooking": "Ga naar booking",
+    "profile": "Profiel",
+    "eventAccess": "Evenementtoegang"
   }
 }

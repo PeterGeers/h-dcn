@@ -179,7 +179,7 @@ function FinancialTotalsRow({ data, totalLabel }: { data: Record<string, any>[];
  * Requirements: 10, 13.3
  */
 const ReportView: React.FC = () => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
 
   // Parse query params from hash routing
   const params = useMemo(() => {

@@ -1,0 +1,119 @@
+{
+  "page": {
+    "title": "Reserva de evento",
+    "title_booking": "Reserva de evento",
+    "error_loading": "Error al cargar el evento",
+    "tab_booking": "Reserva",
+    "tab_overview": "Resumen",
+    "tab_admin": "Admin"
+  },
+  "booking": {
+    "title": "Reserva de evento",
+    "addPerson": "Añadir persona",
+    "addFirstPerson": "Añadir primera persona",
+    "submit": "Enviar reserva",
+    "save": "Guardar borrador",
+    "saving": "Guardando...",
+    "lastSaved": "Último guardado: {{time}}",
+    "retry": "Reintentar",
+    "loading": "Cargando datos de reserva...",
+    "loadFailedTitle": "No se pudo cargar la reserva",
+    "noEventOrOrder": "No hay datos de evento o pedido disponibles.",
+    "lockedMessage": "Esta reserva está bloqueada. Contacte a los organizadores para cambios.",
+    "noPersonsYet": "Aún no se han añadido personas. Añada un delegado o invitado para comenzar.",
+    "estimatedTotal": "Total estimado",
+    "status": {
+      "draft": "Borrador",
+      "submitted": "Enviado",
+      "locked": "Bloqueado"
+    }
+  },
+  "form": {
+    "delegates": "Delegados",
+    "delegateN": "Delegado {{n}}",
+    "guests": "Invitados",
+    "guestN": "Invitado {{n}}",
+    "products": "Productos",
+    "name": "Nombre",
+    "role": "Rol",
+    "gender": "Género",
+    "size": "Talla",
+    "male": "Masculino",
+    "female": "Femenino",
+    "placeholderName": "Nombre completo",
+    "placeholderRole": "ej. Presidente, Secretario",
+    "addDelegate": "Añadir delegado",
+    "addGuest": "Añadir invitado",
+    "removeDelegate": "Eliminar delegado {{n}}",
+    "removeGuest": "Eliminar invitado {{n}}",
+    "maxReached": "(máx {{count}} alcanzado)",
+    "attendParty": "Asistir a la fiesta",
+    "orderTshirt": "Pedir camiseta"
+  },
+  "errors": {
+    "notFound": "Reserva no encontrada",
+    "noAccess": "No tienes acceso a este evento",
+    "clubRequired": "Asignación de club requerida para este evento",
+    "registrationClosed": "El registro está cerrado",
+    "loadFailed": "No se pudieron cargar los datos",
+    "networkError": "Se produjo un error de red",
+    "saveFailed": "Error al guardar",
+    "submitFailed": "Error al enviar",
+    "validationErrors": "Por favor corrija los errores marcados antes de enviar"
+  },
+  "landing": {
+    "registerButton": "Registrarse ahora",
+    "goToBooking": "Ir a la reserva",
+    "registrationClosed": "El registro está cerrado",
+    "alreadyRegistered": "Ya estás registrado",
+    "loginToRegister": "Inicia sesión para registrarte",
+    "welcomeBack": "Bienvenido de nuevo"
+  },
+  "admin": {
+    "manageAccess": "Gestionar acceso",
+    "grantAccess": "Conceder acceso",
+    "revokeAccess": "Revocar acceso",
+    "bulkGrant": "Conceder en masa",
+    "grant": "Conceder",
+    "loadingAccess": "Cargando lista de acceso...",
+    "membersWithAccess": "miembros con acceso",
+    "noMembersWithAccess": "Aún no hay miembros con acceso a este evento.",
+    "emailOrMemberId": "E-mail o ID de miembro",
+    "selected": "seleccionado(s)",
+    "membersUpdated": "miembros actualizados",
+    "accessGranted": "Acceso concedido",
+    "accessRevoked": "Acceso revocado",
+    "grantFailed": "Error al conceder",
+    "revokeFailed": "Error al revocar",
+    "bulkGrantSuccess": "Acceso en masa concedido",
+    "bulkGrantFailed": "Error en concesión masiva",
+    "bulkRevokeSuccess": "Acceso en masa revocado",
+    "bulkRevokeFailed": "Error en revocación masiva",
+    "colMemberId": "ID miembro",
+    "colEmail": "E-mail",
+    "colMemberType": "Tipo",
+    "colActions": "Acciones"
+  },
+  "selfService": {
+    "title": "Mis eventos",
+    "noEvents": "Aún no tienes acceso a ningún evento.",
+    "goToBooking": "Ir a la reserva",
+    "profile": "Perfil",
+    "eventAccess": "Acceso al evento"
+  },
+  "payment": {
+    "title": "Pago",
+    "totalAmount": "Importe total",
+    "totalPaid": "Total pagado",
+    "remainingBalance": "Saldo pendiente",
+    "payNow": "Pagar ahora ({{amount}})",
+    "fullyPaid": "✓ Totalmente pagado",
+    "submitBeforePay": "El pedido debe enviarse antes del pago"
+  },
+  "submit": {
+    "success": "Su reserva ha sido enviada con éxito.",
+    "failed": "Envío fallido — por favor corrija los siguientes errores:",
+    "button": "Enviar reserva",
+    "buttonResubmit": "Reenviar reserva"
+  }
+}

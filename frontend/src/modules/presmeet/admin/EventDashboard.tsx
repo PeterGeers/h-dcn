@@ -61,7 +61,7 @@ const EMPTY_PAYMENT_SUMMARY: PaymentSummary = {
  * Requirements: 13
  */
 const EventDashboard: React.FC = () => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [constraints, setConstraints] = useState<ConstraintProgress[]>([]);

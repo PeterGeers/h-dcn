@@ -1,4 +1,5 @@
 {
+  "_deprecated": "This namespace is deprecated. Use 'eventBooking' namespace instead. Will be removed in a future release.",
   "page": {
     "title": "Ordförandemöte",
     "title_booking": "Bokning Ordförandemöte",

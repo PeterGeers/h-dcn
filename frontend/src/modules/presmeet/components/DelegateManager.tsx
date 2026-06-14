@@ -63,7 +63,7 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
   currentUserEmail,
   onDelegateChange,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const [email, setEmail] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);

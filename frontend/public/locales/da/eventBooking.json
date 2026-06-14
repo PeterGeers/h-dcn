@@ -1,0 +1,119 @@
+{
+  "page": {
+    "title": "Begivenhedsreservation",
+    "title_booking": "Begivenhedsreservation",
+    "error_loading": "Fejl ved indlæsning af begivenhed",
+    "tab_booking": "Reservation",
+    "tab_overview": "Oversigt",
+    "tab_admin": "Admin"
+  },
+  "booking": {
+    "title": "Begivenhedsreservation",
+    "addPerson": "Tilføj person",
+    "addFirstPerson": "Tilføj første person",
+    "submit": "Indsend reservation",
+    "save": "Gem kladde",
+    "saving": "Gemmer...",
+    "lastSaved": "Sidst gemt: {{time}}",
+    "retry": "Prøv igen",
+    "loading": "Indlæser reservationsdata...",
+    "loadFailedTitle": "Kunne ikke indlæse reservation",
+    "noEventOrOrder": "Ingen begivenheds- eller ordredata tilgængelige.",
+    "lockedMessage": "Denne reservation er låst. Kontakt arrangørerne for ændringer.",
+    "noPersonsYet": "Ingen personer tilføjet endnu. Tilføj en delegat eller gæst for at begynde.",
+    "estimatedTotal": "Estimeret total",
+    "status": {
+      "draft": "Kladde",
+      "submitted": "Indsendt",
+      "locked": "Låst"
+    }
+  },
+  "form": {
+    "delegates": "Delegerede",
+    "delegateN": "Delegat {{n}}",
+    "guests": "Gæster",
+    "guestN": "Gæst {{n}}",
+    "products": "Produkter",
+    "name": "Navn",
+    "role": "Rolle",
+    "gender": "Køn",
+    "size": "Størrelse",
+    "male": "Mand",
+    "female": "Kvinde",
+    "placeholderName": "Fulde navn",
+    "placeholderRole": "f.eks. Præsident, Sekretær",
+    "addDelegate": "Tilføj delegat",
+    "addGuest": "Tilføj gæst",
+    "removeDelegate": "Fjern delegat {{n}}",
+    "removeGuest": "Fjern gæst {{n}}",
+    "maxReached": "(maks {{count}} nået)",
+    "attendParty": "Deltag i festen",
+    "orderTshirt": "Bestil t-shirt"
+  },
+  "errors": {
+    "notFound": "Reservation ikke fundet",
+    "noAccess": "Du har ikke adgang til denne begivenhed",
+    "clubRequired": "Klubtildeling påkrævet for denne begivenhed",
+    "registrationClosed": "Registrering er lukket",
+    "loadFailed": "Kunne ikke indlæse data",
+    "networkError": "Der opstod en netværksfejl",
+    "saveFailed": "Gem mislykkedes",
+    "submitFailed": "Indsendelse mislykkedes",
+    "validationErrors": "Ret venligst de markerede fejl før indsendelse"
+  },
+  "landing": {
+    "registerButton": "Registrer nu",
+    "goToBooking": "Gå til reservation",
+    "registrationClosed": "Registrering er lukket",
+    "alreadyRegistered": "Du er allerede registreret",
+    "loginToRegister": "Log ind for at registrere",
+    "welcomeBack": "Velkommen tilbage"
+  },
+  "admin": {
+    "manageAccess": "Administrer adgang",
+    "grantAccess": "Giv adgang",
+    "revokeAccess": "Tilbagekald adgang",
+    "bulkGrant": "Massetildeling",
+    "grant": "Giv",
+    "loadingAccess": "Indlæser adgangsliste...",
+    "membersWithAccess": "medlemmer med adgang",
+    "noMembersWithAccess": "Ingen medlemmer har endnu adgang til denne begivenhed.",
+    "emailOrMemberId": "E-mail eller medlems-ID",
+    "selected": "valgt",
+    "membersUpdated": "medlemmer opdateret",
+    "accessGranted": "Adgang givet",
+    "accessRevoked": "Adgang tilbagekaldt",
+    "grantFailed": "Tildeling mislykkedes",
+    "revokeFailed": "Tilbagekaldelse mislykkedes",
+    "bulkGrantSuccess": "Masseadgang givet",
+    "bulkGrantFailed": "Massetildeling mislykkedes",
+    "bulkRevokeSuccess": "Masseadgang tilbagekaldt",
+    "bulkRevokeFailed": "Massetilbagekaldelse mislykkedes",
+    "colMemberId": "Medlems-ID",
+    "colEmail": "E-mail",
+    "colMemberType": "Type",
+    "colActions": "Handlinger"
+  },
+  "selfService": {
+    "title": "Mine begivenheder",
+    "noEvents": "Du har endnu ikke adgang til nogen begivenheder.",
+    "goToBooking": "Gå til reservation",
+    "profile": "Profil",
+    "eventAccess": "Begivenhedsadgang"
+  },
+  "payment": {
+    "title": "Betaling",
+    "totalAmount": "Samlet beløb",
+    "totalPaid": "Samlet betalt",
+    "remainingBalance": "Resterende saldo",
+    "payNow": "Betal nu ({{amount}})",
+    "fullyPaid": "✓ Fuldt betalt",
+    "submitBeforePay": "Ordren skal indsendes før betaling"
+  },
+  "submit": {
+    "success": "Din reservation er indsendt.",
+    "failed": "Indsendelse mislykkedes — ret venligst følgende fejl:",
+    "button": "Indsend reservation",
+    "buttonResubmit": "Genindsend reservation"
+  }
+}

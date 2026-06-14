@@ -105,7 +105,7 @@ const BookingOverview: React.FC<BookingOverviewProps> = ({
   clubId,
   submittedAt,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const toast = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
 

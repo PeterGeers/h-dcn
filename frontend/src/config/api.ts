@@ -29,6 +29,7 @@ export const API_URLS = {
   memberSelf: () => buildApiUrl(API_CONFIG.ENDPOINTS.MEMBERS, 'me'),
   events: () => buildApiUrl(API_CONFIG.ENDPOINTS.EVENTS),
   event: (id: string) => buildApiUrl(API_CONFIG.ENDPOINTS.EVENTS, id),
+  eventAccess: (eventId: string) => `${API_CONFIG.BASE_URL}/admin/events/${eventId}/access`,
   products: () => buildApiUrl(API_CONFIG.ENDPOINTS.PRODUCTS),
   product: (id: string) => buildApiUrl(API_CONFIG.ENDPOINTS.PRODUCTS, id),
   memberships: () => buildApiUrl(API_CONFIG.ENDPOINTS.MEMBERSHIPS),

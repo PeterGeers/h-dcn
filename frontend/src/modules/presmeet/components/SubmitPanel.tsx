@@ -51,7 +51,7 @@ const SubmitPanel: React.FC<SubmitPanelProps> = ({
   onSubmit,
   isDisabled = false,
 }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const isSubmitted = orderStatus === 'submitted';
 
   return (

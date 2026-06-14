@@ -53,7 +53,7 @@ function isLogoUploadAdmin(groups: string[]): boolean {
 }
 
 const EventBookingPage: React.FC = () => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
   const { user } = useAuth();
   const { eventId } = useParams<{ eventId: string }>();
 

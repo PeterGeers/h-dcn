@@ -70,7 +70,7 @@ export interface BookingWizardProps {
 // --- Component ---
 
 const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
-  const { t } = useTranslation('presmeet');
+  const { t } = useTranslation('eventBooking');
 
   // --- State ---
   const [event, setEvent] = useState<Event | null>(null);
