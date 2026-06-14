@@ -67,6 +67,9 @@ export type HDCNGroup =
   // Webshop Management
   | "Webshop_Management"       // Webshop management permissions - full control over webshop products and orders
 
+  // External Event Participant
+  | "event_participant"        // External member with limited permissions (self-service + event booking)
+
   // Special Application Role
   | "verzoek_lid";             // Role for new user registration (no permissions except signup)
 

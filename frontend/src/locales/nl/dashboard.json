@@ -4,7 +4,8 @@
     "member_intro": "Als H-DCN lid heb je toegang tot je persoonlijke gegevens en de webshop:",
     "admin_intro": "Kies een applicatie om te starten:",
     "guest_intro": "Meld je aan om lid te worden van de H-DCN:",
-    "admin_access_hint": "Voor toegang tot beheerfuncties neem contact op met de administratie."
+    "admin_access_hint": "Voor toegang tot beheerfuncties neem contact op met de administratie.",
+    "event_participant_intro": "Je hebt toegang tot je profiel en evenementboekingen:"
   },
   "loading": {
     "checking_membership": "Lidmaatschap controleren...",

@@ -127,6 +127,7 @@ function Dashboard() {
       // Check if user has valid member roles (not just verzoek_lid)
       const hasValidMemberRole = userGroups.some(group => 
         group === 'hdcnLeden' || 
+        group === 'event_participant' ||
         group.includes('Members_') || 
         group.includes('Events_') || 
         group.includes('Products_') || 
@@ -224,6 +225,7 @@ function Dashboard() {
 
   // Derive permission flags from groups (R4.2 - no manual JWT decoding)
   const isBasicMember = userGroups.includes('hdcnLeden');
+  const isEventParticipant = userGroups.includes('event_participant') && !userGroups.includes('hdcnLeden');
   const hasAdminRoles = userGroups.some(group => 
     group.includes('Members_') || 
     group.includes('Events_') || 
@@ -253,13 +255,15 @@ function Dashboard() {
             fontSize={{ base: 'sm', md: 'md' }}
             px={{ base: 2, md: 0 }}
           >
-            {isLid ? (
+            {isEventParticipant ? (
+              t('greeting.event_participant_intro')
+            ) : isLid ? (
               isBasicMember && !hasAdminRoles ? 
                 t('greeting.member_intro') :
                 t('greeting.admin_intro')
             ) : t('greeting.guest_intro')}
           </Text>
-          {isBasicMember && !hasAdminRoles && (
+          {isBasicMember && !hasAdminRoles && !isEventParticipant && (
             <Text 
               color="gray.500"
               fontSize={{ base: 'xs', md: 'sm' }}
@@ -271,6 +275,26 @@ function Dashboard() {
           )}
         </Box>
         
+        {/* Event Participant: reduced view — profile + event bookings only */}
+        {isEventParticipant ? (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
+            {/* My Account - Self-service profile */}
+            <AppCard 
+              key="my-account"
+              app={{
+                id: 'my-account',
+                title: t('cards.my_account_title'),
+                description: t('cards.my_account_desc'),
+                icon: '👤',
+                path: '/my-account'
+              }}
+              onClick={() => navigate('/my-account')}
+            />
+            
+            {/* Event Bookings - Shows events from allowed_events */}
+            <EventBookingCard navigate={navigate} />
+          </SimpleGrid>
+        ) : (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
           {/* My Account - Only for existing members */}
           {isLid && (
@@ -432,6 +456,7 @@ function Dashboard() {
             />
           </FunctionGuard>
         </SimpleGrid>
+        )}
         
 
       </VStack>

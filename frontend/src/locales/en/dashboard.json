@@ -4,7 +4,8 @@
     "member_intro": "As an H-DCN member you have access to your personal details and the webshop:",
     "admin_intro": "Choose an application to start:",
     "guest_intro": "Register to become a member of H-DCN:",
-    "admin_access_hint": "For access to management features, contact the administration."
+    "admin_access_hint": "For access to management features, contact the administration.",
+    "event_participant_intro": "You have access to your profile and event bookings:"
   },
   "loading": {
     "checking_membership": "Checking membership...",

@@ -54,6 +54,9 @@ function GroupAccessGuard({ children }: GroupAccessGuardProps) {
   );
   const hasNoGroups = userGroups.length === 0;
 
+  // Note: event_participant users have hasFullAccess = true (they have a valid group)
+  // so they pass through the guard and can access all routes including /events/:id/booking
+
   // Handle applicants (verzoek_lid users)
   if (isApplicant && !hasFullAccess) {
     const isApplicantRoute = applicantAllowedRoutes.includes(location.pathname);

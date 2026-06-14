@@ -4,7 +4,8 @@
     "member_intro": "Como miembro de H-DCN tienes acceso a tus datos personales y a la tienda online:",
     "admin_intro": "Elige una aplicación para comenzar:",
     "guest_intro": "Regístrate para ser miembro de H-DCN:",
-    "admin_access_hint": "Para acceder a las funciones de administración, contacta con la administración."
+    "admin_access_hint": "Para acceder a las funciones de administración, contacta con la administración.",
+    "event_participant_intro": "Tienes acceso a tu perfil y a las reservas de eventos:"
   },
   "loading": {
     "checking_membership": "Verificando membresía...",

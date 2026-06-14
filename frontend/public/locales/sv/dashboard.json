@@ -4,7 +4,8 @@
     "member_intro": "Som H-DCN medlem har du tillgång till dina personuppgifter och webbshopen:",
     "admin_intro": "Välj en applikation att starta:",
     "guest_intro": "Registrera dig för att bli medlem i H-DCN:",
-    "admin_access_hint": "För åtkomst till administrationsfunktioner, kontakta administrationen."
+    "admin_access_hint": "För åtkomst till administrationsfunktioner, kontakta administrationen.",
+    "event_participant_intro": "Du har tillgång till din profil och evenemangsbokningar:"
   },
   "loading": {
     "checking_membership": "Kontrollerar medlemskap...",
