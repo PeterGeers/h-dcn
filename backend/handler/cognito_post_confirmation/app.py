@@ -5,14 +5,19 @@ This function handles post-confirmation actions for newly verified users.
 It automatically assigns the default member role (hdcnLeden) to new users
 and can perform additional setup tasks.
 
+For event landing page signups (source='event_landing'), it creates an
+event_participant member record with limited permissions instead.
+
 Trigger: PostConfirmation_ConfirmSignUp, PostConfirmation_ConfirmForgotPassword
 """
 
 import json
 import logging
 import os
+import uuid
 import boto3
 from botocore.exceptions import ClientError
+from datetime import datetime
 
 # Configure logging
 logger = logging.getLogger()
@@ -60,6 +65,9 @@ def lambda_handler(event, context):
         
         # Handle different trigger sources
         if trigger_source == 'PostConfirmation_ConfirmSignUp':
+            # Pass clientMetadata to the signup handler via function attribute
+            client_metadata = event.get('request', {}).get('clientMetadata', {})
+            handle_signup_confirmation._client_metadata = client_metadata
             handle_signup_confirmation(user_pool_id, username, email, given_name, family_name)
         elif trigger_source == 'PostConfirmation_ConfirmForgotPassword':
             handle_password_recovery_confirmation(user_pool_id, username, email)
@@ -77,12 +85,18 @@ def lambda_handler(event, context):
 
 def handle_signup_confirmation(user_pool_id, username, email, given_name, family_name):
     """
-    Handle post-confirmation actions for new user signup
+    Handle post-confirmation actions for new user signup.
     
-    Role assignment logic:
-    - Check if user already exists in Members table
-    - If user is approved, assign default member role
-    - Otherwise, no role assigned until manual approval
+    Two paths:
+    1. Event landing page signup (clientMetadata.source == 'event_landing'):
+       - Create Members record with member_type='event_participant'
+       - Add user to 'event_participant' Cognito group (NOT hdcnLeden)
+       - Grant access to the specified event via allowed_events
+    
+    2. Regular signup (no event context):
+       - Check if user already exists in Members table
+       - If user is approved, assign default member role (hdcnLeden)
+       - Otherwise, no role assigned until manual approval
     
     Args:
         user_pool_id: Cognito User Pool ID
@@ -94,33 +108,99 @@ def handle_signup_confirmation(user_pool_id, username, email, given_name, family
     try:
         logger.info(f"Processing post-confirmation for new user: {email}")
         
-        # Check if user already exists in Members table
-        member_status = check_member_status(email)
+        # Check for event landing page context in clientMetadata
+        # Note: clientMetadata is accessed from the outer event in lambda_handler
+        # We pass it via a module-level variable set in lambda_handler
+        client_metadata = getattr(handle_signup_confirmation, '_client_metadata', {}) or {}
+        event_id = client_metadata.get('event_id')
+        source = client_metadata.get('source')
         
-        if member_status:
-            logger.info(f"User {email} found in Members table with status: {member_status}")
-            
-            # If user is already approved, assign default role
-            approved_statuses = ['active', 'approved']
-            if member_status in approved_statuses:
-                default_group = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
-                logger.info(f"User {email} is approved member, adding to group: {default_group}")
-                add_user_to_group(user_pool_id, username, default_group)
-                logger.info(f"Successfully added existing approved member {email} to group {default_group}")
-            else:
-                logger.info(f"User {email} is not approved (status: {member_status}), no role assigned")
+        if source == 'event_landing' and event_id:
+            # --- Event landing page registration path ---
+            logger.info(f"Event landing page signup for {email}, event_id={event_id}")
+            _handle_event_landing_signup(user_pool_id, username, email, given_name, family_name, event_id)
         else:
-            logger.info(f"User {email} not found in Members table - new applicant, no role assigned")
-        
-        # Send admin notification about new signup
-        send_admin_notification(email, given_name, family_name, 'new_signup')
-        
-        # Log the role assignment decision for audit
-        log_role_assignment_decision(email, member_status, given_name, family_name)
+            # --- Regular H-DCN signup path (existing logic) ---
+            _handle_regular_signup(user_pool_id, username, email, given_name, family_name)
         
     except Exception as e:
         logger.error(f"Error in signup confirmation handler: {str(e)}")
         raise
+
+
+def _handle_event_landing_signup(user_pool_id, username, email, given_name, family_name, event_id):
+    """
+    Handle signup from an event landing page.
+    Creates an event_participant member record and adds to event_participant group.
+    """
+    # Create Members record with event_participant type
+    members_table = dynamodb.Table(MEMBERS_TABLE_NAME)
+    member_id = str(uuid.uuid4())
+    
+    member_record = {
+        'member_id': member_id,
+        'email': email,
+        'given_name': given_name or '',
+        'family_name': family_name or '',
+        'member_type': 'event_participant',
+        'allowed_events': [event_id],
+        'status': 'active',
+        'created_at': datetime.now().isoformat(),
+        'created_via': 'event_landing',
+    }
+    
+    members_table.put_item(Item=member_record)
+    logger.info(f"Created event_participant member record: {member_id} for {email}")
+    
+    # Add user to event_participant Cognito group (NOT hdcnLeden)
+    add_user_to_group(user_pool_id, username, 'event_participant')
+    logger.info(f"Added {email} to event_participant group")
+    
+    # Send admin notification
+    send_admin_notification(email, given_name, family_name, 'event_landing_signup')
+    
+    # Log the decision
+    log_entry = {
+        'timestamp': datetime.now().isoformat(),
+        'event_type': 'POST_CONFIRMATION_EVENT_LANDING',
+        'user_email': email,
+        'member_id': member_id,
+        'event_id': event_id,
+        'member_type': 'event_participant',
+        'group_assigned': 'event_participant',
+        'organization': ORGANIZATION_SHORT_NAME,
+    }
+    logger.info(f"EVENT_LANDING_SIGNUP: {json.dumps(log_entry)}")
+
+
+def _handle_regular_signup(user_pool_id, username, email, given_name, family_name):
+    """
+    Handle regular H-DCN signup (no event context).
+    Existing logic: check member status, assign hdcnLeden if approved.
+    """
+    # Check if user already exists in Members table
+    member_status = check_member_status(email)
+    
+    if member_status:
+        logger.info(f"User {email} found in Members table with status: {member_status}")
+        
+        # If user is already approved, assign default role
+        approved_statuses = ['active', 'approved']
+        if member_status in approved_statuses:
+            default_group = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
+            logger.info(f"User {email} is approved member, adding to group: {default_group}")
+            add_user_to_group(user_pool_id, username, default_group)
+            logger.info(f"Successfully added existing approved member {email} to group {default_group}")
+        else:
+            logger.info(f"User {email} is not approved (status: {member_status}), no role assigned")
+    else:
+        logger.info(f"User {email} not found in Members table - new applicant, no role assigned")
+    
+    # Send admin notification about new signup
+    send_admin_notification(email, given_name, family_name, 'new_signup')
+    
+    # Log the role assignment decision for audit
+    log_role_assignment_decision(email, member_status, given_name, family_name)
 
 def handle_password_recovery_confirmation(user_pool_id, username, email):
     """
@@ -197,6 +277,8 @@ def send_admin_notification(email, given_name, family_name, event_type):
             logger.info(f"ADMIN_NOTIFICATION: New user signup - {display_name} ({email}) for {ORGANIZATION_SHORT_NAME}")
         elif event_type == 'password_recovery':
             logger.info(f"ADMIN_NOTIFICATION: Password recovery completed - {display_name} ({email}) for {ORGANIZATION_SHORT_NAME}")
+        elif event_type == 'event_landing_signup':
+            logger.info(f"ADMIN_NOTIFICATION: Event landing page signup - {display_name} ({email}) for {ORGANIZATION_SHORT_NAME}")
         
         # In a production environment, you could:
         # 1. Send email to administrators using SES
@@ -251,8 +333,6 @@ def log_role_assignment_decision(email, member_status, given_name, family_name):
         family_name (str): User's last name
     """
     try:
-        from datetime import datetime
-        
         # Create display name
         if given_name or family_name:
             display_name = f"{given_name} {family_name}".strip()

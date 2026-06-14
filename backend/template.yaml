@@ -335,6 +335,20 @@ Resources:
                   - ses:SendEmail
                   - ses:SendRawEmail
                 Resource: "*"
+        - PolicyName: DynamoDBMembersAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
 
   # Lambda permissions for Cognito triggers (using existing User Pool)
   CognitoCustomMessagePermission:
@@ -1264,6 +1278,27 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /admin/events/{event_id}/access
+            Method: get
+
+  # --- Public Event Landing Page API (NO auth required) ---
+  GetEventPublicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_event_public
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+      Events:
+        GetEventPublic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/public/{slug}
             Method: get
 
   CreateOrderFunction:
