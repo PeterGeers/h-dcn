@@ -183,7 +183,7 @@ class TestGetEventPublic:
         assert len(body['landing_page']['sections']) == 1
 
     def test_excludes_sensitive_data(self, setup_tables):
-        """Sensitive fields are NOT included in the response."""
+        """Sensitive fields are NOT included in the response, but event_id IS (needed for booking redirect)."""
         events_table, handler = setup_tables
         _seed_event(events_table, slug=TEST_SLUG, enabled=True)
 
@@ -196,7 +196,8 @@ class TestGetEventPublic:
         assert 'constraints' not in body
         assert 'product_ids' not in body
         assert 'order_scope' not in body
-        assert 'event_id' not in body
+        # event_id IS included (needed for authenticated booking redirect)
+        assert body['event_id'] == TEST_EVENT_ID
 
     def test_registration_status_closed(self, setup_tables):
         """Returns registration_status='closed' when event status is not 'open'."""

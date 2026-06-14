@@ -541,6 +541,8 @@ Resources:
                   - cognito-idp:AdminSetUserPassword
                   - cognito-idp:AdminInitiateAuth
                   - cognito-idp:AdminRespondToAuthChallenge
+                  - cognito-idp:AdminConfirmSignUp
+                  - cognito-idp:SignUp
                   - cognito-idp:GetGroup
                   - cognito-idp:UpdateGroup
                 Resource: 

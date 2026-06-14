@@ -52,6 +52,7 @@ const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as an
 const EventBookingPage = lazy(() => import('./modules/presmeet/EventBookingPage')) as any;
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
 const EventLandingPage = lazy(() => import('./modules/events/EventLandingPage')) as any;
+const EventRegisterPage = lazy(() => import('./modules/events/EventRegisterPage')) as any;
 
 /**
  * Route guard for /webshop_management.
@@ -214,6 +215,17 @@ function App() {
                     </Center>
                   }>
                     <EventLandingPage />
+                  </Suspense>
+                } />
+
+                {/* Public event registration page — sign-up/sign-in with event context */}
+                <Route path="/events/:slug/register" element={
+                  <Suspense fallback={
+                    <Center h="100vh">
+                      <Spinner size="xl" color="orange.400" />
+                    </Center>
+                  }>
+                    <EventRegisterPage />
                   </Suspense>
                 } />
                 

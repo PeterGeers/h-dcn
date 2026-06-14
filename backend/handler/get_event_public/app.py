@@ -68,12 +68,13 @@ def _determine_registration_status(event_item):
 def _build_public_response(event_item):
     """
     Build the public-safe response, excluding sensitive fields.
-    Includes: name, dates, location, landing_page config, registration status.
-    Excludes: constraints, product_ids, order counts, event_id, order_scope.
+    Includes: event_id, name, dates, location, landing_page config, registration status.
+    Excludes: constraints, product_ids, order counts, order_scope.
     """
     landing_page = event_item.get('landing_page', {})
 
     return {
+        'event_id': event_item.get('event_id', ''),
         'name': event_item.get('name', ''),
         'event_type': event_item.get('event_type', ''),
         'start_date': event_item.get('start_date', ''),

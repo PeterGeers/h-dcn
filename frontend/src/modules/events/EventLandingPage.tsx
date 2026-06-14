@@ -17,6 +17,7 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { API_CONFIG } from '../../config/api';
+import { useAuth } from '../../context/AuthProvider';
 
 // --- Types ---
 
@@ -49,6 +50,7 @@ interface LandingPageData {
 }
 
 interface PublicEventData {
+  event_id: string;
   name: string;
   event_type: string;
   start_date: string;
@@ -63,6 +65,7 @@ interface PublicEventData {
 const EventLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation('eventBooking');
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,9 +116,26 @@ const EventLandingPage: React.FC = () => {
     );
   }
 
-  const { landing_page, registration_status } = event;
+  const { landing_page, registration_status, event_id } = event;
   const isOpen = registration_status === 'open';
   const ctaLabel = landing_page.registration_label || t('landing.registerButton');
+
+  /**
+   * Determine CTA destination and label based on auth state.
+   * - Not authenticated: link to register page (sign-up/login flow)
+   * - Authenticated: link directly to booking form
+   */
+  const getCtaProps = () => {
+    if (authLoading) {
+      return { to: '#', label: '', isLoading: true };
+    }
+    if (isAuthenticated) {
+      return { to: `/events/${event_id}/booking`, label: t('landing.goToBooking'), isLoading: false };
+    }
+    return { to: `/events/${slug}/register`, label: ctaLabel, isLoading: false };
+  };
+
+  const ctaProps = getCtaProps();
 
   const formatDateRange = (start: string, end: string): string => {
     try {
@@ -185,15 +205,28 @@ const EventLandingPage: React.FC = () => {
             {/* CTA in hero */}
             <Box pt={4}>
               {isOpen ? (
-                <Button
-                  as={RouterLink}
-                  to={`/events/${slug}/register`}
-                  size="lg"
-                  colorScheme="orange"
-                  px={8}
-                >
-                  {ctaLabel}
-                </Button>
+                ctaProps.isLoading ? (
+                  <Button size="lg" colorScheme="orange" px={8} isLoading>
+                    {ctaLabel}
+                  </Button>
+                ) : (
+                  <VStack align="flex-start" spacing={2}>
+                    <Button
+                      as={RouterLink}
+                      to={ctaProps.to}
+                      size="lg"
+                      colorScheme="orange"
+                      px={8}
+                    >
+                      {ctaProps.label}
+                    </Button>
+                    {isAuthenticated && (
+                      <Text fontSize="sm" color="green.300">
+                        {t('landing.alreadyRegistered')}
+                      </Text>
+                    )}
+                  </VStack>
+                )
               ) : (
                 <Button size="lg" colorScheme="gray" isDisabled>
                   {t('landing.registrationClosed')}
@@ -309,21 +342,34 @@ const EventLandingPage: React.FC = () => {
       {/* Bottom CTA */}
       <Container maxW="container.lg" py={{ base: 10, md: 16 }}>
         <Center>
-          {isOpen ? (
-            <Button
-              as={RouterLink}
-              to={`/events/${slug}/register`}
-              size="lg"
-              colorScheme="orange"
-              px={10}
-            >
-              {ctaLabel}
-            </Button>
-          ) : (
-            <Button size="lg" colorScheme="gray" isDisabled>
-              {t('landing.registrationClosed')}
-            </Button>
-          )}
+          <VStack spacing={2}>
+            {isOpen ? (
+              ctaProps.isLoading ? (
+                <Button size="lg" colorScheme="orange" px={10} isLoading>
+                  {ctaLabel}
+                </Button>
+              ) : (
+                <Button
+                  as={RouterLink}
+                  to={ctaProps.to}
+                  size="lg"
+                  colorScheme="orange"
+                  px={10}
+                >
+                  {ctaProps.label}
+                </Button>
+              )
+            ) : (
+              <Button size="lg" colorScheme="gray" isDisabled>
+                {t('landing.registrationClosed')}
+              </Button>
+            )}
+            {isAuthenticated && isOpen && (
+              <Text fontSize="sm" color="green.300">
+                {t('landing.alreadyRegistered')}
+              </Text>
+            )}
+          </VStack>
         </Center>
       </Container>
     </Box>

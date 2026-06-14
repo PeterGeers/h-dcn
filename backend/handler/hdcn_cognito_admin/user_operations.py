@@ -16,6 +16,7 @@ import boto3
 # Initialize Cognito client
 cognito_client = boto3.client('cognito-idp')
 USER_POOL_ID = os.environ.get('COGNITO_USER_POOL_ID', 'eu-west-1_fcUkvwjH5')
+USER_POOL_CLIENT_ID = os.environ.get('COGNITO_USER_POOL_CLIENT_ID', '6jhvk853b0lfg9q1m861qs0cug')
 
 
 def get_users(headers):
@@ -470,13 +471,19 @@ def import_users(event, headers):
 
 def passwordless_signup(event, headers):
     """
-    Create a new user account for passwordless authentication
+    Create a new user account for passwordless authentication.
+
+    Uses Cognito sign_up + admin_confirm_sign_up so that the PostConfirmation
+    Lambda trigger fires and receives clientMetadata (event_id, source, locale).
     """
     try:
         data = json.loads(event['body'])
         email = data.get('email')
         given_name = data.get('given_name')
         family_name = data.get('family_name')
+        locale = data.get('locale', 'nl')
+        event_id = data.get('event_id')
+        source = data.get('source')
 
         if not email or not given_name or not family_name:
             return {
@@ -500,45 +507,39 @@ def passwordless_signup(event, headers):
             # User doesn't exist, proceed with creation
             pass
 
-        # Create user attributes
+        # Build clientMetadata to pass through to PostConfirmation trigger
+        client_metadata = {'locale': locale}
+        if event_id:
+            client_metadata['event_id'] = event_id
+        if source:
+            client_metadata['source'] = source
+
+        # Create user via sign_up API (triggers PreSignUp Lambda)
+        # A random password is used since authentication is passwordless (passkey/OTP/Google)
+        random_password = secrets.token_urlsafe(32) + '!A1a'
+
         user_attributes = [
             {'Name': 'email', 'Value': email},
             {'Name': 'given_name', 'Value': given_name},
             {'Name': 'family_name', 'Value': family_name},
-            {'Name': 'email_verified', 'Value': 'false'}  # Will be verified via email
         ]
 
-        # Create user without password (for passwordless authentication)
-        # Use MessageAction='SUPPRESS' to avoid sending a temporary password email
-        response = cognito_client.admin_create_user(
-            UserPoolId=USER_POOL_ID,
-            Username=email,
-            UserAttributes=user_attributes,
-            MessageAction='SUPPRESS',  # Don't send temp password email - we use passwordless auth
-        )
-
-        # Immediately confirm the user by setting a random password
-        # This moves status from FORCE_CHANGE_PASSWORD to CONFIRMED
-        # The password is never used - authentication is via passkey/OTP/Google
-        random_password = secrets.token_urlsafe(32) + '!A1a'  # Meets Cognito password policy
-        cognito_client.admin_set_user_password(
-            UserPoolId=USER_POOL_ID,
+        cognito_client.sign_up(
+            ClientId=USER_POOL_CLIENT_ID,
             Username=email,
             Password=random_password,
-            Permanent=True
+            UserAttributes=user_attributes,
+            ClientMetadata=client_metadata,
         )
 
-        # Automatically assign basic member role (if group exists)
-        try:
-            cognito_client.admin_add_user_to_group(
-                UserPoolId=USER_POOL_ID,
-                Username=email,
-                GroupName='verzoek_lid'
-            )
-        except cognito_client.exceptions.ResourceNotFoundException:
-            print(f"Warning: Group 'verzoek_lid' does not exist in User Pool {USER_POOL_ID}")
-        except Exception as group_error:
-            print(f"Warning: Could not add user {email} to verzoek_lid group: {str(group_error)}")
+        # Confirm the user via admin API — this triggers PostConfirmation Lambda
+        # which receives the clientMetadata (event_id, source) and handles
+        # event_participant creation or regular signup flow
+        cognito_client.admin_confirm_sign_up(
+            UserPoolId=USER_POOL_ID,
+            Username=email,
+            ClientMetadata=client_metadata,
+        )
 
         return {
             'statusCode': 201,
@@ -546,7 +547,7 @@ def passwordless_signup(event, headers):
             'body': json.dumps({
                 'message': 'Account created successfully. Check your email for verification instructions.',
                 'username': email,
-                'user_status': response['User']['UserStatus']
+                'user_status': 'CONFIRMED'
             })
         }
 
