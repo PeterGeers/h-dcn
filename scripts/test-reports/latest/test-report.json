@@ -1,0 +1,276 @@
+{
+  "date": "2026-06-14T08:20:34.534294Z",
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failed_tests": [
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderHappyPath",
+      "name": "test_submit_draft_order_success",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderHappyPath",
+      "name": "test_submit_order_without_item_fields_product",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderHappyPath",
+      "name": "test_sequential_order_numbers",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderItemFieldsValidation",
+      "name": "test_missing_item_fields_data_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderItemFieldsValidation",
+      "name": "test_empty_required_field_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderItemFieldsValidation",
+      "name": "test_wrong_count_item_fields_data_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderItemFieldsValidation",
+      "name": "test_invalid_email_format_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderPurchaseRules",
+      "name": "test_max_per_order_exceeded_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderPurchaseRules",
+      "name": "test_within_limits_accepted",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderStateMachine",
+      "name": "test_submit_already_submitted_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderStateMachine",
+      "name": "test_submit_confirmed_order_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.integration.test_submit_order_flow.TestSubmitOrderStateMachine",
+      "name": "test_submit_cancelled_order_rejected",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_channel_removed_and_event_id_set",
+      "file": "",
+      "message": "ExceptionGroup: Hypothesis found 2 distinct failures. (2 sub-exceptions)"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_non_presmeet_channels_get_null_event_id",
+      "file": "",
+      "message": "AssertionError: assert 'channel' not in {'product_id': 'prod_1419daab', 'name': 'Test Product', 'channel': 'h-dcn', 'tenant': 'some_tenant', ...}\nFalsifying example: test_non_presmeet_channels_get_nul"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_presmeet_products_linked_to_event_get_correct_event_id",
+      "file": "",
+      "message": "assert 0 == 1\nFalsifying example: test_presmeet_products_linked_to_event_get_correct_event_id(\n    self=<tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation object a"
+    },
+    {
+      "classname": "tests.unit.test_property_order_handlers.TestProperty13OrderValidationPipeline",
+      "name": "test_submit_accepts_valid_variant_parent_match",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable\nFalsifying example: test_submit_accepts_valid_variant_parent_match(\n    # The test always failed when commented parts were varied together.\n    self=<"
+    },
+    {
+      "classname": "tests.unit.test_property_order_handlers.TestProperty13OrderValidationPipeline",
+      "name": "test_submit_rejects_variant_parent_mismatch",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable\nFalsifying example: test_submit_rejects_variant_parent_mismatch(\n    self=<tests.unit.test_property_order_handlers.TestProperty13OrderValidationPipeli"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_normalized_response_includes_all_required_fields",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_normalized_response_includes_all_required_fields(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f16713f4"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_naam_fallback_for_name",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_naam_fallback_for_name(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f1671244e50>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_prijs_fallback_for_price",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_prijs_fallback_for_price(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f1671192b50>,\n    product={'product_id"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_products_without_is_parent_are_normalized",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_products_without_is_parent_are_normalized(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f1671192810>,\n "
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_only_parent_and_legacy_records_returned",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_only_parent_and_legacy_records_returned(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_property_scan_prod"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_legacy_records_without_is_parent_included",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_legacy_records_without_is_parent_included(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_property_scan_pr"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_migration_source_records_excluded_regardless_of_is_parent",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_migration_source_records_excluded_regardless_of_is_parent(\n    self=<tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering object at 0x7f16"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_returns_unified_fields",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_naam_fallback_for_name",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_prijs_fallback_for_price",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_name_preferred_over_naam",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_price_preferred_over_prijs",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_excludes_variant_records",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_excludes_migration_source_records",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_includes_records_without_is_parent",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_groep_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_subgroep_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_images_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_all_three_fields_present_together",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_existing_seven_fields_are_returned",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_existing_seven_fields_are_returned(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f16711e2250>,\n    product={'"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_product_id_preserved_exactly",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_product_id_preserved_exactly(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f1671603a50>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_decimal_to_number_conversion",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_decimal_to_number_conversion(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f16716022d0>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_name_fallback_logic_preserved",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_name_fallback_logic_preserved(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f167125f1d0>,\n    product={'product_id'"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_is_parent_and_active_preserved",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_is_parent_and_active_preserved(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f167125fd90>,\n    product={'product_id"
+    },
+    {
+      "classname": "tests.unit.test_user_group_config_property.TestProperty5TestUserGroupConfigurationCorrectness",
+      "name": "test_user_groups_match_requirements_exactly",
+      "file": "",
+      "message": "ExceptionGroup: Hypothesis found 2 distinct failures. (2 sub-exceptions)"
+    },
+    {
+      "classname": "tests.unit.test_user_group_config_property.TestProperty5TestUserGroupConfigurationCorrectness",
+      "name": "test_all_configured_users_are_in_requirements",
+      "file": "",
+      "message": "AssertionError: User 'test-event-participant' exists in seed config but is not defined in requirements\nassert 'test-event-participant' in {'test-admin': {'Communication_CRUD', 'Communication_Export', "
+    },
+    {
+      "classname": "tests.unit.test_user_group_config_property.TestProperty5TestUserGroupConfigurationCorrectness",
+      "name": "test_requirements_cover_all_seed_users",
+      "file": "",
+      "message": "AssertionError: User set mismatch:\n    In requirements but not in seed: ['test-presmeet']\n    In seed but not in requirements: ['test-event-participant']\nassert {'test-admin'...st-treasurer'} == {'tes"
+    }
+  ]
+}

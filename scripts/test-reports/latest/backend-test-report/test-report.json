@@ -1,0 +1,210 @@
+{
+  "date": "2026-06-12T14:03:11.960974Z",
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failed_tests": [
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_channel_removed_and_event_id_set",
+      "file": "",
+      "message": "ExceptionGroup: Hypothesis found 2 distinct failures. (2 sub-exceptions)"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_non_presmeet_channels_get_null_event_id",
+      "file": "",
+      "message": "AssertionError: assert 'channel' not in {'channel': 'h-dcn', 'is_parent': True, 'name': 'Test Product', 'product_id': 'prod_92014a93', ...}\nFalsifying example: test_non_presmeet_channels_get_null_even"
+    },
+    {
+      "classname": "tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation",
+      "name": "test_presmeet_products_linked_to_event_get_correct_event_id",
+      "file": "",
+      "message": "assert 0 == 1\nFalsifying example: test_presmeet_products_linked_to_event_get_correct_event_id(\n    self=<tests.unit.test_property_channel_transform.TestProperty4ChannelToEventIdTransformation object a"
+    },
+    {
+      "classname": "tests.unit.test_property_order_handlers.TestProperty13OrderValidationPipeline",
+      "name": "test_submit_accepts_valid_variant_parent_match",
+      "file": "",
+      "message": "AssertionError: Expected 200 for valid variant, got 500: {\"error\": \"Failed to generate order number. Please retry.\"}\nassert 500 == 200\nFalsifying example: test_submit_accepts_valid_variant_parent_matc"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_normalized_response_includes_all_required_fields",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_normalized_response_includes_all_required_fields(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f997055e"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_naam_fallback_for_name",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_naam_fallback_for_name(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f997055f890>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_prijs_fallback_for_price",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_prijs_fallback_for_price(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f997055c350>,\n    product={'product_id"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization",
+      "name": "test_products_without_is_parent_are_normalized",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_products_without_is_parent_are_normalized(\n    self=<tests.unit.test_property_scan_product.TestProperty6ScanProductNormalization object at 0x7f997055c090>,\n "
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_only_parent_and_legacy_records_returned",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_only_parent_and_legacy_records_returned(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_property_scan_prod"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_legacy_records_without_is_parent_included",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_legacy_records_without_is_parent_included(\n    # The test always failed when commented parts were varied together.\n    self=<tests.unit.test_property_scan_pr"
+    },
+    {
+      "classname": "tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering",
+      "name": "test_migration_source_records_excluded_regardless_of_is_parent",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_migration_source_records_excluded_regardless_of_is_parent(\n    self=<tests.unit.test_property_scan_product.TestProperty7ScanProductFiltering object at 0x7f99"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_returns_unified_fields",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_naam_fallback_for_name",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_prijs_fallback_for_price",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_name_preferred_over_naam",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductNormalization",
+      "name": "test_price_preferred_over_prijs",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_excludes_variant_records",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_excludes_migration_source_records",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product.TestScanProductFiltering",
+      "name": "test_includes_records_without_is_parent",
+      "file": "",
+      "message": "KeyError: 0"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_groep_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_subgroep_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_response_includes_images_field",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_bug_condition.TestScanProductBugCondition",
+      "name": "test_all_three_fields_present_together",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_existing_seven_fields_are_returned",
+      "file": "",
+      "message": "assert 500 == 200\nFalsifying example: test_existing_seven_fields_are_returned(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f997055efd0>,\n    product={'"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_product_id_preserved_exactly",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_product_id_preserved_exactly(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f997055f750>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_decimal_to_number_conversion",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_decimal_to_number_conversion(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f997055cd90>,\n    product={'product_id':"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_name_fallback_logic_preserved",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_name_fallback_logic_preserved(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f997055ca90>,\n    product={'product_id'"
+    },
+    {
+      "classname": "tests.unit.test_scan_product_preservation.TestScanProductPreservation",
+      "name": "test_is_parent_and_active_preserved",
+      "file": "",
+      "message": "KeyError: 0\nFalsifying example: test_is_parent_and_active_preserved(\n    self=<tests.unit.test_scan_product_preservation.TestScanProductPreservation object at 0x7f99704b9990>,\n    product={'product_id"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestAuthentication",
+      "name": "test_missing_auth_header_returns_401",
+      "file": "",
+      "message": "assert 404 == 401"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestAuthentication",
+      "name": "test_no_member_access_returns_403",
+      "file": "",
+      "message": "assert 404 == 403"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestSuccessfulSubmission",
+      "name": "test_successful_submit_returns_200",
+      "file": "",
+      "message": "assert 500 == 200"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestSuccessfulSubmission",
+      "name": "test_submit_records_status_history",
+      "file": "",
+      "message": "TypeError: 'NoneType' object is not subscriptable"
+    },
+    {
+      "classname": "tests.unit.test_submit_order.TestSuccessfulSubmission",
+      "name": "test_order_without_variant_id_submits_ok",
+      "file": "",
+      "message": "assert 500 == 200"
+    }
+  ]
+}

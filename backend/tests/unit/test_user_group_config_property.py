@@ -55,21 +55,19 @@ EXPECTED_GROUPS = {
         "Events_Read",
         "Events_Export",
         "Regio_All",
-        "Regio_Pressmeet",
         "hdcnLeden",
     },
     "test-lid": {
         "hdcnLeden",
-        "Regio_Pressmeet",
-        "club_test_presmeet",
+        "event_participant",
     },
     "test-treasurer": {
         "Finance_CRUD",
         "Finance_Read",
         "hdcnLeden",
     },
-    "test-presmeet": {
-        "Regio_Pressmeet",
+    "test-event-participant": {
+        "event_participant",
         "hdcnLeden",
     },
     "test-readonly": {

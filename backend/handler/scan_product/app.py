@@ -55,7 +55,7 @@ def lambda_handler(event, context):
         
         # Get products from DynamoDB
         table_name = os.environ.get('DYNAMODB_TABLE', 'Producten')
-        dynamodb = boto3.resource('dynamodb')
+        dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1'))
         table = dynamodb.Table(table_name)
 
         response = table.scan(

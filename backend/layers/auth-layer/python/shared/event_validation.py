@@ -32,13 +32,19 @@ def validate_item_fields(
     For each item, looks up the product by product_id and validates:
     - All required fields are present and non-empty
     - Text fields are strings
+    - Email fields have valid email format
     - Select fields have a value from the allowed options list
     - Number fields are numeric and within min/max bounds
     - Date fields are non-empty strings
 
+    Supports two item_fields_data formats:
+    - Dict format (legacy): {'field_id': value, ...}
+    - List format (per-unit): [{'field_values': {'field_id': value}}, ...]
+      where len(list) must == item quantity.
+
     Args:
         items: The order's items array. Each item has product_id and
-            item_fields_data (dict of field_id -> value).
+            item_fields_data (dict or list of per-unit field data).
         products: Dict mapping product_id -> product record. Each product
             has an order_item_fields array of field definitions.
 
@@ -70,39 +76,83 @@ def validate_item_fields(
         if not field_definitions:
             continue
 
-        fields_data = item.get("item_fields_data", {}) or {}
+        raw_fields_data = item.get("item_fields_data")
+        quantity = item.get("quantity", 1)
+        if isinstance(quantity, Decimal):
+            quantity = int(quantity)
 
-        for field_def in field_definitions:
-            field_id = field_def.get("id")
-            if not field_id:
-                continue
-
-            value = fields_data.get(field_id)
-            field_type = field_def.get("type", "text")
-            required = field_def.get("required", False)
-            label = field_def.get("label", field_id)
-
-            # Check required
-            if required and _is_empty(value, field_type):
+        # Determine format and build list of field_values dicts to validate
+        if isinstance(raw_fields_data, list):
+            # Per-unit list format: validate count matches quantity
+            if len(raw_fields_data) != quantity:
                 errors.append({
                     "item_index": item_index,
-                    "field": field_id,
-                    "message": f"Veld '{label}' is verplicht",
+                    "field": "item_fields_data",
+                    "message": (
+                        f"Aantal veldgegevens ({len(raw_fields_data)}) "
+                        f"komt niet overeen met aantal ({quantity})"
+                    ),
                 })
                 continue
 
-            # Skip further validation if value is empty and not required
-            if _is_empty(value, field_type):
-                continue
-
-            # Type-specific validation
-            field_error = _validate_field_type(value, field_def)
-            if field_error:
+            # Extract field_values from each entry
+            fields_data_list = []
+            for entry in raw_fields_data:
+                if isinstance(entry, dict):
+                    fields_data_list.append(entry.get("field_values") or {})
+                else:
+                    fields_data_list.append({})
+        elif isinstance(raw_fields_data, dict):
+            # Legacy flat dict format — single set of fields
+            fields_data_list = [raw_fields_data]
+        elif raw_fields_data is None:
+            # Missing item_fields_data — check if any fields are required
+            has_required = any(
+                fd.get("required", False) for fd in field_definitions
+            )
+            if has_required:
                 errors.append({
                     "item_index": item_index,
-                    "field": field_id,
-                    "message": field_error,
+                    "field": "item_fields_data",
+                    "message": "Veldgegevens zijn verplicht voor dit product",
                 })
+            continue
+        else:
+            fields_data_list = [{}]
+
+        # Validate each set of field values
+        for unit_index, fields_data in enumerate(fields_data_list):
+            for field_def in field_definitions:
+                field_id = field_def.get("id")
+                if not field_id:
+                    continue
+
+                value = fields_data.get(field_id)
+                field_type = field_def.get("type", "text")
+                required = field_def.get("required", False)
+                label = field_def.get("label", field_id)
+
+                # Check required
+                if required and _is_empty(value, field_type):
+                    errors.append({
+                        "item_index": item_index,
+                        "field": field_id,
+                        "message": f"Veld '{label}' is verplicht",
+                    })
+                    continue
+
+                # Skip further validation if value is empty and not required
+                if _is_empty(value, field_type):
+                    continue
+
+                # Type-specific validation
+                field_error = _validate_field_type(value, field_def)
+                if field_error:
+                    errors.append({
+                        "item_index": item_index,
+                        "field": field_id,
+                        "message": field_error,
+                    })
 
     return errors
 
@@ -112,10 +162,13 @@ def validate_purchase_rules(
     products: Dict[str, Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    Validate item counts per product against purchase_rules (min/max per club).
+    Validate item counts per product against purchase_rules.
 
-    Counts items per product_id in the order, then checks against each
-    product's purchase_rules.min_per_club and purchase_rules.max_per_club.
+    Counts items per product_id in the order (using quantity), then checks
+    against each product's purchase_rules limits:
+    - max_per_order: maximum quantity of this product in a single order
+    - max_per_club: maximum items for club-scoped orders
+    - min_per_club: minimum items for club-scoped orders
 
     Args:
         items: The order's items array.
@@ -126,18 +179,35 @@ def validate_purchase_rules(
     """
     errors = []
 
-    # Count items per product_id
+    # Count total quantity per product_id
     counts: Dict[str, int] = {}
     for item in items:
         product_id = item.get("product_id")
         if product_id:
-            counts[product_id] = counts.get(product_id, 0) + 1
+            quantity = item.get("quantity", 1)
+            if isinstance(quantity, Decimal):
+                quantity = int(quantity)
+            counts[product_id] = counts.get(product_id, 0) + quantity
 
     # Check each product's rules
     for product_id, product in products.items():
         purchase_rules = product.get("purchase_rules") or {}
         count = counts.get(product_id, 0)
         product_name = product.get("name", product_id)
+
+        # max_per_order check
+        max_per_order = purchase_rules.get("max_per_order")
+        if max_per_order is not None:
+            max_val = _to_int(max_per_order)
+            if max_val is not None and count > max_val:
+                errors.append({
+                    "item_index": None,
+                    "field": "purchase_rules",
+                    "message": (
+                        f"max_per_order: maximaal {max_val} toegestaan voor "
+                        f"'{product_name}', maar {count} aangevraagd"
+                    ),
+                })
 
         # max_per_club check
         max_per_club = purchase_rules.get("max_per_club")
@@ -146,7 +216,7 @@ def validate_purchase_rules(
             if max_val is not None and count > max_val:
                 errors.append({
                     "item_index": None,
-                    "field": product_id,
+                    "field": "purchase_rules",
                     "message": (
                         f"Maximum {max_val} items toegestaan voor "
                         f"'{product_name}', maar {count} gevonden"
@@ -160,7 +230,7 @@ def validate_purchase_rules(
             if min_val is not None and min_val > 0 and count < min_val:
                 errors.append({
                     "item_index": None,
-                    "field": product_id,
+                    "field": "purchase_rules",
                     "message": (
                         f"Minimaal {min_val} items vereist voor "
                         f"'{product_name}', maar {count} gevonden"
@@ -263,6 +333,22 @@ def _validate_field_type(value: Any, field_def: Dict[str, Any]) -> Optional[str]
     if field_type == "text":
         if not isinstance(value, str):
             return f"Veld '{label}' moet tekst zijn"
+        # Check min_length validation
+        validation = field_def.get("validation") or {}
+        min_length = validation.get("min_length")
+        if min_length is not None:
+            min_len = _to_int(min_length)
+            if min_len is not None and len(value.strip()) < min_len:
+                return f"Veld '{label}' moet minimaal {min_len} tekens bevatten"
+        return None
+
+    elif field_type == "email":
+        if not isinstance(value, str):
+            return f"Veld '{label}' moet tekst zijn"
+        # Basic email format check
+        import re
+        if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', value):
+            return f"Veld '{label}' is geen geldig e-mailadres"
         return None
 
     elif field_type == "select":
