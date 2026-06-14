@@ -5,6 +5,7 @@ import { ArrowBackIcon } from '@chakra-ui/icons';
 import { Suspense, lazy } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { HelmetProvider } from 'react-helmet-async';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { FunctionGuard } from './components/common/FunctionGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
@@ -192,6 +193,7 @@ function AppContent({ signOut, user }: AppProps) {
 
 function App() {
   return (
+    <HelmetProvider>
     <MaintenanceProvider>
       <AuthProvider>
         <CustomAuthenticator>
@@ -241,6 +243,7 @@ function App() {
         </CustomAuthenticator>
       </AuthProvider>
     </MaintenanceProvider>
+    </HelmetProvider>
   );
 }
 

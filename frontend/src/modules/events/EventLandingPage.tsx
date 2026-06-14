@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import {
   Box,
   Container,
@@ -120,6 +121,8 @@ const EventLandingPage: React.FC = () => {
   const isOpen = registration_status === 'open';
   const ctaLabel = landing_page.registration_label || t('landing.registerButton');
 
+  const pageUrl = window.location.href;
+
   /**
    * Determine CTA destination and label based on auth state.
    * - Not authenticated: link to register page (sign-up/login flow)
@@ -150,6 +153,24 @@ const EventLandingPage: React.FC = () => {
 
   return (
     <Box minH="100vh" bg="black" color="white">
+      <Helmet>
+        <title>{event.name} | H-DCN</title>
+        <meta name="description" content={landing_page.tagline || event.name} />
+        <meta property="og:title" content={event.name} />
+        <meta property="og:description" content={landing_page.tagline || event.name} />
+        {landing_page.hero_image_url && (
+          <meta property="og:image" content={landing_page.hero_image_url} />
+        )}
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={event.name} />
+        <meta name="twitter:description" content={landing_page.tagline || event.name} />
+        {landing_page.hero_image_url && (
+          <meta name="twitter:image" content={landing_page.hero_image_url} />
+        )}
+      </Helmet>
+
       {/* Hero Section */}
       <Box position="relative" w="100%" minH={{ base: '60vh', md: '70vh' }} overflow="hidden">
         {landing_page.hero_image_url && (
