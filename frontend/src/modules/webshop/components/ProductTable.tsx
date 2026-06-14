@@ -35,7 +35,10 @@ function formatVariantSummary(schema?: VariantSchema): string {
     return 'Standaard';
   }
   return Object.entries(schema)
-    .map(([axis, values]) => `${axis}: ${values.join(', ')}`)
+    .map(([axis, values]) => {
+      const valuesArray = Array.isArray(values) ? values : [String(values)];
+      return `${axis}: ${valuesArray.join(', ')}`;
+    })
     .join(' | ');
 }
 
