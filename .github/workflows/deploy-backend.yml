@@ -95,6 +95,7 @@ jobs:
                 OrdersTable=Orders-Test \
                 CountersTable=Counters-Test \
                 StockMovementsTableName=StockMovements-Test \
+                DataBucket=h-dcn-data-test-506221081911 \
                 ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
                 ExistingUserPoolClientId=6jhvk853b0lfg9q1m861qs0cug
           else
