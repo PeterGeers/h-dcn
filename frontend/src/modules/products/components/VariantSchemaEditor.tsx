@@ -57,7 +57,12 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
   onAddVariant,
   onRemoveVariant,
 }) => {
-  const axes = useMemo(() => Object.entries(value), [value]);
+  const axes = useMemo(() => {
+    return Object.entries(value).map(([name, vals]) => [
+      name,
+      Array.isArray(vals) ? vals : [String(vals)],
+    ] as [string, string[]]);
+  }, [value]);
 
   const totalCombinations = useMemo(() => {
     if (axes.length === 0) return 0;
@@ -166,7 +171,7 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
       )}
 
       {axes.length > 0 && !combinationsExceeded && (
-        <Text fontSize="sm" color="gray.700">
+        <Text fontSize="sm" color="gray.400">
           Totaal combinaties: {totalCombinations}
         </Text>
       )}
@@ -177,7 +182,7 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
           p={4}
           borderWidth="1px"
           borderRadius="md"
-          borderColor="gray.200"
+          borderColor="gray.600"
         >
           <HStack mb={3} spacing={2}>
             <FormControl isInvalid={!!allErrors[`axis_${axisIndex}_name`]} flex={1}>
@@ -187,6 +192,10 @@ const VariantSchemaEditor: React.FC<VariantSchemaEditorProps> = ({
                 onChange={(e) => renameAxis(axisIndex, e.target.value)}
                 size="sm"
                 maxLength={50}
+                bg="gray.700"
+                color="white"
+                borderColor="gray.500"
+                _placeholder={{ color: 'gray.400' }}
               />
               <FormErrorMessage fontSize="xs">
                 {allErrors[`axis_${axisIndex}_name`]}
@@ -333,8 +342,12 @@ const ValueInput: React.FC<ValueInputProps> = ({ axisIndex, onAdd, error }) => {
           onKeyDown={handleKeyDown}
           size="sm"
           maxLength={100}
+          bg="gray.700"
+          color="white"
+          borderColor="gray.500"
+          _placeholder={{ color: 'gray.400' }}
         />
-        <Button size="sm" onClick={handleAdd} colorScheme="blue" variant="ghost">
+        <Button size="sm" onClick={handleAdd} colorScheme="orange" variant="ghost">
           Toevoegen
         </Button>
       </HStack>
