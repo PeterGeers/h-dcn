@@ -78,7 +78,7 @@ interface GroupItemProps {
 }
 
 const schema = Yup.object().shape({
-  id: Yup.string().required('Product ID is verplicht'),
+  id: Yup.string().notRequired(),
   naam: Yup.string().required('Productnaam is verplicht'),
   groep: Yup.string().notRequired(),
   subgroep: Yup.string().notRequired(),
