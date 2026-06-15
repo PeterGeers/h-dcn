@@ -96,7 +96,9 @@ def lambda_handler(event, context):
             return create_error_response(404, 'Product not found')
 
         existing = response['Item']
-        if not existing.get('is_parent', False):
+        # Block updates only for explicit variants (is_parent=False).
+        # Products without is_parent set are regular products, not variants.
+        if existing.get('is_parent') is False:
             return create_error_response(
                 400,
                 'Cannot update a variant with this endpoint. Use the variant update endpoint.'
