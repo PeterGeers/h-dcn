@@ -59,8 +59,10 @@ jobs:
 
           if [ "$STAGE" = "test" ]; then
             echo "REACT_APP_API_BASE_URL=https://k81706dxb0.execute-api.eu-west-1.amazonaws.com/prod" > .env
+            echo "REACT_APP_DATA_BUCKET=h-dcn-data-test-506221081911" >> .env
           else
             echo "REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}" > .env
+            echo "REACT_APP_DATA_BUCKET=h-dcn-data-506221081911" >> .env
           fi
           echo "REACT_APP_AWS_REGION=${{ vars.REACT_APP_AWS_REGION }}" >> .env
           echo "REACT_APP_S3_BUCKET=${{ vars.REACT_APP_S3_BUCKET }}" >> .env
