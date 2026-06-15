@@ -37,7 +37,7 @@ function CollapsibleSection({ title, defaultOpen = false, children }: { title: s
         {title}
       </Button>
       <Collapse in={isOpen}>
-        <Box p={3} bg="white">
+        <Box p={3} bg="gray.800">
           {children}
         </Box>
       </Collapse>
@@ -188,8 +188,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 onCategoryModalClose(); // Close modal after selection
               }
             }}
-            bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.200' : 'transparent'}
-            _hover={{ bg: readOnly ? 'transparent' : 'orange.100' }}
+            color="white"
+            bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.600' : 'transparent'}
+            _hover={{ bg: readOnly ? 'transparent' : 'gray.700' }}
             isDisabled={readOnly}
             fontWeight={selectedCategory.groep === groupName ? 'bold' : 'normal'}
           >
@@ -216,12 +217,13 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                         onCategoryModalClose(); // Close modal after selection
                       }
                     }}
-                    bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.300' : 'transparent'}
-                    _hover={{ bg: readOnly ? 'transparent' : 'orange.200' }}
+                    color="white"
+                    bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.700' : 'transparent'}
+                    _hover={{ bg: readOnly ? 'transparent' : 'gray.700' }}
                     isDisabled={readOnly}
                     fontWeight={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'bold' : 'normal'}
                     borderLeft="2px solid"
-                    borderColor="orange.200"
+                    borderColor="orange.400"
                     borderRadius="0"
                     ml={2}
                   >
@@ -236,8 +238,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     };
 
     return (
-      <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="400px" overflowY="auto">
-        <Text fontSize="md" fontWeight="bold" mb={3} color="gray.700">
+      <Box p={3} bg="gray.800" borderRadius="md" border="1px solid" borderColor="gray.600" maxH="400px" overflowY="auto">
+        <Text fontSize="md" fontWeight="bold" mb={3} color="white">
           {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer Categorie:'}
         </Text>
         

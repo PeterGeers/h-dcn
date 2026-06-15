@@ -84,7 +84,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
     <VStack spacing={4} align="stretch" w="100%">
       {/* Max per bestelling */}
       <FormControl isInvalid={!!errors?.max_per_order}>
-        <FormLabel fontSize="sm" color="gray.800">Max per bestelling</FormLabel>
+        <FormLabel fontSize="sm" color="gray.300">Max per bestelling</FormLabel>
         <NumberInput
           min={PURCHASE_RULES_LIMITS.min}
           max={PURCHASE_RULES_LIMITS.max}
@@ -92,7 +92,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
           onChange={handleNumberChange('max_per_order')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen limiet" color="gray.800" />
+          <NumberInputField placeholder="Geen limiet" color="white" bg="gray.700" borderColor="gray.600" _placeholder={{ color: 'gray.400' }} />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -105,7 +105,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Max per lid */}
       <FormControl isInvalid={!!errors?.max_per_member}>
-        <FormLabel fontSize="sm" color="gray.800">Max per lid</FormLabel>
+        <FormLabel fontSize="sm" color="gray.300">Max per lid</FormLabel>
         <NumberInput
           min={PURCHASE_RULES_LIMITS.min}
           max={PURCHASE_RULES_LIMITS.max}
@@ -113,7 +113,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
           onChange={handleNumberChange('max_per_member')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen limiet" color="gray.800" />
+          <NumberInputField placeholder="Geen limiet" color="white" bg="gray.700" borderColor="gray.600" _placeholder={{ color: 'gray.400' }} />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -126,7 +126,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Max per club */}
       <FormControl isInvalid={!!errors?.max_per_club || !!minMaxError}>
-        <FormLabel fontSize="sm" color="gray.800">Max per club</FormLabel>
+        <FormLabel fontSize="sm" color="gray.300">Max per club</FormLabel>
         <NumberInput
           min={PURCHASE_RULES_LIMITS.min}
           max={PURCHASE_RULES_LIMITS.max}
@@ -134,7 +134,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
           onChange={handleNumberChange('max_per_club')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen limiet" color="gray.800" />
+          <NumberInputField placeholder="Geen limiet" color="white" bg="gray.700" borderColor="gray.600" _placeholder={{ color: 'gray.400' }} />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -147,7 +147,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Min per club */}
       <FormControl isInvalid={!!errors?.min_per_club || !!minMaxError}>
-        <FormLabel fontSize="sm" color="gray.800">Min per club</FormLabel>
+        <FormLabel fontSize="sm" color="gray.300">Min per club</FormLabel>
         <NumberInput
           min={PURCHASE_RULES_LIMITS.min}
           max={PURCHASE_RULES_LIMITS.max}
@@ -155,7 +155,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
           onChange={handleNumberChange('min_per_club')}
           size="sm"
         >
-          <NumberInputField placeholder="Geen minimum" color="gray.800" />
+          <NumberInputField placeholder="Geen minimum" color="white" bg="gray.700" borderColor="gray.600" _placeholder={{ color: 'gray.400' }} />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -174,7 +174,7 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
       {/* Lidmaatschap vereist */}
       <FormControl>
         <HStack justify="space-between">
-          <FormLabel fontSize="sm" color="gray.800" mb={0}>
+          <FormLabel fontSize="sm" color="gray.300" mb={0}>
             Lidmaatschap vereist
           </FormLabel>
           <Switch
@@ -187,15 +187,17 @@ const PurchaseRulesEditor: React.FC<PurchaseRulesEditorProps> = ({
 
       {/* Bestelmodus */}
       <FormControl>
-        <FormLabel fontSize="sm" color="gray.800">Bestelmodus</FormLabel>
+        <FormLabel fontSize="sm" color="gray.300">Bestelmodus</FormLabel>
         <Select
           size="sm"
           value={value.order_mode ?? DEFAULT_ORDER_MODE}
           onChange={handleOrderModeChange}
-          color="gray.800"
+          color="white"
+          bg="gray.700"
+          borderColor="gray.600"
         >
           {ORDER_MODE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} style={{ background: '#2D3748', color: 'white' }}>
               {option.label}
             </option>
           ))}

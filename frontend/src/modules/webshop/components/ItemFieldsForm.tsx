@@ -237,10 +237,10 @@ const ItemFieldsForm: React.FC<ItemFieldsFormProps> = ({
           key={itemIndex}
           p={4}
           borderWidth={1}
-          borderColor="gray.200"
+          borderColor="gray.600"
           borderRadius="md"
         >
-          <Heading as="h4" size="sm" mb={3}>
+          <Heading as="h4" size="sm" mb={3} color="white">
             {t('item_fields.item_label', { current: itemIndex + 1, total: quantity })}
           </Heading>
 
@@ -256,7 +256,7 @@ const ItemFieldsForm: React.FC<ItemFieldsFormProps> = ({
                   isInvalid={!!errorMsg}
                   isRequired={field.required}
                 >
-                  <FormLabel fontSize="sm">{field.label}</FormLabel>
+                  <FormLabel fontSize="sm" color="gray.300">{field.label}</FormLabel>
                   {renderFieldInput(field, fieldValue, itemIndex, handleFieldChange, t)}
                   {errorMsg && (
                     <FormErrorMessage>{errorMsg}</FormErrorMessage>
@@ -292,9 +292,12 @@ function renderFieldInput(
           value={value}
           onChange={(e) => handleChange(e.target.value)}
           size="sm"
+          bg="gray.700"
+          borderColor="gray.600"
+          color="white"
         >
           {(field.options || []).map((option) => (
-            <option key={option} value={option}>
+            <option key={option} value={option} style={{ background: '#2D3748', color: 'white' }}>
               {option}
             </option>
           ))}
@@ -310,7 +313,7 @@ function renderFieldInput(
           max={field.validation?.maximum}
           size="sm"
         >
-          <NumberInputField />
+          <NumberInputField bg="gray.700" borderColor="gray.600" color="white" />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
@@ -325,6 +328,9 @@ function renderFieldInput(
           value={value}
           onChange={(e) => handleChange(e.target.value)}
           size="sm"
+          bg="gray.700"
+          borderColor="gray.600"
+          color="white"
         />
       );
 
@@ -337,6 +343,9 @@ function renderFieldInput(
           placeholder={t('item_fields.email_placeholder')}
           size="sm"
           maxLength={field.validation?.max_length}
+          bg="gray.700"
+          borderColor="gray.600"
+          color="white"
         />
       );
 
@@ -349,6 +358,9 @@ function renderFieldInput(
           onChange={(e) => handleChange(e.target.value)}
           size="sm"
           maxLength={field.validation?.max_length}
+          bg="gray.700"
+          borderColor="gray.600"
+          color="white"
         />
       );
   }

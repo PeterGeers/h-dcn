@@ -484,11 +484,11 @@ const VariantActionPanel: React.FC<VariantActionPanelProps> = ({
   if (axes.every(([, values]) => values.length === 0)) return null;
 
   return (
-    <Box p={3} borderWidth="1px" borderRadius="md" borderColor="gray.300" bg="gray.50">
-      <Text fontSize="sm" fontWeight="bold" mb={2} color="gray.700">
+    <Box p={3} borderWidth="1px" borderRadius="md" borderColor="gray.600" bg="gray.800">
+      <Text fontSize="sm" fontWeight="bold" mb={2} color="white">
         Individuele variant toevoegen/verwijderen
       </Text>
-      <Text fontSize="xs" color="gray.500" mb={3}>
+      <Text fontSize="xs" color="gray.400" mb={3}>
         Selecteer een waarde per as om een specifieke variant te beheren.
       </Text>
 
@@ -496,15 +496,18 @@ const VariantActionPanel: React.FC<VariantActionPanelProps> = ({
         {axes.map(([axisName, values]) => (
           values.length > 0 && (
             <HStack key={axisName} spacing={2}>
-              <Text fontSize="sm" minW="80px" color="gray.600">{axisName}:</Text>
+              <Text fontSize="sm" minW="80px" color="gray.300">{axisName}:</Text>
               <Select
                 size="sm"
                 placeholder="Kies..."
                 value={selectedValues[axisName] || ''}
                 onChange={(e) => handleSelectValue(axisName, e.target.value)}
+                bg="gray.700"
+                borderColor="gray.600"
+                color="white"
               >
                 {values.map((val) => (
-                  <option key={val} value={val}>{val}</option>
+                  <option key={val} value={val} style={{ background: '#2D3748', color: 'white' }}>{val}</option>
                 ))}
               </Select>
             </HStack>
