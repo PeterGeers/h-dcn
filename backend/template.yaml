@@ -58,6 +58,10 @@ Parameters:
   OrdersTable:
     Type: String
     Default: Orders
+  DataBucket:
+    Type: String
+    Default: h-dcn-data-506221081911
+    Description: "S3 bucket for product images, logos, and other data assets"
   DefaultTempPassword:
     Type: String
     NoEcho: true
@@ -459,12 +463,12 @@ Resources:
                   - s3:GetObject
                   - s3:DeleteObject
                 Resource:
-                  - "arn:aws:s3:::my-hdcn-bucket/analytics/*"
+                  - !Sub "arn:aws:s3:::${DataBucket}/analytics/*"
               - Effect: Allow
                 Action:
                   - s3:ListBucket
                 Resource:
-                  - "arn:aws:s3:::my-hdcn-bucket"
+                  - !Sub "arn:aws:s3:::${DataBucket}"
                 Condition:
                   StringLike:
                     "s3:prefix": "analytics/*"
@@ -1495,7 +1499,7 @@ Resources:
         Variables:
           ORDERS_TABLE: !Ref OrdersTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
-          S3_BUCKET: "my-hdcn-bucket"
+          S3_BUCKET: !Ref DataBucket
           LOGO_S3_KEY: "imagesWebsite/hdcnFavico.png"
       Events:
         GenerateOrderPdf:
@@ -1548,7 +1552,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - "arn:aws:s3:::my-hdcn-bucket/imagesWebsite/*"
+                  - !Sub "arn:aws:s3:::${DataBucket}/imagesWebsite/*"
 
   # Event Management Functions
   GetEventByIdFunction:
@@ -1646,17 +1650,20 @@ Resources:
       Timeout: 30
       Layers:
         - !Ref AuthLayer
+      Environment:
+        Variables:
+          DATA_BUCKET_NAME: !Ref DataBucket
       Policies:
         - S3ReadPolicy:
-            BucketName: my-hdcn-bucket
+            BucketName: !Ref DataBucket
         - S3WritePolicy:
-            BucketName: my-hdcn-bucket
+            BucketName: !Ref DataBucket
         - Statement:
           - Effect: Allow
             Action:
               - s3:DeleteObject
             Resource: 
-              - arn:aws:s3:::my-hdcn-bucket/*
+              - !Sub "arn:aws:s3:::${DataBucket}/*"
       Events:
         UploadFile:
           Type: Api
@@ -1677,8 +1684,7 @@ Resources:
             Path: /s3/files
             Method: get
 
-  # S3 Lifecycle Configuration for Analytics Data in existing bucket
-  # Note: Using existing my-hdcn-bucket with analytics/ folder structure
+  # S3 Lifecycle Configuration for Analytics Data in DataBucket
 
   # Member Export Function (Simple JSON export - much better than parquet!)
   ExportMembersFunction:
@@ -2323,7 +2329,7 @@ Outputs:
 
   # Analytics Data Folder Structure
   AnalyticsDataInfo:
-    Description: "Analytics data is stored in my-hdcn-bucket under analytics/ folder"
-    Value: "s3://my-hdcn-bucket/analytics/"
+    Description: "Analytics data is stored in the DataBucket under analytics/ folder"
+    Value: !Sub "s3://${DataBucket}/analytics/"
     Export:
       Name: !Sub "${AWS::StackName}-AnalyticsDataPath"

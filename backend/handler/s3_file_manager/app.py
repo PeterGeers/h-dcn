@@ -30,15 +30,15 @@ except ImportError as e:
 # Initialize S3 client
 s3_client = boto3.client('s3')
 
+# Bucket name from environment variable (set via SAM template DataBucket parameter)
+DATA_BUCKET = os.environ.get('DATA_BUCKET_NAME', 'h-dcn-data-506221081911')
+
 def validate_bucket_access(bucket_name):
     """Validate that the bucket is allowed for operations"""
-    # Define allowed buckets for security
-    allowed_buckets = [
-        'my-hdcn-bucket'
-    ]
+    allowed_buckets = [DATA_BUCKET]
     
     if bucket_name not in allowed_buckets:
-        raise ValueError(f'Access denied to bucket: {bucket_name}. Allowed buckets: {allowed_buckets}')
+        raise ValueError(f'Access denied to bucket: {bucket_name}. Allowed: {allowed_buckets}')
 
 def handle_upload(event):
     """Handle file upload to S3"""
