@@ -112,8 +112,8 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   }, []);
 
   const handleSave = (data: Product) => {
-    // Remove fields that should be managed by the backend
-    const { updated_at, created_at, opties, ...cleanData } = data as any;
+    // Remove fields that should be managed by the backend or handled separately
+    const { updated_at, created_at, opties, variant_schema, order_item_fields, purchase_rules, ...cleanData } = data as any;
     
     // Send both Dutch and English field names so the backend writes both.
     // This ensures products with either legacy (prijs/naam) or new (price/name) 
@@ -135,7 +135,10 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
       updateProduct(productId, processedData)
         .then((response: any) => {
           if (response && response.success === false) {
-            alert('Fout bij opslaan: ' + (response.error || 'Onbekende fout'));
+            const errorDetail = response.data?.errors 
+              ? '\n' + JSON.stringify(response.data.errors, null, 2)
+              : '';
+            alert('Fout bij opslaan: ' + (response.error || 'Onbekende fout') + errorDetail);
             return;
           }
           refresh();
