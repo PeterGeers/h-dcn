@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       stack_name:
-        description: 'CloudFormation stack name (default: h-dcn)'
+        description: 'CloudFormation stack name (h-dcn for prod, h-dcn-test for test)'
         required: false
-        default: 'h-dcn'
+        default: ''
         type: string
       stage:
         description: 'Deployment stage (prod or test)'
@@ -71,11 +71,15 @@ jobs:
         working-directory: backend
         run: |
           STAGE="${{ inputs.stage || 'prod' }}"
-          STACK="${{ inputs.stack_name || 'h-dcn' }}"
+          STACK="${{ inputs.stack_name }}"
 
-          # Auto-select test stack when stage is test and no explicit stack_name given
-          if [ "$STAGE" = "test" ] && [ "$STACK" = "h-dcn" ]; then
-            STACK="h-dcn-test"
+          # Auto-select stack name based on stage if not explicitly provided
+          if [ -z "$STACK" ]; then
+            if [ "$STAGE" = "test" ]; then
+              STACK="h-dcn-test"
+            else
+              STACK="h-dcn"
+            fi
           fi
 
           if [ "$STAGE" = "test" ]; then
