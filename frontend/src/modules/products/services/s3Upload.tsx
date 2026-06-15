@@ -1,9 +1,6 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Product as BaseProduct } from '../../../types';
 
-// S3 bucket for product data — configurable via env var, falls back to production bucket
-const DEFAULT_DATA_BUCKET = process.env.REACT_APP_DATA_BUCKET || 'h-dcn-data-506221081911';
-
 interface ProductWithImage extends BaseProduct {
   image?: string | string[];
 }
@@ -30,8 +27,8 @@ export const uploadToS3 = async (
   productId?: string,
   bucketName?: string
 ): Promise<string> => {
-  // Use provided bucket name or default to my-hdcn-bucket
-  const targetBucket = bucketName || 'my-hdcn-bucket';
+  // Use provided bucket name or default to configured data bucket
+  const targetBucket = bucketName || DEFAULT_DATA_BUCKET;
   
   // Use logical naming: if productId provided, use it; otherwise use timestamp
   let fileName: string;
@@ -101,8 +98,8 @@ export const getLogicalImageUrl = (
   fileExtension: string = 'jpg',
   bucketName?: string
 ): string => {
-  // Use provided bucket name or default to my-hdcn-bucket
-  const targetBucket = bucketName || 'my-hdcn-bucket';
+  // Use provided bucket name or default to configured data bucket
+  const targetBucket = bucketName || DEFAULT_DATA_BUCKET;
   
   const region = 'eu-west-1';
   return `https://${targetBucket}.s3.${region}.amazonaws.com/product-images/${productId}.${fileExtension}`;
@@ -112,8 +109,8 @@ export const cleanupUnusedImages = async (
   products: ProductWithImage[], 
   bucketName?: string
 ): Promise<number> => {
-  // Use provided bucket name or default to my-hdcn-bucket
-  const targetBucket = bucketName || 'my-hdcn-bucket';
+  // Use provided bucket name or default to configured data bucket
+  const targetBucket = bucketName || DEFAULT_DATA_BUCKET;
   
   try {
     // Get auth from Amplify session
