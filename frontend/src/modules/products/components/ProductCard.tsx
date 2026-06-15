@@ -80,13 +80,17 @@ interface GroupItemProps {
 const schema = Yup.object().shape({
   id: Yup.string().required('Product ID is verplicht'),
   naam: Yup.string().required('Productnaam is verplicht'),
-  groep: Yup.string().required('Productgroep is verplicht'),
-  subgroep: Yup.string().when('groep', {
-    is: (groep: string) => groep && groep.length > 0,
-    then: (schema) => schema.notRequired(), // Subgroep is optional if groep is selected
-    otherwise: (schema) => schema.notRequired()
-  }),
-  prijs: Yup.number().required('Prijs is verplicht').min(0, 'Prijs moet 0 of hoger zijn'),
+  groep: Yup.string().notRequired(),
+  subgroep: Yup.string().notRequired(),
+  prijs: Yup.mixed().required('Prijs is verplicht').test(
+    'is-valid-price',
+    'Prijs moet 0 of hoger zijn',
+    (value) => {
+      if (value === undefined || value === null || value === '') return false;
+      const num = Number(value);
+      return !isNaN(num) && num >= 0;
+    }
+  ),
   images: Yup.array().of(Yup.string()).nullable(),
 });
 
