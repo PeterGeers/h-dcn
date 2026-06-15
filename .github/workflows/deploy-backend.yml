@@ -73,6 +73,11 @@ jobs:
           STAGE="${{ inputs.stage || 'prod' }}"
           STACK="${{ inputs.stack_name || 'h-dcn' }}"
 
+          # Auto-select test stack when stage is test and no explicit stack_name given
+          if [ "$STAGE" = "test" ] && [ "$STACK" = "h-dcn" ]; then
+            STACK="h-dcn-test"
+          fi
+
           if [ "$STAGE" = "test" ]; then
             sam deploy \
               --stack-name "$STACK" \
