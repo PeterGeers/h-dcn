@@ -133,7 +133,10 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     const productId = data.product_id || data.id;
     if (productId) {
       updateProduct(productId, processedData)
-        .then(() => refresh())
+        .then(() => {
+          refresh();
+          alert('Product opgeslagen ✓');
+        })
         .catch((error: any) => {
           alert('Fout bij opslaan product: ' + (error.response?.data?.error || error.message));
         });

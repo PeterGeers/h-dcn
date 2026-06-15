@@ -77,21 +77,10 @@ interface GroupItemProps {
   };
 }
 
+// Minimal validation — only truly required fields block save
 const schema = Yup.object().shape({
-  id: Yup.string().notRequired(),
   naam: Yup.string().required('Productnaam is verplicht'),
-  groep: Yup.string().notRequired(),
-  subgroep: Yup.string().notRequired(),
-  prijs: Yup.mixed().required('Prijs is verplicht').test(
-    'is-valid-price',
-    'Prijs moet 0 of hoger zijn',
-    (value) => {
-      if (value === undefined || value === null || value === '') return false;
-      const num = Number(value);
-      return !isNaN(num) && num >= 0;
-    }
-  ),
-  images: Yup.array().of(Yup.string()).nullable(),
+  prijs: Yup.mixed().required('Prijs is verplicht'),
 });
 
 export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
@@ -439,18 +428,33 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           onSave(cleanValues);
         }}
       >
-        {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
+        {({ values, setFieldValue, errors, touched, isSubmitting, submitCount }: FormikProps<any>) => {
           // Store the setFieldValue function for use in the modal
           if (!mainFormSetFieldValue) {
             setMainFormSetFieldValue(() => setFieldValue);
           }
           
+          // Show errors after at least one submit attempt
+          const hasErrors = submitCount > 0 && Object.keys(errors).length > 0;
+          
           return (
           <Form>
             <VStack spacing={4}>
+              {/* Validation error banner — shows all errors clearly */}
+              {hasErrors && (
+                <Box bg="red.100" border="1px solid" borderColor="red.400" borderRadius="md" p={3} w="100%">
+                  <Text color="red.700" fontWeight="bold" fontSize="sm">
+                    Kan niet opslaan:
+                  </Text>
+                  {Object.values(errors).map((err, i) => (
+                    <Text key={i} color="red.600" fontSize="sm">• {err as string}</Text>
+                  ))}
+                </Box>
+              )}
+
               {/* Name field at the top */}
-              <FormControl isInvalid={!!(errors.naam && touched.naam)}>
-                <Field name="naam" as={Input} placeholder="Naam" color="white" bg="gray.600" borderColor={errors.naam && touched.naam ? 'red.500' : 'gray.500'} id="product-naam" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
+              <FormControl isInvalid={!!(errors.naam && (touched.naam || submitCount > 0))}>
+                <Field name="naam" as={Input} placeholder="Naam" color="white" bg="gray.600" borderColor={errors.naam && (touched.naam || submitCount > 0) ? 'red.500' : 'gray.500'} id="product-naam" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
                 <FormErrorMessage>{errors.naam as string}</FormErrorMessage>
               </FormControl>
 
