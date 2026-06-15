@@ -1,6 +1,9 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Product as BaseProduct } from '../../../types';
 
+// S3 bucket for product data — configurable via env var, falls back to production bucket
+const DEFAULT_DATA_BUCKET = process.env.REACT_APP_DATA_BUCKET || 'h-dcn-data-506221081911';
+
 interface ProductWithImage extends BaseProduct {
   image?: string | string[];
 }

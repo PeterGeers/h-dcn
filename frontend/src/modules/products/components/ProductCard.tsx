@@ -9,7 +9,6 @@ import VariantSchemaEditor from './VariantSchemaEditor';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
-import { PRODUCT_CATEGORIES } from '../config/productCategories';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { updateVariantSchema, addVariantToProduct, removeVariantFromProduct } from '../api/productApi';
@@ -102,9 +101,23 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [variantSchemaHasErrors, setVariantSchemaHasErrors] = useState<boolean>(false);
 
   useEffect(() => {
-    // Use hardcoded product categories
-    setCategoryStructure(PRODUCT_CATEGORIES);
-  }, []);
+    // Build category structure dynamically from actual product data.
+    // Categories appear once at least one product uses them.
+    const derived: CategoryStructure = {};
+
+    products.forEach(p => {
+      if (p.groep) {
+        if (!derived[p.groep]) {
+          derived[p.groep] = { children: {} };
+        }
+        if (p.subgroep && !derived[p.groep].children![p.subgroep]) {
+          derived[p.groep].children![p.subgroep] = { id: p.subgroep, value: p.subgroep };
+        }
+      }
+    });
+
+    setCategoryStructure(derived);
+  }, [products]);
 
   useEffect(() => {
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
@@ -258,12 +271,15 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         {/* New group/subgroup inputs */}
         {!readOnly && (
           <Box mt={4} pt={3} borderTop="1px solid" borderColor="gray.300">
-            <Text fontSize="sm" fontWeight="bold" color="gray.600" mb={2}>Nieuwe categorie toevoegen:</Text>
+            <Text fontSize="sm" fontWeight="bold" color="gray.200" mb={2}>Nieuwe categorie toevoegen:</Text>
             <HStack spacing={2} mb={2}>
               <Input
                 size="sm"
                 placeholder="Nieuwe groep"
-                bg="white"
+                bg="gray.600"
+                color="white"
+                borderColor="gray.500"
+                _placeholder={{ color: 'gray.300' }}
                 id="new-group-input"
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === 'Enter') {
@@ -292,7 +308,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               <Input
                 size="sm"
                 placeholder="Nieuwe subgroep"
-                bg="white"
+                bg="gray.600"
+                color="white"
+                borderColor="gray.500"
+                _placeholder={{ color: 'gray.300' }}
                 id="new-subgroup-input"
                 isDisabled={!selectedCategory.groep}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -378,7 +397,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
       <Formik
         initialValues={{
           ...product,
-          prijs: product.prijs ? parseFloat(product.prijs.toString()).toFixed(2) : '',
+          prijs: (product.prijs || product.price) ? parseFloat((product.prijs || product.price || 0).toString()).toFixed(2) : '',
           naam: product.naam || product.name || '',
           images: (() => {
             const productAny = product as any;
@@ -444,7 +463,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   />
                 )}
                 <FormControl isInvalid={!!(errors.id && touched.id)} flex={1}>
-                  <Field name="id" as={Input} placeholder="id" color="white" bg="gray.600" borderColor={errors.id && touched.id ? 'red.500' : 'gray.500'} id="product-id" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
+                  <Field name="id" as={Input} placeholder="Artikel code (bijv. G5)" color="white" bg="gray.600" borderColor={errors.id && touched.id ? 'red.500' : 'gray.500'} id="product-id" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
                   <FormErrorMessage>{errors.id as string}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!(errors.prijs && touched.prijs)} flex={1}>

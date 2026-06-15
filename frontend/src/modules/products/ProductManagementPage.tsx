@@ -115,9 +115,18 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     // Remove fields that should be managed by the backend
     const { updated_at, created_at, opties, ...cleanData } = data as any;
     
+    // Send both Dutch and English field names so the backend writes both.
+    // This ensures products with either legacy (prijs/naam) or new (price/name) 
+    // field naming in DynamoDB get updated correctly.
+    const priceStr = cleanData.prijs ? cleanData.prijs.toString() : (cleanData.price ? cleanData.price.toString() : undefined);
+    const nameStr = cleanData.naam || cleanData.name || undefined;
+    
     const processedData = {
       ...cleanData,
-      prijs: cleanData.prijs ? cleanData.prijs.toString() : cleanData.prijs
+      prijs: priceStr,
+      price: priceStr,
+      naam: nameStr,
+      name: nameStr,
     };
     
     // Use product_id (unified key) if available, fallback to id

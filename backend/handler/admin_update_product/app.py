@@ -44,10 +44,10 @@ table = dynamodb.Table(table_name)
 
 # Fields allowed to be updated on a product
 UPDATABLE_FIELDS = [
-    'name', 'description', 'category', 'price', 'active',
+    'name', 'naam', 'description', 'category', 'price', 'prijs', 'active',
     'min_per_club', 'max_per_club', 'required_attributes',
     'image_url', 'event_id', 'groep', 'subgroep', 'images',
-    'order_item_fields', 'purchase_rules'
+    'order_item_fields', 'purchase_rules', 'nietInWinkel'
 ]
 
 
