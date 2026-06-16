@@ -15,7 +15,6 @@ import { updateVariantSchema } from '../api/productApi';
 import { getRequiredFields, getProductField } from '../../../config/productFields';
 import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
 import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
-import { deleteVariant } from '../../webshop-management/services/adminApi';
 import { VariantEditModal } from './VariantEditModal';
 
 /**

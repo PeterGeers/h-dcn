@@ -31,7 +31,7 @@ import {
   Box,
 } from '@chakra-ui/react';
 import { AdminVariant, UpdateVariantRequest } from '../../webshop-management/types/admin.types';
-import { updateVariant, createVariant, deleteVariant } from '../../webshop-management/services/adminApi';
+import { updateVariant, createVariant } from '../../webshop-management/services/adminApi';
 
 export interface VariantEditModalProps {
   isOpen: boolean;
@@ -193,7 +193,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
-        <ModalHeader color="orange.300">Variant bewerken</ModalHeader>
+        <ModalHeader color="orange.300">Variant bewerken — {attrLabel}</ModalHeader>
         <ModalCloseButton color="white" />
         <ModalBody>
           {isLoading ? (
