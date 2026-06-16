@@ -84,8 +84,11 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       setPriceValue(existing.prijs != null ? existing.prijs.toString() : '');
       setAllowOversell(existing.allow_oversell ?? false);
       setIsActive(existing.active !== false);
+    } else if (variants.length === 0) {
+      // Variants haven't loaded yet — wait for them (useEffect below will re-sync)
+      setVariant(null);
     } else {
-      // Variant record doesn't exist yet — auto-create
+      // Variants loaded but no match — auto-create
       setVariant(null);
       autoCreateVariant();
     }
@@ -106,8 +109,8 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       // After refresh, the useEffect will pick up the new variant
     } catch (err: any) {
       const status = err?.response?.status;
-      if (status === 409) {
-        // Already exists — just refresh
+      if (status === 409 || status === 400) {
+        // Already exists or invalid request — just refresh variants and try to find it
         await onUpdate();
       } else {
         toast({
