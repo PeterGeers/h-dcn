@@ -138,9 +138,12 @@ function WebshopPage({ user }: WebshopPageProps) {
     try {
       const response = await productService.scanProducts();
       const allProducts: Product[] = response.data || [];
-      // Filter to show only webshop products (event_id is null/undefined)
+      // Filter to show only products linked to the webshop event
       const webshopProducts = allProducts.filter(
-        (p: Product) => p.event_id === null || p.event_id === undefined
+        (p: any) => {
+          const eventIds = p.event_ids || [];
+          return eventIds.includes('evt-webshop');
+        }
       );
       setProducts(webshopProducts);
     } catch (error) {

@@ -65,11 +65,11 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
         </Thead>
         <Tbody>
           {products.map((product) => {
-            const displayName = product.name || product.naam || '';
-            const displayPrice = product.price ?? product.prijs;
+            const displayName = product.naam || '';
+            const displayPrice = product.prijs;
             return (
               <Tr
-                key={product.product_id || product.id}
+                key={product.product_id}
                 cursor="pointer"
                 _hover={{ bg: 'orange.500', color: 'white' }}
                 onClick={() => onProductSelect(product)}
