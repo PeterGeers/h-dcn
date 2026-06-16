@@ -11,7 +11,8 @@
  * Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5
  */
 
-import { useAuth } from '../../../hooks/useAuth';
+import { useContext } from 'react';
+import { AuthContext } from '../../../context/AuthProvider';
 
 export interface AdminPermissions {
   canRead: boolean;
@@ -47,10 +48,11 @@ export function hasExportPermission(groups: string[]): boolean {
 
 /**
  * Hook returning role-based permission flags for the webshop management section.
+ * Returns safe defaults (no permissions) if AuthProvider is not available.
  */
 export function useAdminPermissions(): AdminPermissions {
-  const { user } = useAuth();
-  const groups = user?.groups ?? [];
+  const context = useContext(AuthContext);
+  const groups = context?.user?.groups ?? [];
 
   return {
     canRead: hasReadPermission(groups),

@@ -62,17 +62,17 @@ export const addVariantToProduct = async (id: string, variantAttributes: Record<
 };
 
 /**
- * Remove a variant from a product (bottom-up sync).
- * The backend deactivates the variant record and updates the parent's variant_schema.
+ * Remove a variant from a product.
+ * Sends DELETE request to `/admin/products/{id}/variants` to remove the variant
+ * identified by the given attributes.
  */
 export const removeVariantFromProduct = async (id: string, variantAttributes: Record<string, string>) => {
   if (!(await ApiService.isAuthenticated())) {
     throw new Error('Authentication required');
   }
-  return ApiService.put(`/admin/products/${id}`, {
-    variant_action: 'remove_variant',
-    variant_attributes: variantAttributes,
-  });
+  // Encode variant attributes as query params for the DELETE endpoint
+  const params = new URLSearchParams(variantAttributes).toString();
+  return ApiService.delete(`/admin/products/${id}/variants?${params}`);
 };
 
 export const deleteProduct = async (id: string) => {

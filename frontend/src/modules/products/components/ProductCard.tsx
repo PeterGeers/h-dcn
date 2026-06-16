@@ -3,7 +3,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Product, Event as HDCNEvent } from '../../../types';
 import VariantSchemaEditor from './VariantSchemaEditor';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
@@ -11,8 +11,11 @@ import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
-import { updateVariantSchema, addVariantToProduct, removeVariantFromProduct } from '../api/productApi';
+import { updateVariantSchema, addVariantToProduct } from '../api/productApi';
 import { getRequiredFields, getProductField } from '../../../config/productFields';
+import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
+import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
+import { getAdminProducts, deleteVariant } from '../../webshop-management/services/adminApi';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -99,6 +102,34 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [events, setEvents] = useState<HDCNEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState<boolean>(false);
   const [variantSchemaHasErrors, setVariantSchemaHasErrors] = useState<boolean>(false);
+  const [variants, setVariants] = useState<AdminVariant[]>([]);
+  const [isLoadingVariants, setIsLoadingVariants] = useState<boolean>(false);
+
+  const fetchVariants = useCallback(async () => {
+    const productId = product.product_id || product.id;
+    if (!productId) return;
+    setIsLoadingVariants(true);
+    try {
+      const adminProducts = await getAdminProducts();
+      const matched = adminProducts.find((p: AdminProduct) => p.product_id === productId);
+      setVariants(matched?.variants ?? []);
+    } catch (err) {
+      console.error('Error fetching variants:', err);
+    } finally {
+      setIsLoadingVariants(false);
+    }
+  }, [product.product_id, product.id]);
+
+  // Fetch variants when product has a non-empty variant_schema
+  useEffect(() => {
+    const schema = (product as any).variant_schema;
+    const hasVariantValues = schema && Object.values(schema).some((vals: any) => Array.isArray(vals) && vals.length > 0);
+    if (hasVariantValues) {
+      fetchVariants();
+    } else {
+      setVariants([]);
+    }
+  }, [product, fetchVariants]);
 
   useEffect(() => {
     // Build category structure dynamically from actual product data.
@@ -413,6 +444,42 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           if (variantSchemaHasErrors) return;
           // Remove legacy fields from payload, send only canonical registry fields
           const { opties, nietInWinkel, event_id, id, name, price, image, ...cleanValues } = values as any;
+
+          // Coerce numeric validation fields in order_item_fields to integers
+          if (cleanValues.order_item_fields) {
+            cleanValues.order_item_fields = cleanValues.order_item_fields.map((field: any) => {
+              if (field.validation) {
+                const numericKeys = ['min_length', 'max_length', 'minimum', 'maximum'];
+                numericKeys.forEach(key => {
+                  if (field.validation[key] !== undefined && field.validation[key] !== '') {
+                    const parsed = parseInt(field.validation[key], 10);
+                    if (!isNaN(parsed)) {
+                      field.validation[key] = parsed;
+                    }
+                  } else if (field.validation[key] === '') {
+                    delete field.validation[key];
+                  }
+                });
+              }
+              return field;
+            });
+          }
+
+          // Coerce numeric fields in purchase_rules to integers
+          if (cleanValues.purchase_rules) {
+            const purchaseNumericKeys = ['max_per_order', 'max_per_member', 'max_per_club', 'min_per_club'];
+            purchaseNumericKeys.forEach(key => {
+              if (cleanValues.purchase_rules[key] !== undefined && cleanValues.purchase_rules[key] !== '') {
+                const parsed = parseInt(cleanValues.purchase_rules[key], 10);
+                if (!isNaN(parsed)) {
+                  cleanValues.purchase_rules[key] = parsed;
+                }
+              } else if (cleanValues.purchase_rules[key] === '') {
+                delete cleanValues.purchase_rules[key];
+              }
+            });
+          }
+
           onSave(cleanValues);
         }}
       >
@@ -614,7 +681,20 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   onRemoveVariant={async (variantAttributes: Record<string, string>) => {
                     const productId = product.product_id || product.id;
                     if (!productId) return;
-                    await removeVariantFromProduct(productId, variantAttributes);
+                    // Resolve variant_attributes → variant_id using fetched variants list
+                    const matchedVariant = variants.find((v) => {
+                      const attrs = v.variant_attributes;
+                      if (!attrs) return false;
+                      const keys = Object.keys(variantAttributes);
+                      return keys.length === Object.keys(attrs).length &&
+                        keys.every((k) => attrs[k] === variantAttributes[k]);
+                    });
+                    if (!matchedVariant) {
+                      throw new Error('Variant niet gevonden voor de geselecteerde attributen');
+                    }
+                    await deleteVariant(productId, matchedVariant.product_id);
+                    // Refresh variants after deletion
+                    await fetchVariants();
                   }}
                 />
                 {variantSchemaHasErrors && (
@@ -623,6 +703,26 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   </Text>
                 )}
               </CollapsibleSection>
+
+              {/* Variant Sub-Table — renders when variant_schema has at least one axis with values */}
+              {values.variant_schema && Object.values(values.variant_schema as Record<string, string[]>).some((vals) => vals.length > 0) && (
+                <CollapsibleSection title="Varianten" defaultOpen={true}>
+                  <VariantSubTable
+                    product={{
+                      product_id: product.product_id || product.id,
+                      name: values.naam || product.naam || '',
+                      price: parseFloat(values.prijs) || 0,
+                      active: true,
+                      is_parent: true,
+                      variant_schema: values.variant_schema,
+                      variants: variants,
+                    } as AdminProduct}
+                    variants={variants}
+                    onUpdate={fetchVariants}
+                    isRefetching={isLoadingVariants}
+                  />
+                </CollapsibleSection>
+              )}
 
               {/* Order Item Fields Editor - collapsible */}
               {!readOnly && (

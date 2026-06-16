@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon, ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@chakra-ui/icons';
 import { VariantSchema } from '../../webshop/types/unifiedProduct.types';
+import { sortSizeValues } from '../../webshop-management/utils/sizeSorter';
 
 const MAX_AXES = 5;
 const MAX_VALUES_PER_AXIS = 20;
@@ -506,7 +507,7 @@ const VariantActionPanel: React.FC<VariantActionPanelProps> = ({
                 borderColor="gray.600"
                 color="white"
               >
-                {values.map((val) => (
+                {sortSizeValues(values).map((val) => (
                   <option key={val} value={val} style={{ background: '#2D3748', color: 'white' }}>{val}</option>
                 ))}
               </Select>

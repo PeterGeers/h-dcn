@@ -72,7 +72,8 @@
   },
   "jest": {
     "moduleNameMapper": {
-      "^@chakra-ui/utils/(.*)$": "<rootDir>/node_modules/@chakra-ui/utils/dist/cjs/$1.cjs"
+      "^@chakra-ui/utils/(.*)$": "<rootDir>/node_modules/@chakra-ui/utils/dist/cjs/$1.cjs",
+      "^axios$": "<rootDir>/node_modules/axios/dist/node/axios.cjs"
     }
   },
   "eslintConfig": {
