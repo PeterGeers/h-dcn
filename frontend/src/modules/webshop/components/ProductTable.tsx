@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { VariantSchema } from '../types/unifiedProduct.types';
+import { sortSizeValues } from '../../webshop-management/utils/sizeSorter';
 
 interface Product {
   product_id: string;
@@ -37,7 +38,7 @@ function formatVariantSummary(schema?: VariantSchema): string {
   return Object.entries(schema)
     .map(([axis, values]) => {
       const valuesArray = Array.isArray(values) ? values : [String(values)];
-      return `${axis}: ${valuesArray.join(', ')}`;
+      return `${axis}: ${sortSizeValues(valuesArray).join(', ')}`;
     })
     .join(' | ');
 }

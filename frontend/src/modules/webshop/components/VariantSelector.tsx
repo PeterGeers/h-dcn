@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { VariantSchema, VariantRecord } from '../types/unifiedProduct.types';
+import { sortSizeValues } from '../../webshop-management/utils/sizeSorter';
 
 export interface VariantSelectorProps {
   /** Variant schema defining axes and their possible values */
@@ -121,7 +122,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
             aria-label={`Selecteer ${axis}`}
             size="md"
           >
-            {variantSchema[axis].map((value) => (
+            {sortSizeValues(variantSchema[axis]).map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>
