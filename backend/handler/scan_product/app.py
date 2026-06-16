@@ -100,6 +100,8 @@ def lambda_handler(event, context):
                 'groep': item.get('groep'),
                 'subgroep': item.get('subgroep'),
                 'images': item.get('images', []),
+                'order_item_fields': item.get('order_item_fields'),
+                'purchase_rules': item.get('purchase_rules'),
             }
             normalized_items.append(normalized)
 
