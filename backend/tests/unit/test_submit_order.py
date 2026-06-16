@@ -35,6 +35,7 @@ os.environ['ORDERS_TABLE_NAME'] = 'Orders'
 os.environ['EVENTS_TABLE_NAME'] = 'Events'
 os.environ['MEMBERS_TABLE_NAME'] = 'Members'
 os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten'
+os.environ['COUNTERS_TABLE_NAME'] = 'Counters'
 
 # Path to the handler under test
 _handler_file = os.path.abspath(
@@ -171,6 +172,14 @@ def setup_tables():
             TableName='Producten',
             KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
+            BillingMode='PAY_PER_REQUEST',
+        )
+
+        # Counters table (used by generate_order_number)
+        counters_table = dynamodb.create_table(
+            TableName='Counters',
+            KeySchema=[{'AttributeName': 'counter_id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'counter_id', 'AttributeType': 'S'}],
             BillingMode='PAY_PER_REQUEST',
         )
 

@@ -3,10 +3,11 @@ Property-Based Tests for scan_product handler (Properties 6 & 7)
 
 **Validates: Requirements 5.4, 5.5, 9.1, 9.2**
 
-Property 6: scan_product response normalization
+Property 6: scan_product response uses canonical Dutch fields
     For any product record where is_parent is true or absent, the response SHALL
-    include product_id, name, price, variant_schema, is_parent, event_id, active —
-    using naam as fallback for name and prijs as fallback for price.
+    include product_id, naam, artikelcode, prijs, variant_schema, is_parent,
+    event_ids, active, groep, subgroep, images — using legacy 'name' as fallback
+    for 'naam' and legacy 'price' as fallback for 'prijs'.
 
 Property 7: scan_product excludes variant and migration records
     The scan_product handler SHALL return only records where is_parent is true or
@@ -129,18 +130,19 @@ def variant_schema_strategy():
 def parent_product_strategy(draw):
     """Generate a valid parent product record with mixed field names.
 
-    Some products use 'name'/'price' (unified), some use 'naam'/'prijs' (legacy),
-    and some have both fields present.
+    Some products use canonical Dutch ('naam'/'prijs'), some use legacy English
+    ('name'/'price'), and some have both fields present. The handler always
+    returns canonical Dutch field names in the response.
     """
     product_id = draw(product_id_strategy())
     name_value = draw(product_name_strategy())
     price_value = draw(price_strategy())
     has_variant_schema = draw(st.booleans())
-    has_event_id = draw(st.booleans())
+    has_event_ids = draw(st.booleans())
     is_active = draw(st.booleans())
 
-    # Determine field naming convention
-    naming = draw(st.sampled_from(['unified', 'legacy', 'both']))
+    # Determine field naming convention in DynamoDB record
+    naming = draw(st.sampled_from(['canonical', 'legacy', 'both']))
 
     record = {
         'product_id': product_id,
@@ -148,25 +150,25 @@ def parent_product_strategy(draw):
         'active': is_active,
     }
 
-    if naming == 'unified':
-        record['name'] = name_value
-        record['price'] = price_value
-    elif naming == 'legacy':
+    if naming == 'canonical':
         record['naam'] = name_value
         record['prijs'] = price_value
-    else:  # both
+    elif naming == 'legacy':
         record['name'] = name_value
-        record['naam'] = f"legacy_{name_value}"
         record['price'] = price_value
-        record['prijs'] = price_value + 1  # different to test preference
+    else:  # both
+        record['naam'] = name_value
+        record['name'] = f"legacy_{name_value}"
+        record['prijs'] = price_value
+        record['price'] = price_value + 1  # different to test preference
 
     if has_variant_schema:
         record['variant_schema'] = draw(variant_schema_strategy())
 
-    if has_event_id:
-        record['event_id'] = draw(st.uuids().map(str))
+    if has_event_ids:
+        record['event_ids'] = [draw(st.uuids().map(str))]
     else:
-        record['event_id'] = None
+        record['event_ids'] = []
 
     return record
 
@@ -178,24 +180,24 @@ def product_without_is_parent_strategy(draw):
     name_value = draw(product_name_strategy())
     price_value = draw(price_strategy())
 
-    naming = draw(st.sampled_from(['unified', 'legacy', 'both']))
+    naming = draw(st.sampled_from(['canonical', 'legacy', 'both']))
 
     record = {
         'product_id': product_id,
         'active': True,
     }
 
-    if naming == 'unified':
-        record['name'] = name_value
-        record['price'] = price_value
-    elif naming == 'legacy':
+    if naming == 'canonical':
         record['naam'] = name_value
         record['prijs'] = price_value
-    else:
+    elif naming == 'legacy':
         record['name'] = name_value
-        record['naam'] = f"legacy_{name_value}"
         record['price'] = price_value
-        record['prijs'] = price_value + 5
+    else:
+        record['naam'] = name_value
+        record['name'] = f"legacy_{name_value}"
+        record['prijs'] = price_value
+        record['price'] = price_value + 5
 
     return record
 
@@ -210,8 +212,8 @@ def variant_record_strategy(draw):
         'product_id': product_id,
         'is_parent': False,
         'parent_id': parent_id,
-        'name': draw(product_name_strategy()),
-        'price': draw(price_strategy()),
+        'naam': draw(product_name_strategy()),
+        'prijs': draw(price_strategy()),
         'variant_attributes': {'Maat': draw(st.sampled_from(['S', 'M', 'L', 'XL']))},
         'stock': draw(st.integers(min_value=0, max_value=100)),
         'allow_oversell': draw(st.booleans()),
@@ -225,15 +227,15 @@ def migration_record_strategy(draw):
 
     return {
         'product_id': product_id,
-        'name': draw(product_name_strategy()),
-        'price': draw(price_strategy()),
+        'naam': draw(product_name_strategy()),
+        'prijs': draw(price_strategy()),
         'source': 'migration',
         'is_parent': draw(st.sampled_from([True, None])),
     }
 
 
 # =============================================================================
-# Property 6: scan_product response normalization
+# Property 6: scan_product response uses canonical Dutch fields
 # =============================================================================
 
 class TestProperty6ScanProductNormalization:
@@ -241,9 +243,10 @@ class TestProperty6ScanProductNormalization:
     **Validates: Requirements 5.4, 9.1, 9.2**
 
     Property 6: For any product record where is_parent is true or absent,
-    the response SHALL include product_id, name, price, variant_schema,
-    is_parent, event_id, active — using naam as fallback for name and prijs
-    as fallback for price.
+    the response SHALL include product_id, naam, artikelcode, prijs,
+    variant_schema, is_parent, event_ids, active, groep, subgroep, images —
+    using legacy 'name' as fallback for 'naam' and legacy 'price' as fallback
+    for 'prijs'.
     """
 
     @given(product=parent_product_strategy())
@@ -251,8 +254,8 @@ class TestProperty6ScanProductNormalization:
     def test_normalized_response_includes_all_required_fields(self, product):
         """
         For any parent product record, the normalized response contains all
-        required fields: product_id, name, price, variant_schema, is_parent,
-        event_id, active.
+        required canonical Dutch fields: product_id, naam, artikelcode, prijs,
+        variant_schema, is_parent, event_ids, active, groep, subgroep, images.
         """
         if 'app' in sys.modules:
             del sys.modules['app']
@@ -281,9 +284,10 @@ class TestProperty6ScanProductNormalization:
 
             result = body[0]
 
-            # All required fields must be present as keys
-            required_fields = ['product_id', 'name', 'price', 'variant_schema',
-                               'is_parent', 'event_id', 'active']
+            # All required canonical Dutch fields must be present as keys
+            required_fields = ['product_id', 'naam', 'artikelcode', 'prijs',
+                               'variant_schema', 'is_parent', 'event_ids', 'active',
+                               'groep', 'subgroep', 'images']
             for field in required_fields:
                 assert field in result, f"Field '{field}' must be present in response"
 
@@ -298,10 +302,11 @@ class TestProperty6ScanProductNormalization:
 
     @given(product=parent_product_strategy())
     @settings(max_examples=100, deadline=None)
-    def test_naam_fallback_for_name(self, product):
+    def test_naam_fallback_from_legacy_name(self, product):
         """
-        The response uses 'naam' as fallback for 'name' when 'name' is not
-        present. When 'name' is present, it takes precedence over 'naam'.
+        The response uses canonical 'naam' field. When 'naam' is present in
+        the DB record it is used directly. When only legacy 'name' is present,
+        it serves as fallback for the 'naam' response field.
         """
         if 'app' in sys.modules:
             del sys.modules['app']
@@ -326,22 +331,26 @@ class TestProperty6ScanProductNormalization:
             body = json.loads(response['body'])
             result = body[0]
 
-            # If 'name' was in the record, it should be used
-            if 'name' in product:
-                assert result['name'] == product['name']
-            elif 'naam' in product:
-                # naam is fallback
-                assert result['name'] == product['naam']
+            # Response always uses canonical 'naam' key
+            assert 'naam' in result
+
+            # If canonical 'naam' was in the record, it should be used
+            if 'naam' in product:
+                assert result['naam'] == product['naam']
+            elif 'name' in product:
+                # Legacy 'name' is fallback for 'naam'
+                assert result['naam'] == product['name']
             else:
-                # Neither present — name should be None
-                assert result['name'] is None
+                # Neither present — naam should be None
+                assert result['naam'] is None
 
     @given(product=parent_product_strategy())
     @settings(max_examples=100, deadline=None)
-    def test_prijs_fallback_for_price(self, product):
+    def test_prijs_fallback_from_legacy_price(self, product):
         """
-        The response uses 'prijs' as fallback for 'price' when 'price' is not
-        present. When 'price' is present, it takes precedence over 'prijs'.
+        The response uses canonical 'prijs' field. When 'prijs' is present in
+        the DB record it is used directly. When only legacy 'price' is present,
+        it serves as fallback for the 'prijs' response field.
         """
         if 'app' in sys.modules:
             del sys.modules['app']
@@ -366,21 +375,24 @@ class TestProperty6ScanProductNormalization:
             body = json.loads(response['body'])
             result = body[0]
 
-            # If 'price' was in the record, it should be used
-            if 'price' in product:
-                assert result['price'] == product['price']
-            elif 'prijs' in product:
-                # prijs is fallback
-                assert result['price'] == product['prijs']
+            # Response always uses canonical 'prijs' key
+            assert 'prijs' in result
+
+            # If canonical 'prijs' was in the record, it should be used
+            if 'prijs' in product:
+                assert result['prijs'] == product['prijs']
+            elif 'price' in product:
+                # Legacy 'price' is fallback for 'prijs'
+                assert result['prijs'] == product['price']
             else:
-                assert result['price'] is None
+                assert result['prijs'] is None
 
     @given(product=product_without_is_parent_strategy())
     @settings(max_examples=100, deadline=None)
     def test_products_without_is_parent_are_normalized(self, product):
         """
         Products without an is_parent attribute are included in the response
-        and normalized with all required fields.
+        and normalized with all required canonical Dutch fields.
         """
         if 'app' in sys.modules:
             del sys.modules['app']
@@ -408,23 +420,24 @@ class TestProperty6ScanProductNormalization:
 
             result = body[0]
 
-            # All required fields present
-            required_fields = ['product_id', 'name', 'price', 'variant_schema',
-                               'is_parent', 'event_id', 'active']
+            # All required canonical Dutch fields present
+            required_fields = ['product_id', 'naam', 'artikelcode', 'prijs',
+                               'variant_schema', 'is_parent', 'event_ids', 'active',
+                               'groep', 'subgroep', 'images']
             for field in required_fields:
                 assert field in result, f"Field '{field}' must be in response"
 
-            # name fallback works
-            if 'name' in product:
-                assert result['name'] == product['name']
-            elif 'naam' in product:
-                assert result['name'] == product['naam']
+            # naam fallback works
+            if 'naam' in product:
+                assert result['naam'] == product['naam']
+            elif 'name' in product:
+                assert result['naam'] == product['name']
 
-            # price fallback works
-            if 'price' in product:
-                assert result['price'] == product['price']
-            elif 'prijs' in product:
-                assert result['price'] == product['prijs']
+            # prijs fallback works
+            if 'prijs' in product:
+                assert result['prijs'] == product['prijs']
+            elif 'price' in product:
+                assert result['prijs'] == product['price']
 
 
 # =============================================================================
@@ -593,8 +606,8 @@ class TestProperty7ScanProductFiltering:
             normal_id = str(uuid.uuid4())
             table.put_item(Item={
                 'product_id': normal_id,
-                'name': 'Normal Product',
-                'price': 10,
+                'naam': 'Normal Product',
+                'prijs': 10,
                 'is_parent': True,
                 'active': True,
             })
@@ -606,8 +619,8 @@ class TestProperty7ScanProductFiltering:
                 migration_ids.append(mid)
                 table.put_item(Item={
                     'product_id': mid,
-                    'name': f'Migration Product {i}',
-                    'price': 15,
+                    'naam': f'Migration Product {i}',
+                    'prijs': 15,
                     'is_parent': True,
                     'source': 'migration',
                     'active': True,
