@@ -124,7 +124,7 @@ export default function Dashboard(): React.ReactElement {
           filteredProducts={filteredProducts}
           onSave={handleSave}
           onDelete={handleDelete}
-          onNew={() => setSelected({ product_id: '', id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '' })}
+          onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
           onClose={() => setSelected(null)}
           onNavigate={setSelected}
         />

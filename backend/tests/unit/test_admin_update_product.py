@@ -189,7 +189,7 @@ class TestAdminUpdateProductBasicFields:
         import app
         app.table = table
 
-        event = _make_event('prod_nonexistent', {'name': 'New Name'})
+        event = _make_event('prod_nonexistent', {'naam': 'New Name'})
         response = app.lambda_handler(event, None)
 
         assert response['statusCode'] == 404
@@ -210,7 +210,7 @@ class TestAdminUpdateProductBasicFields:
         import app
         app.table = table
 
-        event = _make_event('var_prod_test123_default', {'name': 'Bad Update'})
+        event = _make_event('var_prod_test123_default', {'naam': 'Bad Update'})
         response = app.lambda_handler(event, None)
 
         assert response['statusCode'] == 400
@@ -496,13 +496,13 @@ class TestAdminUpdateProductVariantRegeneration:
         import app
         app.table = table
 
-        event = _make_event('prod_test123', {'name': 'Updated Name'})
+        event = _make_event('prod_test123', {'naam': 'Updated Name'})
         response = app.lambda_handler(event, None)
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
         assert 'variants_synced' not in body
-        assert body['product']['name'] == 'Updated Name'
+        assert body['product']['naam'] == 'Updated Name'
 
     @mock_aws
     @patch('app.extract_user_credentials')

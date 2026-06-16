@@ -99,18 +99,27 @@ export type VariantSchema = Record<string, string[]>;
 
 export interface Product {
   product_id: string;
-  id?: string; // backward compat (legacy references)
-  name?: string;
-  naam?: string; // backward compat
-  price?: number;
-  prijs?: string | number; // backward compat
-  category?: string;
-  groep?: string; // backward compat
-  subgroep?: string; // backward compat
+  id?: string; // alias used for React keys and legacy article codes
+  naam?: string;
+  prijs?: string | number;
+  artikelcode?: string;
+  groep?: string;
+  subgroep?: string;
+  images?: string[];
+  event_ids?: string[];
   variant_schema?: VariantSchema;
   is_parent?: boolean;
-  event_id?: string | null;
   active?: boolean;
+  order_item_fields?: any[];
+  purchase_rules?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+  // Variant-specific fields
+  parent_id?: string;
+  variant_attributes?: Record<string, string>;
+  stock?: number;
+  sold_count?: number;
+  allow_oversell?: boolean;
 }
 
 export interface Event {

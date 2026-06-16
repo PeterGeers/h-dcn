@@ -115,22 +115,18 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     // Remove fields that should be managed by the backend or handled separately
     const { updated_at, created_at, opties, variant_schema, order_item_fields, purchase_rules, ...cleanData } = data as any;
     
-    // Send both Dutch and English field names so the backend writes both.
-    // This ensures products with either legacy (prijs/naam) or new (price/name) 
-    // field naming in DynamoDB get updated correctly.
-    const priceStr = cleanData.prijs ? cleanData.prijs.toString() : (cleanData.price ? cleanData.price.toString() : undefined);
-    const nameStr = cleanData.naam || cleanData.name || undefined;
-    
+    // Use canonical Dutch field names only (per schema-driven.md)
     const processedData = {
       ...cleanData,
-      prijs: priceStr,
-      price: priceStr,
-      naam: nameStr,
-      name: nameStr,
+      prijs: cleanData.prijs ? cleanData.prijs.toString() : undefined,
+      naam: cleanData.naam || undefined,
     };
+    // Remove any legacy English field names that may have leaked in
+    delete processedData.name;
+    delete processedData.price;
+    delete processedData.id;
     
-    // Use product_id (unified key) if available, fallback to id
-    const productId = data.product_id || data.id;
+    const productId = data.product_id;
     if (productId) {
       updateProduct(productId, processedData)
         .then((response: any) => {
@@ -265,15 +261,17 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     // Apply active/inactive filter (default: show only active)
     if (!showInactive && p.active === false) return false;
 
-    // Apply event_id filter based on the active event filter
+    // Apply event_ids filter based on the active event filter
     if (activeFilter === 'webshop') {
-      // Show only products where event_id is null (generic webshop products)
-      if ((p as any).event_id != null) return false;
+      // Show only products in the webshop event
+      const eventIds = (p as any).event_ids || [];
+      if (!eventIds.includes('evt-webshop')) return false;
     } else if (activeFilter && activeFilter !== '') {
-      // Show only products linked to a specific event_id
-      if ((p as any).event_id !== activeFilter) return false;
+      // Show only products linked to a specific event
+      const eventIds = (p as any).event_ids || [];
+      if (!eventIds.includes(activeFilter)) return false;
     }
-    // When activeFilter is "" (Alle), show all products — no event_id filtering
+    // When activeFilter is "" (Alle), show all products — no event filtering
 
     // Apply group/subgroup filter
     if (!selectedFilter) return true;
@@ -338,8 +336,8 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 onClick={() => {
                   // Financial product overview
                   const financialOverview = products.map(p => ({
-                    naam: p.naam || p.name,
-                    prijs: p.prijs || p.price,
+                    naam: p.naam,
+                    prijs: p.prijs,
                     categorie: p.groep
                   }));
                   console.log('💰 Financieel overzicht:', financialOverview);
@@ -373,7 +371,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 onClick={() => {
                   // Product catalog view
                   const catalogView = products.map(p => ({
-                    naam: p.naam || p.name,
+                    naam: p.naam,
                     categorie: p.groep,
                     beschikbaar: true
                   }));
@@ -479,7 +477,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               filteredProducts={filteredProducts}
               onSave={handleSave}
               onDelete={handleDelete}
-              onNew={() => setSelected({ product_id: '', id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '' })}
+              onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
               onClose={() => setSelected(null)}
               onNavigate={setSelected}
               readOnly={false}

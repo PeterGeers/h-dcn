@@ -40,9 +40,9 @@ export default function ProductTable({ products, onSelect, renderActions, showSt
                 <Text isTruncated maxW="120px">{p.groep} - {p.subgroep}</Text>
               </Td>
               <Td fontSize={{ base: 'xs', md: 'sm' }}>
-                {p.naam || p.name}
+                {p.naam}
               </Td>
-              <Td fontSize={{ base: 'xs', md: 'sm' }}>€{p.prijs || p.price}</Td>
+              <Td fontSize={{ base: 'xs', md: 'sm' }}>€{p.prijs}</Td>
               {showStatusColumn && (
                 <Td fontSize={{ base: 'xs', md: 'sm' }}>
                   {p.active === false ? (

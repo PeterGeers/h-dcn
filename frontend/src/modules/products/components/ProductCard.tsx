@@ -1,4 +1,4 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge, Select } from '@chakra-ui/react';
+import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
@@ -12,6 +12,7 @@ import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/type
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { updateVariantSchema, addVariantToProduct, removeVariantFromProduct } from '../api/productApi';
+import { getRequiredFields, getProductField } from '../../../config/productFields';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -77,11 +78,17 @@ interface GroupItemProps {
   };
 }
 
-// Minimal validation — only truly required fields block save
-const schema = Yup.object().shape({
-  naam: Yup.string().required('Productnaam is verplicht'),
-  prijs: Yup.mixed().required('Prijs is verplicht'),
-});
+// Validation schema derived from the productFields registry.
+// Required fields for parent products are checked; all else is optional.
+const requiredParentFields = getRequiredFields('parent');
+const schemaShape: Record<string, any> = {};
+for (const key of requiredParentFields) {
+  const fieldDef = getProductField(key);
+  if (!fieldDef || fieldDef.inputType === 'hidden') continue; // skip auto-generated fields
+  const label = fieldDef.label || key;
+  schemaShape[key] = Yup.mixed().required(`${label} is verplicht`);
+}
+const schema = Yup.object().shape(schemaShape);
 
 export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);
@@ -390,32 +397,13 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
       <Formik
         initialValues={{
           ...product,
-          prijs: (product.prijs || product.price) ? parseFloat((product.prijs || product.price || 0).toString()).toFixed(2) : '',
-          naam: product.naam || product.name || '',
-          images: (() => {
-            const productAny = product as any;
-            
-            if (productAny.images && Array.isArray(productAny.images)) {
-              return productAny.images;
-            }
-            if (productAny.image) {
-              const imageArray = Array.isArray(productAny.image) ? productAny.image : [productAny.image];
-              return imageArray;
-            }
-            if (productAny.afbeelding) {
-              const afbeeldingArray = Array.isArray(productAny.afbeelding) ? productAny.afbeelding : [productAny.afbeelding];
-              return afbeeldingArray;
-            }
-            if (productAny.foto) {
-              const fotoArray = Array.isArray(productAny.foto) ? productAny.foto : [productAny.foto];
-              return fotoArray;
-            }
-            return [];
-          })(),
+          prijs: product.prijs ? parseFloat(product.prijs.toString()).toFixed(2) : '',
+          naam: product.naam || '',
+          artikelcode: (product as any).artikelcode || '',
+          images: (product as any).images || [],
           groep: product.groep || '',
           subgroep: product.subgroep || '',
-          event_id: product.event_id || '',
-          nietInWinkel: (product as any).nietInWinkel || false,
+          event_ids: (product as any).event_ids || [],
           variant_schema: (product as any).variant_schema || undefined,
           order_item_fields: (product as any).order_item_fields || undefined,
           purchase_rules: (product as any).purchase_rules || undefined,
@@ -423,8 +411,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         validationSchema={schema}
         onSubmit={(values) => {
           if (variantSchemaHasErrors) return;
-          // Remove opties from payload, ensure variant_schema is included
-          const { opties, ...cleanValues } = values as any;
+          // Remove legacy fields from payload, send only canonical registry fields
+          const { opties, nietInWinkel, event_id, id, name, price, image, ...cleanValues } = values as any;
           onSave(cleanValues);
         }}
       >
@@ -470,9 +458,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     size="sm"
                   />
                 )}
-                <FormControl isInvalid={!!(errors.id && touched.id)} flex={1}>
-                  <Field name="id" as={Input} placeholder="Artikel code (bijv. G5)" color="white" bg="gray.600" borderColor={errors.id && touched.id ? 'red.500' : 'gray.500'} id="product-id" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
-                  <FormErrorMessage>{errors.id as string}</FormErrorMessage>
+                <FormControl isInvalid={!!(errors.artikelcode && touched.artikelcode)} flex={1}>
+                  <Field name="artikelcode" as={Input} placeholder="Artikel code (bijv. G5)" color="white" bg="gray.600" borderColor={errors.artikelcode && touched.artikelcode ? 'red.500' : 'gray.500'} id="product-artikelcode" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
+                  <FormErrorMessage>{errors.artikelcode as string}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!(errors.prijs && touched.prijs)} flex={1}>
                   <Field name="prijs">
@@ -528,45 +516,35 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
 
-              {/* Event selector */}
+              {/* Event_ids multiselect — per webshop-as-event.md */}
               <FormControl>
-                <Select
-                  value={values.event_id || ''}
-                  onChange={(e) => setFieldValue('event_id', e.target.value || null)}
-                  placeholder="Geen event (webshop product)"
-                  bg="gray.600"
-                  color="white"
-                  borderColor="gray.500"
-                  isDisabled={readOnly}
-                  size="sm"
-                  _placeholder={{ color: 'gray.300' }}
-                >
-                  {events.map((event) => (
-                    <option key={event.event_id} value={event.event_id || ''} style={{ background: '#2D3748', color: 'white' }}>
-                      {event.title || event.naam || event.event_id}
-                    </option>
-                  ))}
-                </Select>
-                <Text fontSize="xs" color="gray.500" mt={1}>
-                  {eventsLoading ? 'Events laden...' : `Event koppeling (${events.length} events)`}
+                <Text fontSize="xs" fontWeight="bold" color="gray.300" mb={1}>
+                  Zichtbaar in:
                 </Text>
-              </FormControl>
-
-              {/* Checkbox */}
-              <FormControl>
-                <Field name="nietInWinkel">
-                  {({ field, form }: any) => (
+                <VStack align="stretch" spacing={1}>
+                  {[{ id: 'evt-webshop', label: 'Webshop (algemeen)' }, ...events.map(e => ({ id: e.event_id, label: e.title || e.naam || e.event_id }))].map((evt) => (
                     <Checkbox
-                      {...field}
-                      isChecked={field.value}
-                      onChange={(e) => form.setFieldValue('nietInWinkel', e.target.checked)}
+                      key={evt.id}
+                      isChecked={(values.event_ids || []).includes(evt.id)}
+                      onChange={(e) => {
+                        const current: string[] = values.event_ids || [];
+                        if (e.target.checked) {
+                          setFieldValue('event_ids', [...current, evt.id]);
+                        } else {
+                          setFieldValue('event_ids', current.filter((id: string) => id !== evt.id));
+                        }
+                      }}
                       colorScheme="orange"
+                      size="sm"
                       isDisabled={readOnly}
                     >
-                      Staat er niet op in de winkel
+                      <Text fontSize="sm" color="white">{evt.label}</Text>
                     </Checkbox>
-                  )}
-                </Field>
+                  ))}
+                </VStack>
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {eventsLoading ? 'Events laden...' : `Selecteer waar dit product zichtbaar is (${events.length} events)`}
+                </Text>
               </FormControl>
 
               {/* Legacy required_attributes display */}

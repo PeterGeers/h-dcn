@@ -42,12 +42,27 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
 table = dynamodb.Table(table_name)
 
-# Fields allowed to be updated on a product
+# Fields allowed to be updated on a product.
+# Derived from the productFields registry (frontend/src/config/productFields/fields.ts).
+# Only fields where editable !== false are included.
+# See: docs/decisions/dutch-field-names.md
 UPDATABLE_FIELDS = [
-    'name', 'naam', 'description', 'category', 'price', 'prijs', 'active',
-    'min_per_club', 'max_per_club', 'required_attributes',
-    'image_url', 'event_id', 'groep', 'subgroep', 'images',
-    'order_item_fields', 'purchase_rules', 'nietInWinkel'
+    # identity
+    'naam',
+    'artikelcode',
+    # pricing
+    'prijs',
+    # categorization
+    'groep',
+    'subgroep',
+    'event_ids',
+    # media
+    'images',
+    # metadata
+    'active',
+    # ordering
+    'order_item_fields',
+    'purchase_rules',
 ]
 
 
@@ -158,7 +173,7 @@ def lambda_handler(event, context):
         # Handle top-down sync: variant_schema changed → sync_schema_to_variants
         sync_result = None
         if variant_schema_changed:
-            parent_price = Decimal(str(body.get('price', existing.get('price', 0))))
+            parent_price = Decimal(str(body.get('prijs', existing.get('prijs', 0))))
             try:
                 sync_result = sync_schema_to_variants(
                     table, product_id, body['variant_schema'], parent_price

@@ -78,21 +78,24 @@ def lambda_handler(event, context):
             )
             items.extend(response['Items'])
 
-        # Normalize response: unified field names with fallbacks
+        # Return canonical Dutch field names — no normalization.
+        # See: docs/decisions/dutch-field-names.md, frontend/src/config/productFields/fields.ts
         normalized_items = []
         for item in items:
-            price_value = item.get('price') if item.get('price') is not None else item.get('prijs')
+            # Use canonical 'prijs'; fall back to legacy 'price' for unmigrated records
+            price_value = item.get('prijs') if item.get('prijs') is not None else item.get('price')
             # Convert Decimal to int/float for JSON serialization
             if isinstance(price_value, Decimal):
                 price_value = int(price_value) if price_value == int(price_value) else float(price_value)
 
             normalized = {
                 'product_id': item.get('product_id'),
-                'name': item.get('name') or item.get('naam'),
-                'price': price_value,
+                'naam': item.get('naam') or item.get('name'),
+                'artikelcode': item.get('artikelcode'),
+                'prijs': price_value,
                 'variant_schema': item.get('variant_schema'),
                 'is_parent': item.get('is_parent'),
-                'event_id': item.get('event_id'),
+                'event_ids': item.get('event_ids', []),
                 'active': item.get('active'),
                 'groep': item.get('groep'),
                 'subgroep': item.get('subgroep'),
