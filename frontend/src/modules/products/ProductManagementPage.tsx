@@ -112,8 +112,8 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   }, []);
 
   const handleSave = (data: Product) => {
-    // Remove fields that should be managed by the backend or handled separately
-    const { updated_at, created_at, opties, variant_schema, order_item_fields, purchase_rules, ...cleanData } = data as any;
+    // Remove fields managed by backend or with separate save API (variant_schema)
+    const { updated_at, created_at, opties, variant_schema, ...cleanData } = data as any;
     
     // Use canonical Dutch field names only (per schema-driven.md)
     const processedData = {

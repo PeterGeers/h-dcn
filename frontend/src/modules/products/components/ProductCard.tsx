@@ -518,7 +518,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
               {/* Event_ids multiselect — per webshop-as-event.md */}
               <FormControl>
-                <Text fontSize="xs" fontWeight="bold" color="gray.300" mb={1}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.700" mb={1}>
                   Zichtbaar in:
                 </Text>
                 <VStack align="stretch" spacing={1}>
@@ -538,7 +538,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                       size="sm"
                       isDisabled={readOnly}
                     >
-                      <Text fontSize="sm" color="white">{evt.label}</Text>
+                      <Text fontSize="sm" color="gray.800">{evt.label}</Text>
                     </Checkbox>
                   ))}
                 </VStack>
