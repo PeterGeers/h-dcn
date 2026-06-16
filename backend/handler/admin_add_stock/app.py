@@ -86,6 +86,7 @@ def lambda_handler(event, context):
         # Create inbound stock movement record
         movement = create_inbound_movement(
             variant_id=variant_id,
+            channel='h-dcn',
             quantity=quantity,
             purchase_price_per_unit=purchase_price_per_unit,
             supplier_name=supplier_name,
@@ -105,7 +106,7 @@ def lambda_handler(event, context):
         )
 
         return create_success_response({
-            'movement': movement,
+            'movement': json.loads(json.dumps(movement, default=str)),
             'message': f'Stock increased by {quantity} units'
         })
 
