@@ -36,6 +36,7 @@ export interface AdminProduct {
   min_per_club?: number | null;
   required_attributes?: object | null;
   is_parent: boolean;
+  variant_schema?: Record<string, string[]>;
   variants: AdminVariant[];
 }
 
@@ -43,7 +44,7 @@ export interface AdminVariant {
   product_id: string;
   parent_id: string;
   variant_attributes: Record<string, string>;
-  price?: number | null;
+  prijs?: number | null;
   stock: number;
   sold_count: number;
   allow_oversell: boolean;
@@ -158,7 +159,7 @@ export interface CreateProductRequest {
 
 export interface CreateVariantRequest {
   variant_attributes: Record<string, string>;
-  price?: number | null;
+  prijs?: number | null;
   stock?: number;
   allow_oversell?: boolean;
 }
@@ -166,7 +167,7 @@ export interface CreateVariantRequest {
 export interface UpdateVariantRequest {
   stock?: number;
   allow_oversell?: boolean;
-  price?: number | null;
+  prijs?: number | null;
   active?: boolean;
 }
 

@@ -14,11 +14,12 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.variant_sync import sync_variant_to_schema
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
-    lambda_handler = create_smart_fallback_handler("admin_update_variant")
+    lambda_handler = create_smart_fallback_handler("admin_delete_variant")
     import sys
     sys.exit(0)
 
@@ -26,8 +27,8 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
 table = dynamodb.Table(table_name)
 
-# Fields allowed to be updated on a variant
-UPDATABLE_VARIANT_FIELDS = ['stock', 'allow_oversell', 'prijs', 'naam', 'active']
+orders_table_name = os.environ.get('ORDERS_TABLE_NAME', 'Orders')
+orders_table = dynamodb.Table(orders_table_name)
 
 
 def lambda_handler(event, context):
@@ -48,7 +49,7 @@ def lambda_handler(event, context):
         if not is_authorized:
             return permission_error
 
-        log_successful_access(user_email, user_roles, 'admin_update_variant')
+        log_successful_access(user_email, user_roles, 'admin_delete_variant')
 
         # Get path parameters
         path_params = event.get('pathParameters') or {}
@@ -56,9 +57,6 @@ def lambda_handler(event, context):
         variant_id = path_params.get('vid')
         if not product_id or not variant_id:
             return create_error_response(400, 'Product ID and Variant ID are required')
-
-        # Parse request body
-        body = json.loads(event.get('body') or '{}')
 
         # Verify variant exists and belongs to the product
         response = table.get_item(Key={'product_id': variant_id})
@@ -69,44 +67,53 @@ def lambda_handler(event, context):
         if variant.get('parent_id') != product_id:
             return create_error_response(400, 'Variant does not belong to the specified product')
 
-        # Build update expression
-        update_parts = []
-        expression_values = {}
-        expression_names = {}
+        # Scan Orders table for any line_items referencing this variant
+        order_count = _count_orders_referencing_variant(variant_id)
+        if order_count > 0:
+            return create_error_response(
+                409,
+                f'Variant cannot be deleted: referenced by {order_count} order(s). Deactivate instead.'
+            )
 
-        for field in UPDATABLE_VARIANT_FIELDS:
-            if field in body:
-                attr_name = f'#{field}'
-                attr_val = f':{field}'
-                update_parts.append(f'{attr_name} = {attr_val}')
-                expression_names[attr_name] = field
-                expression_values[attr_val] = body[field]
+        # No orders reference this variant — delete it
+        table.delete_item(Key={'product_id': variant_id})
 
-        if not update_parts:
-            return create_error_response(400, 'No updatable fields provided')
-
-        # Always update updated_at
-        update_parts.append('#updated_at = :updated_at')
-        expression_names['#updated_at'] = 'updated_at'
-        expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
-
-        update_expression = 'SET ' + ', '.join(update_parts)
-
-        updated = table.update_item(
-            Key={'product_id': variant_id},
-            UpdateExpression=update_expression,
-            ExpressionAttributeNames=expression_names,
-            ExpressionAttributeValues=expression_values,
-            ReturnValues='ALL_NEW'
-        )
+        # Rebuild parent schema from remaining active variants
+        sync_variant_to_schema(table, product_id, {})
 
         return create_success_response({
-            'variant': updated.get('Attributes', {}),
-            'message': 'Variant updated successfully'
+            'message': 'Variant deleted successfully',
+            'variant_id': variant_id
         })
 
-    except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
-        print(f"Error updating variant: {str(e)}")
+        print(f"Error deleting variant: {str(e)}")
         return create_error_response(500, 'Internal server error')
+
+
+def _count_orders_referencing_variant(variant_id):
+    """
+    Scan the Orders table and count how many orders have a line_item
+    referencing the given variant_id.
+    """
+    count = 0
+    scan_kwargs = {}
+
+    while True:
+        response = orders_table.scan(**scan_kwargs)
+        items = response.get('Items', [])
+
+        for order in items:
+            line_items = order.get('line_items', [])
+            for item in line_items:
+                if item.get('variant_id') == variant_id:
+                    count += 1
+                    break  # Only count this order once
+
+        # Handle pagination
+        if 'LastEvaluatedKey' in response:
+            scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+        else:
+            break
+
+    return count

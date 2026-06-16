@@ -71,10 +71,20 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
     const qty = parseInt(quantity, 10);
     const price = parseFloat(purchasePrice);
 
-    if (!qty || qty <= 0 || !Number.isInteger(qty)) {
+    if (!qty || qty <= 0 || !Number.isInteger(qty) || quantity.trim() !== String(qty)) {
       toast({
         title: 'Ongeldig aantal',
-        description: 'Voer een positief geheel getal in.',
+        description: 'Voer een geheel getal tussen 1 en 10.000 in.',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (qty > 10000) {
+      toast({
+        title: 'Ongeldig aantal',
+        description: 'Voer een geheel getal tussen 1 en 10.000 in.',
         status: 'warning',
         duration: 3000,
       });
@@ -148,6 +158,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
                 <FormLabel fontSize="sm">Aantal</FormLabel>
                 <NumberInput
                   min={1}
+                  max={10000}
                   value={quantity}
                   onChange={(val) => setQuantity(val)}
                 >

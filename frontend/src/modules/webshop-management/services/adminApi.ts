@@ -109,6 +109,15 @@ export const updateVariant = async (
   );
 };
 
+export const deleteVariant = async (
+  productId: string,
+  variantId: string
+): Promise<void> => {
+  await adminClient.delete(
+    `/admin/products/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`
+  );
+};
+
 export const bulkCreateVariants = async (
   productId: string
 ): Promise<void> => {

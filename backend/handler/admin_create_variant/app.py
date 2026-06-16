@@ -84,10 +84,10 @@ def lambda_handler(event, context):
         variant = {
             'product_id': variant_id,
             'parent_id': product_id,
-            'name': body.get('name', ''),
+            'naam': body.get('naam', ''),
             'is_parent': False,
             'variant_attributes': variant_attributes,
-            'price': body.get('price', parent.get('price')),
+            'prijs': body.get('prijs', parent.get('prijs')),
             'stock': body.get('stock', 0),
             'sold_count': 0,
             'allow_oversell': body.get('allow_oversell', False),
@@ -96,11 +96,18 @@ def lambda_handler(event, context):
             'updated_at': now,
         }
 
-        # Get existing variants to check if Default_Variant should be removed
+        # Get existing variants to check for duplicates and Default_Variant removal
         existing_variants_response = table.scan(
             FilterExpression=boto3.dynamodb.conditions.Attr('parent_id').eq(product_id) & boto3.dynamodb.conditions.Attr('is_parent').eq(False)
         )
         existing_variants = existing_variants_response.get('Items', [])
+
+        # Check for duplicate variant_attributes (active or inactive)
+        for existing in existing_variants:
+            if existing.get('variant_attributes') == variant_attributes:
+                return create_error_response(
+                    409, 'A variant with these attributes already exists'
+                )
 
         # Check if we should remove the Default_Variant
         remove_default = should_remove_default_variant(existing_variants, [variant])

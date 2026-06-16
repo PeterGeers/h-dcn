@@ -233,7 +233,7 @@ def sync_schema_to_variants(
                 "is_parent": False,
                 "active": True,
                 "variant_attributes": combo_attrs,
-                "price": parent_price,
+                "prijs": parent_price,
                 "stock": 0,
                 "sold_count": 0,
                 "allow_oversell": True,

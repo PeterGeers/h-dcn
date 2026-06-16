@@ -2014,6 +2014,29 @@ Resources:
             Path: /admin/products/{id}/variants/{vid}
             Method: put
 
+  # --- Admin: Delete Variant ---
+  AdminDeleteVariantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_delete_variant
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminDeleteVariant:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants/{vid}
+            Method: delete
+
   # --- Admin: Bulk Create Variants ---
   AdminBulkCreateVariantsFunction:
     Type: AWS::Serverless::Function
