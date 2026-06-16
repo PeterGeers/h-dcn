@@ -32,6 +32,7 @@ import {
 } from '@chakra-ui/react';
 import { AdminVariant, UpdateVariantRequest } from '../../webshop-management/types/admin.types';
 import { updateVariant, createVariant } from '../../webshop-management/services/adminApi';
+import { AddStockForm } from '../../webshop-management/components/AddStockForm';
 
 export interface VariantEditModalProps {
   isOpen: boolean;
@@ -231,6 +232,14 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
                 <Box>
                   <Text fontSize="xs" color="gray.400">Verkocht</Text>
                   <Text color="white" fontWeight="bold">{variant.sold_count}</Text>
+                </Box>
+                <Box>
+                  <AddStockForm
+                    productId={productId}
+                    variantId={variant.product_id}
+                    variantLabel={Object.values(clickedAttribute).join(' / ')}
+                    onSuccess={async () => { await onUpdate(); }}
+                  />
                 </Box>
               </HStack>
 
