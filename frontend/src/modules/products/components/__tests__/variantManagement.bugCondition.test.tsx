@@ -112,112 +112,40 @@ describe('Bug Condition Exploration: Variant Management Integration', () => {
   });
 
   /**
-   * Bug 2: VariantActionPanel displays sizes in raw unsorted order
+   * Bug 2: Size values were previously unsorted in VariantActionPanel
    *
-   * EXPECTED BEHAVIOR (after fix): VariantActionPanel Select dropdowns should display
-   * values sorted using sortSizeValues logic.
+   * VariantActionPanel has been removed — variant management now happens via
+   * clickable tags that open VariantEditModal. Size sorting is applied in the
+   * VariantSubTable (via sortVariants utility).
    *
-   * ON UNFIXED CODE: This test FAILS because values are rendered in raw array order
-   * without applying sortSizeValues.
+   * This test validates that sortSizeValues utility correctly sorts size values,
+   * which is the underlying function used by VariantSubTable.
    *
    * Validates: Requirements 1.2
    */
-  describe('Bug 2: VariantActionPanel should sort size values in dropdowns', () => {
-    it('renders Select options sorted via sortSizeValues for ["XL", "S", "M", "XS", "L"]', async () => {
-      const { default: VariantSchemaEditor } = await import('../VariantSchemaEditor');
-
+  describe('Bug 2: Size values should be sorted correctly', () => {
+    it('sortSizeValues sorts ["XL", "S", "M", "XS", "L"] to logical order', () => {
       const unsortedValues = ['XL', 'S', 'M', 'XS', 'L'];
-      const expectedSorted = sortSizeValues(unsortedValues); // ['XS', 'S', 'M', 'L', 'XL']
-
-      const schema = { Maat: unsortedValues };
-
-      render(
-        <ChakraProvider>
-          <VariantSchemaEditor
-            value={schema}
-            onChange={jest.fn()}
-            onAddVariant={jest.fn()}
-            onRemoveVariant={jest.fn()}
-          />
-        </ChakraProvider>
-      );
-
-      // Find the Select element for the Maat axis in VariantActionPanel
-      const selectElements = screen.getAllByRole('combobox');
-      // The VariantActionPanel Select should have option elements
-      const maatSelect = selectElements.find(select => {
-        const options = select.querySelectorAll('option');
-        // Find the select that contains our size values (excluding placeholder)
-        return Array.from(options).some(opt => unsortedValues.includes(opt.textContent || ''));
-      });
-
-      expect(maatSelect).toBeDefined();
-      if (!maatSelect) return;
-
-      const options = Array.from(maatSelect.querySelectorAll('option'))
-        .filter(opt => opt.value !== '') // exclude placeholder "Kies..."
-        .map(opt => opt.textContent);
-
-      // EXPECTED: Options are in sorted order ['XS', 'S', 'M', 'L', 'XL']
-      // ON UNFIXED CODE: Options are in raw order ['XL', 'S', 'M', 'XS', 'L'] → test FAILS ✓
-      expect(options).toEqual(expectedSorted);
+      const result = sortSizeValues(unsortedValues);
+      expect(result).toEqual(['XS', 'S', 'M', 'L', 'XL']);
     });
 
     /**
-     * Property-based: for random size arrays, verify VariantActionPanel renders
-     * sorted values (validates sortSizeValues is applied).
-     *
-     * ON UNFIXED CODE: This FAILS because values render in raw order.
+     * Property-based: for random size arrays, verify sortSizeValues produces
+     * a consistent logical order.
      */
-    it('property: random size arrays are always sorted in VariantActionPanel dropdown', async () => {
-      const { default: VariantSchemaEditor } = await import('../VariantSchemaEditor');
-
+    it('property: random size arrays are always sorted in logical order', () => {
       const SIZE_POOL = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL'];
 
-      // Use a subset of sizes (min 2 to have something to sort)
       const sizeSubsetArb = fc.shuffledSubarray(SIZE_POOL, { minLength: 2, maxLength: 8 });
 
       fc.assert(
         fc.property(sizeSubsetArb, (sizes) => {
-          const schema = { Maat: sizes };
-          const expectedSorted = sortSizeValues(sizes);
-
-          const container = document.createElement('div');
-          document.body.appendChild(container);
-
-          const { unmount } = render(
-            <ChakraProvider>
-              <VariantSchemaEditor
-                value={schema}
-                onChange={jest.fn()}
-                onAddVariant={jest.fn()}
-                onRemoveVariant={jest.fn()}
-              />
-            </ChakraProvider>,
-            { container }
-          );
-
-          const selectElements = container.querySelectorAll('select');
-          let found = false;
-
-          selectElements.forEach(select => {
-            const options = Array.from(select.querySelectorAll('option'))
-              .filter(opt => opt.value !== '')
-              .map(opt => opt.textContent);
-
-            // Check if this select contains our size values
-            if (options.length === sizes.length && options.every(o => sizes.includes(o || ''))) {
-              found = true;
-              // Assert sorted order
-              expect(options).toEqual(expectedSorted);
-            }
-          });
-
-          unmount();
-          document.body.removeChild(container);
-
-          // We must find at least one matching select
-          expect(found).toBe(true);
+          const sorted = sortSizeValues(sizes);
+          // Sort is idempotent
+          expect(sortSizeValues(sorted)).toEqual(sorted);
+          // Same elements
+          expect(sorted.slice().sort()).toEqual(sizes.slice().sort());
         }),
         { numRuns: 50 }
       );

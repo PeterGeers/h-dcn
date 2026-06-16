@@ -11,11 +11,12 @@ import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
-import { updateVariantSchema, addVariantToProduct } from '../api/productApi';
+import { updateVariantSchema } from '../api/productApi';
 import { getRequiredFields, getProductField } from '../../../config/productFields';
 import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
 import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
-import { getAdminProducts, deleteVariant } from '../../webshop-management/services/adminApi';
+import { deleteVariant } from '../../webshop-management/services/adminApi';
+import { VariantEditModal } from './VariantEditModal';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -104,15 +105,23 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [variantSchemaHasErrors, setVariantSchemaHasErrors] = useState<boolean>(false);
   const [variants, setVariants] = useState<AdminVariant[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState<boolean>(false);
+  const [variantModalOpen, setVariantModalOpen] = useState<boolean>(false);
+  const [clickedVariantAttribute, setClickedVariantAttribute] = useState<Record<string, string>>({});
 
   const fetchVariants = useCallback(async () => {
     const productId = product.product_id || product.id;
     if (!productId) return;
     setIsLoadingVariants(true);
     try {
-      const adminProducts = await getAdminProducts();
-      const matched = adminProducts.find((p: AdminProduct) => p.product_id === productId);
-      setVariants(matched?.variants ?? []);
+      const headers = await getAuthHeadersForGet();
+      const response = await fetch(`${API_URLS.base}/products/${encodeURIComponent(productId)}/variants`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setVariants(data.variants ?? []);
+      } else {
+        console.error('Error fetching variants:', response.status);
+        setVariants([]);
+      }
     } catch (err) {
       console.error('Error fetching variants:', err);
     } finally {
@@ -673,28 +682,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     if (!productId) return;
                     await updateVariantSchema(productId, schema);
                   }}
-                  onAddVariant={async (variantAttributes: Record<string, string>) => {
-                    const productId = product.product_id || product.id;
-                    if (!productId) return;
-                    await addVariantToProduct(productId, variantAttributes);
-                  }}
-                  onRemoveVariant={async (variantAttributes: Record<string, string>) => {
-                    const productId = product.product_id || product.id;
-                    if (!productId) return;
-                    // Resolve variant_attributes → variant_id using fetched variants list
-                    const matchedVariant = variants.find((v) => {
-                      const attrs = v.variant_attributes;
-                      if (!attrs) return false;
-                      const keys = Object.keys(variantAttributes);
-                      return keys.length === Object.keys(attrs).length &&
-                        keys.every((k) => attrs[k] === variantAttributes[k]);
-                    });
-                    if (!matchedVariant) {
-                      throw new Error('Variant niet gevonden voor de geselecteerde attributen');
-                    }
-                    await deleteVariant(productId, matchedVariant.product_id);
-                    // Refresh variants after deletion
-                    await fetchVariants();
+                  onVariantClick={(axisName: string, val: string) => {
+                    setClickedVariantAttribute({ [axisName]: val });
+                    setVariantModalOpen(true);
                   }}
                 />
                 {variantSchemaHasErrors && (
@@ -878,6 +868,17 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Variant Edit Modal — opens when clicking a variant value tag */}
+      <VariantEditModal
+        isOpen={variantModalOpen}
+        onClose={() => setVariantModalOpen(false)}
+        productId={product.product_id || product.id || ''}
+        clickedAttribute={clickedVariantAttribute}
+        variants={variants}
+        onUpdate={fetchVariants}
+        parentPrice={parseFloat((product as any).prijs) || 0}
+      />
     </Box>
   );
 }
