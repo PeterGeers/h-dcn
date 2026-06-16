@@ -2,6 +2,7 @@ import json
 import os
 import boto3
 from datetime import datetime, timezone
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -110,7 +111,7 @@ def lambda_handler(event, context):
         )
 
         return create_success_response({
-            'variant': updated.get('Attributes', {}),
+            'variant': json.loads(json.dumps(updated.get('Attributes', {}), default=str)),
             'message': 'Variant updated successfully'
         })
 
