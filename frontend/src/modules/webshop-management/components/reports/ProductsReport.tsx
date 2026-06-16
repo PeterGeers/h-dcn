@@ -157,7 +157,7 @@ export const ProductsReport: React.FC<ProductsReportProps> = ({ report }) => {
                             .join(', ') || 'Standaard'}
                         </Td>
                         <Td color="white" isNumeric>
-                          {variant.price != null ? formatCurrency(variant.price) : '—'}
+                          {variant.prijs != null ? formatCurrency(variant.prijs) : '—'}
                         </Td>
                         <Td color="white" isNumeric>{variant.stock}</Td>
                         <Td color="white" isNumeric>{variant.sold_count}</Td>
