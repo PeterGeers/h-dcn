@@ -50,6 +50,7 @@ import { updateVariant, deleteVariant } from '../services/adminApi';
 import { sortVariants } from '../utils/sizeSorter';
 import { AddStockForm } from './AddStockForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
+import { formatPriceEuro } from '../../../utils/formatPrice';
 
 export interface VariantSubTableProps {
   product: AdminProduct;
@@ -414,8 +415,8 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
                   title={canMutate ? 'Klik om prijs te bewerken' : disabledTooltip}
                 >
                   {variant.prijs != null
-                    ? `€${variant.prijs.toFixed(2)}`
-                    : `€${(product.price ?? 0).toFixed(2)} (ouder)`}
+                    ? formatPriceEuro(variant.prijs)
+                    : `${formatPriceEuro(product.price)} (ouder)`}
                 </Text>
               )}
             </Td>
