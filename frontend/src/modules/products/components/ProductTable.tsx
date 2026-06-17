@@ -18,7 +18,7 @@ export default function ProductTable({ products, onSelect, renderActions, showSt
       <Table variant="simple" colorScheme="orange" size={{ base: 'sm', md: 'md' }}>
         <Thead bg="gray.700">
           <Tr>
-            <Th color="orange.300" minW="60px">ID</Th>
+            <Th color="orange.300" minW="60px">Artikelcode</Th>
             <Th color="orange.300" minW="120px" display={{ base: 'none', md: 'table-cell' }}>Categorie</Th>
             <Th color="orange.300" w="50%">Naam</Th>
             <Th color="orange.300" minW="80px">Prijs</Th>
@@ -35,7 +35,7 @@ export default function ProductTable({ products, onSelect, renderActions, showSt
               color="white"
               opacity={p.active === false ? 0.6 : 1}
             >
-              <Td fontSize={{ base: 'xs', md: 'sm' }}>{p.product_id || p.id}</Td>
+              <Td fontSize={{ base: 'xs', md: 'sm' }}>{p.artikelcode || '-'}</Td>
               <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
                 <Text isTruncated maxW="120px">{p.groep} - {p.subgroep}</Text>
               </Td>

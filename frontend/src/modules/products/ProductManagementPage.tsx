@@ -493,12 +493,12 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         onClose={onDeactivateClose}
       >
         <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+          <AlertDialogContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
               {t('management.deactivate_confirm_title')}
             </AlertDialogHeader>
 
-            <AlertDialogBody>
+            <AlertDialogBody color="white">
               {t('management.deactivate_confirm_body')}
               {hasPendingOrders && (
                 <Alert status="warning" mt={3} borderRadius="md">
@@ -527,12 +527,12 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         onClose={onHardDeleteClose}
       >
         <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+          <AlertDialogContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
               {t('management.hard_delete_confirm_title')}
             </AlertDialogHeader>
 
-            <AlertDialogBody>
+            <AlertDialogBody color="white">
               {t('management.hard_delete_confirm_body')}
             </AlertDialogBody>
 

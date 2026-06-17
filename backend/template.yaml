@@ -1970,6 +1970,29 @@ Resources:
             Path: /admin/products/{id}
             Method: put
 
+  # --- Admin: Delete Product (soft + hard) ---
+  AdminDeleteProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_delete_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminDeleteProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}
+            Method: delete
+
   # --- Admin: Create Variant ---
   AdminCreateVariantFunction:
     Type: AWS::Serverless::Function
