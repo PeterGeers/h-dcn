@@ -21,7 +21,9 @@
     "quantity": "Aantal",
     "price_label": "Prijs:",
     "no_image": "Geen afbeelding beschikbaar",
-    "back": "Terug"
+    "back": "Terug",
+    "variant_fetch_error": "Varianten konden niet worden geladen",
+    "sold_out": "Uitverkocht"
   },
   "card_modal": {
     "select_option_desc": "Kies een maat/optie voor dit product"
@@ -52,5 +54,40 @@
     "inactive_badge": "Inactief",
     "confirm": "Bevestigen",
     "cancel": "Annuleren"
+  },
+  "variant_modal": {
+    "add_title": "Variant toevoegen",
+    "edit_title": "Variant bewerken",
+    "axis_name_label": "As-naam",
+    "axis_name_placeholder": "Bijv. Maat, Kleur...",
+    "axis_select_placeholder": "Kies een as...",
+    "axis_new_option": "Nieuw...",
+    "axis_new_placeholder": "Nieuwe as-naam...",
+    "value_label": "Waarde",
+    "value_placeholder": "Bijv. S, Rood, 42...",
+    "existing_values": "Bestaande waarden voor \"{{axis}}\":",
+    "attributes_label": "Attributen",
+    "stock_label": "Voorraad",
+    "sold_label": "Verkocht",
+    "price_label": "Prijs (leeg = overerft €{{price}} van product)",
+    "oversell_label": "Oversell toestaan",
+    "active_label": "Actief",
+    "not_found": "Variant niet gevonden.",
+    "btn_create": "Aanmaken",
+    "btn_create_loading": "Aanmaken...",
+    "btn_save": "Opslaan",
+    "btn_save_loading": "Opslaan...",
+    "btn_cancel": "Annuleren",
+    "toast_fields_required": "Velden verplicht",
+    "toast_fields_required_desc": "Vul een as-naam en waarde in.",
+    "toast_created": "Variant aangemaakt",
+    "toast_created_desc": "Variant \"{{axis}}: {{value}}\" is aangemaakt.",
+    "toast_duplicate": "Variant bestaat al",
+    "toast_duplicate_desc": "Er bestaat al een variant met deze attributen.",
+    "toast_create_error": "Fout bij aanmaken",
+    "toast_updated": "Variant bijgewerkt",
+    "toast_invalid_price": "Ongeldige prijs",
+    "toast_save_error": "Fout bij opslaan",
+    "toast_unknown_error": "Onbekende fout"
   }
 }

@@ -21,7 +21,9 @@
     "quantity": "Quantità",
     "price_label": "Prezzo:",
     "no_image": "Nessuna immagine disponibile",
-    "back": "Indietro"
+    "back": "Indietro",
+    "variant_fetch_error": "Impossibile caricare le varianti",
+    "sold_out": "Esaurito"
   },
   "card_modal": {
     "select_option_desc": "Scegli una taglia/opzione per questo prodotto"
@@ -52,5 +54,40 @@
     "inactive_badge": "Inattivo",
     "confirm": "Conferma",
     "cancel": "Annulla"
+  },
+  "variant_modal": {
+    "add_title": "Aggiungi variante",
+    "edit_title": "Modifica variante",
+    "axis_name_label": "Nome asse",
+    "axis_name_placeholder": "Es. Taglia, Colore...",
+    "axis_select_placeholder": "Scegli un asse...",
+    "axis_new_option": "Nuovo...",
+    "axis_new_placeholder": "Nuovo nome asse...",
+    "value_label": "Valore",
+    "value_placeholder": "Es. S, Rosso, 42...",
+    "existing_values": "Valori esistenti per \"{{axis}}\":",
+    "attributes_label": "Attributi",
+    "stock_label": "Scorte",
+    "sold_label": "Venduto",
+    "price_label": "Prezzo (vuoto = eredita €{{price}} dal prodotto)",
+    "oversell_label": "Consenti sovravendita",
+    "active_label": "Attivo",
+    "not_found": "Variante non trovata.",
+    "btn_create": "Crea",
+    "btn_create_loading": "Creazione...",
+    "btn_save": "Salva",
+    "btn_save_loading": "Salvataggio...",
+    "btn_cancel": "Annulla",
+    "toast_fields_required": "Campi obbligatori",
+    "toast_fields_required_desc": "Inserisci un nome asse e un valore.",
+    "toast_created": "Variante creata",
+    "toast_created_desc": "Variante \"{{axis}}: {{value}}\" è stata creata.",
+    "toast_duplicate": "La variante esiste già",
+    "toast_duplicate_desc": "Esiste già una variante con questi attributi.",
+    "toast_create_error": "Errore nella creazione",
+    "toast_updated": "Variante aggiornata",
+    "toast_invalid_price": "Prezzo non valido",
+    "toast_save_error": "Errore nel salvataggio",
+    "toast_unknown_error": "Errore sconosciuto"
   }
 }
