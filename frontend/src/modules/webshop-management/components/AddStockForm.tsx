@@ -12,6 +12,8 @@
 import React, { useState } from 'react';
 import {
   Button,
+  IconButton,
+  Tooltip,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -28,6 +30,7 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
+import { AddIcon } from '@chakra-ui/icons';
 import { addStock } from '../services/adminApi';
 import { AddStockRequest } from '../types/admin.types';
 
@@ -143,9 +146,17 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 
   return (
     <>
-      <Button size="xs" colorScheme="orange" variant="outline" onClick={onOpen} isDisabled={isDisabled}>
-        + Voorraad
-      </Button>
+      <Tooltip label="Voorraad toevoegen" hasArrow>
+        <IconButton
+          aria-label="Voorraad toevoegen"
+          icon={<AddIcon />}
+          size="xs"
+          colorScheme="green"
+          variant="ghost"
+          onClick={onOpen}
+          isDisabled={isDisabled}
+        />
+      </Tooltip>
 
       <Modal isOpen={isOpen} onClose={handleClose} isCentered>
         <ModalOverlay />

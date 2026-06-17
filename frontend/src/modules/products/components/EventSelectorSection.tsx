@@ -32,21 +32,17 @@ export interface EventSelectorSectionProps {
 
 // --- Constants ---
 
-const WEBSHOP_EVENT_ID = 'evt-webshop';
-const WEBSHOP_EVENT_LABEL = 'Webshop (algemeen)';
-
 // --- Utility (exported for property testing) ---
 
 /**
  * Returns display names for selected event IDs.
- * Maps each selected ID to its event name. The special "evt-webshop" ID maps to "Webshop (algemeen)".
+ * Maps each selected ID to its event name from the events list.
  */
 export function getSelectedEventNames(
   selectedIds: string[],
   events: HDCNEvent[]
 ): string[] {
   return selectedIds.map((id) => {
-    if (id === WEBSHOP_EVENT_ID) return WEBSHOP_EVENT_LABEL;
     const event = events.find((e) => e.event_id === id);
     if (event) return event.title || event.naam || event.event_id || id;
     return id;

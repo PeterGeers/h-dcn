@@ -41,3 +41,25 @@ Frontend property tests use `fast-check`. Place them in `__tests__/<utility>.pro
 ```bash
 npx react-scripts test --watchAll=false --testPathPattern="sizeSorter.property"
 ```
+
+## ESLint
+
+The CI build runs ESLint as part of `react-scripts build` — it fails the build on any error. Always check for lint issues before committing frontend changes:
+
+```bash
+# From frontend/ directory — lint a specific file
+npx eslint src/modules/products/components/VariantEditModal.tsx
+
+# Lint all changed files (uses git diff)
+npx eslint $(git diff --name-only --diff-filter=d HEAD -- 'src/**/*.ts' 'src/**/*.tsx')
+```
+
+### Common lint errors to avoid
+
+- **no-unused-vars**: Remove unused imports and variables. CI treats these as errors.
+- **react-hooks/exhaustive-deps**: Add missing dependencies or suppress with `// eslint-disable-next-line`.
+- When removing code (imports, functions), check that nothing else referenced the removed symbol.
+
+### Quick lint check before commit
+
+After editing a file, run ESLint on it before staging. The build will fail otherwise and require a fix commit.

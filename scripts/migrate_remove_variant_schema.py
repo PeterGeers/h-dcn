@@ -46,6 +46,7 @@ def main():
 
     items_found = 0
     items_updated = 0
+    items_skipped = 0
 
     while True:
         response = table.scan(**scan_kwargs)
@@ -56,10 +57,19 @@ def main():
             product_id = item['product_id']
             naam = item.get('naam', '(no name)')
             is_parent = item.get('is_parent')
-            schema_keys = list(item.get('variant_schema', {}).keys()) if isinstance(item.get('variant_schema'), dict) else str(item.get('variant_schema'))
+            schema = item.get('variant_schema')
+            schema_keys = list(schema.keys()) if isinstance(schema, dict) else str(schema)
 
-            print(f"  [{items_found}] {product_id} — {naam} (is_parent={is_parent})")
-            print(f"       variant_schema keys: {schema_keys}")
+            # Skip presmeet products (VariantAxis[] format — still used by presmeet module)
+            is_presmeet_format = isinstance(schema, list)
+            skip_label = " [SKIP — presmeet format]" if is_presmeet_format else ""
+
+            print(f"  [{items_found}] {product_id} — {naam} (is_parent={is_parent}){skip_label}")
+            print(f"       variant_schema: {schema_keys}")
+
+            if is_presmeet_format:
+                items_skipped += 1
+                continue
 
             if not args.dry_run:
                 table.update_item(
@@ -75,6 +85,7 @@ def main():
 
     print("=" * 60)
     print(f"Records with variant_schema found: {items_found}")
+    print(f"Records skipped (presmeet format): {items_skipped}")
     if args.dry_run:
         print(f"[DRY RUN] No changes made. Run without --dry-run to remove the field.")
     else:

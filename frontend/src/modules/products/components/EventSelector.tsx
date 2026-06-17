@@ -27,11 +27,6 @@ export interface EventSelectorProps {
   isDisabled?: boolean;
 }
 
-// --- Constants ---
-
-const WEBSHOP_EVENT_ID = 'evt-webshop';
-const WEBSHOP_EVENT_LABEL = 'Webshop (algemeen)';
-
 // --- Filter utility (exported for property testing) ---
 
 /**
@@ -133,20 +128,6 @@ export default function EventSelector({
         overflowY="auto"
         px={1}
       >
-        {/* Webshop (algemeen) — always first regardless of search */}
-        <Checkbox
-          key={WEBSHOP_EVENT_ID}
-          isChecked={selectedIds.includes(WEBSHOP_EVENT_ID)}
-          onChange={(e) => handleToggle(WEBSHOP_EVENT_ID, e.target.checked)}
-          colorScheme="orange"
-          size="sm"
-          isDisabled={isDisabled}
-        >
-          <Text fontSize="sm" color="white">
-            {WEBSHOP_EVENT_LABEL}
-          </Text>
-        </Checkbox>
-
         {/* Filtered event list */}
         {filteredEvents.map((event) => {
           const id = event.event_id || '';
