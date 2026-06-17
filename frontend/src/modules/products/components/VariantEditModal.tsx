@@ -11,7 +11,7 @@
  * - At MAX_AXES: dropdown of existing axes only (no free text option) + free text value
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -30,7 +30,6 @@ import {
   VStack,
   Text,
   Badge,
-  Spinner,
   Box,
   Input,
   Select,
@@ -41,7 +40,6 @@ import { AdminVariant, UpdateVariantRequest } from '../../webshop-management/typ
 import { updateVariant, createVariant } from '../../webshop-management/services/adminApi';
 import { AddStockForm } from '../../webshop-management/components/AddStockForm';
 import { determineFormMode, validateAxisInput, FormMode } from '../utils/variantFormHelpers';
-import { MAX_AXES } from '../../../config/constants';
 
 export interface VariantEditModalProps {
   isOpen: boolean;
@@ -369,10 +367,6 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
     if (!variant) {
       return <Text color="gray.400">{t('variant_modal.not_found')}</Text>;
     }
-
-    const attrLabel = Object.entries(variant.variant_attributes)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ');
 
     return (
       <VStack spacing={4} align="stretch">
