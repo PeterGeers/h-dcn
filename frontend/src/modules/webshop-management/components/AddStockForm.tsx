@@ -181,6 +181,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
                 <FormLabel fontSize="sm" color="white">Inkoopprijs per stuk (€)</FormLabel>
                 <NumberInput
                   min={0.01}
+                  step={0.01}
                   precision={2}
                   value={purchasePrice}
                   onChange={(val) => setPurchasePrice(val)}
