@@ -43,6 +43,15 @@ Validation rules are defined in the Field Registry, not scattered across Yup sch
 - Scan/query handlers return fields using registry keys (no renaming)
 - Validation in handlers references the same rules as the registry
 
+### 6. Financial fields must be stored as DynamoDB Number type
+
+Financial fields (prijs, price, unit_price, line_total, total_amount, total_paid, purchase_price_per_unit)
+MUST be stored as DynamoDB Number type, not String. Backend handlers must:
+
+- Coerce string prices to Decimal before writing: `Decimal(str(value))`
+- Reject non-numeric values with 400 error
+- Never store prices as bare strings like "25"
+
 ## Field Registry Structure (follow Members pattern)
 
 ```

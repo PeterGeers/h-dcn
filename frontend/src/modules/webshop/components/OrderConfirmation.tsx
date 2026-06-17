@@ -3,6 +3,7 @@ import { Button, useToast } from '@chakra-ui/react';
 import { DownloadIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { downloadOrderPdf } from '../services/pdfDownloadService';
+import { formatPrice, toPrice } from '../../../utils/formatPrice';
 
 interface OrderItem {
   name?: string;
@@ -222,8 +223,8 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
                   : '-'}
               </td>
               <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>{item.quantity}</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>€{Number(item.price || 0).toFixed(2)}</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>€{(item.quantity * Number(item.price || 0)).toFixed(2)}</td>
+              <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>{formatPrice(item.price)}</td>
+              <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #E5E7EB' }}>{formatPrice(item.quantity * toPrice(item.price))}</td>
             </tr>
           ))}
         </tbody>

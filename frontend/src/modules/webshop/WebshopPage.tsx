@@ -13,6 +13,7 @@ import OrderSuccess from './components/OrderSuccess';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService, memberService, orderService } from './services/api';
 import { ApiService } from '../../services/apiService';
+import { formatPrice } from '../../utils/formatPrice';
 
 interface User {
   attributes?: {
@@ -671,7 +672,7 @@ function WebshopPage({ user }: WebshopPageProps) {
                 delivery_option: paymentData.deliveryOption || null,
                 items: cartItems.map(item => ({
                   name: item.name,
-                  price: Number(item.price || 0).toFixed(2),
+                  price: formatPrice(item.price),
                   product_id: item.product_id,
                   variant_id: item.variant_id,
                   quantity: item.quantity,

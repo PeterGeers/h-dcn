@@ -4,6 +4,7 @@ import { scanProducts } from '../products/api/productApi';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
+import { formatPrice } from '../../utils/formatPrice';
 
 interface User {
   attributes?: {
@@ -149,9 +150,9 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
           `Actief: ${productStats.actief}\n` +
           `Inactief: ${productStats.inactief}\n` +
           `Categorieën: ${productStats.categorieën}\n` +
-          `Gemiddelde prijs: €${productStats.gemiddeldePrijs.toFixed(2)}\n` +
-          `Hoogste prijs: €${productStats.hoogstePrijs.toFixed(2)}\n` +
-          `Laagste prijs: €${productStats.laagstePrijs.toFixed(2)}\n\n` +
+          `Gemiddelde prijs: ${formatPrice(productStats.gemiddeldePrijs)}\n` +
+          `Hoogste prijs: ${formatPrice(productStats.hoogstePrijs)}\n` +
+          `Laagste prijs: ${formatPrice(productStats.laagstePrijs)}\n\n` +
           `Gedetailleerd rapport gedownload.`);
   };
 

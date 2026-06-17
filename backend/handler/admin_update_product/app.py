@@ -20,6 +20,7 @@ try:
         validate_order_item_fields,
         validate_purchase_rules
     )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -112,6 +113,14 @@ def lambda_handler(event, context):
         # Reject variant_schema if included in request body (field is removed)
         if 'variant_schema' in body:
             return create_error_response(400, 'variant_schema field is no longer supported')
+
+        # Validate price field if provided
+        if 'prijs' in body:
+            price_val, price_err = validate_price_field(body['prijs'], 'prijs')
+            if price_err:
+                return create_error_response(400, price_err)
+            if price_val is not None:
+                body['prijs'] = price_val
 
         # Build update expression for simple fields
         update_parts = []

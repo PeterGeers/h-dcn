@@ -24,6 +24,7 @@ try:
         validate_order_item_fields,
         validate_purchase_rules,
     )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -154,7 +155,12 @@ def lambda_handler(event, context):
 
         # Ensure price is stored as numeric Decimal
         raw_price = body.get('price')
-        price = Decimal(str(raw_price)) if raw_price is not None else None
+        if raw_price is not None:
+            price, price_err = validate_price_field(raw_price, 'price')
+            if price_err:
+                return create_error_response(400, price_err)
+        else:
+            price = None
 
         # Build product record (parent)
         product = {
