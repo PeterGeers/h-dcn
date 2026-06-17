@@ -29,6 +29,7 @@ import {
   ItemFieldsEntry,
 } from '../types/unifiedProduct.types';
 import { processDeliveryOptions, getDefaultDeliveryOptions } from '../utils/deliveryOptionsProcessor';
+import { formatPrice, toPrice } from '../../../utils/formatPrice';
 
 interface CartItem {
   product_id?: string;
@@ -436,7 +437,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {item.name} x {item.quantity}
                     </Text>
                     <Text fontSize="sm">
-                      €{(Number(item.price || 0) * item.quantity).toFixed(2)}
+                      {formatPrice(toPrice(item.price) * item.quantity)}
                     </Text>
                   </HStack>
                 ))}

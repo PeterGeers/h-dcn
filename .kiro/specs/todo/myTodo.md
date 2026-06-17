@@ -32,5 +32,7 @@ Laat oude, stabiele code voorlopig met rust
 Standardize naming conventions to english verbs for tables and fields in dynamo db tables and fix all handlers that touch them. 
 This would help reduce errors/ typos as KIRO often assumes the proper names in English
 
+# missing functions
+Now about Issue 3: separate price for a variant — that's a feature/design issue rather than a bug introduced by this branch. The variant schema editor doesn't currently support per-variant pricing. That would be a separate feature request. Let me note it but not block on it.
 
 

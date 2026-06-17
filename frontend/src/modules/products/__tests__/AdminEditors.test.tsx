@@ -4,8 +4,8 @@
  * Tests for OrderItemFieldsEditor: field CRUD operations,
  * validation errors, and limit enforcement.
  *
- * Note: VariantSchemaEditor and PurchaseRulesEditor already have
- * dedicated test files. This file covers OrderItemFieldsEditor.
+ * Note: PurchaseRulesEditor already has a
+ * dedicated test file. This file covers OrderItemFieldsEditor.
  *
  * Validates: Requirements 13.1, 13.3, 13.5, 13.7
  */

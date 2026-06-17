@@ -11,10 +11,10 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { VariantSchema, VariantRecord } from '../types/unifiedProduct.types';
+import { sortSizeValues } from '../../webshop-management/utils/sizeSorter';
+import { deriveAxesFromVariants } from '../../webshop-management/utils/variantUtils';
 
 export interface VariantSelectorProps {
-  /** Variant schema defining axes and their possible values */
-  variantSchema: VariantSchema;
   /** Available variant records for the product */
   variants: VariantRecord[];
   /** Callback fired when a variant is resolved (or null if incomplete/no match) */
@@ -47,31 +47,35 @@ export function resolveVariant(
 }
 
 /**
- * VariantSelector renders a dropdown/select for each axis in the variant_schema.
+ * VariantSelector renders a dropdown/select for each axis derived from active variant records.
  * It manages internal state for selections per axis. When all axes have a selection,
  * it resolves the matching variant and calls onVariantSelect with the result.
  *
+ * - Uses deriveAxesFromVariants to compute axis→values map from active variants.
  * - Disables add-to-cart (via onVariantSelect(null)) until all axes are selected.
  * - Shows stock count when a variant is resolved.
  * - Shows "Niet op voorraad" when variant has stock=0 and allow_oversell=false.
  * - Shows "Combinatie niet beschikbaar" when no matching variant exists.
  * - Re-resolves on axis change.
  *
- * Requirements: 15.1–15.8
+ * Requirements: 5.1, 5.2, 5.3
  */
 const VariantSelector: React.FC<VariantSelectorProps> = ({
-  variantSchema,
   variants,
   onVariantSelect,
   isDisabled = false,
 }) => {
   const { t } = useTranslation('webshop');
+
+  // Derive the variant schema from active variant records
+  const variantSchema = useMemo(() => deriveAxesFromVariants(variants), [variants]);
+
   const axes = useMemo(() => Object.keys(variantSchema), [variantSchema]);
 
   // Internal state: one selection per axis
   const [selections, setSelections] = useState<Record<string, string>>({});
 
-  // Reset selections when schema changes
+  // Reset selections when derived schema changes
   useEffect(() => {
     setSelections({});
   }, [variantSchema]);
@@ -121,7 +125,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
             aria-label={`Selecteer ${axis}`}
             size="md"
           >
-            {variantSchema[axis].map((value) => (
+            {sortSizeValues(variantSchema[axis]).map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>

@@ -3,6 +3,7 @@ import os
 import uuid
 import boto3
 from datetime import datetime, timezone
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -15,8 +16,8 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.product_validation import validate_variant_attributes
     from shared.variant_helpers import should_remove_default_variant
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -65,16 +66,19 @@ def lambda_handler(event, context):
             return create_error_response(404, 'Parent product not found')
 
         parent = parent_response['Item']
-        if not parent.get('is_parent', False):
+        # Only allow variant creation for parent products
+        if parent.get('is_parent') is False:
             return create_error_response(400, 'Cannot add variants to a non-parent product')
 
-        # Validate variant attributes against parent's required_attributes
         variant_attributes = body.get('variant_attributes', {})
-        parent_required_attrs = parent.get('required_attributes')
 
-        is_valid, errors = validate_variant_attributes(variant_attributes, parent_required_attrs)
-        if not is_valid:
-            return create_error_response(400, 'Variant attribute validation failed', {'errors': errors})
+        # Validate price field if provided
+        raw_prijs = body.get('prijs')
+        if raw_prijs is not None:
+            price_val, price_err = validate_price_field(raw_prijs, 'prijs')
+            if price_err:
+                return create_error_response(400, price_err)
+            body['prijs'] = price_val
 
         # Generate variant ID
         variant_id = f"var_{uuid.uuid4().hex[:12]}"
@@ -84,10 +88,10 @@ def lambda_handler(event, context):
         variant = {
             'product_id': variant_id,
             'parent_id': product_id,
-            'name': body.get('name', ''),
+            'naam': body.get('naam', ''),
             'is_parent': False,
             'variant_attributes': variant_attributes,
-            'price': body.get('price', parent.get('price')),
+            'prijs': body.get('prijs', parent.get('prijs')),
             'stock': body.get('stock', 0),
             'sold_count': 0,
             'allow_oversell': body.get('allow_oversell', False),
@@ -96,11 +100,18 @@ def lambda_handler(event, context):
             'updated_at': now,
         }
 
-        # Get existing variants to check if Default_Variant should be removed
+        # Get existing variants to check for duplicates and Default_Variant removal
         existing_variants_response = table.scan(
             FilterExpression=boto3.dynamodb.conditions.Attr('parent_id').eq(product_id) & boto3.dynamodb.conditions.Attr('is_parent').eq(False)
         )
         existing_variants = existing_variants_response.get('Items', [])
+
+        # Check for duplicate variant_attributes (active or inactive)
+        for existing in existing_variants:
+            if existing.get('variant_attributes') == variant_attributes:
+                return create_error_response(
+                    409, 'A variant with these attributes already exists'
+                )
 
         # Check if we should remove the Default_Variant
         remove_default = should_remove_default_variant(existing_variants, [variant])
@@ -118,14 +129,28 @@ def lambda_handler(event, context):
             except Exception as del_err:
                 print(f"Warning: Could not remove Default_Variant: {str(del_err)}")
 
-        return create_success_response({
+        return create_success_response(_serialize_response({
             'variant': variant,
             'default_variant_removed': removed_default,
             'message': 'Variant created successfully'
-        })
+        }))
 
     except json.JSONDecodeError:
         return create_error_response(400, 'Invalid JSON in request body')
     except Exception as e:
         print(f"Error creating variant: {str(e)}")
         return create_error_response(500, 'Internal server error')
+
+
+def _serialize_response(data):
+    """Convert response dict for JSON (Decimal → int/float)."""
+    return json.loads(json.dumps(data, default=_json_serialize))
+
+
+def _json_serialize(obj):
+    """Custom JSON serializer for Decimal."""
+    if isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")

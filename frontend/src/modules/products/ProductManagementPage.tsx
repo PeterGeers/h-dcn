@@ -7,6 +7,7 @@ import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
+import { isActive, isDeactivated } from '../../utils/productHelpers';
 
 import {
   Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription,
@@ -112,19 +113,34 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   }, []);
 
   const handleSave = (data: Product) => {
-    // Remove fields that should be managed by the backend
+    // Remove fields managed by backend or no longer used
     const { updated_at, created_at, opties, ...cleanData } = data as any;
     
+    // Use canonical Dutch field names only (per schema-driven.md)
     const processedData = {
       ...cleanData,
-      prijs: cleanData.prijs ? cleanData.prijs.toString() : cleanData.prijs
+      prijs: cleanData.prijs ? cleanData.prijs.toString() : undefined,
+      naam: cleanData.naam || undefined,
     };
+    // Remove any legacy English field names that may have leaked in
+    delete processedData.name;
+    delete processedData.price;
+    delete processedData.id;
     
-    // Use product_id (unified key) if available, fallback to id
-    const productId = data.product_id || data.id;
+    const productId = data.product_id;
     if (productId) {
       updateProduct(productId, processedData)
-        .then(() => refresh())
+        .then((response: any) => {
+          if (response && response.success === false) {
+            const errorDetail = response.data?.errors 
+              ? '\n' + JSON.stringify(response.data.errors, null, 2)
+              : '';
+            alert('Fout bij opslaan: ' + (response.error || 'Onbekende fout') + errorDetail);
+            return;
+          }
+          refresh();
+          alert('Product opgeslagen ✓');
+        })
         .catch((error: any) => {
           alert('Fout bij opslaan product: ' + (error.response?.data?.error || error.message));
         });
@@ -244,17 +260,19 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
   const filteredProducts = products.filter((p: Product) => {
     // Apply active/inactive filter (default: show only active)
-    if (!showInactive && p.active === false) return false;
+    if (!showInactive && isDeactivated(p)) return false;
 
-    // Apply event_id filter based on the active event filter
+    // Apply event_ids filter based on the active event filter
     if (activeFilter === 'webshop') {
-      // Show only products where event_id is null (generic webshop products)
-      if ((p as any).event_id != null) return false;
+      // Show only products in the webshop event
+      const eventIds = (p as any).event_ids || [];
+      if (!eventIds.includes('evt-webshop')) return false;
     } else if (activeFilter && activeFilter !== '') {
-      // Show only products linked to a specific event_id
-      if ((p as any).event_id !== activeFilter) return false;
+      // Show only products linked to a specific event
+      const eventIds = (p as any).event_ids || [];
+      if (!eventIds.includes(activeFilter)) return false;
     }
-    // When activeFilter is "" (Alle), show all products — no event_id filtering
+    // When activeFilter is "" (Alle), show all products — no event filtering
 
     // Apply group/subgroup filter
     if (!selectedFilter) return true;
@@ -319,8 +337,8 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 onClick={() => {
                   // Financial product overview
                   const financialOverview = products.map(p => ({
-                    naam: p.naam || p.name,
-                    prijs: p.prijs || p.price,
+                    naam: p.naam,
+                    prijs: p.prijs,
                     categorie: p.groep
                   }));
                   console.log('💰 Financieel overzicht:', financialOverview);
@@ -354,7 +372,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 onClick={() => {
                   // Product catalog view
                   const catalogView = products.map(p => ({
-                    naam: p.naam || p.name,
+                    naam: p.naam,
                     categorie: p.groep,
                     beschikbaar: true
                   }));
@@ -392,7 +410,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               showStatusColumn={hasProductsFullAccess}
               renderActions={hasProductsFullAccess ? (product: Product) => (
                 <HStack spacing={1}>
-                  {product.active !== false ? (
+                  {isActive(product) ? (
                     <Tooltip label={t('management.deactivate')}>
                       <IconButton
                         aria-label={t('management.deactivate')}
@@ -448,7 +466,6 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 onDelete={() => {}} // Disabled delete function
                 onNew={() => {}} // Disabled new function
                 onClose={() => setSelected(null)}
-                onNavigate={setSelected}
                 readOnly={true} // Add read-only mode
               />
             }
@@ -460,9 +477,8 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               filteredProducts={filteredProducts}
               onSave={handleSave}
               onDelete={handleDelete}
-              onNew={() => setSelected({ product_id: '', id: '', name: '', naam: '', price: 0, category: '', groep: '', subgroep: '' })}
+              onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
               onClose={() => setSelected(null)}
-              onNavigate={setSelected}
               readOnly={false}
             />
           </FunctionGuard>
@@ -478,12 +494,12 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         onClose={onDeactivateClose}
       >
         <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+          <AlertDialogContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
               {t('management.deactivate_confirm_title')}
             </AlertDialogHeader>
 
-            <AlertDialogBody>
+            <AlertDialogBody color="white">
               {t('management.deactivate_confirm_body')}
               {hasPendingOrders && (
                 <Alert status="warning" mt={3} borderRadius="md">
@@ -512,12 +528,12 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         onClose={onHardDeleteClose}
       >
         <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+          <AlertDialogContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
               {t('management.hard_delete_confirm_title')}
             </AlertDialogHeader>
 
-            <AlertDialogBody>
+            <AlertDialogBody color="white">
               {t('management.hard_delete_confirm_body')}
             </AlertDialogBody>
 

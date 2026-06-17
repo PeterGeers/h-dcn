@@ -119,6 +119,9 @@ PRODUCTS = [
         "name": "Gala Dinner",
         "price": Decimal("75.00"),
         "status": "active",
+        "is_parent": False,
+        "active": False,
+        "event_id": EVENT_PRESMEET,
         "purchase_rules": {
             "max_per_club": 10,
             "order_mode": "persistent",
@@ -138,6 +141,9 @@ PRODUCTS = [
         "name": "Event T-shirt",
         "price": Decimal("25.00"),
         "status": "active",
+        "is_parent": False,
+        "active": False,
+        "event_id": EVENT_PRESMEET,
         "purchase_rules": {
             "max_per_club": 10,
             "order_mode": "persistent",
@@ -145,15 +151,16 @@ PRODUCTS = [
         "order_item_fields": [
             {"id": "name", "label": "Name", "type": "text", "required": True},
         ],
-        "variant_schema": [
-            {"name": "Size", "values": ["S", "M", "L", "XL"]},
-        ],
+        "variant_schema": {"Size": ["S", "M", "L", "XL"]},
     },
     {
         "product_id": PRODUCT_PARKING,
         "name": "Parking Pass",
         "price": Decimal("15.00"),
         "status": "active",
+        "is_parent": False,
+        "active": False,
+        "event_id": EVENT_PRESMEET,
         "purchase_rules": {
             "max_per_club": 5,
             "order_mode": "persistent",
@@ -167,6 +174,9 @@ PRODUCTS = [
         "name": "Rally Ticket",
         "price": Decimal("50.00"),
         "status": "active",
+        "is_parent": False,
+        "active": False,
+        "event_id": EVENT_RALLY,
         "purchase_rules": {
             "max_per_member": 4,
             "order_mode": "persistent",
@@ -181,6 +191,9 @@ PRODUCTS = [
         "name": "Camping Spot",
         "price": Decimal("30.00"),
         "status": "active",
+        "is_parent": False,
+        "active": False,
+        "event_id": EVENT_RALLY,
         "purchase_rules": {
             "max_per_member": 2,
             "order_mode": "persistent",

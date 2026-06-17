@@ -35,6 +35,7 @@
     "parquetjs": "^0.11.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-helmet-async": "2.0.5",
     "react-i18next": "^14.1.3",
     "react-icons": "^5.5.0",
     "react-router-dom": "^6.8.0",
@@ -71,7 +72,8 @@
   },
   "jest": {
     "moduleNameMapper": {
-      "^@chakra-ui/utils/(.*)$": "<rootDir>/node_modules/@chakra-ui/utils/dist/cjs/$1.cjs"
+      "^@chakra-ui/utils/(.*)$": "<rootDir>/node_modules/@chakra-ui/utils/dist/cjs/$1.cjs",
+      "^axios$": "<rootDir>/node_modules/axios/dist/node/axios.cjs"
     }
   },
   "eslintConfig": {

@@ -5,6 +5,7 @@ import { ArrowBackIcon } from '@chakra-ui/icons';
 import { Suspense, lazy } from 'react';
 import { Spinner, Center } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { HelmetProvider } from 'react-helmet-async';
 import GroupAccessGuard from './components/common/GroupAccessGuard';
 import { FunctionGuard } from './components/common/FunctionGuard';
 import { CustomAuthenticator } from './components/auth/CustomAuthenticator';
@@ -51,6 +52,8 @@ const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) 
 const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as any;
 const EventBookingPage = lazy(() => import('./modules/presmeet/EventBookingPage')) as any;
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
+const EventLandingPage = lazy(() => import('./modules/events/EventLandingPage')) as any;
+const EventRegisterPage = lazy(() => import('./modules/events/EventRegisterPage')) as any;
 
 /**
  * Route guard for /webshop_management.
@@ -190,6 +193,7 @@ function AppContent({ signOut, user }: AppProps) {
 
 function App() {
   return (
+    <HelmetProvider>
     <MaintenanceProvider>
       <AuthProvider>
         <CustomAuthenticator>
@@ -204,6 +208,28 @@ function App() {
                     <p>Hash: {window.location.hash}</p>
                   </div>
                 } />
+
+                {/* Public event landing page — no AuthGuard required */}
+                <Route path="/events/:slug/info" element={
+                  <Suspense fallback={
+                    <Center h="100vh">
+                      <Spinner size="xl" color="orange.400" />
+                    </Center>
+                  }>
+                    <EventLandingPage />
+                  </Suspense>
+                } />
+
+                {/* Public event registration page — sign-up/sign-in with event context */}
+                <Route path="/events/:slug/register" element={
+                  <Suspense fallback={
+                    <Center h="100vh">
+                      <Spinner size="xl" color="orange.400" />
+                    </Center>
+                  }>
+                    <EventRegisterPage />
+                  </Suspense>
+                } />
                 
                 {/* All other routes require group access guard */}
                 <Route path="/*" element={
@@ -217,6 +243,7 @@ function App() {
         </CustomAuthenticator>
       </AuthProvider>
     </MaintenanceProvider>
+    </HelmetProvider>
   );
 }
 

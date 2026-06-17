@@ -5,13 +5,14 @@ Validates: Requirements 1.1, 1.2, 1.3
 
 This test encodes the EXPECTED behavior after the fix:
 - scan_product response MUST include `groep`, `subgroep`, and `images` for each product
+- Response uses canonical Dutch field names (naam, prijs, event_ids, etc.)
 
 On UNFIXED code, this test MUST FAIL — proving the bugs exist.
 After the fix is applied, this test should PASS.
 
 Counterexample (unfixed code): The response products contain only
 product_id, name, price, variant_schema, is_parent, event_id, active —
-but NOT groep, subgroep, or images.
+but NOT groep, subgroep, or images; and use English field names instead of Dutch.
 """
 
 import json
@@ -114,8 +115,8 @@ class TestScanProductBugCondition:
 
         table.put_item(Item={
             'product_id': 'prod-001',
-            'name': 'Club Polo',
-            'price': 45,
+            'naam': 'Club Polo',
+            'prijs': 45,
             'groep': 'Kleding',
             'subgroep': 'Polo',
             'is_parent': True,
@@ -145,8 +146,8 @@ class TestScanProductBugCondition:
 
         table.put_item(Item={
             'product_id': 'prod-002',
-            'name': 'Harley Cap',
-            'price': 25,
+            'naam': 'Harley Cap',
+            'prijs': 25,
             'groep': 'Accessoires',
             'subgroep': 'Petten',
             'is_parent': True,
@@ -177,8 +178,8 @@ class TestScanProductBugCondition:
 
         table.put_item(Item={
             'product_id': 'prod-003',
-            'name': 'Club Jacket',
-            'price': 120,
+            'naam': 'Club Jacket',
+            'prijs': 120,
             'groep': 'Kleding',
             'subgroep': 'Jassen',
             'images': ['s3://bucket/jacket-front.jpg', 's3://bucket/jacket-back.jpg'],
@@ -208,13 +209,13 @@ class TestScanProductBugCondition:
 
         table.put_item(Item={
             'product_id': 'prod-004',
-            'name': 'Event T-shirt 2027',
-            'price': 35,
+            'naam': 'Event T-shirt 2027',
+            'prijs': 35,
             'groep': 'Evenementen',
             'subgroep': 'T-shirts',
             'images': ['s3://bucket/tshirt.jpg'],
             'is_parent': True,
-            'event_id': 'evt-2027',
+            'event_ids': ['evt-2027'],
             'active': True,
         })
 

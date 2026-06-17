@@ -19,16 +19,12 @@ try:
     from shared.variant_helpers import (
         create_default_variant,
     )
-    from shared.variant_sync import (
-        sync_schema_to_variants,
-        MaxCombinationsExceeded,
-    )
     from shared.product_validation import (
         validate_product,
-        validate_variant_schema,
         validate_order_item_fields,
         validate_purchase_rules,
     )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -130,12 +126,6 @@ def lambda_handler(event, context):
         # Validate new unified model fields (if provided)
         all_field_errors = []
 
-        variant_schema = body.get('variant_schema')
-        if variant_schema is not None:
-            schema_valid, schema_errors = validate_variant_schema(variant_schema)
-            if not schema_valid:
-                all_field_errors.extend(schema_errors)
-
         order_item_fields = body.get('order_item_fields')
         if order_item_fields is not None:
             fields_valid, fields_errors = validate_order_item_fields(order_item_fields)
@@ -165,7 +155,12 @@ def lambda_handler(event, context):
 
         # Ensure price is stored as numeric Decimal
         raw_price = body.get('price')
-        price = Decimal(str(raw_price)) if raw_price is not None else None
+        if raw_price is not None:
+            price, price_err = validate_price_field(raw_price, 'price')
+            if price_err:
+                return create_error_response(400, price_err)
+        else:
+            price = None
 
         # Build product record (parent)
         product = {
@@ -183,7 +178,6 @@ def lambda_handler(event, context):
             'required_attributes': body.get('required_attributes'),
             'image_url': body.get('image_url'),
             # New unified model fields
-            'variant_schema': variant_schema,
             'order_item_fields': order_item_fields,
             'purchase_rules': purchase_rules,
             # Catalog fields
@@ -202,46 +196,21 @@ def lambda_handler(event, context):
         # Write product to DynamoDB
         table.put_item(Item=product)
 
-        # Generate variants based on variant_schema or create Default_Variant
+        # Generate Default_Variant for the new product
         variants_created = []
-        sync_result = None
-        if variant_schema:
-            # Use variant_sync to generate and write variants (top-down sync)
-            try:
-                parent_price = price if price is not None else Decimal('0')
-                sync_result = sync_schema_to_variants(
-                    table, product_id, variant_schema, parent_price
-                )
-            except MaxCombinationsExceeded as e:
-                # Product was already written, but variants failed — clean up
-                table.delete_item(Key={'product_id': product_id})
-                return create_error_response(400, 'Too many variant combinations', {
-                    'count': e.count,
-                    'max': e.max,
-                })
-        else:
-            # No variant_schema — create Default_Variant
-            default_variant = create_default_variant(product_id)
-            # Inherit price from parent if set
-            if price is not None:
-                default_variant['price'] = price
-            table.put_item(Item=default_variant)
-            variants_created = [default_variant]
+        default_variant = create_default_variant(product_id)
+        # Inherit price from parent if set
+        if price is not None:
+            default_variant['price'] = price
+        table.put_item(Item=default_variant)
+        variants_created = [default_variant]
 
         response_data = {
             'product': product,
             'message': 'Product created successfully',
+            'variants': variants_created,
+            'variant_count': len(variants_created),
         }
-        if sync_result:
-            response_data['variant_sync'] = {
-                'created': sync_result.created,
-                'preserved': sync_result.preserved,
-                'deactivated': sync_result.deactivated,
-            }
-            response_data['variant_count'] = sync_result.created
-        else:
-            response_data['variants'] = variants_created
-            response_data['variant_count'] = len(variants_created)
 
         return create_success_response(_serialize_response(response_data))
 

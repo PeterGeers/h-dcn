@@ -3,10 +3,12 @@
  *
  * These types represent the unified product/order/payment pipeline that merges
  * the H-DCN webshop and PresMeet booking systems. The core change splits the
- * legacy `required_attributes` field into three purpose-built fields:
- * - variant_schema: axes that generate SKUs with independent stock
+ * legacy `required_attributes` field into purpose-built fields:
  * - order_item_fields: per-item data collected from the buyer at checkout
  * - purchase_rules: business constraints on purchasing
+ *
+ * Variant axes are no longer stored on parent products. They are derived at
+ * runtime from active variant records via `deriveAxesFromVariants()`.
  */
 
 import { Product } from '../../../types';
@@ -21,6 +23,7 @@ export type VariantSchemaAxes = Array<{ name: string; values: string[] }>;
 
 /**
  * Normalize variant_schema to the Record format expected by VariantSelector.
+ * Used by PresMeet products which use an array-of-axes format.
  * Handles both formats:
  * - Record format (h-dcn products): { "Maat": ["S", "M", "L"] } → returned as-is
  * - Array format (presmeet products): [{name: "Size", values: ["S","M","L"]}] → converted
@@ -119,8 +122,6 @@ export interface UnifiedProduct extends Product {
   /** Array of S3 image URLs (up to 10) */
   images?: string[];
 
-  /** Axes that generate SKUs with independent stock */
-  variant_schema?: VariantSchema;
   /** Per-item data fields collected from the buyer at checkout */
   order_item_fields?: OrderItemField[];
   /** Business constraints on purchasing */

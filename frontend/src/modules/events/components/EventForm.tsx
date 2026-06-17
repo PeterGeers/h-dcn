@@ -11,6 +11,7 @@ import { getAuthHeaders } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
+import LandingPageSection, { LandingPageFormData, DEFAULT_LANDING_PAGE } from './LandingPageSection';
 
 interface EventFormData {
   title: string;
@@ -22,6 +23,7 @@ interface EventFormData {
   cost: string;
   revenue: string;
   notes: string;
+  landing_page: LandingPageFormData;
 }
 
 interface EventFormProps {
@@ -43,7 +45,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
     participants: '',
     cost: '',
     revenue: '',
-    notes: ''
+    notes: '',
+    landing_page: { ...DEFAULT_LANDING_PAGE }
   });
   const [isLoading, setIsLoading] = useState(false);
   const { handleError, handleSuccess } = useErrorHandler();
@@ -77,7 +80,18 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         participants: String(event.participants || event.aantal_deelnemers || ''),
         cost: String(event.cost || event.kosten || ''),
         revenue: String(event.revenue || event.inkomsten || ''),
-        notes: event.notes || event.opmerkingen || ''
+        notes: event.notes || event.opmerkingen || '',
+        landing_page: event.landing_page
+          ? {
+              enabled: event.landing_page.enabled ?? false,
+              slug: event.landing_page.slug ?? '',
+              hero_image_url: event.landing_page.hero_image_url ?? '',
+              tagline: event.landing_page.tagline ?? '',
+              registration_label: event.landing_page.registration_label ?? 'Register Now',
+              logos: event.landing_page.logos ?? [],
+              sections: event.landing_page.sections ?? [],
+            }
+          : { ...DEFAULT_LANDING_PAGE }
       });
     } else {
       // For new events, set default region for regional users
@@ -91,7 +105,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         participants: '',
         cost: '',
         revenue: '',
-        notes: ''
+        notes: '',
+        landing_page: { ...DEFAULT_LANDING_PAGE }
       });
     }
   }, [event, allowedRegions]);
@@ -127,7 +142,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         ...formData,
         participants: formData.participants ? String(formData.participants) : '',
         cost: formData.cost ? String(formData.cost) : '',
-        revenue: formData.revenue ? String(formData.revenue) : ''
+        revenue: formData.revenue ? String(formData.revenue) : '',
+        landing_page: formData.landing_page
       };
       
       const headers = await getAuthHeaders();
@@ -282,6 +298,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                 rows={3}
               />
             </FormControl>
+
+            <LandingPageSection
+              data={formData.landing_page}
+              onChange={(landingPage) => setFormData(prev => ({ ...prev, landing_page: landingPage }))}
+            />
           </VStack>
         </ModalBody>
         <ModalFooter>

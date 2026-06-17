@@ -338,9 +338,10 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
               }
               bg="gray.700"
               borderColor="gray.600"
+              color="white"
             >
               {FIELD_TYPES.map((ft) => (
-                <option key={ft.value} value={ft.value}>
+                <option key={ft.value} value={ft.value} style={{ backgroundColor: '#2D3748', color: 'white' }}>
                   {ft.label}
                 </option>
               ))}

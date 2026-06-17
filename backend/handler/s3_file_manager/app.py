@@ -30,15 +30,15 @@ except ImportError as e:
 # Initialize S3 client
 s3_client = boto3.client('s3')
 
+# Bucket name from environment variable (set via SAM template DataBucket parameter)
+DATA_BUCKET = os.environ.get('DATA_BUCKET_NAME', 'h-dcn-data-506221081911')
+
 def validate_bucket_access(bucket_name):
-    """Validate that the bucket is allowed for operations"""
-    # Define allowed buckets for security
-    allowed_buckets = [
-        'my-hdcn-bucket'
-    ]
-    
-    if bucket_name not in allowed_buckets:
-        raise ValueError(f'Access denied to bucket: {bucket_name}. Allowed buckets: {allowed_buckets}')
+    """Validate that the bucket is allowed for operations.
+    If bucket_name doesn't match DATA_BUCKET, override it (legacy frontend compat)."""
+    if bucket_name != DATA_BUCKET:
+        print(f"⚠️ Client requested bucket '{bucket_name}', overriding with DATA_BUCKET '{DATA_BUCKET}'")
+    return DATA_BUCKET
 
 def handle_upload(event):
     """Handle file upload to S3"""
@@ -53,8 +53,8 @@ def handle_upload(event):
         if not all([bucket_name, file_key, file_data]):
             return create_error_response(400, 'bucketName, fileKey, and fileData are required')
         
-        # Validate bucket access
-        validate_bucket_access(bucket_name)
+        # Validate bucket access (overrides to DATA_BUCKET)
+        bucket_name = validate_bucket_access(bucket_name)
         
         # Optional parameters
         content_type = request_data.get('contentType', 'application/octet-stream')
@@ -124,8 +124,8 @@ def handle_delete(event):
         if not all([bucket_name, file_key]):
             return create_error_response(400, 'bucketName and fileKey are required')
         
-        # Validate bucket access
-        validate_bucket_access(bucket_name)
+        # Validate bucket access (overrides to DATA_BUCKET)
+        bucket_name = validate_bucket_access(bucket_name)
         
         # Check if file exists first
         try:
@@ -174,8 +174,8 @@ def handle_list(event):
         if not bucket_name:
             return create_error_response(400, 'bucketName query parameter is required')
         
-        # Validate bucket access
-        validate_bucket_access(bucket_name)
+        # Validate bucket access (overrides to DATA_BUCKET)
+        bucket_name = validate_bucket_access(bucket_name)
         
         # List objects in S3
         list_params = {

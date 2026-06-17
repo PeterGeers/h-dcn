@@ -10,7 +10,6 @@ import {
   Box
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { VariantSchema } from '../types/unifiedProduct.types';
 
 interface Product {
   product_id: string;
@@ -21,22 +20,12 @@ interface Product {
   subgroep?: string;
   price?: number;
   prijs?: number | string;
-  variant_schema?: VariantSchema;
+  is_parent?: boolean;
 }
 
 interface ProductTableProps {
   products: Product[];
   onProductSelect: (product: Product) => void;
-}
-
-/** Format variant schema for display in the table */
-function formatVariantSummary(schema?: VariantSchema): string {
-  if (!schema || Object.keys(schema).length === 0) {
-    return 'Standaard';
-  }
-  return Object.entries(schema)
-    .map(([axis, values]) => `${axis}: ${values.join(', ')}`)
-    .join(' | ');
 }
 
 const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }) => {
@@ -62,11 +51,11 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
         </Thead>
         <Tbody>
           {products.map((product) => {
-            const displayName = product.name || product.naam || '';
-            const displayPrice = product.price ?? product.prijs;
+            const displayName = product.naam || '';
+            const displayPrice = product.prijs;
             return (
               <Tr
-                key={product.product_id || product.id}
+                key={product.product_id}
                 cursor="pointer"
                 _hover={{ bg: 'orange.500', color: 'white' }}
                 onClick={() => onProductSelect(product)}
@@ -86,7 +75,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
                 </Td>
                 <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
                   <Box maxW="150px">
-                    <Text noOfLines={2}>{formatVariantSummary(product.variant_schema)}</Text>
+                    <Text noOfLines={2}>{product.is_parent ? 'Varianten' : 'Standaard'}</Text>
                   </Box>
                 </Td>
               </Tr>

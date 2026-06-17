@@ -2,11 +2,12 @@
 Unit tests for the scan_product handler.
 
 Tests:
-- Unified response normalization (product_id, name, price, variant_schema, is_parent, event_id, active)
-- Fallback: naam → name, prijs → price
+- Canonical Dutch response fields (product_id, naam, artikelcode, prijs, is_parent, event_ids, active)
+- Fallback: name → naam, price → prijs (for unmigrated records)
 - Exclusion of variant records (is_parent: false)
 - Exclusion of migration source records (source: "migration")
 - Retention of records where is_parent is true or not set
+- variant_schema is NOT included in response (removed)
 """
 
 import json
@@ -93,19 +94,19 @@ def producten_table():
 
 
 class TestScanProductNormalization:
-    """Tests for response field normalization."""
+    """Tests for response field normalization — canonical Dutch fields."""
 
-    def test_returns_unified_fields(self, producten_table):
-        """Returns all required unified fields for a product."""
+    def test_returns_canonical_dutch_fields(self, producten_table):
+        """Returns all canonical Dutch fields for a product (without variant_schema)."""
         table, handler = producten_table
 
         table.put_item(Item={
             'product_id': 'uuid-001',
-            'name': 'Club T-shirt',
-            'price': 25,
-            'variant_schema': {'Maat': ['S', 'M', 'L']},
+            'naam': 'Club T-shirt',
+            'prijs': 25,
+            'artikelcode': 'CT-01',
             'is_parent': True,
-            'event_id': None,
+            'event_ids': ['evt-webshop'],
             'active': True,
         })
 
@@ -117,21 +118,22 @@ class TestScanProductNormalization:
         assert len(body) == 1
         product = body[0]
         assert product['product_id'] == 'uuid-001'
-        assert product['name'] == 'Club T-shirt'
-        assert product['price'] == 25
-        assert product['variant_schema'] == {'Maat': ['S', 'M', 'L']}
+        assert product['naam'] == 'Club T-shirt'
+        assert product['artikelcode'] == 'CT-01'
+        assert product['prijs'] == 25
+        assert 'variant_schema' not in product
         assert product['is_parent'] is True
-        assert product['event_id'] is None
+        assert product['event_ids'] == ['evt-webshop']
         assert product['active'] is True
 
-    def test_naam_fallback_for_name(self, producten_table):
-        """Uses naam as fallback when name is not present."""
+    def test_naam_fallback_from_legacy_name(self, producten_table):
+        """Uses legacy 'name' field as fallback for 'naam' when not present."""
         table, handler = producten_table
 
         table.put_item(Item={
             'product_id': 'uuid-002',
-            'naam': 'Pet H-DCN',
-            'price': 15,
+            'name': 'Pet H-DCN',
+            'prijs': 15,
             'is_parent': True,
             'active': True,
         })
@@ -141,16 +143,17 @@ class TestScanProductNormalization:
 
         body = json.loads(response['body'])
         assert len(body) == 1
-        assert body[0]['name'] == 'Pet H-DCN'
+        # Response uses canonical 'naam' field, falling back from 'name'
+        assert body[0]['naam'] == 'Pet H-DCN'
 
-    def test_prijs_fallback_for_price(self, producten_table):
-        """Uses prijs as fallback when price is not present."""
+    def test_prijs_fallback_from_legacy_price(self, producten_table):
+        """Uses legacy 'price' field as fallback for 'prijs' when not present."""
         table, handler = producten_table
 
         table.put_item(Item={
             'product_id': 'uuid-003',
-            'name': 'Sticker',
-            'prijs': 5,
+            'naam': 'Sticker',
+            'price': 5,
             'is_parent': True,
             'active': True,
         })
@@ -160,17 +163,18 @@ class TestScanProductNormalization:
 
         body = json.loads(response['body'])
         assert len(body) == 1
-        assert body[0]['price'] == 5
+        # Response uses canonical 'prijs' field, falling back from 'price'
+        assert body[0]['prijs'] == 5
 
-    def test_name_preferred_over_naam(self, producten_table):
-        """Uses name field when both name and naam are present."""
+    def test_naam_preferred_over_legacy_name(self, producten_table):
+        """Canonical 'naam' is preferred over legacy 'name' when both exist."""
         table, handler = producten_table
 
         table.put_item(Item={
             'product_id': 'uuid-004',
-            'name': 'Correct Name',
-            'naam': 'Legacy Name',
-            'price': 10,
+            'naam': 'Canonical Naam',
+            'name': 'Legacy Name',
+            'prijs': 10,
             'is_parent': True,
             'active': True,
         })
@@ -179,17 +183,17 @@ class TestScanProductNormalization:
             response = handler.lambda_handler(_make_event(), {})
 
         body = json.loads(response['body'])
-        assert body[0]['name'] == 'Correct Name'
+        assert body[0]['naam'] == 'Canonical Naam'
 
-    def test_price_preferred_over_prijs(self, producten_table):
-        """Uses price field when both price and prijs are present."""
+    def test_prijs_preferred_over_legacy_price(self, producten_table):
+        """Canonical 'prijs' is preferred over legacy 'price' when both exist."""
         table, handler = producten_table
 
         table.put_item(Item={
             'product_id': 'uuid-005',
-            'name': 'Test Product',
-            'price': 30,
+            'naam': 'Test Product',
             'prijs': 25,
+            'price': 30,
             'is_parent': True,
             'active': True,
         })
@@ -198,7 +202,91 @@ class TestScanProductNormalization:
             response = handler.lambda_handler(_make_event(), {})
 
         body = json.loads(response['body'])
-        assert body[0]['price'] == 30
+        # Canonical 'prijs' is the preferred source
+        assert body[0]['prijs'] == 25
+
+    def test_event_ids_returned_as_list(self, producten_table):
+        """event_ids is returned as a list (not the old event_id string)."""
+        table, handler = producten_table
+
+        table.put_item(Item={
+            'product_id': 'uuid-006',
+            'naam': 'Event Product',
+            'prijs': 50,
+            'is_parent': True,
+            'event_ids': ['evt-pm2027', 'evt-webshop'],
+            'active': True,
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(_make_event(), {})
+
+        body = json.loads(response['body'])
+        assert body[0]['event_ids'] == ['evt-pm2027', 'evt-webshop']
+
+
+class TestScanProductVariantSchemaRemoval:
+    """Tests verifying variant_schema is excluded from scan_product responses."""
+
+    def test_variant_schema_excluded_when_stored_on_item(self, producten_table):
+        """Even when a DynamoDB item has variant_schema stored, it is NOT in the response."""
+        table, handler = producten_table
+
+        # Store a product WITH variant_schema in DynamoDB (legacy data)
+        table.put_item(Item={
+            'product_id': 'uuid-schema-001',
+            'naam': 'Product met Schema',
+            'prijs': 30,
+            'artikelcode': 'PS-01',
+            'is_parent': True,
+            'active': True,
+            'variant_schema': {'Maat': ['S', 'M', 'L'], 'Kleur': ['Rood', 'Blauw']},
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(_make_event(), {})
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert len(body) == 1
+        product = body[0]
+        assert product['product_id'] == 'uuid-schema-001'
+        assert product['naam'] == 'Product met Schema'
+        # variant_schema must NOT appear in the response
+        assert 'variant_schema' not in product
+
+    def test_variant_schema_excluded_for_multiple_products(self, producten_table):
+        """variant_schema is excluded from ALL products in a multi-product response."""
+        table, handler = producten_table
+
+        # Product with variant_schema
+        table.put_item(Item={
+            'product_id': 'uuid-multi-001',
+            'naam': 'Product A',
+            'prijs': 10,
+            'is_parent': True,
+            'active': True,
+            'variant_schema': {'Maat': ['S', 'M']},
+        })
+
+        # Product without variant_schema
+        table.put_item(Item={
+            'product_id': 'uuid-multi-002',
+            'naam': 'Product B',
+            'prijs': 20,
+            'is_parent': True,
+            'active': True,
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(_make_event(), {})
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert len(body) == 2
+
+        for product in body:
+            assert 'variant_schema' not in product
 
 
 class TestScanProductFiltering:
@@ -210,16 +298,16 @@ class TestScanProductFiltering:
 
         table.put_item(Item={
             'product_id': 'parent-001',
-            'name': 'T-shirt',
-            'price': 25,
+            'naam': 'T-shirt',
+            'prijs': 25,
             'is_parent': True,
             'active': True,
         })
 
         table.put_item(Item={
             'product_id': 'variant-001',
-            'name': 'T-shirt - L',
-            'price': 25,
+            'naam': 'T-shirt - L',
+            'prijs': 25,
             'is_parent': False,
             'parent_id': 'parent-001',
         })
@@ -237,16 +325,16 @@ class TestScanProductFiltering:
 
         table.put_item(Item={
             'product_id': 'normal-001',
-            'name': 'Normal Product',
-            'price': 10,
+            'naam': 'Normal Product',
+            'prijs': 10,
             'is_parent': True,
             'active': True,
         })
 
         table.put_item(Item={
             'product_id': 'migration-001',
-            'name': 'Migrated Record',
-            'price': 15,
+            'naam': 'Migrated Record',
+            'prijs': 15,
             'is_parent': True,
             'source': 'migration',
         })
@@ -275,5 +363,5 @@ class TestScanProductFiltering:
         body = json.loads(response['body'])
         assert len(body) == 1
         assert body[0]['product_id'] == 'legacy-001'
-        assert body[0]['name'] == 'Legacy Product'
-        assert body[0]['price'] == 20
+        assert body[0]['naam'] == 'Legacy Product'
+        assert body[0]['prijs'] == 20

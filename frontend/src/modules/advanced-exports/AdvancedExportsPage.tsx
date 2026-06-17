@@ -4,7 +4,7 @@ import { scanProducts } from '../products/api/productApi';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
-import { formatVariantSchemaForCsv } from './formatVariantSchema';
+import { formatPrice } from '../../utils/formatPrice';
 
 interface User {
   attributes?: {
@@ -55,19 +55,17 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
   }, [hasAdvancedAccess]);
 
   const handleBulkProductOperations = () => {
-    const activeProducts = products.filter(p => (p.price || p.prijs) > 0);
+    const activeProducts = products.filter(p => parseFloat(String(p.prijs || 0)) > 0);
     
     // Create CSV export
     const csvHeaders = ['ID', 'Naam', 'Groep', 'Subgroep', 'Prijs', 'Varianten'];
     const csvData = activeProducts.map(p => [
-      p.product_id || p.id,
-      p.naam || p.name,
-      p.groep || p.category,
+      p.product_id,
+      p.naam || '',
+      p.groep || '',
       p.subgroep || '',
-      p.prijs || p.price,
-      p.variant_schema
-        ? formatVariantSchemaForCsv(p.variant_schema)
-        : 'Standaard'
+      p.prijs || '',
+      p.is_parent ? 'Varianten' : 'Standaard'
     ]);
     
     const csvContent = [csvHeaders, ...csvData]
@@ -91,12 +89,12 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
   const handleInventoryManagement = () => {
     // Create inventory report
     const inventoryData = products.map(p => ({
-      id: p.id,
-      naam: p.naam || p.name,
-      groep: p.groep || p.category,
+      product_id: p.product_id,
+      naam: p.naam || '',
+      groep: p.groep || '',
       subgroep: p.subgroep || '',
-      prijs: p.prijs || p.price,
-      status: (p.prijs || p.price) > 0 ? 'Actief' : 'Inactief'
+      prijs: p.prijs || '',
+      status: parseFloat(String(p.prijs || 0)) > 0 ? 'Actief' : 'Inactief'
     }));
     
     const jsonContent = JSON.stringify(inventoryData, null, 2);
@@ -118,16 +116,16 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
   const handleProductAnalytics = () => {
     const productStats = {
       totaal: products.length,
-      actief: products.filter(p => (p.prijs || p.price) > 0).length,
-      inactief: products.filter(p => (p.prijs || p.price) <= 0).length,
-      categorieën: [...new Set(products.map(p => p.groep || p.category))].filter(Boolean).length,
+      actief: products.filter(p => parseFloat(String(p.prijs || 0)) > 0).length,
+      inactief: products.filter(p => parseFloat(String(p.prijs || 0)) <= 0).length,
+      categorieën: [...new Set(products.map(p => p.groep))].filter(Boolean).length,
       gemiddeldePrijs: products.length > 0 
-        ? products.reduce((sum, p) => sum + (parseFloat(String(p.prijs || p.price)) || 0), 0) / products.length 
+        ? products.reduce((sum, p) => sum + (parseFloat(String(p.prijs)) || 0), 0) / products.length 
         : 0,
-      hoogstePrijs: Math.max(...products.map(p => parseFloat(String(p.prijs || p.price)) || 0)),
-      laagstePrijs: Math.min(...products.filter(p => (p.prijs || p.price) > 0).map(p => parseFloat(String(p.prijs || p.price)) || 0)),
+      hoogstePrijs: Math.max(...products.map(p => parseFloat(String(p.prijs)) || 0)),
+      laagstePrijs: Math.min(...products.filter(p => parseFloat(String(p.prijs || 0)) > 0).map(p => parseFloat(String(p.prijs)) || 0)),
       categorieVerdeling: products.reduce((acc, p) => {
-        const cat = p.groep || p.category || 'Onbekend';
+        const cat = p.groep || 'Onbekend';
         acc[cat] = (acc[cat] || 0) + 1;
         return acc;
       }, {} as Record<string, number>)
@@ -152,9 +150,9 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
           `Actief: ${productStats.actief}\n` +
           `Inactief: ${productStats.inactief}\n` +
           `Categorieën: ${productStats.categorieën}\n` +
-          `Gemiddelde prijs: €${productStats.gemiddeldePrijs.toFixed(2)}\n` +
-          `Hoogste prijs: €${productStats.hoogstePrijs.toFixed(2)}\n` +
-          `Laagste prijs: €${productStats.laagstePrijs.toFixed(2)}\n\n` +
+          `Gemiddelde prijs: ${formatPrice(productStats.gemiddeldePrijs)}\n` +
+          `Hoogste prijs: ${formatPrice(productStats.hoogstePrijs)}\n` +
+          `Laagste prijs: ${formatPrice(productStats.laagstePrijs)}\n\n` +
           `Gedetailleerd rapport gedownload.`);
   };
 

@@ -1,11 +1,15 @@
 # pytest configuration for H-DCN Dashboard backend tests
 
+import logging
 import pytest
 import boto3
 from moto import mock_aws
 import os
 import sys
 import importlib
+
+# Suppress noisy botocore/moto debug logs during tests
+logging.getLogger('botocore').setLevel(logging.WARNING)
 
 # Ensure the auth layer path is available for all tests, so that
 # handlers importing from `shared.event_validation` (etc.) can resolve correctly.

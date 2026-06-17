@@ -2,9 +2,8 @@
 Unit tests for the admin_create_product handler.
 
 Tests the modified handler that supports:
-- variant_schema, order_item_fields, purchase_rules fields
-- Variant generation from variant_schema
-- Default_Variant creation when no variant_schema
+- order_item_fields, purchase_rules fields
+- Default_Variant creation (variant_schema no longer triggers sync)
 - groep, subgroep, images catalog fields
 """
 
@@ -120,8 +119,8 @@ def test_create_simple_product_with_default_variant(producten_table):
     assert body['variants'][0]['variant_attributes'] == {}
 
 
-def test_create_product_with_variant_schema(producten_table):
-    """Product with variant_schema generates correct number of variants via sync."""
+def test_create_product_with_variant_schema_ignored(producten_table):
+    """variant_schema in request body is ignored; only Default_Variant is created."""
     import app as handler_module
 
     event = _make_event({
@@ -139,11 +138,9 @@ def test_create_product_with_variant_schema(producten_table):
 
     body = json.loads(response['body'])
     assert response['statusCode'] == 200
-    # 3 sizes * 2 genders = 6 variants
-    assert body['variant_count'] == 6
-    assert body['variant_sync']['created'] == 6
-    assert body['variant_sync']['preserved'] == 0
-    assert body['variant_sync']['deactivated'] == 0
+    # variant_schema no longer triggers sync — only Default_Variant is created
+    assert body['variant_count'] == 1
+    assert 'variant_sync' not in body
 
 
 def test_create_product_with_order_item_fields(producten_table):
@@ -224,22 +221,25 @@ def test_create_product_with_catalog_fields(producten_table):
     assert len(product['images']) == 2
 
 
-def test_invalid_variant_schema_rejected(producten_table):
-    """Invalid variant_schema returns 400 with structured errors."""
+def test_variant_schema_in_body_ignored(producten_table):
+    """variant_schema in request body is silently ignored (no validation, no storage)."""
     import app as handler_module
 
     event = _make_event({
         'name': 'Bad Product',
         'price': 10,
-        'variant_schema': {'Maat': []}  # empty axis values
+        'variant_schema': {'Maat': []}  # previously invalid, now just ignored
     })
 
     with _auth_patches():
         response = handler_module.lambda_handler(event, {})
 
-    assert response['statusCode'] == 400
+    # No longer validated — product is created with Default_Variant
+    assert response['statusCode'] == 200
     body = json.loads(response['body'])
-    assert 'errors' in body
+    assert body['variant_count'] == 1
+    # variant_schema not stored on the product record
+    assert 'variant_schema' not in body['product']
 
 
 def test_invalid_purchase_rules_rejected(producten_table):
@@ -275,14 +275,13 @@ def test_invalid_images_rejected(producten_table):
 
 
 def test_all_three_fields_together(producten_table):
-    """Product with all three new fields plus catalog fields works."""
+    """Product with order_item_fields, purchase_rules plus catalog fields works."""
     import app as handler_module
 
     event = _make_event({
         'name': 'PresMeet Full Product',
         'price': 75,
         'event_id': 'evt-presmeet-2025',
-        'variant_schema': {'Gender': ['Male', 'Female']},
         'order_item_fields': [
             {'id': 'name', 'label': 'Name', 'type': 'text', 'required': True}
         ],
@@ -300,10 +299,10 @@ def test_all_three_fields_together(producten_table):
 
     body = json.loads(response['body'])
     assert response['statusCode'] == 200
-    assert body['variant_count'] == 2
-    assert body['variant_sync']['created'] == 2
+    # Default_Variant created (no variant_schema sync)
+    assert body['variant_count'] == 1
     product = body['product']
-    assert product['variant_schema'] == {'Gender': ['Male', 'Female']}
+    assert 'variant_schema' not in product
     assert product['order_item_fields'][0]['id'] == 'name'
     assert product['purchase_rules']['order_mode'] == 'persistent'
     assert product['groep'] == 'Events'

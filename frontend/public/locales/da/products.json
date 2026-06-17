@@ -21,7 +21,9 @@
     "quantity": "Antal",
     "price_label": "Pris:",
     "no_image": "Intet billede tilgængeligt",
-    "back": "Tilbage"
+    "back": "Tilbage",
+    "variant_fetch_error": "Varianter kunne ikke indlæses",
+    "sold_out": "Udsolgt"
   },
   "card_modal": {
     "select_option_desc": "Vælg en størrelse/mulighed for dette produkt"
@@ -52,5 +54,40 @@
     "inactive_badge": "Inaktiv",
     "confirm": "Bekræft",
     "cancel": "Annuller"
+  },
+  "variant_modal": {
+    "add_title": "Tilføj variant",
+    "edit_title": "Rediger variant",
+    "axis_name_label": "Aksenavn",
+    "axis_name_placeholder": "F.eks. Størrelse, Farve...",
+    "axis_select_placeholder": "Vælg en akse...",
+    "axis_new_option": "Ny...",
+    "axis_new_placeholder": "Nyt aksenavn...",
+    "value_label": "Værdi",
+    "value_placeholder": "F.eks. S, Rød, 42...",
+    "existing_values": "Eksisterende værdier for \"{{axis}}\":",
+    "attributes_label": "Attributter",
+    "stock_label": "Lager",
+    "sold_label": "Solgt",
+    "price_label": "Pris (tom = arver €{{price}} fra produkt)",
+    "oversell_label": "Tillad oversalg",
+    "active_label": "Aktiv",
+    "not_found": "Variant ikke fundet.",
+    "btn_create": "Opret",
+    "btn_create_loading": "Opretter...",
+    "btn_save": "Gem",
+    "btn_save_loading": "Gemmer...",
+    "btn_cancel": "Annuller",
+    "toast_fields_required": "Felter påkrævet",
+    "toast_fields_required_desc": "Indtast et aksenavn og en værdi.",
+    "toast_created": "Variant oprettet",
+    "toast_created_desc": "Variant \"{{axis}}: {{value}}\" er oprettet.",
+    "toast_duplicate": "Variant findes allerede",
+    "toast_duplicate_desc": "En variant med disse attributter findes allerede.",
+    "toast_create_error": "Fejl ved oprettelse",
+    "toast_updated": "Variant opdateret",
+    "toast_invalid_price": "Ugyldig pris",
+    "toast_save_error": "Fejl ved lagring",
+    "toast_unknown_error": "Ukendt fejl"
   }
 }

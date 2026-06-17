@@ -2,6 +2,7 @@ import json
 import os
 import boto3
 from datetime import datetime, timezone
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -27,7 +28,7 @@ table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
 table = dynamodb.Table(table_name)
 
 # Fields allowed to be updated on a variant
-UPDATABLE_VARIANT_FIELDS = ['stock', 'allow_oversell', 'price', 'name', 'active']
+UPDATABLE_VARIANT_FIELDS = ['stock', 'allow_oversell', 'prijs', 'naam', 'active']
 
 
 def lambda_handler(event, context):
@@ -71,18 +72,25 @@ def lambda_handler(event, context):
 
         # Build update expression
         update_parts = []
+        remove_parts = []
         expression_values = {}
         expression_names = {}
 
         for field in UPDATABLE_VARIANT_FIELDS:
             if field in body:
-                attr_name = f'#{field}'
-                attr_val = f':{field}'
-                update_parts.append(f'{attr_name} = {attr_val}')
-                expression_names[attr_name] = field
-                expression_values[attr_val] = body[field]
+                if body[field] is None:
+                    # Remove the attribute when value is null
+                    attr_name = f'#{field}'
+                    remove_parts.append(attr_name)
+                    expression_names[attr_name] = field
+                else:
+                    attr_name = f'#{field}'
+                    attr_val = f':{field}'
+                    update_parts.append(f'{attr_name} = {attr_val}')
+                    expression_names[attr_name] = field
+                    expression_values[attr_val] = body[field]
 
-        if not update_parts:
+        if not update_parts and not remove_parts:
             return create_error_response(400, 'No updatable fields provided')
 
         # Always update updated_at
@@ -91,6 +99,8 @@ def lambda_handler(event, context):
         expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
 
         update_expression = 'SET ' + ', '.join(update_parts)
+        if remove_parts:
+            update_expression += ' REMOVE ' + ', '.join(remove_parts)
 
         updated = table.update_item(
             Key={'product_id': variant_id},
@@ -101,7 +111,7 @@ def lambda_handler(event, context):
         )
 
         return create_success_response({
-            'variant': updated.get('Attributes', {}),
+            'variant': json.loads(json.dumps(updated.get('Attributes', {}), default=str)),
             'message': 'Variant updated successfully'
         })
 

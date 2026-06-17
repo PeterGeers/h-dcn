@@ -13,7 +13,7 @@ import OrderSuccess from './components/OrderSuccess';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService, memberService, orderService } from './services/api';
 import { ApiService } from '../../services/apiService';
-import { VariantSchema } from './types/unifiedProduct.types';
+import { formatPrice } from '../../utils/formatPrice';
 
 interface User {
   attributes?: {
@@ -36,7 +36,6 @@ interface Product {
   price?: number;
   prijs?: number | string;
   images?: string[];
-  variant_schema?: VariantSchema;
   is_parent?: boolean;
   event_id?: string | null;
   active?: boolean;
@@ -138,9 +137,12 @@ function WebshopPage({ user }: WebshopPageProps) {
     try {
       const response = await productService.scanProducts();
       const allProducts: Product[] = response.data || [];
-      // Filter to show only webshop products (event_id is null/undefined)
+      // Filter to show only products linked to the webshop event
       const webshopProducts = allProducts.filter(
-        (p: Product) => p.event_id === null || p.event_id === undefined
+        (p: any) => {
+          const eventIds = p.event_ids || [];
+          return eventIds.includes('evt-webshop');
+        }
       );
       setProducts(webshopProducts);
     } catch (error) {
@@ -152,7 +154,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           subgroep: 'T-shirts',
           prijs: 25.00,
           images: [],
-          variant_schema: { 'Maat': ['S', 'M', 'L', 'XL'] },
           is_parent: true,
           event_id: null,
           active: true,
@@ -164,7 +165,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           subgroep: 'Hoodies',
           prijs: 45.00,
           images: [],
-          variant_schema: { 'Maat': ['S', 'M', 'L', 'XL'] },
           is_parent: true,
           event_id: null,
           active: true,
@@ -672,7 +672,7 @@ function WebshopPage({ user }: WebshopPageProps) {
                 delivery_option: paymentData.deliveryOption || null,
                 items: cartItems.map(item => ({
                   name: item.name,
-                  price: Number(item.price || 0).toFixed(2),
+                  price: formatPrice(item.price),
                   product_id: item.product_id,
                   variant_id: item.variant_id,
                   quantity: item.quantity,

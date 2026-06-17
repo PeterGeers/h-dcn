@@ -94,7 +94,7 @@ def create_default_variant(
         "name": "Default Variant",
         "is_parent": False,
         "variant_attributes": {},
-        "price": None,
+        "prijs": None,
         "stock": 0,
         "sold_count": 0,
         "allow_oversell": False,

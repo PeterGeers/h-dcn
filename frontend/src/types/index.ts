@@ -94,23 +94,28 @@ export interface Member {
   aanmeldingsjaar?: number | null;
 }
 
-/** Maps axis names to their possible values (e.g., {"Maat": ["S","M","L","XL"]}) */
-export type VariantSchema = Record<string, string[]>;
-
 export interface Product {
   product_id: string;
-  id?: string; // backward compat (legacy references)
-  name?: string;
-  naam?: string; // backward compat
-  price?: number;
-  prijs?: string | number; // backward compat
-  category?: string;
-  groep?: string; // backward compat
-  subgroep?: string; // backward compat
-  variant_schema?: VariantSchema;
+  id?: string; // alias used for React keys and legacy article codes
+  naam?: string;
+  prijs?: string | number;
+  artikelcode?: string;
+  groep?: string;
+  subgroep?: string;
+  images?: string[];
+  event_ids?: string[];
   is_parent?: boolean;
-  event_id?: string | null;
   active?: boolean;
+  order_item_fields?: any[];
+  purchase_rules?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+  // Variant-specific fields
+  parent_id?: string;
+  variant_attributes?: Record<string, string>;
+  stock?: number;
+  sold_count?: number;
+  allow_oversell?: boolean;
 }
 
 export interface Event {
@@ -135,6 +140,15 @@ export interface Event {
   opmerkingen?: string;
   betaalstatus?: string;
   factuurnummer?: string;
+  landing_page?: {
+    enabled: boolean;
+    slug: string;
+    hero_image_url: string;
+    tagline: string;
+    registration_label: string;
+    logos: Array<{ name: string; logo_url: string }>;
+    sections: Array<{ type: string; title: string; content?: string; items?: Array<{ name: string; logo_url: string }> }>;
+  };
 }
 
 export interface ApiResponse<T> {

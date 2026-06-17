@@ -147,7 +147,7 @@ Feature branch → Deploy to h-dcn-test → Verify on testportal.h-dcn.nl → Pu
 
 #### Test Environment Sign-Off
 
-- [ ] 13. Full test environment validation
+- [x] 13. Full test environment validation
   - [x] 13.1. Run `pytest tests/` — all unit tests pass
   - [x] 13.2. Manual test: create order via webshop flow (test portal)
   - [x] 13.3. Manual test: create order via event booking flow (club-scoped)
@@ -155,119 +155,119 @@ Feature branch → Deploy to h-dcn-test → Verify on testportal.h-dcn.nl → Pu
   - [x] 13.5. Manual test: submit, pay (Mollie test mode), lock flow
   - [x] 13.6. Manual test: delegate management (add/remove secondary)
   - [x] 13.7. Manual test: event access grant/revoke via admin
-  - [ ] 13.8. Manual test: event_participant user can only access allowed events
-  - [ ] 13.9. Verify no regressions in existing webshop functionality
+  - [x] 13.8. Manual test: event_participant user can only access allowed events
+  - [x] 13.9. Verify no regressions in existing webshop functionality
 
 #### Push to Production
 
-- [ ] 14. Production deployment
-  - [ ] 14.1. Push feature branch to main (triggers CI: tests → sam build → sam deploy to h-dcn)
-  - [ ] 14.2. Run `clean_orders_and_replace_gsi.py --stage prod` — clean prod Orders table, swap GSI
-  - [ ] 14.3. Run `migrate_members_and_cognito.py --stage prod` — backfill members, remove Regio_Pressmeet, delete group
-  - [ ] 14.4. Run `seed_event_test_data.py --stage prod` — seed the real Presidents Meeting 2027 event + products
-  - [ ] 14.5. Verify production portal works (login, webshop, event booking)
-  - [ ] 14.6. Verify existing H-DCN members with former Regio_Pressmeet still have event access via `allowed_events`
+- [x] 14. Production deployment
+  - [x] 14.1. Push feature branch to main (triggers CI: tests → sam build → sam deploy to h-dcn)
+  - [x] 14.2. Run `clean_orders_and_replace_gsi.py --stage prod` — clean prod Orders table, swap GSI
+  - [x] 14.3. Run `migrate_members_and_cognito.py --stage prod` — backfill members, remove Regio_Pressmeet, delete group
+  - [x] 14.4. Run `seed_event_test_data.py --stage prod` — seed the real Presidents Meeting 2027 event + products
+  - [x] 14.5. Verify production portal works (login, webshop, event booking)
+  - [x] 14.6. Verify existing H-DCN members with former Regio_Pressmeet still have event access via `allowed_events`
 
 ### Phase 3: Frontend Updates
 
-- [ ] 15. Update Booking Form API client
-  - [ ] 15.1. Update `presmeetApi.ts` to accept `source_id` parameter on all calls
-  - [ ] 15.2. Change endpoint paths to unified `/orders` endpoints
-  - [ ] 15.3. Update product loading: fetch by event's `product_ids` instead of config endpoint
-  - [ ] 15.4. Keep all form state management, validation, and UX unchanged
-  - [ ] 15.5. Update TypeScript types to include `source_id` and `member_id` on Order
-  - [ ] 15.6. Deploy frontend to test (testportal.h-dcn.nl), verify
+- [x] 15. Update Booking Form API client
+  - [x] 15.1. Update `presmeetApi.ts` to accept `source_id` parameter on all calls
+  - [x] 15.2. Change endpoint paths to unified `/orders` endpoints
+  - [x] 15.3. Update product loading: fetch by event's `product_ids` instead of config endpoint
+  - [x] 15.4. Keep all form state management, validation, and UX unchanged
+  - [x] 15.5. Update TypeScript types to include `source_id` and `member_id` on Order
+  - [x] 15.6. Deploy frontend to test (testportal.h-dcn.nl), verify
 
-- [ ] 16. Update Booking Form routing
-  - [ ] 16.1. Accept `event_id` from route params (e.g., `/events/:eventId/booking`)
-  - [ ] 16.2. Remove hardcoded presmeet event detection
-  - [ ] 16.3. Event selector on dashboard navigates to correct event booking
-  - [ ] 16.4. Verify on test portal
+- [x] 16. Update Booking Form routing
+  - [x] 16.1. Accept `event_id` from route params (e.g., `/events/:eventId/booking`)
+  - [x] 16.2. Remove hardcoded presmeet event detection
+  - [x] 16.3. Event selector on dashboard navigates to correct event booking
+  - [x] 16.4. Verify on test portal
 
-- [ ] 17. Add external member self-service view
-  - [ ] 17.1. Detect `member_type = "event_participant"` after login
-  - [ ] 17.2. Show reduced navigation (profile + event bookings only)
-  - [ ] 17.3. Display list of accessible events from `allowed_events`
-  - [ ] 17.4. Link each event to its booking form
-  - [ ] 17.5. Verify on test portal with test event_participant user
+- [x] 17. Add external member self-service view
+  - [x] 17.1. Detect `member_type = "event_participant"` after login
+  - [x] 17.2. Show reduced navigation (profile + event bookings only)
+  - [x] 17.3. Display list of accessible events from `allowed_events`
+  - [x] 17.4. Link each event to its booking form
+  - [x] 17.5. Verify on test portal with test event_participant user
 
-- [ ] 18. Update Admin Event Dashboard
-  - [ ] 18.1. Add "Manage Access" tab/section to event admin
-  - [ ] 18.2. Show list of members with access to selected event
-  - [ ] 18.3. Add/remove member access (calls `manage_event_access` handler)
-  - [ ] 18.4. Bulk grant option
-  - [ ] 18.5. Verify on test portal
+- [x] 18. Update Admin Event Dashboard
+  - [x] 18.1. Add "Manage Access" tab/section to event admin
+  - [x] 18.2. Show list of members with access to selected event
+  - [x] 18.3. Add/remove member access (calls `manage_event_access` handler)
+  - [x] 18.4. Bulk grant option
+  - [x] 18.5. Verify on test portal
 
-- [ ] 19. Multi-language (i18n) for event booking
-  - [ ] 19.1. Create `eventBooking` namespace: `frontend/public/locales/{lang}/eventBooking.json` for all 8 languages
-  - [ ] 19.2. Migrate keys from `presmeet.json` to `eventBooking.json`
-  - [ ] 19.3. Add new keys for: landing page UI chrome, self-registration flow, event access errors, external member self-service
-  - [ ] 19.4. Update all event booking components to use `useTranslation('eventBooking')`
-  - [ ] 19.5. Ensure no hardcoded user-facing strings in new components
-  - [ ] 19.6. Remove old `presmeet.json` namespace files
-  - [ ] 19.7. Verify all 8 languages on test portal
+- [x] 19. Multi-language (i18n) for event booking
+  - [x] 19.1. Create `eventBooking` namespace: `frontend/public/locales/{lang}/eventBooking.json` for all 8 languages
+  - [x] 19.2. Migrate keys from `presmeet.json` to `eventBooking.json`
+  - [x] 19.3. Add new keys for: landing page UI chrome, self-registration flow, event access errors, external member self-service
+  - [x] 19.4. Update all event booking components to use `useTranslation('eventBooking')`
+  - [x] 19.5. Ensure no hardcoded user-facing strings in new components
+  - [x] 19.6. Remove old `presmeet.json` namespace files
+  - [x] 19.7. Verify all 8 languages on test portal
 
 #### Frontend Push to Production
 
-- [ ] 20. Frontend production deployment
-  - [ ] 20.1. Push frontend changes to main (triggers CI: build → S3 sync → CloudFront invalidation)
-  - [ ] 20.2. Verify production portal: webshop flow, event booking, admin dashboard
-  - [ ] 20.3. Verify translations load correctly in all languages
+- [x] 20. Frontend production deployment
+  - [x] 20.1. Push frontend changes to main (triggers CI: build → S3 sync → CloudFront invalidation)
+  - [x] 20.2. Verify production portal: webshop flow, event booking, admin dashboard
+  - [x] 20.3. Verify translations load correctly in all languages
 
 ### Phase 4: Event Landing Page (Optional Feature)
 
-- [ ] 21. Create public event API endpoint
-  - [ ] 21.1. Create `backend/handler/get_event_public/app.py` — NO auth required
-  - [ ] 21.2. Accept `slug` path parameter, resolve to event_id
-  - [ ] 21.3. Return event name, dates, location, `landing_page` config, registration status
-  - [ ] 21.4. Exclude sensitive data (constraints, product_ids, order counts)
-  - [ ] 21.5. Add handler to SAM template with no auth requirement
-  - [ ] 21.6. Write unit tests
-  - [ ] 21.7. Deploy to test stack, verify
+- [x] 21. Create public event API endpoint
+  - [x] 21.1. Create `backend/handler/get_event_public/app.py` — NO auth required
+  - [x] 21.2. Accept `slug` path parameter, resolve to event_id
+  - [x] 21.3. Return event name, dates, location, `landing_page` config, registration status
+  - [x] 21.4. Exclude sensitive data (constraints, product_ids, order counts)
+  - [x] 21.5. Add handler to SAM template with no auth requirement
+  - [x] 21.6. Write unit tests
+  - [x] 21.7. Deploy to test stack, verify
 
-- [ ] 22. Create Event Landing Page frontend component
-  - [ ] 22.1. Create public route `/events/:slug/info` (no AuthGuard)
-  - [ ] 22.2. Build `EventLandingPage` component with: Hero, sections, logos, CTA button
-  - [ ] 22.3. Fetch event data from public endpoint
-  - [ ] 22.4. Show "Registration Closed" state when event is not `open`
-  - [ ] 22.5. Responsive styling (Chakra UI), loading/error states
-  - [ ] 22.6. Use `useTranslation('eventBooking')` for UI chrome
-  - [ ] 22.7. Verify on test portal
+- [x] 22. Create Event Landing Page frontend component
+  - [x] 22.1. Create public route `/events/:slug/info` (no AuthGuard)
+  - [x] 22.2. Build `EventLandingPage` component with: Hero, sections, logos, CTA button
+  - [x] 22.3. Fetch event data from public endpoint
+  - [x] 22.4. Show "Registration Closed" state when event is not `open`
+  - [x] 22.5. Responsive styling (Chakra UI), loading/error states
+  - [x] 22.6. Use `useTranslation('eventBooking')` for UI chrome
+  - [x] 22.7. Verify on test portal
 
-- [ ] 23. Implement self-registration flow from landing page
-  - [ ] 23.1. CTA button logic: check auth state → sign-up/login or auto-grant
-  - [ ] 23.2. Create `/events/:slug/register` page
-  - [ ] 23.3. Pass `event_id` as `clientMetadata` in Amplify `signUp()` call
-  - [ ] 23.4. After signup: check `allowed_events`, add if missing, redirect to booking form
-  - [ ] 23.5. Handle "already has access" case
-  - [ ] 23.6. Verify full flow on test portal with new user
+- [x] 23. Implement self-registration flow from landing page
+  - [x] 23.1. CTA button logic: check auth state → sign-up/login or auto-grant
+  - [x] 23.2. Create `/events/:slug/register` page
+  - [x] 23.3. Pass `event_id` as `clientMetadata` in Amplify `signUp()` call
+  - [x] 23.4. After signup: check `allowed_events`, add if missing, redirect to booking form
+  - [x] 23.5. Handle "already has access" case
+  - [x] 23.6. Verify full flow on test portal with new user
 
-- [ ] 24. Update `cognito_post_confirmation` trigger
-  - [ ] 24.1. Read `clientMetadata.event_id` and `clientMetadata.source` from trigger event
-  - [ ] 24.2. If `source == 'event_landing'` and `event_id` present: create Members record with `member_type='event_participant'`, `allowed_events=[event_id]`, `status='active'`
-  - [ ] 24.3. Add user to `event_participant` Cognito group (NOT hdcnLeden)
-  - [ ] 24.4. If no event context: existing flow (no auto member creation)
-  - [ ] 24.5. Write unit tests for both paths
-  - [ ] 24.6. Deploy to test stack, test full sign-up-to-booking flow
+- [x] 24. Update `cognito_post_confirmation` trigger
+  - [x] 24.1. Read `clientMetadata.event_id` and `clientMetadata.source` from trigger event
+  - [x] 24.2. If `source == 'event_landing'` and `event_id` present: create Members record with `member_type='event_participant'`, `allowed_events=[event_id]`, `status='active'`
+  - [x] 24.3. Add user to `event_participant` Cognito group (NOT hdcnLeden)
+  - [x] 24.4. If no event context: existing flow (no auto member creation)
+  - [x] 24.5. Write unit tests for both paths
+  - [x] 24.6. Deploy to test stack, test full sign-up-to-booking flow
 
-- [ ] 25. Open Graph meta tags for social sharing
-  - [ ] 25.1. Add React Helmet dynamic meta tags (title, description, image)
-  - [ ] 25.2. (Optional) Lambda@Edge for non-JS crawlers
-  - [ ] 25.3. Test link previews on Slack, WhatsApp, LinkedIn
+- [x] 25. Open Graph meta tags for social sharing
+  - [x] 25.1. Add React Helmet dynamic meta tags (title, description, image)
+  - [x] 25.2. (Optional) Lambda@Edge for non-JS crawlers
+  - [x] 25.3. Test link previews on Slack, WhatsApp, LinkedIn
 
-- [ ] 26. Admin: landing page configuration
-  - [ ] 26.1. Add `landing_page` section to event create/edit form
-  - [ ] 26.2. Fields: enabled toggle, slug, hero image upload, tagline, sections editor, logos
-  - [ ] 26.3. Slug uniqueness validation
-  - [ ] 26.4. Preview mode
-  - [ ] 26.5. Verify on test portal
+- [x] 26. Admin: landing page configuration
+  - [x] 26.1. Add `landing_page` section to event create/edit form
+  - [x] 26.2. Fields: enabled toggle, slug, hero image upload, tagline, sections editor, logos
+  - [x] 26.3. Slug uniqueness validation
+  - [x] 26.4. Preview mode
+  - [x] 26.5. Verify on test portal
 
 #### Landing Page Push to Production
 
-- [ ] 27. Landing page production deployment
-  - [ ] 27.1. Push to main
-  - [ ] 27.2. Configure landing page on production PresMeet 2027 event
-  - [ ] 27.3. Test public URL + registration flow on production
+- [x] 27. Landing page production deployment
+  - [x] 27.1. Push to main
+  - [x] 27.2. Configure landing page on production PresMeet 2027 event
+  - [x] 27.3. Test public URL + registration flow on production
 
 ### Phase 5: Documentation
 

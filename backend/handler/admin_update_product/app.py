@@ -17,19 +17,10 @@ try:
     )
     from shared.product_validation import (
         validate_product,
-        validate_variant_schema,
         validate_order_item_fields,
         validate_purchase_rules
     )
-    from shared.variant_helpers import (
-        generate_variant_combinations,
-        create_default_variant
-    )
-    from shared.variant_sync import (
-        sync_schema_to_variants,
-        sync_variant_to_schema,
-        MaxCombinationsExceeded
-    )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -42,12 +33,27 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
 table = dynamodb.Table(table_name)
 
-# Fields allowed to be updated on a product
+# Fields allowed to be updated on a product.
+# Derived from the productFields registry (frontend/src/config/productFields/fields.ts).
+# Only fields where editable !== false are included.
+# See: docs/decisions/dutch-field-names.md
 UPDATABLE_FIELDS = [
-    'name', 'description', 'category', 'price', 'active',
-    'min_per_club', 'max_per_club', 'required_attributes',
-    'image_url', 'event_id', 'groep', 'subgroep', 'images',
-    'order_item_fields', 'purchase_rules'
+    # identity
+    'naam',
+    'artikelcode',
+    # pricing
+    'prijs',
+    # categorization
+    'groep',
+    'subgroep',
+    'event_ids',
+    # media
+    'images',
+    # metadata
+    'active',
+    # ordering
+    'order_item_fields',
+    'purchase_rules',
 ]
 
 
@@ -96,18 +102,25 @@ def lambda_handler(event, context):
             return create_error_response(404, 'Product not found')
 
         existing = response['Item']
-        if not existing.get('is_parent', False):
+        # Block updates only for explicit variants (is_parent=False).
+        # Products without is_parent set are regular products, not variants.
+        if existing.get('is_parent') is False:
             return create_error_response(
                 400,
                 'Cannot update a variant with this endpoint. Use the variant update endpoint.'
             )
 
-        # Detect variant action (bottom-up: add/remove variant)
-        variant_action = body.pop('variant_action', None)
-        variant_attributes = body.pop('variant_attributes', None)
+        # Reject variant_schema if included in request body (field is removed)
+        if 'variant_schema' in body:
+            return create_error_response(400, 'variant_schema field is no longer supported')
 
-        # Determine if variant_schema is being changed (top-down)
-        variant_schema_changed = _has_variant_schema_changed(body, existing)
+        # Validate price field if provided
+        if 'prijs' in body:
+            price_val, price_err = validate_price_field(body['prijs'], 'prijs')
+            if price_err:
+                return create_error_response(400, price_err)
+            if price_val is not None:
+                body['prijs'] = price_val
 
         # Build update expression for simple fields
         update_parts = []
@@ -122,73 +135,30 @@ def lambda_handler(event, context):
                 expression_names[attr_name] = field
                 expression_values[attr_val] = body[field]
 
-        # Handle variant_schema field separately (not in UPDATABLE_FIELDS)
-        if 'variant_schema' in body:
-            update_parts.append('#variant_schema = :variant_schema')
-            expression_names['#variant_schema'] = 'variant_schema'
-            expression_values[':variant_schema'] = body['variant_schema']
-
-        # If only a variant action is provided (no other fields), still allow it
-        has_field_updates = bool(update_parts)
-        if not has_field_updates and not variant_action:
+        if not update_parts:
             return create_error_response(400, 'No updatable fields provided')
 
-        # Always update updated_at when there are field updates
-        if has_field_updates:
-            update_parts.append('#updated_at = :updated_at')
-            expression_names['#updated_at'] = 'updated_at'
-            expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
+        # Always update updated_at
+        update_parts.append('#updated_at = :updated_at')
+        expression_names['#updated_at'] = 'updated_at'
+        expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
 
-            update_expression = 'SET ' + ', '.join(update_parts)
+        update_expression = 'SET ' + ', '.join(update_parts)
 
-            # Update the parent product record
-            updated = table.update_item(
-                Key={'product_id': product_id},
-                UpdateExpression=update_expression,
-                ExpressionAttributeNames=expression_names,
-                ExpressionAttributeValues=expression_values,
-                ReturnValues='ALL_NEW'
-            )
-            updated_product = updated.get('Attributes', {})
-        else:
-            updated_product = existing
-
-        # Handle top-down sync: variant_schema changed → sync_schema_to_variants
-        sync_result = None
-        if variant_schema_changed:
-            parent_price = Decimal(str(body.get('price', existing.get('price', 0))))
-            try:
-                sync_result = sync_schema_to_variants(
-                    table, product_id, body['variant_schema'], parent_price
-                )
-            except MaxCombinationsExceeded as e:
-                return create_error_response(400, str(e), {
-                    'count': e.count,
-                    'max': e.max
-                })
-
-        # Handle bottom-up sync: variant add/remove → sync_variant_to_schema
-        updated_schema = None
-        if variant_action and variant_attributes:
-            if variant_action in ('add_variant', 'remove_variant'):
-                updated_schema = sync_variant_to_schema(
-                    table, product_id, variant_attributes
-                )
+        # Update the parent product record
+        updated = table.update_item(
+            Key={'product_id': product_id},
+            UpdateExpression=update_expression,
+            ExpressionAttributeNames=expression_names,
+            ExpressionAttributeValues=expression_values,
+            ReturnValues='ALL_NEW'
+        )
+        updated_product = updated.get('Attributes', {})
 
         result = {
             'product': _convert_decimals(updated_product),
             'message': 'Product updated successfully'
         }
-        if sync_result:
-            result['variants_synced'] = True
-            result['sync_result'] = {
-                'created': sync_result.created,
-                'preserved': sync_result.preserved,
-                'deactivated': sync_result.deactivated,
-            }
-        if updated_schema is not None:
-            result['variant_schema_updated'] = True
-            result['variant_schema'] = updated_schema
 
         return create_success_response(result)
 
@@ -218,20 +188,11 @@ def _convert_decimals(obj):
 
 def _validate_new_fields(body: dict) -> list:
     """
-    Validate variant_schema, order_item_fields, and purchase_rules if present.
+    Validate order_item_fields and purchase_rules if present.
 
     Returns a list of structured error dicts, or empty list if valid.
     """
     all_errors = []
-
-    # Validate variant_schema
-    variant_schema = body.get('variant_schema')
-    if variant_schema is not None:
-        # Allow setting to empty dict/None to remove schema
-        if variant_schema:
-            is_valid, errors = validate_variant_schema(variant_schema)
-            if not is_valid:
-                all_errors.extend(errors)
 
     # Validate order_item_fields
     order_item_fields = body.get('order_item_fields')
@@ -252,23 +213,3 @@ def _validate_new_fields(body: dict) -> list:
                 all_errors.extend(errors)
 
     return all_errors
-
-
-def _has_variant_schema_changed(body: dict, existing: dict) -> bool:
-    """
-    Determine whether the variant_schema is being changed.
-
-    Returns True if:
-    - variant_schema is in the request body AND differs from existing value
-    """
-    if 'variant_schema' not in body:
-        return False
-
-    new_schema = body.get('variant_schema')
-    existing_schema = existing.get('variant_schema')
-
-    # Normalize empty/None values for comparison
-    new_normalized = new_schema if new_schema else None
-    existing_normalized = existing_schema if existing_schema else None
-
-    return new_normalized != existing_normalized

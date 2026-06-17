@@ -41,6 +41,7 @@ try:
         log_successful_access,
     )
     from shared.event_access import get_club_id
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer for create_order")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -233,14 +234,29 @@ def _validate_and_price_items(items):
         if unit_price is None:
             unit_price = product.get('price') or product.get('prijs')
 
-        # Reject if price is null, empty, or zero
-        if not unit_price or Decimal(str(unit_price)) == 0:
+        # Reject if price is null or empty
+        if not unit_price:
             return None, create_error_response(
                 400, 'Product has no configured price',
                 {'product_id': product_id, 'item_index': idx}
             )
 
-        unit_price_decimal = Decimal(str(unit_price))
+        # Validate price is numeric
+        price_val, price_err = validate_price_field(unit_price, 'price')
+        if price_err:
+            return None, create_error_response(
+                400, price_err,
+                {'product_id': product_id, 'item_index': idx}
+            )
+
+        # Reject zero price
+        if price_val == 0:
+            return None, create_error_response(
+                400, 'Product has no configured price',
+                {'product_id': product_id, 'item_index': idx}
+            )
+
+        unit_price_decimal = price_val
         line_total = unit_price_decimal * quantity
 
         validated_item = {

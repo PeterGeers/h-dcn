@@ -12,6 +12,8 @@
 import React, { useState } from 'react';
 import {
   Button,
+  IconButton,
+  Tooltip,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -28,6 +30,7 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
+import { AddIcon } from '@chakra-ui/icons';
 import { addStock } from '../services/adminApi';
 import { AddStockRequest } from '../types/admin.types';
 
@@ -71,10 +74,20 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
     const qty = parseInt(quantity, 10);
     const price = parseFloat(purchasePrice);
 
-    if (!qty || qty <= 0 || !Number.isInteger(qty)) {
+    if (!qty || qty <= 0 || !Number.isInteger(qty) || quantity.trim() !== String(qty)) {
       toast({
         title: 'Ongeldig aantal',
-        description: 'Voer een positief geheel getal in.',
+        description: 'Voer een geheel getal tussen 1 en 10.000 in.',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (qty > 10000) {
+      toast({
+        title: 'Ongeldig aantal',
+        description: 'Voer een geheel getal tussen 1 en 10.000 in.',
         status: 'warning',
         duration: 3000,
       });
@@ -133,57 +146,69 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 
   return (
     <>
-      <Button size="xs" colorScheme="orange" variant="outline" onClick={onOpen} isDisabled={isDisabled}>
-        + Voorraad
-      </Button>
+      <Tooltip label="Voorraad toevoegen" hasArrow>
+        <IconButton
+          aria-label="Voorraad toevoegen"
+          icon={<AddIcon />}
+          size="xs"
+          colorScheme="green"
+          variant="ghost"
+          onClick={onOpen}
+          isDisabled={isDisabled}
+        />
+      </Tooltip>
 
       <Modal isOpen={isOpen} onClose={handleClose} isCentered>
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Voeg voorraad toe</ModalHeader>
-          <ModalCloseButton />
+        <ModalContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
+          <ModalHeader color="white">Voeg voorraad toe</ModalHeader>
+          <ModalCloseButton color="white" />
           <ModalBody>
             <VStack spacing={4} align="stretch">
               <FormControl isRequired>
-                <FormLabel fontSize="sm">Aantal</FormLabel>
+                <FormLabel fontSize="sm" color="white">Aantal</FormLabel>
                 <NumberInput
                   min={1}
+                  max={10000}
                   value={quantity}
                   onChange={(val) => setQuantity(val)}
                 >
-                  <NumberInputField placeholder="Bijv. 50" />
+                  <NumberInputField placeholder="Bijv. 50" bg="gray.700" borderColor="gray.600" color="white" />
                 </NumberInput>
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel fontSize="sm">Inkoopprijs per stuk (€)</FormLabel>
+                <FormLabel fontSize="sm" color="white">Inkoopprijs per stuk (€)</FormLabel>
                 <NumberInput
                   min={0.01}
+                  step={0.01}
                   precision={2}
                   value={purchasePrice}
                   onChange={(val) => setPurchasePrice(val)}
                 >
-                  <NumberInputField placeholder="Bijv. 8.50" />
+                  <NumberInputField placeholder="Bijv. 8.50" bg="gray.700" borderColor="gray.600" color="white" />
                 </NumberInput>
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel fontSize="sm">Leverancier</FormLabel>
+                <FormLabel fontSize="sm" color="white">Leverancier</FormLabel>
                 <Input
                   value={supplierName}
                   onChange={(e) => setSupplierName(e.target.value)}
                   placeholder="Naam leverancier"
                   maxLength={100}
+                  bg="gray.700" borderColor="gray.600" color="white"
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel fontSize="sm">Referentie (optioneel)</FormLabel>
+                <FormLabel fontSize="sm" color="white">Referentie (optioneel)</FormLabel>
                 <Input
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="Bijv. PO-2024-003"
                   maxLength={255}
+                  bg="gray.700" borderColor="gray.600" color="white"
                 />
               </FormControl>
             </VStack>

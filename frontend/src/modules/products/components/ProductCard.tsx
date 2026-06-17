@@ -1,18 +1,21 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge, Select } from '@chakra-ui/react';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
+import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
+import { ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Product, Event as HDCNEvent } from '../../../types';
-import VariantSchemaEditor from './VariantSchemaEditor';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
-import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
-import { PRODUCT_CATEGORIES } from '../config/productCategories';
+import { OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
-import { updateVariantSchema, addVariantToProduct, removeVariantFromProduct } from '../api/productApi';
+import { getRequiredFields, getProductField } from '../../../config/productFields';
+import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
+import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
+import { VariantEditModal } from './VariantEditModal';
+import EventSelectorSection from './EventSelectorSection';
+import { canHaveVariants } from '../../../utils/productHelpers';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -37,7 +40,7 @@ function CollapsibleSection({ title, defaultOpen = false, children }: { title: s
         {title}
       </Button>
       <Collapse in={isOpen}>
-        <Box p={3} bg="white">
+        <Box p={3} bg="gray.800">
           {children}
         </Box>
       </Collapse>
@@ -53,7 +56,6 @@ interface ProductCardProps {
   onNew: () => void;
   onClose: () => void;
   filteredProducts: Product[];
-  onNavigate: (product: Product) => void;
   readOnly?: boolean; // Add read-only mode support
 }
 
@@ -78,20 +80,19 @@ interface GroupItemProps {
   };
 }
 
-const schema = Yup.object().shape({
-  id: Yup.string().required('Product ID is verplicht'),
-  naam: Yup.string().required('Productnaam is verplicht'),
-  groep: Yup.string().required('Productgroep is verplicht'),
-  subgroep: Yup.string().when('groep', {
-    is: (groep: string) => groep && groep.length > 0,
-    then: (schema) => schema.notRequired(), // Subgroep is optional if groep is selected
-    otherwise: (schema) => schema.notRequired()
-  }),
-  prijs: Yup.number().required('Prijs is verplicht').min(0, 'Prijs moet 0 of hoger zijn'),
-  images: Yup.array().of(Yup.string()).nullable(),
-});
+// Validation schema derived from the productFields registry.
+// Required fields for parent products are checked; all else is optional.
+const requiredParentFields = getRequiredFields('parent');
+const schemaShape: Record<string, any> = {};
+for (const key of requiredParentFields) {
+  const fieldDef = getProductField(key);
+  if (!fieldDef || fieldDef.inputType === 'hidden') continue; // skip auto-generated fields
+  const label = fieldDef.label || key;
+  schemaShape[key] = Yup.mixed().required(`${label} is verplicht`);
+}
+const schema = Yup.object().shape(schemaShape);
 
-export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
+export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
@@ -99,12 +100,59 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
   const [events, setEvents] = useState<HDCNEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState<boolean>(false);
-  const [variantSchemaHasErrors, setVariantSchemaHasErrors] = useState<boolean>(false);
+  const [variants, setVariants] = useState<AdminVariant[]>([]);
+  const [isLoadingVariants, setIsLoadingVariants] = useState<boolean>(false);
+  const [variantModalOpen, setVariantModalOpen] = useState<boolean>(false);
+  const [selectedVariantForEdit, setSelectedVariantForEdit] = useState<AdminVariant | null>(null);
+
+  const fetchVariants = useCallback(async () => {
+    const productId = product.product_id || product.id;
+    if (!productId) return;
+    setIsLoadingVariants(true);
+    try {
+      const headers = await getAuthHeadersForGet();
+      const response = await fetch(`${API_URLS.base}/products/${encodeURIComponent(productId)}/variants`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setVariants(data.variants ?? []);
+      } else {
+        console.error('Error fetching variants:', response.status);
+        setVariants([]);
+      }
+    } catch (err) {
+      console.error('Error fetching variants:', err);
+    } finally {
+      setIsLoadingVariants(false);
+    }
+  }, [product.product_id, product.id]);
+
+  // Fetch variants for parent products (any product that's not explicitly a variant)
+  useEffect(() => {
+    if (canHaveVariants(product as any)) {
+      fetchVariants();
+    } else {
+      setVariants([]);
+    }
+  }, [product, fetchVariants]);
 
   useEffect(() => {
-    // Use hardcoded product categories
-    setCategoryStructure(PRODUCT_CATEGORIES);
-  }, []);
+    // Build category structure dynamically from actual product data.
+    // Categories appear once at least one product uses them.
+    const derived: CategoryStructure = {};
+
+    products.forEach(p => {
+      if (p.groep) {
+        if (!derived[p.groep]) {
+          derived[p.groep] = { children: {} };
+        }
+        if (p.subgroep && !derived[p.groep].children![p.subgroep]) {
+          derived[p.groep].children![p.subgroep] = { id: p.subgroep, value: p.subgroep };
+        }
+      }
+    });
+
+    setCategoryStructure(derived);
+  }, [products]);
 
   useEffect(() => {
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
@@ -152,7 +200,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         display="flex"
         alignItems="center"
         fontSize="md"
-        width="50%"
+        width="100%"
         _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
       >
         <Text color={groep ? 'white' : 'gray.300'}>
@@ -188,8 +236,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 onCategoryModalClose(); // Close modal after selection
               }
             }}
-            bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.200' : 'transparent'}
-            _hover={{ bg: readOnly ? 'transparent' : 'orange.100' }}
+            color="white"
+            bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.600' : 'transparent'}
+            _hover={{ bg: readOnly ? 'transparent' : 'gray.700' }}
             isDisabled={readOnly}
             fontWeight={selectedCategory.groep === groupName ? 'bold' : 'normal'}
           >
@@ -216,12 +265,13 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                         onCategoryModalClose(); // Close modal after selection
                       }
                     }}
-                    bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.300' : 'transparent'}
-                    _hover={{ bg: readOnly ? 'transparent' : 'orange.200' }}
+                    color="white"
+                    bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.700' : 'transparent'}
+                    _hover={{ bg: readOnly ? 'transparent' : 'gray.700' }}
                     isDisabled={readOnly}
                     fontWeight={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'bold' : 'normal'}
                     borderLeft="2px solid"
-                    borderColor="orange.200"
+                    borderColor="orange.400"
                     borderRadius="0"
                     ml={2}
                   >
@@ -236,8 +286,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     };
 
     return (
-      <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200" maxH="400px" overflowY="auto">
-        <Text fontSize="md" fontWeight="bold" mb={3} color="gray.700">
+      <Box p={3} bg="gray.800" borderRadius="md" border="1px solid" borderColor="gray.600" maxH="400px" overflowY="auto">
+        <Text fontSize="md" fontWeight="bold" mb={3} color="white">
           {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer Categorie:'}
         </Text>
         
@@ -256,12 +306,15 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         {/* New group/subgroup inputs */}
         {!readOnly && (
           <Box mt={4} pt={3} borderTop="1px solid" borderColor="gray.300">
-            <Text fontSize="sm" fontWeight="bold" color="gray.600" mb={2}>Nieuwe categorie toevoegen:</Text>
+            <Text fontSize="sm" fontWeight="bold" color="gray.200" mb={2}>Nieuwe categorie toevoegen:</Text>
             <HStack spacing={2} mb={2}>
               <Input
                 size="sm"
                 placeholder="Nieuwe groep"
-                bg="white"
+                bg="gray.600"
+                color="white"
+                borderColor="gray.500"
+                _placeholder={{ color: 'gray.300' }}
                 id="new-group-input"
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === 'Enter') {
@@ -290,7 +343,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               <Input
                 size="sm"
                 placeholder="Nieuwe subgroep"
-                bg="white"
+                bg="gray.600"
+                color="white"
+                borderColor="gray.500"
+                _placeholder={{ color: 'gray.300' }}
                 id="new-subgroup-input"
                 isDisabled={!selectedCategory.groep}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -326,22 +382,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   if (!filteredProducts || filteredProducts.length === 0) {
     return null;
   }
-  
-  const currentIndex = filteredProducts.findIndex(p => p.id === product.id);
-  const canGoPrevious = currentIndex > 0;
-  const canGoNext = currentIndex < filteredProducts.length - 1;
-  
-  const handlePrevious = () => {
-    if (canGoPrevious && filteredProducts[currentIndex - 1]) {
-      onNavigate(filteredProducts[currentIndex - 1]);
-    }
-  };
-  
-  const handleNext = () => {
-    if (canGoNext && filteredProducts[currentIndex + 1]) {
-      onNavigate(filteredProducts[currentIndex + 1]);
-    }
-  };
 
   return (
     <Box 
@@ -377,73 +417,93 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         initialValues={{
           ...product,
           prijs: product.prijs ? parseFloat(product.prijs.toString()).toFixed(2) : '',
-          naam: product.naam || product.name || '',
-          images: (() => {
-            const productAny = product as any;
-            
-            if (productAny.images && Array.isArray(productAny.images)) {
-              return productAny.images;
-            }
-            if (productAny.image) {
-              const imageArray = Array.isArray(productAny.image) ? productAny.image : [productAny.image];
-              return imageArray;
-            }
-            if (productAny.afbeelding) {
-              const afbeeldingArray = Array.isArray(productAny.afbeelding) ? productAny.afbeelding : [productAny.afbeelding];
-              return afbeeldingArray;
-            }
-            if (productAny.foto) {
-              const fotoArray = Array.isArray(productAny.foto) ? productAny.foto : [productAny.foto];
-              return fotoArray;
-            }
-            return [];
-          })(),
+          naam: product.naam || '',
+          artikelcode: (product as any).artikelcode || '',
+          images: (product as any).images || [],
           groep: product.groep || '',
           subgroep: product.subgroep || '',
-          event_id: product.event_id || '',
-          nietInWinkel: (product as any).nietInWinkel || false,
-          variant_schema: (product as any).variant_schema || undefined,
+          event_ids: (product as any).event_ids || [],
           order_item_fields: (product as any).order_item_fields || undefined,
           purchase_rules: (product as any).purchase_rules || undefined,
         }}
         validationSchema={schema}
         onSubmit={(values) => {
-          if (variantSchemaHasErrors) return;
-          // Remove opties from payload, ensure variant_schema is included
-          const { opties, ...cleanValues } = values as any;
+          // Remove legacy fields from payload, send only canonical registry fields
+          const { opties, nietInWinkel, event_id, id, name, price, image, ...cleanValues } = values as any;
+
+          // Coerce numeric validation fields in order_item_fields to integers
+          if (cleanValues.order_item_fields) {
+            cleanValues.order_item_fields = cleanValues.order_item_fields.map((field: any) => {
+              if (field.validation) {
+                const numericKeys = ['min_length', 'max_length', 'minimum', 'maximum'];
+                numericKeys.forEach(key => {
+                  if (field.validation[key] !== undefined && field.validation[key] !== '') {
+                    const parsed = parseInt(field.validation[key], 10);
+                    if (!isNaN(parsed)) {
+                      field.validation[key] = parsed;
+                    }
+                  } else if (field.validation[key] === '') {
+                    delete field.validation[key];
+                  }
+                });
+              }
+              return field;
+            });
+          }
+
+          // Coerce numeric fields in purchase_rules to integers
+          if (cleanValues.purchase_rules) {
+            const purchaseNumericKeys = ['max_per_order', 'max_per_member', 'max_per_club', 'min_per_club'];
+            purchaseNumericKeys.forEach(key => {
+              if (cleanValues.purchase_rules[key] !== undefined && cleanValues.purchase_rules[key] !== '') {
+                const parsed = parseInt(cleanValues.purchase_rules[key], 10);
+                if (!isNaN(parsed)) {
+                  cleanValues.purchase_rules[key] = parsed;
+                }
+              } else if (cleanValues.purchase_rules[key] === '') {
+                delete cleanValues.purchase_rules[key];
+              }
+            });
+          }
+
           onSave(cleanValues);
         }}
       >
-        {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
+        {({ values, setFieldValue, errors, touched, isSubmitting, submitCount }: FormikProps<any>) => {
           // Store the setFieldValue function for use in the modal
           if (!mainFormSetFieldValue) {
             setMainFormSetFieldValue(() => setFieldValue);
           }
           
+          // Show errors after at least one submit attempt
+          const hasErrors = submitCount > 0 && Object.keys(errors).length > 0;
+          
           return (
           <Form>
             <VStack spacing={4}>
+              {/* Validation error banner — shows all errors clearly */}
+              {hasErrors && (
+                <Box bg="red.100" border="1px solid" borderColor="red.400" borderRadius="md" p={3} w="100%">
+                  <Text color="red.700" fontWeight="bold" fontSize="sm">
+                    Kan niet opslaan:
+                  </Text>
+                  {Object.values(errors).map((err, i) => (
+                    <Text key={i} color="red.600" fontSize="sm">• {err as string}</Text>
+                  ))}
+                </Box>
+              )}
+
               {/* Name field at the top */}
-              <FormControl isInvalid={!!(errors.naam && touched.naam)}>
-                <Field name="naam" as={Input} placeholder="Naam" color="white" bg="gray.600" borderColor={errors.naam && touched.naam ? 'red.500' : 'gray.500'} id="product-naam" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
+              <FormControl isInvalid={!!(errors.naam && (touched.naam || submitCount > 0))}>
+                <Field name="naam" as={Input} placeholder="Naam" color="white" bg="gray.600" borderColor={errors.naam && (touched.naam || submitCount > 0) ? 'red.500' : 'gray.500'} id="product-naam" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
                 <FormErrorMessage>{errors.naam as string}</FormErrorMessage>
               </FormControl>
 
-              {/* ID and Price with navigation buttons */}
+              {/* ID and Price */}
               <HStack spacing={4} width="100%">
-                {filteredProducts.length > 1 && (
-                  <IconButton
-                    icon={<ChevronLeftIcon />}
-                    colorScheme="orange"
-                    isDisabled={!canGoPrevious}
-                    onClick={handlePrevious}
-                    aria-label="Vorige product"
-                    size="sm"
-                  />
-                )}
-                <FormControl isInvalid={!!(errors.id && touched.id)} flex={1}>
-                  <Field name="id" as={Input} placeholder="id" color="white" bg="gray.600" borderColor={errors.id && touched.id ? 'red.500' : 'gray.500'} id="product-id" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
-                  <FormErrorMessage>{errors.id as string}</FormErrorMessage>
+                <FormControl isInvalid={!!(errors.artikelcode && touched.artikelcode)} flex={1}>
+                  <Field name="artikelcode" as={Input} placeholder="Artikel code (bijv. G5)" color="white" bg="gray.600" borderColor={errors.artikelcode && touched.artikelcode ? 'red.500' : 'gray.500'} id="product-artikelcode" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
+                  <FormErrorMessage>{errors.artikelcode as string}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!(errors.prijs && touched.prijs)} flex={1}>
                   <Field name="prijs">
@@ -477,16 +537,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   </Field>
                   <FormErrorMessage>{errors.prijs as string}</FormErrorMessage>
                 </FormControl>
-                {filteredProducts.length > 1 && (
-                  <IconButton
-                    icon={<ChevronRightIcon />}
-                    colorScheme="orange"
-                    isDisabled={!canGoNext}
-                    onClick={handleNext}
-                    aria-label="Volgende product"
-                    size="sm"
-                  />
-                )}
               </HStack>
 
               {/* Category field */}
@@ -499,49 +549,17 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
 
-              {/* Event selector */}
-              <FormControl>
-                <Select
-                  value={values.event_id || ''}
-                  onChange={(e) => setFieldValue('event_id', e.target.value || null)}
-                  placeholder="Geen event (webshop product)"
-                  bg="gray.600"
-                  color="white"
-                  borderColor="gray.500"
-                  isDisabled={readOnly}
-                  size="sm"
-                  _placeholder={{ color: 'gray.300' }}
-                >
-                  {events.map((event) => (
-                    <option key={event.event_id} value={event.event_id || ''} style={{ background: '#2D3748', color: 'white' }}>
-                      {event.title || event.naam || event.event_id}
-                    </option>
-                  ))}
-                </Select>
-                <Text fontSize="xs" color="gray.500" mt={1}>
-                  {eventsLoading ? 'Events laden...' : `Event koppeling (${events.length} events)`}
-                </Text>
-              </FormControl>
-
-              {/* Checkbox */}
-              <FormControl>
-                <Field name="nietInWinkel">
-                  {({ field, form }: any) => (
-                    <Checkbox
-                      {...field}
-                      isChecked={field.value}
-                      onChange={(e) => form.setFieldValue('nietInWinkel', e.target.checked)}
-                      colorScheme="orange"
-                      isDisabled={readOnly}
-                    >
-                      Staat er niet op in de winkel
-                    </Checkbox>
-                  )}
-                </Field>
-              </FormControl>
+              {/* Evenementen — CollapsibleSection with badges */}
+              <EventSelectorSection
+                events={events}
+                selectedIds={values.event_ids || []}
+                onChange={(ids: string[]) => setFieldValue('event_ids', ids)}
+                isLoading={eventsLoading}
+                isDisabled={readOnly}
+              />
 
               {/* Legacy required_attributes display */}
-              {(product as any).required_attributes && !values.variant_schema && !values.order_item_fields && !values.purchase_rules && (
+              {(product as any).required_attributes && !values.order_item_fields && !values.purchase_rules && (
                 <Box w="100%" p={3} bg="yellow.50" borderRadius="md" border="1px solid" borderColor="yellow.300">
                   <HStack mb={2}>
                     <Text fontSize="sm" fontWeight="bold" color="yellow.800">
@@ -566,60 +584,46 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Box>
               )}
 
-              {/* Variant Schema Editor - collapsible */}
-              <CollapsibleSection title="Variant Schema" defaultOpen={!!values.variant_schema && Object.keys(values.variant_schema).length > 0}>
-                <VariantSchemaEditor
-                  value={values.variant_schema || {}}
-                  onChange={(schema: VariantSchema) => {
-                    setFieldValue('variant_schema', Object.keys(schema).length > 0 ? schema : undefined);
-                    // Validate variant schema errors
-                    const axes = Object.entries(schema);
-                    let hasErrors = false;
-                    if (axes.length > 0) {
-                      const totalCombinations = axes.reduce((product, [, vals]) => product * (vals.length || 1), 1);
-                      if (totalCombinations > 100) hasErrors = true;
-                      const axisNames = axes.map(([name]) => name.trim().toLowerCase());
-                      axes.forEach(([name, vals], index) => {
-                        if (!name.trim()) hasErrors = true;
-                        const dupIdx = axisNames.indexOf(name.trim().toLowerCase());
-                        if (dupIdx !== -1 && dupIdx !== index) hasErrors = true;
-                        const trimmedValues = vals.map((v) => v.trim().toLowerCase());
-                        vals.forEach((val, vIndex) => {
-                          if (!val.trim()) hasErrors = true;
-                          const dupVIdx = trimmedValues.indexOf(val.trim().toLowerCase());
-                          if (dupVIdx !== -1 && dupVIdx !== vIndex) hasErrors = true;
-                        });
-                      });
-                    }
-                    setVariantSchemaHasErrors(hasErrors);
-                  }}
-                  productId={product.product_id || product.id}
-                  onSyncSchema={async (schema: VariantSchema) => {
-                    const productId = product.product_id || product.id;
-                    if (!productId) return;
-                    await updateVariantSchema(productId, schema);
-                  }}
-                  onAddVariant={async (variantAttributes: Record<string, string>) => {
-                    const productId = product.product_id || product.id;
-                    if (!productId) return;
-                    await addVariantToProduct(productId, variantAttributes);
-                  }}
-                  onRemoveVariant={async (variantAttributes: Record<string, string>) => {
-                    const productId = product.product_id || product.id;
-                    if (!productId) return;
-                    await removeVariantFromProduct(productId, variantAttributes);
-                  }}
-                />
-                {variantSchemaHasErrors && (
-                  <Text fontSize="xs" color="red.500" mt={1}>
-                    Los variant schema fouten op voordat u opslaat
-                  </Text>
-                )}
-              </CollapsibleSection>
+              {/* Variant Sub-Table — collapsible for parent products (show unless explicitly a variant) */}
+              {canHaveVariants(product as any) && (
+                <CollapsibleSection title={`Varianten (${variants.length})`} defaultOpen={false}>
+                  {!readOnly && (
+                    <Button
+                      size="xs"
+                      colorScheme="orange"
+                      leftIcon={<AddIcon />}
+                      mb={2}
+                      onClick={() => {
+                        setSelectedVariantForEdit(null);
+                        setVariantModalOpen(true);
+                      }}
+                    >
+                      Variant toevoegen
+                    </Button>
+                  )}
+                  <VariantSubTable
+                    product={{
+                      product_id: product.product_id || product.id,
+                      name: values.naam || product.naam || '',
+                      price: parseFloat(values.prijs) || 0,
+                      active: true,
+                      is_parent: true,
+                      variants: variants,
+                    } as AdminProduct}
+                    variants={variants}
+                    onUpdate={fetchVariants}
+                    isRefetching={isLoadingVariants}
+                    onRowClick={(variant) => {
+                      setSelectedVariantForEdit(variant);
+                      setVariantModalOpen(true);
+                    }}
+                  />
+                </CollapsibleSection>
+              )}
 
               {/* Order Item Fields Editor - collapsible */}
               {!readOnly && (
-                <CollapsibleSection title="Bestelvelden per item" defaultOpen={!!values.order_item_fields && values.order_item_fields.length > 0}>
+                <CollapsibleSection title="Bestelvelden per item" defaultOpen={false}>
                   <OrderItemFieldsEditor
                     value={values.order_item_fields || []}
                     onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields.length > 0 ? fields : undefined)}
@@ -629,7 +633,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
               {/* Purchase Rules Editor - collapsible */}
               {!readOnly && (
-                <CollapsibleSection title="Aankoopregels" defaultOpen={!!values.purchase_rules && Object.values(values.purchase_rules).some(v => v != null)}>
+                <CollapsibleSection title="Aankoopregels" defaultOpen={false}>
                   <PurchaseRulesEditor
                     value={values.purchase_rules || {}}
                     onChange={(rules: PurchaseRules) => {
@@ -640,73 +644,74 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </CollapsibleSection>
               )}
 
-              {/* Image upload button */}
-              <Button 
-                colorScheme="orange" 
-                size="sm"
-                isDisabled={readOnly}
-                onClick={async () => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.multiple = true;
-                  input.onchange = async (e) => {
-                    const target = (e as any).target as HTMLInputElement;
-                    const files = Array.from(target.files || []);
-                    if (files.length > 0) {
-                      try {
-                        setUploading(true);
-                        const uploadPromises = files.map(file => uploadToS3(file, product.id));
-                        const s3Urls = await Promise.all(uploadPromises);
-                        const currentImages = values.images || [];
-                        setFieldValue('images', [...currentImages, ...s3Urls]);
-                      } catch (error: any) {
-                        console.error('Error uploading images:', error);
-                        alert('Upload failed: ' + error.message);
-                      } finally {
-                        setUploading(false);
+              {/* Images CollapsibleSection */}
+              <CollapsibleSection title="Afbeeldingen" defaultOpen={false}>
+                <Button 
+                  colorScheme="orange" 
+                  size="sm"
+                  isDisabled={readOnly}
+                  onClick={async () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.multiple = true;
+                    input.onchange = async (e) => {
+                      const target = (e as any).target as HTMLInputElement;
+                      const files = Array.from(target.files || []);
+                      if (files.length > 0) {
+                        try {
+                          setUploading(true);
+                          const uploadPromises = files.map(file => uploadToS3(file, product.id));
+                          const s3Urls = await Promise.all(uploadPromises);
+                          const currentImages = values.images || [];
+                          setFieldValue('images', [...currentImages, ...s3Urls]);
+                        } catch (error: any) {
+                          console.error('Error uploading images:', error);
+                          alert('Upload failed: ' + error.message);
+                        } finally {
+                          setUploading(false);
+                        }
                       }
-                    }
-                  };
-                  input.click();
-                }}
-              >
-                + Afbeeldingen
-              </Button>
+                    };
+                    input.click();
+                  }}
+                >
+                  + Afbeeldingen
+                </Button>
 
-              {uploading && <Text color="blue.500">Uploading...</Text>}
+                {uploading && <Text color="blue.500">Uploading...</Text>}
 
-              {/* Images section with 30% larger size */}
-              {values.images && values.images.length > 0 && (
-                <Box>
-                  <Text fontSize="sm" fontWeight="bold" mb={2}>Afbeeldingen ({values.images.length}):</Text>
-                  <VStack spacing={2}>
-                    {values.images.map((imageUrl: string, index: number) => (
-                      <HStack key={index} spacing={2} width="100%">
-                        <Image 
-                          src={imageUrl} 
-                          boxSize="78px"
-                          objectFit="cover"
-                          border="1px solid gray"
-                          borderRadius="md"
-                        />
-                        <Text fontSize="xs" flex={1} isTruncated>{String(imageUrl || '').split('/').pop()?.replace(/[<>"'&]/g, '') || 'Unknown'}</Text>
-                        <Button 
-                          size="xs" 
-                          colorScheme="red" 
-                          isDisabled={readOnly}
-                          onClick={() => {
-                            const newImages = values.images.filter((_: string, i: number) => i !== index);
-                            setFieldValue('images', newImages);
-                          }}
-                        >
-                          ×
-                        </Button>
-                      </HStack>
-                    ))}
-                  </VStack>
-                </Box>
-              )}
+                {values.images && values.images.length > 0 && (
+                  <Box mt={3}>
+                    <Text fontSize="sm" fontWeight="bold" mb={2}>Afbeeldingen ({values.images.length}):</Text>
+                    <VStack spacing={2}>
+                      {values.images.map((imageUrl: string, index: number) => (
+                        <HStack key={index} spacing={2} width="100%">
+                          <Image 
+                            src={imageUrl} 
+                            boxSize="78px"
+                            objectFit="cover"
+                            border="1px solid gray"
+                            borderRadius="md"
+                          />
+                          <Text fontSize="xs" flex={1} isTruncated>{String(imageUrl || '').split('/').pop()?.replace(/[<>"'&]/g, '') || 'Unknown'}</Text>
+                          <Button 
+                            size="xs" 
+                            colorScheme="red" 
+                            isDisabled={readOnly}
+                            onClick={() => {
+                              const newImages = values.images.filter((_: string, i: number) => i !== index);
+                              setFieldValue('images', newImages);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
+              </CollapsibleSection>
 
               {/* Action buttons */}
               <HStack spacing={4}>
@@ -717,7 +722,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     size="sm"
                     type="submit"
                     aria-label="Opslaan"
-                    isDisabled={variantSchemaHasErrors}
+                    isDisabled={false}
                     _hover={{ bg: 'orange.600' }}
                   />
                 )}
@@ -771,6 +776,17 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Variant Edit Modal — opens when clicking a variant value tag */}
+      <VariantEditModal
+        isOpen={variantModalOpen}
+        onClose={() => setVariantModalOpen(false)}
+        productId={product.product_id || product.id || ''}
+        variant={selectedVariantForEdit}
+        existingVariants={variants}
+        onSuccess={fetchVariants}
+        parentPrice={parseFloat((product as any).prijs) || 0}
+      />
     </Box>
   );
 }

@@ -24,6 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { DeleteIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
+import { formatPrice, toPrice } from '../../../utils/formatPrice';
 import ItemFieldsForm from './ItemFieldsForm';
 import { OrderItemField, ItemFieldsEntry } from '../types/unifiedProduct.types';
 import { orderService } from '../services/api';
@@ -252,7 +253,7 @@ const DraftOrderModal: React.FC<DraftOrderModalProps> = ({
                             </NumberInputStepper>
                           </NumberInput>
                           <Text fontSize="sm" color="white">
-                            x €{item.price ? Number(item.price).toFixed(2) : '0.00'} = €{(item.quantity * Number(item.price || 0)).toFixed(2)}
+                            x {formatPrice(item.price)} = {formatPrice(item.quantity * toPrice(item.price))}
                           </Text>
                         </HStack>
                       </VStack>

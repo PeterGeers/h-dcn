@@ -215,7 +215,7 @@ def _get_child_variants(parent_id):
     """
     variants = []
     query_kwargs = {
-        'IndexName': 'parent_id-index',
+        'IndexName': 'parent-id-index',
         'KeyConditionExpression': Key('parent_id').eq(parent_id),
     }
 

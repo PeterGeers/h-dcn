@@ -58,6 +58,10 @@ Parameters:
   OrdersTable:
     Type: String
     Default: Orders
+  DataBucket:
+    Type: String
+    Default: h-dcn-data-506221081911
+    Description: "S3 bucket for product images, logos, and other data assets"
   DefaultTempPassword:
     Type: String
     NoEcho: true
@@ -335,6 +339,20 @@ Resources:
                   - ses:SendEmail
                   - ses:SendRawEmail
                 Resource: "*"
+        - PolicyName: DynamoDBMembersAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
 
   # Lambda permissions for Cognito triggers (using existing User Pool)
   CognitoCustomMessagePermission:
@@ -445,12 +463,12 @@ Resources:
                   - s3:GetObject
                   - s3:DeleteObject
                 Resource:
-                  - "arn:aws:s3:::my-hdcn-bucket/analytics/*"
+                  - !Sub "arn:aws:s3:::${DataBucket}/analytics/*"
               - Effect: Allow
                 Action:
                   - s3:ListBucket
                 Resource:
-                  - "arn:aws:s3:::my-hdcn-bucket"
+                  - !Sub "arn:aws:s3:::${DataBucket}"
                 Condition:
                   StringLike:
                     "s3:prefix": "analytics/*"
@@ -527,6 +545,8 @@ Resources:
                   - cognito-idp:AdminSetUserPassword
                   - cognito-idp:AdminInitiateAuth
                   - cognito-idp:AdminRespondToAuthChallenge
+                  - cognito-idp:AdminConfirmSignUp
+                  - cognito-idp:SignUp
                   - cognito-idp:GetGroup
                   - cognito-idp:UpdateGroup
                 Resource: 
@@ -908,7 +928,7 @@ Resources:
       Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
-          DYNAMODB_TABLE: Events
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         CreateEvent:
           Type: Api
@@ -1266,6 +1286,27 @@ Resources:
             Path: /admin/events/{event_id}/access
             Method: get
 
+  # --- Public Event Landing Page API (NO auth required) ---
+  GetEventPublicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_event_public
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+      Events:
+        GetEventPublic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/public/{slug}
+            Method: get
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1458,7 +1499,7 @@ Resources:
         Variables:
           ORDERS_TABLE: !Ref OrdersTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
-          S3_BUCKET: "my-hdcn-bucket"
+          S3_BUCKET: !Ref DataBucket
           LOGO_S3_KEY: "imagesWebsite/hdcnFavico.png"
       Events:
         GenerateOrderPdf:
@@ -1511,7 +1552,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - "arn:aws:s3:::my-hdcn-bucket/imagesWebsite/*"
+                  - !Sub "arn:aws:s3:::${DataBucket}/imagesWebsite/*"
 
   # Event Management Functions
   GetEventByIdFunction:
@@ -1545,7 +1586,7 @@ Resources:
       Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
-          DYNAMODB_TABLE: Events
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         UpdateEvent:
           Type: Api
@@ -1609,17 +1650,20 @@ Resources:
       Timeout: 30
       Layers:
         - !Ref AuthLayer
+      Environment:
+        Variables:
+          DATA_BUCKET_NAME: !Ref DataBucket
       Policies:
         - S3ReadPolicy:
-            BucketName: my-hdcn-bucket
+            BucketName: !Ref DataBucket
         - S3WritePolicy:
-            BucketName: my-hdcn-bucket
+            BucketName: !Ref DataBucket
         - Statement:
           - Effect: Allow
             Action:
               - s3:DeleteObject
             Resource: 
-              - arn:aws:s3:::my-hdcn-bucket/*
+              - !Sub "arn:aws:s3:::${DataBucket}/*"
       Events:
         UploadFile:
           Type: Api
@@ -1640,8 +1684,7 @@ Resources:
             Path: /s3/files
             Method: get
 
-  # S3 Lifecycle Configuration for Analytics Data in existing bucket
-  # Note: Using existing my-hdcn-bucket with analytics/ folder structure
+  # S3 Lifecycle Configuration for Analytics Data in DataBucket
 
   # Member Export Function (Simple JSON export - much better than parquet!)
   ExportMembersFunction:
@@ -1927,6 +1970,29 @@ Resources:
             Path: /admin/products/{id}
             Method: put
 
+  # --- Admin: Delete Product (soft + hard) ---
+  AdminDeleteProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_delete_product
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminDeleteProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}
+            Method: delete
+
   # --- Admin: Create Variant ---
   AdminCreateVariantFunction:
     Type: AWS::Serverless::Function
@@ -1970,6 +2036,29 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /admin/products/{id}/variants/{vid}
             Method: put
+
+  # --- Admin: Delete Variant ---
+  AdminDeleteVariantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_delete_variant
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminDeleteVariant:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/products/{id}/variants/{vid}
+            Method: delete
 
   # --- Admin: Bulk Create Variants ---
   AdminBulkCreateVariantsFunction:
@@ -2286,7 +2375,7 @@ Outputs:
 
   # Analytics Data Folder Structure
   AnalyticsDataInfo:
-    Description: "Analytics data is stored in my-hdcn-bucket under analytics/ folder"
-    Value: "s3://my-hdcn-bucket/analytics/"
+    Description: "Analytics data is stored in the DataBucket under analytics/ folder"
+    Value: !Sub "s3://${DataBucket}/analytics/"
     Export:
       Name: !Sub "${AWS::StackName}-AnalyticsDataPath"

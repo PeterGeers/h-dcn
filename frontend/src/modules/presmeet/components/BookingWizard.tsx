@@ -164,7 +164,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
   const maxPersons = useMemo(() => {
     if (products.length === 0) return 0;
     return Math.max(
-      ...products.map((p) => p.purchase_rules.max_per_club ?? 20)
+      ...products.map((p) => p.purchase_rules?.max_per_club ?? 20)
     );
   }, [products]);
 

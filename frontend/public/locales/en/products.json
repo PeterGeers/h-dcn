@@ -21,7 +21,9 @@
     "quantity": "Quantity",
     "price_label": "Price:",
     "no_image": "No image available",
-    "back": "Back"
+    "back": "Back",
+    "variant_fetch_error": "Variants could not be loaded",
+    "sold_out": "Sold out"
   },
   "card_modal": {
     "select_option_desc": "Choose a size/option for this product"
@@ -52,5 +54,40 @@
     "inactive_badge": "Inactive",
     "confirm": "Confirm",
     "cancel": "Cancel"
+  },
+  "variant_modal": {
+    "add_title": "Add variant",
+    "edit_title": "Edit variant",
+    "axis_name_label": "Axis name",
+    "axis_name_placeholder": "E.g. Size, Colour...",
+    "axis_select_placeholder": "Choose an axis...",
+    "axis_new_option": "New...",
+    "axis_new_placeholder": "New axis name...",
+    "value_label": "Value",
+    "value_placeholder": "E.g. S, Red, 42...",
+    "existing_values": "Existing values for \"{{axis}}\":",
+    "attributes_label": "Attributes",
+    "stock_label": "Stock",
+    "sold_label": "Sold",
+    "price_label": "Price (empty = inherits €{{price}} from product)",
+    "oversell_label": "Allow oversell",
+    "active_label": "Active",
+    "not_found": "Variant not found.",
+    "btn_create": "Create",
+    "btn_create_loading": "Creating...",
+    "btn_save": "Save",
+    "btn_save_loading": "Saving...",
+    "btn_cancel": "Cancel",
+    "toast_fields_required": "Fields required",
+    "toast_fields_required_desc": "Enter an axis name and value.",
+    "toast_created": "Variant created",
+    "toast_created_desc": "Variant \"{{axis}}: {{value}}\" has been created.",
+    "toast_duplicate": "Variant already exists",
+    "toast_duplicate_desc": "A variant with these attributes already exists.",
+    "toast_create_error": "Error creating variant",
+    "toast_updated": "Variant updated",
+    "toast_invalid_price": "Invalid price",
+    "toast_save_error": "Error saving",
+    "toast_unknown_error": "Unknown error"
   }
 }

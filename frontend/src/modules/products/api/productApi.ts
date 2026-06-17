@@ -36,45 +36,6 @@ export const updateProduct = async (id: string, data: Product) => {
   return ApiService.put(`/admin/products/${id}`, data);
 };
 
-/**
- * Update a product's variant schema (top-down sync).
- * The backend detects the schema change and regenerates variants accordingly.
- */
-export const updateVariantSchema = async (id: string, variantSchema: Record<string, string[]>) => {
-  if (!(await ApiService.isAuthenticated())) {
-    throw new Error('Authentication required');
-  }
-  return ApiService.put(`/admin/products/${id}`, { variant_schema: variantSchema });
-};
-
-/**
- * Add a variant to a product (bottom-up sync).
- * The backend creates the variant record and updates the parent's variant_schema.
- */
-export const addVariantToProduct = async (id: string, variantAttributes: Record<string, string>) => {
-  if (!(await ApiService.isAuthenticated())) {
-    throw new Error('Authentication required');
-  }
-  return ApiService.put(`/admin/products/${id}`, {
-    variant_action: 'add_variant',
-    variant_attributes: variantAttributes,
-  });
-};
-
-/**
- * Remove a variant from a product (bottom-up sync).
- * The backend deactivates the variant record and updates the parent's variant_schema.
- */
-export const removeVariantFromProduct = async (id: string, variantAttributes: Record<string, string>) => {
-  if (!(await ApiService.isAuthenticated())) {
-    throw new Error('Authentication required');
-  }
-  return ApiService.put(`/admin/products/${id}`, {
-    variant_action: 'remove_variant',
-    variant_attributes: variantAttributes,
-  });
-};
-
 export const deleteProduct = async (id: string) => {
   if (!(await ApiService.isAuthenticated())) {
     throw new Error('Authentication required');
