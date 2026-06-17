@@ -36,6 +36,7 @@ import {
   Select,
   useToast,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { AdminVariant, UpdateVariantRequest } from '../../webshop-management/types/admin.types';
 import { updateVariant, createVariant } from '../../webshop-management/services/adminApi';
 import { AddStockForm } from '../../webshop-management/components/AddStockForm';
@@ -72,6 +73,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
   isDisabled = false,
 }) => {
   const toast = useToast();
+  const { t } = useTranslation('products');
   const isCreateMode = variant === null;
 
   // --- Edit mode state ---
@@ -152,8 +154,8 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
 
     if (!validateAxisInput(finalAxisName, axisValue)) {
       toast({
-        title: 'Velden verplicht',
-        description: 'Vul een as-naam en waarde in.',
+        title: t('variant_modal.toast_fields_required'),
+        description: t('variant_modal.toast_fields_required_desc'),
         status: 'warning',
         duration: 3000,
       });
@@ -166,8 +168,8 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         variant_attributes: { [finalAxisName.trim()]: axisValue.trim() },
       });
       toast({
-        title: 'Variant aangemaakt',
-        description: `Variant "${finalAxisName.trim()}: ${axisValue.trim()}" is aangemaakt.`,
+        title: t('variant_modal.toast_created'),
+        description: t('variant_modal.toast_created_desc', { axis: finalAxisName.trim(), value: axisValue.trim() }),
         status: 'success',
         duration: 3000,
       });
@@ -177,15 +179,15 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       const status = err?.response?.status;
       if (status === 409) {
         toast({
-          title: 'Variant bestaat al',
-          description: err?.response?.data?.message || 'Er bestaat al een variant met deze attributen.',
+          title: t('variant_modal.toast_duplicate'),
+          description: err?.response?.data?.message || t('variant_modal.toast_duplicate_desc'),
           status: 'error',
           duration: 5000,
         });
       } else {
         toast({
-          title: 'Fout bij aanmaken',
-          description: err?.response?.data?.message || err?.message || 'Onbekende fout',
+          title: t('variant_modal.toast_create_error'),
+          description: err?.response?.data?.message || err?.message || t('variant_modal.toast_unknown_error'),
           status: 'error',
           duration: 5000,
         });
@@ -206,7 +208,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
 
     if (newPrice !== oldPrice) {
       if (priceValue.trim() !== '' && (isNaN(newPrice!) || newPrice! < 0)) {
-        toast({ title: 'Ongeldige prijs', status: 'warning', duration: 3000 });
+        toast({ title: t('variant_modal.toast_invalid_price'), status: 'warning', duration: 3000 });
         return;
       }
       updates.prijs = newPrice;
@@ -229,7 +231,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
     try {
       await updateVariant(variant.parent_id, variant.product_id, updates);
       toast({
-        title: 'Variant bijgewerkt',
+        title: t('variant_modal.toast_updated'),
         status: 'success',
         duration: 3000,
       });
@@ -237,8 +239,8 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       onClose();
     } catch (err: any) {
       toast({
-        title: 'Fout bij opslaan',
-        description: err?.response?.data?.message || err?.message || 'Onbekende fout',
+        title: t('variant_modal.toast_save_error'),
+        description: err?.response?.data?.message || err?.message || t('variant_modal.toast_unknown_error'),
         status: 'error',
         duration: 5000,
       });
@@ -254,12 +256,12 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       {/* Axis Name Input — varies by form mode */}
       <FormControl>
         <FormLabel fontSize="sm" color="white">
-          As-naam
+          {t('variant_modal.axis_name_label')}
         </FormLabel>
         {formMode === 'zero-axes' ? (
           // Free text only
           <Input
-            placeholder="Bijv. Maat, Kleur..."
+            placeholder={t('variant_modal.axis_name_placeholder')}
             value={axisName}
             onChange={(e) => setAxisName(e.target.value)}
             bg="gray.700"
@@ -273,7 +275,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
           // Dropdown with existing axes + "Nieuw..." option
           <VStack spacing={2} align="stretch">
             <Select
-              placeholder="Kies een as..."
+              placeholder={t('variant_modal.axis_select_placeholder')}
               value={isNewAxis ? NEW_AXIS_OPTION : selectedAxis}
               onChange={(e) => handleAxisDropdownChange(e.target.value)}
               bg="gray.700"
@@ -287,11 +289,11 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
                   {name}
                 </option>
               ))}
-              <option value={NEW_AXIS_OPTION}>Nieuw...</option>
+              <option value={NEW_AXIS_OPTION}>{t('variant_modal.axis_new_option')}</option>
             </Select>
             {isNewAxis && (
               <Input
-                placeholder="Nieuwe as-naam..."
+                placeholder={t('variant_modal.axis_new_placeholder')}
                 value={axisName}
                 onChange={(e) => setAxisName(e.target.value)}
                 bg="gray.700"
@@ -306,7 +308,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         ) : (
           // At MAX_AXES: dropdown only, no free text
           <Select
-            placeholder="Kies een as..."
+            placeholder={t('variant_modal.axis_select_placeholder')}
             value={selectedAxis}
             onChange={(e) => {
               setSelectedAxis(e.target.value);
@@ -330,10 +332,10 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       {/* Value Input — always free text */}
       <FormControl>
         <FormLabel fontSize="sm" color="white">
-          Waarde
+          {t('variant_modal.value_label')}
         </FormLabel>
         <Input
-          placeholder="Bijv. S, Rood, 42..."
+          placeholder={t('variant_modal.value_placeholder')}
           value={axisValue}
           onChange={(e) => setAxisValue(e.target.value)}
           bg="gray.700"
@@ -349,7 +351,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       {!isNewAxis && selectedAxis && existingAxes[selectedAxis] && (
         <Box>
           <Text fontSize="xs" color="gray.400" mb={1}>
-            Bestaande waarden voor "{selectedAxis}":
+            {t('variant_modal.existing_values', { axis: selectedAxis })}
           </Text>
           <HStack spacing={1} flexWrap="wrap">
             {Array.from(existingAxes[selectedAxis]).map((val) => (
@@ -365,7 +367,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
 
   const renderEditMode = () => {
     if (!variant) {
-      return <Text color="gray.400">Variant niet gevonden.</Text>;
+      return <Text color="gray.400">{t('variant_modal.not_found')}</Text>;
     }
 
     const attrLabel = Object.entries(variant.variant_attributes)
@@ -377,7 +379,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         {/* Attributes (read-only) */}
         <Box>
           <Text fontSize="sm" fontWeight="bold" color="gray.300" mb={1}>
-            Attributen
+            {t('variant_modal.attributes_label')}
           </Text>
           <HStack spacing={2} flexWrap="wrap">
             {Object.entries(variant.variant_attributes).map(([key, value]) => (
@@ -391,11 +393,11 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         {/* Stock & sold (read-only) */}
         <HStack spacing={6}>
           <Box>
-            <Text fontSize="xs" color="gray.400">Voorraad</Text>
+            <Text fontSize="xs" color="gray.400">{t('variant_modal.stock_label')}</Text>
             <Text color="white" fontWeight="bold">{variant.stock}</Text>
           </Box>
           <Box>
-            <Text fontSize="xs" color="gray.400">Verkocht</Text>
+            <Text fontSize="xs" color="gray.400">{t('variant_modal.sold_label')}</Text>
             <Text color="white" fontWeight="bold">{variant.sold_count}</Text>
           </Box>
           <Box>
@@ -411,7 +413,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         {/* Price (editable) */}
         <FormControl>
           <FormLabel fontSize="sm" color="white">
-            Prijs (leeg = overerft €{parentPrice.toFixed(2)} van product)
+            {t('variant_modal.price_label', { price: parentPrice.toFixed(2) })}
           </FormLabel>
           <NumberInput
             value={priceValue}
@@ -434,7 +436,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         {/* Allow oversell toggle */}
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="variant-oversell" mb="0" fontSize="sm" color="white">
-            Oversell toestaan
+            {t('variant_modal.oversell_label')}
           </FormLabel>
           <Switch
             id="variant-oversell"
@@ -448,7 +450,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         {/* Active toggle */}
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="variant-active" mb="0" fontSize="sm" color="white">
-            Actief
+            {t('variant_modal.active_label')}
           </FormLabel>
           <Switch
             id="variant-active"
@@ -463,8 +465,8 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
   };
 
   const headerTitle = isCreateMode
-    ? 'Variant toevoegen'
-    : `Variant bewerken — ${Object.entries(variant!.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')}`;
+    ? t('variant_modal.add_title')
+    : `${t('variant_modal.edit_title')} — ${Object.entries(variant!.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')}`;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
@@ -484,27 +486,27 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
             color="white"
             _hover={{ bg: 'gray.700' }}
           >
-            Annuleren
+            {t('variant_modal.btn_cancel')}
           </Button>
           {isCreateMode ? (
             <Button
               colorScheme="orange"
               onClick={handleCreateSubmit}
               isLoading={isSubmitting}
-              loadingText="Aanmaken..."
+              loadingText={t('variant_modal.btn_create_loading')}
               isDisabled={isDisabled}
             >
-              Aanmaken
+              {t('variant_modal.btn_create')}
             </Button>
           ) : (
             <Button
               colorScheme="orange"
               onClick={handleEditSave}
               isLoading={isSaving}
-              loadingText="Opslaan..."
+              loadingText={t('variant_modal.btn_save_loading')}
               isDisabled={!variant || isDisabled}
             >
-              Opslaan
+              {t('variant_modal.btn_save')}
             </Button>
           )}
         </ModalFooter>
