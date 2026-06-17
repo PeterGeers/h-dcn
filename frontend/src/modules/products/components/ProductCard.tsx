@@ -584,8 +584,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Box>
               )}
 
-              {/* Variant Sub-Table — collapsible for parent products */}
-              {(product as any).is_parent && (
+              {/* Variant Sub-Table — collapsible for parent products (show unless explicitly a variant) */}
+              {(product as any).is_parent !== false && (
                 <CollapsibleSection title={`Varianten (${variants.length})`} defaultOpen={false}>
                   {!readOnly && (
                     <Button
