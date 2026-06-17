@@ -15,6 +15,7 @@ import { VariantSubTable } from '../../webshop-management/components/VariantSubT
 import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
 import { VariantEditModal } from './VariantEditModal';
 import EventSelectorSection from './EventSelectorSection';
+import { canHaveVariants } from '../../../utils/productHelpers';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -125,10 +126,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     }
   }, [product.product_id, product.id]);
 
-  // Fetch variants for parent products
+  // Fetch variants for parent products (any product that's not explicitly a variant)
   useEffect(() => {
-    const isParent = (product as any).is_parent;
-    if (isParent) {
+    if (canHaveVariants(product as any)) {
       fetchVariants();
     } else {
       setVariants([]);
@@ -585,7 +585,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               )}
 
               {/* Variant Sub-Table — collapsible for parent products (show unless explicitly a variant) */}
-              {(product as any).is_parent !== false && (
+              {canHaveVariants(product as any) && (
                 <CollapsibleSection title={`Varianten (${variants.length})`} defaultOpen={false}>
                   {!readOnly && (
                     <Button

@@ -6,6 +6,7 @@
  */
 
 import { VariantRecord, VariantSchema } from '../../webshop/types/unifiedProduct.types';
+import { isActive } from '../../../utils/productHelpers';
 
 /**
  * Derives the variant axes and their values from active variant records.
@@ -20,7 +21,7 @@ export function deriveAxesFromVariants(variants: VariantRecord[]): VariantSchema
   const axisMap: Record<string, Set<string>> = {};
 
   for (const variant of variants) {
-    if (variant.active === false) continue;
+    if (!isActive(variant)) continue;
 
     for (const [axis, value] of Object.entries(variant.variant_attributes)) {
       if (!axisMap[axis]) axisMap[axis] = new Set();
