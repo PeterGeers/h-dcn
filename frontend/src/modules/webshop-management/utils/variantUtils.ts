@@ -23,7 +23,7 @@ export function deriveAxesFromVariants(variants: VariantRecord[]): VariantSchema
   for (const variant of variants) {
     if (!isActive(variant)) continue;
 
-    for (const [axis, value] of Object.entries(variant.variant_attributes)) {
+    for (const [axis, value] of Object.entries(variant.variant_attributes || {})) {
       if (!axisMap[axis]) axisMap[axis] = new Set();
       axisMap[axis].add(value);
     }

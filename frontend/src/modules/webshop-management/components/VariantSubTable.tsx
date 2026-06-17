@@ -336,10 +336,10 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
             {/* Attribute values */}
             <Td>
               <HStack spacing={1} flexWrap="wrap">
-                {Object.entries(variant.variant_attributes).length === 0 ? (
+                {Object.entries(variant.variant_attributes || {}).length === 0 ? (
                   <Badge colorScheme="gray" size="sm">Default</Badge>
                 ) : (
-                  Object.entries(variant.variant_attributes).map(([key, value]) => (
+                  Object.entries(variant.variant_attributes || {}).map(([key, value]) => (
                     <Badge key={key} colorScheme="teal" size="sm">
                       {key}: {value}
                     </Badge>

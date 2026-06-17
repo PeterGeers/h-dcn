@@ -71,7 +71,8 @@ export function sortSizeValues(values: string[]): string[] {
 function deriveSchemaFromVariants(variants: AdminVariant[]): Record<string, string[]> {
   const axisMap: Record<string, Set<string>> = {};
   for (const v of variants) {
-    for (const [axis, value] of Object.entries(v.variant_attributes)) {
+    const attrs = v.variant_attributes || {};
+    for (const [axis, value] of Object.entries(attrs)) {
       if (!axisMap[axis]) axisMap[axis] = new Set();
       axisMap[axis].add(value);
     }
@@ -114,8 +115,8 @@ export function sortVariants(
 
   return [...variants].sort((a, b) => {
     // Sort by first axis using size sorter logic
-    const aFirstVal = a.variant_attributes[firstAxis] ?? '';
-    const bFirstVal = b.variant_attributes[firstAxis] ?? '';
+    const aFirstVal = (a.variant_attributes || {})[firstAxis] ?? '';
+    const bFirstVal = (b.variant_attributes || {})[firstAxis] ?? '';
 
     const aFirstOrder = firstAxisOrder.get(aFirstVal.toLowerCase());
     const bFirstOrder = firstAxisOrder.get(bFirstVal.toLowerCase());
@@ -131,8 +132,8 @@ export function sortVariants(
     // If first axis values are equal, sort by subsequent axes alphabetically
     for (let i = 1; i < axes.length; i++) {
       const axis = axes[i];
-      const aVal = (a.variant_attributes[axis] ?? '').toLowerCase();
-      const bVal = (b.variant_attributes[axis] ?? '').toLowerCase();
+      const aVal = ((a.variant_attributes || {})[axis] ?? '').toLowerCase();
+      const bVal = ((b.variant_attributes || {})[axis] ?? '').toLowerCase();
       const cmp = aVal.localeCompare(bVal);
       if (cmp !== 0) {
         return cmp;
