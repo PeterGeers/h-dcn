@@ -71,3 +71,33 @@ Follow conventional commits:
 - `chore:` — maintenance (deps, CI config, scripts)
 
 Keep the subject line under 70 chars. Use the body for details.
+
+## DynamoDB Field Safety (CRITICAL)
+
+DynamoDB fields are often absent, null, undefined, or stored as unexpected types (string vs number). Never use truthy/falsy checks on DynamoDB fields.
+
+### Rules
+
+1. **Boolean fields** (`active`, `is_parent`, `allow_oversell`): ALWAYS compare with strict equality
+   - ✅ `item.active === false` / `item.active !== false`
+   - ❌ `!item.active` / `if (item.active)`
+   - Use helpers: `isActive(item)`, `isDeactivated(item)`, `canHaveVariants(product)`
+
+2. **Numeric fields** (`prijs`, `price`, `stock`): ALWAYS convert before math/formatting
+   - ✅ `formatPrice(item.prijs)` or `Number(item.prijs || 0)`
+   - ❌ `item.prijs.toFixed(2)`
+   - Use helper: `formatPrice()`, `toPrice()`
+
+3. **Utilities first**: Before writing feature code that reads DynamoDB data, check if a helper exists in `frontend/src/utils/`. If not, CREATE IT FIRST.
+
+### Available helpers
+
+| Helper                     | Location                  | Use for                  |
+| -------------------------- | ------------------------- | ------------------------ |
+| `canHaveVariants(product)` | `utils/productHelpers.ts` | Show variant UI          |
+| `isVariantRecord(product)` | `utils/productHelpers.ts` | Filter out child records |
+| `isActive(item)`           | `utils/productHelpers.ts` | Active status checks     |
+| `isDeactivated(item)`      | `utils/productHelpers.ts` | Inactive filtering       |
+| `formatPrice(value)`       | `utils/formatPrice.ts`    | Display €X.XX safely     |
+| `formatPriceEuro(value)`   | `utils/formatPrice.ts`    | Alias for formatPrice    |
+| `toPrice(value)`           | `utils/formatPrice.ts`    | Convert to number safely |

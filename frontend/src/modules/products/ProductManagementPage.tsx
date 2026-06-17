@@ -7,6 +7,7 @@ import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
+import { isActive, isDeactivated } from '../../utils/productHelpers';
 
 import {
   Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription,
@@ -259,7 +260,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
   const filteredProducts = products.filter((p: Product) => {
     // Apply active/inactive filter (default: show only active)
-    if (!showInactive && p.active === false) return false;
+    if (!showInactive && isDeactivated(p)) return false;
 
     // Apply event_ids filter based on the active event filter
     if (activeFilter === 'webshop') {
@@ -409,7 +410,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               showStatusColumn={hasProductsFullAccess}
               renderActions={hasProductsFullAccess ? (product: Product) => (
                 <HStack spacing={1}>
-                  {product.active !== false ? (
+                  {isActive(product) ? (
                     <Tooltip label={t('management.deactivate')}>
                       <IconButton
                         aria-label={t('management.deactivate')}

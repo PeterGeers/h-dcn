@@ -51,6 +51,7 @@ import { sortVariants } from '../utils/sizeSorter';
 import { AddStockForm } from './AddStockForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import { formatPriceEuro } from '../../../utils/formatPrice';
+import { isActive } from '../../../utils/productHelpers';
 
 export interface VariantSubTableProps {
   product: AdminProduct;
@@ -109,7 +110,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   const filteredVariants = useMemo(() => {
-    const filtered = showInactive ? variants : variants.filter((v) => v.active !== false);
+    const filtered = showInactive ? variants : variants.filter((v) => isActive(v));
     return sortVariants(filtered);
   }, [variants, showInactive]);
 

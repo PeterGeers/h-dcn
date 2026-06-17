@@ -20,6 +20,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
+import { formatPrice } from '../../../utils/formatPrice';
 import VariantSelector from './VariantSelector';
 import PurchaseRulesFeedback from './PurchaseRulesFeedback';
 import { productService } from '../services/api';
@@ -279,7 +280,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   <Text fontSize={{ base: 'md', md: 'lg' }}>
                     {t('card.price_label')}{' '}
                     <Text as="span" fontWeight="bold" fontSize={{ base: 'lg', md: 'xl' }}>
-                      €{(product.price ?? product.prijs) ? Number(product.price ?? product.prijs).toFixed(2) : '0.00'}
+                      {formatPrice(product.price ?? product.prijs)}
                     </Text>
                   </Text>
                   <Text fontSize={{ base: 'sm', md: 'md' }}>

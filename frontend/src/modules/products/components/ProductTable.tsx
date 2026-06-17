@@ -2,6 +2,7 @@ import React from 'react';
 import { Table, Tbody, Td, Th, Thead, Tr, Box, Text, Badge } from '@chakra-ui/react';
 import { Product } from '../../../types';
 import { useTranslation } from 'react-i18next';
+import { isDeactivated } from '../../../utils/productHelpers';
 
 interface ProductTableProps {
   products: Product[];
@@ -33,7 +34,7 @@ export default function ProductTable({ products, onSelect, renderActions, showSt
               _hover={{ bg: 'orange.500', cursor: 'pointer', color: 'white' }}
               onClick={() => onSelect(p)}
               color="white"
-              opacity={p.active === false ? 0.6 : 1}
+              opacity={isDeactivated(p) ? 0.6 : 1}
             >
               <Td fontSize={{ base: 'xs', md: 'sm' }}>{p.artikelcode || '-'}</Td>
               <Td fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
@@ -45,7 +46,7 @@ export default function ProductTable({ products, onSelect, renderActions, showSt
               <Td fontSize={{ base: 'xs', md: 'sm' }}>€{p.prijs}</Td>
               {showStatusColumn && (
                 <Td fontSize={{ base: 'xs', md: 'sm' }}>
-                  {p.active === false ? (
+                  {isDeactivated(p) ? (
                     <Badge colorScheme="red" variant="subtle">{t('management.inactive_badge')}</Badge>
                   ) : (
                     <Badge colorScheme="green" variant="subtle">Actief</Badge>
