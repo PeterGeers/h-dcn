@@ -584,50 +584,46 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Box>
               )}
 
-              {/* Variant Sub-Table — always visible for parent products */}
+              {/* Variant Sub-Table — collapsible for parent products */}
               {(product as any).is_parent && (
-                <Box w="100%" borderWidth="1px" borderColor="gray.400" borderRadius="md" overflow="hidden">
-                  <HStack w="100%" bg="gray.700" px={3} py={2} justifyContent="space-between">
-                    <Text fontSize="sm" fontWeight="bold" color="white">Varianten</Text>
-                    {!readOnly && (
-                      <Button
-                        size="xs"
-                        colorScheme="orange"
-                        leftIcon={<AddIcon />}
-                        onClick={() => {
-                          setSelectedVariantForEdit(null);
-                          setVariantModalOpen(true);
-                        }}
-                      >
-                        Variant toevoegen
-                      </Button>
-                    )}
-                  </HStack>
-                  <Box p={3} bg="gray.800">
-                    <VariantSubTable
-                      product={{
-                        product_id: product.product_id || product.id,
-                        name: values.naam || product.naam || '',
-                        price: parseFloat(values.prijs) || 0,
-                        active: true,
-                        is_parent: true,
-                        variants: variants,
-                      } as AdminProduct}
-                      variants={variants}
-                      onUpdate={fetchVariants}
-                      isRefetching={isLoadingVariants}
-                      onRowClick={(variant) => {
-                        setSelectedVariantForEdit(variant);
+                <CollapsibleSection title={`Varianten (${variants.length})`} defaultOpen={false}>
+                  {!readOnly && (
+                    <Button
+                      size="xs"
+                      colorScheme="orange"
+                      leftIcon={<AddIcon />}
+                      mb={2}
+                      onClick={() => {
+                        setSelectedVariantForEdit(null);
                         setVariantModalOpen(true);
                       }}
-                    />
-                  </Box>
-                </Box>
+                    >
+                      Variant toevoegen
+                    </Button>
+                  )}
+                  <VariantSubTable
+                    product={{
+                      product_id: product.product_id || product.id,
+                      name: values.naam || product.naam || '',
+                      price: parseFloat(values.prijs) || 0,
+                      active: true,
+                      is_parent: true,
+                      variants: variants,
+                    } as AdminProduct}
+                    variants={variants}
+                    onUpdate={fetchVariants}
+                    isRefetching={isLoadingVariants}
+                    onRowClick={(variant) => {
+                      setSelectedVariantForEdit(variant);
+                      setVariantModalOpen(true);
+                    }}
+                  />
+                </CollapsibleSection>
               )}
 
               {/* Order Item Fields Editor - collapsible */}
               {!readOnly && (
-                <CollapsibleSection title="Bestelvelden per item" defaultOpen={!!values.order_item_fields && values.order_item_fields.length > 0}>
+                <CollapsibleSection title="Bestelvelden per item" defaultOpen={false}>
                   <OrderItemFieldsEditor
                     value={values.order_item_fields || []}
                     onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields.length > 0 ? fields : undefined)}
@@ -637,7 +633,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
               {/* Purchase Rules Editor - collapsible */}
               {!readOnly && (
-                <CollapsibleSection title="Aankoopregels" defaultOpen={!!values.purchase_rules && Object.values(values.purchase_rules).some(v => v != null)}>
+                <CollapsibleSection title="Aankoopregels" defaultOpen={false}>
                   <PurchaseRulesEditor
                     value={values.purchase_rules || {}}
                     onChange={(rules: PurchaseRules) => {
@@ -649,7 +645,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
               )}
 
               {/* Images CollapsibleSection */}
-              <CollapsibleSection title="Afbeeldingen" defaultOpen={values.images && values.images.length > 0}>
+              <CollapsibleSection title="Afbeeldingen" defaultOpen={false}>
                 <Button 
                   colorScheme="orange" 
                   size="sm"

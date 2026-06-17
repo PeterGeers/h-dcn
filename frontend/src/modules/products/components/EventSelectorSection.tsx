@@ -72,7 +72,7 @@ export default function EventSelectorSection({
   isDisabled = false,
 }: EventSelectorSectionProps) {
   const { isOpen, onToggle } = useDisclosure({
-    defaultIsOpen: selectedIds.length > 0,
+    defaultIsOpen: false,
   });
 
   const selectedNames = getSelectedEventNames(selectedIds, events);
