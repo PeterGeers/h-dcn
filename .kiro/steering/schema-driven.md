@@ -9,7 +9,7 @@ Every DynamoDB table has a **Field Registry** — a single source of truth for f
 | Table          | Registry Location                          | Status                                                    |
 | -------------- | ------------------------------------------ | --------------------------------------------------------- |
 | Members        | `frontend/src/config/memberFields/`        | ✅ Complete                                               |
-| Producten      | `frontend/src/config/productFields/`       | ❌ TODO                                                   |
+| Producten      | `frontend/src/config/productFields/`       | ✅ TODO                                                   |
 | Events         | `frontend/src/config/eventFields/`         | ❌ TODO                                                   |
 | Orders         | `frontend/src/config/orderFields/`         | ❌ TODO                                                   |
 | StockMovements | `frontend/src/config/stockMovementFields/` | ❌ TODO                                                   |

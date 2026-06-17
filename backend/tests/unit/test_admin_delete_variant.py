@@ -292,8 +292,8 @@ def test_delete_variant_permission_denied(tables_and_handler):
     assert response['statusCode'] == 403
 
 
-def test_delete_variant_syncs_parent_schema(tables_and_handler):
-    """After deletion, parent schema is rebuilt from remaining variants."""
+def test_delete_variant_does_not_modify_parent_schema(tables_and_handler):
+    """After deletion, parent record is not modified (no schema rebuild)."""
     producten, orders, handler = tables_and_handler
 
     # Create parent
@@ -334,10 +334,8 @@ def test_delete_variant_syncs_parent_schema(tables_and_handler):
 
     assert response['statusCode'] == 200
 
-    # Verify parent schema now only has S and L
+    # Verify parent schema is unchanged (no sync rebuild happens)
     parent = producten.get_item(Key={'product_id': 'prod-1'})['Item']
     schema = parent.get('variant_schema', {})
-    maat_values = schema.get('Maat', [])
-    assert 'S' in maat_values
-    assert 'L' in maat_values
-    assert 'M' not in maat_values
+    # Schema is NOT rebuilt — stays as-is from before deletion
+    assert schema == {'Maat': ['S', 'M', 'L']}

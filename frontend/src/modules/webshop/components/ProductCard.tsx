@@ -24,10 +24,8 @@ import VariantSelector from './VariantSelector';
 import PurchaseRulesFeedback from './PurchaseRulesFeedback';
 import { productService } from '../services/api';
 import {
-  VariantSchema,
   VariantRecord,
   PurchaseRules,
-  normalizeVariantSchema,
 } from '../types/unifiedProduct.types';
 
 interface Product {
@@ -39,7 +37,7 @@ interface Product {
   price?: number;
   images?: string | string[];
   image?: string | string[];
-  variant_schema?: VariantSchema;
+  is_parent?: boolean;
   purchase_rules?: PurchaseRules;
 }
 
@@ -84,60 +82,38 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [hasPurchaseViolation, setHasPurchaseViolation] = useState<boolean>(false);
   const { t } = useTranslation('products');
 
-  // Fetch variants when product has a variant_schema
+  // Fetch variants for the product
   useEffect(() => {
     if (!product || !isOpen) return;
 
     const productId = product.product_id || product.id || '';
 
-    if (product.variant_schema && Object.keys(product.variant_schema).length > 0) {
-      setLoadingVariants(true);
-      productService
-        .getVariants(productId)
-        .then((response: any) => {
-          const variantData = Array.isArray(response)
-            ? response
-            : Array.isArray(response?.data?.variants)
-              ? response.data.variants
-              : [];
-          setVariants(variantData);
-        })
-        .catch((err: Error) => {
-          console.error('Failed to fetch variants:', err);
-          setVariants([]);
-          setVariantFetchError(true);
-        })
-        .finally(() => {
-          setLoadingVariants(false);
-        });
-    } else {
-      // For products without variant_schema, try to load the default variant
-      setLoadingVariants(true);
-      productService
-        .getVariants(productId)
-        .then((response: any) => {
-          const variantData = Array.isArray(response)
-            ? response
-            : Array.isArray(response?.data?.variants)
-              ? response.data.variants
-              : [];
-          setVariants(variantData);
-          // Auto-select default variant (variant with empty variant_attributes)
-          const defaultVariant = variantData.find(
-            (v: VariantRecord) => Object.keys(v.variant_attributes || {}).length === 0
-          );
-          if (defaultVariant) {
-            setSelectedVariant(defaultVariant);
-          }
-        })
-        .catch(() => {
-          setVariants([]);
-          setVariantFetchError(true);
-        })
-        .finally(() => {
-          setLoadingVariants(false);
-        });
-    }
+    setLoadingVariants(true);
+    productService
+      .getVariants(productId)
+      .then((response: any) => {
+        const variantData = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.data?.variants)
+            ? response.data.variants
+            : [];
+        setVariants(variantData);
+        // Auto-select default variant (variant with empty variant_attributes)
+        const defaultVariant = variantData.find(
+          (v: VariantRecord) => Object.keys(v.variant_attributes || {}).length === 0
+        );
+        if (defaultVariant) {
+          setSelectedVariant(defaultVariant);
+        }
+      })
+      .catch((err: Error) => {
+        console.error('Failed to fetch variants:', err);
+        setVariants([]);
+        setVariantFetchError(true);
+      })
+      .finally(() => {
+        setLoadingVariants(false);
+      });
 
     // Reset state on product change
     setSelectedVariant(null);
@@ -156,8 +132,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   if (!product) return null;
 
-  const hasVariantSchema =
-    product.variant_schema && Object.keys(product.variant_schema).length > 0;
+  const hasVariantAxes =
+    variants.some((v) => Object.keys(v.variant_attributes || {}).length > 0);
 
   // Handle both 'image' and 'images' properties from API
   let images: string[] = [];
@@ -198,10 +174,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const canAddToCart = (() => {
     // Disable if variant fetch failed
     if (variantFetchError) return false;
-    // For products with variant_schema, a variant must be resolved
-    if (hasVariantSchema && !selectedVariant) return false;
-    // For products without variant_schema, allow if default variant is loaded or no variants
-    if (!hasVariantSchema && variants.length > 0 && !selectedVariant) return false;
+    // For products with variant axes, a variant must be resolved
+    if (hasVariantAxes && !selectedVariant) return false;
+    // For products without variant axes, allow if default variant is loaded or no variants
+    if (!hasVariantAxes && variants.length > 0 && !selectedVariant) return false;
     // Cannot add if out of stock
     if (isOutOfStock) return false;
     // Cannot add if purchase rule violated
@@ -312,7 +288,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </VStack>
 
                 {/* Variant selector - replaces legacy opties dropdown */}
-                {hasVariantSchema && (
+                {hasVariantAxes && (
                   <Box>
                     {loadingVariants ? (
                       <Flex justify="center" py={3}>
@@ -327,7 +303,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                       </Text>
                     ) : (
                       <VariantSelector
-                        variantSchema={normalizeVariantSchema(product.variant_schema)!}
                         variants={variants}
                         onVariantSelect={handleVariantSelect}
                       />
@@ -335,15 +310,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   </Box>
                 )}
 
-                {/* Variant fetch error for products without variant_schema */}
-                {!hasVariantSchema && variantFetchError && (
+                {/* Variant fetch error for products without variant axes */}
+                {!hasVariantAxes && variantFetchError && (
                   <Text color="red.500" fontSize="sm">
                     {t('card.variant_fetch_error')}
                   </Text>
                 )}
 
-                {/* Sold out message for products without variant_schema */}
-                {!hasVariantSchema && isOutOfStock && (
+                {/* Sold out message for products without variant axes */}
+                {!hasVariantAxes && isOutOfStock && (
                   <Text color="red.500" fontSize="sm" fontWeight="bold">
                     {t('card.sold_out')}
                   </Text>

@@ -97,10 +97,13 @@ backend/tests/
 
 ## Running Tests
 
+### Never run the full backend test suite in automation
+
+The full suite takes ~40 minutes and runs nightly via GitHub Actions (with a generated report). When verifying backend changes locally or in Kiro, only run the specific test files relevant to the changed handlers:
+
 ```bash
 # From backend/ directory
-pytest tests/                          # Full suite
-pytest tests/unit/test_<name>.py       # Single file
+pytest tests/unit/test_<name>.py       # Single file (preferred)
 pytest tests/ -k "scan_product"        # By keyword
 pytest tests/ --tb=short -q            # Concise output
 ```

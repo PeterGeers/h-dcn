@@ -3,7 +3,7 @@
  *
  * Tests for axis rendering, selection interaction, variant resolution,
  * stock display, and out-of-stock state.
- * Validates: Requirements 15.1–15.8
+ * Validates: Requirements 5.1, 5.2, 5.3
  */
 
 import React from 'react';
@@ -55,7 +55,8 @@ import { VariantRecord, VariantSchema } from '../types/unifiedProduct.types';
 function createVariant(
   attributes: Record<string, string>,
   stock = 10,
-  allowOversell = false
+  allowOversell = false,
+  active = true
 ): VariantRecord {
   const attrStr = Object.values(attributes).join('_');
   return {
@@ -67,13 +68,12 @@ function createVariant(
     stock,
     sold_count: 0,
     allow_oversell: allowOversell,
-    active: true,
+    active,
   };
 }
 
 const renderComponent = (props: Partial<VariantSelectorProps> = {}) => {
   const defaultProps: VariantSelectorProps = {
-    variantSchema: { Maat: ['S', 'M', 'L'] },
     variants: [
       createVariant({ Maat: 'S' }, 10),
       createVariant({ Maat: 'M' }, 5),
@@ -92,10 +92,12 @@ const renderComponent = (props: Partial<VariantSelectorProps> = {}) => {
 
 describe('VariantSelector', () => {
   describe('axis rendering', () => {
-    it('renders a select for each axis in the variant schema', () => {
+    it('renders a select for each axis derived from variant records', () => {
       renderComponent({
-        variantSchema: { Maat: ['S', 'M', 'L'], Kleur: ['Rood', 'Blauw'] },
-        variants: [],
+        variants: [
+          createVariant({ Maat: 'S', Kleur: 'Rood' }),
+          createVariant({ Maat: 'M', Kleur: 'Blauw' }),
+        ],
       });
 
       expect(screen.getByLabelText('Selecteer Maat')).toBeInTheDocument();
@@ -104,8 +106,7 @@ describe('VariantSelector', () => {
 
     it('renders axis name as label', () => {
       renderComponent({
-        variantSchema: { Maat: ['S', 'M', 'L'] },
-        variants: [],
+        variants: [createVariant({ Maat: 'S' })],
       });
 
       expect(screen.getByText('Maat')).toBeInTheDocument();
@@ -113,8 +114,11 @@ describe('VariantSelector', () => {
 
     it('renders option values for each axis', () => {
       renderComponent({
-        variantSchema: { Maat: ['S', 'M', 'L'] },
-        variants: [],
+        variants: [
+          createVariant({ Maat: 'S' }),
+          createVariant({ Maat: 'M' }),
+          createVariant({ Maat: 'L' }),
+        ],
       });
 
       const select = screen.getByLabelText('Selecteer Maat');
@@ -125,8 +129,7 @@ describe('VariantSelector', () => {
 
     it('includes placeholder option', () => {
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'] },
-        variants: [],
+        variants: [createVariant({ Maat: 'S' }), createVariant({ Maat: 'M' })],
       });
 
       expect(screen.getByText('variant.select_placeholder')).toBeInTheDocument();
@@ -134,13 +137,61 @@ describe('VariantSelector', () => {
 
     it('shows prompt to select all options when not all selected', () => {
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'], Kleur: ['Rood'] },
-        variants: [],
+        variants: [
+          createVariant({ Maat: 'S', Kleur: 'Rood' }),
+          createVariant({ Maat: 'M', Kleur: 'Blauw' }),
+        ],
       });
 
       expect(
         screen.getByText('variant.select_all_prompt')
       ).toBeInTheDocument();
+    });
+
+    it('excludes inactive variants from axis display', () => {
+      renderComponent({
+        variants: [
+          createVariant({ Maat: 'S' }, 10, false, true),
+          createVariant({ Maat: 'M' }, 10, false, true),
+          createVariant({ Maat: 'XL' }, 10, false, false), // inactive — should not appear
+          createVariant({ Maat: 'XXL' }, 5, false, false), // inactive — should not appear
+        ],
+      });
+
+      const select = screen.getByLabelText('Selecteer Maat');
+      expect(select).toContainHTML('<option value="S">S</option>');
+      expect(select).toContainHTML('<option value="M">M</option>');
+      expect(select).not.toContainHTML('<option value="XL">XL</option>');
+      expect(select).not.toContainHTML('<option value="XXL">XXL</option>');
+    });
+
+    it('correctly aggregates axis values from multiple active records without duplicates', () => {
+      // Two variants share Maat: 'S' but have different Kleur values
+      // Axis "Maat" should show S, M (deduplicated), Kleur should show Rood, Blauw, Groen
+      renderComponent({
+        variants: [
+          createVariant({ Maat: 'S', Kleur: 'Rood' }, 10, false, true),
+          createVariant({ Maat: 'S', Kleur: 'Blauw' }, 5, false, true),
+          createVariant({ Maat: 'M', Kleur: 'Rood' }, 8, false, true),
+          createVariant({ Maat: 'M', Kleur: 'Groen' }, 3, false, true),
+        ],
+      });
+
+      const maatSelect = screen.getByLabelText('Selecteer Maat');
+      const kleurSelect = screen.getByLabelText('Selecteer Kleur');
+
+      // Maat should have exactly S and M (no duplicates despite 2 variants with S and 2 with M)
+      expect(maatSelect).toContainHTML('<option value="S">S</option>');
+      expect(maatSelect).toContainHTML('<option value="M">M</option>');
+      const maatOptions = maatSelect.querySelectorAll('option[value="S"]');
+      expect(maatOptions).toHaveLength(1); // No duplicate S
+
+      // Kleur should aggregate Rood, Blauw, Groen from all active variants
+      expect(kleurSelect).toContainHTML('<option value="Rood">Rood</option>');
+      expect(kleurSelect).toContainHTML('<option value="Blauw">Blauw</option>');
+      expect(kleurSelect).toContainHTML('<option value="Groen">Groen</option>');
+      const roodOptions = kleurSelect.querySelectorAll('option[value="Rood"]');
+      expect(roodOptions).toHaveLength(1); // No duplicate Rood
     });
   });
 
@@ -155,8 +206,10 @@ describe('VariantSelector', () => {
     it('calls onVariantSelect with null when only some axes are selected', () => {
       const onVariantSelect = jest.fn();
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'], Kleur: ['Rood', 'Blauw'] },
-        variants: [createVariant({ Maat: 'S', Kleur: 'Rood' })],
+        variants: [
+          createVariant({ Maat: 'S', Kleur: 'Rood' }),
+          createVariant({ Maat: 'M', Kleur: 'Blauw' }),
+        ],
         onVariantSelect,
       });
 
@@ -174,7 +227,6 @@ describe('VariantSelector', () => {
       const variant = createVariant({ Maat: 'S' }, 10);
       const onVariantSelect = jest.fn();
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'] },
         variants: [variant, createVariant({ Maat: 'M' }, 5)],
         onVariantSelect,
       });
@@ -193,7 +245,6 @@ describe('VariantSelector', () => {
       const variantM = createVariant({ Maat: 'M' }, 5);
       const onVariantSelect = jest.fn();
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'] },
         variants: [variantS, variantM],
         onVariantSelect,
       });
@@ -219,7 +270,6 @@ describe('VariantSelector', () => {
       const variant = createVariant({ Maat: 'M', Kleur: 'Blauw' }, 7);
       const onVariantSelect = jest.fn();
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'], Kleur: ['Rood', 'Blauw'] },
         variants: [
           createVariant({ Maat: 'S', Kleur: 'Rood' }),
           createVariant({ Maat: 'S', Kleur: 'Blauw' }),
@@ -244,8 +294,10 @@ describe('VariantSelector', () => {
     it('shows "Combinatie niet beschikbaar" when no variant matches', () => {
       const onVariantSelect = jest.fn();
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'], Kleur: ['Rood', 'Blauw'] },
-        variants: [createVariant({ Maat: 'S', Kleur: 'Rood' })],
+        variants: [
+          createVariant({ Maat: 'S', Kleur: 'Rood' }),
+          createVariant({ Maat: 'M', Kleur: 'Blauw' }),
+        ],
         onVariantSelect,
       });
 
@@ -254,7 +306,7 @@ describe('VariantSelector', () => {
           target: { value: 'M' },
         });
         fireEvent.change(screen.getByLabelText('Selecteer Kleur'), {
-          target: { value: 'Blauw' },
+          target: { value: 'Rood' },
         });
       });
 
@@ -266,7 +318,6 @@ describe('VariantSelector', () => {
   describe('stock display', () => {
     it('displays stock count when variant is resolved and in stock', () => {
       renderComponent({
-        variantSchema: { Maat: ['S'] },
         variants: [createVariant({ Maat: 'S' }, 10)],
       });
 
@@ -283,7 +334,6 @@ describe('VariantSelector', () => {
   describe('out-of-stock state', () => {
     it('shows "Niet op voorraad" when stock is 0 and allow_oversell is false', () => {
       renderComponent({
-        variantSchema: { Maat: ['L'] },
         variants: [createVariant({ Maat: 'L' }, 0, false)],
       });
 
@@ -298,7 +348,6 @@ describe('VariantSelector', () => {
 
     it('shows stock count (0) when allow_oversell is true', () => {
       renderComponent({
-        variantSchema: { Maat: ['L'] },
         variants: [createVariant({ Maat: 'L' }, 0, true)],
       });
 
@@ -347,8 +396,7 @@ describe('VariantSelector', () => {
   describe('disabled state', () => {
     it('disables selects when isDisabled is true', () => {
       renderComponent({
-        variantSchema: { Maat: ['S', 'M'] },
-        variants: [],
+        variants: [createVariant({ Maat: 'S' }), createVariant({ Maat: 'M' })],
         isDisabled: true,
       });
 

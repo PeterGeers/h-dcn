@@ -13,7 +13,6 @@ import OrderSuccess from './components/OrderSuccess';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService, memberService, orderService } from './services/api';
 import { ApiService } from '../../services/apiService';
-import { VariantSchema } from './types/unifiedProduct.types';
 
 interface User {
   attributes?: {
@@ -36,7 +35,6 @@ interface Product {
   price?: number;
   prijs?: number | string;
   images?: string[];
-  variant_schema?: VariantSchema;
   is_parent?: boolean;
   event_id?: string | null;
   active?: boolean;
@@ -155,7 +153,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           subgroep: 'T-shirts',
           prijs: 25.00,
           images: [],
-          variant_schema: { 'Maat': ['S', 'M', 'L', 'XL'] },
           is_parent: true,
           event_id: null,
           active: true,
@@ -167,7 +164,6 @@ function WebshopPage({ user }: WebshopPageProps) {
           subgroep: 'Hoodies',
           prijs: 45.00,
           images: [],
-          variant_schema: { 'Maat': ['S', 'M', 'L', 'XL'] },
           is_parent: true,
           event_id: null,
           active: true,

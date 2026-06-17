@@ -94,9 +94,6 @@ export interface Member {
   aanmeldingsjaar?: number | null;
 }
 
-/** Maps axis names to their possible values (e.g., {"Maat": ["S","M","L","XL"]}) */
-export type VariantSchema = Record<string, string[]>;
-
 export interface Product {
   product_id: string;
   id?: string; // alias used for React keys and legacy article codes
@@ -107,7 +104,6 @@ export interface Product {
   subgroep?: string;
   images?: string[];
   event_ids?: string[];
-  variant_schema?: VariantSchema;
   is_parent?: boolean;
   active?: boolean;
   order_item_fields?: any[];

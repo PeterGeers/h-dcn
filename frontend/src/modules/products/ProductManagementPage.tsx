@@ -112,8 +112,8 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   }, []);
 
   const handleSave = (data: Product) => {
-    // Remove fields managed by backend or with separate save API (variant_schema)
-    const { updated_at, created_at, opties, variant_schema, ...cleanData } = data as any;
+    // Remove fields managed by backend or no longer used
+    const { updated_at, created_at, opties, ...cleanData } = data as any;
     
     // Use canonical Dutch field names only (per schema-driven.md)
     const processedData = {
@@ -465,7 +465,6 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 onDelete={() => {}} // Disabled delete function
                 onNew={() => {}} // Disabled new function
                 onClose={() => setSelected(null)}
-                onNavigate={setSelected}
                 readOnly={true} // Add read-only mode
               />
             }
@@ -479,7 +478,6 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               onDelete={handleDelete}
               onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
               onClose={() => setSelected(null)}
-              onNavigate={setSelected}
               readOnly={false}
             />
           </FunctionGuard>

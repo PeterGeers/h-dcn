@@ -49,7 +49,6 @@ import { AdminProduct, AdminVariant } from '../types/admin.types';
 import { updateVariant, deleteVariant } from '../services/adminApi';
 import { sortVariants } from '../utils/sizeSorter';
 import { AddStockForm } from './AddStockForm';
-import { AddVariantForm } from './AddVariantForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 
 export interface VariantSubTableProps {
@@ -59,6 +58,8 @@ export interface VariantSubTableProps {
   onUpdate: () => Promise<void> | void;
   /** When true, shows a non-blocking loading indicator over the table. */
   isRefetching?: boolean;
+  /** Callback when a variant row is clicked (opens edit modal in parent). */
+  onRowClick?: (variant: AdminVariant) => void;
 }
 
 export const VariantSubTable: React.FC<VariantSubTableProps> = ({
@@ -66,6 +67,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
   variants,
   onUpdate,
   isRefetching = false,
+  onRowClick,
 }) => {
   const toast = useToast();
   const { canMutate } = useAdminPermissions();
@@ -107,8 +109,8 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
 
   const filteredVariants = useMemo(() => {
     const filtered = showInactive ? variants : variants.filter((v) => v.active !== false);
-    return sortVariants(filtered, product.variant_schema || {});
-  }, [variants, showInactive, product.variant_schema]);
+    return sortVariants(filtered);
+  }, [variants, showInactive]);
 
   const handleOversellToggle = async (variant: AdminVariant, newValue: boolean) => {
     setTogglingOversellId(variant.product_id);
@@ -321,7 +323,13 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
       </Thead>
       <Tbody>
         {filteredVariants.map((variant) => (
-          <Tr key={variant.product_id} opacity={variant.active === false ? 0.5 : 1}>
+          <Tr
+            key={variant.product_id}
+            opacity={variant.active === false ? 0.5 : 1}
+            cursor={onRowClick ? 'pointer' : undefined}
+            _hover={onRowClick ? { bg: 'gray.700' } : undefined}
+            onClick={onRowClick ? () => onRowClick(variant) : undefined}
+          >
             {/* Attribute values */}
             <Td>
               <HStack spacing={1} flexWrap="wrap">
@@ -344,7 +352,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
             <Td isNumeric>{variant.sold_count}</Td>
 
             {/* Allow oversell toggle */}
-            <Td>
+            <Td onClick={(e) => e.stopPropagation()}>
               <Tooltip label={!canMutate ? disabledTooltip : ''} isDisabled={canMutate} hasArrow>
                 <Box display="inline-block">
                   <Switch
@@ -359,7 +367,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
             </Td>
 
             {/* Price (inline editable) */}
-            <Td isNumeric>
+            <Td isNumeric onClick={(e) => e.stopPropagation()}>
               {editingPriceId === variant.product_id ? (
                 <HStack spacing={1} justify="flex-end">
                   <NumberInput
@@ -412,7 +420,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
             </Td>
 
             {/* Actions */}
-            <Td>
+            <Td onClick={(e) => e.stopPropagation()}>
               <HStack spacing={1}>
                 <AddStockForm
                   productId={product.product_id}
@@ -450,16 +458,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
         ))}
       </Tbody>
     </Table>
-
-    {/* Add Variant button (contains its own modal) */}
-    <Box mt={3}>
-      <AddVariantForm
-        productId={product.product_id}
-        variantSchema={product.variant_schema || {}}
-        onSuccess={triggerRefetch}
-        isDisabled={!canMutate}
-      />
-    </Box>
 
     {/* Delete Confirmation Dialog */}
     <AlertDialog

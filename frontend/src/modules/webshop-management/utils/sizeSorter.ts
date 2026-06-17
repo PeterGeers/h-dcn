@@ -65,19 +65,39 @@ export function sortSizeValues(values: string[]): string[] {
 }
 
 /**
+ * Derives a variant schema (axis→values map) directly from variant records.
+ * Used as a replacement for the removed `variant_schema` field on parent products.
+ */
+function deriveSchemaFromVariants(variants: AdminVariant[]): Record<string, string[]> {
+  const axisMap: Record<string, Set<string>> = {};
+  for (const v of variants) {
+    for (const [axis, value] of Object.entries(v.variant_attributes)) {
+      if (!axisMap[axis]) axisMap[axis] = new Set();
+      axisMap[axis].add(value);
+    }
+  }
+  const result: Record<string, string[]> = {};
+  for (const [axis, values] of Object.entries(axisMap)) {
+    result[axis] = Array.from(values);
+  }
+  return result;
+}
+
+/**
  * Sorts variants by:
- * 1. First axis defined in variantSchema using sizeSorter logic
+ * 1. First axis (derived from variant records) using sizeSorter logic
  * 2. Subsequent axes in case-insensitive alphabetical order
  *
+ * Axes are derived directly from variant_attributes — no external schema needed.
+ *
  * @param variants - Array of AdminVariant objects to sort
- * @param variantSchema - The variant schema defining axes and their values
  * @returns A new sorted array (does not mutate the input)
  */
 export function sortVariants(
   variants: AdminVariant[],
-  variantSchema: Record<string, string[]>
 ): AdminVariant[] {
-  const axes = Object.keys(variantSchema);
+  const derivedSchema = deriveSchemaFromVariants(variants);
+  const axes = Object.keys(derivedSchema);
   if (axes.length === 0) {
     return [...variants];
   }
@@ -85,7 +105,7 @@ export function sortVariants(
   const firstAxis = axes[0];
 
   // Build a sort-order index for the first axis using sizeSorter logic
-  const firstAxisValues = variantSchema[firstAxis] ?? [];
+  const firstAxisValues = derivedSchema[firstAxis] ?? [];
   const sortedFirstAxisValues = sortSizeValues(firstAxisValues);
   const firstAxisOrder = new Map<string, number>();
   sortedFirstAxisValues.forEach((val, idx) => {

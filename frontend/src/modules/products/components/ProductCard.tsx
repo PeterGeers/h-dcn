@@ -1,21 +1,20 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Checkbox, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
+import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
+import { ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
 import { useState, useEffect, useCallback } from 'react';
 import { Product, Event as HDCNEvent } from '../../../types';
-import VariantSchemaEditor from './VariantSchemaEditor';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
-import { VariantSchema, OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
+import { OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
-import { updateVariantSchema } from '../api/productApi';
 import { getRequiredFields, getProductField } from '../../../config/productFields';
 import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
 import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
 import { VariantEditModal } from './VariantEditModal';
+import EventSelectorSection from './EventSelectorSection';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -56,7 +55,6 @@ interface ProductCardProps {
   onNew: () => void;
   onClose: () => void;
   filteredProducts: Product[];
-  onNavigate: (product: Product) => void;
   readOnly?: boolean; // Add read-only mode support
 }
 
@@ -93,7 +91,7 @@ for (const key of requiredParentFields) {
 }
 const schema = Yup.object().shape(schemaShape);
 
-export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, onNavigate, readOnly = false }: ProductCardProps) {
+export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
@@ -101,11 +99,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
   const [events, setEvents] = useState<HDCNEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState<boolean>(false);
-  const [variantSchemaHasErrors, setVariantSchemaHasErrors] = useState<boolean>(false);
   const [variants, setVariants] = useState<AdminVariant[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState<boolean>(false);
   const [variantModalOpen, setVariantModalOpen] = useState<boolean>(false);
-  const [clickedVariantAttribute, setClickedVariantAttribute] = useState<Record<string, string>>({});
+  const [selectedVariantForEdit, setSelectedVariantForEdit] = useState<AdminVariant | null>(null);
 
   const fetchVariants = useCallback(async () => {
     const productId = product.product_id || product.id;
@@ -128,11 +125,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     }
   }, [product.product_id, product.id]);
 
-  // Fetch variants when product has a non-empty variant_schema
+  // Fetch variants for parent products
   useEffect(() => {
-    const schema = (product as any).variant_schema;
-    const hasVariantValues = schema && Object.values(schema).some((vals: any) => Array.isArray(vals) && vals.length > 0);
-    if (hasVariantValues) {
+    const isParent = (product as any).is_parent;
+    if (isParent) {
       fetchVariants();
     } else {
       setVariants([]);
@@ -204,7 +200,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         display="flex"
         alignItems="center"
         fontSize="md"
-        width="50%"
+        width="100%"
         _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
       >
         <Text color={groep ? 'white' : 'gray.300'}>
@@ -386,22 +382,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   if (!filteredProducts || filteredProducts.length === 0) {
     return null;
   }
-  
-  const currentIndex = filteredProducts.findIndex(p => p.id === product.id);
-  const canGoPrevious = currentIndex > 0;
-  const canGoNext = currentIndex < filteredProducts.length - 1;
-  
-  const handlePrevious = () => {
-    if (canGoPrevious && filteredProducts[currentIndex - 1]) {
-      onNavigate(filteredProducts[currentIndex - 1]);
-    }
-  };
-  
-  const handleNext = () => {
-    if (canGoNext && filteredProducts[currentIndex + 1]) {
-      onNavigate(filteredProducts[currentIndex + 1]);
-    }
-  };
 
   return (
     <Box 
@@ -443,13 +423,11 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           groep: product.groep || '',
           subgroep: product.subgroep || '',
           event_ids: (product as any).event_ids || [],
-          variant_schema: (product as any).variant_schema || undefined,
           order_item_fields: (product as any).order_item_fields || undefined,
           purchase_rules: (product as any).purchase_rules || undefined,
         }}
         validationSchema={schema}
         onSubmit={(values) => {
-          if (variantSchemaHasErrors) return;
           // Remove legacy fields from payload, send only canonical registry fields
           const { opties, nietInWinkel, event_id, id, name, price, image, ...cleanValues } = values as any;
 
@@ -521,18 +499,8 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <FormErrorMessage>{errors.naam as string}</FormErrorMessage>
               </FormControl>
 
-              {/* ID and Price with navigation buttons */}
+              {/* ID and Price */}
               <HStack spacing={4} width="100%">
-                {filteredProducts.length > 1 && (
-                  <IconButton
-                    icon={<ChevronLeftIcon />}
-                    colorScheme="orange"
-                    isDisabled={!canGoPrevious}
-                    onClick={handlePrevious}
-                    aria-label="Vorige product"
-                    size="sm"
-                  />
-                )}
                 <FormControl isInvalid={!!(errors.artikelcode && touched.artikelcode)} flex={1}>
                   <Field name="artikelcode" as={Input} placeholder="Artikel code (bijv. G5)" color="white" bg="gray.600" borderColor={errors.artikelcode && touched.artikelcode ? 'red.500' : 'gray.500'} id="product-artikelcode" isDisabled={readOnly} _placeholder={{ color: 'gray.300' }} />
                   <FormErrorMessage>{errors.artikelcode as string}</FormErrorMessage>
@@ -569,16 +537,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                   </Field>
                   <FormErrorMessage>{errors.prijs as string}</FormErrorMessage>
                 </FormControl>
-                {filteredProducts.length > 1 && (
-                  <IconButton
-                    icon={<ChevronRightIcon />}
-                    colorScheme="orange"
-                    isDisabled={!canGoNext}
-                    onClick={handleNext}
-                    aria-label="Volgende product"
-                    size="sm"
-                  />
-                )}
               </HStack>
 
               {/* Category field */}
@@ -591,39 +549,17 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
 
-              {/* Event_ids multiselect — per webshop-as-event.md */}
-              <FormControl>
-                <Text fontSize="xs" fontWeight="bold" color="gray.700" mb={1}>
-                  Zichtbaar in:
-                </Text>
-                <VStack align="stretch" spacing={1}>
-                  {[{ id: 'evt-webshop', label: 'Webshop (algemeen)' }, ...events.map(e => ({ id: e.event_id, label: e.title || e.naam || e.event_id }))].map((evt) => (
-                    <Checkbox
-                      key={evt.id}
-                      isChecked={(values.event_ids || []).includes(evt.id)}
-                      onChange={(e) => {
-                        const current: string[] = values.event_ids || [];
-                        if (e.target.checked) {
-                          setFieldValue('event_ids', [...current, evt.id]);
-                        } else {
-                          setFieldValue('event_ids', current.filter((id: string) => id !== evt.id));
-                        }
-                      }}
-                      colorScheme="orange"
-                      size="sm"
-                      isDisabled={readOnly}
-                    >
-                      <Text fontSize="sm" color="gray.800">{evt.label}</Text>
-                    </Checkbox>
-                  ))}
-                </VStack>
-                <Text fontSize="xs" color="gray.500" mt={1}>
-                  {eventsLoading ? 'Events laden...' : `Selecteer waar dit product zichtbaar is (${events.length} events)`}
-                </Text>
-              </FormControl>
+              {/* Evenementen — CollapsibleSection with badges */}
+              <EventSelectorSection
+                events={events}
+                selectedIds={values.event_ids || []}
+                onChange={(ids: string[]) => setFieldValue('event_ids', ids)}
+                isLoading={eventsLoading}
+                isDisabled={readOnly}
+              />
 
               {/* Legacy required_attributes display */}
-              {(product as any).required_attributes && !values.variant_schema && !values.order_item_fields && !values.purchase_rules && (
+              {(product as any).required_attributes && !values.order_item_fields && !values.purchase_rules && (
                 <Box w="100%" p={3} bg="yellow.50" borderRadius="md" border="1px solid" borderColor="yellow.300">
                   <HStack mb={2}>
                     <Text fontSize="sm" fontWeight="bold" color="yellow.800">
@@ -648,69 +584,45 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Box>
               )}
 
-              {/* Variant Schema Editor - collapsible */}
-              <CollapsibleSection title="Variant Schema" defaultOpen={!!values.variant_schema && Object.keys(values.variant_schema).length > 0}>
-                <VariantSchemaEditor
-                  value={values.variant_schema || {}}
-                  onChange={(schema: VariantSchema) => {
-                    setFieldValue('variant_schema', Object.keys(schema).length > 0 ? schema : undefined);
-                    // Validate variant schema errors
-                    const axes = Object.entries(schema);
-                    let hasErrors = false;
-                    if (axes.length > 0) {
-                      const totalCombinations = axes.reduce((product, [, vals]) => product * (vals.length || 1), 1);
-                      if (totalCombinations > 100) hasErrors = true;
-                      const axisNames = axes.map(([name]) => name.trim().toLowerCase());
-                      axes.forEach(([name, vals], index) => {
-                        if (!name.trim()) hasErrors = true;
-                        const dupIdx = axisNames.indexOf(name.trim().toLowerCase());
-                        if (dupIdx !== -1 && dupIdx !== index) hasErrors = true;
-                        const trimmedValues = vals.map((v) => v.trim().toLowerCase());
-                        vals.forEach((val, vIndex) => {
-                          if (!val.trim()) hasErrors = true;
-                          const dupVIdx = trimmedValues.indexOf(val.trim().toLowerCase());
-                          if (dupVIdx !== -1 && dupVIdx !== vIndex) hasErrors = true;
-                        });
-                      });
-                    }
-                    setVariantSchemaHasErrors(hasErrors);
-                  }}
-                  productId={product.product_id || product.id}
-                  onSyncSchema={async (schema: VariantSchema) => {
-                    const productId = product.product_id || product.id;
-                    if (!productId) return;
-                    await updateVariantSchema(productId, schema);
-                  }}
-                  onVariantClick={(axisName: string, val: string) => {
-                    setClickedVariantAttribute({ [axisName]: val });
-                    setVariantModalOpen(true);
-                  }}
-                />
-                {variantSchemaHasErrors && (
-                  <Text fontSize="xs" color="red.500" mt={1}>
-                    Los variant schema fouten op voordat u opslaat
-                  </Text>
-                )}
-              </CollapsibleSection>
-
-              {/* Variant Sub-Table — renders when variant_schema has at least one axis with values */}
-              {values.variant_schema && Object.values(values.variant_schema as Record<string, string[]>).some((vals) => vals.length > 0) && (
-                <CollapsibleSection title="Varianten" defaultOpen={true}>
-                  <VariantSubTable
-                    product={{
-                      product_id: product.product_id || product.id,
-                      name: values.naam || product.naam || '',
-                      price: parseFloat(values.prijs) || 0,
-                      active: true,
-                      is_parent: true,
-                      variant_schema: values.variant_schema,
-                      variants: variants,
-                    } as AdminProduct}
-                    variants={variants}
-                    onUpdate={fetchVariants}
-                    isRefetching={isLoadingVariants}
-                  />
-                </CollapsibleSection>
+              {/* Variant Sub-Table — always visible for parent products */}
+              {(product as any).is_parent && (
+                <Box w="100%" borderWidth="1px" borderColor="gray.400" borderRadius="md" overflow="hidden">
+                  <HStack w="100%" bg="gray.700" px={3} py={2} justifyContent="space-between">
+                    <Text fontSize="sm" fontWeight="bold" color="white">Varianten</Text>
+                    {!readOnly && (
+                      <Button
+                        size="xs"
+                        colorScheme="orange"
+                        leftIcon={<AddIcon />}
+                        onClick={() => {
+                          setSelectedVariantForEdit(null);
+                          setVariantModalOpen(true);
+                        }}
+                      >
+                        Variant toevoegen
+                      </Button>
+                    )}
+                  </HStack>
+                  <Box p={3} bg="gray.800">
+                    <VariantSubTable
+                      product={{
+                        product_id: product.product_id || product.id,
+                        name: values.naam || product.naam || '',
+                        price: parseFloat(values.prijs) || 0,
+                        active: true,
+                        is_parent: true,
+                        variants: variants,
+                      } as AdminProduct}
+                      variants={variants}
+                      onUpdate={fetchVariants}
+                      isRefetching={isLoadingVariants}
+                      onRowClick={(variant) => {
+                        setSelectedVariantForEdit(variant);
+                        setVariantModalOpen(true);
+                      }}
+                    />
+                  </Box>
+                </Box>
               )}
 
               {/* Order Item Fields Editor - collapsible */}
@@ -736,73 +648,74 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </CollapsibleSection>
               )}
 
-              {/* Image upload button */}
-              <Button 
-                colorScheme="orange" 
-                size="sm"
-                isDisabled={readOnly}
-                onClick={async () => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.multiple = true;
-                  input.onchange = async (e) => {
-                    const target = (e as any).target as HTMLInputElement;
-                    const files = Array.from(target.files || []);
-                    if (files.length > 0) {
-                      try {
-                        setUploading(true);
-                        const uploadPromises = files.map(file => uploadToS3(file, product.id));
-                        const s3Urls = await Promise.all(uploadPromises);
-                        const currentImages = values.images || [];
-                        setFieldValue('images', [...currentImages, ...s3Urls]);
-                      } catch (error: any) {
-                        console.error('Error uploading images:', error);
-                        alert('Upload failed: ' + error.message);
-                      } finally {
-                        setUploading(false);
+              {/* Images CollapsibleSection */}
+              <CollapsibleSection title="Afbeeldingen" defaultOpen={values.images && values.images.length > 0}>
+                <Button 
+                  colorScheme="orange" 
+                  size="sm"
+                  isDisabled={readOnly}
+                  onClick={async () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.multiple = true;
+                    input.onchange = async (e) => {
+                      const target = (e as any).target as HTMLInputElement;
+                      const files = Array.from(target.files || []);
+                      if (files.length > 0) {
+                        try {
+                          setUploading(true);
+                          const uploadPromises = files.map(file => uploadToS3(file, product.id));
+                          const s3Urls = await Promise.all(uploadPromises);
+                          const currentImages = values.images || [];
+                          setFieldValue('images', [...currentImages, ...s3Urls]);
+                        } catch (error: any) {
+                          console.error('Error uploading images:', error);
+                          alert('Upload failed: ' + error.message);
+                        } finally {
+                          setUploading(false);
+                        }
                       }
-                    }
-                  };
-                  input.click();
-                }}
-              >
-                + Afbeeldingen
-              </Button>
+                    };
+                    input.click();
+                  }}
+                >
+                  + Afbeeldingen
+                </Button>
 
-              {uploading && <Text color="blue.500">Uploading...</Text>}
+                {uploading && <Text color="blue.500">Uploading...</Text>}
 
-              {/* Images section with 30% larger size */}
-              {values.images && values.images.length > 0 && (
-                <Box>
-                  <Text fontSize="sm" fontWeight="bold" mb={2}>Afbeeldingen ({values.images.length}):</Text>
-                  <VStack spacing={2}>
-                    {values.images.map((imageUrl: string, index: number) => (
-                      <HStack key={index} spacing={2} width="100%">
-                        <Image 
-                          src={imageUrl} 
-                          boxSize="78px"
-                          objectFit="cover"
-                          border="1px solid gray"
-                          borderRadius="md"
-                        />
-                        <Text fontSize="xs" flex={1} isTruncated>{String(imageUrl || '').split('/').pop()?.replace(/[<>"'&]/g, '') || 'Unknown'}</Text>
-                        <Button 
-                          size="xs" 
-                          colorScheme="red" 
-                          isDisabled={readOnly}
-                          onClick={() => {
-                            const newImages = values.images.filter((_: string, i: number) => i !== index);
-                            setFieldValue('images', newImages);
-                          }}
-                        >
-                          ×
-                        </Button>
-                      </HStack>
-                    ))}
-                  </VStack>
-                </Box>
-              )}
+                {values.images && values.images.length > 0 && (
+                  <Box mt={3}>
+                    <Text fontSize="sm" fontWeight="bold" mb={2}>Afbeeldingen ({values.images.length}):</Text>
+                    <VStack spacing={2}>
+                      {values.images.map((imageUrl: string, index: number) => (
+                        <HStack key={index} spacing={2} width="100%">
+                          <Image 
+                            src={imageUrl} 
+                            boxSize="78px"
+                            objectFit="cover"
+                            border="1px solid gray"
+                            borderRadius="md"
+                          />
+                          <Text fontSize="xs" flex={1} isTruncated>{String(imageUrl || '').split('/').pop()?.replace(/[<>"'&]/g, '') || 'Unknown'}</Text>
+                          <Button 
+                            size="xs" 
+                            colorScheme="red" 
+                            isDisabled={readOnly}
+                            onClick={() => {
+                              const newImages = values.images.filter((_: string, i: number) => i !== index);
+                              setFieldValue('images', newImages);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
+              </CollapsibleSection>
 
               {/* Action buttons */}
               <HStack spacing={4}>
@@ -813,7 +726,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     size="sm"
                     type="submit"
                     aria-label="Opslaan"
-                    isDisabled={variantSchemaHasErrors}
+                    isDisabled={false}
                     _hover={{ bg: 'orange.600' }}
                   />
                 )}
@@ -873,9 +786,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         isOpen={variantModalOpen}
         onClose={() => setVariantModalOpen(false)}
         productId={product.product_id || product.id || ''}
-        clickedAttribute={clickedVariantAttribute}
-        variants={variants}
-        onUpdate={fetchVariants}
+        variant={selectedVariantForEdit}
+        existingVariants={variants}
+        onSuccess={fetchVariants}
         parentPrice={parseFloat((product as any).prijs) || 0}
       />
     </Box>

@@ -68,7 +68,6 @@ describe('sortVariants', () => {
   });
 
   it('sorts variants by first axis using size sorter logic', () => {
-    const schema = { Maat: ['L', 'S', 'XL', 'M'] };
     const variants = [
       makeVariant({ Maat: 'XL' }),
       makeVariant({ Maat: 'S' }),
@@ -76,28 +75,26 @@ describe('sortVariants', () => {
       makeVariant({ Maat: 'M' }),
     ];
 
-    const sorted = sortVariants(variants, schema);
+    const sorted = sortVariants(variants);
     expect(sorted.map((v) => v.variant_attributes.Maat)).toEqual([
       'S', 'M', 'L', 'XL',
     ]);
   });
 
   it('sorts subsequent axes alphabetically', () => {
-    const schema = { Maat: ['M'], Kleur: ['Rood', 'Blauw', 'Groen'] };
     const variants = [
       makeVariant({ Maat: 'M', Kleur: 'Rood' }),
       makeVariant({ Maat: 'M', Kleur: 'Blauw' }),
       makeVariant({ Maat: 'M', Kleur: 'Groen' }),
     ];
 
-    const sorted = sortVariants(variants, schema);
+    const sorted = sortVariants(variants);
     expect(sorted.map((v) => v.variant_attributes.Kleur)).toEqual([
       'Blauw', 'Groen', 'Rood',
     ]);
   });
 
   it('sorts by first axis then by second axis', () => {
-    const schema = { Maat: ['S', 'M', 'L'], Kleur: ['Rood', 'Blauw'] };
     const variants = [
       makeVariant({ Maat: 'L', Kleur: 'Rood' }),
       makeVariant({ Maat: 'S', Kleur: 'Blauw' }),
@@ -105,38 +102,36 @@ describe('sortVariants', () => {
       makeVariant({ Maat: 'L', Kleur: 'Blauw' }),
     ];
 
-    const sorted = sortVariants(variants, schema);
+    const sorted = sortVariants(variants);
     expect(sorted.map((v) => `${v.variant_attributes.Maat}-${v.variant_attributes.Kleur}`)).toEqual([
       'S-Blauw', 'S-Rood', 'L-Blauw', 'L-Rood',
     ]);
   });
 
   it('handles numeric sizes in first axis', () => {
-    const schema = { Maat: ['42', '38', '40'] };
     const variants = [
       makeVariant({ Maat: '42' }),
       makeVariant({ Maat: '38' }),
       makeVariant({ Maat: '40' }),
     ];
 
-    const sorted = sortVariants(variants, schema);
+    const sorted = sortVariants(variants);
     expect(sorted.map((v) => v.variant_attributes.Maat)).toEqual([
       '38', '40', '42',
     ]);
   });
 
-  it('returns a copy when schema has no axes', () => {
-    const variants = [makeVariant({ Maat: 'M' })];
-    const sorted = sortVariants(variants, {});
+  it('returns a copy when no variants have attributes', () => {
+    const variants = [makeVariant({})];
+    const sorted = sortVariants(variants);
     expect(sorted).toEqual(variants);
     expect(sorted).not.toBe(variants);
   });
 
   it('does not mutate the input array', () => {
-    const schema = { Maat: ['L', 'S'] };
     const variants = [makeVariant({ Maat: 'L' }), makeVariant({ Maat: 'S' })];
     const original = [...variants];
-    sortVariants(variants, schema);
+    sortVariants(variants);
     expect(variants).toEqual(original);
   });
 });

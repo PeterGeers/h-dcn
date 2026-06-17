@@ -36,7 +36,6 @@ export interface AdminProduct {
   min_per_club?: number | null;
   required_attributes?: object | null;
   is_parent: boolean;
-  variant_schema?: Record<string, string[]>;
   variants: AdminVariant[];
 }
 

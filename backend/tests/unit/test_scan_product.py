@@ -2,11 +2,12 @@
 Unit tests for the scan_product handler.
 
 Tests:
-- Canonical Dutch response fields (product_id, naam, artikelcode, prijs, variant_schema, is_parent, event_ids, active)
+- Canonical Dutch response fields (product_id, naam, artikelcode, prijs, is_parent, event_ids, active)
 - Fallback: name → naam, price → prijs (for unmigrated records)
 - Exclusion of variant records (is_parent: false)
 - Exclusion of migration source records (source: "migration")
 - Retention of records where is_parent is true or not set
+- variant_schema is NOT included in response (removed)
 """
 
 import json
@@ -96,7 +97,7 @@ class TestScanProductNormalization:
     """Tests for response field normalization — canonical Dutch fields."""
 
     def test_returns_canonical_dutch_fields(self, producten_table):
-        """Returns all canonical Dutch fields for a product."""
+        """Returns all canonical Dutch fields for a product (without variant_schema)."""
         table, handler = producten_table
 
         table.put_item(Item={
@@ -104,7 +105,6 @@ class TestScanProductNormalization:
             'naam': 'Club T-shirt',
             'prijs': 25,
             'artikelcode': 'CT-01',
-            'variant_schema': {'Maat': ['S', 'M', 'L']},
             'is_parent': True,
             'event_ids': ['evt-webshop'],
             'active': True,
@@ -121,7 +121,7 @@ class TestScanProductNormalization:
         assert product['naam'] == 'Club T-shirt'
         assert product['artikelcode'] == 'CT-01'
         assert product['prijs'] == 25
-        assert product['variant_schema'] == {'Maat': ['S', 'M', 'L']}
+        assert 'variant_schema' not in product
         assert product['is_parent'] is True
         assert product['event_ids'] == ['evt-webshop']
         assert product['active'] is True
@@ -223,6 +223,70 @@ class TestScanProductNormalization:
 
         body = json.loads(response['body'])
         assert body[0]['event_ids'] == ['evt-pm2027', 'evt-webshop']
+
+
+class TestScanProductVariantSchemaRemoval:
+    """Tests verifying variant_schema is excluded from scan_product responses."""
+
+    def test_variant_schema_excluded_when_stored_on_item(self, producten_table):
+        """Even when a DynamoDB item has variant_schema stored, it is NOT in the response."""
+        table, handler = producten_table
+
+        # Store a product WITH variant_schema in DynamoDB (legacy data)
+        table.put_item(Item={
+            'product_id': 'uuid-schema-001',
+            'naam': 'Product met Schema',
+            'prijs': 30,
+            'artikelcode': 'PS-01',
+            'is_parent': True,
+            'active': True,
+            'variant_schema': {'Maat': ['S', 'M', 'L'], 'Kleur': ['Rood', 'Blauw']},
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(_make_event(), {})
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert len(body) == 1
+        product = body[0]
+        assert product['product_id'] == 'uuid-schema-001'
+        assert product['naam'] == 'Product met Schema'
+        # variant_schema must NOT appear in the response
+        assert 'variant_schema' not in product
+
+    def test_variant_schema_excluded_for_multiple_products(self, producten_table):
+        """variant_schema is excluded from ALL products in a multi-product response."""
+        table, handler = producten_table
+
+        # Product with variant_schema
+        table.put_item(Item={
+            'product_id': 'uuid-multi-001',
+            'naam': 'Product A',
+            'prijs': 10,
+            'is_parent': True,
+            'active': True,
+            'variant_schema': {'Maat': ['S', 'M']},
+        })
+
+        # Product without variant_schema
+        table.put_item(Item={
+            'product_id': 'uuid-multi-002',
+            'naam': 'Product B',
+            'prijs': 20,
+            'is_parent': True,
+            'active': True,
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(_make_event(), {})
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert len(body) == 2
+
+        for product in body:
+            assert 'variant_schema' not in product
 
 
 class TestScanProductFiltering:

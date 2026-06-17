@@ -4,7 +4,6 @@ import { scanProducts } from '../products/api/productApi';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
-import { formatVariantSchemaForCsv } from './formatVariantSchema';
 
 interface User {
   attributes?: {
@@ -65,9 +64,7 @@ export default function AdvancedExportsPage({ user }: AdvancedExportsPageProps) 
       p.groep || '',
       p.subgroep || '',
       p.prijs || '',
-      p.variant_schema
-        ? formatVariantSchemaForCsv(p.variant_schema)
-        : 'Standaard'
+      p.is_parent ? 'Varianten' : 'Standaard'
     ]);
     
     const csvContent = [csvHeaders, ...csvData]

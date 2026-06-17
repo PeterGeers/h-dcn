@@ -93,7 +93,6 @@ def lambda_handler(event, context):
                 'naam': item.get('naam') or item.get('name'),
                 'artikelcode': item.get('artikelcode'),
                 'prijs': price_value,
-                'variant_schema': item.get('variant_schema'),
                 'is_parent': item.get('is_parent'),
                 'event_ids': item.get('event_ids', []),
                 'active': item.get('active'),

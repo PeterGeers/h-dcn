@@ -14,7 +14,6 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.variant_sync import sync_variant_to_schema
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -77,9 +76,6 @@ def lambda_handler(event, context):
 
         # No orders reference this variant — delete it
         table.delete_item(Key={'product_id': variant_id})
-
-        # Rebuild parent schema from remaining active variants
-        sync_variant_to_schema(table, product_id, {})
 
         return create_success_response({
             'message': 'Variant deleted successfully',

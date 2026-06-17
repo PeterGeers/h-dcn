@@ -53,16 +53,16 @@ describe('Bug Condition Exploration: Variant Management Integration', () => {
   /**
    * Bug 1: VariantSubTable is NOT rendered in ProductCard
    *
-   * EXPECTED BEHAVIOR (after fix): When a product has variant_schema with at least
-   * one axis containing values, VariantSubTable should render in ProductCard.
+   * EXPECTED BEHAVIOR (after fix): When a product is a parent product,
+   * VariantSubTable should render in ProductCard.
    *
    * ON UNFIXED CODE: This test FAILS because VariantSubTable is never imported
    * or rendered in ProductCard.
    *
    * Validates: Requirements 1.1
    */
-  describe('Bug 1: VariantSubTable should render for products with variant_schema', () => {
-    it('renders VariantSubTable when product has variant_schema with values', async () => {
+  describe('Bug 1: VariantSubTable should render for parent products', () => {
+    it('renders VariantSubTable when product is a parent product', async () => {
       // Dynamically import ProductCard to avoid module-level issues
       const { default: ProductCard } = await import('../ProductCard');
 
@@ -75,7 +75,7 @@ describe('Bug Condition Exploration: Variant Management Integration', () => {
         subgroep: 'Shirts',
         images: [],
         event_ids: [],
-        variant_schema: { Maat: ['S', 'M', 'L'] },
+        is_parent: true,
         artikelcode: 'T1',
       };
 
@@ -89,7 +89,6 @@ describe('Bug Condition Exploration: Variant Management Integration', () => {
             onNew={jest.fn()}
             onClose={jest.fn()}
             filteredProducts={[productWithVariants as any]}
-            onNavigate={jest.fn()}
           />
         </ChakraProvider>
       );
@@ -153,42 +152,6 @@ describe('Bug Condition Exploration: Variant Management Integration', () => {
   });
 
   /**
-   * Bug 3: removeVariantFromProduct sends PUT instead of DELETE
-   *
-   * EXPECTED BEHAVIOR (after fix): Variant removal should call deleteVariant
-   * which sends DELETE to /admin/products/{id}/variants/{vid}.
-   *
-   * ON UNFIXED CODE: This test FAILS because removeVariantFromProduct sends PUT.
-   *
-   * Validates: Requirements 1.3
-   */
-  describe('Bug 3: removeVariantFromProduct should use DELETE endpoint', () => {
-    it('removeVariantFromProduct sends PUT (confirming bug on unfixed code)', async () => {
-      // productApi uses the mocked ApiService since jest.mock is hoisted.
-      // Import productApi to call removeVariantFromProduct
-      const productApi = await import('../../api/productApi');
-      const apiServiceModule = await import('../../../../services/apiService');
-      const { ApiService } = apiServiceModule;
-
-      // Clear previous mock state
-      (ApiService.put as jest.Mock).mockClear();
-      (ApiService.delete as jest.Mock).mockClear();
-      (ApiService.isAuthenticated as jest.Mock).mockResolvedValue(true);
-
-      await productApi.removeVariantFromProduct('prod-1', { Maat: 'S' });
-
-      // ON UNFIXED CODE: PUT is called with variant_action payload
-      // EXPECTED AFTER FIX: DELETE should be called instead of PUT
-      // So we assert DELETE was called — on unfixed code this FAILS ✓
-      expect(ApiService.delete).toHaveBeenCalled();
-      expect(ApiService.put).not.toHaveBeenCalledWith(
-        expect.stringContaining('/admin/products/prod-1'),
-        expect.objectContaining({ variant_action: 'remove_variant' })
-      );
-    });
-  });
-
-  /**
    * Bug 4: Numeric fields arrive as strings instead of integers
    *
    * EXPECTED BEHAVIOR (after fix): When ProductCard onSubmit is called, numeric
@@ -239,7 +202,6 @@ describe('Bug Condition Exploration: Variant Management Integration', () => {
             onNew={jest.fn()}
             onClose={jest.fn()}
             filteredProducts={[productWithFields as any]}
-            onNavigate={jest.fn()}
           />
         </ChakraProvider>
       );

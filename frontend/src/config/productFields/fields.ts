@@ -147,17 +147,7 @@ export const parentFields: Record<string, ProductFieldDefinition> = {
     defaultValue: [],
   },
 
-  variant_schema: {
-    key: 'variant_schema',
-    label: 'Variant definitie',
-    dataType: 'map',
-    inputType: 'json-editor',
-    group: 'variants',
-    order: 2,
-    required: false,
-    recordType: 'parent',
-    helpText: 'Variant-assen en waarden, bijv. {"Maat": ["S","M","L"]}. Bidirectional sync met variant records.',
-  },
+
 
   order_item_fields: {
     key: 'order_item_fields',
