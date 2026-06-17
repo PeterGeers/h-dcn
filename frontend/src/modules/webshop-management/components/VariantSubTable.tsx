@@ -310,15 +310,16 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
           colorScheme="orange"
         />
       </FormControl>
-      <Table variant="simple" size="xs">
+      <Box overflowX="auto">
+      <Table variant="simple" size="xs" sx={{ 'td': { borderColor: 'gray.600' }, 'th': { borderColor: 'gray.600' } }}>
       <Thead>
         <Tr>
-          <Th>Attributen</Th>
-          <Th isNumeric>Voorraad</Th>
-          <Th isNumeric>Verkocht</Th>
-          <Th>Oversell</Th>
-          <Th isNumeric>Prijs</Th>
-          <Th>Acties</Th>
+          <Th color="gray.400" fontSize="xs" borderColor="gray.600">Attributen</Th>
+          <Th color="gray.400" fontSize="xs" borderColor="gray.600" isNumeric>Voorraad</Th>
+          <Th color="gray.400" fontSize="xs" borderColor="gray.600" isNumeric>Verkocht</Th>
+          <Th color="gray.400" fontSize="xs" borderColor="gray.600">Oversell</Th>
+          <Th color="gray.400" fontSize="xs" borderColor="gray.600" isNumeric>Prijs</Th>
+          <Th color="gray.400" fontSize="xs" borderColor="gray.600">Acties</Th>
         </Tr>
       </Thead>
       <Tbody>
@@ -458,8 +459,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
         ))}
       </Tbody>
     </Table>
-
-    {/* Delete Confirmation Dialog */}
+    </Box>
     <AlertDialog
       isOpen={isDeleteOpen}
       leastDestructiveRef={cancelRef}
