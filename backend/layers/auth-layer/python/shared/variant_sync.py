@@ -128,7 +128,7 @@ def _query_variants_for_parent(producten_table, parent_id: str) -> List[Dict[str
     """
     variants = []
     query_kwargs = {
-        "IndexName": "parent_id-index",
+        "IndexName": "parent-id-index",
         "KeyConditionExpression": Key("parent_id").eq(parent_id),
     }
 

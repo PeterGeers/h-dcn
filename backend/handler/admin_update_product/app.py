@@ -125,6 +125,7 @@ def lambda_handler(event, context):
 
         # Determine if variant_schema is being changed (top-down)
         variant_schema_changed = _has_variant_schema_changed(body, existing)
+        force_sync = body.pop('force_sync', False)
 
         # Build update expression for simple fields
         update_parts = []
@@ -144,6 +145,11 @@ def lambda_handler(event, context):
             update_parts.append('#variant_schema = :variant_schema')
             expression_names['#variant_schema'] = 'variant_schema'
             expression_values[':variant_schema'] = body['variant_schema']
+            # Auto-set is_parent when variant_schema is saved
+            if not existing.get('is_parent'):
+                update_parts.append('#is_parent = :is_parent')
+                expression_names['#is_parent'] = 'is_parent'
+                expression_values[':is_parent'] = True
 
         # If only a variant action is provided (no other fields), still allow it
         has_field_updates = bool(update_parts)
@@ -170,13 +176,14 @@ def lambda_handler(event, context):
         else:
             updated_product = existing
 
-        # Handle top-down sync: variant_schema changed → sync_schema_to_variants
+        # Handle top-down sync: variant_schema changed or force_sync requested
         sync_result = None
-        if variant_schema_changed:
+        if variant_schema_changed or force_sync:
+            schema_to_sync = body.get('variant_schema', existing.get('variant_schema', {}))
             parent_price = Decimal(str(body.get('prijs', existing.get('prijs', 0))))
             try:
                 sync_result = sync_schema_to_variants(
-                    table, product_id, body['variant_schema'], parent_price
+                    table, product_id, schema_to_sync, parent_price
                 )
             except MaxCombinationsExceeded as e:
                 return create_error_response(400, str(e), {

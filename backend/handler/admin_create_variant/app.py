@@ -65,16 +65,25 @@ def lambda_handler(event, context):
             return create_error_response(404, 'Parent product not found')
 
         parent = parent_response['Item']
-        if not parent.get('is_parent', False):
+        # Allow variant creation for parent products OR products with variant_schema
+        if parent.get('is_parent') is False and not parent.get('variant_schema'):
             return create_error_response(400, 'Cannot add variants to a non-parent product')
 
-        # Validate variant attributes against parent's required_attributes
+        # Validate variant attributes against parent's variant_schema
         variant_attributes = body.get('variant_attributes', {})
-        parent_required_attrs = parent.get('required_attributes')
+        variant_schema = parent.get('variant_schema', {})
 
-        is_valid, errors = validate_variant_attributes(variant_attributes, parent_required_attrs)
-        if not is_valid:
-            return create_error_response(400, 'Variant attribute validation failed', {'errors': errors})
+        # If parent has a variant_schema, validate attribute keys/values against it
+        if variant_schema and variant_attributes:
+            errors = []
+            for attr_name, attr_value in variant_attributes.items():
+                if attr_name not in variant_schema:
+                    errors.append(f'Attribute "{attr_name}" is not an axis in variant_schema')
+                elif attr_value not in variant_schema[attr_name]:
+                    # Allow new values — they'll be added to the schema via sync
+                    pass
+            if errors:
+                return create_error_response(400, 'Variant attribute validation failed', {'errors': errors})
 
         # Generate variant ID
         variant_id = f"var_{uuid.uuid4().hex[:12]}"
