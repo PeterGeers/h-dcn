@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -6,12 +6,13 @@ import {
   HStack,
   Tag,
   TagLabel,
+  TagCloseButton,
   Text,
   useDisclosure,
   Wrap,
   WrapItem,
 } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronRightIcon, EditIcon } from '@chakra-ui/icons';
 import { Event as HDCNEvent } from '../../../types';
 import EventSelector from './EventSelector';
 
@@ -29,8 +30,6 @@ export interface EventSelectorSectionProps {
   /** Disables all inputs when true */
   isDisabled?: boolean;
 }
-
-// --- Constants ---
 
 // --- Utility (exported for property testing) ---
 
@@ -52,13 +51,11 @@ export function getSelectedEventNames(
 // --- Component ---
 
 /**
- * EventSelectorSection wraps the EventSelector in a CollapsibleSection
- * with badges/tags in the header showing selected events when collapsed.
+ * EventSelectorSection wraps the EventSelector in a CollapsibleSection.
  *
- * - Collapsed: Shows "Evenementen" title + selected event tags (or placeholder)
- * - Expanded: Shows full searchable EventSelector
- *
- * Uses same expand/collapse animation and styling as OrderItemFieldsEditor/PurchaseRulesEditor sections.
+ * - Collapsed: Shows "Evenementen" title + selected event tags in header
+ * - Expanded: Shows selected events as removable tags + a button to open the
+ *   searchable checkbox dropdown for adding/removing events
  */
 export default function EventSelectorSection({
   events,
@@ -67,14 +64,18 @@ export default function EventSelectorSection({
   isLoading = false,
   isDisabled = false,
 }: EventSelectorSectionProps) {
-  const { isOpen, onToggle } = useDisclosure({
-    defaultIsOpen: false,
-  });
+  const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: false });
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const selectedNames = getSelectedEventNames(selectedIds, events);
 
+  const handleRemoveEvent = (eventId: string) => {
+    onChange(selectedIds.filter((id) => id !== eventId));
+  };
+
   return (
     <Box w="100%" borderWidth="1px" borderColor="gray.400" borderRadius="md" overflow="hidden">
+      {/* Collapsible header */}
       <Button
         w="100%"
         variant="ghost"
@@ -111,15 +112,62 @@ export default function EventSelectorSection({
           )}
         </HStack>
       </Button>
+
+      {/* Expanded content */}
       <Collapse in={isOpen}>
         <Box p={3} bg="gray.800">
-          <EventSelector
-            events={events}
-            selectedIds={selectedIds}
-            onChange={onChange}
-            isLoading={isLoading}
-            isDisabled={isDisabled}
-          />
+          {/* Selected events as removable tags */}
+          {selectedNames.length > 0 ? (
+            <Wrap spacing={2} mb={3}>
+              {selectedIds.map((id, idx) => (
+                <WrapItem key={id}>
+                  <Tag size="md" colorScheme="orange" variant="solid" borderRadius="full">
+                    <TagLabel>{selectedNames[idx]}</TagLabel>
+                    {!isDisabled && (
+                      <TagCloseButton onClick={() => handleRemoveEvent(id)} />
+                    )}
+                  </Tag>
+                </WrapItem>
+              ))}
+            </Wrap>
+          ) : (
+            <Text fontSize="sm" color="gray.400" mb={3}>
+              Geen evenementen geselecteerd
+            </Text>
+          )}
+
+          {/* Button to open the dropdown */}
+          {!showDropdown ? (
+            <Button
+              size="sm"
+              leftIcon={<EditIcon />}
+              colorScheme="orange"
+              variant="outline"
+              onClick={() => setShowDropdown(true)}
+              isDisabled={isDisabled}
+            >
+              Evenementen bewerken
+            </Button>
+          ) : (
+            <Box>
+              <EventSelector
+                events={events}
+                selectedIds={selectedIds}
+                onChange={onChange}
+                isLoading={isLoading}
+                isDisabled={isDisabled}
+              />
+              <Button
+                size="xs"
+                mt={2}
+                variant="ghost"
+                color="gray.400"
+                onClick={() => setShowDropdown(false)}
+              >
+                Sluiten
+              </Button>
+            </Box>
+          )}
         </Box>
       </Collapse>
     </Box>
