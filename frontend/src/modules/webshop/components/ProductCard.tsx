@@ -195,12 +195,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const handleAddToCart = (): void => {
+    // Use variant price if set, otherwise fall back to parent product price
+    const itemPrice = selectedVariant?.price ?? product.price ?? product.prijs ?? 0;
     const cartItem: CartItem = {
       product_id: product.product_id || product.id || '',
       variant_id: selectedVariant?.product_id || '',
       variant_attributes: selectedVariant?.variant_attributes || {},
       name: product.name || product.naam,
-      price: Number(product.price ?? product.prijs ?? 0),
+      price: Number(itemPrice),
       quantity: 1,
     };
     onAddToCart(cartItem);

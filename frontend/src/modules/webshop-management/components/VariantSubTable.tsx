@@ -358,6 +358,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
                     onChange={(val) => setEditPriceValue(val)}
                     min={0}
                     max={999999.99}
+                    step={0.01}
                     precision={2}
                   >
                     <NumberInputField
