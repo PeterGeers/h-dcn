@@ -14,7 +14,7 @@
  * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.13
  */
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Table,
   Thead,
@@ -32,8 +32,6 @@ import {
   Tooltip,
   Box,
   Button,
-  FormControl,
-  FormLabel,
   Spinner,
   useToast,
   useDisclosure,
@@ -47,11 +45,9 @@ import {
 import { CheckIcon, CloseIcon, DeleteIcon, NotAllowedIcon } from '@chakra-ui/icons';
 import { AdminProduct, AdminVariant } from '../types/admin.types';
 import { updateVariant, deleteVariant } from '../services/adminApi';
-import { sortVariants } from '../utils/sizeSorter';
 import { AddStockForm } from './AddStockForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import { formatPriceEuro } from '../../../utils/formatPrice';
-import { isActive } from '../../../utils/productHelpers';
 
 export interface VariantSubTableProps {
   product: AdminProduct;
@@ -76,7 +72,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
   const disabledTooltip = 'Products_CRUD vereist';
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editPriceValue, setEditPriceValue] = useState<string>('');
-  const [showInactive, setShowInactive] = useState<boolean>(false);
   const [togglingOversellId, setTogglingOversellId] = useState<string | null>(null);
   const [internalRefetching, setInternalRefetching] = useState<boolean>(false);
 
@@ -108,11 +103,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [variantToDelete, setVariantToDelete] = useState<AdminVariant | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-
-  const filteredVariants = useMemo(() => {
-    const filtered = showInactive ? variants : variants.filter((v) => isActive(v));
-    return sortVariants(filtered);
-  }, [variants, showInactive]);
 
   const handleOversellToggle = async (variant: AdminVariant, newValue: boolean) => {
     setTogglingOversellId(variant.product_id);
@@ -300,18 +290,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
           <Text fontSize="xs" color="gray.300">Verversen…</Text>
         </HStack>
       )}
-      <FormControl display="flex" alignItems="center" mb={2}>
-        <FormLabel htmlFor="show-inactive-toggle" mb="0" fontSize="sm">
-          Toon inactief
-        </FormLabel>
-        <Switch
-          id="show-inactive-toggle"
-          size="sm"
-          isChecked={showInactive}
-          onChange={(e) => setShowInactive(e.target.checked)}
-          colorScheme="orange"
-        />
-      </FormControl>
       <Box overflowX="auto">
       <Table variant="simple" size="xs" sx={{ 'td': { borderColor: 'gray.600' }, 'th': { borderColor: 'gray.600' } }}>
       <Thead bg="gray.700">
@@ -325,7 +303,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
         </Tr>
       </Thead>
       <Tbody>
-        {filteredVariants.map((variant) => (
+        {variants.map((variant) => (
           <Tr
             key={variant.product_id}
             opacity={variant.active === false ? 0.5 : 1}
