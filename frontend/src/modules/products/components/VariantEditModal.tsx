@@ -40,6 +40,7 @@ import { AdminVariant, UpdateVariantRequest } from '../../webshop-management/typ
 import { updateVariant, createVariant } from '../../webshop-management/services/adminApi';
 import { AddStockForm } from '../../webshop-management/components/AddStockForm';
 import { determineFormMode, validateAxisInput, FormMode } from '../utils/variantFormHelpers';
+import { formatPrice } from '../../../utils/formatPrice';
 
 export interface VariantEditModalProps {
   isOpen: boolean;
@@ -407,7 +408,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         {/* Price (editable) */}
         <FormControl>
           <FormLabel fontSize="sm" color="white">
-            {t('variant_modal.price_label', { price: parentPrice.toFixed(2) })}
+            {t('variant_modal.price_label', { price: formatPrice(parentPrice) })}
           </FormLabel>
           <NumberInput
             value={priceValue}
@@ -418,7 +419,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
             isDisabled={isDisabled}
           >
             <NumberInputField
-              placeholder={`€${parentPrice.toFixed(2)}`}
+              placeholder={`€${formatPrice(parentPrice)}`}
               bg="gray.700"
               color="white"
               borderColor="gray.600"
