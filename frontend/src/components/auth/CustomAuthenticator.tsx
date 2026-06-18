@@ -311,7 +311,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
       <Box maxW="md" w="full" p={6}>
         <Box textAlign="center" mb={8}>
           <Image
-            src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png"
+            src="https://h-dcn-data-506221081911.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png"
             alt="H-DCN Logo"
             mx="auto"
             mb={4}
@@ -337,7 +337,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                   aria-label={t('info.title')}
                   icon={
                     <Image
-                      src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/info-icon-orange.svg"
+                      src="https://h-dcn-data-506221081911.s3.eu-west-1.amazonaws.com/imagesWebsite/info-icon-orange.svg"
                       alt="Info"
                       w="20px"
                       h="20px"

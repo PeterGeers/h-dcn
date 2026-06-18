@@ -125,7 +125,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '20px' }}>
         <img 
-          src="https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png" 
+          src="https://h-dcn-data-506221081911.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png" 
           alt="H-DCN Logo"
           style={{ width: '80px', height: '80px', objectFit: 'contain' }}
           onError={(e) => {
