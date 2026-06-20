@@ -148,6 +148,13 @@ Parameters:
     Default: "Counters"
     Description: "DynamoDB table name for atomic counters (order numbers, invoice numbers). Managed externally."
 
+  # Closed Community Booking
+  SessionTokenSecret:
+    Type: String
+    NoEcho: true
+    Description: "HMAC secret for signing event session tokens (verify-password flow)"
+    Default: "h-dcn-event-session-default-secret"
+
 Mappings:
   StageConfig:
     prod:
@@ -1307,6 +1314,33 @@ Resources:
             Path: /events/public/{slug}
             Method: get
 
+  # --- Verify Event Password (NO auth required, rate-limited) ---
+  VerifyEventPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/verify_event_password
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          JWT_SECRET_BASE: !Sub '{{resolve:ssm:/h-dcn/event-session-secret}}'
+      Events:
+        VerifyEventPassword:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}/verify-password
+            Method: post
+            RequestParameters:
+              - method.request.header.X-Forwarded-For:
+                  Required: false
+            ThrottlingBurstLimit: 10
+            ThrottlingRateLimit: 10
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1786,6 +1820,31 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /presmeet/clubs
+            Method: get
+
+  # --- Get Event Registry (Closed Community Booking) ---
+  GetEventRegistryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_event_registry
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+          SESSION_TOKEN_SECRET: !Ref SessionTokenSecret
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        GetEventRegistry:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}/registry
             Method: get
 
   # --- Assign Club (Onboarding) ---
