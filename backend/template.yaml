@@ -1258,6 +1258,28 @@ Resources:
             Path: /admin/booking/{id}/unlock
             Method: post
 
+  # --- Unified Order: Batch Unlock Orders (admin — bulk unlock by source_id) ---
+  BatchUnlockOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/lock_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        BatchUnlockOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/booking/unlock
+            Method: post
+
   # --- Unified Order: Manage Event Access (admin — grant/revoke access) ---
   ManageEventAccessFunction:
     Type: AWS::Serverless::Function
@@ -1342,11 +1364,6 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /events/{event_id}/verify-password
             Method: post
-            RequestParameters:
-              - method.request.header.X-Forwarded-For:
-                  Required: false
-            ThrottlingBurstLimit: 10
-            ThrottlingRateLimit: 10
 
   CreateOrderFunction:
     Type: AWS::Serverless::Function

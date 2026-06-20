@@ -2,16 +2,20 @@
 Unit Tests for lock_orders Lambda Handler (unified lock/unlock).
 
 Tests the unified admin lock/unlock endpoints:
-- POST /admin/booking/lock?source_id={id}  → lock all submitted orders for a source
-- POST /admin/booking/{id}/unlock          → unlock a specific locked order
+- POST /admin/booking/lock?source_id={id}    → lock all submitted orders for a source
+- POST /admin/booking/unlock?source_id={id}  → unlock all submitted/locked orders for a source
+- POST /admin/booking/{id}/unlock            → unlock a specific submitted/locked order → draft
 
 Test cases:
 - Returns 403 when user is not admin
 - Returns 400 when source_id is missing
 - Successfully locks submitted orders (count + order_ids)
 - Skips non-submitted orders (draft, already locked)
-- Unlock: returns specific order to submitted status
+- Unlock: returns specific order to draft status
+- Unlock: accepts submitted or locked orders
 - Unlock: returns 404 when order doesn't exist
+- Unlock: rejects draft orders
+- Batch unlock: unlocks submitted and locked orders
 """
 
 import importlib.util
@@ -71,6 +75,7 @@ def _make_lock_event(source_id=None, query_params=None, body=None):
         'queryStringParameters': qsp if qsp else None,
         'pathParameters': None,
         'body': json.dumps(body) if body else None,
+        'resource': '/admin/booking/lock',
     }
 
 
@@ -82,6 +87,22 @@ def _make_unlock_event(order_id):
         'queryStringParameters': None,
         'pathParameters': {'id': order_id},
         'body': None,
+        'resource': '/admin/booking/{id}/unlock',
+    }
+
+
+def _make_batch_unlock_event(source_id=None, query_params=None, body=None):
+    """Create API Gateway event for POST /admin/booking/unlock."""
+    qsp = query_params or {}
+    if source_id and 'source_id' not in qsp:
+        qsp['source_id'] = source_id
+    return {
+        'httpMethod': 'POST',
+        'headers': {'Authorization': 'Bearer test-token'},
+        'queryStringParameters': qsp if qsp else None,
+        'pathParameters': None,
+        'body': json.dumps(body) if body else None,
+        'resource': '/admin/booking/unlock',
     }
 
 
@@ -251,6 +272,7 @@ class TestMissingSourceId:
                 'queryStringParameters': None,
                 'pathParameters': None,
                 'body': json.dumps({'source_id': TEST_SOURCE_ID}),
+                'resource': '/admin/booking/lock',
             }
             response = handler.lambda_handler(event, None)
 
@@ -345,8 +367,8 @@ class TestLockOrders:
 class TestUnlockOrder:
     """Tests for unlocking a specific order."""
 
-    def test_unlocks_locked_order(self, setup_tables):
-        """Unlock returns the order to submitted status."""
+    def test_unlocks_locked_order_to_draft(self, setup_tables):
+        """Unlock transitions a locked order to draft status (Req 10.3)."""
         handler = setup_tables['handler']
         orders_table = setup_tables['orders']
 
@@ -358,10 +380,27 @@ class TestUnlockOrder:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert body['order']['status'] == 'submitted'
+        assert body['order']['status'] == 'draft'
         assert body['transition']['from'] == 'locked'
-        assert body['transition']['to'] == 'submitted'
+        assert body['transition']['to'] == 'draft'
         assert body['message'] == 'Order unlocked successfully'
+
+    def test_unlocks_submitted_order_to_draft(self, setup_tables):
+        """Unlock transitions a submitted order to draft status (Req 10.3)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        _seed_order(orders_table, 'order-001', status='submitted', version=2, member_id='mem-001')
+
+        with _admin_auth_patches():
+            event = _make_unlock_event('order-001')
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['status'] == 'draft'
+        assert body['transition']['from'] == 'submitted'
+        assert body['transition']['to'] == 'draft'
 
     def test_unlock_returns_404_when_order_does_not_exist(self, setup_tables):
         """Unlock returns 404 for non-existent order."""
@@ -375,12 +414,12 @@ class TestUnlockOrder:
         body = json.loads(response['body'])
         assert 'not found' in body.get('error', '').lower()
 
-    def test_unlock_returns_400_for_non_locked_order(self, setup_tables):
-        """Cannot unlock an order that is not locked."""
+    def test_unlock_returns_400_for_draft_order(self, setup_tables):
+        """Cannot unlock an order that is already in draft status."""
         handler = setup_tables['handler']
         orders_table = setup_tables['orders']
 
-        _seed_order(orders_table, 'order-001', status='submitted', member_id='mem-001')
+        _seed_order(orders_table, 'order-001', status='draft', member_id='mem-001')
 
         with _admin_auth_patches():
             event = _make_unlock_event('order-001')
@@ -388,10 +427,10 @@ class TestUnlockOrder:
 
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
-        assert 'submitted' in body.get('error', '').lower()
+        assert 'draft' in body.get('error', '').lower()
 
     def test_unlock_persisted_in_dynamodb(self, setup_tables):
-        """After unlock, DynamoDB shows status=submitted with version incremented."""
+        """After unlock, DynamoDB shows status=draft with version incremented."""
         handler = setup_tables['handler']
         orders_table = setup_tables['orders']
 
@@ -402,10 +441,10 @@ class TestUnlockOrder:
             handler.lambda_handler(event, None)
 
         db_order = orders_table.get_item(Key={'order_id': 'order-001'})['Item']
-        assert db_order['status'] == 'submitted'
+        assert db_order['status'] == 'draft'
         assert db_order['version'] == 4  # incremented from 3
         assert len(db_order['status_history']) == 1
-        assert db_order['status_history'][0]['to'] == 'submitted'
+        assert db_order['status_history'][0]['to'] == 'draft'
 
 
 # ---------------------------------------------------------------------------
@@ -423,3 +462,91 @@ class TestCORS:
             None
         )
         assert response['statusCode'] == 200
+
+
+# ---------------------------------------------------------------------------
+# Tests: Batch Unlock
+# ---------------------------------------------------------------------------
+
+class TestBatchUnlockOrders:
+    """Tests for batch unlocking submitted/locked orders (Req 10.5)."""
+
+    def test_batch_unlocks_submitted_and_locked_orders(self, setup_tables):
+        """Batch unlock transitions all submitted and locked orders to draft."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        _seed_order(orders_table, 'order-001', status='submitted', member_id='mem-001')
+        _seed_order(orders_table, 'order-002', status='locked', member_id='mem-002')
+        _seed_order(orders_table, 'order-003', status='draft', member_id='mem-003')
+
+        with _admin_auth_patches():
+            event = _make_batch_unlock_event(source_id=TEST_SOURCE_ID)
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['unlocked_count'] == 2
+        assert set(body['unlocked_order_ids']) == {'order-001', 'order-002'}
+        assert body['skipped_count'] == 1  # draft order skipped
+
+    def test_batch_unlock_skips_draft_orders(self, setup_tables):
+        """Batch unlock does not touch draft orders."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        _seed_order(orders_table, 'order-001', status='draft', member_id='mem-001')
+        _seed_order(orders_table, 'order-002', status='draft', member_id='mem-002')
+
+        with _admin_auth_patches():
+            event = _make_batch_unlock_event(source_id=TEST_SOURCE_ID)
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['unlocked_count'] == 0
+        assert body['skipped_count'] == 2
+
+    def test_batch_unlock_returns_zero_when_no_orders(self, setup_tables):
+        """Returns success with 0 count when no orders found for source."""
+        handler = setup_tables['handler']
+
+        with _admin_auth_patches():
+            event = _make_batch_unlock_event(source_id='nonexistent-source')
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['unlocked_count'] == 0
+
+    def test_batch_unlock_persisted_in_dynamodb(self, setup_tables):
+        """After batch unlock, DynamoDB records show status=draft and version incremented."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        _seed_order(orders_table, 'order-001', status='locked', version=5, member_id='mem-001')
+
+        with _admin_auth_patches():
+            event = _make_batch_unlock_event(source_id=TEST_SOURCE_ID)
+            handler.lambda_handler(event, None)
+
+        db_order = orders_table.get_item(Key={'order_id': 'order-001'})['Item']
+        assert db_order['status'] == 'draft'
+        assert db_order['version'] == 6
+        assert len(db_order['status_history']) == 1
+        assert db_order['status_history'][0]['from'] == 'locked'
+        assert db_order['status_history'][0]['to'] == 'draft'
+
+    def test_batch_unlock_requires_source_id(self, setup_tables):
+        """Batch unlock returns 400 when source_id is missing."""
+        handler = setup_tables['handler']
+
+        with _admin_auth_patches():
+            event = _make_batch_unlock_event()
+            event['queryStringParameters'] = None
+            event['body'] = None
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'source_id' in body.get('error', '').lower()
