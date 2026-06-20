@@ -195,6 +195,228 @@ def _validate_webshop_items(items, products):
     return errors
 
 
+def _validate_event_persons(order, products, all_source_orders):
+    """
+    Validate an event order with persons structure.
+
+    Validates (Requirements 9.1-9.9):
+    - Every person has a non-empty name (≥1 non-whitespace char)
+    - Every item has item_fields_data.name populated (non-empty)
+    - All required order_item_fields are filled per product line
+    - Per-order quantity limits (max_per_club) not exceeded
+    - Per-event capacity (max_per_event) via current Sold_Count
+    - All variant_id references exist in product's variant list
+    - Errors are grouped per person
+
+    Returns list of error dicts with person_index, product_id, field, message.
+    """
+    persons = order.get('persons', [])
+    items = order.get('items', [])
+    club_id = order.get('club_id')
+    errors = []
+
+    # 1. Validate person names (Req 9.1)
+    for idx, person in enumerate(persons):
+        name = person.get('name', '')
+        if not isinstance(name, str) or not name.strip():
+            errors.append({
+                'person_index': idx,
+                'product_id': None,
+                'field': 'name',
+                'message': f'Persoon {idx + 1}: naam is verplicht (minimaal 1 niet-witruimte teken)',
+            })
+
+    # 2. Validate item_fields_data.name on every line (Req 9.2)
+    for item_idx, item in enumerate(items):
+        person_index = item.get('person_index')
+        product_id = item.get('product_id')
+        fields_data = item.get('item_fields_data') or {}
+
+        item_name = fields_data.get('name', '') if isinstance(fields_data, dict) else ''
+        if not isinstance(item_name, str) or not item_name.strip():
+            errors.append({
+                'person_index': person_index,
+                'product_id': product_id,
+                'field': 'item_fields_data.name',
+                'message': (
+                    f'Productlijn voor persoon {(person_index or 0) + 1}: '
+                    f'item_fields_data.name is verplicht'
+                ),
+            })
+
+    # 3. Validate required order_item_fields (Req 9.3)
+    for item_idx, item in enumerate(items):
+        person_index = item.get('person_index')
+        product_id = item.get('product_id')
+        if not product_id:
+            continue
+
+        product = products.get(product_id)
+        if not product:
+            continue
+
+        field_definitions = product.get('order_item_fields', [])
+        if not field_definitions:
+            continue
+
+        fields_data = item.get('item_fields_data') or {}
+        if not isinstance(fields_data, dict):
+            fields_data = {}
+
+        for field_def in field_definitions:
+            field_id = field_def.get('id')
+            if not field_id:
+                continue
+            required = field_def.get('required', False)
+            if not required:
+                continue
+
+            value = fields_data.get(field_id)
+            label = field_def.get('label', field_id)
+
+            if value is None or (isinstance(value, str) and not value.strip()):
+                errors.append({
+                    'person_index': person_index,
+                    'product_id': product_id,
+                    'field': field_id,
+                    'message': (
+                        f"Persoon {(person_index or 0) + 1}, product '{product.get('name', product_id)}': "
+                        f"veld '{label}' is verplicht"
+                    ),
+                })
+
+    # 4. Validate per-order quantity limits: max_per_club (Req 9.4)
+    product_counts: dict[str, int] = {}
+    for item in items:
+        product_id = item.get('product_id')
+        if product_id:
+            quantity = item.get('quantity', 1)
+            if isinstance(quantity, Decimal):
+                quantity = int(quantity)
+            product_counts[product_id] = product_counts.get(product_id, 0) + quantity
+
+    for product_id, count in product_counts.items():
+        product = products.get(product_id)
+        if not product:
+            continue
+        purchase_rules = product.get('purchase_rules') or {}
+        max_per_club = purchase_rules.get('max_per_club')
+        if max_per_club is not None:
+            max_val = int(max_per_club) if isinstance(max_per_club, Decimal) else int(max_per_club)
+            if count > max_val:
+                errors.append({
+                    'person_index': None,
+                    'product_id': product_id,
+                    'field': 'max_per_club',
+                    'message': (
+                        f"Product '{product.get('name', product_id)}': "
+                        f"maximaal {max_val} per bestelling, maar {count} geselecteerd"
+                    ),
+                })
+
+    # 5. Validate per-event capacity: max_per_event via Sold_Count (Req 9.5, 9.9)
+    # Calculate sold counts from other submitted/locked orders (exclude current order)
+    sold_counts = _calculate_sold_counts(all_source_orders, club_id)
+
+    for product_id, count in product_counts.items():
+        product = products.get(product_id)
+        if not product:
+            continue
+        purchase_rules = product.get('purchase_rules') or {}
+        max_per_event = purchase_rules.get('max_per_event')
+        if max_per_event is not None:
+            max_val = int(max_per_event) if isinstance(max_per_event, Decimal) else int(max_per_event)
+            sold = sold_counts.get(product_id, 0)
+            remaining = max_val - sold
+            if count > remaining:
+                errors.append({
+                    'person_index': None,
+                    'product_id': product_id,
+                    'field': 'max_per_event',
+                    'message': (
+                        f"Product '{product.get('name', product_id)}': "
+                        f"evenementcapaciteit overschreden. "
+                        f"Resterende capaciteit: {remaining}, gevraagd: {count}"
+                    ),
+                    'remaining': remaining,
+                })
+
+    # 6. Validate variant_id references exist in product's variant list (Req 9.6)
+    for item_idx, item in enumerate(items):
+        variant_id = item.get('variant_id')
+        if not variant_id:
+            continue
+
+        person_index = item.get('person_index')
+        product_id = item.get('product_id')
+        if not product_id:
+            continue
+
+        # Fetch variant record from Producten table
+        variant = _get_variant(variant_id)
+        if variant is None:
+            errors.append({
+                'person_index': person_index,
+                'product_id': product_id,
+                'field': 'variant_id',
+                'message': (
+                    f"Persoon {(person_index or 0) + 1}, product '{products.get(product_id, {}).get('name', product_id)}': "
+                    f"variant '{variant_id}' bestaat niet"
+                ),
+            })
+        elif variant.get('parent_id') != product_id:
+            errors.append({
+                'person_index': person_index,
+                'product_id': product_id,
+                'field': 'variant_id',
+                'message': (
+                    f"Persoon {(person_index or 0) + 1}, product '{products.get(product_id, {}).get('name', product_id)}': "
+                    f"variant '{variant_id}' behoort niet tot dit product"
+                ),
+            })
+
+    return errors
+
+
+def _calculate_sold_counts(all_source_orders, current_club_id):
+    """
+    Calculate sold counts from submitted/locked orders, excluding the current club's order.
+    This mirrors the logic in get_product_sold_counts but excludes the current order.
+
+    Returns dict mapping product_id -> sold count.
+    """
+    sold_counts: dict[str, int] = {}
+
+    for order in all_source_orders:
+        # Only count submitted/locked orders
+        if order.get('status') not in ('submitted', 'locked'):
+            continue
+        # Exclude current club's order (will be replaced by this submission)
+        if current_club_id and order.get('club_id') == current_club_id:
+            continue
+
+        for item in order.get('items', []):
+            product_id = item.get('product_id')
+            if not product_id:
+                continue
+            quantity = item.get('quantity', 1)
+            if isinstance(quantity, Decimal):
+                quantity = int(quantity)
+            sold_counts[product_id] = sold_counts.get(product_id, 0) + quantity
+
+    return sold_counts
+
+
+def _get_variant(variant_id):
+    """Fetch a variant record from the Producten table."""
+    try:
+        response = producten_table.get_item(Key={'product_id': variant_id})
+        return response.get('Item')
+    except Exception as e:
+        logger.warning(f"Error fetching variant {variant_id}: {e}")
+        return None
+
+
 def lambda_handler(event, context):
     """POST /orders/{order_id}/submit"""
     try:
@@ -294,10 +516,17 @@ def lambda_handler(event, context):
             # Query all orders for this source for constraint validation
             all_source_orders = _query_all_orders_for_source(source_id)
 
-            # Full event validation: fields + purchase rules + event constraints
-            validation_errors = validate_submission(
-                order, event_record, products, all_source_orders
-            )
+            # Check if order uses persons structure (closed community booking)
+            if order.get('persons'):
+                # Person-based event validation (Req 9.1-9.9)
+                validation_errors = _validate_event_persons(
+                    order, products, all_source_orders
+                )
+            else:
+                # Legacy event validation: fields + purchase rules + event constraints
+                validation_errors = validate_submission(
+                    order, event_record, products, all_source_orders
+                )
 
         # 9. If validation fails: return 400 with errors
         if validation_errors:
