@@ -1847,6 +1847,33 @@ Resources:
             Path: /events/{event_id}/registry
             Method: get
 
+  # --- Event Onboard (Closed Community Booking — atomic registration) ---
+  EventOnboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/event_onboard
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+          JWT_SECRET_BASE: !Sub '{{resolve:ssm:/h-dcn/event-session-secret}}'
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        EventOnboard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}/onboard
+            Method: post
+
   # --- Assign Club (Onboarding) ---
   AssignClubFunction:
     Type: AWS::Serverless::Function
