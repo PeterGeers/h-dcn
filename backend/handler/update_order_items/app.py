@@ -7,8 +7,11 @@ PUT /orders/{id}/items — Update items on a draft order:
 3. Fetch prices from Producten table for each item
 4. Validate variant parent_id matches product_id
 5. Increment version on success, recalculate total_amount
+6. Accept persons array structure with per-person product lines (event booking)
+7. Sync item_fields_data.name when person name is updated
+8. Remove all product lines when a person is removed (not present in new array)
 
-Requirements: 7.6, 7.7, 7.8, 7.9, 7.10, 10.9, 12.21
+Requirements: 5.5, 6.4, 6.5, 7.6, 7.7, 7.8, 7.9, 7.10, 8.3, 10.9, 12.21
 """
 
 import json
@@ -82,14 +85,21 @@ def lambda_handler(event, context):
         body = json.loads(event.get('body', '{}'))
         version = body.get('version')
         items = body.get('items')
+        persons = body.get('persons')
 
         # Validate required fields
         if version is None:
             return create_error_response(400, 'version is required for optimistic locking')
-        if items is None:
-            return create_error_response(400, 'items is required')
-        if not isinstance(items, list):
+
+        # Must provide either items or persons (persons takes precedence for event orders)
+        if items is None and persons is None:
+            return create_error_response(400, 'items or persons is required')
+
+        # Validate types
+        if items is not None and not isinstance(items, list):
             return create_error_response(400, 'items must be an array')
+        if persons is not None and not isinstance(persons, list):
+            return create_error_response(400, 'persons must be an array')
 
         # Fetch existing order
         order_response = orders_table.get_item(Key={'order_id': order_id})
@@ -101,7 +111,22 @@ def lambda_handler(event, context):
         # Verify order belongs to this user (unless admin)
         if not is_admin_authorized:
             order_email = order.get('user_email', '')
-            if order_email.lower() != user_email.lower():
+            delegates = order.get('delegates', {})
+            is_delegate = False
+            if delegates:
+                # For event orders: check delegate membership
+                member_id = body.get('member_id')
+                is_delegate = user_email.lower() in [
+                    (delegates.get('primary') or '').lower(),
+                    (delegates.get('secondary') or '').lower(),
+                ]
+                # Also check by member_id if available
+                if not is_delegate and member_id:
+                    is_delegate = member_id in [
+                        delegates.get('primary_member_id'),
+                        delegates.get('secondary_member_id'),
+                    ]
+            if order_email.lower() != user_email.lower() and not is_delegate:
                 return create_error_response(403, 'Access denied: order belongs to another user')
 
         # Verify order is in draft status
@@ -120,10 +145,18 @@ def lambda_handler(event, context):
                 {'current_version': stored_version}
             )
 
-        # Process items: fetch prices and validate variants
-        processed_items, process_error = _process_items(items)
-        if process_error:
-            return process_error
+        # Process items: either from persons array or flat items array
+        if persons is not None:
+            # Event booking: persons array with per-person product lines
+            processed_items, persons_data, process_error = _process_persons(persons)
+            if process_error:
+                return process_error
+        else:
+            # Webshop: flat items array
+            processed_items, process_error = _process_items(items)
+            if process_error:
+                return process_error
+            persons_data = None
 
         # Calculate total amount
         total_amount = _calculate_total(processed_items)
@@ -132,24 +165,33 @@ def lambda_handler(event, context):
         new_version = stored_version + 1
         now = datetime.now(timezone.utc).isoformat()
 
+        # Build update expression based on whether persons data is present
+        update_expr = (
+            'SET #items = :items, total_amount = :total, '
+            'updated_at = :now, #ver = :new_ver'
+        )
+        expr_names = {
+            '#items': 'items',
+            '#ver': 'version',
+        }
+        expr_values = {
+            ':items': _convert_to_dynamodb(processed_items),
+            ':total': Decimal(str(total_amount)),
+            ':now': now,
+            ':new_ver': new_version,
+        }
+
+        if persons_data is not None:
+            update_expr += ', persons = :persons'
+            expr_values[':persons'] = _convert_to_dynamodb(persons_data)
+
         try:
             orders_table.update_item(
                 Key={'order_id': order_id},
-                UpdateExpression=(
-                    'SET #items = :items, total_amount = :total, '
-                    'updated_at = :now, #ver = :new_ver'
-                ),
+                UpdateExpression=update_expr,
                 ConditionExpression=Attr('version').eq(stored_version),
-                ExpressionAttributeNames={
-                    '#items': 'items',
-                    '#ver': 'version',
-                },
-                ExpressionAttributeValues={
-                    ':items': _convert_to_dynamodb(processed_items),
-                    ':total': Decimal(str(total_amount)),
-                    ':now': now,
-                    ':new_ver': new_version,
-                },
+                ExpressionAttributeNames=expr_names,
+                ExpressionAttributeValues=expr_values,
             )
         except ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
@@ -161,12 +203,17 @@ def lambda_handler(event, context):
 
         logger.info(f"Order {order_id} items updated, version {stored_version} -> {new_version}")
 
-        return create_success_response({
+        response_data = {
             'order_id': order_id,
             'version': new_version,
             'total_amount': float(total_amount),
             'item_count': len(processed_items),
-        })
+        }
+
+        if persons_data is not None:
+            response_data['person_count'] = len(persons_data)
+
+        return create_success_response(response_data)
 
     except json.JSONDecodeError:
         return create_error_response(400, 'Invalid JSON in request body')
@@ -178,6 +225,124 @@ def lambda_handler(event, context):
 # ---------------------------------------------------------------------------
 # Item processing helpers
 # ---------------------------------------------------------------------------
+
+
+def _process_persons(persons: list) -> tuple[list, list, dict | None]:
+    """
+    Process persons array structure for event booking orders.
+
+    Each person has a name and a list of product lines. This function:
+    1. Validates persons structure
+    2. Syncs item_fields_data.name on each product line to match person name (Req 6.4)
+    3. Flattens to items list for storage (with person_index for association)
+    4. Fetches prices and validates variants for product lines
+
+    A person not present in the new array = removed, and all their product lines
+    are implicitly removed (they simply aren't in the output). (Req 6.5)
+
+    Returns:
+        (processed_items, persons_data, error_response)
+        - processed_items: flat list of all items across all persons
+        - persons_data: list of person metadata (name, person_index)
+        - error_response: error response dict if validation fails, None otherwise
+    """
+    processed_items = []
+    persons_data = []
+
+    for person_index, person in enumerate(persons):
+        if not isinstance(person, dict):
+            return None, None, create_error_response(
+                400, f'Person at index {person_index} must be an object'
+            )
+
+        person_name = person.get('name', '')
+        person_lines = person.get('items', [])
+
+        if not isinstance(person_lines, list):
+            return None, None, create_error_response(
+                400, f'Person at index {person_index}: items must be an array'
+            )
+
+        # Store person metadata
+        persons_data.append({
+            'name': person_name,
+            'person_index': person_index,
+        })
+
+        # Process each product line for this person
+        for line_idx, item in enumerate(person_lines):
+            product_id = item.get('product_id')
+            variant_id = item.get('variant_id')
+            quantity = item.get('quantity', 1)
+            item_fields_data = item.get('item_fields_data') or {}
+
+            # Sync item_fields_data.name with person name (Req 6.4)
+            if isinstance(item_fields_data, dict):
+                item_fields_data['name'] = person_name
+            elif isinstance(item_fields_data, list):
+                # Legacy list format: ensure name is synced
+                item_fields_data = {'name': person_name}
+
+            # Draft orders accept incomplete data: product_id might be absent
+            if not product_id:
+                processed_item = {
+                    'person_index': person_index,
+                    'quantity': int(quantity) if quantity else 1,
+                    'item_fields_data': item_fields_data,
+                }
+                if variant_id:
+                    processed_item['variant_id'] = variant_id
+                processed_items.append(processed_item)
+                continue
+
+            # Fetch price from Producten table
+            product = _get_product(product_id)
+            if product is None:
+                return None, None, create_error_response(
+                    404, 'Product not found', {'product_id': product_id}
+                )
+
+            price = product.get('price') or product.get('prijs')
+            if price is None or price == '' or price == 0:
+                return None, None, create_error_response(
+                    400, 'Product has no configured price', {'product_id': product_id}
+                )
+
+            unit_price = Decimal(str(price))
+
+            # Validate variant if provided
+            variant_attributes = item.get('variant_attributes')
+            if variant_id:
+                variant, variant_error = _validate_variant(variant_id, product_id)
+                if variant_error:
+                    return None, None, variant_error
+                variant_price = variant.get('price')
+                if variant_price and variant_price != 0:
+                    unit_price = Decimal(str(variant_price))
+                if not variant_attributes:
+                    variant_attributes = variant.get('variant_attributes', {})
+
+            # Build processed item
+            qty = int(quantity) if quantity else 1
+            line_total = unit_price * qty
+
+            processed_item = {
+                'product_id': product_id,
+                'person_index': person_index,
+                'quantity': qty,
+                'unit_price': unit_price,
+                'line_total': line_total,
+                'item_fields_data': item_fields_data,
+            }
+
+            if variant_id:
+                processed_item['variant_id'] = variant_id
+            if variant_attributes:
+                processed_item['variant_attributes'] = variant_attributes
+
+            processed_items.append(processed_item)
+
+    return processed_items, persons_data, None
 
 
 def _process_items(items):
