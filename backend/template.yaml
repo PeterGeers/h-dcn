@@ -1199,13 +1199,20 @@ Resources:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
-        ManageDelegates:
+        ManageDelegatesPost:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
             Path: /booking/{id}/delegates
             Method: post
+        ManageDelegatesDelete:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/delegates
+            Method: delete
 
   # --- Unified Order: Lock Orders (admin — bulk lock by source_id) ---
   LockOrdersFunction:
@@ -1873,6 +1880,27 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /events/{event_id}/onboard
             Method: post
+
+  # --- Get Product Sold Counts (Closed Community Booking) ---
+  GetProductSoldCountsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_product_sold_counts
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+      Events:
+        GetProductSoldCounts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /products/sold-counts
+            Method: get
 
   # --- Assign Club (Onboarding) ---
   AssignClubFunction:
