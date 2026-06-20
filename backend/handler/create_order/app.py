@@ -100,6 +100,13 @@ def lambda_handler(event, context):
 
         # --- Event order flow: one per club per event ---
         if event_id:
+            # club_id is required for event orders (Req 18.3)
+            if not club_id:
+                return create_error_response(
+                    400,
+                    'club_id is required for event orders'
+                )
+
             existing_order = _find_existing_event_order(club_id, event_id)
             if existing_order:
                 logger.info(
