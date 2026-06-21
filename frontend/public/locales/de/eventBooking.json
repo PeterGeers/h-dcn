@@ -159,6 +159,8 @@
     "estimated_total": "Geschätzter Gesamtbetrag",
     "save_now": "Jetzt speichern",
     "saving": "Speichern...",
+    "saved": "Gespeichert",
+    "save_failed": "Speichern fehlgeschlagen",
     "last_saved": "Zuletzt gespeichert: {{time}}",
     "retry": "Erneut versuchen"
   },

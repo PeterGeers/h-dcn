@@ -144,6 +144,8 @@
     "estimated_total": "Total estimé",
     "save_now": "Enregistrer",
     "saving": "Enregistrement...",
+    "saved": "Enregistré",
+    "save_failed": "Échec de l'enregistrement",
     "last_saved": "Dernière sauvegarde : {{time}}",
     "retry": "Réessayer"
   },

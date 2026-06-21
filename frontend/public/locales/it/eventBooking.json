@@ -14,6 +14,8 @@
     "submit": "Invia prenotazione",
     "save": "Salva bozza",
     "saving": "Salvataggio...",
+    "saved": "Salvato",
+    "save_failed": "Salvataggio fallito",
     "lastSaved": "Ultimo salvataggio: {{time}}",
     "retry": "Riprova",
     "loading": "Caricamento dati prenotazione...",

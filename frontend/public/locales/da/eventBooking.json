@@ -14,6 +14,8 @@
     "submit": "Indsend reservation",
     "save": "Gem kladde",
     "saving": "Gemmer...",
+    "saved": "Gemt",
+    "save_failed": "Gem mislykkedes",
     "lastSaved": "Sidst gemt: {{time}}",
     "retry": "Prøv igen",
     "loading": "Indlæser reservationsdata...",

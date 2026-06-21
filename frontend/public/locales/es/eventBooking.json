@@ -14,6 +14,8 @@
     "submit": "Enviar reserva",
     "save": "Guardar borrador",
     "saving": "Guardando...",
+    "saved": "Guardado",
+    "save_failed": "Error al guardar",
     "lastSaved": "Último guardado: {{time}}",
     "retry": "Reintentar",
     "loading": "Cargando datos de reserva...",

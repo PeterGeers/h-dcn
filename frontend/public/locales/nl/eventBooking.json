@@ -160,6 +160,8 @@
     "estimated_total": "Geschat totaal",
     "save_now": "Nu opslaan",
     "saving": "Opslaan...",
+    "saved": "Opgeslagen",
+    "save_failed": "Opslaan mislukt",
     "last_saved": "Laatst opgeslagen: {{time}}",
     "retry": "Opnieuw"
   },
@@ -371,5 +373,20 @@
     "error_generic": "Er is iets misgegaan. Probeer het later opnieuw.",
     "conflict_title": "Slot al geclaimd",
     "conflict_description": "Dit slot is geclaimd door een andere gebruiker. Neem contact op met {{contact}} voor vragen."
+  },
+  "product_configurator": {
+    "select_variant": "Selecteer {{axis}}",
+    "select_all_variants": "Selecteer alle opties om dit product toe te voegen.",
+    "variant_unavailable": "Deze combinatie is niet beschikbaar."
+  },
+  "person_card": {
+    "name": "Naam",
+    "name_placeholder": "Volledige naam",
+    "role": "Rol",
+    "role_placeholder": "bijv. Voorzitter",
+    "remove_person": "Persoon verwijderen",
+    "remove_product": "{{product}} verwijderen",
+    "add_product": "+ Product toevoegen",
+    "variant_required": "Selecteer een geldige variant om door te gaan."
   }
 }

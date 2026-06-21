@@ -14,6 +14,8 @@
     "submit": "Skicka bokning",
     "save": "Spara utkast",
     "saving": "Sparar...",
+    "saved": "Sparad",
+    "save_failed": "Sparning misslyckades",
     "lastSaved": "Senast sparad: {{time}}",
     "retry": "Försök igen",
     "loading": "Laddar bokningsdata...",

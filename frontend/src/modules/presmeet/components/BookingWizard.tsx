@@ -54,22 +54,26 @@ import {
   formatCurrency,
 } from '../utils/priceCalculator';
 import { useAutoSave } from '../hooks/useAutoSave';
+import { useEffectiveLimits } from '../hooks/useEffectiveLimits';
 import ReadOnlyView from './ReadOnlyView';
 import PersonCard from './PersonCard';
 import EventInfoHeader from './EventInfoHeader';
 import EffectiveLimits from './EffectiveLimits';
 import SubmitPanel from './SubmitPanel';
+import SaveStatusIndicator from './SaveStatusIndicator';
 
 // --- Props ---
 
 export interface BookingWizardProps {
   /** The event ID to load the booking for */
   eventId: string;
+  /** Delegate's name from Member record — pre-fills first person (Req 6.3) */
+  delegateName?: string;
 }
 
 // --- Component ---
 
-const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
+const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) => {
   const { t } = useTranslation('eventBooking');
 
   // --- State ---
@@ -103,6 +107,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
   /** Whether the order is locked (no editing allowed for delegates) */
   const isLocked = order?.status === 'locked';
 
+  // --- Effective limits (dual constraint: per-order + per-event) ---
+  const { limits: effectiveLimits, isLoading: isLimitsLoading, refresh: refreshLimits } =
+    useEffectiveLimits(eventId, formState, products);
+
   // --- Load event, products, and order on mount ---
 
   const loadData = useCallback(async () => {
@@ -135,6 +143,16 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
 
       // Convert order items to person-centric form state
       const initialFormState = orderItemsToFormState(orderData.items);
+
+      // Pre-fill first person with delegate's name if no persons exist (Req 6.3)
+      if (initialFormState.persons.length === 0 && delegateName) {
+        initialFormState.persons.push({
+          name: delegateName.trim(),
+          role: '',
+          products: [],
+        });
+      }
+
       setFormState(initialFormState);
     } catch (err: any) {
       const message =
@@ -160,10 +178,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
 
   // --- Person management ---
 
-  /** Overall max persons = max of all product max_per_club values */
+  /** Overall max persons = max of all product max_per_club values, minimum 1 (Req 6.1) */
   const maxPersons = useMemo(() => {
-    if (products.length === 0) return 0;
+    if (products.length === 0) return 1;
     return Math.max(
+      1,
       ...products.map((p) => p.purchase_rules?.max_per_club ?? 20)
     );
   }, [products]);
@@ -183,6 +202,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
   }, [canAddPerson]);
 
   const handleRemovePerson = useCallback((index: number) => {
+    // Prevent removal of first person (Req 6.3)
+    if (index === 0) return;
     setFormState((prev) => ({
       persons: prev.persons.filter((_, i) => i !== index),
     }));
@@ -212,6 +233,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
       });
       setOrder(updatedOrder);
       setVersion(updatedOrder.version);
+      // Refresh sold counts after successful save to reflect latest state
+      refreshLimits();
       return true;
     } catch (err: any) {
       if (isVersionConflict(err)) {
@@ -227,13 +250,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
     } finally {
       setIsSaving(false);
     }
-  }, [order, formState, products, version]);
+  }, [order, formState, products, version, refreshLimits]);
 
-  // --- Auto-save (debounced, 3s after last change) ---
+  // --- Auto-save (debounced, 3s after last change, retry after 30s on failure) ---
 
-  const { isAutoSaving, lastSavedAt, notifyChange } = useAutoSave(handleSave, {
+  const { saveStatus, lastSavedAt, notifyChange, saveNow } = useAutoSave(handleSave, {
     delay: 3000,
     enabled: !!order && event?.status === 'open',
+    retryDelay: 30000,
   });
 
   // Notify auto-save on form state changes (skip initial load)
@@ -504,11 +528,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
       <EventInfoHeader event={event} />
 
       {/* Effective limits */}
-      {products.length > 0 && event.constraints && (
+      {products.length > 0 && (
         <EffectiveLimits
-          products={products}
-          constraints={event.constraints}
-          currentPersonCount={formState.persons.length}
+          limits={effectiveLimits}
+          isLoading={isLimitsLoading}
         />
       )}
 
@@ -550,6 +573,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
             isDisabled={isSaving || isSubmitting || isLocked}
             fieldErrors={fieldErrors[idx]}
             personErrors={personErrors[idx]}
+            effectiveLimits={effectiveLimits}
           />
         ))}
       </VStack>
@@ -599,26 +623,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId }) => {
         />
       )}
 
-      {/* Save status */}
+      {/* Save status indicator */}
       <HStack justify="space-between" fontSize="xs" color="gray.500">
-        <HStack spacing={2}>
-          {isAutoSaving && (
-            <>
-              <Spinner size="xs" />
-              <Text>{t('booking.saving')}</Text>
-            </>
-          )}
-          {!isAutoSaving && lastSavedAt && (
-            <Text>
-              {t('booking.last_saved', { time: lastSavedAt.toLocaleTimeString('nl-NL') })}
-            </Text>
-          )}
-        </HStack>
+        <SaveStatusIndicator status={saveStatus} lastSavedAt={lastSavedAt} />
         <Button
           size="xs"
           variant="ghost"
           leftIcon={<CheckIcon />}
-          onClick={handleSave}
+          onClick={saveNow}
           isLoading={isSaving}
           isDisabled={isSaving}
         >

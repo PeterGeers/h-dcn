@@ -160,6 +160,8 @@
     "estimated_total": "Estimated Total",
     "save_now": "Save now",
     "saving": "Saving...",
+    "saved": "Saved",
+    "save_failed": "Save failed",
     "last_saved": "Last saved: {{time}}",
     "retry": "Retry"
   },
@@ -371,5 +373,27 @@
     "error_generic": "Something went wrong. Please try again later.",
     "conflict_title": "Slot Already Claimed",
     "conflict_description": "This slot was claimed by another user. Contact {{contact}} for questions."
+  },
+  "product_configurator": {
+    "select_variant": "Select {{axis}}",
+    "select_all_variants": "Select all options to add this product.",
+    "variant_unavailable": "This combination is not available."
+  },
+  "person_card": {
+    "name": "Name",
+    "name_placeholder": "Full name",
+    "role": "Role",
+    "role_placeholder": "e.g. President",
+    "remove_person": "Remove person",
+    "remove_product": "Remove {{product}}",
+    "add_product": "+ Add product",
+    "variant_required": "Select a valid variant to continue."
+  },
+  "limits": {
+    "title": "Available capacity",
+    "loading": "Loading capacity...",
+    "remaining": "{{remaining}} of {{total}} remaining",
+    "exhausted": "This product has reached its limit",
+    "sold_out": "sold out"
   }
 }
