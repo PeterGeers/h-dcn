@@ -67,7 +67,15 @@
     "registrationClosed": "Le iscrizioni sono chiuse",
     "alreadyRegistered": "Sei già registrato",
     "loginToRegister": "Accedi per registrarti",
-    "welcomeBack": "Bentornato"
+    "welcomeBack": "Bentornato",
+    "password_title": "Password dell'evento",
+    "password_description": "Inserisci la password che hai ricevuto per accedere alla registrazione.",
+    "password_placeholder": "Password",
+    "password_incorrect": "Password non valida. Controlla la password e riprova.",
+    "verify_button": "Verifica",
+    "verifying": "Verifica in corso...",
+    "rate_limited": "Troppi tentativi. Attendi prima di riprovare.",
+    "wait_seconds": "Attendi {{seconds}}s"
   },
   "admin": {
     "manageAccess": "Gestisci accesso",
@@ -109,6 +117,12 @@
     "payNow": "Paga ora ({{amount}})",
     "fullyPaid": "✓ Interamente pagato",
     "submitBeforePay": "L'ordine deve essere inviato prima del pagamento"
+  },
+  "access_denied": {
+    "title": "Accesso negato",
+    "message": "È necessaria la registrazione per visualizzare questa prenotazione. Visita la pagina di registrazione.",
+    "register_link": "Vai alla registrazione",
+    "contact_organizer": "Nessuna pagina di registrazione disponibile. Contatta l'organizzatore dell'evento per l'accesso."
   },
   "submit": {
     "success": "La tua prenotazione è stata inviata con successo.",

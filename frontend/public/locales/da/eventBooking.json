@@ -67,7 +67,15 @@
     "registrationClosed": "Registrering er lukket",
     "alreadyRegistered": "Du er allerede registreret",
     "loginToRegister": "Log ind for at registrere",
-    "welcomeBack": "Velkommen tilbage"
+    "welcomeBack": "Velkommen tilbage",
+    "password_title": "Begivenhedsadgangskode",
+    "password_description": "Indtast adgangskoden du har modtaget for at få adgang til registreringen.",
+    "password_placeholder": "Adgangskode",
+    "password_incorrect": "Ugyldig adgangskode. Kontrollér adgangskoden og prøv igen.",
+    "verify_button": "Bekræft",
+    "verifying": "Bekræfter...",
+    "rate_limited": "For mange forsøg. Vent venligst før du prøver igen.",
+    "wait_seconds": "Vent {{seconds}}s"
   },
   "admin": {
     "manageAccess": "Administrer adgang",
@@ -109,6 +117,12 @@
     "payNow": "Betal nu ({{amount}})",
     "fullyPaid": "✓ Fuldt betalt",
     "submitBeforePay": "Ordren skal indsendes før betaling"
+  },
+  "access_denied": {
+    "title": "Ingen adgang",
+    "message": "Registrering er påkrævet for at se denne reservation. Besøg venligst registreringssiden.",
+    "register_link": "Gå til registrering",
+    "contact_organizer": "Ingen registreringsside tilgængelig. Kontakt venligst arrangøren for adgang."
   },
   "submit": {
     "success": "Din reservation er indsendt.",

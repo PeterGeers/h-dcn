@@ -311,7 +311,21 @@
     "registrationClosed": "Registration is closed",
     "alreadyRegistered": "You are already registered",
     "loginToRegister": "Log in to register",
-    "welcomeBack": "Welcome back"
+    "welcomeBack": "Welcome back",
+    "password_title": "Event Password",
+    "password_description": "Enter the password you received to access the registration.",
+    "password_placeholder": "Password",
+    "password_incorrect": "Invalid password. Please check the password and try again.",
+    "verify_button": "Verify",
+    "verifying": "Verifying...",
+    "rate_limited": "Too many attempts. Please wait before trying again.",
+    "wait_seconds": "Wait {{seconds}}s"
+  },
+  "access_denied": {
+    "title": "Access Denied",
+    "message": "Registration is required to view this booking. Please visit the registration page to sign up.",
+    "register_link": "Go to registration",
+    "contact_organizer": "No registration page is available. Please contact the event organizer for access."
   },
   "selfService": {
     "title": "My Events",

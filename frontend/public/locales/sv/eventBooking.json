@@ -67,7 +67,15 @@
     "registrationClosed": "Registreringen är stängd",
     "alreadyRegistered": "Du är redan registrerad",
     "loginToRegister": "Logga in för att registrera",
-    "welcomeBack": "Välkommen tillbaka"
+    "welcomeBack": "Välkommen tillbaka",
+    "password_title": "Evenemangets lösenord",
+    "password_description": "Ange lösenordet du fått för att komma åt registreringen.",
+    "password_placeholder": "Lösenord",
+    "password_incorrect": "Ogiltigt lösenord. Kontrollera lösenordet och försök igen.",
+    "verify_button": "Verifiera",
+    "verifying": "Verifierar...",
+    "rate_limited": "För många försök. Vänta innan du försöker igen.",
+    "wait_seconds": "Vänta {{seconds}}s"
   },
   "admin": {
     "manageAccess": "Hantera åtkomst",
@@ -109,6 +117,12 @@
     "payNow": "Betala nu ({{amount}})",
     "fullyPaid": "✓ Helt betalt",
     "submitBeforePay": "Beställningen måste skickas innan betalning"
+  },
+  "access_denied": {
+    "title": "Åtkomst nekad",
+    "message": "Registrering krävs för att visa denna bokning. Besök registreringssidan.",
+    "register_link": "Gå till registrering",
+    "contact_organizer": "Ingen registreringssida tillgänglig. Kontakta evenemangsarrangören för åtkomst."
   },
   "submit": {
     "success": "Din bokning har skickats.",

@@ -311,7 +311,21 @@
     "registrationClosed": "Registratie is gesloten",
     "alreadyRegistered": "U bent al geregistreerd",
     "loginToRegister": "Log in om u te registreren",
-    "welcomeBack": "Welkom terug"
+    "welcomeBack": "Welkom terug",
+    "password_title": "Evenement wachtwoord",
+    "password_description": "Voer het wachtwoord in dat je hebt ontvangen om toegang te krijgen tot de registratie.",
+    "password_placeholder": "Wachtwoord",
+    "password_incorrect": "Ongeldig wachtwoord. Controleer het wachtwoord en probeer het opnieuw.",
+    "verify_button": "Verifiëren",
+    "verifying": "Bezig met verifiëren...",
+    "rate_limited": "Te veel pogingen. Wacht even voordat je het opnieuw probeert.",
+    "wait_seconds": "Wacht {{seconds}}s"
+  },
+  "access_denied": {
+    "title": "Geen toegang",
+    "message": "Registratie is vereist om deze boeking te bekijken. Ga naar de registratiepagina om je aan te melden.",
+    "register_link": "Ga naar registratie",
+    "contact_organizer": "Er is geen registratiepagina beschikbaar. Neem contact op met de organisator voor toegang."
   },
   "selfService": {
     "title": "Mijn Evenementen",

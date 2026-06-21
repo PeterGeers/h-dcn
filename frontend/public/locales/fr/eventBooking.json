@@ -245,7 +245,21 @@
     "registrationClosed": "Les inscriptions sont closes",
     "alreadyRegistered": "Vous êtes déjà inscrit",
     "loginToRegister": "Connectez-vous pour vous inscrire",
-    "welcomeBack": "Bienvenue"
+    "welcomeBack": "Bienvenue",
+    "password_title": "Mot de passe de l'événement",
+    "password_description": "Entrez le mot de passe que vous avez reçu pour accéder à l'inscription.",
+    "password_placeholder": "Mot de passe",
+    "password_incorrect": "Mot de passe invalide. Veuillez vérifier le mot de passe et réessayer.",
+    "verify_button": "Vérifier",
+    "verifying": "Vérification...",
+    "rate_limited": "Trop de tentatives. Veuillez patienter avant de réessayer.",
+    "wait_seconds": "Attendre {{seconds}}s"
+  },
+  "access_denied": {
+    "title": "Accès refusé",
+    "message": "Une inscription est requise pour accéder à cette réservation. Veuillez visiter la page d'inscription.",
+    "register_link": "Aller à l'inscription",
+    "contact_organizer": "Aucune page d'inscription n'est disponible. Veuillez contacter l'organisateur de l'événement."
   },
   "selfService": {
     "title": "Mes événements",

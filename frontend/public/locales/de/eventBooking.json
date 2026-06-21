@@ -279,7 +279,21 @@
     "registrationClosed": "Registrierung ist geschlossen",
     "alreadyRegistered": "Sie sind bereits registriert",
     "loginToRegister": "Anmelden zum Registrieren",
-    "welcomeBack": "Willkommen zurück"
+    "welcomeBack": "Willkommen zurück",
+    "password_title": "Veranstaltungs-Passwort",
+    "password_description": "Geben Sie das Passwort ein, das Sie erhalten haben, um auf die Registrierung zuzugreifen.",
+    "password_placeholder": "Passwort",
+    "password_incorrect": "Ungültiges Passwort. Bitte überprüfen Sie das Passwort und versuchen Sie es erneut.",
+    "verify_button": "Überprüfen",
+    "verifying": "Wird überprüft...",
+    "rate_limited": "Zu viele Versuche. Bitte warten Sie, bevor Sie es erneut versuchen.",
+    "wait_seconds": "Warte {{seconds}}s"
+  },
+  "access_denied": {
+    "title": "Kein Zugang",
+    "message": "Eine Registrierung ist erforderlich, um diese Buchung anzuzeigen. Bitte besuchen Sie die Registrierungsseite.",
+    "register_link": "Zur Registrierung",
+    "contact_organizer": "Keine Registrierungsseite verfügbar. Bitte kontaktieren Sie den Veranstalter für den Zugang."
   },
   "selfService": {
     "title": "Meine Veranstaltungen",
