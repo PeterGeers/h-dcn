@@ -245,16 +245,23 @@ export async function getReport(params: ReportParams): Promise<ReportResponse> {
 }
 
 /**
- * Manage delegates on an order (add or remove secondary delegate).
+ * Manage delegates on an order (invite, revoke, or legacy add/remove).
  * Uses the unified /booking/{id}/delegates endpoint.
- * - action "add": requires email of existing portal user with event access
- * - action "remove": removes the current secondary delegate
+ * - action "invite": invite secondary delegate by email (stores pending_secondary_email)
+ * - action "revoke": revoke pending invitation or remove linked secondary (draft only)
+ * - action "add": (legacy) add secondary delegate by member_id/email
+ * - action "remove": (legacy) remove current secondary delegate
  *
- * Possible errors: 404 (user not found), 403 (no event access), 400 (already assigned)
+ * Possible errors: 404 (user not found), 403 (no event access), 400 (validation),
+ *                  409 (version conflict)
  */
 export async function manageDelegates(
   orderId: string,
-  data: { action: 'add'; email: string } | { action: 'remove' }
+  data:
+    | { action: 'invite'; email: string }
+    | { action: 'revoke' }
+    | { action: 'add'; email: string }
+    | { action: 'remove' }
 ): Promise<Order> {
   const response = await presmeetClient.post<Order>(
     `/booking/${encodeURIComponent(orderId)}/delegates`,

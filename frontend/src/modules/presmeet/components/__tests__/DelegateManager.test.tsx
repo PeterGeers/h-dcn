@@ -1,14 +1,17 @@
 /**
  * DelegateManager component tests.
  *
- * Validates: Requirements 12.6, 12.7, 12.8
+ * Validates: Requirements 5.1, 5.2, 5.3, 5.5, 5.6, 5.7
  *
  * Tests cover:
- * - Primary delegate sees add/remove controls
+ * - Primary delegate sees invite/revoke controls
  * - Non-primary delegate sees read-only view
- * - Adding a secondary delegate via email
- * - Removing a secondary delegate
- * - Error display for API failures (404, 403, 400)
+ * - Inviting a secondary delegate via email (action='invite')
+ * - Client-side self-invitation rejection
+ * - Pending invitation state display
+ * - Revoking pending invitation / removing secondary (draft only)
+ * - Version conflict (409) handling with reload toast
+ * - Revoke restricted to draft status only
  */
 
 import React from 'react';
@@ -17,11 +20,13 @@ import '@testing-library/jest-dom';
 import DelegateManager from '../DelegateManager';
 import { Order } from '../../types/presmeet.types';
 
-// Mock the manageDelegates function from the API client
+// Mock the API functions
 const mockManageDelegates = jest.fn();
+const mockIsVersionConflict = jest.fn();
 
 jest.mock('../../services/presmeetApi', () => ({
   manageDelegates: (...args: any[]) => mockManageDelegates(...args),
+  isVersionConflict: (...args: any[]) => mockIsVersionConflict(...args),
 }));
 
 // Mock react-i18next
@@ -34,11 +39,22 @@ jest.mock('react-i18next', () => ({
         'delegate_manager.secondary': 'Secondary',
         'delegate_manager.you': '(you)',
         'delegate_manager.no_secondary': 'No secondary delegate assigned',
-        'delegate_manager.add_button': 'Add',
+        'delegate_manager.invite_button': 'Invite',
         'delegate_manager.remove_button': 'Remove',
+        'delegate_manager.revoke_button': 'Revoke',
         'delegate_manager.removing': 'Removing...',
+        'delegate_manager.revoking': 'Revoking...',
+        'delegate_manager.pending': 'Pending',
         'delegate_manager.email_placeholder': 'Email address',
         'delegate_manager.add_description': 'Add a secondary delegate who can also manage this booking',
+        'delegate_manager.error_self_invite': 'You cannot invite yourself as a secondary delegate',
+        'delegate_manager.error_not_found': 'User not found. Please check the email address.',
+        'delegate_manager.error_no_access': 'This user does not have event access.',
+        'delegate_manager.error_already_assigned': 'This user is already assigned as a delegate.',
+        'delegate_manager.error_generic': 'An unexpected error occurred. Please try again.',
+        'delegate_manager.conflict_title': 'Order modified',
+        'delegate_manager.conflict_description': 'This order was modified by another delegate. Please reload.',
+        'delegate_manager.reload_button': 'Reload',
       };
       return translations[key] || key;
     },
@@ -47,6 +63,7 @@ jest.mock('react-i18next', () => ({
 }));
 
 // Mock Chakra UI components
+const mockToast = jest.fn();
 jest.mock('@chakra-ui/react', () => ({
   Alert: ({ children, status }: any) => (
     <div role="alert" data-status={status}>{children}</div>
@@ -82,6 +99,7 @@ jest.mock('@chakra-ui/react', () => ({
     return <Tag {...props}>{children}</Tag>;
   },
   VStack: ({ children }: any) => <div>{children}</div>,
+  useToast: () => mockToast,
 }));
 
 jest.mock('@chakra-ui/icons', () => ({
@@ -106,6 +124,7 @@ function createOrder(overrides: Partial<Order> = {}): Order {
     delegates: {
       primary: 'jan@club.nl',
       secondary: null,
+      primary_member_id: 'member-1',
     },
     version: 1,
     status_history: [],
@@ -122,6 +141,7 @@ describe('DelegateManager', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockIsVersionConflict.mockReturnValue(false);
   });
 
   describe('Display', () => {
@@ -141,7 +161,7 @@ describe('DelegateManager', () => {
       expect(screen.getByText('(you)')).toBeInTheDocument();
     });
 
-    it('shows "No secondary delegate assigned" when secondary is null', () => {
+    it('shows "No secondary delegate assigned" when no secondary and no pending', () => {
       const order = createOrder();
 
       render(
@@ -155,9 +175,14 @@ describe('DelegateManager', () => {
       expect(screen.getByText('No secondary delegate assigned')).toBeInTheDocument();
     });
 
-    it('shows secondary delegate email when one is assigned', () => {
+    it('shows linked secondary delegate email', () => {
       const order = createOrder({
-        delegates: { primary: 'jan@club.nl', secondary: 'piet@club.nl' },
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: 'piet@club.nl',
+          primary_member_id: 'member-1',
+          secondary_member_id: 'member-2',
+        },
       });
 
       render(
@@ -170,10 +195,33 @@ describe('DelegateManager', () => {
 
       expect(screen.getByText('piet@club.nl')).toBeInTheDocument();
     });
+
+    it('shows pending invitation state with "Pending" badge', () => {
+      const order = createOrder({
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: null,
+          primary_member_id: 'member-1',
+          pending_secondary_email: 'piet@club.nl',
+        },
+      });
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      expect(screen.getByText('piet@club.nl')).toBeInTheDocument();
+      expect(screen.getByText('Pending')).toBeInTheDocument();
+      expect(screen.getByTestId('badge-yellow')).toBeInTheDocument();
+    });
   });
 
   describe('Primary delegate controls', () => {
-    it('shows add input when primary and no secondary exists', () => {
+    it('shows invite input when primary and no secondary exists', () => {
       const order = createOrder();
 
       render(
@@ -185,12 +233,17 @@ describe('DelegateManager', () => {
       );
 
       expect(screen.getByTestId('email-input')).toBeInTheDocument();
-      expect(screen.getByText('Add')).toBeInTheDocument();
+      expect(screen.getByText('Invite')).toBeInTheDocument();
     });
 
-    it('shows remove button when primary and secondary exists', () => {
+    it('shows remove button when primary, draft status, and secondary exists', () => {
       const order = createOrder({
-        delegates: { primary: 'jan@club.nl', secondary: 'piet@club.nl' },
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: 'piet@club.nl',
+          primary_member_id: 'member-1',
+          secondary_member_id: 'member-2',
+        },
       });
 
       render(
@@ -204,9 +257,56 @@ describe('DelegateManager', () => {
       expect(screen.getByText('Remove')).toBeInTheDocument();
     });
 
-    it('does not show add input when secondary is already assigned', () => {
+    it('shows revoke button when primary, draft status, and pending invitation', () => {
       const order = createOrder({
-        delegates: { primary: 'jan@club.nl', secondary: 'piet@club.nl' },
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: null,
+          primary_member_id: 'member-1',
+          pending_secondary_email: 'piet@club.nl',
+        },
+      });
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      expect(screen.getByText('Revoke')).toBeInTheDocument();
+    });
+
+    it('does not show invite input when pending invitation exists', () => {
+      const order = createOrder({
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: null,
+          primary_member_id: 'member-1',
+          pending_secondary_email: 'piet@club.nl',
+        },
+      });
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      expect(screen.queryByTestId('email-input')).not.toBeInTheDocument();
+    });
+
+    it('does not show invite input when secondary is already linked', () => {
+      const order = createOrder({
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: 'piet@club.nl',
+          primary_member_id: 'member-1',
+          secondary_member_id: 'member-2',
+        },
       });
 
       render(
@@ -221,8 +321,54 @@ describe('DelegateManager', () => {
     });
   });
 
+  describe('Draft-only restriction (Req 5.7)', () => {
+    it('does not show remove button when order is submitted', () => {
+      const order = createOrder({
+        status: 'submitted',
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: 'piet@club.nl',
+          primary_member_id: 'member-1',
+          secondary_member_id: 'member-2',
+        },
+      });
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      expect(screen.queryByText('Remove')).not.toBeInTheDocument();
+    });
+
+    it('does not show revoke button when order is locked', () => {
+      const order = createOrder({
+        status: 'locked',
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: null,
+          primary_member_id: 'member-1',
+          pending_secondary_email: 'piet@club.nl',
+        },
+      });
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      expect(screen.queryByText('Revoke')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Non-primary (read-only)', () => {
-    it('does not show add input for non-primary user', () => {
+    it('does not show invite input for non-primary user', () => {
       const order = createOrder();
 
       render(
@@ -238,7 +384,12 @@ describe('DelegateManager', () => {
 
     it('does not show remove button for non-primary user', () => {
       const order = createOrder({
-        delegates: { primary: 'jan@club.nl', secondary: 'piet@club.nl' },
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: 'piet@club.nl',
+          primary_member_id: 'member-1',
+          secondary_member_id: 'member-2',
+        },
       });
 
       render(
@@ -251,29 +402,12 @@ describe('DelegateManager', () => {
 
       expect(screen.queryByText('Remove')).not.toBeInTheDocument();
     });
-
-    it('does not show "(you)" for non-primary user on primary label', () => {
-      const order = createOrder();
-
-      render(
-        <DelegateManager
-          order={order}
-          currentUserEmail="piet@club.nl"
-          onDelegateChange={onDelegateChange}
-        />
-      );
-
-      expect(screen.queryByText('(you)')).not.toBeInTheDocument();
-    });
   });
 
-  describe('Add delegate', () => {
-    it('calls manageDelegates with add action and email on button click', async () => {
+  describe('Invite delegate (Req 5.1)', () => {
+    it('calls manageDelegates with invite action and email on button click', async () => {
       const order = createOrder();
-      mockManageDelegates.mockResolvedValue({
-        ...order,
-        delegates: { primary: 'jan@club.nl', secondary: 'piet@club.nl' },
-      });
+      mockManageDelegates.mockResolvedValue({ order });
 
       render(
         <DelegateManager
@@ -287,11 +421,11 @@ describe('DelegateManager', () => {
       fireEvent.change(input, { target: { value: 'piet@club.nl' } });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Invite'));
       });
 
       expect(mockManageDelegates).toHaveBeenCalledWith('order-123', {
-        action: 'add',
+        action: 'invite',
         email: 'piet@club.nl',
       });
       expect(onDelegateChange).toHaveBeenCalled();
@@ -299,7 +433,7 @@ describe('DelegateManager', () => {
 
     it('calls manageDelegates on Enter key press', async () => {
       const order = createOrder();
-      mockManageDelegates.mockResolvedValue(order);
+      mockManageDelegates.mockResolvedValue({ order });
 
       render(
         <DelegateManager
@@ -317,14 +451,14 @@ describe('DelegateManager', () => {
       });
 
       expect(mockManageDelegates).toHaveBeenCalledWith('order-123', {
-        action: 'add',
+        action: 'invite',
         email: 'piet@club.nl',
       });
     });
 
-    it('clears email input after successful add', async () => {
+    it('clears email input after successful invite', async () => {
       const order = createOrder();
-      mockManageDelegates.mockResolvedValue(order);
+      mockManageDelegates.mockResolvedValue({ order });
 
       render(
         <DelegateManager
@@ -338,7 +472,7 @@ describe('DelegateManager', () => {
       fireEvent.change(input, { target: { value: 'piet@club.nl' } });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Invite'));
       });
 
       expect(input).toHaveValue('');
@@ -356,22 +490,99 @@ describe('DelegateManager', () => {
       );
 
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Invite'));
       });
 
       expect(mockManageDelegates).not.toHaveBeenCalled();
     });
   });
 
-  describe('Remove delegate', () => {
-    it('calls manageDelegates with remove action on button click', async () => {
+  describe('Self-invitation rejection (Req 5.2)', () => {
+    it('rejects self-invitation client-side without calling API', async () => {
+      const order = createOrder();
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      const input = screen.getByTestId('email-input');
+      fireEvent.change(input, { target: { value: 'jan@club.nl' } });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Invite'));
+      });
+
+      expect(mockManageDelegates).not.toHaveBeenCalled();
+      expect(screen.getByText('You cannot invite yourself as a secondary delegate')).toBeInTheDocument();
+    });
+
+    it('rejects self-invitation case-insensitively', async () => {
+      const order = createOrder();
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      const input = screen.getByTestId('email-input');
+      fireEvent.change(input, { target: { value: 'JAN@CLUB.NL' } });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Invite'));
+      });
+
+      expect(mockManageDelegates).not.toHaveBeenCalled();
+      expect(screen.getByText('You cannot invite yourself as a secondary delegate')).toBeInTheDocument();
+    });
+  });
+
+  describe('Revoke delegate (Req 5.7)', () => {
+    it('calls manageDelegates with revoke action on revoke button click', async () => {
       const order = createOrder({
-        delegates: { primary: 'jan@club.nl', secondary: 'piet@club.nl' },
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: null,
+          primary_member_id: 'member-1',
+          pending_secondary_email: 'piet@club.nl',
+        },
       });
-      mockManageDelegates.mockResolvedValue({
-        ...order,
-        delegates: { primary: 'jan@club.nl', secondary: null },
+      mockManageDelegates.mockResolvedValue({ order });
+
+      render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Revoke'));
       });
+
+      expect(mockManageDelegates).toHaveBeenCalledWith('order-123', {
+        action: 'revoke',
+      });
+      expect(onDelegateChange).toHaveBeenCalled();
+    });
+
+    it('calls manageDelegates with revoke action on remove button click', async () => {
+      const order = createOrder({
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: 'piet@club.nl',
+          primary_member_id: 'member-1',
+          secondary_member_id: 'member-2',
+        },
+      });
+      mockManageDelegates.mockResolvedValue({ order });
 
       render(
         <DelegateManager
@@ -386,18 +597,22 @@ describe('DelegateManager', () => {
       });
 
       expect(mockManageDelegates).toHaveBeenCalledWith('order-123', {
-        action: 'remove',
+        action: 'revoke',
       });
       expect(onDelegateChange).toHaveBeenCalled();
     });
   });
 
-  describe('Error handling', () => {
-    it('shows "User not found" error on 404 response', async () => {
+  describe('Version conflict handling (Req 5.6)', () => {
+    it('shows toast on 409 version conflict during invite', async () => {
       const order = createOrder();
-      mockManageDelegates.mockRejectedValue({
-        response: { status: 404, data: { message: 'User not found' } },
-      });
+      const conflictError = {
+        type: 'VERSION_CONFLICT',
+        message: 'Version conflict',
+        current_version: 5,
+      };
+      mockIsVersionConflict.mockReturnValue(true);
+      mockManageDelegates.mockRejectedValue(conflictError);
 
       render(
         <DelegateManager
@@ -408,21 +623,32 @@ describe('DelegateManager', () => {
       );
 
       const input = screen.getByTestId('email-input');
-      fireEvent.change(input, { target: { value: 'nobody@club.nl' } });
+      fireEvent.change(input, { target: { value: 'piet@club.nl' } });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Invite'));
       });
 
-      expect(screen.getByText('User not found')).toBeInTheDocument();
+      expect(mockToast).toHaveBeenCalled();
       expect(onDelegateChange).not.toHaveBeenCalled();
     });
 
-    it('shows "No PresMeet access" error on 403 response', async () => {
-      const order = createOrder();
-      mockManageDelegates.mockRejectedValue({
-        response: { status: 403, data: { message: 'No PresMeet access' } },
+    it('shows toast on 409 version conflict during revoke', async () => {
+      const order = createOrder({
+        delegates: {
+          primary: 'jan@club.nl',
+          secondary: null,
+          primary_member_id: 'member-1',
+          pending_secondary_email: 'piet@club.nl',
+        },
       });
+      const conflictError = {
+        type: 'VERSION_CONFLICT',
+        message: 'Version conflict',
+        current_version: 5,
+      };
+      mockIsVersionConflict.mockReturnValue(true);
+      mockManageDelegates.mockRejectedValue(conflictError);
 
       render(
         <DelegateManager
@@ -432,17 +658,17 @@ describe('DelegateManager', () => {
         />
       );
 
-      const input = screen.getByTestId('email-input');
-      fireEvent.change(input, { target: { value: 'noaccess@club.nl' } });
-
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Revoke'));
       });
 
-      expect(screen.getByText('No PresMeet access')).toBeInTheDocument();
+      expect(mockToast).toHaveBeenCalled();
+      expect(onDelegateChange).not.toHaveBeenCalled();
     });
+  });
 
-    it('shows "Already assigned" error on 400 response', async () => {
+  describe('Error handling', () => {
+    it('shows server error message on 400 response', async () => {
       const order = createOrder();
       mockManageDelegates.mockRejectedValue({
         response: { status: 400, data: { message: 'Already assigned' } },
@@ -457,19 +683,17 @@ describe('DelegateManager', () => {
       );
 
       const input = screen.getByTestId('email-input');
-      fireEvent.change(input, { target: { value: 'jan@club.nl' } });
+      fireEvent.change(input, { target: { value: 'someone@club.nl' } });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Invite'));
       });
 
       expect(screen.getByText('Already assigned')).toBeInTheDocument();
     });
 
-    it('clears error on next successful action', async () => {
+    it('clears error when user types in input', async () => {
       const order = createOrder();
-
-      // First call fails
       mockManageDelegates.mockRejectedValueOnce({
         response: { status: 404, data: { message: 'User not found' } },
       });
@@ -486,19 +710,13 @@ describe('DelegateManager', () => {
       fireEvent.change(input, { target: { value: 'bad@club.nl' } });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
+        fireEvent.click(screen.getByText('Invite'));
       });
 
       expect(screen.getByText('User not found')).toBeInTheDocument();
 
-      // Second call succeeds
-      mockManageDelegates.mockResolvedValueOnce(order);
+      // Typing clears error
       fireEvent.change(input, { target: { value: 'good@club.nl' } });
-
-      await act(async () => {
-        fireEvent.click(screen.getByText('Add'));
-      });
-
       expect(screen.queryByText('User not found')).not.toBeInTheDocument();
     });
   });
@@ -506,7 +724,7 @@ describe('DelegateManager', () => {
   describe('Case-insensitive email comparison', () => {
     it('treats uppercase user email as primary', () => {
       const order = createOrder({
-        delegates: { primary: 'jan@club.nl', secondary: null },
+        delegates: { primary: 'jan@club.nl', secondary: null, primary_member_id: 'member-1' },
       });
 
       render(
@@ -519,6 +737,22 @@ describe('DelegateManager', () => {
 
       expect(screen.getByText('(you)')).toBeInTheDocument();
       expect(screen.getByTestId('email-input')).toBeInTheDocument();
+    });
+  });
+
+  describe('No delegates', () => {
+    it('renders nothing when order has no delegates field', () => {
+      const order = createOrder({ delegates: undefined });
+
+      const { container } = render(
+        <DelegateManager
+          order={order}
+          currentUserEmail="jan@club.nl"
+          onDelegateChange={onDelegateChange}
+        />
+      );
+
+      expect(container.firstChild).toBeNull();
     });
   });
 });

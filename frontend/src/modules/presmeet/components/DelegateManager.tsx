@@ -1,12 +1,16 @@
 /**
- * DelegateManager — Manage primary and secondary delegates for a PresMeet order.
+ * DelegateManager — Manage primary and secondary delegates for a booking order.
  *
- * - Shows current delegates (primary = current user label, secondary = email or empty)
- * - Primary delegate can add a secondary delegate by email (validated via API)
- * - Primary delegate can remove the secondary delegate
- * - Non-primary users see a read-only view of delegate info
+ * Features:
+ * - Shows current delegates (primary + secondary if linked)
+ * - Shows pending invitation state (email + "Pending" badge)
+ * - Invite form: email input + invite button (primary only)
+ * - Client-side validation: reject self-invitation
+ * - Calls POST /booking/{order_id}/delegates with action='invite'
+ * - Revoke button: calls POST with action='revoke' (only in draft status)
+ * - On 409 (version conflict): shows toast notification with "Reload" button
  *
- * Validates: Requirements 12.6, 12.7, 12.8
+ * Validates: Requirements 5.1, 5.2, 5.3, 5.5, 5.6, 5.7
  */
 
 import React, { useState } from 'react';
@@ -24,11 +28,12 @@ import {
   InputRightElement,
   Text,
   VStack,
+  useToast,
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { Order } from '../types/presmeet.types';
-import { manageDelegates } from '../services/presmeetApi';
+import { manageDelegates, isVersionConflict } from '../services/presmeetApi';
 
 export interface DelegateManagerProps {
   /** The current order containing delegates info */
@@ -40,22 +45,22 @@ export interface DelegateManagerProps {
 }
 
 /**
- * Maps API error status codes to user-friendly messages.
+ * Maps API error status codes to translation-friendly error keys or messages.
  */
-function getDelegateErrorMessage(error: any): string {
+function getDelegateErrorKey(error: any): string {
   const status = error?.response?.status;
   const serverMessage = error?.response?.data?.message;
 
   if (status === 404) {
-    return serverMessage || 'User not found. Please check the email address.';
+    return serverMessage || 'delegate_manager.error_not_found';
   }
   if (status === 403) {
-    return serverMessage || 'This user does not have PresMeet access.';
+    return serverMessage || 'delegate_manager.error_no_access';
   }
   if (status === 400) {
-    return serverMessage || 'This user is already assigned as a delegate.';
+    return serverMessage || 'delegate_manager.error_already_assigned';
   }
-  return serverMessage || 'An unexpected error occurred. Please try again.';
+  return serverMessage || 'delegate_manager.error_generic';
 }
 
 const DelegateManager: React.FC<DelegateManagerProps> = ({
@@ -64,63 +69,128 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
   onDelegateChange,
 }) => {
   const { t } = useTranslation('eventBooking');
+  const toast = useToast();
   const [email, setEmail] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle both old format (delegates.primary = email) and new format (delegates.primary_member_id = id)
-  const primaryDelegate = order.delegates?.primary || order.delegates?.primary_member_id || '';
-  const secondaryDelegate = order.delegates?.secondary || order.delegates?.secondary_member_id || null;
+  // Delegate state from order
+  const delegates = order.delegates;
+  const primaryEmail = delegates?.primary || '';
+  const secondaryEmail = delegates?.secondary || null;
+  const secondaryMemberId = delegates?.secondary_member_id || null;
+  const pendingEmail = delegates?.pending_secondary_email || null;
 
-  const isPrimary = primaryDelegate
-    ? currentUserEmail.toLowerCase() === primaryDelegate.toLowerCase() ||
-      order.member_id === primaryDelegate  // In new format, primary_member_id matches order.member_id
+  // Determine if current user is the primary delegate
+  const isPrimary = primaryEmail
+    ? currentUserEmail.toLowerCase() === primaryEmail.toLowerCase()
     : true; // If no delegate info, assume current user is primary
 
-  const handleAddDelegate = async () => {
+  // Draft status check for revoke/remove actions (Req 5.7)
+  const isDraft = order.status === 'draft';
+
+  // Whether a secondary delegate is present (linked or pending)
+  const hasLinkedSecondary = !!secondaryMemberId;
+  const hasPendingInvitation = !!pendingEmail;
+  const hasSecondary = hasLinkedSecondary || hasPendingInvitation;
+
+  /**
+   * Handle version conflict (409): show toast with reload action (Req 5.6)
+   */
+  const handleVersionConflict = (err: any) => {
+    toast({
+      title: t('delegate_manager.conflict_title'),
+      description: t('delegate_manager.conflict_description'),
+      status: 'warning',
+      duration: null,
+      isClosable: true,
+      render: ({ onClose }) => (
+        <Alert status="warning" borderRadius="md" boxShadow="lg">
+          <AlertIcon />
+          <Box flex={1}>
+            <Text fontWeight="bold">{t('delegate_manager.conflict_title')}</Text>
+            <Text fontSize="sm">{t('delegate_manager.conflict_description')}</Text>
+          </Box>
+          <Button
+            size="sm"
+            colorScheme="orange"
+            ml={3}
+            onClick={() => {
+              onClose();
+              onDelegateChange();
+            }}
+          >
+            {t('delegate_manager.reload_button')}
+          </Button>
+        </Alert>
+      ),
+    });
+  };
+
+  /**
+   * Handle inviting a secondary delegate by email (Req 5.1, 5.2, 5.3)
+   */
+  const handleInvite = async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) return;
 
+    // Client-side: reject self-invitation (Req 5.2)
+    if (trimmedEmail.toLowerCase() === currentUserEmail.toLowerCase()) {
+      setError(t('delegate_manager.error_self_invite'));
+      return;
+    }
+
     setError(null);
-    setIsAdding(true);
+    setIsInviting(true);
 
     try {
       await manageDelegates(order.order_id, {
-        action: 'add',
+        action: 'invite',
         email: trimmedEmail,
       });
       setEmail('');
       onDelegateChange();
     } catch (err: any) {
-      setError(getDelegateErrorMessage(err));
+      if (isVersionConflict(err)) {
+        handleVersionConflict(err);
+      } else {
+        setError(getDelegateErrorKey(err));
+      }
     } finally {
-      setIsAdding(false);
+      setIsInviting(false);
     }
   };
 
-  const handleRemoveDelegate = async () => {
+  /**
+   * Handle revoking a pending invitation or removing a linked secondary (Req 5.7)
+   */
+  const handleRevoke = async () => {
     setError(null);
-    setIsRemoving(true);
+    setIsRevoking(true);
 
     try {
-      await manageDelegates(order.order_id, { action: 'remove' });
+      await manageDelegates(order.order_id, { action: 'revoke' });
       onDelegateChange();
     } catch (err: any) {
-      setError(getDelegateErrorMessage(err));
+      if (isVersionConflict(err)) {
+        handleVersionConflict(err);
+      } else {
+        setError(getDelegateErrorKey(err));
+      }
     } finally {
-      setIsRemoving(false);
+      setIsRevoking(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && email.trim()) {
-      handleAddDelegate();
+      handleInvite();
     }
   };
 
-  // Don't render for member-scoped orders (no delegates)
-  if (!order.delegates) {
+  // Don't render for orders without delegates structure
+  if (!delegates) {
     return null;
   }
 
@@ -135,7 +205,7 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
             {t('delegate_manager.primary')}
           </Badge>
           <Text fontSize="sm">
-            {primaryDelegate}
+            {primaryEmail}
             {isPrimary && (
               <Text as="span" color="gray.500" ml={1}>
                 {t('delegate_manager.you')}
@@ -149,32 +219,58 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
           <Badge colorScheme="gray" fontSize="xs">
             {t('delegate_manager.secondary')}
           </Badge>
-          {secondaryDelegate ? (
+
+          {hasLinkedSecondary ? (
+            /* Linked secondary delegate */
             <HStack spacing={2} flex={1} justify="space-between">
-              <Text fontSize="sm">{secondaryDelegate}</Text>
-              {isPrimary && (
+              <Text fontSize="sm">{secondaryEmail}</Text>
+              {isPrimary && isDraft && (
                 <Button
                   size="xs"
                   colorScheme="red"
                   variant="ghost"
                   leftIcon={<DeleteIcon />}
-                  onClick={handleRemoveDelegate}
-                  isLoading={isRemoving}
+                  onClick={handleRevoke}
+                  isLoading={isRevoking}
                   loadingText={t('delegate_manager.removing')}
                 >
                   {t('delegate_manager.remove_button')}
                 </Button>
               )}
             </HStack>
+          ) : hasPendingInvitation ? (
+            /* Pending invitation state (Req 5.3) */
+            <HStack spacing={2} flex={1} justify="space-between">
+              <HStack spacing={2}>
+                <Text fontSize="sm">{pendingEmail}</Text>
+                <Badge colorScheme="yellow" fontSize="xs">
+                  {t('delegate_manager.pending')}
+                </Badge>
+              </HStack>
+              {isPrimary && isDraft && (
+                <Button
+                  size="xs"
+                  colorScheme="red"
+                  variant="ghost"
+                  leftIcon={<DeleteIcon />}
+                  onClick={handleRevoke}
+                  isLoading={isRevoking}
+                  loadingText={t('delegate_manager.revoking')}
+                >
+                  {t('delegate_manager.revoke_button')}
+                </Button>
+              )}
+            </HStack>
           ) : (
+            /* No secondary delegate */
             <Text fontSize="sm" color="gray.500">
               {t('delegate_manager.no_secondary')}
             </Text>
           )}
         </HStack>
 
-        {/* Add secondary delegate (primary only) */}
-        {isPrimary && !secondaryDelegate && (
+        {/* Invite form: only primary delegate, no existing secondary (Req 5.1) */}
+        {isPrimary && !hasSecondary && (
           <Box>
             <Text fontSize="xs" color="gray.500" mb={2}>
               {t('delegate_manager.add_description')}
@@ -183,20 +279,23 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
               <Input
                 placeholder={t('delegate_manager.email_placeholder')}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 onKeyDown={handleKeyDown}
                 type="email"
-                isDisabled={isAdding}
+                isDisabled={isInviting}
               />
-              <InputRightElement width="4rem">
+              <InputRightElement width="5rem">
                 <Button
                   size="xs"
                   colorScheme="orange"
-                  onClick={handleAddDelegate}
-                  isLoading={isAdding}
+                  onClick={handleInvite}
+                  isLoading={isInviting}
                   isDisabled={!email.trim()}
                 >
-                  {t('delegate_manager.add_button')}
+                  {t('delegate_manager.invite_button')}
                 </Button>
               </InputRightElement>
             </InputGroup>
