@@ -36,6 +36,7 @@ export interface Delegate {
   secondary: string | null;
   primary_member_id?: string;
   secondary_member_id?: string;
+  pending_secondary_email?: string | null;
 }
 
 export interface StatusHistoryEntry {
@@ -114,7 +115,16 @@ export interface VariantAxis {
 export interface PurchaseRules {
   min_per_club?: number;
   max_per_club?: number;
+  max_per_event?: number;
   order_mode?: 'persistent';
+}
+
+export interface ProductVariant {
+  variant_id: string;
+  variant_attributes: Record<string, string>;
+  price?: number;
+  stock?: number;
+  active?: boolean;
 }
 
 export interface Product {
@@ -125,6 +135,8 @@ export interface Product {
   price: number;
   order_item_fields: OrderItemField[];
   variant_schema: VariantAxis[] | null;
+  /** Actual variant records for resolution when variant_schema is defined */
+  variants?: ProductVariant[];
   purchase_rules: PurchaseRules;
 }
 
@@ -162,8 +174,11 @@ export interface PaymentInitiationResponse {
 
 export interface ValidationError {
   item_index: number;
+  person_index: number | null;
+  product_id: string | null;
   field: string;
   message: string;
+  remaining?: number;
 }
 
 export interface SubmitValidationErrorResponse {
