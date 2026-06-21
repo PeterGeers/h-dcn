@@ -166,7 +166,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
       setIsLoading(false);
       hasLoadedRef.current = true;
     }
-  }, [eventId]);
+  }, [eventId, delegateName]);
 
   useEffect(() => {
     loadData();
