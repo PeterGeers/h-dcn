@@ -35,6 +35,7 @@ try:
         handle_options_request,
         log_successful_access,
     )
+    from shared.event_access import verify_order_event_access
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
@@ -201,6 +202,22 @@ def lambda_handler(event, context):
         if not order:
             return create_error_response(404, 'Order not found')
 
+        # 5a. Resolve requester's member record (needed for both access check and auth)
+        is_admin_user = _is_admin(user_roles, user_email)
+        requester_member = _resolve_member_by_email(user_email)
+
+        # 5b. Event access verification (Req 16.5, 16.7):
+        # For event-scoped orders, verify allowed_events + delegate ownership.
+        # On failure, return 403 without revealing order existence.
+        if not is_admin_user:
+            event_id = order.get('event_id') or order.get('source_id')
+            if event_id and event_id != 'webshop':
+                if not requester_member:
+                    return create_error_response(403, 'Insufficient event access')
+                requester_member_id = requester_member['member_id']
+                if not verify_order_event_access(order, requester_member_id):
+                    return create_error_response(403, 'Insufficient event access')
+
         # 6. Verify order is club-scoped (has delegates field)
         delegates = order.get('delegates')
         if not delegates:
@@ -208,15 +225,13 @@ def lambda_handler(event, context):
                 400, 'Delegate management is only available for club-scoped orders'
             )
 
-        # 7. Resolve requester's member_id and verify authorization
-        requester_member = _resolve_member_by_email(user_email)
+        # 7. Verify authorization (primary delegate or admin)
         if not requester_member:
             return create_error_response(404, 'Requester member record not found')
 
         requester_member_id = requester_member['member_id']
         primary_member_id = delegates.get('primary_member_id')
         is_primary = (requester_member_id == primary_member_id)
-        is_admin_user = _is_admin(user_roles, user_email)
 
         if not is_primary and not is_admin_user:
             return create_error_response(
@@ -400,6 +415,18 @@ def _handle_delete(event, order_id: str, user_email: str, user_roles: list):
     if not order:
         return create_error_response(404, 'Order not found')
 
+    # Event access verification (Req 16.5, 16.7)
+    is_admin_user = _is_admin(user_roles, user_email)
+    requester_member = _resolve_member_by_email(user_email)
+
+    if not is_admin_user:
+        event_id = order.get('event_id') or order.get('source_id')
+        if event_id and event_id != 'webshop':
+            if not requester_member:
+                return create_error_response(403, 'Insufficient event access')
+            if not verify_order_event_access(order, requester_member['member_id']):
+                return create_error_response(403, 'Insufficient event access')
+
     delegates = order.get('delegates')
     if not delegates:
         return create_error_response(
@@ -407,14 +434,12 @@ def _handle_delete(event, order_id: str, user_email: str, user_roles: list):
         )
 
     # Verify requester is primary delegate or admin
-    requester_member = _resolve_member_by_email(user_email)
     if not requester_member:
         return create_error_response(404, 'Requester member record not found')
 
     requester_member_id = requester_member['member_id']
     primary_member_id = delegates.get('primary_member_id')
     is_primary = (requester_member_id == primary_member_id)
-    is_admin_user = _is_admin(user_roles, user_email)
 
     if not is_primary and not is_admin_user:
         return create_error_response(

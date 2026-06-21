@@ -46,7 +46,7 @@ try:
         handle_options_request,
         log_successful_access,
     )
-    from shared.event_access import has_event_access
+    from shared.event_access import has_event_access, verify_order_event_access
     from shared.event_validation import (
         validate_item_fields,
         validate_purchase_rules,
@@ -450,9 +450,18 @@ def lambda_handler(event, context):
         if not order:
             return create_error_response(404, 'Order not found')
 
+        # 4a. Event access verification (Req 16.5, 16.7):
+        # For event-scoped orders, verify allowed_events + delegate ownership.
+        # On failure, return 403 without revealing order existence.
+        admin = _is_admin(user_roles, user_email)
+        if not admin:
+            event_id = order.get('event_id') or order.get('source_id')
+            if event_id and event_id != 'webshop':
+                if not verify_order_event_access(order, member_id):
+                    return create_error_response(403, 'Insufficient event access')
+
         # 5. Verify ownership: order's member_id must match authenticated member (or admin)
         order_member_id = order.get('member_id')
-        admin = _is_admin(user_roles, user_email)
 
         if order_member_id != member_id and not admin:
             # For club-scoped orders, also check delegate access

@@ -191,7 +191,7 @@ def setup_tables():
             'email': TEST_PRIMARY_EMAIL,
             'club_id': TEST_CLUB_ID,
             'member_type': 'hdcn_member',
-            'allowed_events': [],
+            'allowed_events': [TEST_EVENT_ID, 'evt-member-event-uuid'],
         })
         members_table.put_item(Item={
             'member_id': TEST_TARGET_MEMBER_ID,
@@ -309,7 +309,7 @@ class TestAuthorization:
     """Tests for delegate management access control."""
 
     def test_returns_403_when_requester_is_not_primary_or_admin(self, setup_tables):
-        """Non-primary, non-admin user cannot manage delegates."""
+        """Non-primary, non-admin user cannot manage delegates (Req 16.5, 16.7)."""
         handler = setup_tables['handler']
         orders_table = setup_tables['orders']
         _seed_club_order(orders_table)
@@ -320,7 +320,11 @@ class TestAuthorization:
 
         assert response['statusCode'] == 403
         body = json.loads(response['body'])
-        assert 'primary delegate' in body.get('error', '').lower() or 'admin' in body.get('error', '').lower()
+        # May return "Insufficient event access" (Req 16.7) or "primary delegate" depending on
+        # whether the user fails event access check first or delegate check.
+        error_msg = body.get('error', '').lower()
+        assert ('primary delegate' in error_msg or 'admin' in error_msg
+                or 'insufficient event access' in error_msg)
 
     def test_admin_can_manage_delegates(self, setup_tables):
         """Admin (events_crud) can manage delegates even if not primary."""

@@ -32,7 +32,7 @@ try:
         handle_options_request,
         log_successful_access,
     )
-    from shared.event_access import has_event_access
+    from shared.event_access import has_event_access, verify_order_event_access
 except ImportError:
     from shared.maintenance_fallback import create_smart_fallback_handler
     lambda_handler = create_smart_fallback_handler("get_order")

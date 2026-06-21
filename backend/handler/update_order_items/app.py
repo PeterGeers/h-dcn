@@ -35,6 +35,7 @@ try:
         create_success_response,
         log_successful_access,
     )
+    from shared.event_access import verify_order_event_access
     print("Using shared auth layer for update_order_items")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -50,6 +51,21 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
+members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
+
+
+def _resolve_member_for_access(user_email: str) -> dict | None:
+    """Resolve member record from Members table by email for access checks."""
+    from boto3.dynamodb.conditions import Attr as AttrFilter
+    try:
+        response = members_table.scan(
+            FilterExpression=AttrFilter('email').eq(user_email),
+            ProjectionExpression='member_id, allowed_events'
+        )
+        items = response.get('Items', [])
+        return items[0] if items else None
+    except Exception:
+        return None
 
 
 def lambda_handler(event, context):
@@ -107,6 +123,20 @@ def lambda_handler(event, context):
             return create_error_response(404, 'Order not found', {'order_id': order_id})
 
         order = order_response['Item']
+
+        # Event access verification (Req 16.5, 16.7):
+        # For event-scoped orders, verify allowed_events + delegate ownership.
+        # On failure, return 403 without revealing order existence.
+        if not is_admin_authorized:
+            event_id = order.get('event_id') or order.get('source_id')
+            if event_id and event_id != 'webshop':
+                # Resolve member_id from email for event access check
+                member_record = _resolve_member_for_access(user_email)
+                if not member_record:
+                    return create_error_response(403, 'Insufficient event access')
+                member_id = member_record['member_id']
+                if not verify_order_event_access(order, member_id):
+                    return create_error_response(403, 'Insufficient event access')
 
         # Verify order belongs to this user (unless admin)
         if not is_admin_authorized:

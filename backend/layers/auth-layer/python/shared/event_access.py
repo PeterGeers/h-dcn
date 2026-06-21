@@ -116,3 +116,47 @@ def is_presmeet_admin(user_roles: list[str]) -> bool:
     """
     admin_roles = {'Products_CRUD', 'Products_Read', 'Webshop_Management', 'Regio_All'}
     return bool(set(user_roles) & admin_roles)
+
+
+def verify_order_event_access(order: dict, member_id: str) -> bool:
+    """
+    Verify event-scoped access for a booking order.
+
+    Combines two checks (Requirement 16.5):
+    1. The order's event_id is in the member's allowed_events list
+    2. The member is listed as primary_member_id or secondary_member_id
+       on the order's delegates
+
+    For non-event orders (no event_id or source_id == 'webshop'), returns True
+    (no event access check needed).
+
+    Args:
+        order: The order record dict from DynamoDB.
+        member_id: The authenticated member's member_id.
+
+    Returns:
+        bool: True if access is granted, False if denied.
+    """
+    # Determine event_id from order (either event_id field or source_id)
+    event_id = order.get('event_id') or order.get('source_id')
+
+    # Non-event orders (webshop) skip event access check
+    # source_id == 'webshop' means it's a webshop order regardless of event_id
+    source_id = order.get('source_id', '')
+    if not event_id or event_id == 'webshop' or source_id == 'webshop':
+        return True
+
+    # Check 1: event_id must be in member's allowed_events
+    if not has_event_access(member_id, event_id):
+        return False
+
+    # Check 2: member must be a delegate on the order
+    delegates = order.get('delegates', {})
+    if not delegates:
+        # No delegates field — fall back to checking order's member_id (owner)
+        return order.get('member_id') == member_id
+
+    primary_member_id = delegates.get('primary_member_id')
+    secondary_member_id = delegates.get('secondary_member_id')
+
+    return member_id in (primary_member_id, secondary_member_id)
