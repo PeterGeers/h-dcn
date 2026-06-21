@@ -22,10 +22,12 @@ import { Order } from '../../types/presmeet.types';
 
 // Mock the API functions
 const mockManageDelegates = jest.fn();
+const mockResendDelegateInvitation = jest.fn();
 const mockIsVersionConflict = jest.fn();
 
 jest.mock('../../services/presmeetApi', () => ({
   manageDelegates: (...args: any[]) => mockManageDelegates(...args),
+  resendDelegateInvitation: (...args: any[]) => mockResendDelegateInvitation(...args),
   isVersionConflict: (...args: any[]) => mockIsVersionConflict(...args),
 }));
 
@@ -104,6 +106,7 @@ jest.mock('@chakra-ui/react', () => ({
 
 jest.mock('@chakra-ui/icons', () => ({
   DeleteIcon: () => <span data-testid="delete-icon" />,
+  RepeatIcon: () => <span data-testid="repeat-icon" />,
 }));
 
 // --- Test data ---

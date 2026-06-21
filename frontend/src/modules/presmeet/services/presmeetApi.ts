@@ -245,6 +245,21 @@ export async function getReport(params: ReportParams): Promise<ReportResponse> {
 }
 
 /**
+ * Resend the delegate invitation email for an order with a pending invitation.
+ * Uses POST /booking/{id}/invite-email.
+ */
+export async function resendDelegateInvitation(
+  orderId: string,
+  locale?: string
+): Promise<{ message: string; recipient: string }> {
+  const response = await presmeetClient.post<{ message: string; recipient: string }>(
+    `/booking/${encodeURIComponent(orderId)}/invite-email`,
+    locale ? { locale } : {}
+  );
+  return response.data;
+}
+
+/**
  * Manage delegates on an order (invite, revoke, or legacy add/remove).
  * Uses the unified /booking/{id}/delegates endpoint.
  * - action "invite": invite secondary delegate by email (stores pending_secondary_email)
@@ -281,6 +296,7 @@ export const presmeetApi = {
   getProducts,
   getReport,
   manageDelegates,
+  resendDelegateInvitation,
   isVersionConflict,
   isAuthorizationError,
 };

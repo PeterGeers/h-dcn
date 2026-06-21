@@ -30,10 +30,10 @@ import {
   VStack,
   useToast,
 } from '@chakra-ui/react';
-import { DeleteIcon } from '@chakra-ui/icons';
+import { DeleteIcon, RepeatIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { Order } from '../types/presmeet.types';
-import { manageDelegates, isVersionConflict } from '../services/presmeetApi';
+import { manageDelegates, resendDelegateInvitation, isVersionConflict } from '../services/presmeetApi';
 
 export interface DelegateManagerProps {
   /** The current order containing delegates info */
@@ -73,6 +73,7 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
   const [email, setEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Delegate state from order
@@ -183,6 +184,38 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
     }
   };
 
+  /**
+   * Handle resending the invitation email to the pending secondary delegate.
+   */
+  const handleResend = async () => {
+    setError(null);
+    setIsResending(true);
+
+    try {
+      await resendDelegateInvitation(order.order_id);
+      toast({
+        title: t('delegate_manager.resend_success'),
+        status: 'success',
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const serverMessage = err?.response?.data?.message;
+      setError(serverMessage || t('delegate_manager.resend_error'));
+      if (status !== 400 && status !== 403 && status !== 404) {
+        toast({
+          title: t('delegate_manager.resend_error'),
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && email.trim()) {
       handleInvite();
@@ -247,19 +280,34 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
                   {t('delegate_manager.pending')}
                 </Badge>
               </HStack>
-              {isPrimary && isDraft && (
-                <Button
-                  size="xs"
-                  colorScheme="red"
-                  variant="ghost"
-                  leftIcon={<DeleteIcon />}
-                  onClick={handleRevoke}
-                  isLoading={isRevoking}
-                  loadingText={t('delegate_manager.revoking')}
-                >
-                  {t('delegate_manager.revoke_button')}
-                </Button>
-              )}
+              <HStack spacing={1}>
+                {isPrimary && (
+                  <Button
+                    size="xs"
+                    colorScheme="blue"
+                    variant="ghost"
+                    leftIcon={<RepeatIcon />}
+                    onClick={handleResend}
+                    isLoading={isResending}
+                    loadingText={t('delegate_manager.resending')}
+                  >
+                    {t('delegate_manager.resend_button')}
+                  </Button>
+                )}
+                {isPrimary && isDraft && (
+                  <Button
+                    size="xs"
+                    colorScheme="red"
+                    variant="ghost"
+                    leftIcon={<DeleteIcon />}
+                    onClick={handleRevoke}
+                    isLoading={isRevoking}
+                    loadingText={t('delegate_manager.revoking')}
+                  >
+                    {t('delegate_manager.revoke_button')}
+                  </Button>
+                )}
+              </HStack>
             </HStack>
           ) : (
             /* No secondary delegate */
