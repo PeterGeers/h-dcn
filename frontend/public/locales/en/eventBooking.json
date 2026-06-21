@@ -333,5 +333,43 @@
     "goToBooking": "Go to booking",
     "profile": "Profile",
     "eventAccess": "Event Access"
+  },
+  "registry": {
+    "select_title": "Select your {{rowLabel}}",
+    "select_description": "Choose the {{rowLabel}} you represent for this event.",
+    "loading": "Loading available rows...",
+    "load_failed": "The registry is temporarily unavailable. Please try again.",
+    "error_title": "Failed to load",
+    "retry": "Retry",
+    "no_rows": "No rows are currently available.",
+    "status_available": "Available",
+    "status_taken": "Taken",
+    "email_restricted_tooltip": "This item is only available for the associated email address.",
+    "session_expired": "Your session has expired. Please re-enter the password."
+  },
+  "claim": {
+    "title": "Complete Registration",
+    "description": "Confirm your details to claim {{rowLabel}}.",
+    "label_name": "Full name",
+    "label_email": "Email address",
+    "label_password": "Password",
+    "placeholder_name": "Your full name",
+    "placeholder_email": "your@email.com",
+    "placeholder_password": "Minimum 8 characters",
+    "submit_button": "Claim {{rowLabel}}",
+    "claiming": "Claiming...",
+    "error_name_required": "Name is required.",
+    "error_name_too_long": "Name must be 100 characters or fewer.",
+    "error_email_required": "Email is required.",
+    "error_email_invalid": "Please enter a valid email address.",
+    "error_password_required": "Password is required.",
+    "error_password_too_short": "Password must be at least 8 characters.",
+    "error_row_taken": "This slot has already been claimed by another user.",
+    "error_already_claimed": "You already have a claim for this event. Only one slot per user is allowed.",
+    "error_email_not_authorized": "Your email address is not authorized for the selected slot.",
+    "error_validation": "Please check your input and try again.",
+    "error_generic": "Something went wrong. Please try again later.",
+    "conflict_title": "Slot Already Claimed",
+    "conflict_description": "This slot was claimed by another user. Contact {{contact}} for questions."
   }
 }

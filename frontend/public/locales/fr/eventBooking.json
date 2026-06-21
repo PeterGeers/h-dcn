@@ -267,5 +267,43 @@
     "goToBooking": "Aller à la réservation",
     "profile": "Profil",
     "eventAccess": "Accès événement"
+  },
+  "registry": {
+    "select_title": "Sélectionnez votre {{rowLabel}}",
+    "select_description": "Choisissez le/la {{rowLabel}} que vous représentez pour cet événement.",
+    "loading": "Chargement des entrées disponibles...",
+    "load_failed": "Le registre est temporairement indisponible. Veuillez réessayer.",
+    "error_title": "Échec du chargement",
+    "retry": "Réessayer",
+    "no_rows": "Aucune entrée disponible actuellement.",
+    "status_available": "Disponible",
+    "status_taken": "Pris",
+    "email_restricted_tooltip": "Cet élément n'est disponible que pour l'adresse e-mail associée.",
+    "session_expired": "Votre session a expiré. Veuillez saisir à nouveau le mot de passe."
+  },
+  "claim": {
+    "title": "Finaliser l'inscription",
+    "description": "Confirmez vos informations pour réserver {{rowLabel}}.",
+    "label_name": "Nom complet",
+    "label_email": "Adresse e-mail",
+    "label_password": "Mot de passe",
+    "placeholder_name": "Votre nom complet",
+    "placeholder_email": "votre@email.fr",
+    "placeholder_password": "Minimum 8 caractères",
+    "submit_button": "Réserver {{rowLabel}}",
+    "claiming": "Réservation en cours...",
+    "error_name_required": "Le nom est obligatoire.",
+    "error_name_too_long": "Le nom ne doit pas dépasser 100 caractères.",
+    "error_email_required": "L'adresse e-mail est obligatoire.",
+    "error_email_invalid": "Veuillez entrer une adresse e-mail valide.",
+    "error_password_required": "Le mot de passe est obligatoire.",
+    "error_password_too_short": "Le mot de passe doit contenir au moins 8 caractères.",
+    "error_row_taken": "Ce créneau a déjà été réservé par un autre utilisateur.",
+    "error_already_claimed": "Vous avez déjà une réservation pour cet événement. Un seul créneau par utilisateur est autorisé.",
+    "error_email_not_authorized": "Votre adresse e-mail n'est pas autorisée pour le créneau sélectionné.",
+    "error_validation": "Veuillez vérifier vos informations et réessayer.",
+    "error_generic": "Une erreur s'est produite. Veuillez réessayer plus tard.",
+    "conflict_title": "Créneau déjà réservé",
+    "conflict_description": "Ce créneau a été réservé par un autre utilisateur. Contactez {{contact}} pour toute question."
   }
 }

@@ -301,5 +301,43 @@
     "goToBooking": "Zur Buchung",
     "profile": "Profil",
     "eventAccess": "Veranstaltungszugang"
+  },
+  "registry": {
+    "select_title": "Wählen Sie Ihre(n) {{rowLabel}}",
+    "select_description": "Wählen Sie die/den {{rowLabel}}, die/den Sie bei dieser Veranstaltung vertreten.",
+    "loading": "Verfügbare Einträge werden geladen...",
+    "load_failed": "Das Register ist vorübergehend nicht verfügbar. Bitte versuchen Sie es erneut.",
+    "error_title": "Laden fehlgeschlagen",
+    "retry": "Erneut versuchen",
+    "no_rows": "Derzeit sind keine Einträge verfügbar.",
+    "status_available": "Verfügbar",
+    "status_taken": "Vergeben",
+    "email_restricted_tooltip": "Dieses Element ist nur für die zugeordnete E-Mail-Adresse verfügbar.",
+    "session_expired": "Ihre Sitzung ist abgelaufen. Bitte geben Sie das Passwort erneut ein."
+  },
+  "claim": {
+    "title": "Registrierung abschließen",
+    "description": "Bestätigen Sie Ihre Daten, um {{rowLabel}} zu beanspruchen.",
+    "label_name": "Vollständiger Name",
+    "label_email": "E-Mail-Adresse",
+    "label_password": "Passwort",
+    "placeholder_name": "Ihr vollständiger Name",
+    "placeholder_email": "ihre@email.de",
+    "placeholder_password": "Mindestens 8 Zeichen",
+    "submit_button": "{{rowLabel}} beanspruchen",
+    "claiming": "Wird beansprucht...",
+    "error_name_required": "Name ist erforderlich.",
+    "error_name_too_long": "Name darf maximal 100 Zeichen enthalten.",
+    "error_email_required": "E-Mail-Adresse ist erforderlich.",
+    "error_email_invalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "error_password_required": "Passwort ist erforderlich.",
+    "error_password_too_short": "Passwort muss mindestens 8 Zeichen enthalten.",
+    "error_row_taken": "Dieser Platz wurde bereits von einem anderen Benutzer beansprucht.",
+    "error_already_claimed": "Sie haben bereits eine Reservierung für diese Veranstaltung. Nur ein Platz pro Benutzer ist erlaubt.",
+    "error_email_not_authorized": "Ihre E-Mail-Adresse ist für den ausgewählten Platz nicht autorisiert.",
+    "error_validation": "Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut.",
+    "error_generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es später erneut.",
+    "conflict_title": "Platz bereits belegt",
+    "conflict_description": "Dieser Platz wurde von einem anderen Benutzer beansprucht. Kontaktieren Sie {{contact}} für Fragen."
   }
 }

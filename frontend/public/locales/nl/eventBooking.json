@@ -333,5 +333,43 @@
     "goToBooking": "Ga naar booking",
     "profile": "Profiel",
     "eventAccess": "Evenementtoegang"
+  },
+  "registry": {
+    "select_title": "Selecteer je {{rowLabel}}",
+    "select_description": "Kies de {{rowLabel}} die je vertegenwoordigt voor dit evenement.",
+    "loading": "Beschikbare rijen laden...",
+    "load_failed": "Het register is tijdelijk niet beschikbaar. Probeer het opnieuw.",
+    "error_title": "Laden mislukt",
+    "retry": "Opnieuw proberen",
+    "no_rows": "Er zijn momenteel geen rijen beschikbaar.",
+    "status_available": "Beschikbaar",
+    "status_taken": "Bezet",
+    "email_restricted_tooltip": "Dit item is alleen beschikbaar voor het gekoppelde e-mailadres.",
+    "session_expired": "Je sessie is verlopen. Voer het wachtwoord opnieuw in."
+  },
+  "claim": {
+    "title": "Registratie voltooien",
+    "description": "Bevestig je gegevens om {{rowLabel}} te claimen.",
+    "label_name": "Volledige naam",
+    "label_email": "E-mailadres",
+    "label_password": "Wachtwoord",
+    "placeholder_name": "Je volledige naam",
+    "placeholder_email": "jouw@email.nl",
+    "placeholder_password": "Minimaal 8 tekens",
+    "submit_button": "Claim {{rowLabel}}",
+    "claiming": "Claimen...",
+    "error_name_required": "Naam is verplicht.",
+    "error_name_too_long": "Naam mag maximaal 100 tekens bevatten.",
+    "error_email_required": "E-mailadres is verplicht.",
+    "error_email_invalid": "Voer een geldig e-mailadres in.",
+    "error_password_required": "Wachtwoord is verplicht.",
+    "error_password_too_short": "Wachtwoord moet minimaal 8 tekens bevatten.",
+    "error_row_taken": "Dit slot is al geclaimd door een andere gebruiker.",
+    "error_already_claimed": "Je hebt al een claim voor dit evenement. Slechts één slot per gebruiker is toegestaan.",
+    "error_email_not_authorized": "Je e-mailadres is niet geautoriseerd voor het geselecteerde slot.",
+    "error_validation": "Controleer je invoer en probeer het opnieuw.",
+    "error_generic": "Er is iets misgegaan. Probeer het later opnieuw.",
+    "conflict_title": "Slot al geclaimd",
+    "conflict_description": "Dit slot is geclaimd door een andere gebruiker. Neem contact op met {{contact}} voor vragen."
   }
 }
