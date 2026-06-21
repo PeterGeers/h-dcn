@@ -71,6 +71,12 @@ Parameters:
     Type: String
     Default: "2025-12-28"
   
+  JwtSecretBase:
+    Type: String
+    NoEcho: true
+    Default: "h-dcn-event-session-secret-default"
+    Description: "Base secret for signing event session tokens (JWT). Override via parameter overrides in deploy."
+
   # Email template customization parameters
   OrganizationName:
     Type: String
@@ -1356,7 +1362,7 @@ Resources:
       Environment:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
-          JWT_SECRET_BASE: !Sub '{{resolve:ssm:/h-dcn/event-session-secret}}'
+          JWT_SECRET_BASE: !Ref JwtSecretBase
       Events:
         VerifyEventPassword:
           Type: Api
@@ -1932,7 +1938,7 @@ Resources:
           MEMBERS_TABLE_NAME: !Ref MembersTable
           ORDERS_TABLE_NAME: !Ref OrdersTable
           REGISTRY_BUCKET_NAME: !Ref DataBucket
-          JWT_SECRET_BASE: !Sub '{{resolve:ssm:/h-dcn/event-session-secret}}'
+          JWT_SECRET_BASE: !Ref JwtSecretBase
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
         EventOnboard:
