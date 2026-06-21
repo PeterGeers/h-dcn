@@ -68,10 +68,15 @@ def _determine_registration_status(event_item):
 def _build_public_response(event_item):
     """
     Build the public-safe response, excluding sensitive fields.
-    Includes: event_id, name, dates, location, landing_page config, registration status.
-    Excludes: constraints, product_ids, order counts, order_scope.
+    Includes: event_id, name, dates, location, landing_page config, registration status,
+              has_event_password (bool), landing_page_enabled (bool).
+    Excludes: constraints, product_ids, order counts, order_scope, actual password hash.
     """
     landing_page = event_item.get('landing_page', {})
+
+    # Expose whether a password gate exists (not the hash itself)
+    has_event_password = bool(event_item.get('event_password'))
+    landing_page_enabled = bool(event_item.get('landing_page_enabled', True))
 
     return {
         'event_id': event_item.get('event_id', ''),
@@ -81,6 +86,8 @@ def _build_public_response(event_item):
         'end_date': event_item.get('end_date', ''),
         'location': event_item.get('location', ''),
         'registration_status': _determine_registration_status(event_item),
+        'has_event_password': has_event_password,
+        'landing_page_enabled': landing_page_enabled,
         'landing_page': {
             'slug': landing_page.get('slug', ''),
             'hero_image_url': landing_page.get('hero_image_url', ''),
