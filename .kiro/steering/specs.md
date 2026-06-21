@@ -25,7 +25,7 @@ A spec task is only complete when ALL of the following are satisfied:
 
 - Work on the current feature branch (check `git branch` first)
 - Never push directly to `main`
-- Commit with `--no-verify` (Kiro hook handles secret scanning)
+- Always use `mcp_git_git_commit` (MCP tool) for commits — never `execute_pwsh` with `git commit`. This ensures the ggshield preToolUse hook fires for secret scanning.
 
 ## Dead Code
 

@@ -53,9 +53,18 @@
 ### Git
 
 ```bash
-# Always use --no-verify when committing (shell hook can't run in Kiro's environment)
-# Secret scanning + auth layer sync is handled by the Kiro preToolUse hook (ggshield-pre-commit)
-git commit --no-verify -m "message"
+# IMPORTANT: Always use the MCP git tool (mcp_git_git_commit) for commits — NOT execute_pwsh with "git commit".
+# This ensures the ggshield preToolUse hook fires for secret scanning + auth layer sync.
+# The MCP tool automatically uses --no-verify.
+
+# For staging files, use the MCP git_add tool:
+# mcp_git_git_add(repo_path, files)
+
+# For committing, use the MCP git_commit tool:
+# mcp_git_git_commit(repo_path, message)
+
+# Only use shell for git push (no MCP tool available for push):
+git push
 ```
 
 ### Backend
