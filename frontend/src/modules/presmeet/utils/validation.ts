@@ -5,7 +5,7 @@
  * Also validates cart items (party ticket name check) before order submission.
  * Draft saves bypass validation (Requirement 8.6).
  *
- * Validates: Requirements 9.1, 9.2
+ * Validates: Requirements 6.2, 9.1, 9.2
  */
 
 import {
@@ -24,6 +24,23 @@ const VALID_GENDERS: Gender[] = ['male', 'female'];
 const VALID_SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const VALID_DIRECTIONS: TransferDirection[] = ['pickup', 'dropoff'];
 const VALID_AIRPORTS: Airport[] = ['AMS', 'RTM', 'EIN'];
+
+/** Maximum person name length after trimming (Req 6.2) */
+export const PERSON_NAME_MAX_LENGTH = 100;
+
+/**
+ * Validate a person name: trimmed 1-100 chars, reject whitespace-only (Req 6.2).
+ * Returns null if valid, or an error message string if invalid.
+ */
+export function validatePersonName(name: string | undefined | null): string | null {
+  if (name == null || name.trim().length === 0) {
+    return 'Name is required';
+  }
+  if (name.trim().length > PERSON_NAME_MAX_LENGTH) {
+    return `Name must be ${PERSON_NAME_MAX_LENGTH} characters or fewer`;
+  }
+  return null;
+}
 
 /**
  * Validate a delegate entry. Returns a list of field-level errors.

@@ -4,7 +4,14 @@
  * Allows editing name, role, adding/removing products, and configuring
  * product fields for each person in the booking.
  *
- * Validates: Requirement 11.1 (person-centric wizard)
+ * When a product has variant_schema defined, the variant selection dropdowns
+ * are rendered via ProductConfigurator and the variant_id must map to a valid
+ * variant before the product line is considered complete.
+ *
+ * When a product has order_item_fields defined, the dynamic fields are rendered
+ * via ProductConfigurator.
+ *
+ * Validates: Requirements 7.6, 7.7
  */
 
 import React from 'react';
@@ -17,13 +24,15 @@ import {
   IconButton,
   Input,
   Select,
+  Text,
   VStack,
 } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { Product } from '../types/presmeet.types';
 import { PersonFormEntry, PersonProduct } from '../utils/orderTransformer';
 import { formatCurrency } from '../utils/priceCalculator';
-import ProductConfigurator from './ProductConfigurator';
+import ProductConfigurator, { isVariantSelectionIncomplete } from './ProductConfigurator';
 
 export interface PersonCardProps {
   person: PersonFormEntry;
@@ -32,6 +41,8 @@ export interface PersonCardProps {
   onUpdate: (index: number, person: PersonFormEntry) => void;
   onRemove: (index: number) => void;
   isDisabled?: boolean;
+  /** Whether removal of this person is prevented (e.g. first person = delegate) */
+  preventRemoval?: boolean;
   /** Validation errors for this person's fields, keyed by product index then field id */
   fieldErrors?: Record<number, Record<string, string>>;
   /** Validation errors for person-level fields (name, role) */
@@ -45,9 +56,12 @@ const PersonCard: React.FC<PersonCardProps> = ({
   onUpdate,
   onRemove,
   isDisabled = false,
+  preventRemoval = false,
   fieldErrors = {},
   personErrors = {},
 }) => {
+  const { t } = useTranslation('eventBooking');
+
   const handleNameChange = (name: string) => {
     onUpdate(personIndex, { ...person, name });
   };
@@ -71,6 +85,9 @@ const PersonCard: React.FC<PersonCardProps> = ({
   };
 
   const handleAddProduct = (productId: string) => {
+    const productDef = products.find((p) => p.product_id === productId);
+    if (!productDef) return;
+
     const newProduct: PersonProduct = {
       product_id: productId,
       variant_id: null,
@@ -96,9 +113,9 @@ const PersonCard: React.FC<PersonCardProps> = ({
 
   return (
     <Box borderWidth={1} borderRadius="lg" p={4} position="relative">
-      {!isDisabled && (
+      {!isDisabled && !preventRemoval && (
         <IconButton
-          aria-label="Remove person"
+          aria-label={t('person_card.remove_person')}
           icon={<CloseIcon />}
           size="xs"
           position="absolute"
@@ -114,12 +131,12 @@ const PersonCard: React.FC<PersonCardProps> = ({
         {/* Person identity */}
         <HStack spacing={3}>
           <FormControl flex={2} isInvalid={!!personErrors.name}>
-            <FormLabel fontSize="xs">Name</FormLabel>
+            <FormLabel fontSize="xs">{t('person_card.name')}</FormLabel>
             <Input
               size="sm"
               value={person.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Full name"
+              placeholder={t('person_card.name_placeholder')}
               isDisabled={isDisabled}
             />
             {personErrors.name && (
@@ -127,12 +144,12 @@ const PersonCard: React.FC<PersonCardProps> = ({
             )}
           </FormControl>
           <FormControl flex={1} isInvalid={!!personErrors.role}>
-            <FormLabel fontSize="xs">Role</FormLabel>
+            <FormLabel fontSize="xs">{t('person_card.role')}</FormLabel>
             <Input
               size="sm"
               value={person.role}
               onChange={(e) => handleRoleChange(e.target.value)}
-              placeholder="e.g. President"
+              placeholder={t('person_card.role_placeholder')}
               isDisabled={isDisabled}
             />
             {personErrors.role && (
@@ -141,15 +158,23 @@ const PersonCard: React.FC<PersonCardProps> = ({
           </FormControl>
         </HStack>
 
-        {/* Assigned products */}
+        {/* Assigned products with variant + dynamic field configuration */}
         {person.products.map((pp, pIdx) => {
           const productDef = productMap.get(pp.product_id);
           if (!productDef) return null;
+
+          // Check if variant selection is incomplete for this product line
+          const variantIncomplete = isVariantSelectionIncomplete(
+            productDef,
+            pp.fields,
+            pp.variant_id
+          );
+
           return (
             <Box key={pIdx} position="relative">
               {!isDisabled && (
                 <IconButton
-                  aria-label={`Remove ${productDef.name}`}
+                  aria-label={t('person_card.remove_product', { product: productDef.name })}
                   icon={<CloseIcon />}
                   size="xs"
                   position="absolute"
@@ -170,6 +195,12 @@ const PersonCard: React.FC<PersonCardProps> = ({
                 isDisabled={isDisabled}
                 fieldErrors={fieldErrors[pIdx]}
               />
+              {/* Variant incomplete indicator */}
+              {variantIncomplete && !isDisabled && (
+                <Text fontSize="xs" color="orange.600" mt={1} pl={4}>
+                  {t('person_card.variant_required')}
+                </Text>
+              )}
             </Box>
           );
         })}
@@ -178,7 +209,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
         {!isDisabled && availableProducts.length > 0 && (
           <Select
             size="sm"
-            placeholder="+ Add product"
+            placeholder={t('person_card.add_product')}
             onChange={(e) => {
               if (e.target.value) {
                 handleAddProduct(e.target.value);

@@ -1,49 +1,62 @@
 /**
  * EffectiveLimits — Shows effective capacity limits per product.
  *
- * Displays min(max_per_club, event_remaining) for each product so the
- * delegate sees realistic limits before submitting.
+ * Displays "X of Y remaining" for each product based on the dual limits:
+ * per-order (max_per_club) and per-event (max_per_event via sold counts).
  *
- * Validates: Requirement 6.4
+ * Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.8
  */
 
 import React from 'react';
-import { Box, HStack, Text, VStack } from '@chakra-ui/react';
-import { Constraint, Product } from '../types/presmeet.types';
+import { Badge, Box, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
+import { ProductEffectiveLimit } from '../hooks/useEffectiveLimits';
 
 export interface EffectiveLimitsProps {
-  products: Product[];
-  constraints: Constraint[];
-  currentPersonCount: number;
+  limits: ProductEffectiveLimit[];
+  isLoading: boolean;
 }
 
-const EffectiveLimits: React.FC<EffectiveLimitsProps> = ({
-  products,
-  constraints,
-}) => {
+const EffectiveLimits: React.FC<EffectiveLimitsProps> = ({ limits, isLoading }) => {
+  const { t } = useTranslation('eventBooking');
+
+  // Don't render if no limits to show (all products have unlimited capacity)
+  const hasFiniteLimits = limits.some((l) => l.totalCapacity !== Infinity);
+  if (!hasFiniteLimits && !isLoading) return null;
+
   return (
     <Box p={3} borderWidth={1} borderRadius="md" bg="blue.50">
       <Text fontSize="sm" fontWeight="medium" mb={2}>
-        Available capacity
+        {t('limits.title')}
       </Text>
-      <VStack spacing={1} align="stretch">
-        {products.map((product) => {
-          const maxPerClub = product.purchase_rules?.max_per_club ?? Infinity;
-          // Find event constraint for this product
-          const constraint = constraints.find((c) => c.product_id === product.product_id);
-          const eventRemaining = constraint ? constraint.max : Infinity;
-          const effectiveLimit = Math.min(maxPerClub, eventRemaining);
-
-          return (
-            <HStack key={product.product_id} justify="space-between" fontSize="xs">
-              <Text>{product.name}</Text>
-              <Text color="gray.600">
-                max {effectiveLimit === Infinity ? '∞' : effectiveLimit} per club
-              </Text>
-            </HStack>
-          );
-        })}
-      </VStack>
+      {isLoading ? (
+        <HStack spacing={2}>
+          <Spinner size="xs" />
+          <Text fontSize="xs" color="gray.600">
+            {t('limits.loading')}
+          </Text>
+        </HStack>
+      ) : (
+        <VStack spacing={1} align="stretch">
+          {limits
+            .filter((l) => l.totalCapacity !== Infinity)
+            .map((limit) => (
+              <HStack key={limit.product_id} justify="space-between" fontSize="xs">
+                <Text>{limit.product_name}</Text>
+                <Badge
+                  colorScheme={limit.isExhausted ? 'red' : limit.remaining <= 2 ? 'orange' : 'green'}
+                  fontSize="xs"
+                  variant="subtle"
+                >
+                  {t('limits.remaining', {
+                    remaining: limit.remaining,
+                    total: limit.totalCapacity,
+                  })}
+                </Badge>
+              </HStack>
+            ))}
+        </VStack>
+      )}
     </Box>
   );
 };

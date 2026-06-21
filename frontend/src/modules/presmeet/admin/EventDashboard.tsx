@@ -21,8 +21,10 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { presmeetApi } from '../services/presmeetApi';
-import { Event, Constraint, ReportResponse } from '../types/presmeet.types';
+import { Event, Constraint, ReportResponse, Product } from '../types/presmeet.types';
 import { formatCurrency } from '../utils/priceCalculator';
+import AdminOrderLockUnlock from './AdminOrderLockUnlock';
+import AdminPaymentAndPdf from './AdminPaymentAndPdf';
 
 /**
  * Constraint progress data combining the event constraint definition
@@ -69,6 +71,7 @@ const EventDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const toast = useToast();
 
   // Load all presmeet events on mount
@@ -122,6 +125,15 @@ const EventDashboard: React.FC = () => {
       // Parse payment summary from financial data
       const payment = parsePaymentSummary(financialResult);
       setPaymentSummary(payment);
+
+      // Fetch products for PDF filter dropdown
+      const productIds = selectedEvent?.product_ids || [];
+      if (productIds.length > 0) {
+        const productList = await presmeetApi.getProducts(selectedEventId, productIds);
+        setProducts(productList);
+      } else {
+        setProducts([]);
+      }
     } catch (err) {
       setError(t('admin.failed_load_dashboard'));
       setConstraints([]);
@@ -426,6 +438,16 @@ const EventDashboard: React.FC = () => {
             </Grid>
           </Box>
         </>
+      )}
+
+      {/* Order Lock/Unlock Management */}
+      {!loading && selectedEventId && (
+        <AdminOrderLockUnlock eventId={selectedEventId} />
+      )}
+
+      {/* Payment Recording and Preparation PDF */}
+      {!loading && selectedEventId && (
+        <AdminPaymentAndPdf eventId={selectedEventId} products={products} />
       )}
 
       {!loading && !selectedEventId && events.length === 0 && (
