@@ -11,6 +11,9 @@ secret:
 
   # Ignored paths - excludes generated files, dependencies, and test files
   ignored_paths:
+    # Translation/locale files (contain placeholder emails like "your@email.com" — not real secrets)
+    - "**/locales/**"
+    - "**/public/locales/**"
     # Lock files
     - "**/package-lock.json"
     - "**/yarn.lock"
