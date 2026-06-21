@@ -406,6 +406,11 @@ Resources:
       OpenApiVersion: '3.0'
       BinaryMediaTypes:
         - application/pdf
+      MethodSettings:
+        - HttpMethod: POST
+          ResourcePath: /events/{event_id}/verify-password
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 10
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
@@ -485,6 +490,15 @@ Resources:
                 Condition:
                   StringLike:
                     "s3:prefix": "analytics/*"
+        - PolicyName: S3RegistryReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucket}/events/*"
         - PolicyName: CognitoReadAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -588,6 +602,65 @@ Resources:
                 Resource: 
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}/*"
+
+  # IAM Role for Event Onboard Lambda (DynamoDB + Cognito Admin + S3 Registry)
+  EventOnboardRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
+        - PolicyName: CognitoAdminAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminListGroupsForUser
+                  - cognito-idp:ListUsers
+                Resource:
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
+        - PolicyName: S3RegistryReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucket}/events/*"
 
   InsertProductFunction:
     Type: AWS::Serverless::Function
@@ -1954,7 +2027,7 @@ Resources:
       Timeout: 30
       Layers:
         - !Ref AuthLayer
-      Role: !GetAtt DynamoDBRole.Arn
+      Role: !GetAtt EventOnboardRole.Arn
       Environment:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
