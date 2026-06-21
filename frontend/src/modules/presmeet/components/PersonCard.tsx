@@ -33,6 +33,7 @@ import { Product } from '../types/presmeet.types';
 import { PersonFormEntry, PersonProduct } from '../utils/orderTransformer';
 import { formatCurrency } from '../utils/priceCalculator';
 import ProductConfigurator, { isVariantSelectionIncomplete } from './ProductConfigurator';
+import { ProductEffectiveLimit } from '../hooks/useEffectiveLimits';
 
 export interface PersonCardProps {
   person: PersonFormEntry;
@@ -47,6 +48,8 @@ export interface PersonCardProps {
   fieldErrors?: Record<number, Record<string, string>>;
   /** Validation errors for person-level fields (name, role) */
   personErrors?: Record<string, string>;
+  /** Effective limits per product (for displaying "X of Y remaining") */
+  effectiveLimits?: ProductEffectiveLimit[];
 }
 
 const PersonCard: React.FC<PersonCardProps> = ({
@@ -59,6 +62,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
   preventRemoval = false,
   fieldErrors = {},
   personErrors = {},
+  effectiveLimits = [],
 }) => {
   const { t } = useTranslation('eventBooking');
 
