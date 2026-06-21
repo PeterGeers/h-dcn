@@ -274,7 +274,7 @@ const EventBookingPage: React.FC = () => {
           <TabPanel px={0}>
             {activeEvent ? (
               <VStack spacing={6} align="stretch">
-                <BookingWizard eventId={activeEvent.event_id} />
+                <BookingWizard eventId={activeEvent.event_id} onSubmitted={reloadOrder} />
 
                 {order && (
                   <>

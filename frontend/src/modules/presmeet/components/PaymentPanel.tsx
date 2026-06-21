@@ -62,7 +62,7 @@ const PaymentPanel: React.FC<PaymentPanelProps> = ({ order, onPaymentInitiated }
       const message =
         error instanceof Error
           ? error.message
-          : 'Er is een fout opgetreden bij het starten van de betaling. Probeer het opnieuw.';
+          : t('payment.payment_error_desc');
 
       toast({
         title: t('payment.payment_failed'),
