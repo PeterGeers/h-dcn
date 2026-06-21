@@ -1,0 +1,12 @@
+{
+  "name": "GGShield Post-Task Scan",
+  "description": "Runs ggshield secret scan on the last commit after each spec task completes, catching any secrets committed by subagents.",
+  "version": "1.0.0",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "powershell -NoProfile -Command \"$lastCommit = git log -1 --format='%H' 2>$null; if($lastCommit){ ggshield secret scan commit-range $lastCommit~1..$lastCommit 2>&1 } else { Write-Host 'No commits to scan' }\""
+  }
+}
