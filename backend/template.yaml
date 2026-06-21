@@ -520,6 +520,29 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
+        - PolicyName: SESEmailSendAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: "*"
+        - PolicyName: S3EmailTemplatesReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "${EmailTemplatesBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt EmailTemplatesBucket.Arn
 
   # IAM Role for Cognito Admin access
   CognitoAdminRole:
@@ -2603,6 +2626,36 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /admin/events/{event_id}/claims/{row_id}
             Method: delete
+
+  # --- Send Delegate Invitation Email (Closed Community Booking) ---
+  SendDelegateInvitationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/send_delegate_invitation
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
+          SENDER_EMAIL: !Ref OrganizationEmail
+          PORTAL_BASE_URL: !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
+          ORGANIZATION_NAME: !Ref OrganizationName
+          ORGANIZATION_WEBSITE: !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
+          ORGANIZATION_EMAIL: !Ref OrganizationEmail
+          ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
+      Events:
+        SendDelegateInvitation:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/invite-email
+            Method: post
 
 Outputs:
   ApiUrl:
