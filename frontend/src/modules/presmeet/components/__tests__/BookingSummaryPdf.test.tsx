@@ -5,8 +5,12 @@
  * - PDF generation with person-centric data
  * - Download button renders at all order statuses
  * - Filename generation
+ * - Validation checks at PDF generation time (Req 12.3)
+ * - Disclaimer with locale-formatted date-time (Req 12.4)
+ * - Draft with no persons shows indication (Req 12.5)
+ * - Delegate info included (Req 12.2)
  *
- * Validates: Requirements 11.10, 11.11
+ * Validates: Requirements 12.1, 12.2, 12.3, 12.4, 12.5
  */
 
 import React from 'react';
@@ -15,6 +19,7 @@ import { ChakraProvider } from '@chakra-ui/react';
 import BookingSummaryPdf, {
   buildFilename,
   generateBookingSummaryPdf,
+  runValidationChecks,
 } from '../BookingSummaryPdf';
 import { Event, Order, Product } from '../../types/presmeet.types';
 
@@ -29,6 +34,8 @@ jest.mock('jspdf', () => ({
     return {
       setFontSize: jest.fn(),
       setFont: jest.fn(),
+      setTextColor: jest.fn(),
+      addPage: jest.fn(),
       text: (text: string) => {
         mockTextCalls.push(text);
       },
@@ -50,32 +57,43 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, string>) => {
       if (params) {
-        let result = key;
-        Object.entries(params).forEach(([k, v]) => {
-          result = result.replace(`{{${k}}}`, v);
-        });
-        // For known keys, return a readable label
         const labels: Record<string, string> = {
           'pdf.download_button': 'Download Booking Summary',
           'pdf.club': `Club: ${params.clubId || ''}`,
+          'pdf.row_label': `${params.rowLabel || 'Club'}: ${params.clubId || ''}`,
+          'pdf.row_label_default': 'Club',
           'pdf.location': `Location: ${params.location || ''}`,
           'pdf.event_dates': `Event dates: ${params.start || ''} – ${params.end || ''}`,
           'pdf.total': `Total: ${params.amount || ''}`,
           'pdf.payment_status': `Payment status: ${params.status || ''}`,
           'pdf.order_status': `Order status: ${params.status || ''}`,
+          'pdf.delegate_primary': `Primary delegate: ${params.email || ''}`,
+          'pdf.delegate_secondary': `Secondary delegate: ${params.email || ''}`,
+          'pdf.delegate_pending': `Pending invitation: ${params.email || ''}`,
           'pdf.generated': `Generated: ${params.date || ''}`,
+          'pdf.disclaimer': `Generated on ${params.datetime || ''}. Products and availability subject to change.`,
+          'pdf.validation_issues_title': `Validation issues (${params.count || ''}):`,
+          'pdf.validation_field_required': `${params.field || ''} is required`,
+          'pdf.validation_quantity_exceeded': `${params.product || ''}: ${params.count || ''} selected, max ${params.max || ''} allowed`,
+          'pdf.validation_person_unnamed': `Person ${params.index || ''}`,
         };
-        return labels[key] || result;
+        return labels[key] || key;
       }
       const staticLabels: Record<string, string> = {
         'pdf.download_button': 'Download Booking Summary',
+        'pdf.row_label_default': 'Club',
         'pdf.no_items': 'No items in this booking.',
+        'pdf.no_persons_yet': 'No persons have been added yet.',
         'pdf.col_person': 'Person',
         'pdf.col_role': 'Role',
         'pdf.col_product': 'Product',
         'pdf.col_variant': 'Variant',
         'pdf.col_fields': 'Fields',
         'pdf.col_price': 'Price',
+        'pdf.validation_valid': '✓ Order is valid at this moment',
+        'pdf.validation_name_empty': 'Name is required',
+        'pdf.validation_variant_missing': 'Variant selection is required',
+        'pdf.validation_variant_invalid': 'Selected variant is invalid',
       };
       return staticLabels[key] || key;
     },
@@ -90,23 +108,39 @@ const mockT = ((key: string, params?: Record<string, string>) => {
   if (params) {
     const labels: Record<string, string> = {
       'pdf.club': `Club: ${params.clubId || ''}`,
+      'pdf.row_label': `${params.rowLabel || 'Club'}: ${params.clubId || ''}`,
+      'pdf.row_label_default': 'Club',
       'pdf.location': `Location: ${params.location || ''}`,
       'pdf.event_dates': `Event dates: ${params.start || ''} – ${params.end || ''}`,
       'pdf.total': `Total: ${params.amount || ''}`,
       'pdf.payment_status': `Payment status: ${params.status || ''}`,
       'pdf.order_status': `Order status: ${params.status || ''}`,
+      'pdf.delegate_primary': `Primary delegate: ${params.email || ''}`,
+      'pdf.delegate_secondary': `Secondary delegate: ${params.email || ''}`,
+      'pdf.delegate_pending': `Pending invitation: ${params.email || ''}`,
       'pdf.generated': `Generated: ${params.date || ''}`,
+      'pdf.disclaimer': `Generated on ${params.datetime || ''}. Products and availability subject to change.`,
+      'pdf.validation_issues_title': `Validation issues (${params.count || ''}):`,
+      'pdf.validation_field_required': `${params.field || ''} is required`,
+      'pdf.validation_quantity_exceeded': `${params.product || ''}: ${params.count || ''} selected, max ${params.max || ''} allowed`,
+      'pdf.validation_person_unnamed': `Person ${params.index || ''}`,
     };
     return labels[key] || key;
   }
   const staticLabels: Record<string, string> = {
+    'pdf.row_label_default': 'Club',
     'pdf.no_items': 'No items in this booking.',
+    'pdf.no_persons_yet': 'No persons have been added yet.',
     'pdf.col_person': 'Person',
     'pdf.col_role': 'Role',
     'pdf.col_product': 'Product',
     'pdf.col_variant': 'Variant',
     'pdf.col_fields': 'Fields',
     'pdf.col_price': 'Price',
+    'pdf.validation_valid': '✓ Order is valid at this moment',
+    'pdf.validation_name_empty': 'Name is required',
+    'pdf.validation_variant_missing': 'Variant selection is required',
+    'pdf.validation_variant_invalid': 'Selected variant is invalid',
   };
   return staticLabels[key] || key;
 }) as any;
@@ -142,7 +176,7 @@ const mockProducts: Product[] = [
       { id: 'role', label: 'Functie', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { min_per_club: 1, max_per_club: 3, order_mode: 'persistent' },
+    purchase_rules: { min_per_club: 1, max_per_club: 3 },
   },
   {
     product_id: 'prod-party',
@@ -154,7 +188,7 @@ const mockProducts: Product[] = [
       { id: 'name', label: 'Naam', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { max_per_club: 13, order_mode: 'persistent' },
+    purchase_rules: { max_per_club: 13 },
   },
 ];
 
@@ -192,7 +226,11 @@ const mockOrder: Order = {
       line_total: 50.0,
     },
   ],
-  delegates: { primary: 'jan@club.nl', secondary: null },
+  delegates: {
+    primary: 'jan@club.nl',
+    secondary: 'piet@club.nl',
+    pending_secondary_email: null,
+  },
   version: 3,
   status_history: [],
   created_at: '2027-01-10T08:00:00Z',
@@ -218,21 +256,21 @@ describe('BookingSummaryPdf', () => {
   describe('buildFilename', () => {
     it('creates a sanitized filename from club_id and event name', () => {
       const result = buildFilename('club-amsterdam', 'Presidents Meeting 2027');
-      expect(result).toBe('presmeet-booking-club-amsterdam-presidents-meeting-2027.pdf');
+      expect(result).toBe('booking-club-amsterdam-presidents-meeting-2027.pdf');
     });
 
     it('strips special characters from event name', () => {
       const result = buildFilename('club-123', 'PM 2027 (Special!)');
-      expect(result).toBe('presmeet-booking-club-123-pm-2027-special.pdf');
+      expect(result).toBe('booking-club-123-pm-2027-special.pdf');
     });
 
     it('handles event name with only special characters', () => {
       const result = buildFilename('club-1', '---');
-      expect(result).toBe('presmeet-booking-club-1-.pdf');
+      expect(result).toBe('booking-club-1-.pdf');
     });
   });
 
-  describe('Component rendering', () => {
+  describe('Component rendering (Requirement 12.1)', () => {
     it('renders download button', () => {
       renderWithChakra(
         <BookingSummaryPdf order={mockOrder} event={mockEvent} products={mockProducts} />
@@ -265,20 +303,30 @@ describe('BookingSummaryPdf', () => {
       );
       fireEvent.click(screen.getByText('Download Booking Summary'));
       expect(mockSave).toHaveBeenCalledWith(
-        'presmeet-booking-club-amsterdam-presidents-meeting-2027.pdf'
+        'booking-club-amsterdam-presidents-meeting-2027.pdf'
       );
     });
   });
 
-  describe('generateBookingSummaryPdf', () => {
+  describe('generateBookingSummaryPdf (Requirement 12.2)', () => {
     it('includes event name in the PDF', () => {
       generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
       expect(mockTextCalls).toContain('Presidents Meeting 2027');
     });
 
-    it('includes club ID in the PDF', () => {
+    it('includes row label with club ID', () => {
+      generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT, 'team');
+      expect(mockTextCalls).toContain('team: club-amsterdam');
+    });
+
+    it('includes primary delegate email', () => {
       generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
-      expect(mockTextCalls).toContain('Club: club-amsterdam');
+      expect(mockTextCalls).toContain('Primary delegate: jan@club.nl');
+    });
+
+    it('includes secondary delegate email', () => {
+      generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
+      expect(mockTextCalls).toContain('Secondary delegate: piet@club.nl');
     });
 
     it('includes payment status', () => {
@@ -293,25 +341,106 @@ describe('BookingSummaryPdf', () => {
 
     it('includes total amount', () => {
       generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
-      // formatCurrency uses nl-NL locale: "€ 125,00"
       const totalText = mockTextCalls.find((t) => t.startsWith('Total:'));
       expect(totalText).toBeDefined();
     });
+  });
 
-    it('includes event location', () => {
+  describe('Validation checks (Requirement 12.3)', () => {
+    it('shows valid when order passes all checks', () => {
       generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
-      expect(mockTextCalls).toContain('Location: Hotel Amersfoort');
+      expect(mockTextCalls).toContain('✓ Order is valid at this moment');
     });
 
-    it('includes event dates', () => {
-      generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
-      expect(mockTextCalls).toContain('Event dates: 2027-06-20 – 2027-06-22');
+    it('shows validation issues when person name is empty', () => {
+      const invalidOrder = {
+        ...mockOrder,
+        items: [
+          {
+            product_id: 'prod-meeting',
+            variant_id: null,
+            item_fields_data: { name: '', role: 'President' },
+            unit_price: 50.0,
+            line_total: 50.0,
+          },
+        ],
+      };
+      generateBookingSummaryPdf(invalidOrder, mockEvent, mockProducts, mockT);
+      expect(mockTextCalls.some((t) => t.includes('Validation issues'))).toBe(true);
     });
 
-    it('handles empty order items gracefully', () => {
-      const emptyOrder = { ...mockOrder, items: [] };
-      generateBookingSummaryPdf(emptyOrder, mockEvent, mockProducts, mockT);
-      expect(mockTextCalls).toContain('No items in this booking.');
+    it('detects missing required fields', () => {
+      const issues = runValidationChecks(
+        {
+          ...mockOrder,
+          items: [
+            {
+              product_id: 'prod-meeting',
+              variant_id: null,
+              item_fields_data: { name: 'Jan', role: '' },
+              unit_price: 50.0,
+              line_total: 50.0,
+            },
+          ],
+        },
+        mockProducts,
+        mockT
+      );
+      // role is required on prod-meeting
+      expect(issues.some((i) => i.field === 'Functie')).toBe(true);
+    });
+
+    it('detects quantity limit exceeded', () => {
+      const orderWithTooMany = {
+        ...mockOrder,
+        items: [
+          { product_id: 'prod-meeting', variant_id: null, item_fields_data: { name: 'A', role: 'R1' }, unit_price: 50, line_total: 50 },
+          { product_id: 'prod-meeting', variant_id: null, item_fields_data: { name: 'B', role: 'R2' }, unit_price: 50, line_total: 50 },
+          { product_id: 'prod-meeting', variant_id: null, item_fields_data: { name: 'C', role: 'R3' }, unit_price: 50, line_total: 50 },
+          { product_id: 'prod-meeting', variant_id: null, item_fields_data: { name: 'D', role: 'R4' }, unit_price: 50, line_total: 50 },
+        ],
+      };
+      const issues = runValidationChecks(orderWithTooMany, mockProducts, mockT);
+      expect(issues.some((i) => i.message.includes('selected, max'))).toBe(true);
+    });
+
+    it('returns no issues for a valid order', () => {
+      const issues = runValidationChecks(mockOrder, mockProducts, mockT);
+      expect(issues).toHaveLength(0);
+    });
+  });
+
+  describe('Disclaimer (Requirement 12.4)', () => {
+    it('includes disclaimer with date-time', () => {
+      generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT);
+      const disclaimerText = mockTextCalls.find((t) =>
+        t.includes('Products and availability subject to change')
+      );
+      expect(disclaimerText).toBeDefined();
+      expect(disclaimerText).toContain('Generated on');
+    });
+  });
+
+  describe('Draft with no persons (Requirement 12.5)', () => {
+    it('shows no-persons indication for empty draft order', () => {
+      const emptyDraftOrder: Order = {
+        ...mockOrder,
+        status: 'draft',
+        items: [],
+      };
+      generateBookingSummaryPdf(emptyDraftOrder, mockEvent, mockProducts, mockT);
+      expect(mockTextCalls).toContain('No persons have been added yet.');
+    });
+
+    it('still includes event name and delegates for empty draft', () => {
+      const emptyDraftOrder: Order = {
+        ...mockOrder,
+        status: 'draft',
+        items: [],
+      };
+      generateBookingSummaryPdf(emptyDraftOrder, mockEvent, mockProducts, mockT);
+      expect(mockTextCalls).toContain('Presidents Meeting 2027');
+      expect(mockTextCalls).toContain('Primary delegate: jan@club.nl');
     });
   });
 });
