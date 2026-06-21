@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} — Inbjudan till {{EVENT_NAME}}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Du har blivit inbjuden till {{EVENT_NAME}}</h2>
+
+        <p>Hej,</p>
+
+        <p><strong>{{INVITER_NAME}}</strong> har bjudit in dig som medombud för
+        <strong>{{CLUB_NAME}}</strong> vid evenemanget <strong>{{EVENT_NAME}}</strong>.</p>
+
+        <p>Som medombud kan du visa och redigera bokningen å din grupps vägnar.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{REGISTRATION_LINK}}"
+               style="background-color: #d2691e; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Registrera dig för {{EVENT_NAME}}
+            </a>
+        </div>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Evenemangsdetaljer:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Evenemang:</strong> {{EVENT_NAME}}</li>
+                <li><strong>Inbjuden av:</strong> {{INVITER_NAME}}</li>
+                <li><strong>Grupp:</strong> {{CLUB_NAME}}</li>
+            </ul>
+        </div>
+
+        <p>Använd knappen ovan för att registrera dig. Om du redan har ett konto kan du logga in med dina befintliga uppgifter.</p>
+
+        <p>Om du inte kan öppna länken, kopiera följande adress till din webbläsare:<br>
+        <a href="{{REGISTRATION_LINK}}" style="word-break: break-all;">{{REGISTRATION_LINK}}</a></p>
+
+        <p>Med vänliga hälsningar,<br>
+        {{ORGANIZATION_SHORT_NAME}}-teamet</p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Webbplats: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-post: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

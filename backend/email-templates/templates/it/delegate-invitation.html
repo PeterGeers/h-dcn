@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} — Invito per {{EVENT_NAME}}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Sei stato/a invitato/a a {{EVENT_NAME}}</h2>
+
+        <p>Ciao,</p>
+
+        <p><strong>{{INVITER_NAME}}</strong> ti ha invitato/a come co-delegato/a per
+        <strong>{{CLUB_NAME}}</strong> all'evento <strong>{{EVENT_NAME}}</strong>.</p>
+
+        <p>Come co-delegato/a, puoi visualizzare e modificare la prenotazione per conto del tuo gruppo.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{REGISTRATION_LINK}}"
+               style="background-color: #d2691e; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Registrati per {{EVENT_NAME}}
+            </a>
+        </div>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Dettagli dell'evento:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Evento:</strong> {{EVENT_NAME}}</li>
+                <li><strong>Invitato/a da:</strong> {{INVITER_NAME}}</li>
+                <li><strong>Gruppo:</strong> {{CLUB_NAME}}</li>
+            </ul>
+        </div>
+
+        <p>Usa il pulsante qui sopra per registrarti. Se hai già un account, puoi accedere con le tue credenziali esistenti.</p>
+
+        <p>Se non riesci ad aprire il link, copia il seguente indirizzo nel tuo browser:<br>
+        <a href="{{REGISTRATION_LINK}}" style="word-break: break-all;">{{REGISTRATION_LINK}}</a></p>
+
+        <p>Cordiali saluti,<br>
+        Il team {{ORGANIZATION_SHORT_NAME}}</p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Sito web: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>
