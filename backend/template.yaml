@@ -1590,6 +1590,7 @@ Resources:
                 Action:
                   - dynamodb:GetItem
                   - dynamodb:Query
+                  - dynamodb:Scan
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
@@ -1602,7 +1603,26 @@ Resources:
                   - dynamodb:GetItem
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
-        - PolicyName: S3LogoRead
+        - PolicyName: DynamoDBEventsRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
+        - PolicyName: DynamoDBProductenRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}/index/*"
+        - PolicyName: S3DataRead
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -1610,7 +1630,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub "arn:aws:s3:::${DataBucket}/imagesWebsite/*"
+                  - !Sub "arn:aws:s3:::${DataBucket}/*"
 
   # Event Management Functions
   GetEventByIdFunction:
@@ -1965,6 +1985,32 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /admin/events/{event_id}/dashboard
+            Method: get
+
+  # --- Admin Preparation PDF (Closed Community Booking) ---
+  GeneratePreparationPdfFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerTag: generate-preparation-pdf
+      DockerContext: .
+      Dockerfile: handler/generate_preparation_pdf/Dockerfile
+    Properties:
+      PackageType: Image
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt PdfGeneratorRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+      Events:
+        GeneratePreparationPdf:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/preparation-pdf
             Method: get
 
   # --- Assign Club (Onboarding) ---
