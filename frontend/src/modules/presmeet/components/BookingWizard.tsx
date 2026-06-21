@@ -69,11 +69,13 @@ export interface BookingWizardProps {
   eventId: string;
   /** Delegate's name from Member record — pre-fills first person (Req 6.3) */
   delegateName?: string;
+  /** Callback fired after successful order submission (Req 11.1) */
+  onSubmitted?: () => void;
 }
 
 // --- Component ---
 
-const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) => {
+const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, onSubmitted }) => {
   const { t } = useTranslation('eventBooking');
 
   // --- State ---
@@ -92,6 +94,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [serverErrors, setServerErrors] = useState<ValidationError[]>([]);
+  /** Whether the confirmation view is shown after successful submission */
+  const [showConfirmation, setShowConfirmation] = useState(false);
   /** Per-person field errors from client-side validation: personIndex → productIndex → fieldId → message */
   const [fieldErrors, setFieldErrors] = useState<
     Record<number, Record<number, Record<string, string>>>
@@ -343,27 +347,6 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
     );
   }, [fieldErrors, personErrors]);
 
-  /**
-   * Map a flat item_index (from the backend error response) back to
-   * the person/product indices in our form state.
-   */
-  const mapItemIndexToPersonProduct = useCallback(
-    (itemIndex: number): { personIdx: number; productIdx: number } | null => {
-      let currentIndex = 0;
-      for (let pIdx = 0; pIdx < formState.persons.length; pIdx++) {
-        const person = formState.persons[pIdx];
-        for (let prodIdx = 0; prodIdx < person.products.length; prodIdx++) {
-          if (currentIndex === itemIndex) {
-            return { personIdx: pIdx, productIdx: prodIdx };
-          }
-          currentIndex++;
-        }
-      }
-      return null;
-    },
-    [formState]
-  );
-
   // --- Submit logic (Requirement 11.9) ---
 
   const handleSubmit = useCallback(async () => {
@@ -372,11 +355,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
     // Clear previous errors
     setSubmitError(null);
     setServerErrors([]);
+    setShowConfirmation(false);
 
     // Client-side validation first
     const isValid = validateFormForSubmit();
     if (!isValid) {
-      setSubmitError('Please fill in all required fields before submitting.');
+      setSubmitError(t('submit.fix_fields'));
       return;
     }
 
@@ -396,9 +380,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
       setOrder(submittedOrder);
       setVersion(submittedOrder.version);
 
+      // Notify parent that submission succeeded (shows PaymentPanel)
+      onSubmitted?.();
+
+      // Show confirmation view with payment option (Req 9.7)
+      setShowConfirmation(true);
+
       toast({
-        title: 'Booking submitted',
-        description: 'Your booking has been submitted successfully.',
+        title: t('submit.confirmation_title'),
+        description: t('submit.confirmation_message'),
         status: 'success',
         duration: 5000,
         isClosable: true,
@@ -412,26 +402,44 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
         return;
       }
 
-      // Handle server validation errors (400 with errors array)
+      // Handle server validation errors (400 with errors array) (Req 9.8, 9.9)
       if (err?.response?.status === 400 && err?.response?.data?.errors) {
         const errors: ValidationError[] = err.response.data.errors;
         setServerErrors(errors);
-        setSubmitError('Submission failed — the server found validation errors.');
+        setSubmitError(t('submit.failed'));
 
-        // Map server errors to inline field errors
+        // Map server errors to inline field errors for PersonCard display
         const newFieldErrors: Record<number, Record<number, Record<string, string>>> = {};
+        const newPersonErrors: Record<number, Record<string, string>> = {};
+
         for (const serverErr of errors) {
-          // Map item_index back to person/product index
-          const mapping = mapItemIndexToPersonProduct(serverErr.item_index);
-          if (mapping) {
-            const { personIdx, productIdx } = mapping;
-            if (!newFieldErrors[personIdx]) newFieldErrors[personIdx] = {};
-            if (!newFieldErrors[personIdx][productIdx])
-              newFieldErrors[personIdx][productIdx] = {};
-            newFieldErrors[personIdx][productIdx][serverErr.field] = serverErr.message;
+          const personIdx = serverErr.person_index;
+
+          // Person-level errors (e.g., name required)
+          if (personIdx !== null && personIdx !== undefined && serverErr.field === 'name') {
+            if (!newPersonErrors[personIdx]) newPersonErrors[personIdx] = {};
+            newPersonErrors[personIdx][serverErr.field] = serverErr.message;
+            continue;
+          }
+
+          // Product-level errors — map via person_index + product_id
+          if (personIdx !== null && personIdx !== undefined && serverErr.product_id) {
+            const person = formState.persons[personIdx];
+            if (person) {
+              const prodIdx = person.products.findIndex(
+                (p) => p.product_id === serverErr.product_id
+              );
+              if (prodIdx >= 0) {
+                if (!newFieldErrors[personIdx]) newFieldErrors[personIdx] = {};
+                if (!newFieldErrors[personIdx][prodIdx]) newFieldErrors[personIdx][prodIdx] = {};
+                newFieldErrors[personIdx][prodIdx][serverErr.field] = serverErr.message;
+              }
+            }
           }
         }
+
         setFieldErrors(newFieldErrors);
+        setPersonErrors(newPersonErrors);
         return;
       }
 
@@ -439,12 +447,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
       const message =
         err?.response?.data?.message ||
         err?.message ||
-        'Submission failed. Your data is preserved — please try again.';
+        t('submit.generic_error');
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);
     }
-  }, [order, formState, products, version, validateFormForSubmit, toast, mapItemIndexToPersonProduct]);
+  }, [order, formState, products, version, validateFormForSubmit, toast, onSubmitted, t]);
 
   // Clear validation errors when user edits form
   const handleUpdatePersonWithClear = useCallback(
@@ -516,6 +524,21 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
       <VStack spacing={6} align="stretch">
         <EventInfoHeader event={event} />
         <ReadOnlyView order={order} event={event} products={products} />
+      </VStack>
+    );
+  }
+
+  // Order is submitted or locked → read-only view for delegates (Requirement 10.2)
+  if (order.status === 'submitted' || order.status === 'locked') {
+    return (
+      <VStack spacing={6} align="stretch">
+        <EventInfoHeader event={event} />
+        <ReadOnlyView
+          order={order}
+          event={event}
+          products={products}
+          reason={order.status === 'submitted' ? 'order_submitted' : 'order_locked'}
+        />
       </VStack>
     );
   }
@@ -613,6 +636,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
       {/* Submit panel */}
       {!isLocked && (
         <SubmitPanel
+          order={order}
           orderStatus={order.status}
           isSubmitting={isSubmitting}
           hasErrors={hasValidationErrors}
@@ -620,6 +644,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName }) 
           serverErrors={serverErrors}
           onSubmit={handleSubmit}
           isDisabled={isSaving || isLocked}
+          showConfirmation={showConfirmation}
         />
       )}
 

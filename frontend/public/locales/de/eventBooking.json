@@ -170,7 +170,13 @@
     "button": "Buchung einreichen",
     "button_resubmit": "Buchung erneut einreichen",
     "fix_fields": "Bitte beheben Sie alle markierten Felder vor dem Einreichen.",
-    "person_field": "Person {{index}}, {{field}}:"
+    "person_field": "Person {{index}}, {{field}}:",
+    "confirmation_title": "Buchung eingereicht",
+    "confirmation_message": "Ihre Buchung wurde erfolgreich eingereicht. Sie können jetzt mit der Zahlung fortfahren.",
+    "capacity_errors_title": "Kapazität überschritten",
+    "remaining_capacity": "Verbleibend: {{count}}",
+    "person_header": "Person {{index}}",
+    "generic_error": "Einreichung fehlgeschlagen. Ihre Daten sind gespeichert — bitte versuchen Sie es erneut."
   },
   "pdf": {
     "download_button": "Buchungsübersicht herunterladen",
@@ -196,10 +202,22 @@
     "you": "(Sie)",
     "no_secondary": "Kein sekundärer Delegierter zugewiesen",
     "add_button": "Hinzufügen",
+    "invite_button": "Einladen",
     "remove_button": "Entfernen",
+    "revoke_button": "Widerrufen",
     "removing": "Wird entfernt...",
+    "revoking": "Wird widerrufen...",
+    "pending": "Ausstehend",
     "email_placeholder": "E-Mail-Adresse",
-    "add_description": "Fügen Sie einen sekundären Delegierten hinzu, der diese Buchung auch verwalten kann"
+    "add_description": "Fügen Sie einen sekundären Delegierten hinzu, der diese Buchung auch verwalten kann",
+    "error_self_invite": "Sie können sich nicht selbst als sekundären Delegierten einladen",
+    "error_not_found": "Benutzer nicht gefunden. Bitte überprüfen Sie die E-Mail-Adresse.",
+    "error_no_access": "Dieser Benutzer hat keinen Zugang zur Veranstaltung.",
+    "error_already_assigned": "Dieser Benutzer ist bereits als Delegierter zugewiesen.",
+    "error_generic": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "conflict_title": "Bestellung geändert",
+    "conflict_description": "Diese Bestellung wurde von einem anderen Delegierten geändert. Bitte neu laden, um die neuesten Änderungen zu sehen.",
+    "reload_button": "Neu laden"
   },
   "admin": {
     "dashboard_title": "Event Dashboard",
@@ -341,5 +359,15 @@
     "error_generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es später erneut.",
     "conflict_title": "Platz bereits belegt",
     "conflict_description": "Dieser Platz wurde von einem anderen Benutzer beansprucht. Kontaktieren Sie {{contact}} für Fragen."
+  },
+  "read_only": {
+    "order_submitted": "Ihre Buchung wurde eingereicht. Die Details werden unten im Nur-Lese-Modus angezeigt.",
+    "order_locked": "Ihre Buchung wurde vom Veranstalter gesperrt. Die Details werden unten angezeigt.",
+    "event_closed": "Die Registrierung ist geschlossen. Ihre Buchung wird unten im Nur-Lese-Modus angezeigt.",
+    "event_draft": "Die Registrierung ist noch nicht geöffnet. Kommen Sie nach dem Eröffnungsdatum zurück.",
+    "event_archived": "Diese Veranstaltung ist archiviert. Ihre Buchung wird als Referenz angezeigt.",
+    "no_persons": "Keine Personen für diese Veranstaltung registriert.",
+    "person": "Person",
+    "total": "Gesamt"
   }
 }

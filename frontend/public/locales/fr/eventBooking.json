@@ -155,7 +155,13 @@
     "button": "Soumettre la réservation",
     "button_resubmit": "Resoumettre la réservation",
     "fix_fields": "Veuillez corriger tous les champs marqués avant de soumettre.",
-    "person_field": "Personne {{index}}, {{field}} :"
+    "person_field": "Personne {{index}}, {{field}} :",
+    "confirmation_title": "Réservation soumise",
+    "confirmation_message": "Votre réservation a été soumise avec succès. Vous pouvez maintenant procéder au paiement.",
+    "capacity_errors_title": "Capacité dépassée",
+    "remaining_capacity": "Restant : {{count}}",
+    "person_header": "Personne {{index}}",
+    "generic_error": "Échec de la soumission. Vos données sont préservées — veuillez réessayer."
   },
   "pdf": {
     "download_button": "Télécharger le résumé",
@@ -181,10 +187,22 @@
     "you": "(vous)",
     "no_secondary": "Aucun délégué secondaire attribué",
     "add_button": "Ajouter",
+    "invite_button": "Inviter",
     "remove_button": "Supprimer",
+    "revoke_button": "Révoquer",
     "removing": "Suppression...",
+    "revoking": "Révocation...",
+    "pending": "En attente",
     "email_placeholder": "Adresse e-mail",
-    "add_description": "Ajouter un délégué secondaire qui peut aussi gérer cette réservation"
+    "add_description": "Ajouter un délégué secondaire qui peut aussi gérer cette réservation",
+    "error_self_invite": "Vous ne pouvez pas vous inviter vous-même comme délégué secondaire",
+    "error_not_found": "Utilisateur non trouvé. Veuillez vérifier l'adresse e-mail.",
+    "error_no_access": "Cet utilisateur n'a pas accès à l'événement.",
+    "error_already_assigned": "Cet utilisateur est déjà attribué comme délégué.",
+    "error_generic": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+    "conflict_title": "Commande modifiée",
+    "conflict_description": "Cette commande a été modifiée par un autre délégué. Veuillez recharger pour voir les dernières modifications.",
+    "reload_button": "Recharger"
   },
   "admin": {
     "dashboard_title": "Tableau de bord événement",
@@ -307,5 +325,15 @@
     "error_generic": "Une erreur s'est produite. Veuillez réessayer plus tard.",
     "conflict_title": "Créneau déjà réservé",
     "conflict_description": "Ce créneau a été réservé par un autre utilisateur. Contactez {{contact}} pour toute question."
+  },
+  "read_only": {
+    "order_submitted": "Votre réservation a été soumise. Les détails sont affichés ci-dessous en lecture seule.",
+    "order_locked": "Votre réservation a été verrouillée par l'organisateur. Les détails sont affichés ci-dessous.",
+    "event_closed": "Les inscriptions sont closes. Votre réservation est affichée ci-dessous en lecture seule.",
+    "event_draft": "Les inscriptions ne sont pas encore ouvertes. Revenez après la date d'ouverture.",
+    "event_archived": "Cet événement est archivé. Votre réservation est affichée à titre de référence.",
+    "no_persons": "Aucune personne inscrite pour cet événement.",
+    "person": "Personne",
+    "total": "Total"
   }
 }

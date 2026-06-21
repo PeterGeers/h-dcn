@@ -171,7 +171,13 @@
     "button": "Submit Booking",
     "button_resubmit": "Resubmit Booking",
     "fix_fields": "Please fix all highlighted fields before submitting.",
-    "person_field": "Person {{index}}, {{field}}:"
+    "person_field": "Person {{index}}, {{field}}:",
+    "confirmation_title": "Booking Submitted",
+    "confirmation_message": "Your booking has been submitted successfully. You can now proceed with payment.",
+    "capacity_errors_title": "Capacity exceeded",
+    "remaining_capacity": "Remaining: {{count}}",
+    "person_header": "Person {{index}}",
+    "generic_error": "Submission failed. Your data is preserved — please try again."
   },
   "pdf": {
     "download_button": "Download Booking Summary",
@@ -197,10 +203,22 @@
     "you": "(you)",
     "no_secondary": "No secondary delegate assigned",
     "add_button": "Add",
+    "invite_button": "Invite",
     "remove_button": "Remove",
+    "revoke_button": "Revoke",
     "removing": "Removing...",
+    "revoking": "Revoking...",
+    "pending": "Pending",
     "email_placeholder": "Email address",
-    "add_description": "Add a secondary delegate who can also manage this booking"
+    "add_description": "Add a secondary delegate who can also manage this booking",
+    "error_self_invite": "You cannot invite yourself as a secondary delegate",
+    "error_not_found": "User not found. Please check the email address.",
+    "error_no_access": "This user does not have event access.",
+    "error_already_assigned": "This user is already assigned as a delegate.",
+    "error_generic": "An unexpected error occurred. Please try again.",
+    "conflict_title": "Order modified",
+    "conflict_description": "This order was modified by another delegate. Please reload to see the latest changes.",
+    "reload_button": "Reload"
   },
   "admin": {
     "dashboard_title": "Event Dashboard",
@@ -395,5 +413,15 @@
     "remaining": "{{remaining}} of {{total}} remaining",
     "exhausted": "This product has reached its limit",
     "sold_out": "sold out"
+  },
+  "read_only": {
+    "order_submitted": "Your booking has been submitted. The details are shown below in read-only mode.",
+    "order_locked": "Your booking has been locked by the organizer. The details are shown below.",
+    "event_closed": "Registration is closed. Your booking is shown below in read-only mode.",
+    "event_draft": "Registration is not yet open. Check back after the registration open date.",
+    "event_archived": "This event is archived. Your booking is shown below for reference.",
+    "no_persons": "No persons registered for this event.",
+    "person": "Person",
+    "total": "Total"
   }
 }

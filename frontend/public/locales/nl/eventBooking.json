@@ -171,7 +171,13 @@
     "button": "Booking indienen",
     "button_resubmit": "Booking opnieuw indienen",
     "fix_fields": "Los alle gemarkeerde velden op voordat u indient.",
-    "person_field": "Persoon {{index}}, {{field}}:"
+    "person_field": "Persoon {{index}}, {{field}}:",
+    "confirmation_title": "Booking ingediend",
+    "confirmation_message": "Uw booking is succesvol ingediend. U kunt nu doorgaan met betalen.",
+    "capacity_errors_title": "Capaciteit overschreden",
+    "remaining_capacity": "Resterend: {{count}}",
+    "person_header": "Persoon {{index}}",
+    "generic_error": "Indienen mislukt. Uw gegevens zijn bewaard — probeer het opnieuw."
   },
   "pdf": {
     "download_button": "Download Booking Samenvatting",
@@ -197,10 +203,22 @@
     "you": "(u)",
     "no_secondary": "Geen secondary delegate toegewezen",
     "add_button": "Toevoegen",
+    "invite_button": "Uitnodigen",
     "remove_button": "Verwijderen",
+    "revoke_button": "Intrekken",
     "removing": "Verwijderen...",
+    "revoking": "Intrekken...",
+    "pending": "In afwachting",
     "email_placeholder": "E-mailadres",
-    "add_description": "Voeg een secondary delegate toe die ook deze booking kan beheren"
+    "add_description": "Voeg een secondary delegate toe die ook deze booking kan beheren",
+    "error_self_invite": "U kunt uzelf niet uitnodigen als secondary delegate",
+    "error_not_found": "Gebruiker niet gevonden. Controleer het e-mailadres.",
+    "error_no_access": "Deze gebruiker heeft geen toegang tot het evenement.",
+    "error_already_assigned": "Deze gebruiker is al toegewezen als delegate.",
+    "error_generic": "Er is een onverwachte fout opgetreden. Probeer het opnieuw.",
+    "conflict_title": "Bestelling gewijzigd",
+    "conflict_description": "Deze bestelling is gewijzigd door een andere delegate. Herlaad om de laatste wijzigingen te zien.",
+    "reload_button": "Herladen"
   },
   "admin": {
     "dashboard_title": "Event Dashboard",
@@ -388,5 +406,15 @@
     "remove_product": "{{product}} verwijderen",
     "add_product": "+ Product toevoegen",
     "variant_required": "Selecteer een geldige variant om door te gaan."
+  },
+  "read_only": {
+    "order_submitted": "Je booking is ingediend. De gegevens worden hieronder in alleen-lezen modus weergegeven.",
+    "order_locked": "Je booking is vergrendeld door de organisator. De gegevens worden hieronder weergegeven.",
+    "event_closed": "Registratie is gesloten. Je booking wordt hieronder weergegeven in alleen-lezen modus.",
+    "event_draft": "Registratie is nog niet geopend. Kom terug na de openingsdatum.",
+    "event_archived": "Dit evenement is gearchiveerd. Je booking wordt ter referentie weergegeven.",
+    "no_persons": "Geen personen geregistreerd voor dit evenement.",
+    "person": "Persoon",
+    "total": "Totaal"
   }
 }
