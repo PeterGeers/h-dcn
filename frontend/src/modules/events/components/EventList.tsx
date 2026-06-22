@@ -198,17 +198,17 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     return amount ? `€${parseFloat(String(amount)).toFixed(2)}` : '€0,00';
   };
 
-  const getEventField = (event: Event, field: string): string | number => {
+  const getEventField = (event: Event, field: string): string => {
     // Direct field access using new registry names
-    const fieldMap: Record<string, string | number> = {
+    const fieldMap: Record<string, string> = {
       naam: event.name || '',
       datum_van: event.start_date || '',
       datum_tot: event.end_date || '',
       locatie: event.location || '',
       regio: event.linked_regio || '',
-      aantal_deelnemers: event.participants || 0,
-      kosten: event.cost || 0,
-      inkomsten: event.revenue || 0
+      aantal_deelnemers: String(event.participants || 0),
+      kosten: String(event.cost || 0),
+      inkomsten: String(event.revenue || 0)
     };
     return fieldMap[field] || '';
   };
