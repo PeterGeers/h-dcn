@@ -3,7 +3,7 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
   VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, Select,
   Alert, AlertIcon, Text, Accordion, AccordionItem, AccordionButton, AccordionPanel,
-  AccordionIcon, Box, HStack, Badge
+  AccordionIcon, Box, HStack
 } from '@chakra-ui/react';
 import { getAllowedRegions } from '../../../utils/regionalMapping';
 import { Event } from '../../../types';
@@ -236,15 +236,6 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       return;
     }
 
-    // Validate registration dates
-    if (!formData.registration_open || !formData.registration_close) {
-      handleError(
-        { status: 400, message: 'Registratie open en sluit datum zijn verplicht' },
-        'validatie'
-      );
-      return;
-    }
-
     // Validate regional permissions
     if (allowedRegions.length > 0 && formData.linked_regio !== 'regio_all' && !allowedRegions.includes(formData.linked_regio)) {
       handleError(
@@ -271,9 +262,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         start_date: formData.start_date,
         end_date: formData.end_date,
         linked_regio: formData.linked_regio,
-        registration_open: formData.registration_open,
-        registration_close: formData.registration_close,
       };
+
+      // Optional registration dates (only send if filled)
+      if (formData.registration_open) payload.registration_open = formData.registration_open;
+      if (formData.registration_close) payload.registration_close = formData.registration_close;
 
       // Optional core fields
       if (formData.location) payload.location = formData.location;
@@ -477,13 +470,12 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                 <AccordionButton _hover={{ bg: 'gray.700' }}>
                   <HStack flex="1" textAlign="left">
                     <Text fontWeight="bold" color="orange.300">Registratie & Deadlines</Text>
-                    <Badge colorScheme="red" fontSize="xs">verplicht</Badge>
                   </HStack>
                   <AccordionIcon color="orange.300" />
                 </AccordionButton>
                 <AccordionPanel pb={4}>
                   <SimpleGrid columns={2} spacing={4}>
-                    <FormControl isRequired>
+                    <FormControl>
                       <FormLabel color="orange.300">Registratie open</FormLabel>
                       <Input
                         type="datetime-local"
@@ -494,7 +486,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                       />
                     </FormControl>
 
-                    <FormControl isRequired>
+                    <FormControl>
                       <FormLabel color="orange.300">Registratie sluit</FormLabel>
                       <Input
                         type="datetime-local"

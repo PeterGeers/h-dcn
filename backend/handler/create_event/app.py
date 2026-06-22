@@ -33,12 +33,13 @@ table = dynamodb.Table(table_name)
 # Valid event statuses and counting rules
 VALID_STATUSES = {'draft', 'open', 'closed', 'archived'}
 VALID_COUNTING_RULES = {'count_items_by_product', 'count_distinct_clubs', 'sum_field'}
-REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'registration_open', 'registration_close', 'linked_regio']
+REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'linked_regio']
 
 
 def validate_dates(body):
     """
     Validate date ordering: registration_open < registration_close <= start_date <= end_date.
+    Only validates relationships between dates that are actually provided.
 
     Returns list of error strings (empty if valid).
     """
