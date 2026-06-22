@@ -67,6 +67,16 @@ interface EventFormProps {
 // HELPERS
 // ============================================================================
 
+/** Normalize a date/datetime string for datetime-local input (requires yyyy-MM-ddTHH:mm) */
+function toDatetimeLocal(value: string | undefined): string {
+  if (!value) return '';
+  // Already in datetime-local format
+  if (value.includes('T')) return value.slice(0, 16);
+  // Date-only: append T00:00
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T00:00`;
+  return value;
+}
+
 const EMPTY_FORM: EventFormData = {
   name: '',
   event_type: '',
@@ -161,9 +171,9 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         location: event.location || '',
         poster_url: event.poster_url || '',
         slug: event.slug || '',
-        registration_open: event.registration_open || '',
-        registration_close: event.registration_close || '',
-        payment_deadline: event.payment_deadline || '',
+        registration_open: toDatetimeLocal(event.registration_open),
+        registration_close: toDatetimeLocal(event.registration_close),
+        payment_deadline: toDatetimeLocal(event.payment_deadline),
         product_ids: Array.isArray(event.product_ids) ? event.product_ids.join(', ') : '',
         participants: event.participants != null ? String(event.participants) : '',
         cost: event.cost != null ? String(event.cost) : '',
