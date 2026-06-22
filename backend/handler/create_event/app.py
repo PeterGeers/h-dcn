@@ -3,6 +3,7 @@ import boto3
 import uuid
 import os
 from datetime import datetime
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -15,6 +16,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -31,7 +33,7 @@ table = dynamodb.Table(table_name)
 # Valid event statuses and counting rules
 VALID_STATUSES = {'draft', 'open', 'closed', 'archived'}
 VALID_COUNTING_RULES = {'count_items_by_product', 'count_distinct_clubs', 'sum_field'}
-REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'registration_open', 'registration_close']
+REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'registration_open', 'registration_close', 'linked_regio']
 
 
 def validate_dates(body):
@@ -210,6 +212,23 @@ def lambda_handler(event, context):
             if slug_error:
                 return slug_error
 
+        # Validate and coerce financial fields
+        for field in ['cost', 'revenue']:
+            if field in body and body[field] is not None:
+                decimal_value, error = validate_price_field(body[field], field)
+                if error:
+                    return create_error_response(400, error)
+                body[field] = decimal_value
+
+        # Validate participants as non-negative integer
+        if 'participants' in body and body['participants'] is not None:
+            try:
+                body['participants'] = int(body['participants'])
+                if body['participants'] < 0:
+                    return create_error_response(400, 'participants must be non-negative')
+            except (ValueError, TypeError):
+                return create_error_response(400, 'participants must be an integer')
+
         # Generate event ID and create event item
         event_id = str(uuid.uuid4())
         event_item = {
@@ -221,9 +240,15 @@ def lambda_handler(event, context):
 
         # Copy allowed fields from body
         allowed_fields = [
-            'name', 'event_type', 'location', 'start_date', 'end_date',
-            'registration_open', 'registration_close', 'payment_deadline',
-            'constraints', 'product_ids', 'landing_page'
+            # core
+            'name', 'event_type', 'event_category', 'participation',
+            'linked_regio', 'location', 'slug', 'poster_url',
+            # dates
+            'start_date', 'end_date', 'registration_open', 'registration_close', 'payment_deadline',
+            # config
+            'constraints', 'product_ids', 'landing_page',
+            # financial
+            'participants', 'cost', 'revenue', 'notes',
         ]
         for field in allowed_fields:
             if field in body:

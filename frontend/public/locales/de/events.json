@@ -1,21 +1,22 @@
 {
   "title": "Veranstaltungen",
   "loading": {
-    "permissions": "Berechtigungen werden geladen...",
-    "events": "Veranstaltungen werden geladen..."
+    "permissions": "Berechtigungen laden...",
+    "events": "Veranstaltungen laden..."
   },
   "tabs": {
     "events": "Veranstaltungen",
     "finance": "Finanzen",
-    "analytics": "Analytik"
+    "analytics": "Analyse"
   },
   "access": {
-    "no_access": "Sie haben keinen Zugang zur Veranstaltungsverwaltung. Kontaktieren Sie einen Administrator, wenn Sie Zugang benötigen.",
-    "no_financial_access": "Sie haben keinen Zugang zu Finanzdaten.",
-    "no_analytics_access": "Sie haben keinen Zugang zu Analytik.",
+    "no_access": "Du hast keinen Zugang zur Veranstaltungsverwaltung. Wende dich an einen Administrator.",
+    "no_financial_access": "Du hast keinen Zugang zu Finanzdaten.",
+    "no_analytics_access": "Du hast keinen Zugang zur Analyse.",
     "current_roles": "Aktuelle Rollen: {{roles}}",
     "no_roles": "Keine Rollen zugewiesen",
-    "required_roles": "Erforderliche Rollen: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman oder andere veranstaltungsbezogene Rollen"
+    "required_roles": "Erforderliche Rollen: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman oder andere eventbezogene Rollen",
+    "region_limited": "Du kannst Veranstaltungen verwalten für: {{regions}}"
   },
   "communication": {
     "title": "Veranstaltungskommunikation & Export",
@@ -23,16 +24,103 @@
     "newsletter_content": "Newsletter-Inhalt"
   },
   "overview": {
-    "title": "Veranstaltungsübersicht & Berichterstattung",
+    "title": "Veranstaltungsübersicht & Berichte",
     "event_overview": "Veranstaltungsübersicht",
     "regional_summary": "Regionale Zusammenfassung"
   },
+  "form": {
+    "title_new": "Neue Veranstaltung",
+    "title_edit": "Veranstaltung bearbeiten",
+    "save_new": "Erstellen",
+    "save_edit": "Aktualisieren",
+    "cancel": "Abbrechen",
+    "success_created": "Veranstaltung erfolgreich erstellt",
+    "success_updated": "Veranstaltung erfolgreich aktualisiert",
+    "error_save": "Fehler beim Speichern der Veranstaltung",
+    "validation": {
+      "required_fields": "Name, Typ, Start- und Enddatum und Region sind erforderlich",
+      "required_registration": "Registrierung Öffnungs- und Schlussdatum sind erforderlich",
+      "no_region_access": "Du hast keine Berechtigung, Veranstaltungen in dieser Region zu erstellen"
+    },
+    "sections": {
+      "registration": "Registrierung & Fristen",
+      "registration_required": "erforderlich",
+      "config": "Konfiguration",
+      "financial": "Finanziell",
+      "landing_page": "Landing Page"
+    }
+  },
   "fields": {
-    "name": "Name",
-    "date": "Datum",
+    "name": "Veranstaltungsname",
+    "name_placeholder": "Name der Veranstaltung",
+    "event_type": "Typ",
+    "event_type_placeholder": "Typ auswählen...",
+    "participation": "Teilnahme",
+    "linked_regio": "Region",
+    "linked_regio_placeholder": "Region auswählen...",
+    "regio_all_label": "Alle Regionen (landesweit)",
+    "start_date": "Startdatum",
+    "end_date": "Enddatum",
     "location": "Ort",
-    "participants": "Teilnehmer",
-    "revenue": "Einnahmen",
+    "location_placeholder": "Z.B. H-DCN Clubhaus, Amsterdam",
+    "poster_url": "Poster / Bild",
+    "poster_placeholder": "URL oder Datei hochladen",
+    "poster_upload": "Hochladen",
+    "poster_success": "Poster erfolgreich hochgeladen",
+    "slug": "URL Slug",
+    "slug_placeholder": "z.B. presmeet-2026",
+    "registration_open": "Registrierung öffnet",
+    "registration_close": "Registrierung schließt",
+    "payment_deadline": "Zahlungsfrist",
+    "product_ids": "Produkt-IDs (kommagetrennt)",
+    "product_ids_placeholder": "produkt-id-1, produkt-id-2",
+    "participants": "Teilnehmerzahl",
+    "cost": "Kosten (€)",
+    "revenue": "Einnahmen (€)",
+    "notes": "Anmerkungen",
+    "notes_placeholder": "Interne Notizen zu Kosten, Vereinbarungen, etc.",
+    "date": "Datum",
     "costs": "Kosten"
+  },
+  "event_types": {
+    "presmeet": "PresMeet",
+    "alv": "ALV (Mitgliederversammlung)",
+    "rlv": "RLV (Regionalversammlung)",
+    "vbv": "VBV",
+    "vergader_queue": "Sitzungs-Warteschlange",
+    "internationaal_treffen": "Internationales Treffen",
+    "nationaal_treffen": "Nationales Treffen",
+    "openingsrit": "Eröffnungsfahrt",
+    "regio_rit": "Regionalfahrt",
+    "tourweekend": "Tour-Wochenende",
+    "sluitingsrit": "Abschlussfahrt",
+    "webshop": "Webshop",
+    "other": "Sonstiges"
+  },
+  "event_categories": {
+    "vergadering": "Versammlungen",
+    "rally": "Rallies",
+    "rit": "Fahrten",
+    "overig": "Sonstiges"
+  },
+  "participation_modes": {
+    "open": "Offen (Teilnahme für alle)",
+    "closed": "Geschlossen (nur Mitglieder / Eingeladene)"
+  },
+  "list": {
+    "search_placeholder": "Veranstaltungen suchen...",
+    "new_event": "Neue Veranstaltung",
+    "new_event_short": "Neu",
+    "no_events": "Keine Veranstaltungen gefunden",
+    "edit": "Bearbeiten",
+    "duplicate": "Duplizieren",
+    "delete": "Löschen",
+    "no_edit_access": "Keine Berechtigung zum Bearbeiten",
+    "no_duplicate_access": "Keine Berechtigung zum Duplizieren",
+    "no_delete_access": "Keine Berechtigung zum Löschen",
+    "confirm_delete": "Bist du sicher, dass du \"{{name}}\" löschen möchtest?",
+    "deleted_success": "Veranstaltung gelöscht",
+    "delete_error": "Fehler beim Löschen",
+    "profit": "Gewinn"
   }
 }

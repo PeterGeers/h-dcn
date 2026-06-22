@@ -3,7 +3,7 @@
  *
  * Fields with group: 'booking'
  * These fields support the closed community booking module:
- * password gate, landing page, invitee registry, and claims.
+ * password gate, invitee registry, and claims.
  */
 
 import type { FieldDefinition } from '../types';
@@ -22,28 +22,15 @@ export const bookingFields: Record<string, FieldDefinition> = {
     width: 'medium',
   },
 
-  landing_page_enabled: {
-    key: 'landing_page_enabled',
-    label: 'Landing Page Actief',
-    dataType: 'boolean',
-    inputType: 'toggle',
-    group: 'booking',
-    order: 2,
-    defaultValue: false,
-    permissions: createPermissionConfig('admin', 'admin'),
-    helpText: 'Bepaalt of de landing page flow actief is (password gate → registry selector → claim)',
-    width: 'small',
-  },
-
   registry_config: {
     key: 'registry_config',
     label: 'Registry Configuratie',
     dataType: 'map',
     inputType: 'json',
     group: 'booking',
-    order: 3,
+    order: 2,
     permissions: createPermissionConfig('admin', 'admin'),
-    helpText: 'Configuratie voor het invitee registry: s3_path, row_label, claim_mode, max_delegates_per_row, allow_logo_upload',
+    helpText: 'Configuratie voor het invitee registry: s3_path, row_label, claim_mode, max_delegates_per_row, allow_logo_upload.',
     width: 'full',
   },
 
@@ -53,10 +40,10 @@ export const bookingFields: Record<string, FieldDefinition> = {
     dataType: 'map',
     inputType: 'json',
     group: 'booking',
-    order: 4,
+    order: 3,
     readOnly: true,
-    permissions: createPermissionConfig('admin', 'system'),
-    helpText: 'Runtime claim state: map van row_id → { member_id, email, name, claimed_at }. Wordt beheerd door het onboard-endpoint.',
+    permissions: createPermissionConfig('admin', 'none'),
+    helpText: 'Runtime claim state: map van row_id → { member_id, email, name, claimed_at }. Beheerd door het onboard-endpoint.',
     width: 'full',
   },
 };

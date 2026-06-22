@@ -27,16 +27,15 @@ interface EventAdminPageProps {
 interface Event {
   event_id?: string;
   name?: string;
-  event_date?: string;
-  datum_van?: string;
+  event_type?: string;
+  start_date?: string;
+  end_date?: string;
   location?: string;
-  locatie?: string;
+  linked_regio?: string;
   participants?: string | number;
-  aantal_deelnemers?: string | number;
   revenue?: string | number;
-  inkomsten?: string | number;
   cost?: string | number;
-  kosten?: string | number;
+  status?: string;
 }
 
 function EventAdminPage({ user }: EventAdminPageProps) {

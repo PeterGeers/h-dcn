@@ -1,38 +1,14 @@
 {
   "title": "Eventi",
-  "loading": {
-    "permissions": "Caricamento permessi...",
-    "events": "Caricamento eventi..."
-  },
-  "tabs": {
-    "events": "Eventi",
-    "finance": "Finanze",
-    "analytics": "Analisi"
-  },
-  "access": {
-    "no_access": "Non hai accesso all'amministrazione degli eventi. Contatta un amministratore se hai bisogno di accesso.",
-    "no_financial_access": "Non hai accesso ai dati finanziari.",
-    "no_analytics_access": "Non hai accesso alle analisi.",
-    "current_roles": "Ruoli attuali: {{roles}}",
-    "no_roles": "Nessun ruolo assegnato",
-    "required_roles": "Ruoli richiesti: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman o altri ruoli relativi agli eventi"
-  },
-  "communication": {
-    "title": "Comunicazione & Esportazione eventi",
-    "export_participants": "Esporta elenchi partecipanti",
-    "newsletter_content": "Contenuto newsletter"
-  },
-  "overview": {
-    "title": "Panoramica & Report eventi",
-    "event_overview": "Panoramica eventi",
-    "regional_summary": "Riepilogo regionale"
-  },
-  "fields": {
-    "name": "Nome",
-    "date": "Data",
-    "location": "Luogo",
-    "participants": "Partecipanti",
-    "revenue": "Entrate",
-    "costs": "Costi"
-  }
+  "loading": { "permissions": "Caricamento permessi...", "events": "Caricamento eventi..." },
+  "tabs": { "events": "Eventi", "finance": "Finanze", "analytics": "Analisi" },
+  "access": { "no_access": "Non hai accesso all'amministrazione eventi.", "no_financial_access": "Non hai accesso ai dati finanziari.", "no_analytics_access": "Non hai accesso alle analisi.", "current_roles": "Ruoli attuali: {{roles}}", "no_roles": "Nessun ruolo assegnato", "required_roles": "Ruoli richiesti: Events_Read, Events_CRUD o altri ruoli relativi agli eventi", "region_limited": "Puoi gestire eventi per: {{regions}}" },
+  "communication": { "title": "Comunicazione & Esportazione Eventi", "export_participants": "Esporta liste partecipanti", "newsletter_content": "Contenuto newsletter" },
+  "overview": { "title": "Panoramica & Report Eventi", "event_overview": "Panoramica Eventi", "regional_summary": "Riepilogo Regionale" },
+  "form": { "title_new": "Nuovo Evento", "title_edit": "Modifica Evento", "save_new": "Crea", "save_edit": "Aggiorna", "cancel": "Annulla", "success_created": "Evento creato con successo", "success_updated": "Evento aggiornato con successo", "error_save": "Errore nel salvataggio", "validation": { "required_fields": "Nome, tipo, date di inizio e fine, e regione sono obbligatori", "required_registration": "Le date di apertura e chiusura iscrizioni sono obbligatorie", "no_region_access": "Non hai il permesso di creare eventi in questa regione" }, "sections": { "registration": "Iscrizioni & Scadenze", "registration_required": "obbligatorio", "config": "Configurazione", "financial": "Finanziario", "landing_page": "Pagina di destinazione" } },
+  "fields": { "name": "Nome evento", "name_placeholder": "Nome dell'evento", "event_type": "Tipo", "event_type_placeholder": "Seleziona tipo...", "participation": "Partecipazione", "linked_regio": "Regione", "linked_regio_placeholder": "Seleziona regione...", "regio_all_label": "Tutte le regioni (nazionale)", "start_date": "Data di inizio", "end_date": "Data di fine", "location": "Luogo", "location_placeholder": "Es. Clubhouse H-DCN, Amsterdam", "poster_url": "Poster / Immagine", "poster_placeholder": "URL o carica un file", "poster_upload": "Carica", "poster_success": "Poster caricato con successo", "slug": "Slug URL", "slug_placeholder": "es. presmeet-2026", "registration_open": "Iscrizioni aperte", "registration_close": "Iscrizioni chiuse", "payment_deadline": "Scadenza pagamento", "product_ids": "ID prodotti (separati da virgola)", "product_ids_placeholder": "prodotto-id-1, prodotto-id-2", "participants": "Numero partecipanti", "cost": "Costi (€)", "revenue": "Ricavi (€)", "notes": "Note", "notes_placeholder": "Note interne su costi, accordi, ecc.", "date": "Data", "costs": "Costi" },
+  "event_types": { "presmeet": "PresMeet", "alv": "ALV (Assemblea Generale)", "rlv": "RLV (Riunione Regionale)", "vbv": "VBV", "vergader_queue": "Coda riunioni", "internationaal_treffen": "Incontro Internazionale", "nationaal_treffen": "Incontro Nazionale", "openingsrit": "Giro di apertura", "regio_rit": "Giro regionale", "tourweekend": "Weekend tour", "sluitingsrit": "Giro di chiusura", "webshop": "Negozio", "other": "Altro" },
+  "event_categories": { "vergadering": "Riunioni", "rally": "Rally", "rit": "Giri", "overig": "Altro" },
+  "participation_modes": { "open": "Aperto (partecipazione per tutti)", "closed": "Chiuso (solo membri / invitati)" },
+  "list": { "search_placeholder": "Cerca eventi...", "new_event": "Nuovo Evento", "new_event_short": "Nuovo", "no_events": "Nessun evento trovato", "edit": "Modifica", "duplicate": "Duplica", "delete": "Elimina", "no_edit_access": "Nessun permesso per modificare", "no_duplicate_access": "Nessun permesso per duplicare", "no_delete_access": "Nessun permesso per eliminare", "confirm_delete": "Sei sicuro di voler eliminare \"{{name}}\"?", "deleted_success": "Evento eliminato", "delete_error": "Errore nell'eliminazione", "profit": "Profitto" }
 }

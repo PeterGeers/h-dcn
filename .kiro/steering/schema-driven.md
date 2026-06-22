@@ -6,16 +6,16 @@ Every DynamoDB table has a **Field Registry** — a single source of truth for f
 
 ## Existing Field Registries
 
-| Table          | Registry Location                          | Status                                                    |
-| -------------- | ------------------------------------------ | --------------------------------------------------------- |
-| Members        | `frontend/src/config/memberFields/`        | ✅ Complete                                               |
-| Producten      | `frontend/src/config/productFields/`       | ✅ TODO                                                   |
-| Events         | `frontend/src/config/eventFields/`         | ❌ TODO                                                   |
-| Orders         | `frontend/src/config/orderFields/`         | ❌ TODO                                                   |
-| StockMovements | `frontend/src/config/stockMovementFields/` | ❌ TODO                                                   |
-| Memberships    | `frontend/src/config/membershipFields/`    | ❌ TODO                                                   |
-| Payments       | `frontend/src/config/paymentFields/`       | ❌ TODO                                                   |
-| Counters       | (no frontend config needed)                | Utility table — atomic counters for order/invoice numbers |
+| Table          | Registry Location                          | Status                                                                       |
+| -------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| Members        | `frontend/src/config/memberFields/`        | ✅ Complete (fields/, permissions, tableConfig, modalConfig, helpers, tests) |
+| Producten      | `frontend/src/config/productFields/`       | ✅ Complete (parent + variant fields, types, helpers)                        |
+| Events         | `frontend/src/config/eventFields/`         | ✅ Complete (coreFields + bookingFields, permissions)                        |
+| Orders         | `frontend/src/config/orderFields/`         | ❌ TODO                                                                      |
+| StockMovements | `frontend/src/config/stockMovementFields/` | ❌ TODO                                                                      |
+| Memberships    | `frontend/src/config/membershipFields/`    | ❌ TODO                                                                      |
+| Payments       | `frontend/src/config/paymentFields/`       | ❌ TODO                                                                      |
+| Counters       | (no frontend config needed)                | Utility table — atomic counters for order/invoice numbers                    |
 
 > **Decision (2026-06):** Carts are NOT a separate table. Orders use a `status` field to represent the cart→order lifecycle. The Carts table is deprecated — do not use for new code.
 

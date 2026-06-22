@@ -120,26 +120,27 @@ export interface Product {
 
 export interface Event {
   event_id?: string;
-  title?: string;
-  naam?: string;
-  event_date?: string;
-  datum_van?: string;
+  // New schema (Field Registry)
+  name?: string;
+  event_type?: string;
+  event_category?: string;
+  participation?: string;
+  linked_regio?: string;
+  status?: string;
+  start_date?: string;
   end_date?: string;
-  datum_tot?: string;
   location?: string;
-  locatie?: string;
-  region?: string;
-  regio?: string;
+  slug?: string;
+  poster_url?: string;
+  registration_open?: string;
+  registration_close?: string;
+  payment_deadline?: string;
+  product_ids?: string[];
+  constraints?: Array<{ key: string; max: number; counting_rule: string }>;
   participants?: string | number;
-  aantal_deelnemers?: string | number;
   cost?: string | number;
-  kosten?: string | number;
   revenue?: string | number;
-  inkomsten?: string | number;
   notes?: string;
-  opmerkingen?: string;
-  betaalstatus?: string;
-  factuurnummer?: string;
   landing_page?: {
     enabled: boolean;
     slug: string;
@@ -149,6 +150,10 @@ export interface Event {
     logos: Array<{ name: string; logo_url: string }>;
     sections: Array<{ type: string; title: string; content?: string; items?: Array<{ name: string; logo_url: string }> }>;
   };
+  // Metadata
+  created_at?: string;
+  created_by?: string;
+  updated_at?: string;
 }
 
 export interface ApiResponse<T> {

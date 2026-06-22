@@ -36,16 +36,20 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     // If user has full event write access, they can edit any event
     if (permissionManager?.hasAccess('events', 'write')) return true;
     
-    // Check regional permissions
-    const eventRegion = event.region || event.regio;
-    if (eventRegion) {
-      const regionNumber = getRegionNumber(eventRegion);
-      if (regionNumber) {
-        return userRoles.some(role => 
-          role.includes(`Region${regionNumber}`) && 
-          (role.includes('Chairman') || role.includes('Secretary'))
-        );
-      }
+    // Check regional permissions based on linked_regio
+    const eventRegion = event.linked_regio;
+    if (!eventRegion || eventRegion === 'regio_all') {
+      // regio_all events require full access
+      return false;
+    }
+
+    // Regional user: check if their region matches
+    const regionNumber = getRegionNumber(eventRegion);
+    if (regionNumber) {
+      return userRoles.some(role => 
+        role.includes(`Region${regionNumber}`) && 
+        (role.includes('Chairman') || role.includes('Secretary'))
+      );
     }
     
     return false;
@@ -84,31 +88,30 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
   const filteredEvents = events
     .filter(event => {
       // Basic search filter
-      const matchesSearch = (event.title || event.naam)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (event.location || event.locatie)?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = (event.name || '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.location || '')?.toLowerCase().includes(searchTerm.toLowerCase());
       
       if (!matchesSearch) return false;
       
       // If user has full event access, show all events
       if (hasFullEventAccess || permissionManager?.hasAccess('events', 'read')) return true;
       
-      // Apply regional filtering based on user roles
-      const eventRegion = event.region || event.regio;
+      // Apply regional filtering based on linked_regio
+      const eventRegion = event.linked_regio;
       
-      // If user has regional access, only show events from their region(s)
-      if (eventRegion) {
+      if (eventRegion && eventRegion !== 'regio_all') {
         const regionNumber = getRegionNumber(eventRegion);
         if (regionNumber) {
           return userRoles.some(role => role.includes(`Region${regionNumber}`));
         }
       }
       
-      // If no region specified on event, show to all users with any event access
+      // If no region specified or regio_all, show to all users with any event access
       return permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'public' }) || false;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.event_date || a.datum_van || '1900-01-01');
-      const dateB = new Date(b.event_date || b.datum_van || '1900-01-01');
+      const dateA = new Date(a.start_date || '1900-01-01');
+      const dateB = new Date(b.start_date || '1900-01-01');
       return dateB.getTime() - dateA.getTime(); // Newest first
     });
 
@@ -138,9 +141,11 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     }
     const duplicatedEvent = {
       ...event,
-      title: `${getEventField(event, 'naam')} (Kopie)`,
-      event_date: '',
-      end_date: ''
+      name: `${event.name || ''} (Kopie)`,
+      start_date: '',
+      end_date: '',
+      registration_open: '',
+      registration_close: '',
     };
     delete duplicatedEvent.event_id;
     setSelectedEvent(duplicatedEvent);
@@ -158,7 +163,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
       return;
     }
     
-    if (!window.confirm(`Weet je zeker dat je "${getEventField(event, 'naam')}" wilt verwijderen?`)) return;
+    if (!window.confirm(`Weet je zeker dat je "${event.name || ''}" wilt verwijderen?`)) return;
     
     try {
       const headers = await getAuthHeadersForGet();
@@ -193,17 +198,17 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     return amount ? `€${parseFloat(String(amount)).toFixed(2)}` : '€0,00';
   };
 
-  const getEventField = (event: Event, field: string) => {
-    // Map backend fields to display values
-    const fieldMap = {
-      naam: event.title || event.naam || '',
-      datum_van: event.event_date || event.datum_van || '',
-      datum_tot: event.end_date || event.datum_tot || '',
-      locatie: event.location || event.locatie || '',
-      regio: event.region || event.regio || '',
-      aantal_deelnemers: event.participants || event.aantal_deelnemers || 0,
-      kosten: event.cost || event.kosten || 0,
-      inkomsten: event.revenue || event.inkomsten || 0
+  const getEventField = (event: Event, field: string): string | number => {
+    // Direct field access using new registry names
+    const fieldMap: Record<string, string | number> = {
+      naam: event.name || '',
+      datum_van: event.start_date || '',
+      datum_tot: event.end_date || '',
+      locatie: event.location || '',
+      regio: event.linked_regio || '',
+      aantal_deelnemers: event.participants || 0,
+      kosten: event.cost || 0,
+      inkomsten: event.revenue || 0
     };
     return fieldMap[field] || '';
   };

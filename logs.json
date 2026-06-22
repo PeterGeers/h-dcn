@@ -1,0 +1,43 @@
+{
+    "events": [
+        {
+            "logStreamName": "2026/06/16/[$LATEST]2f4a32dc43c34d369e1ac4b2d098aed7",
+            "timestamp": 1781651447147,
+            "message": "INIT_START Runtime Version: python:3.11.mainlinev2.v11\tRuntime Version ARN: arn:aws:lambda:eu-west-1::runtime:53285ee2fb9fac4cc9ebbb3c5ac1845832297f816fabe2356a10a7e37355c64e\n",
+            "ingestionTime": 1781651453184,
+            "eventId": "39732154955418596540266684307762387505263835148000034816"
+        },
+        {
+            "logStreamName": "2026/06/16/[$LATEST]2f4a32dc43c34d369e1ac4b2d098aed7",
+            "timestamp": 1781651447517,
+            "message": "Using shared auth layer\n",
+            "ingestionTime": 1781651453184,
+            "eventId": "39732154963669872263723014870130603266143728905212788737"
+        },
+        {
+            "logStreamName": "2026/06/16/[$LATEST]2f4a32dc43c34d369e1ac4b2d098aed7",
+            "timestamp": 1781651447757,
+            "message": "START RequestId: 8e740741-4ecd-4e0e-92d7-32b30045a904 Version: $LATEST\n",
+            "ingestionTime": 1781651453184,
+            "eventId": "39732154969022051111370364424099175651579335666648088578"
+        },
+        {
+            "logStreamName": "2026/06/16/[$LATEST]2f4a32dc43c34d369e1ac4b2d098aed7",
+            "timestamp": 1781651447772,
+            "message": "[AUTH_DEBUG] extract_user_credentials called from SHARED auth utils - FIX: FIX_20260616_231047\n",
+            "ingestionTime": 1781651453184,
+            "eventId": "39732154969356562289348323771222211425669061089237794819"
+        },
+        {
+            "logStreamName": "2026/06/16/[$LATEST]2f4a32dc43c34d369e1ac4b2d098aed7",
+            "timestamp": 1781651447772,
+
+'charmap' codec can't encode character '\U0001f50d' in position 1: character maps to <undefined>
+            "message": "[AUTH_DEBUG] Available headers: ['Accept', 'Accept-Encoding', 'Accept-Language', 'Authorization', 'cache-control', 'CloudFront-Forwarded-Proto', 'CloudFront-Is-Desktop-Viewer', 'CloudFront-Is-Mobile-Viewer', 'CloudFront-Is-SmartTV-Viewer', 'CloudFront-Is-Tablet-Viewer', 'CloudFront-Viewer-ASN', 'CloudFront-Viewer-Country', 'content-type', 'Host', 'origin', 'pragma', 'priority', 'Referer', 'sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform', 'sec-fetch-dest', 'sec-fetch-mode', 'sec-fetch-site', 'User-Agent', 'Via', 'X-Amz-Cf-Id', 'X-Amzn-Trace-Id', 'x-enhanced-groups', 'X-Forwarded-For', 'X-Forwarded-Port', 'X-Forwarded-Proto', 'x-user-email']\n",
+            "ingestionTime": 1781651453184,
+            "eventId": "39732154969356562289348323771222211425669061089237794820"
+        },
+        {
+            "logStreamName": "2026/06/16/[$LATEST]2f4a32dc43c34d369e1ac4b2d098aed7",
+            "timestamp": 1781651447772,
+            "message": 

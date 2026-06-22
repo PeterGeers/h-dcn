@@ -63,18 +63,18 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
   // Access check is now handled by FunctionGuard wrapper - no need for duplicate check here
 
   const eventsWithFinance: ProcessedEvent[] = events.map(event => {
-    const kosten = parseFloat(String(event.cost || event.kosten || 0));
-    const inkomsten = parseFloat(String(event.revenue || event.inkomsten || 0));
+    const kosten = parseFloat(String(event.cost || 0));
+    const inkomsten = parseFloat(String(event.revenue || 0));
     
     const processedEvent = {
       ...event,
-      naam: event.title || event.naam,
-      datum_van: event.event_date || event.datum_van,
+      naam: event.name || '',
+      datum_van: event.start_date || '',
       kosten: kosten,
       inkomsten: inkomsten,
       winst: inkomsten - kosten,
-      betaalstatus: event.betaalstatus || 'open',
-      factuurnummer: event.factuurnummer || '-'
+      betaalstatus: 'open',
+      factuurnummer: '-'
     };
     
     return processedEvent;

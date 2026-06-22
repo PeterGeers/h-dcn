@@ -12,9 +12,9 @@ export type { HDCNGroup } from '../../types/user';
 // BASE TYPE ALIASES
 // ============================================================================
 
-export type DataType = 'string' | 'date' | 'number' | 'boolean' | 'enum' | 'map' | 'object';
-export type InputType = 'text' | 'date' | 'select' | 'textarea' | 'number' | 'toggle' | 'json' | 'password';
-export type FieldGroup = 'core' | 'booking';
+export type DataType = 'string' | 'date' | 'number' | 'boolean' | 'enum' | 'map' | 'list' | 'object';
+export type InputType = 'text' | 'date' | 'datetime' | 'select' | 'textarea' | 'number' | 'toggle' | 'json' | 'password' | 'multiselect' | 'hidden';
+export type FieldGroup = 'core' | 'dates' | 'config' | 'financial' | 'landing_page' | 'booking' | 'metadata';
 
 // ============================================================================
 // FIELD CONFIGURATION INTERFACES

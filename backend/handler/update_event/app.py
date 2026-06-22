@@ -2,6 +2,7 @@ import json
 import boto3
 import os
 from datetime import datetime
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -14,6 +15,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -35,7 +37,7 @@ ALLOWED_MANUAL_TRANSITIONS = {
     'open': {'closed'},
     'closed': {'open'},
 }
-REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'registration_open', 'registration_close']
+REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'registration_open', 'registration_close', 'linked_regio']
 
 
 def validate_dates(body):
@@ -208,6 +210,46 @@ def lambda_handler(event, context):
                 if slug_error:
                     return slug_error
 
+        # Validate and coerce financial fields
+        for field in ['cost', 'revenue']:
+            if field in body and body[field] is not None:
+                decimal_value, error = validate_price_field(body[field], field)
+                if error:
+                    return create_error_response(400, error)
+                body[field] = decimal_value
+
+        # Validate participants as non-negative integer
+        if 'participants' in body and body['participants'] is not None:
+            try:
+                body['participants'] = int(body['participants'])
+                if body['participants'] < 0:
+                    return create_error_response(400, 'participants must be non-negative')
+            except (ValueError, TypeError):
+                return create_error_response(400, 'participants must be an integer')
+
+        # Regional access control: check if user may edit this event
+        event_regio = current_event.get('linked_regio')
+        if event_regio:
+            # Users with Events_CRUD or Regio_All can edit any event
+            has_full_event_access = any(
+                role in ['Events_CRUD', 'Regio_All', 'System_CRUD', 'System_User_Management']
+                for role in user_roles
+            )
+            if not has_full_event_access:
+                # Regional user: check if their region matches the event's linked_regio
+                user_region_roles = [r for r in user_roles if r.startswith('Regio_')]
+                user_regions = []
+                for role in user_region_roles:
+                    # Extract region name from role (e.g., Regio_Noord-Holland → Noord-Holland)
+                    region_name = role.replace('Regio_', '', 1)
+                    user_regions.append(region_name)
+
+                if event_regio not in user_regions and 'All' not in user_regions:
+                    return create_error_response(
+                        403,
+                        f'Je hebt geen rechten om events in regio "{event_regio}" te bewerken'
+                    )
+
         # Build update expression
         update_expression = "SET updated_at = :updated_at"
         expression_values = {':updated_at': datetime.utcnow().isoformat()}
@@ -215,9 +257,15 @@ def lambda_handler(event, context):
 
         # Fields that can be updated
         updatable_fields = [
-            'name', 'event_type', 'location', 'start_date', 'end_date',
-            'registration_open', 'registration_close', 'payment_deadline',
-            'constraints', 'product_ids', 'landing_page'
+            # core
+            'name', 'event_type', 'event_category', 'participation',
+            'linked_regio', 'location', 'slug', 'poster_url',
+            # dates
+            'start_date', 'end_date', 'registration_open', 'registration_close', 'payment_deadline',
+            # config
+            'constraints', 'product_ids', 'landing_page',
+            # financial
+            'participants', 'cost', 'revenue', 'notes',
         ]
 
         for key, value in body.items():
