@@ -49,16 +49,15 @@ const PasskeyTest = lazy(() => import('./components/auth/PasskeyTest')) as any;
 const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCompatibilityTest')) as any;
 const NewMemberApplication = lazy(() => import('./pages/NewMemberApplication')) as any;
 const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) as any;
-const PresMeetPage = lazy(() => import('./modules/presmeet/PresMeetPage')) as any;
-const EventBookingPage = lazy(() => import('./modules/presmeet/EventBookingPage')) as any;
+const EventBookingPage = lazy(() => import('./modules/eventBooking/pages/EventBookingPage')) as any;
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
 const EventLandingPage = lazy(() => import('./modules/events/EventLandingPage')) as any;
-const EventRegisterPage = lazy(() => import('./modules/events/EventRegisterPage')) as any;
+const EventRegisterPage = lazy(() => import('./modules/eventBooking/pages/EventRegisterPage')) as any;
 
 /**
  * Route guard for /webshop_management.
  * Uses FunctionGuard with Products_* roles. Shows 403 if user lacks access.
- * Renders independently of PresMeet onboarding flow (no club_id or OnboardingFlow).
+ * Renders independently of event booking onboarding flow (no club_id or OnboardingFlow).
  *
  * Validates: Requirements 1.5, 1.6, 1.7, 7.1, 7.9, 8.1, 8.2
  */
@@ -179,7 +178,6 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/members" element={<MemberAdminPage user={user} />} />
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
-            <Route path="/presmeet" element={<PresMeetPage />} />
             <Route path="/events/:eventId/booking" element={<EventBookingPage />} />
             <Route path="/webshop_management" element={<WebshopManagementGuard />} />
             <Route path="/test/passkey" element={<PasskeyTest />} />

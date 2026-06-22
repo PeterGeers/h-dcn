@@ -6,7 +6,7 @@ import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { membershipService } from '../utils/membershipService';
 import { useAuth } from '../context/AuthProvider';
-import { presmeetApi } from '../modules/presmeet/services/presmeetApi';
+import { eventBookingApi } from '../modules/eventBooking/services/eventBookingApi';
 
 /**
  * EventBookingCard — Displays a card for each event the user has access to.
@@ -21,7 +21,7 @@ function EventBookingCard({ navigate }: { navigate: (path: string) => void }) {
     let cancelled = false;
     async function fetchEvents() {
       try {
-        const allEvents = await presmeetApi.getEvent();
+        const allEvents = await eventBookingApi.getEvent();
         if (!cancelled) {
           // Show open events preferentially
           const relevantEvents = allEvents.filter(
