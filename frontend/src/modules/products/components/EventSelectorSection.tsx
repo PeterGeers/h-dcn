@@ -43,7 +43,7 @@ export function getSelectedEventNames(
 ): string[] {
   return selectedIds.map((id) => {
     const event = events.find((e) => e.event_id === id);
-    if (event) return event.title || event.naam || event.event_id || id;
+    if (event) return event.name || event.event_id || id;
     return id;
   });
 }

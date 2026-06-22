@@ -34,26 +34,18 @@ const eventIdArb = fc.stringOf(
 
 /**
  * Generator for an HDCNEvent object.
- * Randomly picks whether the event name is in title, naam, or only event_id.
+ * Randomly picks whether the event has a name or only event_id.
  */
 const hdcnEventArb: fc.Arbitrary<HDCNEvent> = fc.oneof(
-  // Event with title set
+  // Event with name set
   fc.record({
     event_id: eventIdArb,
-    title: eventNameArb,
-    naam: fc.constant(undefined),
+    name: eventNameArb,
   }),
-  // Event with naam set (no title)
+  // Event with only event_id (no name)
   fc.record({
     event_id: eventIdArb,
-    title: fc.constant(undefined),
-    naam: eventNameArb,
-  }),
-  // Event with only event_id (no title/naam)
-  fc.record({
-    event_id: eventIdArb,
-    title: fc.constant(undefined),
-    naam: fc.constant(undefined),
+    name: fc.constant(undefined),
   }),
 ) as fc.Arbitrary<HDCNEvent>;
 
@@ -82,7 +74,7 @@ const searchStringArb = fc.oneof(
 
 /** Computes the event name using the same logic as the component. */
 function getEventName(event: HDCNEvent): string {
-  return event.title || event.naam || event.event_id || '';
+  return event.name || event.event_id || '';
 }
 
 // --- Property 5: Event search filter correctness ---

@@ -11,9 +11,9 @@ import { Event as HDCNEvent } from '../../../types';
 // --- Test data ---
 
 const mockEvents: HDCNEvent[] = [
-  { event_id: 'evt-1', title: 'Zomerrit 2025' },
-  { event_id: 'evt-2', title: 'Wintermeeting' },
-  { event_id: 'evt-3', title: 'Nationale Dag' },
+  { event_id: 'evt-1', name: 'Zomerrit 2025' },
+  { event_id: 'evt-2', name: 'Wintermeeting' },
+  { event_id: 'evt-3', name: 'Nationale Dag' },
 ];
 
 const renderSelector = (
@@ -140,11 +140,11 @@ describe('getSelectedEventTags', () => {
     expect(tags).toEqual([{ id: 'evt-1', label: 'Zomerrit 2025' }]);
   });
 
-  it('uses naam field when title is not available', () => {
-    const eventsWithNaam: HDCNEvent[] = [
-      { event_id: 'evt-a', naam: 'Herfstrit' },
+  it('uses name field for label', () => {
+    const eventsWithName: HDCNEvent[] = [
+      { event_id: 'evt-a', name: 'Herfstrit' },
     ];
-    const tags = getSelectedEventTags(eventsWithNaam, ['evt-a']);
+    const tags = getSelectedEventTags(eventsWithName, ['evt-a']);
     expect(tags).toEqual([{ id: 'evt-a', label: 'Herfstrit' }]);
   });
 });
@@ -162,9 +162,9 @@ describe('filterEvents', () => {
     expect(result).toEqual(mockEvents);
   });
 
-  it('filters by case-insensitive substring match on title', () => {
+  it('filters by case-insensitive substring match on name', () => {
     const result = filterEvents(mockEvents, 'zomer');
-    expect(result).toEqual([{ event_id: 'evt-1', title: 'Zomerrit 2025' }]);
+    expect(result).toEqual([{ event_id: 'evt-1', name: 'Zomerrit 2025' }]);
   });
 
   it('returns empty array when no events match', () => {

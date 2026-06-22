@@ -37,7 +37,7 @@ export function filterEvents(events: HDCNEvent[], search: string): HDCNEvent[] {
   if (!search.trim()) return events;
   const lowerSearch = search.toLowerCase();
   return events.filter((event) => {
-    const name = event.title || event.naam || event.event_id || '';
+    const name = event.name || event.event_id || '';
     return name.toLowerCase().includes(lowerSearch);
   });
 }
@@ -59,7 +59,7 @@ export function getSelectedEventTags(events: HDCNEvent[], selectedIds: string[])
     .map((id) => {
       const event = events.find((e) => (e.event_id || '') === id);
       if (!event) return null;
-      const label = event.title || event.naam || event.event_id || '';
+      const label = event.name || event.event_id || '';
       return { id, label };
     })
     .filter((tag): tag is EventTag => tag !== null);
@@ -131,7 +131,7 @@ export default function EventSelector({
         {/* Filtered event list */}
         {filteredEvents.map((event) => {
           const id = event.event_id || '';
-          const label = event.title || event.naam || event.event_id || '';
+          const label = event.name || event.event_id || '';
           return (
             <Checkbox
               key={id}
