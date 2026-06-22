@@ -208,7 +208,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       setFormData(prev => ({ ...prev, poster_url: result.url }));
       handleSuccess('Poster succesvol geüpload');
     } catch (error: unknown) {
-      handleError(error, 'poster upload');
+      handleError(error as any, 'poster upload');
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -297,7 +297,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         event?.event_id ? 'Evenement succesvol bijgewerkt' : 'Evenement succesvol aangemaakt'
       );
     } catch (error: unknown) {
-      handleError(error, 'opslaan evenement');
+      handleError(error as any, 'opslaan evenement');
     } finally {
       setIsLoading(false);
     }
