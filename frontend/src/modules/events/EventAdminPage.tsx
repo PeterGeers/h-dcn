@@ -247,9 +247,9 @@ function EventAdminPage({ user }: EventAdminPageProps) {
                   // Event overview for management
                   const eventOverview = events.map(e => ({
                     naam: e.name,
-                    datum: e.event_date || e.datum_van,
-                    locatie: e.location || e.locatie,
-                    deelnemers: e.participants || e.aantal_deelnemers
+                    datum: e.start_date,
+                    locatie: e.location,
+                    deelnemers: e.participants
                   }));
                   console.log('📋 Evenement overzicht:', eventOverview);
                 }}
