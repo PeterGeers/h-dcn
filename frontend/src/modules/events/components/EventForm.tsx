@@ -34,6 +34,7 @@ interface EventFormData {
   name: string;
   event_type: string;
   participation: string;
+  status: string;
   start_date: string;
   end_date: string;
   linked_regio: string;
@@ -82,6 +83,7 @@ const EMPTY_FORM: EventFormData = {
   name: '',
   event_type: '',
   participation: 'open',
+  status: 'draft',
   start_date: '',
   end_date: '',
   linked_regio: '',
@@ -184,6 +186,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         name: event.name || '',
         event_type: event.event_type || '',
         participation: event.participation || 'open',
+        status: event.status || 'published',
         start_date: toDatetimeLocal(event.start_date),
         end_date: toDatetimeLocal(event.end_date),
         linked_regio: event.linked_regio || '',
@@ -278,6 +281,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         event_type: formData.event_type,
         event_category: getCategoryForType(formData.event_type as EventType),
         participation: formData.participation,
+        status: formData.status,
         start_date: formData.start_date,
         end_date: formData.end_date,
         linked_regio: formData.linked_regio,
@@ -392,6 +396,20 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                       {label}
                     </option>
                   ))}
+                </Select>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="orange.300">Publicatiestatus</FormLabel>
+                <Select
+                  value={formData.status || 'draft'}
+                  onChange={(e) => handleChange('status', e.target.value)}
+                  bg="gray.700"
+                  borderColor="orange.400"
+                >
+                  <option value="draft" style={{ backgroundColor: '#2D3748', color: 'white' }}>Draft (niet zichtbaar)</option>
+                  <option value="published" style={{ backgroundColor: '#2D3748', color: 'white' }}>Published (live)</option>
+                  <option value="archived" style={{ backgroundColor: '#2D3748', color: 'white' }}>Archived (niet meer actief)</option>
                 </Select>
               </FormControl>
 

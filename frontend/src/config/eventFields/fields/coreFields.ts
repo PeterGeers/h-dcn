@@ -118,17 +118,17 @@ export const coreFields: Record<string, FieldDefinition> = {
 
   status: {
     key: 'status',
-    label: 'Status',
+    label: 'Publicatiestatus',
     dataType: 'enum',
     inputType: 'select',
     group: 'core',
     order: 7,
     required: true,
-    enumOptions: ['draft', 'open', 'closed', 'archived'],
+    enumOptions: ['draft', 'published', 'archived'],
     defaultValue: 'draft',
-    readOnly: true,
+    readOnly: false,
     permissions: createPermissionConfig('admin', 'admin'),
-    helpText: 'Huidige status. Transitions: draft→open→closed→(open). Beheerd via status-endpoint.',
+    helpText: 'Draft = nog niet zichtbaar. Published = live, landingspagina bereikbaar. Archived = niet langer gepubliceerd.',
     width: 'small',
   },
 

@@ -60,9 +60,34 @@ def _resolve_event_by_slug(slug):
 
 
 def _determine_registration_status(event_item):
-    """Determine if registration is open or closed based on event status."""
+    """
+    Determine if registration is open based on publication status + date fields.
+
+    Rules:
+    - status 'draft' or 'archived' → always closed
+    - status 'published' (or 'open' for backward compat, or missing) → check dates
+    - registration_open/close determine the registration window
+    - If dates are not set, that boundary is not enforced
+    """
+    from datetime import date
+
     status = event_item.get('status', '')
-    return 'open' if status == 'open' else 'closed'
+
+    # Draft and archived: never allow registration
+    if status in ('draft', 'archived', 'closed', 'locked'):
+        return 'closed'
+
+    # Published (or 'open' backward compat, or no status field): check dates
+    today = date.today().isoformat()  # yyyy-mm-dd
+    reg_open = event_item.get('registration_open', '')
+    reg_close = event_item.get('registration_close', '')
+
+    if reg_open and today < reg_open[:10]:
+        return 'closed'  # Registration not yet open
+    if reg_close and today > reg_close[:10]:
+        return 'closed'  # Registration past deadline
+
+    return 'open'
 
 
 def _build_public_response(event_item):
