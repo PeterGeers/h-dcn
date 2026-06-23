@@ -18,6 +18,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { ApiService } from '../../../services/apiService';
+import { resizeImage } from '../../../utils/imageResize';
 
 // --- Constants ---
 
@@ -86,8 +87,11 @@ const ClubLogoUploader: React.FC<ClubLogoUploaderProps> = ({ clubId, isAdmin }) 
       return;
     }
 
+    // Resize image to 200×200 max (logo dimensions)
+    const resizedFile = await resizeImage(file, { maxWidth: 200, maxHeight: 200, quality: 0.9, format: 'png' });
+
     // Read file as base64
-    const base64Data = await readFileAsBase64(file);
+    const base64Data = await readFileAsBase64(resizedFile);
     const previousCacheBuster = cacheBuster;
     const previousHasError = hasError;
 

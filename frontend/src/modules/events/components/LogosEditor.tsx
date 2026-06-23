@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   VStack,
   HStack,
@@ -8,8 +8,10 @@ import {
   IconButton,
   Text,
   Box,
+  Spinner,
 } from '@chakra-ui/react';
 import { DeleteIcon, AddIcon } from '@chakra-ui/icons';
+import { uploadEventPoster } from '../services/eventPosterUpload';
 
 export interface LogoEntry {
   name: string;
@@ -23,6 +25,9 @@ interface LogosEditorProps {
 }
 
 function LogosEditor({ logos, onChange, label = "Logo's" }: LogosEditorProps) {
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
   const handleAdd = () => {
     onChange([...logos, { name: '', logo_url: '' }]);
   };
@@ -36,6 +41,23 @@ function LogosEditor({ logos, onChange, label = "Logo's" }: LogosEditorProps) {
       i === index ? { ...logo, [field]: value } : logo
     );
     onChange(updated);
+  };
+
+  const handleLogoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setUploadingIndex(index);
+    try {
+      const logoName = logos[index].name || `logo-${index}`;
+      const result = await uploadEventPoster(file, `landing-logo-${logoName.replace(/[^a-zA-Z0-9]/g, '-')}`);
+      handleChange(index, 'logo_url', result.url);
+    } catch (error: any) {
+      alert(error.message || 'Upload mislukt');
+    } finally {
+      setUploadingIndex(null);
+    }
   };
 
   return (
@@ -61,11 +83,28 @@ function LogosEditor({ logos, onChange, label = "Logo's" }: LogosEditorProps) {
             <Input
               value={logo.logo_url}
               onChange={(e) => handleChange(index, 'logo_url', e.target.value)}
-              placeholder="Logo URL"
+              placeholder="URL of upload →"
               bg="gray.700"
               borderColor="orange.400"
               size="sm"
               flex={2}
+            />
+            <Button
+              size="sm"
+              colorScheme="orange"
+              variant="outline"
+              onClick={() => fileInputRefs.current[index]?.click()}
+              isLoading={uploadingIndex === index}
+              minW="70px"
+            >
+              {uploadingIndex === index ? <Spinner size="xs" /> : 'Upload'}
+            </Button>
+            <input
+              ref={(el) => { fileInputRefs.current[index] = el; }}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              style={{ display: 'none' }}
+              onChange={(e) => handleLogoUpload(index, e)}
             />
             <IconButton
               aria-label="Verwijder logo"

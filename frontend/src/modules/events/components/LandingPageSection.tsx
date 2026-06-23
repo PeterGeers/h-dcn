@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   VStack,
   FormControl,
@@ -18,10 +18,12 @@ import {
   Button,
   Divider,
   Tooltip,
+  Spinner,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon } from '@chakra-ui/icons';
 import LogosEditor, { LogoEntry } from './LogosEditor';
 import SectionsEditor, { SectionEntry } from './SectionsEditor';
+import { uploadEventPoster } from '../services/eventPosterUpload';
 
 export interface LandingPageFormData {
   enabled: boolean;
@@ -49,8 +51,28 @@ interface LandingPageSectionProps {
 }
 
 function LandingPageSection({ data, onChange }: LandingPageSectionProps) {
+  const [isUploadingHero, setIsUploadingHero] = useState(false);
+  const heroInputRef = useRef<HTMLInputElement>(null);
+
   const handleChange = (field: keyof LandingPageFormData, value: string | boolean) => {
     onChange({ ...data, [field]: value });
+  };
+
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setIsUploadingHero(true);
+    try {
+      const slug = data.slug || 'landing';
+      const result = await uploadEventPoster(file, `landing-hero-${slug}`);
+      handleChange('hero_image_url', result.url);
+    } catch (error: any) {
+      alert(error.message || 'Upload mislukt');
+    } finally {
+      setIsUploadingHero(false);
+    }
   };
 
   return (
@@ -109,14 +131,37 @@ function LandingPageSection({ data, onChange }: LandingPageSectionProps) {
             </FormControl>
 
             <FormControl>
-              <FormLabel color="orange.300">Hero afbeelding URL</FormLabel>
-              <Input
-                value={data.hero_image_url}
-                onChange={(e) => handleChange('hero_image_url', e.target.value)}
-                placeholder="https://..."
-                bg="gray.700"
-                borderColor="orange.400"
-              />
+              <FormLabel color="orange.300">Hero afbeelding</FormLabel>
+              <HStack>
+                <Input
+                  value={data.hero_image_url}
+                  onChange={(e) => handleChange('hero_image_url', e.target.value)}
+                  placeholder="https://... of upload →"
+                  bg="gray.700"
+                  borderColor="orange.400"
+                  flex={1}
+                />
+                <Button
+                  size="sm"
+                  colorScheme="orange"
+                  variant="outline"
+                  onClick={() => heroInputRef.current?.click()}
+                  isLoading={isUploadingHero}
+                  minW="100px"
+                >
+                  {isUploadingHero ? <Spinner size="xs" /> : 'Upload'}
+                </Button>
+                <input
+                  ref={heroInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={handleHeroUpload}
+                />
+              </HStack>
+              <FormHelperText color="gray.400">
+                Max 1920×1080px. Grotere afbeeldingen worden automatisch verkleind.
+              </FormHelperText>
             </FormControl>
 
             <FormControl>

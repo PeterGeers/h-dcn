@@ -9,6 +9,7 @@
  */
 
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { resizeImage } from '../../../utils/imageResize';
 
 const DEFAULT_DATA_BUCKET = process.env.REACT_APP_DATA_BUCKET || 'h-dcn-data-506221081911';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod';
@@ -63,8 +64,14 @@ export async function uploadEventPoster(file: File, eventId?: string): Promise<P
     ? `event-posters/${eventId}.${fileExtension}`
     : `event-posters/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
+  // Resize image files (not PDFs) to max 1920×1080
+  let uploadFile = file;
+  if (file.type.startsWith('image/')) {
+    uploadFile = await resizeImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.85 });
+  }
+
   // Convert to base64
-  const fileBuffer = await file.arrayBuffer();
+  const fileBuffer = await uploadFile.arrayBuffer();
   const uint8Array = new Uint8Array(fileBuffer);
   let binaryString = '';
   for (let i = 0; i < uint8Array.length; i++) {
@@ -90,7 +97,7 @@ export async function uploadEventPoster(file: File, eventId?: string): Promise<P
     bucketName: DEFAULT_DATA_BUCKET,
     fileKey: fileName,
     fileData: base64String,
-    contentType: file.type,
+    contentType: uploadFile.type,
     cacheControl: 'public, max-age=86400', // Cache for 1 day (posters may be updated)
   };
 
