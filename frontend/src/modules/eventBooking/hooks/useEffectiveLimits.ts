@@ -138,7 +138,7 @@ export function useEffectiveLimits(
 
     return {
       product_id: product.product_id,
-      product_name: product.name,
+      product_name: product.naam,
       totalCapacity,
       remaining: Math.max(remaining, 0),
       isExhausted: remaining <= 0,

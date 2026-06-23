@@ -129,10 +129,10 @@ export interface ProductVariant {
 
 export interface Product {
   product_id: string;
-  name: string;
+  naam: string;
   event_id?: string | null;
   event_type: string;
-  price: number;
+  prijs: number;
   order_item_fields: OrderItemField[];
   variant_schema: VariantAxis[] | null;
   /** Actual variant records for resolution when variant_schema is defined */

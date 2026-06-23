@@ -219,9 +219,9 @@ const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   return (
     <Box pl={4} borderLeftWidth={2} borderLeftColor="blue.200" mt={2}>
       <Text fontSize="sm" fontWeight="medium" mb={2}>
-        {product.name}
+        {product.naam}
         <Text as="span" color="gray.500" ml={2}>
-          {formatCurrency(product.price)}
+          {formatCurrency(product.prijs)}
         </Text>
       </Text>
 

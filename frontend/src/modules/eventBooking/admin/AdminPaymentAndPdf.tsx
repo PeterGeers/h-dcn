@@ -364,7 +364,7 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
           >
             {products.map((product) => (
               <option key={product.product_id} value={product.product_id}>
-                {product.name}
+                {product.naam}
               </option>
             ))}
           </Select>

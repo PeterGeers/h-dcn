@@ -43,9 +43,9 @@ const purchaseRulesArb: fc.Arbitrary<PurchaseRules> = fc
 const productArb: fc.Arbitrary<Product> = fc
   .record({
     product_id: fc.uuid(),
-    name: fc.string({ minLength: 1, maxLength: 30 }),
+    naam: fc.string({ minLength: 1, maxLength: 30 }),
     event_type: fc.constant('presmeet'),
-    price: fc.double({ min: 0.01, max: 500, noNaN: true, noDefaultInfinity: true }),
+    prijs: fc.double({ min: 0.01, max: 500, noNaN: true, noDefaultInfinity: true }),
     purchase_rules: purchaseRulesArb,
   })
   .map((r) => ({

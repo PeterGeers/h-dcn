@@ -102,7 +102,7 @@ const ReadOnlyView: React.FC<ReadOnlyViewProps> = ({ order, event, products, rea
                 return (
                   <Box key={pIdx} ml={4} mt={2}>
                     <Text fontSize="sm" fontWeight="medium">
-                      {productDef?.name || pp.product_id}
+                      {productDef?.naam || pp.product_id}
                     </Text>
                     {Object.entries(pp.fields).length > 0 && (
                       <Box ml={2} mt={1}>

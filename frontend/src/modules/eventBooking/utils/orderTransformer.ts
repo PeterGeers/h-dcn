@@ -52,7 +52,7 @@ export function formStateToOrderItems(
   for (const person of formState.persons) {
     for (const personProduct of person.products) {
       const productDef = productMap.get(personProduct.product_id);
-      const unitPrice = productDef?.price ?? 0;
+      const unitPrice = productDef?.prijs ?? 0;
 
       const itemFieldsData: Record<string, any> = {
         name: person.name,

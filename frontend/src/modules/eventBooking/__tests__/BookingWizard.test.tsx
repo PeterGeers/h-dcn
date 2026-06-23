@@ -139,10 +139,10 @@ const mockEvent: Event = {
 const mockProducts: Product[] = [
   {
     product_id: 'prod-meeting',
-    name: 'Meeting Ticket',
+    naam: 'Meeting Ticket',
     event_id: 'evt-1',
     event_type: 'presmeet',
-    price: 50,
+    prijs: 50,
     order_item_fields: [
       { id: 'name', label: 'Naam', type: 'text', required: true },
       { id: 'role', label: 'Functie', type: 'text', required: true },
@@ -152,10 +152,10 @@ const mockProducts: Product[] = [
   },
   {
     product_id: 'prod-party',
-    name: 'Party Ticket',
+    naam: 'Party Ticket',
     event_id: 'evt-1',
     event_type: 'presmeet',
-    price: 25,
+    prijs: 25,
     order_item_fields: [
       { id: 'name', label: 'Naam', type: 'text', required: true },
     ],

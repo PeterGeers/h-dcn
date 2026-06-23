@@ -69,7 +69,7 @@ export function buildFilename(clubId: string, eventName: string): string {
  */
 function getProductName(productId: string, products: Product[]): string {
   const product = products.find((p) => p.product_id === productId);
-  return product?.name ?? productId;
+  return product?.naam ?? productId;
 }
 
 /**

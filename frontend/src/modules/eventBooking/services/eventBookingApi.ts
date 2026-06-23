@@ -208,12 +208,12 @@ export async function getProducts(
   if (productIds && productIds.length > 0) {
     products = products.filter((p) => productIds.includes(p.product_id));
   }
-  // Normalize: ensure order_item_fields is always an array, price is always a number
-  return products.map((p) => ({
+  // Normalize: ensure order_item_fields is always an array, prijs is always a number
+  return products.map((p: any) => ({
     ...p,
+    naam: p.naam || p.product_id,
+    prijs: toPrice(p.prijs),
     order_item_fields: p.order_item_fields || [],
-    price: toPrice(p.price),
-    name: p.name || p.product_id,
   }));
 }
 

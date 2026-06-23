@@ -166,7 +166,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
             <Box key={pIdx} position="relative">
               {!isDisabled && (
                 <IconButton
-                  aria-label={t('person_card.remove_product', { product: productDef.name })}
+                  aria-label={t('person_card.remove_product', { product: productDef.naam })}
                   icon={<CloseIcon />}
                   size="xs"
                   position="absolute"
@@ -211,7 +211,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
           >
             {availableProducts.map((p) => (
               <option key={p.product_id} value={p.product_id}>
-                {p.name} ({formatCurrency(p.price)})
+                {p.naam} ({formatCurrency(p.prijs)})
               </option>
             ))}
           </Select>

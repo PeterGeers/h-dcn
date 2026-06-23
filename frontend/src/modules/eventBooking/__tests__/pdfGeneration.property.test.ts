@@ -152,10 +152,10 @@ const productArb: fc.Arbitrary<Product> = fc
 
     return fc.constant<Product>({
       product_id: base.product_id,
-      name: base.name,
+      naam: base.name,
       event_id: null,
       event_type: base.event_type,
-      price: base.price,
+      prijs: base.price,
       order_item_fields: [
         { id: 'name', label: 'Naam', type: 'text', required: true },
       ],
@@ -210,8 +210,8 @@ function orderArb(products: Product[]): fc.Arbitrary<Order> {
                     product_id: product.product_id,
                     variant_id: variantId,
                     item_fields_data: { name },
-                    unit_price: product.price,
-                    line_total: product.price,
+                    unit_price: product.prijs,
+                    line_total: product.prijs,
                   };
                 });
               })
@@ -424,7 +424,7 @@ describe('PDF Output Completeness - Property 22', () => {
           // For each product in the order, its name must appear in the PDF
           for (const productId of productIds) {
             const product = products.find((p) => p.product_id === productId);
-            if (product && !allText.includes(product.name)) return false;
+            if (product && !allText.includes(product.naam)) return false;
           }
           return true;
         }

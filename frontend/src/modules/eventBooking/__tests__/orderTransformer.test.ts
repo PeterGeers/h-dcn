@@ -19,10 +19,10 @@ import { OrderItem, Product } from '../types/eventBooking.types';
 const mockProducts: Product[] = [
   {
     product_id: 'prod-meeting',
-    name: 'Meeting Ticket PM2027',
+    naam: 'Meeting Ticket PM2027',
     event_id: 'evt-pm2027',
     event_type: 'presmeet',
-    price: 50,
+    prijs: 50,
     order_item_fields: [
       { id: 'name', label: 'Naam', type: 'text', required: true },
       { id: 'role', label: 'Functie', type: 'text', required: true },
@@ -32,10 +32,10 @@ const mockProducts: Product[] = [
   },
   {
     product_id: 'prod-party',
-    name: 'Party Ticket PM2027',
+    naam: 'Party Ticket PM2027',
     event_id: 'evt-pm2027',
     event_type: 'presmeet',
-    price: 99.5,
+    prijs: 99.5,
     order_item_fields: [
       { id: 'name', label: 'Naam', type: 'text', required: true },
       { id: 'person_type', label: 'Type', type: 'select', required: true, options: ['delegate', 'guest'] },
@@ -45,10 +45,10 @@ const mockProducts: Product[] = [
   },
   {
     product_id: 'prod-tshirt',
-    name: 'T-Shirt PM2027',
+    naam: 'T-Shirt PM2027',
     event_id: 'evt-pm2027',
     event_type: 'presmeet',
-    price: 25,
+    prijs: 25,
     order_item_fields: [
       { id: 'person_name', label: 'Naam persoon', type: 'text', required: true },
     ],

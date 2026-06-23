@@ -51,7 +51,7 @@ export function calculateTotalFromProducts(
     if (item.line_total > 0) return sum + item.line_total;
     if (item.unit_price > 0) return sum + item.unit_price;
     const productDef = productMap.get(item.product_id);
-    return sum + (productDef?.price ?? 0);
+    return sum + (productDef?.prijs ?? 0);
   }, 0);
 
   return Math.round(total * 100) / 100;
