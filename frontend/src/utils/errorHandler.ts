@@ -61,10 +61,13 @@ export const parseApiError = async (response: Response): Promise<ApiError> => {
     // Fallback to status-based messages
   }
 
-  // Map status codes to user-friendly messages
+  // Map status codes to user-friendly messages (only override if no specific message was found)
   switch (response.status) {
     case 400:
-      message = ERROR_MESSAGES.VALIDATION;
+      // Keep the specific backend message if available, otherwise use generic
+      if (message === ERROR_MESSAGES.UNKNOWN) {
+        message = ERROR_MESSAGES.VALIDATION;
+      }
       break;
     case 401:
       message = ERROR_MESSAGES.UNAUTHORIZED;

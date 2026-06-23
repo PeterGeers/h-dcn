@@ -165,8 +165,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         name: event.name || '',
         event_type: event.event_type || '',
         participation: event.participation || 'open',
-        start_date: event.start_date || '',
-        end_date: event.end_date || '',
+        start_date: toDatetimeLocal(event.start_date),
+        end_date: toDatetimeLocal(event.end_date),
         linked_regio: event.linked_regio || '',
         location: event.location || '',
         poster_url: event.poster_url || '',
@@ -397,7 +397,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
               <FormControl isRequired>
                 <FormLabel color="orange.300">Startdatum</FormLabel>
                 <Input
-                  type="date"
+                  type="datetime-local"
                   value={formData.start_date}
                   onChange={(e) => handleChange('start_date', e.target.value)}
                   bg="gray.700"
@@ -408,7 +408,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
               <FormControl isRequired>
                 <FormLabel color="orange.300">Einddatum</FormLabel>
                 <Input
-                  type="date"
+                  type="datetime-local"
                   value={formData.end_date}
                   onChange={(e) => handleChange('end_date', e.target.value)}
                   bg="gray.700"
