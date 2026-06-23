@@ -8,13 +8,6 @@ import {
   Textarea,
   Switch,
   HStack,
-  Text,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
-  Box,
   Button,
   Divider,
   Tooltip,
@@ -76,28 +69,17 @@ function LandingPageSection({ data, onChange }: LandingPageSectionProps) {
   };
 
   return (
-    <Accordion allowToggle>
-      <AccordionItem border="1px" borderColor="orange.400" borderRadius="md">
-        <AccordionButton bg="gray.700" borderRadius="md" _expanded={{ borderBottomRadius: 0 }}>
-          <Box flex="1" textAlign="left">
-            <Text fontWeight="semibold" color="orange.300">
-              Landingspagina
-            </Text>
-          </Box>
-          <AccordionIcon color="orange.300" />
-        </AccordionButton>
-        <AccordionPanel pb={4} pt={4} bg="gray.750">
-          <VStack spacing={4} align="stretch">
-            <FormControl>
-              <HStack justify="space-between">
-                <FormLabel color="orange.300" mb={0}>Ingeschakeld</FormLabel>
-                <Switch
-                  colorScheme="orange"
-                  isChecked={data.enabled}
-                  onChange={(e) => handleChange('enabled', e.target.checked)}
-                />
-              </HStack>
-            </FormControl>
+    <VStack spacing={4} align="stretch">
+      <FormControl>
+        <HStack justify="space-between">
+          <FormLabel color="orange.300" mb={0}>Ingeschakeld</FormLabel>
+          <Switch
+            colorScheme="orange"
+            isChecked={data.enabled}
+            onChange={(e) => handleChange('enabled', e.target.checked)}
+          />
+        </HStack>
+      </FormControl>
 
             {data.enabled && data.slug.trim() !== '' && (
               <Tooltip label="Opslaan voordat je een voorbeeld bekijkt" hasArrow>
@@ -200,10 +182,7 @@ function LandingPageSection({ data, onChange }: LandingPageSectionProps) {
               sections={data.sections}
               onChange={(sections) => onChange({ ...data, sections })}
             />
-          </VStack>
-        </AccordionPanel>
-      </AccordionItem>
-    </Accordion>
+    </VStack>
   );
 }
 
