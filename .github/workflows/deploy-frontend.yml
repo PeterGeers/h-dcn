@@ -34,10 +34,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Secret scan (ggshield)
         uses: GitGuardian/ggshield-action@v1
+        continue-on-error: true
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 

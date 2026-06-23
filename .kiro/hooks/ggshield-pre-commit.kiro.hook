@@ -1,8 +1,8 @@
 {
   "enabled": true,
   "name": "GGShield Secret Scan",
-  "description": "Syncs auth layer and runs ggshield secret scan on staged files before any git commit to prevent secrets from being committed. Only triggers on MCP git_commit tool — use mcp_git_git_commit instead of shell git commit.",
-  "version": "2",
+  "description": "Syncs auth layer, then scans for secrets. Uses ggshield API when available, falls back to local regex scanner when quota is exhausted. Always blocks on secrets found.",
+  "version": "3",
   "when": {
     "type": "preToolUse",
     "toolTypes": [
@@ -11,7 +11,7 @@
   },
   "then": {
     "type": "runCommand",
-    "command": "powershell -NoProfile -Command \"$src='backend/shared/auth_utils.py'; $dst='backend/layers/auth-layer/python/shared/auth_utils.py'; if((Test-Path $src) -and (Test-Path $dst)){if((Get-FileHash $src).Hash -ne (Get-FileHash $dst).Hash){Copy-Item $src $dst; git add $dst; Write-Host 'Auth layer synced'}}; ggshield secret scan pre-commit\"",
+    "command": "powershell -NoProfile -Command \"$src='backend/shared/auth_utils.py'; $dst='backend/layers/auth-layer/python/shared/auth_utils.py'; if((Test-Path $src) -and (Test-Path $dst)){if((Get-FileHash $src).Hash -ne (Get-FileHash $dst).Hash){Copy-Item $src $dst; git add $dst; Write-Host 'Auth layer synced'}}; $output = ggshield secret scan pre-commit 2>&1 | Out-String; $code = $LASTEXITCODE; if($output -match 'no more API calls|quota|rate.limit'){Write-Host 'ggshield quota exhausted - using local scanner'; & ./scripts/scan-secrets-local.ps1; exit $LASTEXITCODE} else {Write-Host $output; exit $code}\"",
     "timeout": 30
   }
 }
