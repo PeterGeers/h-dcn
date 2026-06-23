@@ -1,5 +1,6 @@
 import json
 import boto3
+import bcrypt
 import uuid
 import os
 from datetime import datetime
@@ -237,6 +238,17 @@ def lambda_handler(event, context):
             except (ValueError, TypeError):
                 return create_error_response(400, 'participants must be an integer')
 
+        # Hash event_password if provided (store as bcrypt hash, never plaintext)
+        if 'event_password' in body:
+            raw_password = body['event_password']
+            if raw_password and isinstance(raw_password, str):
+                if len(raw_password) < 4:
+                    return create_error_response(400, 'event_password must be at least 4 characters')
+                password_bytes = raw_password.encode('utf-8')[:72]
+                body['event_password'] = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
+            else:
+                body.pop('event_password', None)
+
         # Generate event ID and create event item
         event_id = str(uuid.uuid4())
         event_item = {
@@ -255,6 +267,8 @@ def lambda_handler(event, context):
             'start_date', 'end_date', 'registration_open', 'registration_close', 'payment_deadline',
             # config
             'constraints', 'product_ids', 'landing_page',
+            # booking
+            'event_password', 'registry_config',
             # financial
             'participants', 'cost', 'revenue', 'notes',
         ]

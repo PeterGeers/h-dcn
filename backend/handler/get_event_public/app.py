@@ -101,7 +101,7 @@ def _build_public_response(event_item):
 
     # Expose whether a password gate exists (not the hash itself)
     has_event_password = bool(event_item.get('event_password'))
-    landing_page_enabled = bool(event_item.get('landing_page_enabled', True))
+    landing_page_enabled = bool(landing_page.get('enabled', False))
 
     return {
         'event_id': event_item.get('event_id', ''),

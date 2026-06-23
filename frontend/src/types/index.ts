@@ -150,6 +150,13 @@ export interface Event {
     logos: Array<{ name: string; logo_url: string }>;
     sections: Array<{ type: string; title: string; content?: string; items?: Array<{ name: string; logo_url: string }> }>;
   };
+  registry_config?: {
+    s3_path?: string;
+    row_label?: string;
+    claim_mode?: 'first_come_first_served' | 'email_restricted';
+    max_delegates_per_row?: number;
+    allow_logo_upload?: boolean;
+  };
   // Metadata
   created_at?: string;
   created_by?: string;

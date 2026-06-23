@@ -47,6 +47,12 @@ interface EventFormData {
   payment_deadline: string;
   // config
   product_ids: string[];
+  // booking
+  event_password: string;
+  registry_s3_path: string;
+  registry_row_label: string;
+  registry_claim_mode: string;
+  registry_allow_logo_upload: boolean;
   // financial
   participants: string;
   cost: string;
@@ -94,6 +100,11 @@ const EMPTY_FORM: EventFormData = {
   registration_close: '',
   payment_deadline: '',
   product_ids: [],
+  event_password: '',
+  registry_s3_path: '',
+  registry_row_label: 'club',
+  registry_claim_mode: 'first_come_first_served',
+  registry_allow_logo_upload: false,
   participants: '',
   cost: '',
   revenue: '',
@@ -107,7 +118,7 @@ function sectionHasData(formData: EventFormData, section: 'registration' | 'conf
     case 'registration':
       return !!(formData.registration_open || formData.registration_close || formData.payment_deadline);
     case 'config':
-      return !!(formData.product_ids.length > 0);
+      return !!(formData.product_ids.length > 0 || formData.event_password || formData.registry_s3_path);
     case 'financial':
       return !!(formData.participants || formData.cost || formData.revenue || formData.notes);
     case 'landing_page':
@@ -197,6 +208,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         registration_close: toDatetimeLocal(event.registration_close),
         payment_deadline: toDatetimeLocal(event.payment_deadline),
         product_ids: Array.isArray(event.product_ids) ? event.product_ids : [],
+        event_password: '', // writeOnly: never returned by API, always empty on edit
+        registry_s3_path: event.registry_config?.s3_path || '',
+        registry_row_label: event.registry_config?.row_label || 'club',
+        registry_claim_mode: event.registry_config?.claim_mode || 'first_come_first_served',
+        registry_allow_logo_upload: event.registry_config?.allow_logo_upload ?? false,
         participants: event.participants != null ? String(event.participants) : '',
         cost: event.cost != null ? String(event.cost) : '',
         revenue: event.revenue != null ? String(event.revenue) : '',
@@ -300,6 +316,21 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       // Config fields
       if (formData.product_ids.length > 0) {
         payload.product_ids = formData.product_ids;
+      }
+
+      // Booking fields (only send password if user filled it in)
+      if (formData.event_password) {
+        payload.event_password = formData.event_password;
+      }
+
+      // Registry config (assemble map from individual form fields)
+      if (formData.registry_s3_path || formData.registry_row_label !== 'club' || formData.registry_claim_mode !== 'first_come_first_served' || formData.registry_allow_logo_upload) {
+        payload.registry_config = {
+          s3_path: formData.registry_s3_path,
+          row_label: formData.registry_row_label || 'club',
+          claim_mode: formData.registry_claim_mode || 'first_come_first_served',
+          allow_logo_upload: formData.registry_allow_logo_upload,
+        };
       }
 
       // Financial fields (send as strings - backend handles Decimal coercion)
@@ -608,6 +639,82 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                       </Text>
                     )}
                   </FormControl>
+
+                  <FormControl mt={4}>
+                    <FormLabel color="orange.300">Event Wachtwoord</FormLabel>
+                    <Input
+                      type="password"
+                      value={formData.event_password}
+                      onChange={(e) => handleChange('event_password', e.target.value)}
+                      placeholder={event?.event_id ? '••••••• (laat leeg om niet te wijzigen)' : 'Wachtwoord voor deelnemers'}
+                      bg="gray.700"
+                      borderColor="orange.400"
+                    />
+                    <Text fontSize="xs" color="gray.400" mt={1}>
+                      Gedeeld wachtwoord dat deelnemers moeten invoeren om te boeken. Wordt versleuteld opgeslagen.
+                    </Text>
+                  </FormControl>
+
+                  <Text fontWeight="bold" color="orange.300" mt={6} mb={2}>
+                    Registry Configuratie
+                  </Text>
+
+                  <SimpleGrid columns={2} spacing={4}>
+                    <FormControl>
+                      <FormLabel color="orange.300">S3 Pad (registry JSON)</FormLabel>
+                      <Input
+                        value={formData.registry_s3_path}
+                        onChange={(e) => handleChange('registry_s3_path', e.target.value)}
+                        placeholder="events/{event_id}/invitee_registry.json"
+                        bg="gray.700"
+                        borderColor="orange.400"
+                      />
+                      <Text fontSize="xs" color="gray.400" mt={1}>
+                        S3 key naar het JSON bestand met de uitgenodigde rijen.
+                      </Text>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel color="orange.300">Rij label</FormLabel>
+                      <Input
+                        value={formData.registry_row_label}
+                        onChange={(e) => handleChange('registry_row_label', e.target.value)}
+                        placeholder="club"
+                        bg="gray.700"
+                        borderColor="orange.400"
+                      />
+                      <Text fontSize="xs" color="gray.400" mt={1}>
+                        Hoe een rij heet in de UI (bijv. "club", "team", "chapter").
+                      </Text>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel color="orange.300">Claim modus</FormLabel>
+                      <Select
+                        value={formData.registry_claim_mode}
+                        onChange={(e) => handleChange('registry_claim_mode', e.target.value)}
+                        bg="gray.700"
+                        borderColor="orange.400"
+                      >
+                        <option value="first_come_first_served" style={{ backgroundColor: '#2D3748', color: 'white' }}>
+                          First come, first served
+                        </option>
+                        <option value="email_restricted" style={{ backgroundColor: '#2D3748', color: 'white' }}>
+                          E-mail restricted
+                        </option>
+                      </Select>
+                    </FormControl>
+
+                    <FormControl display="flex" alignItems="center" pt={8}>
+                      <Checkbox
+                        isChecked={formData.registry_allow_logo_upload}
+                        onChange={(e) => setFormData(prev => ({ ...prev, registry_allow_logo_upload: e.target.checked }))}
+                        colorScheme="orange"
+                      >
+                        <Text fontSize="sm" color="white">Logo upload toestaan</Text>
+                      </Checkbox>
+                    </FormControl>
+                  </SimpleGrid>
                 </AccordionPanel>
               </AccordionItem>
 

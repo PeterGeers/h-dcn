@@ -46,7 +46,7 @@ members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 s3 = boto3.client('s3', region_name='eu-west-1')
 
 REGISTRY_BUCKET = os.environ.get('REGISTRY_BUCKET_NAME', 'h-dcn-data-506221081911')
-SESSION_TOKEN_SECRET = os.environ.get('SESSION_TOKEN_SECRET', 'h-dcn-event-session-default-secret')
+JWT_SECRET_BASE = os.environ.get('JWT_SECRET_BASE', 'h-dcn-event-session-secret')
 SESSION_TOKEN_MAX_AGE = 900  # 15 minutes
 
 
@@ -80,6 +80,11 @@ def mask_email(email: str) -> str:
     return f"{local[:2]}***@{domain}"
 
 
+def _get_event_signing_secret(event_id: str) -> str:
+    """Derive a per-event signing secret from the base secret and event_id."""
+    return f"{JWT_SECRET_BASE}:{event_id}"
+
+
 def validate_session_token(token: str, event_id: str) -> tuple[bool, str | None]:
     """
     Validate a session token (HMAC-signed JWT-like token from verify-password).
@@ -103,10 +108,11 @@ def validate_session_token(token: str, event_id: str) -> tuple[bool, str | None]
         payload_bytes = base64.urlsafe_b64decode(payload_encoded)
         payload = json.loads(payload_bytes)
 
-        # Verify signature
+        # Verify signature using per-event secret (matches verify_event_password)
         signing_input = f"{parts[0]}.{parts[1]}".encode('utf-8')
+        secret = _get_event_signing_secret(event_id)
         expected_sig = hmac.new(
-            SESSION_TOKEN_SECRET.encode('utf-8'),
+            secret.encode('utf-8'),
             signing_input,
             hashlib.sha256
         ).digest()

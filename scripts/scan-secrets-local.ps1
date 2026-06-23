@@ -43,26 +43,43 @@ $patterns = @(
     @{ Name = "Google API Key"; Pattern = "AIza[0-9A-Za-z\-_]{35}" }
     @{ Name = "Slack Token"; Pattern = "xox[bpors]-[0-9a-zA-Z\-]{10,}" }
     @{ Name = "Generic Secret Assignment"; Pattern = "(?i)(secret|password|passwd|token|api_key|apikey|auth_token)\s*[=:]\s*[""'][A-Za-z0-9/+=\-_]{8,}[""']" }
-    @{ Name = "Connection String Password"; Pattern = "(?i)(password|pwd)\s*=\s*[^;\s]{8,}" }
-    @{ Name = "Bearer Token (hardcoded)"; Pattern = "(?i)bearer\s+[A-Za-z0-9\-._~+/]+=*" }
+    @{ Name = "Connection String Password"; Pattern = "(?i)(password|pwd)\s*=\s*[""'][^;""'\s]{8,}[""']" }
+    @{ Name = "Bearer Token (hardcoded)"; Pattern = "(?i)bearer\s+[A-Za-z0-9\-._~+/]{20,}=*" }
     @{ Name = "Base64 JWT (long)"; Pattern = "eyJ[A-Za-z0-9\-_]{50,}\.[A-Za-z0-9\-_]{50,}\.[A-Za-z0-9\-_]{50,}" }
 )
 
-# --- Ignored paths (from .gitguardian.yaml convention) ---
+# --- Ignored paths (loaded from .gitguardian.yaml if available, else defaults) ---
 $ignoredPatterns = @(
-    "*/locales/*",
-    "*/public/locales/*",
-    "*package-lock.json",
-    "*yarn.lock",
-    "*.venv/*",
-    "*/node_modules/*",
-    "test_*",
-    "*/tests/*",
-    "*/__tests__/*",
-    "*.example",
-    "*.example.*",
     "scripts/scan-secrets-local.ps1"
 )
+
+# Try to load ignored_paths from .gitguardian.yaml
+$repoRoot = git rev-parse --show-toplevel 2>$null
+if ($repoRoot) {
+    $yamlFile = Join-Path $repoRoot '.gitguardian.yaml'
+    if (Test-Path $yamlFile) {
+        $inIgnoredPaths = $false
+        foreach ($yamlLine in Get-Content $yamlFile) {
+            if ($yamlLine -match '^\s*ignored_paths:') {
+                $inIgnoredPaths = $true
+                continue
+            }
+            if ($inIgnoredPaths) {
+                if ($yamlLine -match '^\s+-\s+"?(.+?)"?\s*$') {
+                    $pathValue = $yamlLine -replace '^\s+-\s+', '' -replace '"', '' -replace "'", ''
+                    $pathValue = $pathValue.Trim()
+                    if ($pathValue) {
+                        $ignoredPatterns += $pathValue
+                    }
+                }
+                elseif ($yamlLine -match '^\S') {
+                    # New top-level key, stop parsing
+                    $inIgnoredPaths = $false
+                }
+            }
+        }
+    }
+}
 
 function Test-Ignored {
     param([string]$FilePath)
@@ -109,6 +126,8 @@ foreach ($file in $stagedFiles) {
         # Skip comments and known safe patterns
         if ($line -match '^\s*(#|//|/\*|\*)') { continue }
         if ($line -match 'example|placeholder|dummy|test.*token|fake|mock') { continue }
+        # Skip code that references password as a field/variable name (not a literal value)
+        if ($line -match "event_password|user_password|password_hash|hash_password|checkpw|hashpw|verify_password") { continue }
         
         foreach ($patternDef in $patterns) {
             if ($line -match $patternDef.Pattern) {

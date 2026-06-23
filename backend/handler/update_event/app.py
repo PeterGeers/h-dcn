@@ -1,5 +1,6 @@
 import json
 import boto3
+import bcrypt
 import os
 from datetime import datetime
 from decimal import Decimal
@@ -257,6 +258,18 @@ def lambda_handler(event, context):
                         f'Je hebt geen rechten om events in regio "{event_regio}" te bewerken'
                     )
 
+        # Hash event_password if provided (store as bcrypt hash, never plaintext)
+        if 'event_password' in body:
+            raw_password = body['event_password']
+            if raw_password:
+                if not isinstance(raw_password, str) or len(raw_password) < 4:
+                    return create_error_response(400, 'event_password must be at least 4 characters')
+                password_bytes = raw_password.encode('utf-8')[:72]
+                body['event_password'] = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
+            else:
+                # Empty string = remove password
+                body.pop('event_password')
+
         # Build update expression
         update_expression = "SET updated_at = :updated_at"
         expression_values = {':updated_at': datetime.utcnow().isoformat()}
@@ -271,6 +284,8 @@ def lambda_handler(event, context):
             'start_date', 'end_date', 'registration_open', 'registration_close', 'payment_deadline',
             # config
             'constraints', 'product_ids', 'landing_page',
+            # booking
+            'event_password', 'registry_config',
             # financial
             'participants', 'cost', 'revenue', 'notes',
         ]

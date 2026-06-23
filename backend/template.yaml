@@ -2006,7 +2006,7 @@ Resources:
           EVENTS_TABLE_NAME: !Ref EventsTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
           REGISTRY_BUCKET_NAME: !Ref DataBucket
-          SESSION_TOKEN_SECRET: !Ref SessionTokenSecret
+          JWT_SECRET_BASE: !Ref JwtSecretBase
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
         GetEventRegistry:

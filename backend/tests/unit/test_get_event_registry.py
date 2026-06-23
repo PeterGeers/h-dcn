@@ -26,7 +26,7 @@ os.environ['AWS_SESSION_TOKEN'] = 'testing'
 os.environ['EVENTS_TABLE_NAME'] = 'Events'
 os.environ['MEMBERS_TABLE_NAME'] = 'Members'
 os.environ['REGISTRY_BUCKET_NAME'] = 'test-registry-bucket'
-os.environ['SESSION_TOKEN_SECRET'] = 'test-secret-key'
+os.environ['JWT_SECRET_BASE'] = 'test-secret-key'
 
 # Handler file path
 _handler_file = os.path.abspath(
@@ -46,13 +46,15 @@ def _load_handler():
 
 
 def _create_session_token(event_id: str, secret: str = 'test-secret-key', expired: bool = False) -> str:
-    """Create a valid session token for testing."""
+    """Create a valid session token for testing. Uses per-event secret like the handler."""
     header = base64.urlsafe_b64encode(json.dumps({'alg': 'HS256', 'typ': 'JWT'}).encode()).rstrip(b'=').decode()
     exp = int(time.time()) - 100 if expired else int(time.time()) + 900
     payload_data = {'event_id': event_id, 'verified_at': int(time.time()), 'exp': exp}
     payload = base64.urlsafe_b64encode(json.dumps(payload_data).encode()).rstrip(b'=').decode()
     signing_input = f"{header}.{payload}".encode('utf-8')
-    sig = hmac.new(secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
+    # Per-event secret: base_secret:event_id (matches handler's _get_event_signing_secret)
+    per_event_secret = f"{secret}:{event_id}"
+    sig = hmac.new(per_event_secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
     sig_encoded = base64.urlsafe_b64encode(sig).rstrip(b'=').decode()
     return f"{header}.{payload}.{sig_encoded}"
 
