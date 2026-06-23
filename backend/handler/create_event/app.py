@@ -27,7 +27,7 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table_name = os.environ.get('DYNAMODB_TABLE', os.environ.get('EVENTS_TABLE_NAME', 'Events'))
+table_name = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 table = dynamodb.Table(table_name)
 
 # Valid event statuses and counting rules
