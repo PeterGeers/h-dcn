@@ -203,10 +203,15 @@ export async function getProducts(
   productIds?: string[]
 ): Promise<Product[]> {
   const response = await eventBookingClient.get<Product[]>('/scan-product/');
+  let products = response.data;
   if (productIds && productIds.length > 0) {
-    return response.data.filter((p) => productIds.includes(p.product_id));
+    products = products.filter((p) => productIds.includes(p.product_id));
   }
-  return response.data;
+  // Normalize: ensure order_item_fields is always an array
+  return products.map((p) => ({
+    ...p,
+    order_item_fields: p.order_item_fields || [],
+  }));
 }
 
 /**
