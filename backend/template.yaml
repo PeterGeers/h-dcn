@@ -187,7 +187,7 @@ Globals:
     TracingEnabled: True
     Cors:
       AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language,x-session-token'"
       AllowOrigin: !Sub
         - "'${Origin}'"
         - Origin: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
@@ -413,7 +413,7 @@ Resources:
           ThrottlingBurstLimit: 10
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language,x-session-token'"
         AllowOrigin: !Sub
           - "'${Origin}'"
           - Origin: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
