@@ -250,10 +250,10 @@ def atomic_claim_row(event_id: str, row_id: str, member_id: str, email: str, nam
     try:
         events_table.update_item(
             Key={'event_id': event_id},
-            UpdateExpression='SET registry_claims.#row = :claim',
+            UpdateExpression='SET registry_claims = if_not_exists(registry_claims, :empty_map), registry_claims.#row = :claim',
             ConditionExpression='attribute_not_exists(registry_claims.#row)',
             ExpressionAttributeNames={'#row': row_id},
-            ExpressionAttributeValues={':claim': claim_data},
+            ExpressionAttributeValues={':claim': claim_data, ':empty_map': {}},
         )
         return True, None
 

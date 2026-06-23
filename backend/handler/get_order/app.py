@@ -189,9 +189,17 @@ def lambda_handler(event, context):
             if not event_record:
                 return create_error_response(404, 'Event not found')
 
-            # Check event access via allowed_events
-            if not has_event_access(member_id, source_id):
-                return create_error_response(403, 'Event access required')
+            # Check event access:
+            # - Open events: any authenticated member (hdcnLeden) can access
+            # - Closed events: member must be in allowed_events
+            participation = event_record.get('participation', 'open')
+            if participation == 'closed':
+                if not has_event_access(member_id, source_id):
+                    return create_error_response(403, 'Event access required')
+            else:
+                # Open event: any logged-in member can book
+                if 'hdcnLeden' not in user_roles and not has_event_access(member_id, source_id):
+                    return create_error_response(403, 'Member access required for open events')
 
             # Check event status for new order creation
             # (we still allow viewing existing orders for non-open events)
@@ -208,7 +216,7 @@ def lambda_handler(event, context):
                 return create_success_response(convert_decimals(existing[0]))
 
             # No existing order — check event status before creating
-            if event_record and event_record.get('status') != 'open':
+            if event_record and event_record.get('status') != 'published':
                 return create_error_response(403, 'Registration is not open')
 
             # Create draft
@@ -238,7 +246,7 @@ def lambda_handler(event, context):
                 return create_success_response(convert_decimals(club_order))
             else:
                 # No existing order — check event status before creating
-                if event_record and event_record.get('status') != 'open':
+                if event_record and event_record.get('status') != 'published':
                     return create_error_response(403, 'Registration is not open')
 
                 # Create new order with requesting member as primary delegate
