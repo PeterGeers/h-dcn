@@ -14,7 +14,6 @@ import {
   Text,
   Heading,
   Spinner,
-  Select,
   AlertDialog,
   AlertDialogOverlay,
   AlertDialogContent,
@@ -33,6 +32,7 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 import { OrderStatus } from '../types/eventBooking.types';
+import { FilterPanel, GenericFilter } from '../../../components/filters';
 
 const BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -334,20 +334,23 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
           </HStack>
 
           <HStack spacing={3}>
-            <Text fontSize="sm" fontWeight="medium">
-              {t('reports.order_status')}:
-            </Text>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              size="sm"
-              maxW="160px"
+            <FilterPanel
+              hasActiveFilters={statusFilter !== 'all'}
+              onReset={() => setStatusFilter('all')}
             >
-              <option value="all">{t('reports.filter_all_statuses')}</option>
-              <option value="draft">{t('reports.filter_draft')}</option>
-              <option value="submitted">{t('reports.filter_submitted')}</option>
-              <option value="locked">{t('reports.filter_locked')}</option>
-            </Select>
+              <GenericFilter
+                label={t('reports.order_status')}
+                value={statusFilter === 'all' ? '' : statusFilter}
+                options={[
+                  { value: 'draft', label: t('reports.filter_draft') },
+                  { value: 'submitted', label: t('reports.filter_submitted') },
+                  { value: 'locked', label: t('reports.filter_locked') },
+                ]}
+                onChange={(v) => setStatusFilter(v || 'all')}
+                placeholder={t('reports.filter_all_statuses')}
+                width="160px"
+              />
+            </FilterPanel>
             <Button size="sm" variant="ghost" onClick={loadOrders}>
               {t('admin.claims.refresh')}
             </Button>

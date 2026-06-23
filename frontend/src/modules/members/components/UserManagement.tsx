@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Th, Td,
-  Input, Badge, useToast, Text, IconButton, useDisclosure
+  Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Td,
+  Badge, useToast, Text, IconButton, useDisclosure
 } from '@chakra-ui/react';
 import {
   Menu, MenuButton, MenuList, MenuItem
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, SearchIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import cognitoService from '../services/cognitoService';
 import UserModal from './UserModal';
+import { useFilterableTable } from '../../../hooks/useFilterableTable';
+import { FilterableHeader } from '../../../components/filters';
 
 interface CognitoAttribute {
   Name: string;
@@ -34,7 +36,6 @@ interface UserManagementProps {
 function UserManagement({ user }: UserManagementProps) {
   const [users, setUsers] = useState<CognitoUser[]>([]);
   const [groups, setGroups] = useState<CognitoGroup[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<CognitoUser | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -70,16 +71,27 @@ function UserManagement({ user }: UserManagementProps) {
     }
   };
 
-  const filteredUsers = users
-    .filter(user =>
-      user.Username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.Attributes?.find(attr => attr.Name === 'email')?.Value?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      const emailA = getUserAttribute(a, 'email').toLowerCase();
-      const emailB = getUserAttribute(b, 'email').toLowerCase();
-      return emailA.localeCompare(emailB);
+  // Transform Cognito users to flat records for the framework
+  const tableData = useMemo(() => {
+    return users.map(u => ({
+      ...u,
+      email: getUserAttribute(u, 'email'),
+      fullName: `${getUserAttribute(u, 'given_name')} ${getUserAttribute(u, 'family_name')}`.trim(),
+      status: u.Enabled ? 'Actief' : 'Uitgeschakeld',
+      created: u.UserCreateDate || '',
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
+
+  const INITIAL_FILTERS = { email: '', fullName: '', status: '', created: '' };
+
+  const { filters, setFilter, handleSort, sortField, sortDirection, processedData } =
+    useFilterableTable(tableData, {
+      initialFilters: INITIAL_FILTERS,
+      defaultSort: { field: 'email', direction: 'asc' },
     });
+
+  const filteredUsers = processedData as (CognitoUser & Record<string, unknown>)[];
 
   const handleDeleteUser = async (username: string) => {
     if (!window.confirm(`Weet je zeker dat je gebruiker "${username}" wilt verwijderen?`)) return;
@@ -154,56 +166,77 @@ function UserManagement({ user }: UserManagementProps) {
 
   return (
     <VStack spacing={6} align="stretch">
-      <HStack justify="space-between">
-        <HStack flex={1}>
-          <SearchIcon color="orange.400" />
-          <Input
-            placeholder="Zoek gebruikers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            bg="gray.800"
-            color="white"
-            borderColor="orange.400"
-          />
-        </HStack>
-        <HStack spacing={4}>
-          <Text color="orange.400" fontWeight="bold">
-            Totaal: {users.length} accounts
-          </Text>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="orange"
-            onClick={() => {
-              setSelectedUser(null);
-              onOpen();
-            }}
-          >
-            Nieuwe Gebruiker
-          </Button>
-        </HStack>
+      <HStack justify="flex-end">
+        <Text color="orange.400" fontWeight="bold">
+          Totaal: {users.length} accounts
+        </Text>
+        <Button
+          leftIcon={<AddIcon />}
+          colorScheme="orange"
+          onClick={() => {
+            setSelectedUser(null);
+            onOpen();
+          }}
+        >
+          Nieuwe Gebruiker
+        </Button>
       </HStack>
 
       <Box bg="gray.800" borderRadius="md" border="1px" borderColor="orange.400" overflow="hidden">
         <Table variant="simple">
           <Thead bg="gray.700">
             <Tr>
-              <Th color="orange.300">Email</Th>
-              <Th color="orange.300">Naam</Th>
-              <Th color="orange.300">Status</Th>
-              <Th color="orange.300">Aangemaakt</Th>
-              <Th color="orange.300">Acties</Th>
+              <FilterableHeader
+                label="Email"
+                filterValue={filters.email}
+                onFilterChange={(v) => setFilter('email', v)}
+                sortable
+                sortDirection={sortField === 'email' ? sortDirection : null}
+                onSort={() => handleSort('email')}
+                minW="200px"
+              />
+              <FilterableHeader
+                label="Naam"
+                filterValue={filters.fullName}
+                onFilterChange={(v) => setFilter('fullName', v)}
+                sortable
+                sortDirection={sortField === 'fullName' ? sortDirection : null}
+                onSort={() => handleSort('fullName')}
+                minW="150px"
+              />
+              <FilterableHeader
+                label="Status"
+                filterValue={filters.status}
+                onFilterChange={(v) => setFilter('status', v)}
+                sortable
+                sortDirection={sortField === 'status' ? sortDirection : null}
+                onSort={() => handleSort('status')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Aangemaakt"
+                filterValue={filters.created}
+                onFilterChange={(v) => setFilter('created', v)}
+                sortable
+                sortDirection={sortField === 'created' ? sortDirection : null}
+                onSort={() => handleSort('created')}
+                minW="120px"
+              />
+              <FilterableHeader
+                label="Acties"
+                showFilter={false}
+                minW="200px"
+              />
             </Tr>
           </Thead>
           <Tbody>
             {filteredUsers.map((user) => (
               <Tr key={user.Username}>
-                <Td color="white">{getUserAttribute(user, 'email')}</Td>
-                <Td color="white">
-                  {getUserAttribute(user, 'given_name')} {getUserAttribute(user, 'family_name')}
-                </Td>
+                <Td color="white">{user.email as string}</Td>
+                <Td color="white">{user.fullName as string}</Td>
                 <Td>
                   <Badge colorScheme={user.Enabled ? 'green' : 'red'}>
-                    {user.Enabled ? 'Actief' : 'Uitgeschakeld'}
+                    {user.status as string}
                   </Badge>
                 </Td>
                 <Td color="white">
