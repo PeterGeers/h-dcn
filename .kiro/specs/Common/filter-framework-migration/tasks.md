@@ -38,10 +38,12 @@ Migratie van 7 componenten naar het gestandaardiseerde Table Filter Framework. V
   - [x] 6.1 Vervang custom `<Select>` door `GenericFilter` in `FilterPanel`
   - [x] 6.2 Verificatie AdminOrderLockUnlock
 
-- [ ] 7. ProductManagementPage migratie
-  - [ ] 7.1 Vervang ProductFilter door `GenericFilter` componenten in `FilterPanel`
-    - SKIPPED: ProductManagementPage uses a sidebar filter + card grid (not a table). The ProductFilter component serves a different UX pattern than table filters. Migration would change the layout significantly.
-  - [ ] 7.2 Verificatie ProductManagementPage
+- [x] 7. ProductManagementPage migratie
+  - [x] 7.1 Vervang ProductFilter door `GenericFilter` componenten in `FilterPanel`
+    - Replaced tree-style ProductFilter with two cascading GenericFilters (Groep → Subgroep)
+    - Subgroep options dynamically filter based on selected Groep
+    - Active/inactive toggle stays as separate Switch
+  - [x] 7.2 Verificatie ProductManagementPage
 
 - [x] 8. OrdersAdmin migratie
   - [x] 8.1 Vervang custom `<Select>` door `GenericFilter` in `FilterPanel`
