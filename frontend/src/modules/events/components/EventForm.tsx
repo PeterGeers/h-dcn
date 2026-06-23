@@ -3,7 +3,7 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
   VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, Select,
   Alert, AlertIcon, Text, Accordion, AccordionItem, AccordionButton, AccordionPanel,
-  AccordionIcon, Box, HStack
+  AccordionIcon, Box, HStack, Checkbox, Spinner, Stack
 } from '@chakra-ui/react';
 import { getAllowedRegions } from '../../../utils/regionalMapping';
 import { Event } from '../../../types';
@@ -11,6 +11,7 @@ import { getAuthHeaders } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
+import { scanProducts } from '../../products/api/productApi';
 import {
   EVENT_TYPES_BY_CATEGORY,
   EVENT_TYPE_LABELS,
@@ -44,7 +45,7 @@ interface EventFormData {
   registration_close: string;
   payment_deadline: string;
   // config
-  product_ids: string;
+  product_ids: string[];
   // financial
   participants: string;
   cost: string;
@@ -90,7 +91,7 @@ const EMPTY_FORM: EventFormData = {
   registration_open: '',
   registration_close: '',
   payment_deadline: '',
-  product_ids: '',
+  product_ids: [],
   participants: '',
   cost: '',
   revenue: '',
@@ -104,7 +105,7 @@ function sectionHasData(formData: EventFormData, section: 'registration' | 'conf
     case 'registration':
       return !!(formData.registration_open || formData.registration_close || formData.payment_deadline);
     case 'config':
-      return !!(formData.product_ids);
+      return !!(formData.product_ids.length > 0);
     case 'financial':
       return !!(formData.participants || formData.cost || formData.revenue || formData.notes);
     case 'landing_page':
@@ -120,6 +121,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
   const [formData, setFormData] = useState<EventFormData>({ ...EMPTY_FORM });
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState<{ product_id: string; naam: string; groep?: string }[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
   const { handleError, handleSuccess } = useErrorHandler();
 
   const userRoles = getUserRoles(user || {});
@@ -133,6 +136,22 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
     [JSON.stringify(userRoles), hasFullEventAccess]
   );
 
+  // Load available products when modal opens
+  useEffect(() => {
+    if (isOpen && availableProducts.length === 0) {
+      setProductsLoading(true);
+      scanProducts()
+        .then((res: any) => {
+          const products = (res.data || [])
+            .filter((p: any) => p.is_parent !== false) // Only parent products
+            .map((p: any) => ({ product_id: p.product_id, naam: p.naam || p.name || p.product_id, groep: p.groep }))
+            .sort((a: any, b: any) => (a.naam || '').localeCompare(b.naam || ''));
+          setAvailableProducts(products);
+        })
+        .catch(() => { /* silently fail — field will show IDs only */ })
+        .finally(() => setProductsLoading(false));
+    }
+  }, [isOpen, availableProducts.length]);
   // Available regions for the dropdown
   const availableRegions = useMemo(() => {
     const allRegions = [...EVENT_REGIOS];
@@ -174,7 +193,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         registration_open: toDatetimeLocal(event.registration_open),
         registration_close: toDatetimeLocal(event.registration_close),
         payment_deadline: toDatetimeLocal(event.payment_deadline),
-        product_ids: Array.isArray(event.product_ids) ? event.product_ids.join(', ') : '',
+        product_ids: Array.isArray(event.product_ids) ? event.product_ids : [],
         participants: event.participants != null ? String(event.participants) : '',
         cost: event.cost != null ? String(event.cost) : '',
         revenue: event.revenue != null ? String(event.revenue) : '',
@@ -275,8 +294,8 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       if (formData.payment_deadline) payload.payment_deadline = formData.payment_deadline;
 
       // Config fields
-      if (formData.product_ids) {
-        payload.product_ids = formData.product_ids.split(',').map(s => s.trim()).filter(Boolean);
+      if (formData.product_ids.length > 0) {
+        payload.product_ids = formData.product_ids;
       }
 
       // Financial fields (send as strings - backend handles Decimal coercion)
@@ -532,14 +551,44 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                 </AccordionButton>
                 <AccordionPanel pb={4}>
                   <FormControl>
-                    <FormLabel color="orange.300">Product IDs (kommagescheiden)</FormLabel>
-                    <Input
-                      value={formData.product_ids}
-                      onChange={(e) => handleChange('product_ids', e.target.value)}
-                      placeholder="product-id-1, product-id-2"
-                      bg="gray.700"
-                      borderColor="orange.400"
-                    />
+                    <FormLabel color="orange.300">Producten koppelen</FormLabel>
+                    {productsLoading ? (
+                      <HStack spacing={2}>
+                        <Spinner size="sm" color="orange.300" />
+                        <Text color="gray.400" fontSize="sm">Producten laden...</Text>
+                      </HStack>
+                    ) : availableProducts.length === 0 ? (
+                      <Text color="gray.400" fontSize="sm">Geen producten beschikbaar</Text>
+                    ) : (
+                      <Box maxH="200px" overflowY="auto" p={2} bg="gray.700" borderRadius="md" borderColor="orange.400" borderWidth="1px">
+                        <Stack spacing={1}>
+                          {availableProducts.map(product => (
+                            <Checkbox
+                              key={product.product_id}
+                              isChecked={formData.product_ids.includes(product.product_id)}
+                              onChange={(e) => {
+                                const newIds = e.target.checked
+                                  ? [...formData.product_ids, product.product_id]
+                                  : formData.product_ids.filter(id => id !== product.product_id);
+                                setFormData(prev => ({ ...prev, product_ids: newIds }));
+                              }}
+                              colorScheme="orange"
+                              size="sm"
+                            >
+                              <Text fontSize="sm" color="white">
+                                {product.naam}
+                                {product.groep && <Text as="span" color="gray.400"> ({product.groep})</Text>}
+                              </Text>
+                            </Checkbox>
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+                    {formData.product_ids.length > 0 && (
+                      <Text fontSize="xs" color="gray.400" mt={1}>
+                        {formData.product_ids.length} product(en) geselecteerd
+                      </Text>
+                    )}
                   </FormControl>
                 </AccordionPanel>
               </AccordionItem>
