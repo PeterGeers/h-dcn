@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Container, useToast, Spinner, Center, Flex, Button, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 import { ArrowBackIcon, ViewIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import ProductFilter from './components/ProductFilter';
 import ProductTable from './components/ProductTable';
 import ProductCard from './components/ProductCard';
 import DraftOrderModal from './components/DraftOrderModal';
@@ -14,6 +13,7 @@ import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService, memberService, orderService } from './services/api';
 import { ApiService } from '../../services/apiService';
 import { formatPrice } from '../../utils/formatPrice';
+import { FilterPanel, GenericFilter } from '../../components/filters';
 
 interface User {
   attributes?: {
@@ -50,12 +50,6 @@ interface CartItem {
   quantity: number;
 }
 
-interface Filter {
-  type: 'group' | 'subgroup';
-  value: string;
-  group?: string;
-}
-
 interface MemberInfo {
   member_id?: string;
   voornaam?: string;
@@ -86,8 +80,8 @@ function WebshopPage({ user }: WebshopPageProps) {
   const { t } = useTranslation('webshop');
   const { t: tCommon } = useTranslation('common');
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<Filter | null>(null);
+  const [selectedGroep, setSelectedGroep] = useState<string>('');
+  const [selectedSubgroep, setSelectedSubgroep] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductCardOpen, setIsProductCardOpen] = useState<boolean>(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -193,22 +187,33 @@ function WebshopPage({ user }: WebshopPageProps) {
     }
   }, [toast, t]);
 
-  const filterProducts = useCallback(() => {
-    let filtered = products;
-    
-    if (selectedFilter) {
-      if (selectedFilter.type === 'group') {
-        filtered = filtered.filter(p => p.groep === selectedFilter.value);
-      } else if (selectedFilter.type === 'subgroup') {
-        filtered = filtered.filter(p => p.groep === selectedFilter.group && p.subgroep === selectedFilter.value);
+  const { groepOptions, subgroepOptions } = useMemo(() => {
+    const groups = new Set<string>();
+    const subgroups = new Set<string>();
+    products.forEach(p => {
+      if (p.groep) groups.add(p.groep);
+      if (p.subgroep && (!selectedGroep || p.groep === selectedGroep)) {
+        subgroups.add(p.subgroep);
       }
+    });
+    return {
+      groepOptions: Array.from(groups).sort().map(g => ({ value: g, label: g })),
+      subgroepOptions: Array.from(subgroups).sort().map(s => ({ value: s, label: s })),
+    };
+  }, [products, selectedGroep]);
+
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+    if (selectedGroep) {
+      filtered = filtered.filter(p => p.groep === selectedGroep);
     }
-    
+    if (selectedSubgroep) {
+      filtered = filtered.filter(p => p.subgroep === selectedSubgroep);
+    }
     // Only show active products
     filtered = filtered.filter(p => p.active !== false);
-    
-    setFilteredProducts(filtered);
-  }, [products, selectedFilter]);
+    return filtered;
+  }, [products, selectedGroep, selectedSubgroep]);
 
   const loadUserInfo = useCallback(async () => {
     try {
@@ -488,10 +493,6 @@ function WebshopPage({ user }: WebshopPageProps) {
     loadUserInfo();
   }, [loadProducts, initializeCart, loadUserInfo]);
 
-  useEffect(() => {
-    filterProducts();
-  }, [filterProducts]);
-
   if (loading) {
     return (
       <Center h="100vh">
@@ -579,11 +580,27 @@ function WebshopPage({ user }: WebshopPageProps) {
           ) : (
             <Stack direction={{ base: 'column', lg: 'row' }} spacing={6}>
               <Box w={{ base: 'full', lg: '300px' }}>
-                <ProductFilter
-                  products={products}
-                  selectedFilter={selectedFilter}
-                  onFilterChange={setSelectedFilter}
-                />
+                <FilterPanel
+                  hasActiveFilters={!!selectedGroep || !!selectedSubgroep}
+                  onReset={() => { setSelectedGroep(''); setSelectedSubgroep(''); }}
+                >
+                  <GenericFilter
+                    label={t('filter.group', 'Groep')}
+                    value={selectedGroep}
+                    options={groepOptions}
+                    onChange={(v) => { setSelectedGroep(v); setSelectedSubgroep(''); }}
+                    placeholder={t('filter.all_groups', 'Alle groepen')}
+                  />
+                  {subgroepOptions.length > 0 && (
+                    <GenericFilter
+                      label={t('filter.subgroup', 'Subgroep')}
+                      value={selectedSubgroep}
+                      options={subgroepOptions}
+                      onChange={setSelectedSubgroep}
+                      placeholder={t('filter.all_subgroups', 'Alle subgroepen')}
+                    />
+                  )}
+                </FilterPanel>
               </Box>
               
               <Box flex={1}>
