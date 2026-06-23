@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Th, Td,
-  Input, Badge, useToast, Text, IconButton, Stack, useBreakpointValue,
+  Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Td,
+  Badge, useToast, Text, IconButton, Stack, useBreakpointValue,
   Tooltip
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, SearchIcon, CopyIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, CopyIcon } from '@chakra-ui/icons';
 import EventForm from './EventForm';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
+import { useFilterableTable } from '../../../hooks/useFilterableTable';
+import { FilterableHeader } from '../../../components/filters';
 
 interface EventListProps {
   events: Event[];
@@ -19,8 +21,9 @@ interface EventListProps {
   canWriteEvents?: boolean;
 }
 
+const INITIAL_FILTERS = { name: '', start_date: '', location: '', linked_regio: '', participants: '', cost: '', revenue: '' };
+
 function EventList({ events, onEventUpdate, user, permissionManager, canWriteEvents = false }: EventListProps) {
-  const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const toast = useToast();
@@ -32,18 +35,11 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
   // Check if user can edit specific events based on regional permissions
   const canEditEvent = (event: Event): boolean => {
     if (!canWriteEvents) return false;
-    
-    // If user has full event write access, they can edit any event
     if (permissionManager?.hasAccess('events', 'write')) return true;
     
-    // Check regional permissions based on linked_regio
     const eventRegion = event.linked_regio;
-    if (!eventRegion || eventRegion === 'regio_all') {
-      // regio_all events require full access
-      return false;
-    }
+    if (!eventRegion || eventRegion === 'regio_all') return false;
 
-    // Regional user: check if their region matches
     const regionNumber = getRegionNumber(eventRegion);
     if (regionNumber) {
       return userRoles.some(role => 
@@ -51,16 +47,13 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
         (role.includes('Chairman') || role.includes('Secretary'))
       );
     }
-    
     return false;
   };
 
   const canDeleteEvent = (event: Event): boolean => {
-    // Only users with full event write access can delete events
     return permissionManager?.hasAccess('events', 'write') || false;
   };
 
-  // Helper function to extract region number from region name
   const getRegionNumber = (regionName: string): string | null => {
     const regionMap: { [key: string]: string } = {
       'Noord-Holland': '1',
@@ -76,7 +69,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     return regionMap[regionName] || null;
   };
 
-  // Check if user has full event access (Events_CRUD, Events_Read, Events_Export, or Regio_All)
+  // Check if user has full event access
   const hasFullEventAccess = userRoles.some(role => 
     role === 'Events_CRUD' ||
     role === 'Events_Read' ||
@@ -85,35 +78,44 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     role === 'System_User_Management'
   );
 
-  const filteredEvents = events
-    .filter(event => {
-      // Basic search filter
-      const matchesSearch = (event.name || '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (event.location || '')?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (!matchesSearch) return false;
-      
-      // If user has full event access, show all events
+  // Pre-filter: permission-based filtering (security — before framework)
+  const permissionFilteredEvents = useMemo(() => {
+    return events.filter(event => {
       if (hasFullEventAccess || permissionManager?.hasAccess('events', 'read')) return true;
       
-      // Apply regional filtering based on linked_regio
       const eventRegion = event.linked_regio;
-      
       if (eventRegion && eventRegion !== 'regio_all') {
         const regionNumber = getRegionNumber(eventRegion);
         if (regionNumber) {
           return userRoles.some(role => role.includes(`Region${regionNumber}`));
         }
       }
-      
-      // If no region specified or regio_all, show to all users with any event access
       return permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'public' }) || false;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.start_date || '1900-01-01');
-      const dateB = new Date(b.start_date || '1900-01-01');
-      return dateB.getTime() - dateA.getTime(); // Newest first
     });
+  }, [events, hasFullEventAccess, permissionManager, userRoles]);
+
+  // Transform events to flat records for the framework
+  const tableData = useMemo(() => {
+    return permissionFilteredEvents.map(event => ({
+      ...event,
+      name: event.name || '',
+      start_date: event.start_date || '',
+      location: event.location || '',
+      linked_regio: event.linked_regio || '',
+      participants: String(event.participants || 0),
+      cost: String(event.cost || 0),
+      revenue: String(event.revenue || 0),
+    }));
+  }, [permissionFilteredEvents]);
+
+  // Framework: filter + sort pipeline
+  const { filters, setFilter, handleSort, sortField, sortDirection, processedData } =
+    useFilterableTable(tableData, {
+      initialFilters: INITIAL_FILTERS,
+      defaultSort: { field: 'start_date', direction: 'desc' },
+    });
+
+  const filteredEvents = processedData as (Event & Record<string, unknown>)[];
 
   const handleEdit = (event: Event) => {
     if (!canEditEvent(event)) {
@@ -198,21 +200,6 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
     return amount ? `€${parseFloat(String(amount)).toFixed(2)}` : '€0,00';
   };
 
-  const getEventField = (event: Event, field: string): string => {
-    // Direct field access using new registry names
-    const fieldMap: Record<string, string> = {
-      naam: event.name || '',
-      datum_van: event.start_date || '',
-      datum_tot: event.end_date || '',
-      locatie: event.location || '',
-      regio: event.linked_regio || '',
-      aantal_deelnemers: String(event.participants || 0),
-      kosten: String(event.cost || 0),
-      inkomsten: String(event.revenue || 0)
-    };
-    return fieldMap[field] || '';
-  };
-
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   return (
@@ -220,20 +207,9 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
       <Stack 
         direction={{ base: 'column', md: 'row' }} 
         spacing={4} 
-        justify="space-between"
+        justify="flex-end"
         align={{ base: 'stretch', md: 'center' }}
       >
-        <HStack flex={1}>
-          <SearchIcon color="orange.400" />
-          <Input
-            placeholder="Zoek evenementen..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            bg="gray.800"
-            color="white"
-            borderColor="orange.400"
-          />
-        </HStack>
         <HStack spacing={2} justify={{ base: 'center', md: 'flex-end' }}>
           {canExportEvents && (
             <CSVExportButton data={filteredEvents} filename="evenementen" />
@@ -265,42 +241,112 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
         <Table variant="simple" size={{ base: 'sm', md: 'md' }}>
           <Thead bg="gray.700">
             <Tr>
-              <Th color="orange.300" minW="120px">Naam</Th>
-              <Th color="orange.300" minW="100px">Datum</Th>
-              <Th color="orange.300" minW="100px" display={{ base: 'none', md: 'table-cell' }}>Locatie</Th>
-              <Th color="orange.300" minW="80px" display={{ base: 'none', lg: 'table-cell' }}>Regio</Th>
-              <Th color="orange.300" minW="80px" display={{ base: 'none', md: 'table-cell' }}>Deelnemers</Th>
-              <Th color="orange.300" minW="80px">Kosten</Th>
-              <Th color="orange.300" minW="80px">Inkomsten</Th>
-              <Th color="orange.300" minW="80px">Winst</Th>
-              <Th color="orange.300" minW="120px" position="sticky" right={0} bg="gray.700">Acties</Th>
+              <FilterableHeader
+                label="Naam"
+                filterValue={filters.name}
+                onFilterChange={(v) => setFilter('name', v)}
+                sortable
+                sortDirection={sortField === 'name' ? sortDirection : null}
+                onSort={() => handleSort('name')}
+                minW="120px"
+              />
+              <FilterableHeader
+                label="Datum"
+                filterValue={filters.start_date}
+                onFilterChange={(v) => setFilter('start_date', v)}
+                sortable
+                sortDirection={sortField === 'start_date' ? sortDirection : null}
+                onSort={() => handleSort('start_date')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Locatie"
+                filterValue={filters.location}
+                onFilterChange={(v) => setFilter('location', v)}
+                sortable
+                sortDirection={sortField === 'location' ? sortDirection : null}
+                onSort={() => handleSort('location')}
+                minW="100px"
+                display={{ base: 'none', md: 'table-cell' }}
+              />
+              <FilterableHeader
+                label="Regio"
+                filterValue={filters.linked_regio}
+                onFilterChange={(v) => setFilter('linked_regio', v)}
+                sortable
+                sortDirection={sortField === 'linked_regio' ? sortDirection : null}
+                onSort={() => handleSort('linked_regio')}
+                minW="80px"
+                display={{ base: 'none', lg: 'table-cell' }}
+              />
+              <FilterableHeader
+                label="Deelnemers"
+                filterValue={filters.participants}
+                onFilterChange={(v) => setFilter('participants', v)}
+                sortable
+                sortDirection={sortField === 'participants' ? sortDirection : null}
+                onSort={() => handleSort('participants')}
+                minW="80px"
+                display={{ base: 'none', md: 'table-cell' }}
+              />
+              <FilterableHeader
+                label="Kosten"
+                filterValue={filters.cost}
+                onFilterChange={(v) => setFilter('cost', v)}
+                sortable
+                sortDirection={sortField === 'cost' ? sortDirection : null}
+                onSort={() => handleSort('cost')}
+                minW="80px"
+              />
+              <FilterableHeader
+                label="Inkomsten"
+                filterValue={filters.revenue}
+                onFilterChange={(v) => setFilter('revenue', v)}
+                sortable
+                sortDirection={sortField === 'revenue' ? sortDirection : null}
+                onSort={() => handleSort('revenue')}
+                minW="80px"
+              />
+              <FilterableHeader
+                label="Winst"
+                sortable
+                sortDirection={sortField === 'winst' ? sortDirection : null}
+                onSort={() => handleSort('winst')}
+                minW="80px"
+                showFilter={false}
+              />
+              <FilterableHeader
+                label="Acties"
+                minW="120px"
+                showFilter={false}
+              />
             </Tr>
           </Thead>
           <Tbody>
             {filteredEvents.map((event) => {
-              const kosten = parseFloat(getEventField(event, 'kosten'));
-              const inkomsten = parseFloat(getEventField(event, 'inkomsten'));
+              const kosten = parseFloat(String(event.cost || 0));
+              const inkomsten = parseFloat(String(event.revenue || 0));
               const winst = inkomsten - kosten;
               
               return (
                 <Tr key={event.event_id}>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>
-                    <Text isTruncated maxW="120px">{getEventField(event, 'naam')}</Text>
+                    <Text isTruncated maxW="120px">{event.name || ''}</Text>
                   </Td>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>
-                    {formatDate(getEventField(event, 'datum_van'))}
-                    {getEventField(event, 'datum_tot') && getEventField(event, 'datum_tot') !== getEventField(event, 'datum_van') && 
-                      ` - ${formatDate(getEventField(event, 'datum_tot'))}`
+                    {formatDate(event.start_date || '')}
+                    {event.end_date && event.end_date !== event.start_date && 
+                      ` - ${formatDate(event.end_date)}`
                     }
                   </Td>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                    <Text isTruncated maxW="100px">{getEventField(event, 'locatie')}</Text>
+                    <Text isTruncated maxW="100px">{event.location || ''}</Text>
                   </Td>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
-                    {getEventField(event, 'regio')}
+                    {event.linked_regio || ''}
                   </Td>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                    {getEventField(event, 'aantal_deelnemers')}
+                    {event.participants || 0}
                   </Td>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>{formatCurrency(kosten)}</Td>
                   <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>{formatCurrency(inkomsten)}</Td>
@@ -309,14 +355,14 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                       {formatCurrency(winst)}
                     </Badge>
                   </Td>
-                  <Td position="sticky" right={0} bg="gray.800">
+                  <Td>
                     <HStack spacing={1}>
-                      {canEditEvent(event) ? (
+                      {canEditEvent(event as Event) ? (
                         <IconButton
                           icon={<EditIcon />}
                           size="xs"
                           colorScheme="blue"
-                          onClick={() => handleEdit(event)}
+                          onClick={() => handleEdit(event as Event)}
                           title="Bewerken"
                           aria-label="Bewerken"
                         />
@@ -337,7 +383,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                           icon={<CopyIcon />}
                           size="xs"
                           colorScheme="green"
-                          onClick={() => handleDuplicate(event)}
+                          onClick={() => handleDuplicate(event as Event)}
                           title="Dupliceren"
                           aria-label="Dupliceren"
                         />
@@ -353,12 +399,12 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                           />
                         </Tooltip>
                       )}
-                      {canDeleteEvent(event) ? (
+                      {canDeleteEvent(event as Event) ? (
                         <IconButton
                           icon={<DeleteIcon />}
                           size="xs"
                           colorScheme="red"
-                          onClick={() => handleDelete(event)}
+                          onClick={() => handleDelete(event as Event)}
                           title="Verwijderen"
                           aria-label="Verwijderen"
                         />

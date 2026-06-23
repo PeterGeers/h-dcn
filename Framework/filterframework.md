@@ -1,18 +1,3 @@
-https://testportal.h-dcn.nl/events
-Inonsistent drop down (filter) behaviour. It would be nice if we have 1 standard to use for drop downs (template)
-
-Evenementen
-Type: The type drop down shows categories white on white the box is blue when selected
-
-Financiën
-Alle statussen
-
-Toegangsbeheer
-Selecteer een evenement
-
-
-For a generic approach: Please use this 
-
 # Filter Framework — Reuse Guide for h-dcn
 
 ## Overview
@@ -171,6 +156,3 @@ Skip `useTableConfig` unless you need runtime-configurable column visibility via
 - **Sort**: strings use case-insensitive `localeCompare`, numbers use numeric comparison
 - **Null handling**: null/undefined values sort to end regardless of direction
 - **Pipeline**: filter first → then sort (order is fixed)
-
-
-If you need access to specific files you are granted. Or i can copy them
