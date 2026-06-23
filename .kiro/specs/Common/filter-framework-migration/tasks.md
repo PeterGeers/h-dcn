@@ -53,14 +53,17 @@ Migratie van 7 componenten naar het gestandaardiseerde Table Filter Framework. V
 
 - [x] 10. Opruimen
   - [x] 10.1 Verwijder `Framework/` map
-  - [ ] 10.2 Verwijder ongebruikte oude filter componenten/code
-  - [ ] 10.3 Update testFindings.md
+  - [x] 10.2 Verwijder ongebruikte oude filter componenten/code
+    - ProductFilter.tsx (products + webshop) verwijderd — nergens meer geïmporteerd
+    - Dashboard.tsx + WebshopPage.tsx gemigreerd naar FilterPanel + GenericFilter
+  - [x] 10.3 Update testFindings.md
+    - Inconsistent dropdown gedrag opgelost via framework migratie
 
-- [ ] 11. Finale verificatie
-  - `npx tsc --noEmit` (volledige frontend type check)
-  - Lint alle gewijzigde bestanden
-  - Geen unused imports (ESLint no-unused-vars)
-  - Commit op huidige feature branch
+- [x] 11. Finale verificatie
+  - `npx tsc --noEmit` — 0 fouten ✓
+  - ESLint — 0 fouten op alle gemigreerde bestanden ✓
+  - Gecommit en gedeployed naar testportal.h-dcn.nl ✓
+  - Commits: `1bf000a`, `91ae183`, `9a33595`, `1b00f5a`
 
 ## Notes
 
