@@ -11,7 +11,7 @@ export type OrderStatus = 'draft' | 'submitted' | 'locked';
 
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 
-export type EventStatus = 'draft' | 'open' | 'closed' | 'archived';
+export type EventStatus = 'draft' | 'published' | 'open' | 'closed' | 'archived';
 
 export type CountingRule = 'count_items_by_product' | 'count_distinct_clubs' | 'sum_field';
 

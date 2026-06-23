@@ -519,7 +519,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
   }
 
   // Event is not open → read-only view
-  if (event.status !== 'open') {
+  if (event.status !== 'published') {
     return (
       <VStack spacing={6} align="stretch">
         <EventInfoHeader event={event} />
