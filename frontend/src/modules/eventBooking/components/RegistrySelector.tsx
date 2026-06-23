@@ -116,8 +116,8 @@ const RegistrySelector: React.FC<RegistrySelectorProps> = ({
     return (
       <Center py={12}>
         <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text color="gray.600">{t('registry.loading')}</Text>
+          <Spinner size="xl" color="orange.400" />
+          <Text color="gray.400">{t('registry.loading')}</Text>
         </VStack>
       </Center>
     );
@@ -165,10 +165,10 @@ const RegistrySelector: React.FC<RegistrySelectorProps> = ({
     <Box maxW="2xl" mx="auto" py={8} px={4}>
       <VStack spacing={6} align="stretch">
         <Box textAlign="center">
-          <Heading size="lg" mb={2}>
+          <Heading size="lg" color="orange.400" mb={2}>
             {selectorTitle}
           </Heading>
-          <Text color="gray.600">
+          <Text color="gray.300">
             {t('registry.select_description', { rowLabel })}
           </Text>
         </Box>

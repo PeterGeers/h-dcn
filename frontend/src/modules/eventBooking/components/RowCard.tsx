@@ -93,15 +93,15 @@ const RowCard: React.FC<RowCardProps> = ({
   const cardContent = (
     <Box
       borderWidth="2px"
-      borderColor={disabled ? 'gray.200' : 'gray.300'}
+      borderColor={disabled ? 'gray.600' : 'gray.500'}
       borderRadius="lg"
       p={4}
       cursor={disabled || isSelecting ? 'not-allowed' : 'pointer'}
       opacity={disabled ? 0.6 : 1}
-      bg={disabled ? 'gray.50' : 'white'}
+      bg={disabled ? 'gray.900' : 'gray.800'}
       _hover={
         !disabled && !isSelecting
-          ? { borderColor: 'blue.400', shadow: 'md' }
+          ? { borderColor: 'orange.400', shadow: 'md' }
           : undefined
       }
       transition="all 0.2s"
@@ -122,7 +122,7 @@ const RowCard: React.FC<RowCardProps> = ({
             fallback={
               <Box
                 boxSize="48px"
-                bg="gray.100"
+                bg="gray.700"
                 borderRadius="md"
                 display="flex"
                 alignItems="center"
@@ -137,7 +137,7 @@ const RowCard: React.FC<RowCardProps> = ({
         ) : (
           <Box
             boxSize="48px"
-            bg="gray.100"
+            bg="gray.700"
             borderRadius="md"
             display="flex"
             alignItems="center"
@@ -152,11 +152,11 @@ const RowCard: React.FC<RowCardProps> = ({
 
         {/* Label and status */}
         <VStack align="start" spacing={0} flex={1} minW={0}>
-          <Text fontWeight="semibold" fontSize="md" noOfLines={1}>
+          <Text fontWeight="semibold" fontSize="md" color="white" noOfLines={1}>
             {row.label}
           </Text>
           {!row.available && row.claimed_contact && (
-            <Text fontSize="xs" color="gray.500" noOfLines={1}>
+            <Text fontSize="xs" color="gray.400" noOfLines={1}>
               {row.claimed_contact}
             </Text>
           )}

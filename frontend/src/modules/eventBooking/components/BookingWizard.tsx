@@ -624,11 +624,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
       <Divider />
 
       {/* Total display */}
-      <Flex justify="space-between" align="center" p={4} bg="gray.50" borderRadius="md">
-        <Text fontWeight="bold" fontSize="lg">
+      <Flex justify="space-between" align="center" p={4} bg="gray.700" borderRadius="md" borderWidth={1} borderColor="gray.600">
+        <Text fontWeight="bold" fontSize="lg" color="gray.100">
           {t('booking.estimated_total')}
         </Text>
-        <Text fontWeight="bold" fontSize="xl" color="orange.600">
+        <Text fontWeight="bold" fontSize="xl" color="orange.400">
           {formatCurrency(totalAmount)}
         </Text>
       </Flex>

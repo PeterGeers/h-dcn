@@ -1,14 +1,14 @@
 /**
- * EventInfoHeader — Displays event name, location, dates, and days until close.
+ * EventInfoHeader — Displays event location, dates, and days until close.
  *
- * Shows key event information at the top of the booking wizard to give
- * the delegate context about what they're booking for and when registration ends.
+ * The event name/title is rendered by the parent page (EventBookingPage),
+ * so this component only shows supplementary info: location, dates, countdown.
  *
  * Validates: Requirement 11.3
  */
 
 import React, { useMemo } from 'react';
-import { Box, HStack, Heading, Text } from '@chakra-ui/react';
+import { Box, HStack, Text } from '@chakra-ui/react';
 import { Event } from '../types/eventBooking.types';
 
 export interface EventInfoHeaderProps {
@@ -34,22 +34,19 @@ const EventInfoHeader: React.FC<EventInfoHeaderProps> = ({ event }) => {
 
   return (
     <Box p={4} borderWidth={1} borderColor="gray.600" borderRadius="md" bg="gray.800">
-      <Heading size="md" color="orange.400" mb={2}>
-        {event.name}
-      </Heading>
       <HStack spacing={4} flexWrap="wrap">
-        <Text fontSize="sm" color="gray.300">
-          📍 {event.location}
-        </Text>
+        {event.location && (
+          <Text fontSize="sm" color="gray.300">
+            📍 {event.location}
+          </Text>
+        )}
         <Text fontSize="sm" color="gray.300">
           📅 {formatDate(event.start_date)} – {formatDate(event.end_date)}
         </Text>
       </HStack>
       {event.status === 'published' && daysUntilClose > 0 && (
         <Text fontSize="sm" mt={2} color={daysUntilClose <= 7 ? 'red.300' : 'gray.400'}>
-          {daysUntilClose > 0
-            ? `Nog ${daysUntilClose} dagen om te registreren`
-            : 'Registratie sluit vandaag!'}
+          Nog {daysUntilClose} dagen om te registreren
         </Text>
       )}
     </Box>

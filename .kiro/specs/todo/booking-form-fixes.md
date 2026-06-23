@@ -8,22 +8,22 @@ Test URL: `https://testportal.h-dcn.nl/events/542609d8-891e-4f9e-ab97-0c8b3a8c02
 
 - [ ] **Dubbele titel verwijderen** — Page header toont "Presidents Meeting 2027" en het EventInfoHeader blok herhaalt dezelfde naam. Eén van de twee verwijderen of samenvoegen.
 - [ ] **Locatie + datums samenvoegen met capaciteitsblok** — Nu zijn het losse blokken zonder visuele samenhang. Maak er één compact event info blok van.
-- [ ] **Capaciteit: productnamen tonen** — "12 van 13 beschikbaar" zegt niets als er geen productnaam bij staat. Koppel elke capaciteitsregel aan het bijbehorende product.
+- [x] **Capaciteit: productnamen tonen** — Fallback naar product_id als naam ontbreekt.
 
 ### Formulier logica
 
-- [ ] **Rol-veld alleen tonen bij producten die het vragen** — Nu wordt "Rol" altijd getoond bij elke persoon. Het zou alleen zichtbaar moeten zijn als het product een `order_item_fields` entry met `id: 'role'` heeft.
-- [x] **€ NaN fixen** — Producten zonder `order_item_fields` crashten de UI. Gefixt: normalisatie naar `[]` in `getProducts` API layer.
+- [x] **Rol-veld alleen tonen bij producten die het vragen** — Hardcoded role veld verwijderd uit PersonCard. Wordt nu dynamisch gerenderd via ProductConfigurator op basis van order_item_fields.
+- [x] **€ NaN fixen** — Producten zonder prijs of met string-prijs crashten de UI. Gefixt: normalisatie met `toPrice()` in `getProducts` API layer.
 - [ ] **Productnaam en prijs tonen in dropdown** — "Product toevoegen" dropdown toont items zonder naam of prijs. Toon `naam — €prijs` per optie.
 
 ### Data & Type Safety
 
-- [ ] **Generic helpers voor DynamoDB velden** — Gebruik `formatPrice()`, `toPrice()` en soortgelijke helpers consequent om NaN/undefined crashes te voorkomen bij ontbrekende velden.
+- [x] **Generic helpers voor DynamoDB velden** — `toPrice()` uit `utils/formatPrice.ts` gebruikt voor prijs normalisatie. Product name fallback naar product_id.
 - [ ] **`event_participant` Cognito groep** — Wordt uitgefilterd als "invalid role" in AuthHeaders. Onderzoeken of dit een geldige groep moet zijn of opgeruimd moet worden.
 
 ### Look & Feel
 
-- [ ] **Dark theme toepassen** — Alle booking form blokken moeten het standaard dark theme volgen (bg gray.800, tekst wit/oranje, borders gray.600).
+- [x] **Dark theme toepassen** — EventInfoHeader, EffectiveLimits en PersonCard gebruiken nu dark theme (bg gray.800, tekst wit/oranje, borders gray.600).
 - [ ] **RegistrySelector styling** — Wit op wit, geen logo's zichtbaar. Dark theme + logo rendering fixen.
 
 ## Gefixt in deze sessie
