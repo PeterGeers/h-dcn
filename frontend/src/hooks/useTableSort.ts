@@ -9,7 +9,7 @@
  *   const sorted = sortData(data);
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 
 export type SortDirection = 'asc' | 'desc';
 

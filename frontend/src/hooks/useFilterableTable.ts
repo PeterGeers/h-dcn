@@ -13,7 +13,7 @@
 
 import { useMemo } from 'react';
 import { useColumnFilters, UseColumnFiltersOptions } from './useColumnFilters';
-import { useTableSort, UseTableSortOptions, SortDirection, SortConfig } from './useTableSort';
+import { useTableSort, SortDirection, SortConfig } from './useTableSort';
 
 export interface UseFilterableTableOptions<T extends Record<string, string>> {
   /** Initial filter values */
