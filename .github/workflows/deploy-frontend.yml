@@ -33,14 +33,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Secret scan (ggshield)
-        uses: GitGuardian/ggshield-action@v1
-        continue-on-error: true
-        env:
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+      # NOTE: CI ggshield scan removed 2026-06-23 to preserve API quota.
+      # Secret scanning happens locally via Kiro preToolUse hook (with local fallback scanner).
+      # Re-enable if multiple developers push without Kiro, or if quota is upgraded:
+      #
+      # - name: Secret scan (ggshield)
+      #   uses: GitGuardian/ggshield-action@v1
+      #   continue-on-error: true
+      #   env:
+      #     GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
       - name: Setup Node.js 18
         uses: actions/setup-node@v4

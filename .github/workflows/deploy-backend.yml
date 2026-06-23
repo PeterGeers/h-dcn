@@ -39,14 +39,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Secret scan (ggshield)
-        uses: GitGuardian/ggshield-action@v1
-        continue-on-error: true
-        env:
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+      # NOTE: CI ggshield scan removed 2026-06-23 to preserve API quota.
+      # Secret scanning happens locally via Kiro preToolUse hook (with local fallback scanner).
+      # Re-enable if multiple developers push without Kiro, or if quota is upgraded:
+      #
+      # - name: Secret scan (ggshield)
+      #   uses: GitGuardian/ggshield-action@v1
+      #   continue-on-error: true
+      #   env:
+      #     GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
