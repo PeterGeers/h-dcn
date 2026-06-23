@@ -33,25 +33,23 @@ const EventInfoHeader: React.FC<EventInfoHeaderProps> = ({ event }) => {
   };
 
   return (
-    <Box p={4} borderWidth={1} borderRadius="md" bg="orange.50">
-      <Heading size="md" color="orange.700" mb={2}>
+    <Box p={4} borderWidth={1} borderColor="gray.600" borderRadius="md" bg="gray.800">
+      <Heading size="md" color="orange.400" mb={2}>
         {event.name}
       </Heading>
       <HStack spacing={4} flexWrap="wrap">
-        <Text fontSize="sm" color="gray.700">
+        <Text fontSize="sm" color="gray.300">
           📍 {event.location}
         </Text>
-        <Text fontSize="sm" color="gray.700">
+        <Text fontSize="sm" color="gray.300">
           📅 {formatDate(event.start_date)} – {formatDate(event.end_date)}
         </Text>
       </HStack>
-      {event.status === 'open' && (
-        <Text fontSize="sm" mt={2} color={daysUntilClose <= 7 ? 'red.600' : 'gray.600'}>
+      {event.status === 'published' && daysUntilClose > 0 && (
+        <Text fontSize="sm" mt={2} color={daysUntilClose <= 7 ? 'red.300' : 'gray.400'}>
           {daysUntilClose > 0
-            ? `${daysUntilClose} days until registration close`
-            : daysUntilClose === 0
-              ? 'Registration closes today!'
-              : 'Registration close date has passed'}
+            ? `Nog ${daysUntilClose} dagen om te registreren`
+            : 'Registratie sluit vandaag!'}
         </Text>
       )}
     </Box>

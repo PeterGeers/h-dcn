@@ -19,6 +19,7 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { getAuthHeaders } from '../../../utils/authHeaders';
+import { toPrice } from '../../../utils/formatPrice';
 import {
   Order,
   Event,
@@ -207,10 +208,12 @@ export async function getProducts(
   if (productIds && productIds.length > 0) {
     products = products.filter((p) => productIds.includes(p.product_id));
   }
-  // Normalize: ensure order_item_fields is always an array
+  // Normalize: ensure order_item_fields is always an array, price is always a number
   return products.map((p) => ({
     ...p,
     order_item_fields: p.order_item_fields || [],
+    price: toPrice(p.price),
+    name: p.name || p.product_id,
   }));
 }
 

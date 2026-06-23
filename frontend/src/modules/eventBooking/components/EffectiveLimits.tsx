@@ -25,14 +25,14 @@ const EffectiveLimits: React.FC<EffectiveLimitsProps> = ({ limits, isLoading }) 
   if (!hasFiniteLimits && !isLoading) return null;
 
   return (
-    <Box p={3} borderWidth={1} borderRadius="md" bg="blue.50">
-      <Text fontSize="sm" fontWeight="medium" mb={2}>
+    <Box p={3} borderWidth={1} borderColor="gray.600" borderRadius="md" bg="gray.800">
+      <Text fontSize="sm" fontWeight="medium" color="orange.300" mb={2}>
         {t('limits.title')}
       </Text>
       {isLoading ? (
         <HStack spacing={2}>
-          <Spinner size="xs" />
-          <Text fontSize="xs" color="gray.600">
+          <Spinner size="xs" color="orange.300" />
+          <Text fontSize="xs" color="gray.400">
             {t('limits.loading')}
           </Text>
         </HStack>
@@ -42,7 +42,7 @@ const EffectiveLimits: React.FC<EffectiveLimitsProps> = ({ limits, isLoading }) 
             .filter((l) => l.totalCapacity !== Infinity)
             .map((limit) => (
               <HStack key={limit.product_id} justify="space-between" fontSize="xs">
-                <Text>{limit.product_name}</Text>
+                <Text color="gray.200">{limit.product_name || limit.product_id}</Text>
                 <Badge
                   colorScheme={limit.isExhausted ? 'red' : limit.remaining <= 2 ? 'orange' : 'green'}
                   fontSize="xs"

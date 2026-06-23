@@ -70,10 +70,6 @@ const PersonCard: React.FC<PersonCardProps> = ({
     onUpdate(personIndex, { ...person, name });
   };
 
-  const handleRoleChange = (role: string) => {
-    onUpdate(personIndex, { ...person, role });
-  };
-
   const handleProductFieldsChange = (
     productIndex: number,
     fields: Record<string, any>,
@@ -110,13 +106,18 @@ const PersonCard: React.FC<PersonCardProps> = ({
 
   const productMap = new Map(products.map((p) => [p.product_id, p]));
 
+  // Show role field only if a product assigned to this person requires it
+  // NOTE: role is actually handled by ProductConfigurator via order_item_fields.
+  // The person-level role field is kept for backward compatibility with existing orders
+  // that stored role at person level. New orders should use order_item_fields.
+
   // Products not yet assigned to this person
   const availableProducts = products.filter(
     (p) => !person.products.some((pp) => pp.product_id === p.product_id)
   );
 
   return (
-    <Box borderWidth={1} borderRadius="lg" p={4} position="relative">
+    <Box borderWidth={1} borderColor="gray.600" borderRadius="lg" p={4} position="relative" bg="gray.800">
       {!isDisabled && !preventRemoval && (
         <IconButton
           aria-label={t('person_card.remove_person')}
@@ -134,7 +135,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
       <VStack spacing={3} align="stretch">
         {/* Person identity */}
         <HStack spacing={3}>
-          <FormControl flex={2} isInvalid={!!personErrors.name}>
+          <FormControl isInvalid={!!personErrors.name}>
             <FormLabel fontSize="xs">{t('person_card.name')}</FormLabel>
             <Input
               size="sm"
@@ -145,19 +146,6 @@ const PersonCard: React.FC<PersonCardProps> = ({
             />
             {personErrors.name && (
               <FormErrorMessage fontSize="xs">{personErrors.name}</FormErrorMessage>
-            )}
-          </FormControl>
-          <FormControl flex={1} isInvalid={!!personErrors.role}>
-            <FormLabel fontSize="xs">{t('person_card.role')}</FormLabel>
-            <Input
-              size="sm"
-              value={person.role}
-              onChange={(e) => handleRoleChange(e.target.value)}
-              placeholder={t('person_card.role_placeholder')}
-              isDisabled={isDisabled}
-            />
-            {personErrors.role && (
-              <FormErrorMessage fontSize="xs">{personErrors.role}</FormErrorMessage>
             )}
           </FormControl>
         </HStack>
