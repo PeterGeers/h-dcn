@@ -117,7 +117,7 @@ const EventLandingPage: React.FC = () => {
     );
   }
 
-  const { landing_page, registration_status, event_id } = event;
+  const { landing_page, registration_status } = event;
   const isOpen = registration_status === 'open';
   const ctaLabel = landing_page.registration_label || t('landing.registerButton');
 
@@ -125,15 +125,16 @@ const EventLandingPage: React.FC = () => {
 
   /**
    * Determine CTA destination and label based on auth state.
-   * - Not authenticated: link to register page (sign-up/login flow)
-   * - Authenticated: link directly to booking form
+   * Always link to register page — EventRegisterPage handles the logic:
+   * - If user has event access → auto-redirect to booking
+   * - If not → onboarding flow (PasswordGate → RegistrySelector → ClaimAction)
    */
   const getCtaProps = () => {
     if (authLoading) {
       return { to: '#', label: '', isLoading: true };
     }
     if (isAuthenticated) {
-      return { to: `/events/${event_id}/booking`, label: t('landing.goToBooking'), isLoading: false };
+      return { to: `/events/${slug}/register`, label: t('landing.goToBooking'), isLoading: false };
     }
     return { to: `/events/${slug}/register`, label: ctaLabel, isLoading: false };
   };
@@ -241,11 +242,6 @@ const EventLandingPage: React.FC = () => {
                     >
                       {ctaProps.label}
                     </Button>
-                    {isAuthenticated && (
-                      <Text fontSize="sm" color="green.300">
-                        {t('landing.alreadyRegistered')}
-                      </Text>
-                    )}
                   </VStack>
                 )
               ) : (
@@ -384,11 +380,6 @@ const EventLandingPage: React.FC = () => {
               <Button size="lg" colorScheme="gray" isDisabled>
                 {t('landing.registrationClosed')}
               </Button>
-            )}
-            {isAuthenticated && isOpen && (
-              <Text fontSize="sm" color="green.300">
-                {t('landing.alreadyRegistered')}
-              </Text>
             )}
           </VStack>
         </Center>
