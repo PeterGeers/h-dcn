@@ -41,12 +41,12 @@ De event booking flow is gebouwd in losse componenten die niet end-to-end verbon
 - [ ] Voeg `registry_config` veld toe (of maak een apart admin scherm voor registry upload)
 - [ ] Documenteer welke velden nodig zijn om een closed event volledig te configureren
 
-### Stap 2: Test data opschonen
+### Stap 2: Test data compleet maken
 
-- [ ] Verwijder non-UUID event records uit Events-Test tabel
-- [ ] Maak één schoon test event via het formulier (UUID wordt gegenereerd)
+- [ ] Migreer event `presmeet_2025_test` naar een UUID-based record (migration script dat alle referenties updatet: Orders.source_id, Members.allowed_events, S3 registry paden, product_ids koppelingen)
+- [ ] Zorg dat het event alle benodigde velden heeft: event_password, registry config, status=published
+- [ ] Zorg dat test user's `allowed_events` naar het nieuwe event_id wijst
 - [ ] Upload een test registry JSON naar S3 voor dat event
-- [ ] Stel een event wachtwoord in
 
 ### Stap 3: Flow valideren per stap
 
@@ -72,8 +72,8 @@ De event booking flow is gebouwd in losse componenten die niet end-to-end verbon
 
 ## Aanpak
 
-Geen nieuwe architectuur. Gebruik wat er is. Verbind de losse stukken:
+Geen nieuwe architectuur. Geen spec sessie nodig — voer de taken hierboven direct uit in een Vibe sessie:
 
 1. Admin UI velden toevoegen zodat events volledig configureerbaar zijn
-2. Test data opschonen zodat er één consistent test event is
+2. Test data migreren naar UUID + ontbrekende velden invullen
 3. Flow stap voor stap valideren en fixen waar het breekt
