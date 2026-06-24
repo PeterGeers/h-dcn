@@ -202,6 +202,10 @@ const PersonCard: React.FC<PersonCardProps> = ({
           <Select
             size="sm"
             placeholder={t('person_card.add_product')}
+            bg="gray.700"
+            borderColor="gray.600"
+            color="white"
+            _placeholder={{ color: 'gray.400' }}
             onChange={(e) => {
               if (e.target.value) {
                 handleAddProduct(e.target.value);
@@ -210,7 +214,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
             }}
           >
             {availableProducts.map((p) => (
-              <option key={p.product_id} value={p.product_id}>
+              <option key={p.product_id} value={p.product_id} style={{ backgroundColor: '#2D3748', color: 'white' }}>
                 {p.naam} ({formatCurrency(p.prijs)})
               </option>
             ))}
