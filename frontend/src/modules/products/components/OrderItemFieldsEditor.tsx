@@ -52,13 +52,13 @@ export interface OrderItemFieldsEditorProps {
 // --- Helpers ---
 
 /** Convert label text to a kebab-case id */
-function toKebabCase(text: string): string {
+function toSnakeCase(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s_-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/[^a-z0-9\s_]/g, '')
+    .replace(/[\s-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
     .slice(0, 50);
 }
 
@@ -143,10 +143,10 @@ const OrderItemFieldsEditor: React.FC<OrderItemFieldsEditorProps> = ({
   const handleLabelChange = useCallback(
     (index: number, label: string) => {
       const field = value[index];
-      const autoId = !field.id || field.id === toKebabCase(field.label);
+      const autoId = !field.id || field.id === toSnakeCase(field.label);
       const updates: Partial<OrderItemField> = { label };
       if (autoId) {
-        updates.id = toKebabCase(label);
+        updates.id = toSnakeCase(label);
       }
       handleFieldChange(index, updates);
     },
