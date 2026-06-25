@@ -6,7 +6,8 @@
     "admin_no_personal_booking": "Geen persoonlijke booking gevonden. Gebruik het Admin-tabblad om bestellingen te beheren.",
     "tab_booking": "Booking",
     "tab_overview": "Overzicht",
-    "tab_admin": "Admin"
+    "tab_admin": "Admin",
+    "logo_uploaded": "Logo succesvol geüpload"
   },
   "info": {
     "days_remaining": "Nog {{count}} dagen om te registreren"

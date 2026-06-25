@@ -31,8 +31,10 @@ import {
   Flex,
   VStack,
   Divider,
+  useToast,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { useAuth } from '../../../context/AuthProvider';
 import { eventBookingApi, isAuthorizationError } from '../services/eventBookingApi';
 import { Event, Order, Product } from '../types/eventBooking.types';
@@ -42,20 +44,17 @@ import PaymentPanel from '../components/PaymentPanel';
 import DelegateManager from '../components/DelegateManager';
 import BookingSummaryPdf from '../components/BookingSummaryPdf';
 import RegistryRowLogo from '../components/RegistryRowLogo';
+import { getAuthHeaders } from '../../../utils/authHeaders';
 
-/**
- * Check if user has logo upload admin rights.
- */
-function isLogoUploadAdmin(groups: string[]): boolean {
-  return groups.some((g) =>
-    ['Products_CRUD', 'Webshop_Management'].includes(g)
-  );
-}
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL ||
+  'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod';
 
 const EventBookingPage: React.FC = () => {
   const { t } = useTranslation('eventBooking');
   const { user } = useAuth();
   const { eventId } = useParams<{ eventId: string }>();
+  const toast = useToast();
 
   // Page-level state
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
@@ -65,8 +64,70 @@ const EventBookingPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  const userGroups = (user?.groups as string[]) ?? [];
-  const isLogoAdmin = isLogoUploadAdmin(userGroups);
+  /**
+   * Check if the current user is a delegate on this order (can upload logo).
+   */
+  const isDelegate = useCallback((): boolean => {
+    if (!order || !user?.email) return false;
+    const delegates = order.delegates;
+    if (!delegates) return false;
+    const email = user.email.toLowerCase();
+    const primary = (delegates.primary || '').toLowerCase();
+    const secondary = (delegates.secondary || '').toLowerCase();
+    return email === primary || email === secondary;
+  }, [order, user?.email]);
+
+  /**
+   * Upload logo for the registry row via /events/{event_id}/registry-logo.
+   */
+  const handleLogoUpload = useCallback(async (file: File) => {
+    if (!eventId || !order?.registry_row_id) return;
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip data URL prefix (data:image/png;base64,...)
+          const base64Data = result.split(',')[1] || result;
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const headers = await getAuthHeaders();
+      const response = await axios.post(
+        `${BASE_URL}/events/${eventId}/registry-logo`,
+        {
+          image_data: base64,
+          row_id: order.registry_row_id,
+          content_type: file.type || 'image/png',
+        },
+        { headers }
+      );
+
+      const logoUrl = response.data?.logo_url;
+      if (logoUrl && order) {
+        setOrder({ ...order, registry_row_logo_url: logoUrl });
+      }
+
+      toast({
+        title: t('page.logo_uploaded'),
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Upload failed';
+      toast({
+        title: msg,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [eventId, order, toast, t]);
 
   /**
    * Load the event by ID and attempt to load the order.
@@ -253,11 +314,12 @@ const EventBookingPage: React.FC = () => {
   return (
     <Container maxW="container.xl" py={6}>
       <Flex align="center" gap={3} mb={6}>
-        {registryRowLogoUrl && (
+        {order?.registry_row_id && (
           <RegistryRowLogo
             logoUrl={registryRowLogoUrl}
             label={registryRowLabel}
-            isAdmin={isLogoAdmin}
+            isAdmin={isDelegate()}
+            onUpload={handleLogoUpload}
           />
         )}
         <Box>
