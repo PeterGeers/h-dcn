@@ -3,10 +3,8 @@
  *
  * Features:
  * - Report type selector: Financial, Products, Orders, Stock Movements
- * - Respects primary event filter from parent (All, Webshop, specific event)
  * - Additional filters: order status, payment status
  * - Export controls (CSV / JSON)
- * - Event context display when event filter is active
  *
  * Validates: Requirements 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7,
  * 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14
@@ -26,11 +24,9 @@ import {
   Stack,
   Tooltip,
   Select,
-  Badge,
 } from '@chakra-ui/react';
 import { useAdminReports } from '../hooks/useAdminReports';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
-import { useEventFilter, EventOption } from '../hooks/useEventFilter';
 import {
   ReportType,
   OrderStatusFilter,
@@ -42,7 +38,7 @@ import { OrdersReport } from './reports/OrdersReport';
 import { StockMovementsReport } from './reports/StockMovementsReport';
 
 interface ReportsTabProps {
-  eventFilter: string;
+  eventFilter?: string;
 }
 
 // Exported utility functions for sub-components
@@ -100,7 +96,7 @@ const PAYMENT_STATUS_OPTIONS: { value: PaymentStatusFilter; label: string }[] = 
   { value: 'paid', label: 'Betaald' },
 ];
 
-export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter }) => {
+export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter = '' }) => {
   const [reportType, setReportType] = useState<ReportType>('financial');
   const [orderStatus, setOrderStatus] = useState<OrderStatusFilter>('all');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatusFilter>('all');
@@ -109,12 +105,6 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter }) => {
   const { report, loading, refreshing, error, refresh, exportData } =
     useAdminReports(eventFilter, reportType, orderStatus, paymentStatus);
   const { canMutate, canExport } = useAdminPermissions();
-  const { events } = useEventFilter();
-
-  // Resolve event context for display
-  const activeEvent: EventOption | undefined = eventFilter && eventFilter !== 'webshop'
-    ? events.find((e) => e.event_id === eventFilter)
-    : undefined;
 
   return (
     <Box>
@@ -160,37 +150,6 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter }) => {
           </Select>
         </Box>
       </HStack>
-
-      {/* Event Context */}
-      {activeEvent && (
-        <Box bg="purple.900" borderRadius="md" p={3} mb={4}>
-          <HStack spacing={3}>
-            <Badge colorScheme="purple" fontSize="xs">Evenement</Badge>
-            <Text color="white" fontSize="sm" fontWeight="medium">
-              {activeEvent.name}
-            </Text>
-          </HStack>
-          {report?.event_context && (
-            <HStack spacing={4} mt={2}>
-              {report.event_context.location && (
-                <Text color="gray.300" fontSize="xs">
-                  Locatie: {report.event_context.location}
-                </Text>
-              )}
-              {report.event_context.start_date && (
-                <Text color="gray.300" fontSize="xs">
-                  Van: {formatDate(report.event_context.start_date)}
-                </Text>
-              )}
-              {report.event_context.end_date && (
-                <Text color="gray.300" fontSize="xs">
-                  Tot: {formatDate(report.event_context.end_date)}
-                </Text>
-              )}
-            </HStack>
-          )}
-        </Box>
-      )}
 
       {/* Actions bar: Refresh + Export */}
       <HStack justify="space-between" mb={4} flexWrap="wrap" spacing={4}>

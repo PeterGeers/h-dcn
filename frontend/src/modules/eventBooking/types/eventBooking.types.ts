@@ -141,7 +141,6 @@ export interface ProductVariant {
 export interface Product {
   product_id: string;
   naam: string;
-  event_id?: string | null;
   event_type: string;
   prijs: number;
   order_item_fields: OrderItemField[];

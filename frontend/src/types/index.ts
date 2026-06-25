@@ -103,7 +103,6 @@ export interface Product {
   groep?: string;
   subgroep?: string;
   images?: string[];
-  event_ids?: string[];
   is_parent?: boolean;
   active?: boolean;
   order_item_fields?: any[];

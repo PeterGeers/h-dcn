@@ -128,12 +128,6 @@ jest.mock('../components/VariantEditModal', () => ({
   VariantEditModal: () => <div data-testid="variant-edit-modal" />,
 }));
 
-// Mock EventSelectorSection
-jest.mock('../components/EventSelectorSection', () => ({
-  __esModule: true,
-  default: () => <div data-testid="event-selector-section">EventSelectorSection</div>,
-}));
-
 // Mock OrderItemFieldsEditor
 jest.mock('../components/OrderItemFieldsEditor', () => ({
   __esModule: true,
@@ -169,7 +163,6 @@ const mockParentProduct: Product = {
   images: ['https://s3.example.com/image1.jpg'],
   is_parent: true,
   active: true,
-  event_ids: [],
 };
 
 const defaultProps = {

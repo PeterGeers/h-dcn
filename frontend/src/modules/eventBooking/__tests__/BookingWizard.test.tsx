@@ -140,7 +140,6 @@ const mockProducts: Product[] = [
   {
     product_id: 'prod-meeting',
     naam: 'Meeting Ticket',
-    event_id: 'evt-1',
     event_type: 'presmeet',
     prijs: 50,
     order_item_fields: [
@@ -153,7 +152,6 @@ const mockProducts: Product[] = [
   {
     product_id: 'prod-party',
     naam: 'Party Ticket',
-    event_id: 'evt-1',
     event_type: 'presmeet',
     prijs: 25,
     order_item_fields: [

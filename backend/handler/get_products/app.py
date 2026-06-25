@@ -1,22 +1,20 @@
 """
-GET /products — Event-filtered product listing for webshop buyers.
+GET /products — Batch-get products by explicit IDs.
 
-Returns active parent products filtered by event_id parameter.
-Products with event_id=null are webshop products, products with a specific
-event_id are event-linked products.
+Returns product records matching the requested product_ids.
+Callers obtain product IDs from the event's product_ids array.
 
 Query Parameters:
-    event_id (optional): Filter by event_id. Use "null" for webshop products,
-                         or a specific event_id for event-linked products.
-                         If omitted, returns all accessible products.
+    product_ids (required): Comma-separated list of product IDs to fetch.
+                            Empty string returns empty list (200).
+                            Missing param returns 400.
 
-Requirements: 7.1–7.7, 2.1–2.3, 12.2
+Requirements: 6.1, 6.2, 6.3, 6.4
 """
 
 import json
 import os
 import boto3
-from boto3.dynamodb.conditions import Attr
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -36,9 +34,43 @@ except ImportError as e:
     import sys
     sys.exit(0)
 
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
 table = dynamodb.Table(table_name)
+
+
+def _chunk_list(items: list, chunk_size: int = 100) -> list[list]:
+    """Split list into chunks of chunk_size for DynamoDB batch limits."""
+    return [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
+
+
+def _batch_get_products(product_ids: list[str]) -> list[dict]:
+    """Fetch products by ID using DynamoDB BatchGetItem, handling 100-item limit."""
+    if not product_ids:
+        return []
+
+    all_products = []
+    for chunk in _chunk_list(product_ids):
+        keys = [{'product_id': pid} for pid in chunk]
+        response = dynamodb.batch_get_item(
+            RequestItems={
+                table_name: {'Keys': keys}
+            }
+        )
+        items = response.get('Responses', {}).get(table_name, [])
+        all_products.extend(items)
+
+        # Handle unprocessed keys (DynamoDB throttling)
+        unprocessed = response.get('UnprocessedKeys', {}).get(table_name, {})
+        while unprocessed:
+            response = dynamodb.batch_get_item(
+                RequestItems={table_name: unprocessed}
+            )
+            items = response.get('Responses', {}).get(table_name, [])
+            all_products.extend(items)
+            unprocessed = response.get('UnprocessedKeys', {}).get(table_name, {})
+
+    return all_products
 
 
 def lambda_handler(event, context):
@@ -54,74 +86,50 @@ def lambda_handler(event, context):
 
         # Access control: user must have at least one qualifying role
         has_webshop_access = 'hdcnLeden' in user_roles
-        has_event_booking_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant'))
+        has_event_booking_access = any(
+            r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant')
+        )
 
         if not has_webshop_access and not has_event_booking_access:
             return create_error_response(403, 'No product access',
                 details={'error': 'access_denied',
                          'details': {'message': 'No qualifying role for product access'}})
 
-        # Get event_id filter from query parameters
+        # Get product_ids from query parameters
         query_params = event.get('queryStringParameters') or {}
-        requested_event_id = query_params.get('event_id')
+
+        if 'product_ids' not in query_params:
+            return create_error_response(400, 'product_ids parameter is required')
+
+        raw_product_ids = query_params.get('product_ids', '')
+
+        # Empty string → empty list → 200 with empty products
+        if not raw_product_ids.strip():
+            return {
+                'statusCode': 200,
+                'headers': cors_headers(),
+                'body': json.dumps({
+                    'products': [],
+                    'total_count': 0,
+                }, default=str)
+            }
+
+        # Parse comma-separated IDs and deduplicate
+        product_ids = list(set(
+            pid.strip() for pid in raw_product_ids.split(',') if pid.strip()
+        ))
 
         log_successful_access(user_email, user_roles, 'get_products')
 
-        # Build filter: is_parent=true, active!=false (includes products without active field)
-        # Products with active=false are excluded; products with active=true OR no active field are included
-        filter_expr = (
-            Attr('is_parent').eq(True) &
-            (Attr('active').ne(False) | Attr('active').not_exists())
-        )
-
-        if requested_event_id is not None:
-            if requested_event_id == 'null' or requested_event_id == '':
-                # Webshop products: event_id is null or not set
-                filter_expr = filter_expr & (
-                    Attr('event_id').not_exists() | Attr('event_id').eq(None)
-                )
-            else:
-                # Event-linked products: filter by specific event_id
-                filter_expr = filter_expr & Attr('event_id').eq(requested_event_id)
-
-        # Scan with filter
-        response = table.scan(FilterExpression=filter_expr)
-        products = response.get('Items', [])
-
-        # Handle pagination for large datasets
-        while 'LastEvaluatedKey' in response:
-            response = table.scan(
-                FilterExpression=filter_expr,
-                ExclusiveStartKey=response['LastEvaluatedKey']
-            )
-            products.extend(response.get('Items', []))
-
-        # Return product list with relevant fields
-        result = []
-        for product in products:
-            item = {
-                'product_id': product.get('product_id'),
-                'name': product.get('name'),
-                'description': product.get('description'),
-                'price': product.get('price'),
-                'event_id': product.get('event_id'),
-                'groep': product.get('groep'),
-                'subgroep': product.get('subgroep'),
-                'images': product.get('images', []),
-                'variant_schema': product.get('variant_schema'),
-                'order_item_fields': product.get('order_item_fields'),
-                'purchase_rules': product.get('purchase_rules'),
-                'active': product.get('active'),
-            }
-            result.append(item)
+        # Batch-get products from DynamoDB
+        products = _batch_get_products(product_ids)
 
         return {
             'statusCode': 200,
             'headers': cors_headers(),
             'body': json.dumps({
-                'products': result,
-                'total_count': len(result),
-                'event_id': requested_event_id,
+                'products': products,
+                'total_count': len(products),
             }, default=str)
         }
 

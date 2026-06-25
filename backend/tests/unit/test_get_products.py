@@ -1,273 +1,318 @@
 """
-Unit tests for the get_products handler.
+Unit tests for the get_products handler (batch-get-by-IDs).
 
-Tests event_id-filtered product listing for webshop buyers,
-covering access validation and product filtering by event_id.
+Tests the rewritten handler that accepts product_ids as a comma-separated
+query parameter and returns those specific products via DynamoDB BatchGetItem.
+
+Requirements: 6.1, 6.2, 6.3, 6.4
 """
 
+import importlib.util
 import json
-import pytest
-import sys
 import os
-import boto3
-from moto import mock_aws
+import sys
 from decimal import Decimal
+from unittest.mock import patch
 
-# Ensure shared layer is importable
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python')))
+import boto3
+import pytest
+from moto import mock_aws
+
+# Environment setup
+os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten'
+os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
+os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+
+# Handler file path for importlib loading
+_handler_file = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'get_products', 'app.py')
+)
+
+# Expose handler path for conftest cleanup
+_handler_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'get_products')
+)
 
 
-def _create_jwt_payload(email, groups):
-    """Create a mock JWT token payload for testing."""
-    import base64
-    payload = json.dumps({
-        "email": email,
-        "cognito:groups": groups,
-    })
-    # Create a fake but structurally valid JWT (header.payload.signature)
-    header = base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode()).rstrip(b'=').decode()
-    body = base64.urlsafe_b64encode(payload.encode()).rstrip(b'=').decode()
-    sig = base64.urlsafe_b64encode(b'fake_signature').rstrip(b'=').decode()
-    return f"{header}.{body}.{sig}"
+def _load_handler():
+    """Load handler module by file path, bypassing sys.path."""
+    if 'app' in sys.modules:
+        del sys.modules['app']
+    spec = importlib.util.spec_from_file_location('app', _handler_file)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules['app'] = module
+    spec.loader.exec_module(module)
+    return module
 
 
-def _build_event(event_id=None, groups=None, email="user@h-dcn.nl"):
-    """Build an API Gateway event for the get_products handler."""
-    if groups is None:
-        groups = ["hdcnLeden"]
-    token = _create_jwt_payload(email, groups)
+def _auth_patches():
+    """Patch auth layer to allow all requests with hdcnLeden role."""
+    return patch.multiple(
+        'app',
+        extract_user_credentials=lambda event: ('user@h-dcn.nl', ['hdcnLeden'], None),
+        log_successful_access=lambda *a, **kw: None,
+    )
+
+
+def _build_event(product_ids=None, include_param=True):
+    """Build an API Gateway event for the get_products handler.
+
+    Args:
+        product_ids: Comma-separated string of product IDs, or None for empty string.
+        include_param: If False, omits the product_ids param entirely.
+    """
     event = {
-        "httpMethod": "GET",
-        "headers": {
-            "Authorization": f"Bearer {token}",
-        },
-        "queryStringParameters": {},
+        'httpMethod': 'GET',
+        'headers': {'Authorization': 'Bearer fake-token'},
+        'queryStringParameters': {},
     }
-    if event_id is not None:
-        event["queryStringParameters"]["event_id"] = event_id
+    if include_param:
+        event['queryStringParameters']['product_ids'] = product_ids if product_ids is not None else ''
+    else:
+        # Missing product_ids param entirely
+        event['queryStringParameters'] = {}
     return event
 
 
+def _create_producten_table(dynamodb):
+    """Create the Producten table."""
+    return dynamodb.create_table(
+        TableName='Producten',
+        KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
+        AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
+        BillingMode='PAY_PER_REQUEST',
+    )
+
+
 @pytest.fixture
-def producten_table():
-    """Create a mocked Producten DynamoDB table with test products."""
+def setup_table():
+    """Create mocked Producten table, load handler inside mock context."""
     with mock_aws():
-        os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten'
-        os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
-        os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-        os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-        table = dynamodb.create_table(
-            TableName='Producten',
-            KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
-            AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
-            BillingMode='PAY_PER_REQUEST',
-        )
+        table = _create_producten_table(dynamodb)
 
-        # Seed test products — webshop products (event_id=null)
+        # Seed a few products
         table.put_item(Item={
-            'product_id': 'prod_hdcn_1',
-            'name': 'H-DCN T-shirt',
-            'description': 'Club T-shirt',
-            'price': Decimal('25.00'),
-            'event_id': None,
-            'is_parent': True,
+            'product_id': 'prod_001',
+            'naam': 'H-DCN T-shirt',
+            'prijs': Decimal('25.00'),
             'active': True,
-            'groep': 'Kleding',
-            'subgroep': 'T-shirts',
-            'images': ['https://s3.example.com/img1.jpg'],
-            'variant_schema': {'Maat': ['S', 'M', 'L']},
-            'order_item_fields': None,
-            'purchase_rules': {'max_per_order': 5},
         })
         table.put_item(Item={
-            'product_id': 'prod_hdcn_2',
-            'name': 'H-DCN Pet',
-            'description': 'Club cap',
-            'price': Decimal('15.00'),
-            'event_id': None,
-            'is_parent': True,
+            'product_id': 'prod_002',
+            'naam': 'H-DCN Pet',
+            'prijs': Decimal('15.00'),
             'active': True,
-            'groep': 'Accessoires',
-            'subgroep': None,
-            'images': [],
-            'variant_schema': None,
-            'order_item_fields': None,
-            'purchase_rules': None,
         })
-        # Event-linked product (event_id set)
         table.put_item(Item={
-            'product_id': 'prod_presmeet_1',
-            'name': 'PresMeet Diner',
-            'description': 'Dinner reservation',
-            'price': Decimal('50.00'),
-            'event_id': 'evt_presmeet_2027',
-            'is_parent': True,
+            'product_id': 'prod_003',
+            'naam': 'H-DCN Mok',
+            'prijs': Decimal('10.00'),
             'active': True,
-            'groep': 'Events',
-            'subgroep': None,
-            'images': [],
-            'variant_schema': None,
-            'order_item_fields': [{'id': 'name', 'label': 'Naam', 'type': 'text', 'required': True}],
-            'purchase_rules': {'max_per_club': 10},
-        })
-        # Inactive product — should not appear
-        table.put_item(Item={
-            'product_id': 'prod_hdcn_inactive',
-            'name': 'Old Product',
-            'description': 'Inactive',
-            'price': Decimal('10.00'),
-            'event_id': None,
-            'is_parent': True,
-            'active': False,
-            'groep': None,
-            'subgroep': None,
-            'images': [],
-        })
-        # Variant record — should not appear (is_parent=False)
-        table.put_item(Item={
-            'product_id': 'var_prod_hdcn_1_s',
-            'name': 'H-DCN T-shirt - S',
-            'event_id': None,
-            'is_parent': False,
-            'parent_id': 'prod_hdcn_1',
-            'active': True,
-            'variant_attributes': {'Maat': 'S'},
-            'stock': 10,
-        })
-        # Legacy product without 'active' field — should still appear (backward compatibility)
-        table.put_item(Item={
-            'product_id': 'prod_hdcn_legacy',
-            'name': 'Legacy Product',
-            'description': 'No active field',
-            'price': Decimal('12.00'),
-            'event_id': None,
-            'is_parent': True,
-            'groep': 'Overig',
-            'subgroep': None,
-            'images': [],
         })
 
-        yield table
+        handler_module = _load_handler()
+        yield table, handler_module
 
 
-class TestGetProductsHandler:
-    """Tests for the get_products Lambda handler."""
+class TestGetProductsEmptyIds:
+    """Test empty product_ids returns empty list (200).
 
-    def _import_handler(self):
-        """Import the handler fresh (after moto mock is active)."""
-        # Remove cached module if it exists
-        if 'backend.handler.get_products.app' in sys.modules:
-            del sys.modules['backend.handler.get_products.app']
+    Validates: Requirement 6.3
+    """
 
-        handler_path = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), '..', '..', 'handler', 'get_products'
-        ))
-        if handler_path not in sys.path:
-            sys.path.insert(0, handler_path)
+    def test_empty_string_product_ids_returns_200_empty(self, setup_table):
+        """Empty product_ids param returns 200 with empty products list."""
+        table, handler_module = setup_table
+        event = _build_event(product_ids='')
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
 
-        # Remove previously cached app module
-        if 'app' in sys.modules:
-            del sys.modules['app']
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['products'] == []
+        assert body['total_count'] == 0
 
-        import app
-        return app.lambda_handler
+    def test_whitespace_only_product_ids_returns_200_empty(self, setup_table):
+        """Whitespace-only product_ids returns 200 with empty products list."""
+        table, handler_module = setup_table
+        event = _build_event(product_ids='   ')
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
 
-    def test_options_request(self, producten_table):
-        handler = self._import_handler()
-        event = {"httpMethod": "OPTIONS", "headers": {}}
-        result = handler(event, None)
-        assert result['statusCode'] == 200
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['products'] == []
+        assert body['total_count'] == 0
 
-    def test_returns_webshop_products_with_event_id_null(self, producten_table):
-        """Filter by event_id=null returns only webshop products (including legacy without active field)."""
-        handler = self._import_handler()
-        event = _build_event(event_id="null", groups=["hdcnLeden"])
-        result = handler(event, None)
 
-        assert result['statusCode'] == 200
-        body = json.loads(result['body'])
-        assert body['total_count'] == 3
-        product_ids = [p['product_id'] for p in body['products']]
-        assert 'prod_hdcn_1' in product_ids
-        assert 'prod_hdcn_2' in product_ids
-        assert 'prod_hdcn_legacy' in product_ids
-        # Inactive and variant should not appear
-        assert 'prod_hdcn_inactive' not in product_ids
-        assert 'var_prod_hdcn_1_s' not in product_ids
+class TestGetProductsMissingParam:
+    """Test missing product_ids param returns 400.
 
-    def test_returns_event_products_with_specific_event_id(self, producten_table):
-        """Filter by specific event_id returns only that event's products."""
-        handler = self._import_handler()
-        event = _build_event(event_id="evt_presmeet_2027", groups=["Regio_Pressmeet"])
-        result = handler(event, None)
+    Validates: Requirement 6.2
+    """
 
-        assert result['statusCode'] == 200
-        body = json.loads(result['body'])
-        assert body['total_count'] == 1
-        assert body['products'][0]['product_id'] == 'prod_presmeet_1'
+    def test_missing_product_ids_param_returns_400(self, setup_table):
+        """Missing product_ids query parameter returns 400 error."""
+        table, handler_module = setup_table
+        event = _build_event(include_param=False)
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
 
-    def test_returns_all_active_products_without_event_id_filter(self, producten_table):
-        """No event_id filter returns all active parent products (including legacy without active field)."""
-        handler = self._import_handler()
-        event = _build_event(event_id=None, groups=["hdcnLeden", "Regio_Pressmeet"])
-        result = handler(event, None)
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'product_ids' in body.get('error', '').lower()
 
-        assert result['statusCode'] == 200
-        body = json.loads(result['body'])
-        # All 3 active parent products + 1 legacy product without active field
-        assert body['total_count'] == 4
-
-    def test_product_fields_included_in_response(self, producten_table):
-        handler = self._import_handler()
-        event = _build_event(event_id="null", groups=["hdcnLeden"])
-        result = handler(event, None)
-
-        body = json.loads(result['body'])
-        product = next(p for p in body['products'] if p['product_id'] == 'prod_hdcn_1')
-        assert product['groep'] == 'Kleding'
-        assert product['subgroep'] == 'T-shirts'
-        assert product['images'] == ['https://s3.example.com/img1.jpg']
-        assert product['variant_schema'] == {'Maat': ['S', 'M', 'L']}
-        # DynamoDB returns Decimal values serialized as strings via json.dumps(default=str)
-        assert product['purchase_rules'] == {'max_per_order': '5'}
-
-    def test_unauthorized_returns_401(self, producten_table):
-        handler = self._import_handler()
+    def test_null_query_string_parameters_returns_400(self, setup_table):
+        """queryStringParameters being None returns 400."""
+        table, handler_module = setup_table
         event = {
-            "httpMethod": "GET",
-            "headers": {},  # No Authorization header
-            "queryStringParameters": {},
+            'httpMethod': 'GET',
+            'headers': {'Authorization': 'Bearer fake-token'},
+            'queryStringParameters': None,
         }
-        result = handler(event, None)
-        assert result['statusCode'] == 401
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
 
-    def test_no_webshop_access_returns_403(self, producten_table):
-        handler = self._import_handler()
-        # verzoek_lid has no product access roles
-        event = _build_event(event_id="null", groups=["verzoek_lid"])
-        result = handler(event, None)
-        assert result['statusCode'] == 403
+        assert response['statusCode'] == 400
 
-    def test_inactive_products_excluded(self, producten_table):
-        """Products with active=false are excluded from customer-facing listing."""
-        handler = self._import_handler()
-        event = _build_event(event_id=None, groups=["hdcnLeden", "Regio_Pressmeet"])
-        result = handler(event, None)
 
-        assert result['statusCode'] == 200
-        body = json.loads(result['body'])
-        product_ids = [p['product_id'] for p in body['products']]
-        assert 'prod_hdcn_inactive' not in product_ids
+class TestGetProductsNonExistentIds:
+    """Test non-existent IDs are silently omitted.
 
-    def test_legacy_products_without_active_field_included(self, producten_table):
-        """Products without an active field are included (backward compatibility)."""
-        handler = self._import_handler()
-        event = _build_event(event_id="null", groups=["hdcnLeden"])
-        result = handler(event, None)
+    Validates: Requirement 6.4
+    """
 
-        assert result['statusCode'] == 200
-        body = json.loads(result['body'])
-        product_ids = [p['product_id'] for p in body['products']]
-        assert 'prod_hdcn_legacy' in product_ids
+    def test_nonexistent_ids_omitted(self, setup_table):
+        """Non-existent product IDs are silently omitted from response."""
+        table, handler_module = setup_table
+        event = _build_event(product_ids='prod_001,nonexistent_999,prod_002')
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        returned_ids = {p['product_id'] for p in body['products']}
+        assert returned_ids == {'prod_001', 'prod_002'}
+        assert body['total_count'] == 2
+
+    def test_all_nonexistent_ids_returns_empty(self, setup_table):
+        """All non-existent IDs returns 200 with empty list."""
+        table, handler_module = setup_table
+        event = _build_event(product_ids='fake_001,fake_002,fake_003')
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['products'] == []
+        assert body['total_count'] == 0
+
+    def test_single_existing_id_returned(self, setup_table):
+        """A single existing product ID is returned correctly."""
+        table, handler_module = setup_table
+        event = _build_event(product_ids='prod_003')
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert len(body['products']) == 1
+        assert body['products'][0]['product_id'] == 'prod_003'
+
+
+class TestGetProductsChunking:
+    """Test >100 IDs are chunked correctly for DynamoDB BatchGetItem.
+
+    Validates: Requirements 6.1, 6.4
+    """
+
+    def test_more_than_100_ids_chunked(self, setup_table):
+        """IDs exceeding 100 are processed in chunks via BatchGetItem."""
+        table, handler_module = setup_table
+
+        # Insert 150 products
+        for i in range(150):
+            table.put_item(Item={
+                'product_id': f'bulk_{i:04d}',
+                'naam': f'Bulk Product {i}',
+                'prijs': Decimal('5.00'),
+            })
+
+        # Request all 150
+        ids_list = [f'bulk_{i:04d}' for i in range(150)]
+        product_ids_str = ','.join(ids_list)
+        event = _build_event(product_ids=product_ids_str)
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['total_count'] == 150
+        returned_ids = {p['product_id'] for p in body['products']}
+        assert returned_ids == set(ids_list)
+
+    def test_exactly_100_ids_no_chunking_needed(self, setup_table):
+        """Exactly 100 IDs does not require chunking (single batch)."""
+        table, handler_module = setup_table
+
+        # Insert 100 products
+        for i in range(100):
+            table.put_item(Item={
+                'product_id': f'exact_{i:03d}',
+                'naam': f'Product {i}',
+                'prijs': Decimal('1.00'),
+            })
+
+        ids_list = [f'exact_{i:03d}' for i in range(100)]
+        product_ids_str = ','.join(ids_list)
+        event = _build_event(product_ids=product_ids_str)
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['total_count'] == 100
+
+    def test_101_ids_with_some_nonexistent(self, setup_table):
+        """101 IDs with some non-existent are chunked; missing IDs omitted."""
+        table, handler_module = setup_table
+
+        # Insert only 50 products
+        for i in range(50):
+            table.put_item(Item={
+                'product_id': f'chunk_{i:03d}',
+                'naam': f'Chunk Product {i}',
+                'prijs': Decimal('3.00'),
+            })
+
+        # Request 101 IDs — 50 exist, 51 don't
+        ids_list = [f'chunk_{i:03d}' for i in range(101)]
+        product_ids_str = ','.join(ids_list)
+        event = _build_event(product_ids=product_ids_str)
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        # Only the 50 that exist should be returned
+        assert body['total_count'] == 50
+
+
+class TestGetProductsDuplicateIds:
+    """Test that duplicate IDs are deduplicated."""
+
+    def test_duplicate_ids_deduplicated(self, setup_table):
+        """Duplicate product IDs in the request are deduplicated."""
+        table, handler_module = setup_table
+        event = _build_event(product_ids='prod_001,prod_001,prod_002,prod_002,prod_002')
+        with _auth_patches():
+            response = handler_module.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        returned_ids = [p['product_id'] for p in body['products']]
+        # Each product returned at most once
+        assert len(returned_ids) == len(set(returned_ids))
+        assert set(returned_ids) == {'prod_001', 'prod_002'}

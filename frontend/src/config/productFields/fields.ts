@@ -134,20 +134,6 @@ export const parentFields: Record<string, ProductFieldDefinition> = {
     helpText: 'true = hoofdproduct, false = variant',
   },
 
-  event_ids: {
-    key: 'event_ids',
-    label: 'Evenementen',
-    dataType: 'list',
-    inputType: 'multiselect',
-    group: 'categorization',
-    order: 3,
-    required: false,
-    recordType: 'parent',
-    helpText: 'In welke evenementen/winkels dit product zichtbaar is (incl. evt-webshop)',
-    defaultValue: [],
-  },
-
-
 
   order_item_fields: {
     key: 'order_item_fields',

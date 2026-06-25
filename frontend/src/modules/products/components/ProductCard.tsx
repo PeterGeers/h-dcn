@@ -4,7 +4,7 @@ import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
 import { useState, useEffect, useCallback } from 'react';
-import { Product, Event as HDCNEvent } from '../../../types';
+import { Product } from '../../../types';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
@@ -14,7 +14,7 @@ import { getRequiredFields, getProductField } from '../../../config/productField
 import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
 import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
 import { VariantEditModal } from './VariantEditModal';
-import EventSelectorSection from './EventSelectorSection';
+
 import { canHaveVariants } from '../../../utils/productHelpers';
 
 /**
@@ -98,8 +98,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
   const { isOpen: isCategoryModalOpen, onOpen: onCategoryModalOpen, onClose: onCategoryModalClose } = useDisclosure();
   const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
-  const [events, setEvents] = useState<HDCNEvent[]>([]);
-  const [eventsLoading, setEventsLoading] = useState<boolean>(false);
   const [variants, setVariants] = useState<AdminVariant[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState<boolean>(false);
   const [variantModalOpen, setVariantModalOpen] = useState<boolean>(false);
@@ -158,25 +156,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
   }, [product]);
 
-  // Fetch events for the event_id selector
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setEventsLoading(true);
-      try {
-        const headers = await getAuthHeadersForGet();
-        const response = await fetch(API_URLS.events(), { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setEvents(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error('Error fetching events:', err);
-      } finally {
-        setEventsLoading(false);
-      }
-    };
-    fetchEvents();
-  }, []);
 
   const CategoryDisplay = ({ groep, subgroep, onClick }: { groep: string; subgroep: string; onClick: () => void }) => {
     const displayText = groep && subgroep 
@@ -422,14 +401,13 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           images: (product as any).images || [],
           groep: product.groep || '',
           subgroep: product.subgroep || '',
-          event_ids: (product as any).event_ids || [],
           order_item_fields: (product as any).order_item_fields || undefined,
           purchase_rules: (product as any).purchase_rules || undefined,
         }}
         validationSchema={schema}
         onSubmit={(values) => {
           // Remove legacy fields from payload, send only canonical registry fields
-          const { opties, nietInWinkel, event_id, id, name, price, image, ...cleanValues } = values as any;
+          const { opties, nietInWinkel, event_id, event_ids, id, name, price, image, ...cleanValues } = values as any;
 
           // Coerce numeric validation fields in order_item_fields to integers
           if (cleanValues.order_item_fields) {
@@ -549,14 +527,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
 
-              {/* Evenementen — CollapsibleSection with badges */}
-              <EventSelectorSection
-                events={events}
-                selectedIds={values.event_ids || []}
-                onChange={(ids: string[]) => setFieldValue('event_ids', ids)}
-                isLoading={eventsLoading}
-                isDisabled={readOnly}
-              />
 
               {/* Legacy required_attributes display */}
               {(product as any).required_attributes && !values.order_item_fields && !values.purchase_rules && (

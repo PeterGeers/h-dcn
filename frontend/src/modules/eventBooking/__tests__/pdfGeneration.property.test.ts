@@ -153,7 +153,6 @@ const productArb: fc.Arbitrary<Product> = fc
     return fc.constant<Product>({
       product_id: base.product_id,
       naam: base.name,
-      event_id: null,
       event_type: base.event_type,
       prijs: base.price,
       order_item_fields: [

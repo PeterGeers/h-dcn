@@ -60,7 +60,6 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 events_table = dynamodb.Table(os.environ.get('EVENTS_TABLE_NAME', 'Events'))
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
-products_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
 
 # S3 client for registry file and logos
 s3 = boto3.client('s3', region_name='eu-west-1')
@@ -109,27 +108,42 @@ def _fetch_registry_rows(s3_path: str) -> dict[str, dict]:
         return {}
 
 
-def _fetch_products_map(event_id: str) -> dict[str, dict]:
-    """Fetch all products linked to the event, keyed by product_id."""
-    filter_expr = Attr('event_id').eq(event_id)
+def _chunk_list(items: list, chunk_size: int = 100) -> list[list]:
+    """Split list into chunks of chunk_size for DynamoDB BatchGetItem limit."""
+    return [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
 
-    response = products_table.scan(
-        FilterExpression=filter_expr,
-        ProjectionExpression='product_id, #n, variant_schema',
-        ExpressionAttributeNames={'#n': 'name'},
-    )
-    items = response.get('Items', [])
 
-    while 'LastEvaluatedKey' in response:
-        response = products_table.scan(
-            FilterExpression=filter_expr,
-            ProjectionExpression='product_id, #n, variant_schema',
-            ExpressionAttributeNames={'#n': 'name'},
-            ExclusiveStartKey=response['LastEvaluatedKey'],
+def _fetch_products_map(product_ids: list[str]) -> dict[str, dict]:
+    """Fetch products by ID list using BatchGetItem."""
+    if not product_ids:
+        return {}
+
+    products_table_name = os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten')
+    products_map = {}
+
+    for chunk in _chunk_list(product_ids):
+        keys = [{'product_id': pid} for pid in chunk]
+        response = dynamodb.batch_get_item(
+            RequestItems={
+                products_table_name: {
+                    'Keys': keys,
+                    'ProjectionExpression': 'product_id, #n',
+                    'ExpressionAttributeNames': {'#n': 'naam'},
+                }
+            }
         )
-        items.extend(response.get('Items', []))
+        for item in response.get('Responses', {}).get(products_table_name, []):
+            products_map[item['product_id']] = item
 
-    return {item['product_id']: item for item in items}
+        # Handle unprocessed keys
+        unprocessed = response.get('UnprocessedKeys', {})
+        while unprocessed.get(products_table_name):
+            response = dynamodb.batch_get_item(RequestItems=unprocessed)
+            for item in response.get('Responses', {}).get(products_table_name, []):
+                products_map[item['product_id']] = item
+            unprocessed = response.get('UnprocessedKeys', {})
+
+    return products_map
 
 
 def _get_last_word(name: str) -> str:
@@ -674,8 +688,9 @@ def lambda_handler(event, context):
         # Resolve row_label prefix from registry_config (fallback: "row")
         row_label_prefix = registry_config.get('row_label', '') or 'row'
 
-        # Fetch products for product names
-        products_map = _fetch_products_map(event_id)
+        # Fetch products for product names (using event's product_ids array)
+        product_ids = event_record.get('product_ids', [])
+        products_map = _fetch_products_map(product_ids)
 
         # Build HTML for the PDF
         if mode == 'by_order':

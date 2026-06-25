@@ -34,7 +34,7 @@ import { AdminOrder } from '../types/admin.types';
 
 export interface OrdersTabProps {
   /** Active event filter value (empty string = all, "webshop" = no event) */
-  eventFilter: string;
+  eventFilter?: string;
 }
 
 const PAYMENT_STATUS_COLOR: Record<string, string> = {
@@ -68,8 +68,7 @@ function getEventLabel(eventId?: string | null): string {
   return eventId;
 }
 
-export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter }) => {
-  // eventFilter prop is interpreted as event_id filter from parent EventFilter
+export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
   const { orders, loading, error, refetch } = useAdminOrders(eventFilter);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);

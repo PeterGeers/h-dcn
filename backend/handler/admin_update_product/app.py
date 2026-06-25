@@ -46,7 +46,6 @@ UPDATABLE_FIELDS = [
     # categorization
     'groep',
     'subgroep',
-    'event_ids',
     # media
     'images',
     # metadata

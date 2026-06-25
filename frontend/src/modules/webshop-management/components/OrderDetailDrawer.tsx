@@ -56,7 +56,7 @@ export interface OrderDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderUpdated: () => void;
-  eventFilter: string;
+  eventFilter?: string;
 }
 
 /**

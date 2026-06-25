@@ -133,6 +133,7 @@ def setup_aws():
         events_table.put_item(Item={
             'event_id': 'evt-001',
             'name': 'Test Event 2025',
+            'product_ids': ['prod-1', 'prod-2'],
             'registry_config': {
                 's3_path': 'registries/evt-001.json',
                 'row_label': 'club',
