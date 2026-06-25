@@ -246,7 +246,6 @@ const EventBookingPage: React.FC = () => {
   }
 
   // --- Main booking page ---
-  const registryRowId = order?.registry_row_id;
   const registryRowLabel = order?.registry_row_label;
   const registryRowLogoUrl = order?.registry_row_logo_url;
   const eventTitle = activeEvent?.name || t('page.title_booking');
