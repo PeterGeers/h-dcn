@@ -209,6 +209,8 @@ export async function getProducts(
 ): Promise<Product[]> {
   const response = await eventBookingClient.get<Product[]>('/scan-product/');
   let products = response.data;
+  // Filter to only active products (active !== false)
+  products = products.filter((p: any) => p.active !== false);
   if (productIds && productIds.length > 0) {
     products = products.filter((p) => productIds.includes(p.product_id));
   }
