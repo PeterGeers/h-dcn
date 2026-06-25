@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader,
   AlertDialogContent, AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { DeleteIcon, NotAllowedIcon, CheckIcon } from '@chakra-ui/icons';
+import { DeleteIcon, NotAllowedIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 
 interface User {
   attributes?: {
@@ -409,6 +409,18 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               filteredCount={filteredProducts.length}
               totalCount={products.length}
             >
+              {hasProductsFullAccess && (
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="green"
+                  size="sm"
+                  w="full"
+                  mb={3}
+                  onClick={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
+                >
+                  {t('management.new_product', 'Nieuw product')}
+                </Button>
+              )}
               <GenericFilter
                 label={t('management.group', 'Groep')}
                 value={selectedGroep}
@@ -502,6 +514,14 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               onSave={handleSave}
               onDelete={handleDelete}
               onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
+              onCopy={(sourceProduct) => {
+                const { product_id, id, created_at, updated_at, ...rest } = sourceProduct as any;
+                setSelected({
+                  ...rest,
+                  product_id: '',
+                  naam: `${rest.naam || ''} (kopie)`,
+                });
+              }}
               onClose={() => setSelected(null)}
               readOnly={false}
             />

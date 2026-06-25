@@ -10,9 +10,9 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { VariantSchema, VariantRecord } from '../types/unifiedProduct.types';
-import { sortSizeValues } from '../../webshop-management/utils/sizeSorter';
-import { deriveAxesFromVariants } from '../../webshop-management/utils/variantUtils';
+import { VariantSchema, VariantRecord } from '../modules/webshop/types/unifiedProduct.types';
+import { sortSizeValues } from '../modules/webshop-management/utils/sizeSorter';
+import { deriveAxesFromVariants } from '../utils/variantUtils';
 
 export interface VariantSelectorProps {
   /** Available variant records for the product */

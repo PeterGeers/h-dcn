@@ -1,5 +1,5 @@
 import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon, CopyIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { uploadToS3 } from '../services/s3Upload';
@@ -54,6 +54,7 @@ interface ProductCardProps {
   onSave: (values: Product) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
+  onCopy?: (product: Product) => void;
   onClose: () => void;
   filteredProducts: Product[];
   readOnly?: boolean; // Add read-only mode support
@@ -92,7 +93,7 @@ for (const key of requiredParentFields) {
 }
 const schema = Yup.object().shape(schemaShape);
 
-export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
+export default function ProductCard({ product, products, onSave, onDelete, onNew, onCopy, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
   const [uploading, setUploading] = useState<boolean>(false);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
@@ -708,11 +709,11 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 )}
                 {!readOnly && (
                   <IconButton
-                    icon={<AddIcon />}
+                    icon={<CopyIcon />}
                     colorScheme="green"
                     size="sm"
-                    onClick={onNew}
-                    aria-label="Nieuw product"
+                    onClick={() => onCopy ? onCopy(product) : onNew()}
+                    aria-label="Kopieer product"
                     _hover={{ bg: 'green.600' }}
                   />
                 )}

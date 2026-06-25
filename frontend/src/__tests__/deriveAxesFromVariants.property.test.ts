@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { deriveAxesFromVariants } from '../modules/webshop-management/utils/variantUtils';
+import { deriveAxesFromVariants } from '../utils/variantUtils';
 import { VariantRecord } from '../modules/webshop/types/unifiedProduct.types';
 
 // Feature: product-variant-simplification, Property 4: Axis derivation from active variant records

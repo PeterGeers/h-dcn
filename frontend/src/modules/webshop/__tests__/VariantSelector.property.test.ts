@@ -12,7 +12,7 @@
  */
 
 import * as fc from 'fast-check';
-import { resolveVariant } from '../components/VariantSelector';
+import { resolveVariant } from '../../../components/VariantSelector';
 import { VariantRecord, VariantSchema } from '../types/unifiedProduct.types';
 
 // ---------- Arbitraries ----------

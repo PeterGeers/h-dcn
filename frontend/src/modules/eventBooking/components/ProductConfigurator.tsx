@@ -3,18 +3,19 @@
  *
  * Based on the product's order_item_fields definition, renders the appropriate
  * input elements (text, select, number, date). Also handles variant selection
- * if the product has a variant_schema — resolving axis selections to a valid
- * variant_id before the line can be committed.
+ * using the shared VariantSelector component + useProductVariants hook.
  *
  * Validates: Requirements 7.6, 7.7
  */
 
-import React, { useMemo } from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   FormControl,
   FormErrorMessage,
   FormLabel,
+  HStack,
+  Image,
   Input,
   NumberDecrementStepper,
   NumberIncrementStepper,
@@ -22,11 +23,15 @@ import {
   NumberInputField,
   NumberInputStepper,
   Select,
+  Spinner,
   Text,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { OrderItemField, Product, ProductVariant } from '../types/eventBooking.types';
+import { OrderItemField, Product } from '../types/eventBooking.types';
 import { formatCurrency } from '../utils/priceCalculator';
+import { useProductVariants } from '../../../hooks/useProductVariants';
+import VariantSelector from '../../../components/VariantSelector';
+import { VariantRecord } from '../../webshop/types/unifiedProduct.types';
 
 export interface ProductConfiguratorProps {
   product: Product;
@@ -39,58 +44,25 @@ export interface ProductConfiguratorProps {
 }
 
 /**
- * Resolve variant axis selections to a valid variant_id.
- *
- * Given the user's axis selections (stored as _variant_<axisName> in fields),
- * find the matching variant from the product's variants list.
- *
- * @returns The matching variant_id, or null if not all axes are selected or no match found.
- */
-export function resolveVariantId(
-  fields: Record<string, any>,
-  variantSchema: { name: string; values: string[] }[],
-  variants: ProductVariant[]
-): string | null {
-  if (!variantSchema || variantSchema.length === 0 || !variants || variants.length === 0) {
-    return null;
-  }
-
-  // Collect the current selection for each axis
-  const selections: Record<string, string> = {};
-  for (const axis of variantSchema) {
-    const value = fields[`_variant_${axis.name}`];
-    if (!value || value === '') {
-      return null; // Not all axes selected yet
-    }
-    selections[axis.name] = value;
-  }
-
-  // Find the variant whose variant_attributes match all selections
-  const match = variants.find((variant) =>
-    variantSchema.every(
-      (axis) => variant.variant_attributes[axis.name] === selections[axis.name]
-    )
-  );
-
-  return match?.variant_id ?? null;
-}
-
-/**
  * Check whether a product requires variant selection but doesn't yet have one resolved.
  */
 export function isVariantSelectionIncomplete(
   product: Product,
-  fields: Record<string, any>,
+  _fields: Record<string, any>,
   variantId: string | null
 ): boolean {
-  if (!product.variant_schema || product.variant_schema.length === 0) {
+  // This is now a simplified check — if the product has is_parent set,
+  // it likely has variants. The actual check happens via useProductVariants.
+  if (product.is_parent === false) {
     return false;
   }
-  if (!product.variants || product.variants.length === 0) {
-    // No variants available — cannot resolve, treat as incomplete
-    return true;
+  // If variantId is provided, selection is complete
+  if (variantId) {
+    return false;
   }
-  return variantId === null;
+  // We can't know for sure without variant data, so return true to be safe
+  // The component itself will handle the loading state
+  return product.is_parent === true;
 }
 
 /**
@@ -171,88 +143,76 @@ const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
 }) => {
   const { t } = useTranslation('eventBooking');
 
-  const hasVariantSchema = product.variant_schema && product.variant_schema.length > 0;
-  const hasVariants = product.variants && product.variants.length > 0;
+  // Fetch variants using the shared hook
+  const { variants, loading: loadingVariants, error: variantError, hasVariantAxes } =
+    useProductVariants(product.product_id, true);
 
-  // Resolve variant_id from current axis selections
-  const resolvedVariantId = useMemo(() => {
-    if (!hasVariantSchema || !hasVariants) return null;
-    return resolveVariantId(
-      fields,
-      product.variant_schema!,
-      product.variants!
-    );
-  }, [fields, hasVariantSchema, hasVariants, product.variant_schema, product.variants]);
-
-  // Determine if variant selection is incomplete (all axes must be selected)
-  const variantIncomplete = useMemo(() => {
-    if (!hasVariantSchema) return false;
-    return resolvedVariantId === null;
-  }, [hasVariantSchema, resolvedVariantId]);
-
-  // Check if all axes are selected but no matching variant exists
-  const allAxesSelected = useMemo(() => {
-    if (!hasVariantSchema || !product.variant_schema) return false;
-    return product.variant_schema.every(
-      (axis) => fields[`_variant_${axis.name}`] && fields[`_variant_${axis.name}`] !== ''
-    );
-  }, [hasVariantSchema, product.variant_schema, fields]);
-
-  const combinationInvalid = allAxesSelected && resolvedVariantId === null && hasVariants;
+  // Handle variant selection from the shared VariantSelector
+  const handleVariantSelect = useCallback(
+    (variant: VariantRecord | null) => {
+      const newVariantId = variant?.product_id ?? null;
+      // Only trigger onChange if the variant actually changed
+      if (newVariantId !== variantId) {
+        onChange(fields, newVariantId);
+      }
+    },
+    [fields, variantId, onChange]
+  );
 
   const handleFieldChange = (fieldId: string, value: any) => {
     const updatedFields = { ...fields, [fieldId]: value };
-
-    // If this is a variant axis change, re-resolve the variant_id
-    if (fieldId.startsWith('_variant_') && hasVariantSchema && hasVariants) {
-      const newVariantId = resolveVariantId(
-        updatedFields,
-        product.variant_schema!,
-        product.variants!
-      );
-      onChange(updatedFields, newVariantId);
-    } else {
-      onChange(updatedFields, variantId);
-    }
+    onChange(updatedFields, variantId);
   };
+
+  // First image URL for thumbnail
+  const thumbnailUrl = product.images && product.images.length > 0 ? product.images[0] : null;
 
   return (
     <Box pl={4} borderLeftWidth={2} borderLeftColor="blue.200" mt={2}>
-      <Text fontSize="sm" fontWeight="medium" mb={2}>
-        {product.naam}
-        <Text as="span" color="gray.500" ml={2}>
-          {formatCurrency(product.prijs)}
+      <HStack spacing={2} mb={2} align="center">
+        {thumbnailUrl && (
+          <Image
+            src={thumbnailUrl}
+            alt={product.naam}
+            boxSize="48px"
+            objectFit="cover"
+            borderRadius="md"
+            flexShrink={0}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
+        <Text fontSize="sm" fontWeight="medium">
+          {product.naam}
+          <Text as="span" color="gray.500" ml={2}>
+            {formatCurrency(product.prijs)}
+          </Text>
         </Text>
-      </Text>
+      </HStack>
 
-      {/* Variant selector (if product has variant_schema) */}
-      {hasVariantSchema && product.variant_schema!.map((axis) => (
-        <FormControl key={axis.name} mb={2} size="sm">
-          <FormLabel fontSize="xs">{axis.name}</FormLabel>
-          <Select
-            size="sm"
-            value={fields[`_variant_${axis.name}`] || ''}
-            onChange={(e) => handleFieldChange(`_variant_${axis.name}`, e.target.value)}
-            isDisabled={isDisabled}
-            placeholder={t('product_configurator.select_variant', { axis: axis.name })}
-          >
-            {axis.values.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </Select>
-        </FormControl>
-      ))}
+      {/* Variant selector — uses the shared VariantSelector component */}
+      {loadingVariants && (
+        <HStack spacing={2} mb={2}>
+          <Spinner size="xs" />
+          <Text fontSize="xs" color="gray.500">
+            {t('product_configurator.loading_variants', { defaultValue: 'Opties laden...' })}
+          </Text>
+        </HStack>
+      )}
 
-      {/* Variant resolution feedback */}
-      {hasVariantSchema && variantIncomplete && !combinationInvalid && (
-        <Text fontSize="xs" color="orange.500" mb={2}>
-          {t('product_configurator.select_all_variants')}
+      {variantError && (
+        <Text fontSize="xs" color="red.500" mb={2}>
+          {t('product_configurator.variant_fetch_error', { defaultValue: 'Kon opties niet laden' })}
         </Text>
       )}
-      {combinationInvalid && (
-        <Text fontSize="xs" color="red.500" mb={2}>
-          {t('product_configurator.variant_unavailable')}
-        </Text>
+
+      {!loadingVariants && !variantError && hasVariantAxes && (
+        <Box mb={2}>
+          <VariantSelector
+            variants={variants}
+            onVariantSelect={handleVariantSelect}
+            isDisabled={isDisabled}
+          />
+        </Box>
       )}
 
       {/* Dynamic fields from order_item_fields (name is auto-filled from person) */}

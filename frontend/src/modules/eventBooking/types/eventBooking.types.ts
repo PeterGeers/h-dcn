@@ -144,10 +144,15 @@ export interface Product {
   event_type: string;
   prijs: number;
   order_item_fields: OrderItemField[];
-  variant_schema: VariantAxis[] | null;
-  /** Actual variant records for resolution when variant_schema is defined */
+  /** @deprecated No longer stored in DB — variants are fetched separately via useProductVariants */
+  variant_schema?: VariantAxis[] | null;
+  /** @deprecated Use useProductVariants hook instead */
   variants?: ProductVariant[];
   purchase_rules: PurchaseRules;
+  /** Product images (S3 URLs) */
+  images?: string[];
+  /** Whether this is a parent product (has variants) */
+  is_parent?: boolean;
 }
 
 // --- Payment Models ---

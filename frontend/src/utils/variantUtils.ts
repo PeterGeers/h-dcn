@@ -5,8 +5,8 @@
  * webshop (VariantSelector) modules.
  */
 
-import { VariantRecord, VariantSchema } from '../../webshop/types/unifiedProduct.types';
-import { isActive } from '../../../utils/productHelpers';
+import { VariantRecord, VariantSchema } from '../modules/webshop/types/unifiedProduct.types';
+import { isActive } from './productHelpers';
 
 /**
  * Derives the variant axes and their values from active variant records.
