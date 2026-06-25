@@ -37,11 +37,11 @@ import { useAuth } from '../../../context/AuthProvider';
 import { eventBookingApi, isAuthorizationError } from '../services/eventBookingApi';
 import { Event, Order, Product } from '../types/eventBooking.types';
 import BookingWizard from '../components/BookingWizard';
-import OnboardingFlow from '../components/OnboardingFlow';
+import RegistrySelector from '../components/RegistrySelector';
 import PaymentPanel from '../components/PaymentPanel';
 import DelegateManager from '../components/DelegateManager';
 import BookingSummaryPdf from '../components/BookingSummaryPdf';
-import ClubLogoUploader from '../components/ClubLogoUploader';
+import RegistryRowLogo from '../components/RegistryRowLogo';
 
 /**
  * Check if user has logo upload admin rights.
@@ -136,20 +136,19 @@ const EventBookingPage: React.FC = () => {
         }
       } catch (orderErr: any) {
         if (isAuthorizationError(orderErr)) {
-          const msg = orderErr.message?.toLowerCase() || '';
-          if (msg.includes('club') || msg.includes('assignment')) {
+          const errorCode = (orderErr as any)?.error_code;
+          if (errorCode === 'REGISTRY_ROW_REQUIRED') {
             setNeedsOnboarding(true);
           } else {
             setError(orderErr.message);
           }
         } else if (orderErr?.response?.status === 403) {
-          const msg = (orderErr?.response?.data?.message || orderErr?.response?.data?.error || '').toLowerCase();
-          if (msg.includes('club') || msg.includes('assignment')) {
+          const errorCode = orderErr?.response?.data?.error_code;
+          if (errorCode === 'REGISTRY_ROW_REQUIRED') {
             setNeedsOnboarding(true);
           } else {
-            setError(
-              orderErr?.response?.data?.message || orderErr?.response?.data?.error || t('page.error_loading')
-            );
+            const msg = orderErr?.response?.data?.message || orderErr?.response?.data?.error;
+            setError(msg || t('page.error_loading'));
           }
         } else if (orderErr?.response?.status === 404) {
           // No order exists yet — valid state
@@ -170,9 +169,9 @@ const EventBookingPage: React.FC = () => {
     loadPageData();
   }, [loadPageData]);
 
-  /** After onboarding completes, reload page data */
-  const handleOnboardingComplete = useCallback(
-    async (_clubId: string) => {
+  /** After registry row selection completes, reload page data */
+  const handleRegistryRowSelected = useCallback(
+    async (_rowId: string, _rowLabel: string) => {
       await loadPageData();
     },
     [loadPageData]
@@ -228,30 +227,37 @@ const EventBookingPage: React.FC = () => {
     );
   }
 
-  // --- Onboarding flow (no club assignment) ---
+  // --- Registry row selection (no registry_row_id on member) ---
   if (needsOnboarding) {
     return (
       <Container maxW="container.xl" py={6}>
         <Heading size="lg" color="orange.400" mb={6}>
           {activeEvent?.name || t('page.title')}
         </Heading>
-        <OnboardingFlow
-          onComplete={handleOnboardingComplete}
+        <RegistrySelector
           eventId={eventId}
+          sessionToken={user?.accessToken || ''}
+          rowLabel={activeEvent?.registry_config?.row_label}
+          userEmail={user?.email}
+          onSelectRow={handleRegistryRowSelected}
         />
       </Container>
     );
   }
 
   // --- Main booking page ---
-  const clubId = order?.club_id;
+  const clubId = order?.registry_row_id;
   const eventTitle = activeEvent?.name || t('page.title_booking');
 
   return (
     <Container maxW="container.xl" py={6}>
       <Flex align="center" gap={3} mb={6}>
         {clubId && (
-          <ClubLogoUploader clubId={clubId} isAdmin={isLogoAdmin} />
+          <RegistryRowLogo
+            logoUrl={order?.registry_row_logo_url}
+            label={order?.registry_row_label}
+            isAdmin={isLogoAdmin}
+          />
         )}
         <Heading size="lg" color="orange.400">
           {eventTitle}

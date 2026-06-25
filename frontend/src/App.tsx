@@ -57,7 +57,7 @@ const EventRegisterPage = lazy(() => import('./modules/eventBooking/pages/EventR
 /**
  * Route guard for /webshop_management.
  * Uses FunctionGuard with Products_* roles. Shows 403 if user lacks access.
- * Renders independently of event booking onboarding flow (no club_id or OnboardingFlow).
+ * Renders independently of event booking registry flow.
  *
  * Validates: Requirements 1.5, 1.6, 1.7, 7.1, 7.9, 8.1, 8.2
  */

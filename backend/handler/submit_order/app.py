@@ -97,7 +97,7 @@ def _resolve_member_id(user_email):
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(user_email),
-            ProjectionExpression='member_id, club_id, member_type, allowed_events'
+            ProjectionExpression='member_id, registry_row_id, member_type, allowed_events'
         )
         items = response.get('Items', [])
         if not items:
@@ -203,7 +203,7 @@ def _validate_event_persons(order, products, all_source_orders):
     - Every person has a non-empty name (≥1 non-whitespace char)
     - Every item has item_fields_data.name populated (non-empty)
     - All required order_item_fields are filled per product line
-    - Per-order quantity limits (max_per_club) not exceeded
+    - Per-order quantity limits (max_per_order) not exceeded
     - Per-event capacity (max_per_event) via current Sold_Count
     - All variant_id references exist in product's variant list
     - Errors are grouped per person
@@ -212,7 +212,7 @@ def _validate_event_persons(order, products, all_source_orders):
     """
     persons = order.get('persons', [])
     items = order.get('items', [])
-    club_id = order.get('club_id')
+    registry_row_id = order.get('registry_row_id')
     errors = []
 
     # 1. Validate person names (Req 9.1)
@@ -285,7 +285,7 @@ def _validate_event_persons(order, products, all_source_orders):
                     ),
                 })
 
-    # 4. Validate per-order quantity limits: max_per_club (Req 9.4)
+    # 4. Validate per-order quantity limits: max_per_order (Req 5.5, 5.8)
     product_counts: dict[str, int] = {}
     for item in items:
         product_id = item.get('product_id')
@@ -300,14 +300,17 @@ def _validate_event_persons(order, products, all_source_orders):
         if not product:
             continue
         purchase_rules = product.get('purchase_rules') or {}
-        max_per_club = purchase_rules.get('max_per_club')
-        if max_per_club is not None:
-            max_val = int(max_per_club) if isinstance(max_per_club, Decimal) else int(max_per_club)
+        # max_per_order is authoritative; fall back to max_per_club for backward compat (Req 5.8)
+        max_per_order = purchase_rules.get('max_per_order')
+        if max_per_order is None:
+            max_per_order = purchase_rules.get('max_per_club')
+        if max_per_order is not None:
+            max_val = int(max_per_order) if isinstance(max_per_order, Decimal) else int(max_per_order)
             if count > max_val:
                 errors.append({
                     'person_index': None,
                     'product_id': product_id,
-                    'field': 'max_per_club',
+                    'field': 'max_per_order',
                     'message': (
                         f"Product '{product.get('name', product_id)}': "
                         f"maximaal {max_val} per bestelling, maar {count} geselecteerd"
@@ -316,7 +319,7 @@ def _validate_event_persons(order, products, all_source_orders):
 
     # 5. Validate per-event capacity: max_per_event via Sold_Count (Req 9.5, 9.9)
     # Calculate sold counts from other submitted/locked orders (exclude current order)
-    sold_counts = _calculate_sold_counts(all_source_orders, club_id)
+    sold_counts = _calculate_sold_counts(all_source_orders, registry_row_id)
 
     for product_id, count in product_counts.items():
         product = products.get(product_id)
@@ -378,9 +381,9 @@ def _validate_event_persons(order, products, all_source_orders):
     return errors
 
 
-def _calculate_sold_counts(all_source_orders, current_club_id):
+def _calculate_sold_counts(all_source_orders, current_registry_row_id):
     """
-    Calculate sold counts from submitted/locked orders, excluding the current club's order.
+    Calculate sold counts from submitted/locked orders, excluding the current registry row's order.
     This mirrors the logic in get_product_sold_counts but excludes the current order.
 
     Returns dict mapping product_id -> sold count.
@@ -391,8 +394,8 @@ def _calculate_sold_counts(all_source_orders, current_club_id):
         # Only count submitted/locked orders
         if order.get('status') not in ('submitted', 'locked'):
             continue
-        # Exclude current club's order (will be replaced by this submission)
-        if current_club_id and order.get('club_id') == current_club_id:
+        # Exclude current registry row's order (will be replaced by this submission)
+        if current_registry_row_id and order.get('registry_row_id') == current_registry_row_id:
             continue
 
         for item in order.get('items', []):
@@ -464,7 +467,7 @@ def lambda_handler(event, context):
         order_member_id = order.get('member_id')
 
         if order_member_id != member_id and not admin:
-            # For club-scoped orders, also check delegate access
+            # For row-scoped orders, also check delegate access
             delegates = order.get('delegates', {})
             is_delegate = member_id in [
                 delegates.get('primary_member_id'),
@@ -509,9 +512,17 @@ def lambda_handler(event, context):
             if not event_record:
                 return create_error_response(404, 'Event not found')
 
-            # Check event access
-            if not has_event_access(member_id, source_id) and not admin:
-                return create_error_response(403, 'Event access required')
+            # Check event access:
+            # - Open events: any authenticated member (hdcnLeden) can access
+            # - Closed events: member must be in allowed_events (or be admin)
+            participation = event_record.get('participation', 'open')
+            if participation == 'closed':
+                if not has_event_access(member_id, source_id) and not admin:
+                    return create_error_response(403, 'Event access required')
+            else:
+                # Open event: any logged-in member can submit
+                if 'hdcnLeden' not in user_roles and not has_event_access(member_id, source_id) and not admin:
+                    return create_error_response(403, 'Member access required for open events')
 
             # Check event status
             event_status = event_record.get('status')

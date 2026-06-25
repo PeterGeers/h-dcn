@@ -2145,11 +2145,11 @@ Resources:
             Path: /presmeet/clubs/assign
             Method: post
 
-  # --- Upload Club Logo ---
-  UploadClubLogoFunction:
+  # --- Upload Registry Logo ---
+  UploadRegistryLogoFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: handler/upload_club_logo
+      CodeUri: handler/upload_registry_logo
       Handler: app.lambda_handler
       Runtime: python3.11
       Timeout: 30
@@ -2163,11 +2163,11 @@ Resources:
           FRONTEND_BUCKET_NAME: "h-dcn-frontend-506221081911"
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
-        UploadClubLogo:
+        UploadRegistryLogo:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /presmeet/logo
+            Path: /events/{event_id}/registry-logo
             Method: post
 
   # ============================================================

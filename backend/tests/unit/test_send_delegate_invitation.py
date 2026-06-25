@@ -127,7 +127,9 @@ def tables_and_handler():
         orders_table.put_item(Item={
             'order_id': 'order-001',
             'event_id': 'evt-001',
-            'club_id': 'club-abc',
+            'registry_row_id': 'club-abc',
+            'registry_row_label': 'Riders Amsterdam',
+            'registry_row_logo_url': None,
             'status': 'draft',
             'delegates': {
                 'primary': 'primary@test.nl',
@@ -141,7 +143,9 @@ def tables_and_handler():
         orders_table.put_item(Item={
             'order_id': 'order-002',
             'event_id': 'evt-001',
-            'club_id': 'club-xyz',
+            'registry_row_id': 'club-xyz',
+            'registry_row_label': 'Thunder Crew',
+            'registry_row_logo_url': None,
             'status': 'draft',
             'delegates': {
                 'primary': 'other@test.nl',
@@ -155,7 +159,7 @@ def tables_and_handler():
             'member_id': 'member-001',
             'email': 'primary@test.nl',
             'name': 'Jan Delegaat',
-            'club_id': 'club-abc',
+            'registry_row_id': 'club-abc',
         })
 
         # Seed admin member
@@ -170,7 +174,7 @@ def tables_and_handler():
             'member_id': 'member-002',
             'email': 'other@test.nl',
             'name': 'Other User',
-            'club_id': 'club-xyz',
+            'registry_row_id': 'club-xyz',
         })
 
         # Create S3 bucket for email templates
@@ -183,7 +187,7 @@ def tables_and_handler():
         # Upload a template
         template_html = """<!DOCTYPE html>
 <html><head><title>H-DCN — Uitnodiging voor {{EVENT_NAME}}</title></head>
-<body><p>{{INVITER_NAME}} nodigt je uit voor {{CLUB_NAME}} bij {{EVENT_NAME}}.</p>
+<body><p>{{INVITER_NAME}} nodigt je uit voor {{ROW_LABEL}}: {{ROW_NAME}} bij {{EVENT_NAME}}.</p>
 <a href="{{REGISTRATION_LINK}}">Registreren</a></body></html>"""
         s3.put_object(
             Bucket='hdcn-email-templates',
@@ -341,3 +345,134 @@ class TestSendDelegateInvitation:
             )
 
         assert result['statusCode'] == 200
+
+
+# =============================================================================
+# Task 7.4 — Delegate email template context resolution tests
+# Requirements: 7.1, 7.2, 7.3, 7.4
+# =============================================================================
+
+
+class TestResolveRowLabel:
+    """Tests for _resolve_row_label() helper — Requirement 7.1."""
+
+    def test_resolves_row_label_from_registry_config(self, tables_and_handler):
+        """Should return row_label from event.registry_config.row_label."""
+        handler = tables_and_handler['handler']
+        event = {
+            'registry_config': {'row_label': 'club', 'claim_mode': 'first_come_first_served'},
+        }
+        assert handler._resolve_row_label(event) == 'club'
+
+    def test_resolves_team_label(self, tables_and_handler):
+        """Should return 'team' when registry_config.row_label is 'team'."""
+        handler = tables_and_handler['handler']
+        event = {
+            'registry_config': {'row_label': 'team'},
+        }
+        assert handler._resolve_row_label(event) == 'team'
+
+    def test_resolves_school_label(self, tables_and_handler):
+        """Should return 'school' when registry_config.row_label is 'school'."""
+        handler = tables_and_handler['handler']
+        event = {
+            'registry_config': {'row_label': 'school'},
+        }
+        assert handler._resolve_row_label(event) == 'school'
+
+    def test_fallback_to_group_when_row_label_empty(self, tables_and_handler):
+        """Should fallback to 'group' when row_label is empty string."""
+        handler = tables_and_handler['handler']
+        event = {
+            'registry_config': {'row_label': ''},
+        }
+        assert handler._resolve_row_label(event) == 'group'
+
+    def test_fallback_to_group_when_row_label_absent(self, tables_and_handler):
+        """Should fallback to 'group' when row_label key is absent."""
+        handler = tables_and_handler['handler']
+        event = {
+            'registry_config': {'claim_mode': 'first_come_first_served'},
+        }
+        assert handler._resolve_row_label(event) == 'group'
+
+    def test_fallback_to_group_when_registry_config_absent(self, tables_and_handler):
+        """Should fallback to 'group' when registry_config is absent."""
+        handler = tables_and_handler['handler']
+        event = {}
+        assert handler._resolve_row_label(event) == 'group'
+
+    def test_fallback_to_group_when_registry_config_none(self, tables_and_handler):
+        """Should fallback to 'group' when registry_config is None."""
+        handler = tables_and_handler['handler']
+        event = {'registry_config': None}
+        assert handler._resolve_row_label(event) == 'group'
+
+
+class TestResolveRowName:
+    """Tests for _resolve_row_name() helper — Requirements 7.2, 7.4."""
+
+    def test_resolves_from_order_registry_row_label(self, tables_and_handler):
+        """Should return order.registry_row_label as first priority."""
+        handler = tables_and_handler['handler']
+        order = {'registry_row_id': 'club-abc', 'registry_row_label': 'Riders Amsterdam'}
+        event = {'registry_claims': {}}
+        assert handler._resolve_row_name(order, event) == 'Riders Amsterdam'
+
+    def test_fallback_to_registry_claims_label(self, tables_and_handler):
+        """Should fallback to event.registry_claims[row_id].label when order label absent."""
+        handler = tables_and_handler['handler']
+        order = {'registry_row_id': 'club-abc', 'registry_row_label': ''}
+        event = {
+            'registry_claims': {
+                'club-abc': {'label': 'Claim Label', 'member_id': 'm-1'},
+            },
+        }
+        assert handler._resolve_row_name(order, event) == 'Claim Label'
+
+    def test_fallback_to_registry_row_id(self, tables_and_handler):
+        """Should fallback to registry_row_id when no label available anywhere."""
+        handler = tables_and_handler['handler']
+        order = {'registry_row_id': 'club-abc', 'registry_row_label': ''}
+        event = {'registry_claims': {}}
+        assert handler._resolve_row_name(order, event) == 'club-abc'
+
+    def test_fallback_empty_when_no_row_id(self, tables_and_handler):
+        """Should return empty string when registry_row_id is also absent."""
+        handler = tables_and_handler['handler']
+        order = {}
+        event = {'registry_claims': {}}
+        assert handler._resolve_row_name(order, event) == ''
+
+    def test_order_label_takes_priority_over_claims(self, tables_and_handler):
+        """Order label should take priority even if claims has different label."""
+        handler = tables_and_handler['handler']
+        order = {'registry_row_id': 'club-abc', 'registry_row_label': 'Order Label'}
+        event = {
+            'registry_claims': {
+                'club-abc': {'label': 'Claims Label'},
+            },
+        }
+        assert handler._resolve_row_name(order, event) == 'Order Label'
+
+    def test_claims_label_used_when_order_label_none(self, tables_and_handler):
+        """Claims label used when order has registry_row_label missing (key not present)."""
+        handler = tables_and_handler['handler']
+        order = {'registry_row_id': 'club-abc'}
+        event = {
+            'registry_claims': {
+                'club-abc': {'label': 'From Claims'},
+            },
+        }
+        assert handler._resolve_row_name(order, event) == 'From Claims'
+
+    def test_claims_with_empty_label_falls_through_to_row_id(self, tables_and_handler):
+        """If claims entry has empty label, should fall through to registry_row_id."""
+        handler = tables_and_handler['handler']
+        order = {'registry_row_id': 'row-xyz', 'registry_row_label': ''}
+        event = {
+            'registry_claims': {
+                'row-xyz': {'label': '', 'member_id': 'm-1'},
+            },
+        }
+        assert handler._resolve_row_name(order, event) == 'row-xyz'

@@ -8,7 +8,7 @@ Query params:
   product_filter = product_id (optional)
 
 Generates a PDF for event preparation:
-  - by_order: one page per club/order, sorted alphabetically by club name
+  - by_order: one page per registry row/order, sorted alphabetically by row label
   - by_guest: one page per person, sorted by last word of guest name
 
 Only includes submitted and locked orders.
@@ -138,8 +138,8 @@ def _get_last_word(name: str) -> str:
     return parts[-1] if parts else ''
 
 
-def _sort_key_club_name(name: str) -> str:
-    """Sort key for by_order mode: case-insensitive club name."""
+def _sort_key_row_label(name: str) -> str:
+    """Sort key for by_order mode: case-insensitive row label."""
     return name.lower() if name else ''
 
 
@@ -231,13 +231,13 @@ def _build_css() -> str:
             border-bottom: 2px solid #FF6B35;
             padding-bottom: 12px;
         }
-        .club-logo {
+        .row-logo {
             width: 50px;
             height: 50px;
             vertical-align: middle;
             margin-right: 12px;
         }
-        .club-name {
+        .row-name {
             font-size: 20px;
             font-weight: bold;
             vertical-align: middle;
@@ -320,17 +320,20 @@ def _build_by_order_page(
     total_pages: int,
     event_name: str,
     generation_date: str,
+    row_label_prefix: str = 'row',
 ) -> str:
-    """Build one page for by_order mode (one page per club/order)."""
-    club_id = order.get('club_id', '')
-    row_data = registry_rows.get(club_id, {})
-    club_name = row_data.get('label', club_id)
+    """Build one page for by_order mode (one page per registry row/order)."""
+    row_id = order.get('registry_row_id', '')
+    row_data = registry_rows.get(row_id, {})
+    row_label = row_data.get('label', row_id)
     logo_url = row_data.get('logo_url')
 
-    # Header with club logo and name
+    # Header with row logo and label in format "{row_label_prefix}: {name}"
     logo_html = ''
     if logo_url:
-        logo_html = f'<img src="{logo_url}" alt="" class="club-logo" />'
+        logo_html = f'<img src="{logo_url}" alt="" class="row-logo" />'
+
+    header_text = f"{row_label_prefix}: {row_label}"
 
     # Delegates
     delegates = order.get('delegates', {})
@@ -373,7 +376,7 @@ def _build_by_order_page(
 
     return f"""<div class="page">
     <div class="page-header">
-        {logo_html}<span class="club-name">{club_name}</span>
+        {logo_html}<span class="row-name">{header_text}</span>
     </div>
     <div class="delegates">{delegates_html}</div>
     <table>
@@ -404,23 +407,26 @@ def _build_by_order_page(
 def _build_by_guest_page(
     guest_name: str,
     guest_items: list[dict],
-    club_id: str,
+    row_id: str,
     registry_rows: dict[str, dict],
     products_map: dict[str, dict],
     page_num: int,
     total_pages: int,
     event_name: str,
     generation_date: str,
+    row_label_prefix: str = 'row',
 ) -> str:
     """Build one page for by_guest mode (one page per person)."""
-    row_data = registry_rows.get(club_id, {})
-    club_name = row_data.get('label', club_id)
+    row_data = registry_rows.get(row_id, {})
+    row_label = row_data.get('label', row_id)
     logo_url = row_data.get('logo_url')
 
-    # Header with club logo, club name, and guest name
+    # Header with row logo, row label, and guest name
     logo_html = ''
     if logo_url:
-        logo_html = f'<img src="{logo_url}" alt="" class="club-logo" />'
+        logo_html = f'<img src="{logo_url}" alt="" class="row-logo" />'
+
+    header_text = f"{row_label_prefix}: {row_label}"
 
     # Build items table
     rows_html = ''
@@ -442,7 +448,7 @@ def _build_by_guest_page(
 
     return f"""<div class="page">
     <div class="page-header">
-        {logo_html}<span class="club-name">{club_name}</span>
+        {logo_html}<span class="row-name">{header_text}</span>
     </div>
     <div class="guest-name">{guest_name}</div>
     <table>
@@ -468,6 +474,7 @@ def build_by_order_pdf(
     products_map: dict[str, dict],
     event_name: str,
     product_filter: str | None = None,
+    row_label_prefix: str = 'row',
 ) -> str:
     """Build full HTML for by_order mode."""
     generation_date = date.today().isoformat()
@@ -491,12 +498,12 @@ def build_by_order_pdf(
     if not filtered_orders:
         return ''
 
-    # Sort alphabetically by club name (case-insensitive)
+    # Sort alphabetically by row label (case-insensitive)
     def sort_key(order: dict) -> str:
-        club_id = order.get('club_id', '')
-        row_data = registry_rows.get(club_id, {})
-        club_name = row_data.get('label', club_id)
-        return _sort_key_club_name(club_name)
+        row_id = order.get('registry_row_id', '')
+        row_data = registry_rows.get(row_id, {})
+        row_label = row_data.get('label', row_id)
+        return _sort_key_row_label(row_label)
 
     filtered_orders.sort(key=sort_key)
 
@@ -505,6 +512,7 @@ def build_by_order_pdf(
     for i, order in enumerate(filtered_orders, 1):
         pages_html += _build_by_order_page(
             order, registry_rows, products_map, i, total_pages, event_name, generation_date,
+            row_label_prefix,
         )
 
     css = _build_css()
@@ -528,14 +536,15 @@ def build_by_guest_pdf(
     products_map: dict[str, dict],
     event_name: str,
     product_filter: str | None = None,
+    row_label_prefix: str = 'row',
 ) -> str:
     """Build full HTML for by_guest mode."""
     generation_date = date.today().isoformat()
 
     # Collect all guests across all orders
-    guests: list[dict] = []  # Each entry: {name, club_id, items}
+    guests: list[dict] = []  # Each entry: {name, row_id, items}
     for order in orders:
-        club_id = order.get('club_id', '')
+        row_id = order.get('registry_row_id', '')
         items = order.get('items', [])
 
         # Group items by person name (item_fields_data.name)
@@ -556,13 +565,13 @@ def build_by_guest_pdf(
                     continue
                 guests.append({
                     'name': person_name,
-                    'club_id': club_id,
+                    'row_id': row_id,
                     'items': matching,
                 })
             else:
                 guests.append({
                     'name': person_name,
-                    'club_id': club_id,
+                    'row_id': row_id,
                     'items': person_items,
                 })
 
@@ -578,13 +587,14 @@ def build_by_guest_pdf(
         pages_html += _build_by_guest_page(
             guest['name'],
             guest['items'],
-            guest['club_id'],
+            guest['row_id'],
             registry_rows,
             products_map,
             i,
             total_pages,
             event_name,
             generation_date,
+            row_label_prefix,
         )
 
     css = _build_css()
@@ -661,6 +671,9 @@ def lambda_handler(event, context):
         s3_path = registry_config.get('s3_path', '')
         registry_rows = _fetch_registry_rows(s3_path) if s3_path else {}
 
+        # Resolve row_label prefix from registry_config (fallback: "row")
+        row_label_prefix = registry_config.get('row_label', '') or 'row'
+
         # Fetch products for product names
         products_map = _fetch_products_map(event_id)
 
@@ -668,10 +681,12 @@ def lambda_handler(event, context):
         if mode == 'by_order':
             html = build_by_order_pdf(
                 orders, registry_rows, products_map, event_name, product_filter,
+                row_label_prefix,
             )
         else:
             html = build_by_guest_pdf(
                 orders, registry_rows, products_map, event_name, product_filter,
+                row_label_prefix,
             )
 
         # If filtering removed all pages, return empty-state message

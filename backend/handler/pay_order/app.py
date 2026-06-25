@@ -46,7 +46,7 @@ try:
         create_success_response,
         log_successful_access,
     )
-    from shared.event_access import get_club_id, verify_order_event_access
+    from shared.event_access import get_registry_row_id, verify_order_event_access
     from shared.mollie_client import create_payment, MollieError
     from shared.stock_reservation import (
         reserve_stock_for_order,
@@ -210,8 +210,8 @@ def lambda_handler(event, context):
         # Build payment description
         event_id = order.get('event_id')
         if event_id:
-            club_id = order.get('club_id', 'unknown')
-            description = f"H-DCN Order {order_id[:8]} - {club_id}"
+            registry_row_id = order.get('registry_row_id', 'unknown')
+            description = f"H-DCN Order {order_id[:8]} - {registry_row_id}"
         else:
             description = f"H-DCN Webshop - Order {order_id[:8]}"
 
@@ -270,8 +270,8 @@ def lambda_handler(event, context):
                 'created_at': now,
                 'created_by': user_email,
             }
-            if order.get('club_id'):
-                payment_record['club_id'] = order['club_id']
+            if order.get('registry_row_id'):
+                payment_record['registry_row_id'] = order['registry_row_id']
             if variant_items:
                 payment_record['variant_items'] = variant_items
 
@@ -368,9 +368,9 @@ def lambda_handler(event, context):
             'created_by': user_email,
         }
 
-        # Include club_id for event orders
-        if order.get('club_id'):
-            payment_record['club_id'] = order['club_id']
+        # Include registry_row_id for event orders
+        if order.get('registry_row_id'):
+            payment_record['registry_row_id'] = order['registry_row_id']
 
         # Store variant_items for stock reservation on payment confirmation
         # Works for both webshop and event orders — same flow regardless of product type
@@ -468,9 +468,9 @@ def _check_payment_authorization(order, user_email, user_roles, is_admin):
         return None
 
     # Check club membership for event orders
-    if order.get('event_id') and order.get('club_id'):
-        user_club_id = get_club_id(user_email)
-        if user_club_id and user_club_id == order.get('club_id'):
+    if order.get('event_id') and order.get('registry_row_id'):
+        user_registry_row_id = get_registry_row_id(user_email)
+        if user_registry_row_id and user_registry_row_id == order.get('registry_row_id'):
             return None
 
     return create_error_response(403, 'Access denied: You cannot pay this order')

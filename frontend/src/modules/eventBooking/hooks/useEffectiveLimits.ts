@@ -1,7 +1,7 @@
 /**
  * useEffectiveLimits — Fetches sold counts and calculates effective limits per product.
  *
- * Effective limit = min(max_per_club - order_qty, max_per_event - sold_count)
+ * Effective limit = min(max_per_order - order_qty, max_per_event - sold_count)
  * When max_per_event is absent, only the per-order limit applies.
  *
  * Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.8
@@ -60,7 +60,7 @@ function getOrderQuantityForProduct(
 /**
  * Hook that fetches product sold counts from the backend and calculates
  * the effective limit for each product based on dual constraints:
- * per-order (max_per_club) and per-event (max_per_event).
+ * per-order (max_per_order) and per-event (max_per_event).
  *
  * @param eventId - The event ID to fetch sold counts for
  * @param formState - Current form state (to calculate order quantities)
@@ -107,14 +107,14 @@ export function useEffectiveLimits(
 
   // Calculate effective limits based on current form state + sold counts
   const limits: ProductEffectiveLimit[] = products.map((product) => {
-    const maxPerClub = product.purchase_rules?.max_per_club;
+    const maxPerOrder = product.purchase_rules?.max_per_order;
     const maxPerEvent = product.purchase_rules?.max_per_event;
     const orderQty = getOrderQuantityForProduct(formState, product.product_id);
     const soldCount = soldCounts[product.product_id] || 0;
 
     // Per-order remaining (how many more can this order add)
     const perOrderRemaining =
-      maxPerClub !== undefined ? maxPerClub - orderQty : Infinity;
+      maxPerOrder !== undefined ? maxPerOrder - orderQty : Infinity;
 
     // Per-event remaining (how many are left globally)
     const perEventRemaining =
@@ -124,12 +124,12 @@ export function useEffectiveLimits(
     const remaining = Math.min(perOrderRemaining, perEventRemaining);
 
     // Total capacity (Y in "X of Y remaining"):
-    // min(max_per_club, max_per_event) — or whichever is defined
+    // min(max_per_order, max_per_event) — or whichever is defined
     let totalCapacity: number;
-    if (maxPerClub !== undefined && maxPerEvent !== undefined) {
-      totalCapacity = Math.min(maxPerClub, maxPerEvent);
-    } else if (maxPerClub !== undefined) {
-      totalCapacity = maxPerClub;
+    if (maxPerOrder !== undefined && maxPerEvent !== undefined) {
+      totalCapacity = Math.min(maxPerOrder, maxPerEvent);
+    } else if (maxPerOrder !== undefined) {
+      totalCapacity = maxPerOrder;
     } else if (maxPerEvent !== undefined) {
       totalCapacity = maxPerEvent;
     } else {

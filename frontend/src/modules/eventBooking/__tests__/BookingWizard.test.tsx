@@ -148,7 +148,7 @@ const mockProducts: Product[] = [
       { id: 'role', label: 'Functie', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { min_per_club: 1, max_per_club: 3 },
+    purchase_rules: { min_per_order: 1, max_per_order: 3 },
   },
   {
     product_id: 'prod-party',
@@ -160,7 +160,7 @@ const mockProducts: Product[] = [
       { id: 'name', label: 'Naam', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { max_per_club: 13 },
+    purchase_rules: { max_per_order: 13 },
   },
 ];
 
@@ -168,7 +168,7 @@ const mockOrder: Order = {
   order_id: 'ord-1',
   source_id: 'evt-1',
   member_id: 'member-1',
-  club_id: 'club-1',
+  registry_row_id: 'club-1',
   event_id: 'evt-1',
   event_type: 'presmeet',
   status: 'draft',

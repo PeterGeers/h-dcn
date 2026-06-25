@@ -122,13 +122,13 @@ def _find_member_by_email(email: str) -> dict | None:
         return None
 
 
-def _find_order_for_row(event_id: str, club_id: str) -> dict | None:
-    """Find the non-cancelled order for a specific row/club in an event."""
+def _find_order_for_row(event_id: str, registry_row_id: str) -> dict | None:
+    """Find the non-cancelled order for a specific registry row in an event."""
     try:
         response = orders_table.scan(
             FilterExpression=(
                 Attr('event_id').eq(event_id)
-                & Attr('club_id').eq(club_id)
+                & Attr('registry_row_id').eq(registry_row_id)
                 & Attr('status').ne('cancelled')
             ),
         )
@@ -139,20 +139,53 @@ def _find_order_for_row(event_id: str, club_id: str) -> dict | None:
         return None
 
 
+def _resolve_registry_row_data(event_id: str, registry_row_id: str) -> tuple[str | None, str | None]:
+    """
+    Resolve label and logo_url from S3 registry file for a given row_id.
+    Returns (label, logo_url). Logo_url is None if not found or absent.
+    """
+    event_record, error = _get_event_with_claims(event_id)
+    if error or not event_record:
+        return None, None
+
+    registry_config = event_record.get('registry_config', {})
+    s3_path = registry_config.get('s3_path')
+    if not s3_path:
+        return None, None
+
+    rows = _get_s3_registry(s3_path)
+    if rows is None:
+        return None, None
+
+    for row in rows:
+        if row.get('row_id') == registry_row_id:
+            label = row.get('label')
+            logo_url = row.get('logo_url', None)
+            return label, logo_url
+
+    return None, None
+
+
 def _create_draft_order_for_claim(
     event_id: str,
     row_id: str,
     member_id: str,
     member_email: str,
 ) -> dict | None:
-    """Create a draft order for a manually assigned row."""
+    """Create a draft order for a manually assigned row with registry row data resolved from S3."""
     now = datetime.now(timezone.utc).isoformat()
+
+    # Resolve label and logo from S3 registry
+    registry_row_label, registry_row_logo_url = _resolve_registry_row_data(event_id, row_id)
+
     order = {
         'order_id': str(uuid.uuid4()),
         'status': 'draft',
         'payment_status': 'unpaid',
         'event_id': event_id,
-        'club_id': row_id,
+        'registry_row_id': row_id,
+        'registry_row_label': registry_row_label,
+        'registry_row_logo_url': registry_row_logo_url,
         'member_id': member_id,
         'user_email': member_email,
         'delegates': {

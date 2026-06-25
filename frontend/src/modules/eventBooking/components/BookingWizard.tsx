@@ -182,12 +182,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
 
   // --- Person management ---
 
-  /** Overall max persons = max of all product max_per_club values, minimum 1 (Req 6.1) */
+  /** Overall max persons = max of all product max_per_order values, minimum 1 (Req 6.1) */
   const maxPersons = useMemo(() => {
     if (products.length === 0) return 1;
     return Math.max(
       1,
-      ...products.map((p) => p.purchase_rules?.max_per_club ?? 20)
+      ...products.map((p) => p.purchase_rules?.max_per_order ?? 20)
     );
   }, [products]);
 
@@ -522,7 +522,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
   if (event.status !== 'published') {
     return (
       <VStack spacing={6} align="stretch">
-        <EventInfoHeader event={event} />
+        <EventInfoHeader event={event} limits={effectiveLimits} isLimitsLoading={isLimitsLoading} />
         <ReadOnlyView order={order} event={event} products={products} />
       </VStack>
     );
@@ -532,7 +532,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
   if (order.status === 'submitted' || order.status === 'locked') {
     return (
       <VStack spacing={6} align="stretch">
-        <EventInfoHeader event={event} />
+        <EventInfoHeader event={event} limits={effectiveLimits} isLimitsLoading={isLimitsLoading} />
         <ReadOnlyView
           order={order}
           event={event}
@@ -548,7 +548,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
   return (
     <VStack spacing={6} align="stretch">
       {/* Event info panel */}
-      <EventInfoHeader event={event} />
+      <EventInfoHeader event={event} limits={effectiveLimits} isLimitsLoading={isLimitsLoading} />
 
       {/* Effective limits */}
       {products.length > 0 && (

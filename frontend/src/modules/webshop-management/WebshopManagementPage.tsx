@@ -4,7 +4,7 @@
  * Features:
  * - Tab navigation: Producten, Bestellingen, Betalingen, Rapporten
  * - Shared event filter state via useEventFilter hook
- * - Independent of PresMeet onboarding flow (no club_id or OnboardingFlow dependency)
+ * - Independent of event booking registry flow (no registry_row dependency)
  * - Accessible to users with Products_CRUD, Products_Read, or Products_Export roles
  *
  * Validates: Requirements 1.3, 1.7, 8.1, 8.2, 10.5, 12.6, 12.10

@@ -59,8 +59,7 @@ jest.mock('react-i18next', () => ({
       if (params) {
         const labels: Record<string, string> = {
           'pdf.download_button': 'Download Booking Summary',
-          'pdf.club': `Club: ${params.clubId || ''}`,
-          'pdf.row_label': `${params.rowLabel || 'Club'}: ${params.clubId || ''}`,
+          'pdf.row_label': `${params.rowLabel || 'Club'}: ${params.name || ''}`,
           'pdf.row_label_default': 'Club',
           'pdf.location': `Location: ${params.location || ''}`,
           'pdf.event_dates': `Event dates: ${params.start || ''} – ${params.end || ''}`,
@@ -107,8 +106,7 @@ jest.mock('react-i18next', () => ({
 const mockT = ((key: string, params?: Record<string, string>) => {
   if (params) {
     const labels: Record<string, string> = {
-      'pdf.club': `Club: ${params.clubId || ''}`,
-      'pdf.row_label': `${params.rowLabel || 'Club'}: ${params.clubId || ''}`,
+      'pdf.row_label': `${params.rowLabel || 'Club'}: ${params.name || ''}`,
       'pdf.row_label_default': 'Club',
       'pdf.location': `Location: ${params.location || ''}`,
       'pdf.event_dates': `Event dates: ${params.start || ''} – ${params.end || ''}`,
@@ -176,7 +174,7 @@ const mockProducts: Product[] = [
       { id: 'role', label: 'Functie', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { min_per_club: 1, max_per_club: 3 },
+    purchase_rules: { min_per_order: 1, max_per_order: 3 },
   },
   {
     product_id: 'prod-party',
@@ -188,7 +186,7 @@ const mockProducts: Product[] = [
       { id: 'name', label: 'Naam', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { max_per_club: 13 },
+    purchase_rules: { max_per_order: 13 },
   },
 ];
 
@@ -196,7 +194,9 @@ const mockOrder: Order = {
   order_id: 'ord-1',
   source_id: 'evt-1',
   member_id: 'member-1',
-  club_id: 'club-amsterdam',
+  registry_row_id: 'club-amsterdam',
+  registry_row_label: 'Club Amsterdam',
+  registry_row_logo_url: null,
   event_id: 'evt-1',
   event_type: 'presmeet',
   status: 'submitted',
@@ -254,19 +254,39 @@ describe('BookingSummaryPdf', () => {
   });
 
   describe('buildFilename', () => {
-    it('creates a sanitized filename from club_id and event name', () => {
-      const result = buildFilename('club-amsterdam', 'Presidents Meeting 2027');
+    it('creates a sanitized filename from registry_row_label and event name', () => {
+      const result = buildFilename('Club Amsterdam', 'Presidents Meeting 2027');
       expect(result).toBe('booking-club-amsterdam-presidents-meeting-2027.pdf');
     });
 
     it('strips special characters from event name', () => {
-      const result = buildFilename('club-123', 'PM 2027 (Special!)');
+      const result = buildFilename('Club 123', 'PM 2027 (Special!)');
       expect(result).toBe('booking-club-123-pm-2027-special.pdf');
     });
 
     it('handles event name with only special characters', () => {
-      const result = buildFilename('club-1', '---');
-      expect(result).toBe('booking-club-1-.pdf');
+      const result = buildFilename('Club 1', '---');
+      expect(result).toBe('booking-club-1-unknown.pdf');
+    });
+
+    it('falls back to "unknown" when registry_row_label is null', () => {
+      const result = buildFilename(null, 'Test Event');
+      expect(result).toBe('booking-unknown-test-event.pdf');
+    });
+
+    it('falls back to "unknown" when registry_row_label is empty string', () => {
+      const result = buildFilename('', 'Test Event');
+      expect(result).toBe('booking-unknown-test-event.pdf');
+    });
+
+    it('falls back to "unknown" when registry_row_label is undefined', () => {
+      const result = buildFilename(undefined, 'Test Event');
+      expect(result).toBe('booking-unknown-test-event.pdf');
+    });
+
+    it('collapses consecutive hyphens', () => {
+      const result = buildFilename('Club---Amsterdam', 'Event   Name');
+      expect(result).toBe('booking-club-amsterdam-event-name.pdf');
     });
   });
 
@@ -314,9 +334,9 @@ describe('BookingSummaryPdf', () => {
       expect(mockTextCalls).toContain('Presidents Meeting 2027');
     });
 
-    it('includes row label with club ID', () => {
+    it('includes row label with registry_row_label', () => {
       generateBookingSummaryPdf(mockOrder, mockEvent, mockProducts, mockT, 'team');
-      expect(mockTextCalls).toContain('team: club-amsterdam');
+      expect(mockTextCalls).toContain('team: Club Amsterdam');
     });
 
     it('includes primary delegate email', () => {

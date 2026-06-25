@@ -26,7 +26,7 @@ const mockProducts: Product[] = [
     prijs: 50,
     order_item_fields: [],
     variant_schema: null,
-    purchase_rules: { max_per_club: 3 },
+    purchase_rules: { max_per_order: 3 },
   },
   {
     product_id: 'prod-party',
@@ -36,7 +36,7 @@ const mockProducts: Product[] = [
     prijs: 99.5,
     order_item_fields: [],
     variant_schema: null,
-    purchase_rules: { max_per_club: 13 },
+    purchase_rules: { max_per_order: 13 },
   },
   {
     product_id: 'prod-tshirt',
@@ -46,7 +46,7 @@ const mockProducts: Product[] = [
     prijs: 25,
     order_item_fields: [],
     variant_schema: [{ name: 'Size', values: ['S', 'M', 'L'] }],
-    purchase_rules: { max_per_club: 13 },
+    purchase_rules: { max_per_order: 13 },
   },
 ];
 

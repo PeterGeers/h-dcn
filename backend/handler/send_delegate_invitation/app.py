@@ -122,6 +122,9 @@ def _extract_subject(html: str) -> str:
 
 def _get_fallback_html(context: dict) -> str:
     """Generate a minimal fallback HTML email if S3 template is unavailable."""
+    row_label = context.get('ROW_LABEL', 'group')
+    row_name = context.get('ROW_NAME', '')
+    row_display = f"{row_label}: {row_name}" if row_name else row_label
     return f"""<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><title>{ORGANIZATION_SHORT_NAME} — Uitnodiging voor {context.get('EVENT_NAME', 'evenement')}</title></head>
@@ -129,7 +132,7 @@ def _get_fallback_html(context: dict) -> str:
 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
 <h2 style="color: #d2691e;">Je bent uitgenodigd voor {context.get('EVENT_NAME', 'een evenement')}</h2>
 <p><strong>{context.get('INVITER_NAME', '')}</strong> heeft je uitgenodigd als mede-delegatie voor
-<strong>{context.get('CLUB_NAME', '')}</strong>.</p>
+<strong>{row_display}</strong>.</p>
 <p><a href="{context.get('REGISTRATION_LINK', '#')}">Registreren</a></p>
 <p>Met vriendelijke groet,<br>Het {ORGANIZATION_SHORT_NAME} Team</p>
 </div>
@@ -145,7 +148,7 @@ def _resolve_member_by_email(email: str) -> dict | None:
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(email.lower()),
-            ProjectionExpression='member_id, email, #n, club_id',
+            ProjectionExpression='member_id, email, #n, registry_row_id',
             ExpressionAttributeNames={'#n': 'name'},
         )
         items = response.get('Items', [])
@@ -165,16 +168,36 @@ def _get_event(event_id: str) -> dict | None:
         return None
 
 
-def _get_club_name(event: dict, club_id: str) -> str:
+def _resolve_row_label(event: dict) -> str:
     """
-    Resolve club/row name from the event's registry_claims or fallback to club_id.
+    Resolve the row type label from event.registry_config.row_label.
+    Fallback: "group".
     """
-    registry_claims = event.get('registry_claims', {})
-    claim = registry_claims.get(club_id, {})
-    # The claim stores the name of who claimed it, but we want the row label
-    # Row label is in the S3 registry — use club_id as fallback display name
-    # For best UX, the row label might be cached on the claim. Otherwise use club_id.
-    return claim.get('label', club_id) if claim else club_id
+    registry_config = event.get('registry_config') or {}
+    row_label = registry_config.get('row_label', '')
+    return row_label if row_label else 'group'
+
+
+def _resolve_row_name(order: dict, event: dict) -> str:
+    """
+    Resolve the row name (instance label) for the email template.
+    Priority: order.registry_row_label → event.registry_claims[row_id].label → registry_row_id.
+    """
+    # Try order's stored label first
+    row_name = order.get('registry_row_label', '')
+    if row_name:
+        return row_name
+
+    # Fallback: check event registry_claims
+    registry_row_id = order.get('registry_row_id', '')
+    if registry_row_id and event:
+        registry_claims = event.get('registry_claims', {})
+        claim = registry_claims.get(registry_row_id, {})
+        if claim and claim.get('label'):
+            return claim['label']
+
+    # Final fallback: registry_row_id itself
+    return registry_row_id if registry_row_id else ''
 
 
 def _build_registration_link(event: dict) -> str:
@@ -270,11 +293,13 @@ def lambda_handler(event, context):
 
         # 7. Gather context for the email
         event_id = order.get('event_id')
-        club_id = order.get('club_id', '')
 
         event_record = _get_event(event_id) if event_id else None
         event_name = event_record.get('name', 'Evenement') if event_record else 'Evenement'
-        club_name = _get_club_name(event_record, club_id) if event_record else club_id
+
+        # Resolve ROW_LABEL (type of unit) and ROW_NAME (instance name)
+        row_label = _resolve_row_label(event_record) if event_record else 'group'
+        row_name = _resolve_row_name(order, event_record) if event_record else order.get('registry_row_id', '')
 
         # Inviter name: from the requester's member record
         inviter_name = requester_member.get('name', user_email)
@@ -286,7 +311,8 @@ def lambda_handler(event, context):
         template_context = {
             'EVENT_NAME': event_name,
             'INVITER_NAME': inviter_name,
-            'CLUB_NAME': club_name,
+            'ROW_LABEL': row_label,
+            'ROW_NAME': row_name,
             'REGISTRATION_LINK': registration_link,
             'ORGANIZATION_NAME': ORGANIZATION_NAME,
             'ORGANIZATION_WEBSITE': ORGANIZATION_WEBSITE,
@@ -329,7 +355,7 @@ def lambda_handler(event, context):
 
         logger.info(
             f"Delegate invitation email sent to {pending_email} "
-            f"for order {order_id} (event: {event_id}, club: {club_id})"
+            f"for order {order_id} (event: {event_id}, row: {row_label}/{row_name})"
         )
 
         return create_success_response({

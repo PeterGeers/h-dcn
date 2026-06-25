@@ -31,7 +31,7 @@ export const configFields: Record<string, FieldDefinition> = {
     order: 2,
     defaultValue: [],
     permissions: createPermissionConfig('admin', 'admin'),
-    helpText: 'Capaciteitsbeperkingen. Elk item: { key, max, counting_rule }. Counting rules: count_items_by_product, count_distinct_clubs, sum_field.',
+    helpText: 'Capaciteitsbeperkingen. Elk item: { key, max, counting_rule }. Counting rules: count_items_by_product, count_distinct_rows, sum_field.',
     width: 'full',
   },
 };

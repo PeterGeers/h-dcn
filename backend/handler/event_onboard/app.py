@@ -248,12 +248,19 @@ def atomic_claim_row(event_id: str, row_id: str, member_id: str, email: str, nam
     }
 
     try:
+        # Step 1: Ensure registry_claims map exists on the event record
         events_table.update_item(
             Key={'event_id': event_id},
-            UpdateExpression='SET registry_claims = if_not_exists(registry_claims, :empty_map), registry_claims.#row = :claim',
+            UpdateExpression='SET registry_claims = if_not_exists(registry_claims, :empty_map)',
+            ExpressionAttributeValues={':empty_map': {}},
+        )
+        # Step 2: Atomically set the row claim with a condition that it doesn't already exist
+        events_table.update_item(
+            Key={'event_id': event_id},
+            UpdateExpression='SET registry_claims.#row = :claim',
             ConditionExpression='attribute_not_exists(registry_claims.#row)',
             ExpressionAttributeNames={'#row': row_id},
-            ExpressionAttributeValues={':claim': claim_data, ':empty_map': {}},
+            ExpressionAttributeValues={':claim': claim_data},
         )
         return True, None
 
@@ -323,6 +330,7 @@ def check_existing_claim_for_user(event_id: str, email: str) -> str | None:
 def create_member_record(member_id: str, email: str, name: str, event_id: str, row_id: str) -> tuple[bool, str | None]:
     """
     Create a new Member record for an event-only user.
+    Stores only registry_row_id (no label/logo — resolved from S3 at order creation time).
     Returns (True, None) on success, (False, error) on failure.
     """
     now = datetime.now(timezone.utc).isoformat()
@@ -333,7 +341,7 @@ def create_member_record(member_id: str, email: str, name: str, event_id: str, r
                 'email': email.lower(),
                 'name': name,
                 'member_type': event_id,
-                'club_id': row_id,
+                'registry_row_id': row_id,
                 'allowed_events': [event_id],
                 'created_at': now,
                 'updated_at': now,
@@ -349,15 +357,17 @@ def create_member_record(member_id: str, email: str, name: str, event_id: str, r
         return False, f"Member creation failed: {str(e)}"
 
 
-def update_member_event_access(member_id: str, event_id: str) -> tuple[bool, str | None]:
+def update_member_event_access(member_id: str, event_id: str, row_id: str) -> tuple[bool, str | None]:
     """
-    Append event_id to an existing member's allowed_events list.
-    Only adds if not already present. Does not modify other fields.
+    Update an existing member for a new event:
+    - Append event_id to allowed_events list (if not already present)
+    - Update registry_row_id to the newly selected row (Req 2.2)
+
+    Only the ID is stored on the Member — no label/logo.
     Returns (True, None) on success, (False, error) on failure.
     """
     try:
-        # Use ADD to append to a set-like list (DynamoDB list append with dedup check)
-        # First check current allowed_events
+        # Check current allowed_events
         response = members_table.get_item(
             Key={'member_id': member_id},
             ProjectionExpression='allowed_events',
@@ -365,20 +375,30 @@ def update_member_event_access(member_id: str, event_id: str) -> tuple[bool, str
         item = response.get('Item', {})
         allowed_events = item.get('allowed_events', [])
 
-        if event_id in allowed_events:
-            # Already has access, nothing to do
-            return True, None
+        now = datetime.now(timezone.utc).isoformat()
 
-        # Append event_id
-        members_table.update_item(
-            Key={'member_id': member_id},
-            UpdateExpression='SET allowed_events = list_append(if_not_exists(allowed_events, :empty), :event_list), updated_at = :now',
-            ExpressionAttributeValues={
-                ':event_list': [event_id],
-                ':empty': [],
-                ':now': datetime.now(timezone.utc).isoformat(),
-            },
-        )
+        if event_id in allowed_events:
+            # Already has access — only update registry_row_id
+            members_table.update_item(
+                Key={'member_id': member_id},
+                UpdateExpression='SET registry_row_id = :row_id, updated_at = :now',
+                ExpressionAttributeValues={
+                    ':row_id': row_id,
+                    ':now': now,
+                },
+            )
+        else:
+            # Append event_id and update registry_row_id
+            members_table.update_item(
+                Key={'member_id': member_id},
+                UpdateExpression='SET allowed_events = list_append(if_not_exists(allowed_events, :empty), :event_list), registry_row_id = :row_id, updated_at = :now',
+                ExpressionAttributeValues={
+                    ':event_list': [event_id],
+                    ':empty': [],
+                    ':row_id': row_id,
+                    ':now': now,
+                },
+            )
         return True, None
 
     except ClientError as e:
@@ -434,21 +454,36 @@ def check_and_link_pending_delegates(email: str, member_id: str) -> None:
 
 # --- S3 Registry ---
 
-def get_row_allowed_emails(s3_path: str, row_id: str) -> list[str] | None:
-    """Fetch allowed_emails for a specific row from S3 registry."""
+def _load_registry_from_s3(s3_path: str) -> dict | None:
+    """Load the full registry JSON from S3. Returns None on error."""
     try:
         response = s3.get_object(Bucket=REGISTRY_BUCKET, Key=s3_path)
-        registry_data = json.loads(response['Body'].read().decode('utf-8'))
-        rows = registry_data.get('rows', [])
-
-        for row in rows:
-            if row.get('row_id') == row_id:
-                return row.get('allowed_emails', [])
-
-        return None  # Row not found
+        return json.loads(response['Body'].read().decode('utf-8'))
     except Exception as e:
-        logger.error(f"Error fetching S3 registry: {e}")
+        logger.error(f"Error fetching S3 registry at {s3_path}: {e}")
         return None
+
+
+def find_row_in_registry(registry_data: dict, row_id: str) -> dict | None:
+    """Find a row by row_id in the registry data. Returns the row dict or None."""
+    rows = registry_data.get('rows', [])
+    for row in rows:
+        if row.get('row_id') == row_id:
+            return row
+    return None
+
+
+def get_row_allowed_emails(s3_path: str, row_id: str) -> list[str] | None:
+    """Fetch allowed_emails for a specific row from S3 registry."""
+    registry_data = _load_registry_from_s3(s3_path)
+    if registry_data is None:
+        return None
+
+    row = find_row_in_registry(registry_data, row_id)
+    if row is None:
+        return None  # Row not found
+
+    return row.get('allowed_emails', [])
 
 
 # --- Main Handler ---
@@ -500,16 +535,22 @@ def lambda_handler(event, context):
         registry_config = event_record.get('registry_config', {})
         claim_mode = registry_config.get('claim_mode', 'first_come_first_served')
 
-        # 3. If email_restricted: verify email against row's allowed_emails
+        # 3. Resolve row from S3 registry — verify row_id exists (Req 2.1, 2.4)
+        s3_path = registry_config.get('s3_path')
+        if not s3_path:
+            return create_error_response(500, 'Registry not configured')
+
+        registry_data = _load_registry_from_s3(s3_path)
+        if registry_data is None:
+            return create_error_response(500, 'Failed to load registry')
+
+        registry_row = find_row_in_registry(registry_data, row_id)
+        if registry_row is None:
+            return create_error_response(400, 'Row not found in registry', details={'error_code': 'ROW_NOT_FOUND'})
+
+        # 3b. If email_restricted: verify email against row's allowed_emails
         if claim_mode == 'email_restricted':
-            s3_path = registry_config.get('s3_path')
-            if not s3_path:
-                return create_error_response(500, 'Registry not configured')
-
-            allowed_emails = get_row_allowed_emails(s3_path, row_id)
-            if allowed_emails is None:
-                return create_error_response(404, 'Row not found in registry')
-
+            allowed_emails = registry_row.get('allowed_emails', [])
             if not email_matches_list(email, allowed_emails):
                 return create_error_response(403, 'Email not authorized for this row')
 
@@ -552,8 +593,8 @@ def lambda_handler(event, context):
 
         # 8. Create or update Member record
         if existing_member:
-            # Append event access
-            success, member_error = update_member_event_access(member_id, event_id)
+            # Update event access and registry_row_id
+            success, member_error = update_member_event_access(member_id, event_id, row_id)
         else:
             # Create new member
             success, member_error = create_member_record(member_id, email, name, event_id, row_id)

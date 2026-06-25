@@ -54,25 +54,23 @@ def has_event_access(member_id: str, event_id: str) -> bool:
     return event_id in allowed_events
 
 
-def get_club_id(user_email: str) -> str | None:
+def get_registry_row_id(user_email: str) -> str | None:
     """
-    Look up a member's club_id by their email address.
-
-    Scans the Members table for a record with a matching email,
-    then returns the club_id field.
+    Look up a member's registry_row_id by email address.
+    Replaces get_club_id(). Returns None if member not found or field absent.
 
     Args:
         user_email: The member's email address.
 
     Returns:
-        str or None: The member's club_id, or None if not found.
+        str or None: The member's registry_row_id, or None if not found.
     """
     from boto3.dynamodb.conditions import Attr
 
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(user_email.lower()),
-            ProjectionExpression='club_id'
+            ProjectionExpression='registry_row_id'
         )
     except Exception:
         return None
@@ -81,7 +79,7 @@ def get_club_id(user_email: str) -> str | None:
     if not items:
         return None
 
-    return items[0].get('club_id')
+    return items[0].get('registry_row_id')
 
 
 def has_presmeet_access(user_roles: list[str]) -> bool:

@@ -433,7 +433,7 @@ class TestSuccessfulOnboard:
         assert member['email'] == TEST_EMAIL.lower()
         assert member['name'] == TEST_NAME
         assert member['member_type'] == TEST_EVENT_ID
-        assert member['club_id'] == TEST_ROW_ID
+        assert member['registry_row_id'] == TEST_ROW_ID
         assert TEST_EVENT_ID in member['allowed_events']
 
     def test_new_user_onboard_creates_claim(self, setup_tables):
@@ -607,3 +607,116 @@ class TestDelegateAutoLink:
         assert order['delegates']['secondary_member_id'] is not None
         # pending should be cleared (set to None)
         assert order['delegates']['pending_secondary_email'] is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Registry Row — onboard stores only registry_row_id, ROW_NOT_FOUND error
+# Requirements: 2.1, 2.2, 2.4
+# ---------------------------------------------------------------------------
+
+class TestRegistryRowOnboard:
+    """Tests for registry_row_id storage on member during onboarding."""
+
+    def test_onboard_stores_only_registry_row_id_on_new_member(self, setup_tables):
+        """
+        New member record stores registry_row_id but NOT label or logo_url.
+        Label and logo are resolved from S3 at order creation time (not stored on member).
+        Validates: Requirements 2.1
+        """
+        events_table, members_table, _, handler = setup_tables
+        _seed_event(events_table)
+
+        body = _default_body()
+        event = _make_event(body=body)
+        with _cognito_patches(user_exists=False):
+            with patch.object(handler, 'atomic_claim_row', return_value=(True, None)):
+                response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        resp_body = json.loads(response['body'])
+        member_id = resp_body['member_id']
+
+        # Verify member record
+        member_resp = members_table.get_item(Key={'member_id': member_id})
+        member = member_resp['Item']
+        assert member['registry_row_id'] == TEST_ROW_ID
+        # Label and logo must NOT be stored on the member
+        assert 'registry_row_label' not in member
+        assert 'registry_row_logo_url' not in member
+
+    def test_onboard_updates_registry_row_id_for_existing_member(self, setup_tables):
+        """
+        When an existing member re-onboards, registry_row_id is updated to the new row.
+        Validates: Requirements 2.2
+        """
+        events_table, members_table, _, handler = setup_tables
+        _seed_event(events_table)
+
+        # Pre-create existing member with a different registry_row_id
+        existing_member_id = 'existing-member-456'
+        members_table.put_item(Item={
+            'member_id': existing_member_id,
+            'email': TEST_EMAIL.lower(),
+            'name': TEST_NAME,
+            'member_type': 'other-event',
+            'registry_row_id': 'old-club-xyz',
+            'allowed_events': ['other-event-id'],
+        })
+
+        body = _default_body()
+        event = _make_event(body=body)
+        with _cognito_patches(user_exists=True):
+            with patch.object(handler, 'atomic_claim_row', return_value=(True, None)):
+                response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+
+        # Verify registry_row_id was updated
+        member_resp = members_table.get_item(Key={'member_id': existing_member_id})
+        member = member_resp['Item']
+        assert member['registry_row_id'] == TEST_ROW_ID
+        # Still no label/logo on member
+        assert 'registry_row_label' not in member
+        assert 'registry_row_logo_url' not in member
+
+    def test_row_not_found_returns_400_with_error_code(self, setup_tables):
+        """
+        When row_id is not found in S3 registry file, returns 400 with error_code ROW_NOT_FOUND.
+        Validates: Requirements 2.4
+        """
+        events_table, _, _, handler = setup_tables
+        _seed_event(events_table)
+
+        # Use a row_id that doesn't exist in REGISTRY_JSON
+        body = _default_body(row_id='nonexistent-club-xyz')
+        event = _make_event(body=body)
+        with _cognito_patches(user_exists=False):
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        resp_body = json.loads(response['body'])
+        assert resp_body.get('error_code') == 'ROW_NOT_FOUND'
+        assert 'not found' in resp_body.get('error', '').lower()
+
+    def test_valid_row_id_succeeds(self, setup_tables):
+        """
+        When row_id exists in the registry file, onboarding proceeds successfully.
+        Validates: Requirements 2.1
+        """
+        events_table, members_table, _, handler = setup_tables
+        _seed_event(events_table)
+
+        # club-amsterdam exists in REGISTRY_JSON
+        body = _default_body(row_id='club-amsterdam')
+        event = _make_event(body=body)
+        with _cognito_patches(user_exists=False):
+            with patch.object(handler, 'atomic_claim_row', return_value=(True, None)):
+                response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        resp_body = json.loads(response['body'])
+        member_id = resp_body['member_id']
+
+        member_resp = members_table.get_item(Key={'member_id': member_id})
+        member = member_resp['Item']
+        assert member['registry_row_id'] == 'club-amsterdam'

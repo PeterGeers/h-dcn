@@ -40,7 +40,7 @@ try:
         create_success_response,
         log_successful_access,
     )
-    from shared.event_access import get_club_id
+    from shared.event_access import get_registry_row_id
     from shared.price_validation import validate_price_field
     print("Using shared auth layer for create_order")
 except ImportError as e:
@@ -96,7 +96,7 @@ def lambda_handler(event, context):
 
         # Resolve club_id from user context if not provided in body
         if not club_id:
-            club_id = get_club_id(user_email)
+            club_id = get_registry_row_id(user_email)
 
         # --- Event order flow: one per club per event ---
         if event_id:

@@ -161,7 +161,7 @@ const productArb: fc.Arbitrary<Product> = fc
       ],
       variant_schema: variantSchema,
       variants: variants.length > 0 ? variants : undefined,
-      purchase_rules: { max_per_club: 10 },
+      purchase_rules: { max_per_order: 10 },
     });
   });
 
@@ -223,7 +223,7 @@ function orderArb(products: Product[]): fc.Arbitrary<Order> {
               order_id: 'ord-test',
               source_id: 'evt-test',
               member_id: 'member-test',
-              club_id: 'club-test',
+              registry_row_id: 'club-test',
               event_id: 'evt-test',
               event_type: 'presmeet',
               status,

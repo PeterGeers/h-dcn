@@ -170,7 +170,7 @@ export const parentFields: Record<string, ProductFieldDefinition> = {
     order: 2,
     required: false,
     recordType: 'parent',
-    helpText: 'Beperkingen: max_per_member, order_mode (persistent/event)',
+    helpText: 'Beperkingen: max_per_order (max per bestelling), min_per_order (min per bestelling), max_per_event (totaal cap), order_mode (persistent/event)',
   },
 
   created_at: {

@@ -42,8 +42,8 @@ const BASE_URL =
 
 interface OrderSummary {
   order_id: string;
-  club_id: string;
-  club_name?: string;
+  registry_row_id: string;
+  registry_row_label?: string;
   status: OrderStatus;
   payment_status?: string;
   total_amount?: number;
@@ -82,8 +82,8 @@ async function fetchOrdersForEvent(eventId: string): Promise<OrderSummary[]> {
   const rows = Array.isArray(data) ? data : [];
   return rows.map((row: Record<string, any>) => ({
     order_id: row.order_id || '',
-    club_id: row.club_id || '',
-    club_name: row.club || row.club_name || row.club_id || '',
+    registry_row_id: row.registry_row_id || '',
+    registry_row_label: row.registry_row_label || '',
     status: row.status || 'draft',
     payment_status: row.payment_status || 'unpaid',
     total_amount: row.total_amount ?? 0,
@@ -380,7 +380,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
                 <Tr key={order.order_id}>
                   <Td>
                     <Text fontSize="sm" fontWeight="medium">
-                      {order.club_name || order.club_id}
+                      {order.registry_row_label || order.registry_row_id}
                     </Text>
                   </Td>
                   <Td>

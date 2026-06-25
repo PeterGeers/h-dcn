@@ -13,7 +13,7 @@ export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 
 export type EventStatus = 'draft' | 'published' | 'open' | 'closed' | 'archived';
 
-export type CountingRule = 'count_items_by_product' | 'count_distinct_clubs' | 'sum_field';
+export type CountingRule = 'count_items_by_product' | 'count_distinct_rows' | 'sum_field';
 
 export type PaymentProvider = 'mollie' | 'manual';
 
@@ -51,7 +51,9 @@ export interface Order {
   order_id: string;
   source_id: string;
   member_id: string;
-  club_id?: string;
+  registry_row_id?: string;
+  registry_row_label?: string;
+  registry_row_logo_url?: string;
   event_id?: string;
   event_type?: string;
   status: OrderStatus;
@@ -78,6 +80,14 @@ export interface Constraint {
   product_id?: string;
 }
 
+export interface RegistryConfig {
+  s3_path: string;
+  row_label: string;
+  claim_mode?: 'first_come_first_served' | 'email_restricted';
+  max_delegates_per_row?: number;
+  allow_logo_upload?: boolean;
+}
+
 export interface Event {
   event_id: string;
   event_type: string;
@@ -93,6 +103,7 @@ export interface Event {
   constraints: Constraint[];
   created_at: string;
   created_by: string;
+  registry_config?: RegistryConfig;
 }
 
 // --- Product Models ---
@@ -113,8 +124,8 @@ export interface VariantAxis {
 }
 
 export interface PurchaseRules {
-  min_per_club?: number;
-  max_per_club?: number;
+  min_per_order?: number;
+  max_per_order?: number;
   max_per_event?: number;
   order_mode?: 'persistent';
 }
@@ -145,7 +156,7 @@ export interface Product {
 export interface PaymentRecord {
   payment_id: string;
   order_id: string;
-  club_id: string;
+  registry_row_id: string;
   amount: number;
   status: MolliePaymentStatus;
   provider: PaymentProvider;

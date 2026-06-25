@@ -582,3 +582,253 @@ class TestHelpers:
         assert handler._get_last_word('Anna') == 'Anna'
         assert handler._get_last_word('') == ''
         assert handler._get_last_word('  ') == ''
+
+
+# =============================================================================
+# Task 7.4 — Generic registry row CSS classes and header format tests
+# Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
+# =============================================================================
+
+
+class TestRegistryRowCssClasses:
+    """Tests for Requirement 6.1: CSS classes use row-name/row-logo (not club-*)."""
+
+    def test_html_contains_row_name_class(self, setup_aws):
+        """HTML output should contain class 'row-name', not 'club-name'."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Test Person'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Club Alpha', 'logo_url': 'https://example.com/logo.png'}}
+        products_map = {'prod-1': {'name': 'Dinner Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event')
+
+        assert 'class="row-name"' in html
+        assert 'class="club-name"' not in html
+
+    def test_html_contains_row_logo_class(self, setup_aws):
+        """HTML output should contain class 'row-logo', not 'club-logo'."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Test Person'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Club Alpha', 'logo_url': 'https://example.com/logo.png'}}
+        products_map = {'prod-1': {'name': 'Dinner Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event')
+
+        assert 'class="row-logo"' in html
+        assert 'class="club-logo"' not in html
+
+    def test_css_defines_row_name_style(self, setup_aws):
+        """CSS should define .row-name style (not .club-name)."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-1',
+            'items': [],
+            'total_amount': 0,
+            'payment_status': 'unpaid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-1': {'label': 'Test Row', 'logo_url': None}}
+        products_map = {}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event')
+
+        assert '.row-name' in html
+        assert '.club-name' not in html
+
+    def test_css_defines_row_logo_style(self, setup_aws):
+        """CSS should define .row-logo style (not .club-logo)."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-1',
+            'items': [],
+            'total_amount': 0,
+            'payment_status': 'unpaid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-1': {'label': 'Test Row', 'logo_url': None}}
+        products_map = {}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event')
+
+        assert '.row-logo' in html
+        assert '.club-logo' not in html
+
+
+class TestRegistryRowHeaderFormat:
+    """Tests for Requirement 6.2, 6.3, 6.4: header format '{row_label}: {name}'."""
+
+    def test_header_format_with_club_label(self, setup_aws):
+        """Header should display 'club: Club Alpha' when row_label_prefix is 'club'."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Someone'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Club Alpha', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='club')
+
+        assert 'club: Club Alpha' in html
+
+    def test_header_format_with_team_label(self, setup_aws):
+        """Header should display 'team: Alpha Squad' when row_label_prefix is 'team'."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Someone'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Alpha Squad', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='team')
+
+        assert 'team: Alpha Squad' in html
+
+    def test_header_format_with_school_label(self, setup_aws):
+        """Header should display 'school: Lyceum X' when row_label_prefix is 'school'."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Someone'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Lyceum X', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='school')
+
+        assert 'school: Lyceum X' in html
+
+    def test_header_fallback_to_row_when_prefix_absent(self, setup_aws):
+        """Header should use default 'row' prefix when row_label_prefix is not passed."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Someone'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'My Row Name', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        # Default row_label_prefix is 'row'
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event')
+
+        assert 'row: My Row Name' in html
+
+    def test_header_shows_logo_when_present(self, setup_aws):
+        """Header should include an img tag with row-logo class when logo_url is present."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Someone'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Club Alpha', 'logo_url': 'https://example.com/logo.png'}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='club')
+
+        assert '<img src="https://example.com/logo.png"' in html
+        assert 'class="row-logo"' in html
+
+    def test_header_no_img_when_logo_absent(self, setup_aws):
+        """Header should NOT include an img tag when logo_url is None."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Someone'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Club Alpha', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='club')
+
+        assert '<img' not in html
+
+    def test_row_label_prefix_used_in_by_guest_mode(self, setup_aws):
+        """by_guest mode should also use the row_label_prefix in headers."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-2',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Anna Test'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-2': {'label': 'Riders', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_guest_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='club')
+
+        # The row info should be present somewhere in the guest page
+        assert 'club: Riders' in html or 'Riders' in html
+
+
+class TestNoHardcodedClubText:
+    """Tests for Requirement 6.5: no hardcoded 'club' text in output."""
+
+    def test_no_hardcoded_club_class_in_html(self, setup_aws):
+        """Generated HTML should not contain any 'club-' CSS class prefix."""
+        handler = setup_aws
+        orders = [{
+            'order_id': 'ord-1',
+            'registry_row_id': 'row-1',
+            'items': [{'product_id': 'prod-1', 'item_fields_data': {'name': 'Person'}, 'unit_price': 50, 'line_total': 50}],
+            'total_amount': 50,
+            'payment_status': 'paid',
+            'delegates': {},
+        }]
+        registry_rows = {'row-1': {'label': 'Test Group', 'logo_url': None}}
+        products_map = {'prod-1': {'name': 'Ticket'}}
+
+        html = handler.build_by_order_pdf(orders, registry_rows, products_map, 'Test Event', row_label_prefix='team')
+
+        # Should not contain any 'club-' prefixed CSS class
+        assert 'club-name' not in html
+        assert 'club-logo' not in html
+
+    def test_sort_key_uses_row_label_name(self, setup_aws):
+        """_sort_key_row_label function should exist and work (not _sort_key_club_name)."""
+        handler = setup_aws
+        assert hasattr(handler, '_sort_key_row_label')
+        assert handler._sort_key_row_label('Zebra') == 'zebra'
+        assert handler._sort_key_row_label('ALPHA') == 'alpha'

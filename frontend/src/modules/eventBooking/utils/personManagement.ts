@@ -13,7 +13,7 @@ import { PersonFormState } from './orderTransformer';
 
 /**
  * Calculate the maximum number of persons allowed on an order based on
- * the highest max_per_club value across all event-linked products.
+ * the highest max_per_order value across all event-linked products.
  *
  * Returns at least 1 (a delegate always counts as one person).
  *
@@ -23,7 +23,7 @@ export function getMaxPersons(products: Product[]): number {
   if (products.length === 0) return 1;
   return Math.max(
     1,
-    ...products.map((p) => p.purchase_rules?.max_per_club ?? 1)
+    ...products.map((p) => p.purchase_rules?.max_per_order ?? 1)
   );
 }
 

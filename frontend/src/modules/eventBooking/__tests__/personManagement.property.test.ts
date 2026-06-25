@@ -21,21 +21,21 @@ import {
 
 // ---------- Arbitraries ----------
 
-/** Generates a valid max_per_club value (1–50) */
+/** Generates a valid max_per_order value (1–50) */
 const maxPerClubArb = fc.integer({ min: 1, max: 50 });
 
-/** Generates purchase_rules with a max_per_club value */
+/** Generates purchase_rules with a max_per_order value */
 const purchaseRulesArb: fc.Arbitrary<PurchaseRules> = fc
   .record({
-    max_per_club: fc.option(maxPerClubArb, { nil: undefined }),
+    max_per_order: fc.option(maxPerClubArb, { nil: undefined }),
     max_per_event: fc.option(fc.integer({ min: 1, max: 500 }), { nil: undefined }),
-    min_per_club: fc.option(fc.integer({ min: 0, max: 10 }), { nil: undefined }),
+    min_per_order: fc.option(fc.integer({ min: 0, max: 10 }), { nil: undefined }),
   })
   .map((r) => {
     const rules: PurchaseRules = {};
-    if (r.max_per_club !== undefined) rules.max_per_club = r.max_per_club;
+    if (r.max_per_order !== undefined) rules.max_per_order = r.max_per_order;
     if (r.max_per_event !== undefined) rules.max_per_event = r.max_per_event;
-    if (r.min_per_club !== undefined) rules.min_per_club = r.min_per_club;
+    if (r.min_per_order !== undefined) rules.min_per_order = r.min_per_order;
     return rules;
   });
 
@@ -100,12 +100,12 @@ describe('Person Management - Property Tests', () => {
    * **Validates: Requirements 6.1**
    *
    * Property 12: Maximum Persons Derived from Products
-   * For any set of event-linked products with varying max_per_club values,
+   * For any set of event-linked products with varying max_per_order values,
    * the maximum number of persons allowed on an order SHALL equal the highest
-   * max_per_club value across all products, with a minimum of 1.
+   * max_per_order value across all products, with a minimum of 1.
    */
   describe('Property 12: Maximum Persons Derived from Products', () => {
-    it('max persons equals the highest max_per_club across all products, minimum 1', () => {
+    it('max persons equals the highest max_per_order across all products, minimum 1', () => {
       fc.assert(
         fc.property(productsArb, (products) => {
           const result = getMaxPersons(products);
@@ -113,9 +113,9 @@ describe('Person Management - Property Tests', () => {
           // Result must be at least 1
           expect(result).toBeGreaterThanOrEqual(1);
 
-          // Result must equal the highest max_per_club value (or 1 if all are undefined/lower)
+          // Result must equal the highest max_per_order value (or 1 if all are undefined/lower)
           const maxFromProducts = Math.max(
-            ...products.map((p) => p.purchase_rules?.max_per_club ?? 1)
+            ...products.map((p) => p.purchase_rules?.max_per_order ?? 1)
           );
           const expected = Math.max(1, maxFromProducts);
           expect(result).toBe(expected);
@@ -128,13 +128,13 @@ describe('Person Management - Property Tests', () => {
       expect(getMaxPersons([])).toBe(1);
     });
 
-    it('returns 1 when all products have max_per_club = 1', () => {
+    it('returns 1 when all products have max_per_order = 1', () => {
       fc.assert(
         fc.property(
           fc.array(
             productArb.map((p) => ({
               ...p,
-              purchase_rules: { max_per_club: 1 },
+              purchase_rules: { max_per_order: 1 },
             })),
             { minLength: 1, maxLength: 10 }
           ),
@@ -146,12 +146,12 @@ describe('Person Management - Property Tests', () => {
       );
     });
 
-    it('max persons is at least as large as any single product max_per_club', () => {
+    it('max persons is at least as large as any single product max_per_order', () => {
       fc.assert(
         fc.property(productsArb, (products) => {
           const result = getMaxPersons(products);
           for (const product of products) {
-            const productMax = product.purchase_rules?.max_per_club ?? 1;
+            const productMax = product.purchase_rules?.max_per_order ?? 1;
             expect(result).toBeGreaterThanOrEqual(productMax);
           }
         }),

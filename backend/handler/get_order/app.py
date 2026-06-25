@@ -7,16 +7,17 @@ Logic:
   1. Extract credentials, resolve member_id from email
   2. Read source_id from query params
   3. If source_id == "webshop": verify hdcnLeden, scope = "member"
-  4. If source_id is event UUID: load event, check has_event_access, read order_scope
-  5. If order_scope == "member": query GSI source_id + member_id, create draft if missing
-  6. If order_scope == "club": resolve club_id, query GSI PK-only, filter by club_id,
-     verify delegate access, create draft if missing
+  4. If source_id is event UUID: load event, check has_event_access, derive order scope
+  5. If scope == "member": query GSI source_id + member_id, create draft if missing
+  6. If scope == "registry_row": resolve registry_row_id, query GSI PK-only, filter by
+     registry_row_id, verify delegate access, create draft if missing
 """
 
 import json
 import os
 import uuid
 import base64
+import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -45,6 +46,13 @@ orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 events_table = dynamodb.Table(os.environ.get('EVENTS_TABLE_NAME', 'Events'))
 members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
+# S3 client for registry file
+s3 = boto3.client('s3', region_name='eu-west-1')
+REGISTRY_BUCKET = os.environ.get('REGISTRY_BUCKET_NAME', 'h-dcn-data-506221081911')
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 GSI_NAME = 'event-member-index'
 
 
@@ -71,7 +79,7 @@ def _resolve_member_id(user_email):
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(user_email),
-            ProjectionExpression='member_id, club_id, member_type, allowed_events'
+            ProjectionExpression='member_id, registry_row_id, member_type, allowed_events'
         )
         items = response.get('Items', [])
         if not items:
@@ -118,9 +126,17 @@ def _query_orders_by_source(source_id):
     return items
 
 
-def _create_draft_order(source_id, member_id, club_id=None, is_club_scope=False):
+def _create_draft_order(
+    source_id: str,
+    member_id: str,
+    registry_row_id: str | None = None,
+    registry_row_label: str | None = None,
+    registry_row_logo_url: str | None = None,
+    is_row_scope: bool = False,
+) -> dict:
     """
     Create a new draft order and persist it.
+    For row-scoped orders, stores registry_row_id, label, and logo_url.
     Returns the created order dict.
     """
     now = datetime.now(timezone.utc).isoformat()
@@ -135,14 +151,54 @@ def _create_draft_order(source_id, member_id, club_id=None, is_club_scope=False)
         'updated_at': now,
     }
 
-    if is_club_scope and club_id:
-        order['club_id'] = club_id
+    if is_row_scope and registry_row_id:
+        order['registry_row_id'] = registry_row_id
+        order['registry_row_label'] = registry_row_label
+        order['registry_row_logo_url'] = registry_row_logo_url
         order['delegates'] = {
             'primary_member_id': member_id,
         }
 
     orders_table.put_item(Item=order)
     return order
+
+
+def _resolve_order_scope(event_record: dict) -> str:
+    """
+    Derive order scope from event config.
+    If registry_config exists → row-scoped (one order per registry row).
+    Otherwise → member-scoped (one order per member).
+    """
+    if event_record.get('registry_config'):
+        return 'registry_row'
+    return 'member'
+
+
+def _resolve_registry_row_data(event_record: dict, registry_row_id: str) -> tuple[str | None, str | None]:
+    """
+    Resolve label and logo_url from S3 registry file for a given row_id.
+    Returns (label, logo_url). Logo_url is None if not found or absent.
+    """
+    registry_config = event_record.get('registry_config', {})
+    s3_path = registry_config.get('s3_path')
+    if not s3_path:
+        return None, None
+
+    try:
+        response = s3.get_object(Bucket=REGISTRY_BUCKET, Key=s3_path)
+        registry_data = json.loads(response['Body'].read().decode('utf-8'))
+        rows = registry_data.get('rows', [])
+    except Exception as e:
+        logger.error(f"Error fetching S3 registry at {s3_path}: {e}")
+        return None, None
+
+    for row in rows:
+        if row.get('row_id') == registry_row_id:
+            label = row.get('label')
+            logo_url = row.get('logo_url', None)
+            return label, logo_url
+
+    return None, None
 
 
 def lambda_handler(event, context):
@@ -203,7 +259,7 @@ def lambda_handler(event, context):
 
             # Check event status for new order creation
             # (we still allow viewing existing orders for non-open events)
-            order_scope = event_record.get('order_scope', 'member')
+            order_scope = _resolve_order_scope(event_record)
 
         # Log access
         log_successful_access(user_email, user_roles, 'get_order')
@@ -223,40 +279,56 @@ def lambda_handler(event, context):
             order = _create_draft_order(source_id, member_id)
             return create_success_response(convert_decimals(order), status_code=201)
 
-        elif order_scope == 'club':
-            # --- Club-scoped: one order per club ---
-            club_id = member_record.get('club_id')
-            if not club_id:
-                return create_error_response(403, 'Club assignment required for this event')
+        elif order_scope == 'registry_row':
+            # --- Registry-row-scoped: one order per registry row ---
+            registry_row_id = member_record.get('registry_row_id')
+            if not registry_row_id:
+                return create_error_response(
+                    403, 'Registry row required for this event',
+                    details={'error_code': 'REGISTRY_ROW_REQUIRED'}
+                )
 
-            # Query all orders for this source, filter by club_id
+            # Query all orders for this source, filter by registry_row_id
             all_orders = _query_orders_by_source(source_id)
-            club_order = next(
-                (o for o in all_orders if o.get('club_id') == club_id), None
+            row_order = next(
+                (o for o in all_orders if o.get('registry_row_id') == registry_row_id), None
             )
 
-            if club_order:
+            if row_order:
                 # Verify requesting member is a delegate
-                delegates = club_order.get('delegates', {})
+                delegates = row_order.get('delegates', {})
                 if member_id not in [
                     delegates.get('primary_member_id'),
                     delegates.get('secondary_member_id'),
                 ]:
-                    return create_error_response(403, 'You are not a delegate for this club')
-                return create_success_response(convert_decimals(club_order))
+                    return create_error_response(403, 'You are not a delegate for this registry row')
+                return create_success_response(convert_decimals(row_order))
             else:
                 # No existing order — check event status before creating
                 if event_record and event_record.get('status') != 'published':
                     return create_error_response(403, 'Registration is not open')
 
+                # Resolve label and logo from S3 registry
+                registry_row_label, registry_row_logo_url = _resolve_registry_row_data(
+                    event_record, registry_row_id
+                )
+
                 # Create new order with requesting member as primary delegate
                 order = _create_draft_order(
-                    source_id, member_id, club_id=club_id, is_club_scope=True
+                    source_id,
+                    member_id,
+                    registry_row_id=registry_row_id,
+                    registry_row_label=registry_row_label,
+                    registry_row_logo_url=registry_row_logo_url,
+                    is_row_scope=True,
                 )
                 return create_success_response(convert_decimals(order), status_code=201)
 
         else:
-            return create_error_response(400, f'Unknown order_scope: {order_scope}')
+            return create_error_response(
+                400, 'Invalid order scope',
+                details={'error_code': 'INVALID_ORDER_SCOPE'}
+            )
 
     except Exception as e:
         print(f"Error in get_order handler: {str(e)}")

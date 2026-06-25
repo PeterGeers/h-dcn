@@ -53,15 +53,30 @@ type TranslateFn = (key: string, params?: Record<string, string>) => string;
 // --- Helpers ---
 
 /**
- * Build a sanitized filename for the PDF download.
- * Format: booking-{club_id}-{event_name}.pdf
+ * Sanitize a string for use in a filename:
+ * - Lowercase
+ * - Non-alphanumeric characters → hyphens
+ * - Consecutive hyphens collapsed
+ * - Leading/trailing hyphens removed
+ * - Empty/absent → "unknown"
  */
-export function buildFilename(clubId: string, eventName: string): string {
-  const sanitized = eventName
+export function sanitizeForFilename(value: string | null | undefined): string {
+  if (!value || value.trim().length === 0) return 'unknown';
+  return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return `booking-${clubId}-${sanitized}.pdf`;
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '') || 'unknown';
+}
+
+/**
+ * Build a sanitized filename for the PDF download.
+ * Format: booking-{sanitized_registry_row_label}-{sanitized_event_name}.pdf
+ */
+export function buildFilename(registryRowLabel: string | null | undefined, eventName: string): string {
+  const sanitizedLabel = sanitizeForFilename(registryRowLabel);
+  const sanitizedName = sanitizeForFilename(eventName);
+  return `booking-${sanitizedLabel}-${sanitizedName}.pdf`;
 }
 
 /**
@@ -108,7 +123,7 @@ function formatFieldValues(fields: Record<string, any>): string {
  * - Person names non-empty
  * - item_fields_data.name populated
  * - Required order_item_fields filled
- * - Per-order quantity limits (max_per_club)
+ * - Per-order quantity limits (max_per_order)
  * - Variant validity (variant_id exists in product's variants)
  *
  * Note: per-event capacity (max_per_event) is not checked client-side because
@@ -216,7 +231,7 @@ export function runValidationChecks(
     }
   }
 
-  // Check per-order quantity limits (max_per_club)
+  // Check per-order quantity limits (max_per_order)
   const productCounts = new Map<string, number>();
   for (const item of order.items) {
     const count = productCounts.get(item.product_id) || 0;
@@ -225,7 +240,7 @@ export function runValidationChecks(
 
   for (const [productId, count] of productCounts) {
     const productDef = productMap.get(productId);
-    if (productDef?.purchase_rules?.max_per_club && count > productDef.purchase_rules.max_per_club) {
+    if (productDef?.purchase_rules?.max_per_order && count > productDef.purchase_rules.max_per_order) {
       issues.push({
         personIndex: -1,
         personName: '',
@@ -234,7 +249,7 @@ export function runValidationChecks(
         message: t('pdf.validation_quantity_exceeded', {
           product: getProductName(productId, products),
           count: String(count),
-          max: String(productDef.purchase_rules.max_per_club),
+          max: String(productDef.purchase_rules.max_per_order),
         }),
       });
     }
@@ -266,11 +281,39 @@ export function generateBookingSummaryPdf(
   doc.text(event.name, 14, yPos);
   yPos += 8;
 
-  // --- Row label (club/team name) ---
-  doc.setFontSize(12);
-  const displayRowLabel = rowLabel || t('pdf.row_label_default');
-  doc.text(t('pdf.row_label', { rowLabel: displayRowLabel, clubId: order.club_id || '' }), 14, yPos);
-  yPos += 8;
+  // --- Row logo + label (registry_row_logo_url + registry_row_label) ---
+  if (order.registry_row_logo_url) {
+    try {
+      doc.addImage(order.registry_row_logo_url, 'PNG', 14, yPos - 4, 12, 12);
+      // Shift text to the right when logo is present
+      doc.setFontSize(12);
+      const displayRowLabel = rowLabel || t('pdf.row_label_default');
+      doc.text(
+        t('pdf.row_label', { rowLabel: displayRowLabel, name: order.registry_row_label || '' }),
+        28,
+        yPos + 4
+      );
+    } catch {
+      // If image fails to load, render text only
+      doc.setFontSize(12);
+      const displayRowLabel = rowLabel || t('pdf.row_label_default');
+      doc.text(
+        t('pdf.row_label', { rowLabel: displayRowLabel, name: order.registry_row_label || '' }),
+        14,
+        yPos
+      );
+    }
+    yPos += 12;
+  } else {
+    doc.setFontSize(12);
+    const displayRowLabel = rowLabel || t('pdf.row_label_default');
+    doc.text(
+      t('pdf.row_label', { rowLabel: displayRowLabel, name: order.registry_row_label || '' }),
+      14,
+      yPos
+    );
+    yPos += 8;
+  }
 
   // --- Delegates section (Requirement 12.2) ---
   doc.setFontSize(10);
@@ -413,7 +456,7 @@ export function generateBookingSummaryPdf(
   doc.setTextColor(0, 0, 0);
 
   // --- Download ---
-  const filename = buildFilename(order.club_id || 'unknown', event.name);
+  const filename = buildFilename(order.registry_row_label, event.name);
   doc.save(filename);
 }
 

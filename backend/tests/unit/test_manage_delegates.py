@@ -858,3 +858,119 @@ class TestDeleteMethod:
             response = handler.lambda_handler(event, None)
 
         assert response['statusCode'] == 403
+
+
+# ---------------------------------------------------------------------------
+# Tests: Registry Row — delegate registry_row_id mismatch rejection
+# Requirements: 2.5
+# ---------------------------------------------------------------------------
+
+class TestRegistryRowMismatch:
+    """Tests for delegate assignment validation with registry_row_id."""
+
+    def test_delegate_mismatch_returns_403_with_error_code(self, setup_tables):
+        """
+        When target member's registry_row_id differs from order's registry_row_id,
+        the assignment is rejected with 403 and error_code DELEGATE_ROW_MISMATCH.
+        Validates: Requirements 2.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        members_table = setup_tables['members']
+
+        # Seed order with registry_row_id
+        orders_table.put_item(Item={
+            'order_id': TEST_ORDER_ID,
+            'source_id': TEST_EVENT_ID,
+            'event_id': TEST_EVENT_ID,
+            'member_id': TEST_PRIMARY_MEMBER_ID,
+            'registry_row_id': 'row-amsterdam',
+            'status': 'draft',
+            'items': [],
+            'delegates': {
+                'primary_member_id': TEST_PRIMARY_MEMBER_ID,
+                'primary': TEST_PRIMARY_EMAIL,
+            },
+            'version': 1,
+        })
+
+        # Create target member with DIFFERENT registry_row_id
+        mismatch_member_id = 'mem-mismatch-999'
+        members_table.put_item(Item={
+            'member_id': mismatch_member_id,
+            'email': 'mismatch@h-dcn.nl',
+            'registry_row_id': 'row-rotterdam',
+            'member_type': 'hdcn_member',
+            'allowed_events': [TEST_EVENT_ID],
+        })
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': mismatch_member_id})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 403
+        body = json.loads(response['body'])
+        assert body.get('error_code') == 'DELEGATE_ROW_MISMATCH'
+        assert 'registry row' in body.get('error', '').lower()
+
+    def test_delegate_same_registry_row_succeeds(self, setup_tables):
+        """
+        When target member's registry_row_id matches order's registry_row_id,
+        delegate assignment succeeds.
+        Validates: Requirements 2.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        members_table = setup_tables['members']
+
+        # Seed order with registry_row_id
+        orders_table.put_item(Item={
+            'order_id': TEST_ORDER_ID,
+            'source_id': TEST_EVENT_ID,
+            'event_id': TEST_EVENT_ID,
+            'member_id': TEST_PRIMARY_MEMBER_ID,
+            'registry_row_id': TEST_CLUB_ID,
+            'status': 'draft',
+            'items': [],
+            'delegates': {
+                'primary_member_id': TEST_PRIMARY_MEMBER_ID,
+                'primary': TEST_PRIMARY_EMAIL,
+            },
+            'version': 1,
+        })
+
+        # Target member with same registry_row_id
+        target_member_id = 'mem-same-row-777'
+        members_table.put_item(Item={
+            'member_id': target_member_id,
+            'email': 'samerow@h-dcn.nl',
+            'registry_row_id': TEST_CLUB_ID,
+            'member_type': 'hdcn_member',
+            'allowed_events': [TEST_EVENT_ID],
+        })
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': target_member_id})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['delegates']['secondary_member_id'] == target_member_id
+
+    def test_delegate_no_registry_row_on_order_skips_check(self, setup_tables):
+        """
+        When order has no registry_row_id (member-scoped), the mismatch check
+        is skipped and the old club_id check applies instead.
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        # Seed a club-scoped order WITHOUT registry_row_id (uses club_id)
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            # Target member has the same club_id (TEST_CLUB_ID)
+            event = _make_event(body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200

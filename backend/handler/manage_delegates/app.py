@@ -1,5 +1,5 @@
 """
-Manage delegates handler for club-scoped event orders.
+Manage delegates handler for row-scoped event orders.
 Endpoint: POST /booking/{id}/delegates
           DELETE /booking/{id}/delegates
 
@@ -97,7 +97,7 @@ def _resolve_member_by_email(user_email: str) -> dict | None:
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(user_email.lower()),
-            ProjectionExpression='member_id, email, club_id, member_type, allowed_events',
+            ProjectionExpression='member_id, email, registry_row_id, member_type, allowed_events',
         )
         items = response.get('Items', [])
         return items[0] if items else None
@@ -218,11 +218,11 @@ def lambda_handler(event, context):
                 if not verify_order_event_access(order, requester_member_id):
                     return create_error_response(403, 'Insufficient event access')
 
-        # 6. Verify order is club-scoped (has delegates field)
+        # 6. Verify order is row-scoped (has delegates field)
         delegates = order.get('delegates')
         if not delegates:
             return create_error_response(
-                400, 'Delegate management is only available for club-scoped orders'
+                400, 'Delegate management is only available for row-scoped orders'
             )
 
         # 7. Verify authorization (primary delegate or admin)
@@ -430,7 +430,7 @@ def _handle_delete(event, order_id: str, user_email: str, user_roles: list):
     delegates = order.get('delegates')
     if not delegates:
         return create_error_response(
-            400, 'Delegate management is only available for club-scoped orders'
+            400, 'Delegate management is only available for row-scoped orders'
         )
 
     # Verify requester is primary delegate or admin
@@ -472,12 +472,13 @@ def _handle_add(order: dict, target_member_id: str, primary_member_id: str, requ
     if not target_member:
         return create_error_response(400, 'Target member not found')
 
-    # Verify target member has same club_id as the order
-    order_club_id = order.get('club_id')
-    target_club_id = target_member.get('club_id')
-    if order_club_id and target_club_id != order_club_id:
+    # Verify target member's registry_row_id matches the order's registry_row_id
+    order_registry_row_id = order.get('registry_row_id')
+    target_registry_row_id = target_member.get('registry_row_id')
+    if order_registry_row_id and target_registry_row_id != order_registry_row_id:
         return create_error_response(
-            400, 'Target member does not belong to the same club'
+            403, 'Target member does not belong to the same registry row',
+            details={'error_code': 'DELEGATE_ROW_MISMATCH'}
         )
 
     # Update order: set secondary_member_id and secondary email

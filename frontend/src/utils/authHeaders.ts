@@ -42,7 +42,7 @@ const filterValidRoles = (groups: string[]): string[] => {
     }
 
     // Allow specific valid roles
-    if (['hdcnLeden', 'Webshop_Management', 'verzoek_lid'].includes(role)) {
+    if (['hdcnLeden', 'Webshop_Management', 'verzoek_lid', 'event_participant'].includes(role)) {
       return true;
     }
 

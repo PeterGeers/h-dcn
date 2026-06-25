@@ -156,7 +156,7 @@ def setup_tables():
         orders_table.put_item(Item={
             'order_id': 'order-1',
             'event_id': 'test-event',
-            'club_id': 'club-a',
+            'registry_row_id': 'club-a',
             'member_id': 'member-1',
             'user_email': 'alice@club-a.nl',
             'status': 'submitted',
@@ -323,7 +323,7 @@ class TestManualAssign:
             order_response = orders_table.get_item(Key={'order_id': body['order_id']})
             order = order_response['Item']
             assert order['status'] == 'draft'
-            assert order['club_id'] == 'club-b'
+            assert order['registry_row_id'] == 'club-b'
             assert order['event_id'] == 'test-event'
 
     def test_assign_already_claimed_returns_409(self, setup_tables):

@@ -28,7 +28,7 @@ const mockProducts: Product[] = [
       { id: 'role', label: 'Functie', type: 'text', required: true },
     ],
     variant_schema: null,
-    purchase_rules: { min_per_club: 1, max_per_club: 3, order_mode: 'persistent' },
+    purchase_rules: { min_per_order: 1, max_per_order: 3, order_mode: 'persistent' },
   },
   {
     product_id: 'prod-party',
@@ -41,7 +41,7 @@ const mockProducts: Product[] = [
       { id: 'person_type', label: 'Type', type: 'select', required: true, options: ['delegate', 'guest'] },
     ],
     variant_schema: null,
-    purchase_rules: { max_per_club: 13, order_mode: 'persistent' },
+    purchase_rules: { max_per_order: 13, order_mode: 'persistent' },
   },
   {
     product_id: 'prod-tshirt',
@@ -56,7 +56,7 @@ const mockProducts: Product[] = [
       { name: 'Size', values: ['S', 'M', 'L', 'XL', 'XXL'] },
       { name: 'Gender', values: ['Male', 'Female'] },
     ],
-    purchase_rules: { max_per_club: 13, order_mode: 'persistent' },
+    purchase_rules: { max_per_order: 13, order_mode: 'persistent' },
   },
 ];
 
