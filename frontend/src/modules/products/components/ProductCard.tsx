@@ -626,7 +626,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <CollapsibleSection title="Bestelvelden per item" defaultOpen={false}>
                   <OrderItemFieldsEditor
                     value={values.order_item_fields || []}
-                    onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields.length > 0 ? fields : undefined)}
+                    onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields)}
                   />
                 </CollapsibleSection>
               )}
