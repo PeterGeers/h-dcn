@@ -58,7 +58,6 @@ import { useEffectiveLimits } from '../hooks/useEffectiveLimits';
 import ReadOnlyView from './ReadOnlyView';
 import PersonCard from './PersonCard';
 import EventInfoHeader from './EventInfoHeader';
-import EffectiveLimits from './EffectiveLimits';
 import SubmitPanel from './SubmitPanel';
 import SaveStatusIndicator from './SaveStatusIndicator';
 
@@ -547,16 +546,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
 
   return (
     <VStack spacing={6} align="stretch">
-      {/* Event info panel */}
+      {/* Event info panel (includes capacity display) */}
       <EventInfoHeader event={event} limits={effectiveLimits} isLimitsLoading={isLimitsLoading} />
-
-      {/* Effective limits */}
-      {products.length > 0 && (
-        <EffectiveLimits
-          limits={effectiveLimits}
-          isLoading={isLimitsLoading}
-        />
-      )}
 
       {/* Save error alert */}
       {saveError && (

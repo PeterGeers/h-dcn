@@ -246,22 +246,31 @@ const EventBookingPage: React.FC = () => {
   }
 
   // --- Main booking page ---
-  const clubId = order?.registry_row_id;
+  const registryRowId = order?.registry_row_id;
+  const registryRowLabel = order?.registry_row_label;
+  const registryRowLogoUrl = order?.registry_row_logo_url;
   const eventTitle = activeEvent?.name || t('page.title_booking');
 
   return (
     <Container maxW="container.xl" py={6}>
       <Flex align="center" gap={3} mb={6}>
-        {clubId && (
+        {registryRowLogoUrl && (
           <RegistryRowLogo
-            logoUrl={order?.registry_row_logo_url}
-            label={order?.registry_row_label}
+            logoUrl={registryRowLogoUrl}
+            label={registryRowLabel}
             isAdmin={isLogoAdmin}
           />
         )}
-        <Heading size="lg" color="orange.400">
-          {eventTitle}
-        </Heading>
+        <Box>
+          <Heading size="lg" color="orange.400">
+            {eventTitle}
+          </Heading>
+          {registryRowLabel && (
+            <Text fontSize="md" color="gray.300">
+              {registryRowLabel}
+            </Text>
+          )}
+        </Box>
       </Flex>
 
       {error && (
