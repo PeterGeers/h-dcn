@@ -65,17 +65,9 @@ const EventBookingPage: React.FC = () => {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   /**
-   * Check if the current user is a delegate on this order (can upload logo).
+   * Any user who can see a row-scoped order is a delegate (backend enforces access).
    */
-  const isDelegate = useCallback((): boolean => {
-    if (!order || !user?.email) return false;
-    const delegates = order.delegates;
-    if (!delegates) return false;
-    const email = user.email.toLowerCase();
-    const primary = (delegates.primary || '').toLowerCase();
-    const secondary = (delegates.secondary || '').toLowerCase();
-    return email === primary || email === secondary;
-  }, [order, user?.email]);
+  const canUploadLogo = order?.registry_row_id != null;
 
   /**
    * Upload logo for the registry row via /events/{event_id}/registry-logo.
@@ -318,7 +310,7 @@ const EventBookingPage: React.FC = () => {
           <RegistryRowLogo
             logoUrl={registryRowLogoUrl}
             label={registryRowLabel}
-            isAdmin={isDelegate()}
+            isAdmin={canUploadLogo}
             onUpload={handleLogoUpload}
           />
         )}

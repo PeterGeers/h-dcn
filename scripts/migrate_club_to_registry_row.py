@@ -142,7 +142,12 @@ def scan_all(table) -> list[dict]:
 # --- Migration Functions ---
 
 def migrate_orders(table, registry: dict[str, RegistryRow], dry_run: bool) -> MigrationStats:
-    """Migrate Orders table: club_id → registry_row_id + label + logo_url."""
+    """Migrate Orders table: club_id → registry_row_id + label + logo_url.
+    
+    Records with club_id not found in registry are still migrated:
+    registry_row_id is set to the club_id value, label defaults to the club_id,
+    and logo_url is set to None. This ensures no record is left in a broken state.
+    """
     stats: MigrationStats = {"scanned": 0, "converted": 0, "skipped": 0, "errored": 0}
 
     scan_kwargs: dict = {}
@@ -164,18 +169,20 @@ def migrate_orders(table, registry: dict[str, RegistryRow], dry_run: bool) -> Mi
                 stats["skipped"] += 1
                 continue
 
-            # Resolve from registry
+            # Resolve from registry (best-effort)
             club_id_str = str(club_id)
-            if club_id_str not in registry:
+            if club_id_str in registry:
+                row = registry[club_id_str]
+                registry_row_label = row["club_name"]
+                registry_row_logo_url = row.get("logo_url") or None
+            else:
+                # Not in registry — still migrate with club_id as label fallback
                 logger.warning(
-                    f"  SKIP order {order_id}: club_id '{club_id_str}' not found in S3 registry"
+                    f"  WARN order {order_id}: club_id '{club_id_str}' not in S3 registry, "
+                    f"using club_id as label fallback"
                 )
-                stats["skipped"] += 1
-                continue
-
-            row = registry[club_id_str]
-            registry_row_label = row["club_name"]
-            registry_row_logo_url = row.get("logo_url") or None
+                registry_row_label = club_id_str
+                registry_row_logo_url = None
 
             if dry_run:
                 logger.info(
@@ -190,7 +197,8 @@ def migrate_orders(table, registry: dict[str, RegistryRow], dry_run: bool) -> Mi
                         UpdateExpression=(
                             "SET registry_row_id = :row_id, "
                             "registry_row_label = :label, "
-                            "registry_row_logo_url = :logo_url"
+                            "registry_row_logo_url = :logo_url "
+                            "REMOVE club_id"
                         ),
                         ExpressionAttributeValues={
                             ":row_id": club_id_str,
@@ -214,7 +222,11 @@ def migrate_orders(table, registry: dict[str, RegistryRow], dry_run: bool) -> Mi
 
 
 def migrate_members(table, registry: dict[str, RegistryRow], dry_run: bool) -> MigrationStats:
-    """Migrate Members table: club_id → registry_row_id (no label/logo)."""
+    """Migrate Members table: club_id → registry_row_id (no label/logo).
+    
+    Always migrates records with club_id, even if not in S3 registry.
+    Removes club_id in the same operation.
+    """
     stats: MigrationStats = {"scanned": 0, "converted": 0, "skipped": 0, "errored": 0}
 
     scan_kwargs: dict = {}
@@ -236,14 +248,12 @@ def migrate_members(table, registry: dict[str, RegistryRow], dry_run: bool) -> M
                 stats["skipped"] += 1
                 continue
 
-            # Resolve from registry
             club_id_str = str(club_id)
             if club_id_str not in registry:
                 logger.warning(
-                    f"  SKIP member {member_id}: club_id '{club_id_str}' not found in S3 registry"
+                    f"  WARN member {member_id}: club_id '{club_id_str}' not in S3 registry, "
+                    f"migrating anyway"
                 )
-                stats["skipped"] += 1
-                continue
 
             if dry_run:
                 logger.info(
@@ -254,7 +264,7 @@ def migrate_members(table, registry: dict[str, RegistryRow], dry_run: bool) -> M
                 try:
                     table.update_item(
                         Key={"member_id": member_id},
-                        UpdateExpression="SET registry_row_id = :row_id",
+                        UpdateExpression="SET registry_row_id = :row_id REMOVE club_id",
                         ExpressionAttributeValues={":row_id": club_id_str},
                     )
                 except Exception as e:
@@ -273,7 +283,11 @@ def migrate_members(table, registry: dict[str, RegistryRow], dry_run: bool) -> M
 
 
 def migrate_payments(table, registry: dict[str, RegistryRow], dry_run: bool) -> MigrationStats:
-    """Migrate Payments table: club_id → registry_row_id + label + logo_url."""
+    """Migrate Payments table: club_id → registry_row_id + label + logo_url.
+    
+    Always migrates records with club_id, even if not in S3 registry.
+    Removes club_id in the same operation.
+    """
     stats: MigrationStats = {"scanned": 0, "converted": 0, "skipped": 0, "errored": 0}
 
     scan_kwargs: dict = {}
@@ -295,18 +309,19 @@ def migrate_payments(table, registry: dict[str, RegistryRow], dry_run: bool) -> 
                 stats["skipped"] += 1
                 continue
 
-            # Resolve from registry
+            # Resolve from registry (best-effort)
             club_id_str = str(club_id)
-            if club_id_str not in registry:
+            if club_id_str in registry:
+                row = registry[club_id_str]
+                registry_row_label = row["club_name"]
+                registry_row_logo_url = row.get("logo_url") or None
+            else:
                 logger.warning(
-                    f"  SKIP payment {payment_id}: club_id '{club_id_str}' not found in S3 registry"
+                    f"  WARN payment {payment_id}: club_id '{club_id_str}' not in S3 registry, "
+                    f"using club_id as label fallback"
                 )
-                stats["skipped"] += 1
-                continue
-
-            row = registry[club_id_str]
-            registry_row_label = row["club_name"]
-            registry_row_logo_url = row.get("logo_url") or None
+                registry_row_label = club_id_str
+                registry_row_logo_url = None
 
             if dry_run:
                 logger.info(
@@ -321,7 +336,8 @@ def migrate_payments(table, registry: dict[str, RegistryRow], dry_run: bool) -> 
                         UpdateExpression=(
                             "SET registry_row_id = :row_id, "
                             "registry_row_label = :label, "
-                            "registry_row_logo_url = :logo_url"
+                            "registry_row_logo_url = :logo_url "
+                            "REMOVE club_id"
                         ),
                         ExpressionAttributeValues={
                             ":row_id": club_id_str,
@@ -504,7 +520,12 @@ def migrate_events(table, dry_run: bool) -> MigrationStats:
 # --- Validation ---
 
 def validate_table(table, key_field: str, table_name: str) -> ValidationResult:
-    """Validate that all records have registry_row_id and no club_id remains."""
+    """Validate that no record still has club_id.
+    
+    Only flags records that have club_id remaining (migration incomplete).
+    Records without registry_row_id that also never had club_id are fine
+    (e.g. webshop members who never participated in row-scoped events).
+    """
     result: ValidationResult = {"passed": True, "total_checked": 0, "non_compliant": []}
 
     scan_kwargs: dict = {}
@@ -516,18 +537,12 @@ def validate_table(table, key_field: str, table_name: str) -> ValidationResult:
             result["total_checked"] += 1
             record_id = item.get(key_field, "unknown")
 
-            has_registry_row_id = "registry_row_id" in item
             has_club_id = "club_id" in item
 
-            if not has_registry_row_id or has_club_id:
+            if has_club_id:
                 result["passed"] = False
-                reasons = []
-                if not has_registry_row_id:
-                    reasons.append("missing registry_row_id")
-                if has_club_id:
-                    reasons.append("still has club_id")
                 result["non_compliant"].append(
-                    f"{table_name}/{record_id} ({', '.join(reasons)})"
+                    f"{table_name}/{record_id} (still has club_id)"
                 )
 
         if "LastEvaluatedKey" in response:
