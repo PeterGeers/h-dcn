@@ -77,11 +77,15 @@ function parseApiError(error: AxiosError<any>): EventBookingApiError | AxiosErro
   }
 
   if (status === 403) {
-    return {
+    const authError: AuthorizationError & { error_code?: string } = {
       type: 'AUTHORIZATION_ERROR',
       message: data?.message || data?.error || 'You do not have permission to perform this action.',
       status: 403,
-    } as AuthorizationError;
+    };
+    if (data?.error_code) {
+      authError.error_code = data.error_code;
+    }
+    return authError;
   }
 
   return error;
