@@ -255,9 +255,11 @@ const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
         </Text>
       )}
 
-      {/* Dynamic fields from order_item_fields */}
+      {/* Dynamic fields from order_item_fields (name is auto-filled from person) */}
       {product.order_item_fields && product.order_item_fields.length > 0 &&
-        product.order_item_fields.map((field) => {
+        product.order_item_fields
+          .filter((field) => field.id !== 'name')
+          .map((field) => {
           const error = fieldErrors[field.id];
           return (
             <FormControl key={field.id} mb={2} size="sm" isInvalid={!!error}>

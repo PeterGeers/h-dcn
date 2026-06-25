@@ -267,6 +267,9 @@ def _validate_event_persons(order, products, all_source_orders):
             field_id = field_def.get('id')
             if not field_id:
                 continue
+            # Skip 'name' field — auto-injected from person entry, not user-submitted
+            if field_id == 'name':
+                continue
             required = field_def.get('required', False)
             if not required:
                 continue
