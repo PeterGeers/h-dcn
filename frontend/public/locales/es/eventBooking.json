@@ -561,5 +561,16 @@
     "no_persons": "No hay personas registradas para este evento.",
     "person": "Persona",
     "total": "Total"
+  },
+  "validation": {
+    "required": "{{field}} es obligatorio",
+    "email": "Introduzca una dirección de correo válida",
+    "min_length": "Mínimo {{count}} caracteres requeridos",
+    "max_length": "Máximo {{count}} caracteres permitidos",
+    "min": "El valor debe ser al menos {{value}}",
+    "max": "El valor debe ser como máximo {{value}}",
+    "pattern": "Entrada no válida",
+    "invalid_number": "Introduzca un número válido",
+    "invalid_option": "Seleccione una opción válida"
   }
 }

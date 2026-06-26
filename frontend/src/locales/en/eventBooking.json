@@ -561,5 +561,16 @@
     "no_persons": "No persons registered for this event.",
     "person": "Person",
     "total": "Total"
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "email": "Please enter a valid email address",
+    "min_length": "Minimum {{count}} characters required",
+    "max_length": "Maximum {{count}} characters allowed",
+    "min": "Value must be at least {{value}}",
+    "max": "Value must be at most {{value}}",
+    "pattern": "Invalid input",
+    "invalid_number": "Please enter a valid number",
+    "invalid_option": "Please select a valid option"
   }
 }

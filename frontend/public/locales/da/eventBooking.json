@@ -498,5 +498,16 @@
     "no_persons": "Ingen personer registreret til denne begivenhed.",
     "person": "Person",
     "total": "Total"
+  },
+  "validation": {
+    "required": "{{field}} er påkrævet",
+    "email": "Indtast venligst en gyldig e-mailadresse",
+    "min_length": "Mindst {{count}} tegn påkrævet",
+    "max_length": "Højst {{count}} tegn tilladt",
+    "min": "Værdien skal være mindst {{value}}",
+    "max": "Værdien må højst være {{value}}",
+    "pattern": "Ugyldig indtastning",
+    "invalid_number": "Indtast venligst et gyldigt nummer",
+    "invalid_option": "Vælg venligst en gyldig mulighed"
   }
 }

@@ -317,5 +317,16 @@
     "conflict_title": "Beställning ändrad",
     "conflict_description": "Denna beställning har ändrats av en annan delegat. Ladda om för att se de senaste ändringarna.",
     "reload_button": "Ladda om"
+  },
+  "validation": {
+    "required": "{{field}} är obligatoriskt",
+    "email": "Ange en giltig e-postadress",
+    "min_length": "Minst {{count}} tecken krävs",
+    "max_length": "Högst {{count}} tecken tillåtna",
+    "min": "Värdet måste vara minst {{value}}",
+    "max": "Värdet får vara högst {{value}}",
+    "pattern": "Ogiltig inmatning",
+    "invalid_number": "Ange ett giltigt nummer",
+    "invalid_option": "Välj ett giltigt alternativ"
   }
 }

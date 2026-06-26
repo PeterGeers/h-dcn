@@ -479,5 +479,16 @@
     "no_persons": "Keine Personen für diese Veranstaltung registriert.",
     "person": "Person",
     "total": "Gesamt"
+  },
+  "validation": {
+    "required": "{{field}} ist erforderlich",
+    "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "min_length": "Mindestens {{count}} Zeichen erforderlich",
+    "max_length": "Maximal {{count}} Zeichen erlaubt",
+    "min": "Wert muss mindestens {{value}} sein",
+    "max": "Wert darf höchstens {{value}} sein",
+    "pattern": "Ungültige Eingabe",
+    "invalid_number": "Bitte geben Sie eine gültige Nummer ein",
+    "invalid_option": "Bitte wählen Sie eine gültige Option"
   }
 }
