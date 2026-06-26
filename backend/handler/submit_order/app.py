@@ -53,6 +53,7 @@ try:
         validate_submission,
     )
     from shared.number_generator import generate_order_number
+    from shared.i18n.locale_resolver import resolve_request_locale
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
@@ -430,6 +431,9 @@ def lambda_handler(event, context):
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
 
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
+
         # 1. Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
@@ -442,7 +446,8 @@ def lambda_handler(event, context):
         path_params = event.get('pathParameters') or {}
         order_id = path_params.get('id') or path_params.get('order_id')
         if not order_id:
-            return create_error_response(400, 'Order ID is required')
+            return create_error_response(400, 'Order ID is required',
+                                         error_key='validation_error', locale=locale)
 
         # 3. Resolve member record from email
         member_record, member_error = _resolve_member_id(user_email)
@@ -454,7 +459,8 @@ def lambda_handler(event, context):
         # 4. Load order by order_id
         order = _get_order(order_id)
         if not order:
-            return create_error_response(404, 'Order not found')
+            return create_error_response(404, 'Order not found',
+                                         error_key='order_not_found', locale=locale)
 
         # 4a. Event access verification (Req 16.5, 16.7):
         # For event-scoped orders, verify allowed_events + delegate ownership.
@@ -464,7 +470,8 @@ def lambda_handler(event, context):
             event_id = order.get('event_id') or order.get('source_id')
             if event_id and event_id != 'webshop':
                 if not verify_order_event_access(order, member_id):
-                    return create_error_response(403, 'Insufficient event access')
+                    return create_error_response(403, 'Insufficient event access',
+                                                 error_key='forbidden', locale=locale)
 
         # 5. Verify ownership: order's member_id must match authenticated member (or admin)
         order_member_id = order.get('member_id')
@@ -477,7 +484,8 @@ def lambda_handler(event, context):
                 delegates.get('secondary_member_id'),
             ]
             if not is_delegate:
-                return create_error_response(403, 'Access denied: not the order owner')
+                return create_error_response(403, 'Access denied: not the order owner',
+                                             error_key='forbidden', locale=locale)
 
         # 6. Verify order is in draft status
         current_status = order.get('status', 'draft')
@@ -489,19 +497,22 @@ def lambda_handler(event, context):
         # 7. Check items exist
         items = order.get('items', [])
         if not items:
-            return create_error_response(400, 'Cannot submit order with no items')
+            return create_error_response(400, 'Cannot submit order with no items',
+                                         error_key='validation_error', locale=locale)
 
         # 8. Determine source and validate accordingly
         source_id = order.get('source_id')
         if not source_id:
-            return create_error_response(400, 'Order missing source_id')
+            return create_error_response(400, 'Order missing source_id',
+                                         error_key='validation_error', locale=locale)
 
         validation_errors = []
 
         if source_id == 'webshop':
             # --- Webshop source ---
             if 'hdcnLeden' not in user_roles and not admin:
-                return create_error_response(403, 'Member access required for webshop')
+                return create_error_response(403, 'Member access required for webshop',
+                                             error_key='forbidden', locale=locale)
 
             # Load products referenced by order items
             products = _get_products_for_items(items)
@@ -513,7 +524,8 @@ def lambda_handler(event, context):
             # --- Event source (UUID) ---
             event_record = _get_event(source_id)
             if not event_record:
-                return create_error_response(404, 'Event not found')
+                return create_error_response(404, 'Event not found',
+                                             error_key='not_found', locale=locale)
 
             # Check event access:
             # - Open events: any authenticated member (hdcnLeden) can access
@@ -521,16 +533,19 @@ def lambda_handler(event, context):
             participation = event_record.get('participation', 'open')
             if participation == 'closed':
                 if not has_event_access(member_id, source_id) and not admin:
-                    return create_error_response(403, 'Event access required')
+                    return create_error_response(403, 'Event access required',
+                                                 error_key='forbidden', locale=locale)
             else:
                 # Open event: any logged-in member can submit
                 if 'hdcnLeden' not in user_roles and not has_event_access(member_id, source_id) and not admin:
-                    return create_error_response(403, 'Member access required for open events')
+                    return create_error_response(403, 'Member access required for open events',
+                                                 error_key='forbidden', locale=locale)
 
             # Check event status
             event_status = event_record.get('status')
             if event_status != 'open':
-                return create_error_response(403, 'Registration is not open')
+                return create_error_response(403, 'Registration is not open',
+                                             error_key='forbidden', locale=locale)
 
             # Load products via event's product_ids[]
             event_product_ids = event_record.get('product_ids', [])
@@ -556,7 +571,8 @@ def lambda_handler(event, context):
             return create_error_response(
                 400,
                 'Validation failed',
-                {'errors': convert_decimals(validation_errors)}
+                {'errors': convert_decimals(validation_errors)},
+                error_key='validation_error', locale=locale
             )
 
         # 10. Validation passed — submit the order with optimistic locking (version check)
@@ -603,4 +619,5 @@ def lambda_handler(event, context):
 
     except Exception as e:
         logger.error(f"Error in submit_order handler: {str(e)}", exc_info=True)
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)
