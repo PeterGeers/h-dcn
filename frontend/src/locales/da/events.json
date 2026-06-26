@@ -10,5 +10,18 @@
   "event_types": { "presmeet": "PresMeet", "alv": "ALV (Generalforsamling)", "rlv": "RLV (Regionalt møde)", "vbv": "VBV", "vergader_queue": "Mødekø", "internationaal_treffen": "Internationalt Træf", "nationaal_treffen": "Nationalt Træf", "openingsrit": "Åbningstur", "regio_rit": "Regional tur", "tourweekend": "Tour-weekend", "sluitingsrit": "Afslutningstur", "webshop": "Webshop", "other": "Andet" },
   "event_categories": { "vergadering": "Møder", "rally": "Rallies", "rit": "Ture", "overig": "Andet" },
   "participation_modes": { "open": "Åben (deltagelse for alle)", "closed": "Lukket (kun medlemmer / inviterede)" },
-  "list": { "search_placeholder": "Søg begivenheder...", "new_event": "Ny begivenhed", "new_event_short": "Ny", "no_events": "Ingen begivenheder fundet", "edit": "Rediger", "duplicate": "Dupliker", "delete": "Slet", "no_edit_access": "Ingen tilladelse til at redigere", "no_duplicate_access": "Ingen tilladelse til at duplikere", "no_delete_access": "Ingen tilladelse til at slette", "confirm_delete": "Er du sikker på, at du vil slette \"{{name}}\"?", "deleted_success": "Begivenhed slettet", "delete_error": "Fejl ved sletning", "profit": "Fortjeneste" }
+  "list": { "search_placeholder": "Søg begivenheder...", "new_event": "Ny begivenhed", "new_event_short": "Ny", "no_events": "Ingen begivenheder fundet", "edit": "Rediger", "duplicate": "Dupliker", "delete": "Slet", "no_edit_access": "Ingen tilladelse til at redigere", "no_duplicate_access": "Ingen tilladelse til at duplikere", "no_delete_access": "Ingen tilladelse til at slette", "confirm_delete": "Er du sikker på, at du vil slette \"{{name}}\"?", "deleted_success": "Begivenhed slettet", "delete_error": "Fejl ved sletning", "profit": "Fortjeneste" },
+  "validation": {
+    "required": "{{field}} er påkrævet",
+    "email": "Indtast en gyldig e-mailadresse",
+    "min_length": "Minimum {{count}} tegn påkrævet",
+    "max_length": "Maksimalt {{count}} tegn tilladt",
+    "min": "Værdien skal være mindst {{value}}",
+    "max": "Værdien må højst være {{value}}",
+    "pattern": "Ugyldig indtastning",
+    "invalid_number": "Indtast et gyldigt nummer",
+    "invalid_option": "Vælg en gyldig mulighed",
+    "poster_invalid_type": "Ugyldig filtype. Tilladt: {{types}}",
+    "poster_file_too_large": "Filen er for stor. Maksimalt {{maxSize}} tilladt"
+  }
 }

@@ -10,5 +10,18 @@
   "event_types": { "presmeet": "PresMeet", "alv": "ALV (Asamblea General)", "rlv": "RLV (Reunión Regional)", "vbv": "VBV", "vergader_queue": "Cola de reuniones", "internationaal_treffen": "Encuentro Internacional", "nationaal_treffen": "Encuentro Nacional", "openingsrit": "Paseo de apertura", "regio_rit": "Paseo regional", "tourweekend": "Fin de semana tour", "sluitingsrit": "Paseo de cierre", "webshop": "Tienda", "other": "Otro" },
   "event_categories": { "vergadering": "Reuniones", "rally": "Rallies", "rit": "Paseos", "overig": "Otro" },
   "participation_modes": { "open": "Abierto (participación para todos)", "closed": "Cerrado (solo miembros / invitados)" },
-  "list": { "search_placeholder": "Buscar eventos...", "new_event": "Nuevo Evento", "new_event_short": "Nuevo", "no_events": "No se encontraron eventos", "edit": "Editar", "duplicate": "Duplicar", "delete": "Eliminar", "no_edit_access": "Sin permiso para editar", "no_duplicate_access": "Sin permiso para duplicar", "no_delete_access": "Sin permiso para eliminar", "confirm_delete": "¿Estás seguro de que quieres eliminar \"{{name}}\"?", "deleted_success": "Evento eliminado", "delete_error": "Error al eliminar", "profit": "Beneficio" }
+  "list": { "search_placeholder": "Buscar eventos...", "new_event": "Nuevo Evento", "new_event_short": "Nuevo", "no_events": "No se encontraron eventos", "edit": "Editar", "duplicate": "Duplicar", "delete": "Eliminar", "no_edit_access": "Sin permiso para editar", "no_duplicate_access": "Sin permiso para duplicar", "no_delete_access": "Sin permiso para eliminar", "confirm_delete": "¿Estás seguro de que quieres eliminar \"{{name}}\"?", "deleted_success": "Evento eliminado", "delete_error": "Error al eliminar", "profit": "Beneficio" },
+  "validation": {
+    "required": "{{field}} es obligatorio",
+    "email": "Introduce una dirección de correo válida",
+    "min_length": "Mínimo {{count}} caracteres requeridos",
+    "max_length": "Máximo {{count}} caracteres permitidos",
+    "min": "El valor debe ser al menos {{value}}",
+    "max": "El valor debe ser como máximo {{value}}",
+    "pattern": "Entrada no válida",
+    "invalid_number": "Introduce un número válido",
+    "invalid_option": "Selecciona una opción válida",
+    "poster_invalid_type": "Tipo de archivo no válido. Permitido: {{types}}",
+    "poster_file_too_large": "Archivo demasiado grande. Máximo {{maxSize}} permitido"
+  }
 }

@@ -122,5 +122,18 @@
     "deleted_success": "Evenement verwijderd",
     "delete_error": "Fout bij verwijderen",
     "profit": "Winst"
+  },
+  "validation": {
+    "required": "{{field}} is verplicht",
+    "email": "Voer een geldig emailadres in",
+    "min_length": "Minimaal {{count}} karakters vereist",
+    "max_length": "Maximaal {{count}} karakters toegestaan",
+    "min": "Waarde moet minimaal {{value}} zijn",
+    "max": "Waarde mag maximaal {{value}} zijn",
+    "pattern": "Ongeldige invoer",
+    "invalid_number": "Voer een geldig nummer in",
+    "invalid_option": "Selecteer een geldige optie",
+    "poster_invalid_type": "Ongeldig bestandstype. Toegestaan: {{types}}",
+    "poster_file_too_large": "Bestand is te groot. Maximaal {{maxSize}} toegestaan"
   }
 }

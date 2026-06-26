@@ -122,5 +122,18 @@
     "deleted_success": "Événement supprimé",
     "delete_error": "Erreur lors de la suppression",
     "profit": "Bénéfice"
+  },
+  "validation": {
+    "required": "{{field}} est obligatoire",
+    "email": "Entrez une adresse e-mail valide",
+    "min_length": "Minimum {{count}} caractères requis",
+    "max_length": "Maximum {{count}} caractères autorisés",
+    "min": "La valeur doit être au moins {{value}}",
+    "max": "La valeur doit être au maximum {{value}}",
+    "pattern": "Saisie invalide",
+    "invalid_number": "Entrez un nombre valide",
+    "invalid_option": "Sélectionnez une option valide",
+    "poster_invalid_type": "Type de fichier invalide. Autorisé : {{types}}",
+    "poster_file_too_large": "Fichier trop volumineux. Maximum {{maxSize}} autorisé"
   }
 }
