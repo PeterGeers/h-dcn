@@ -55,6 +55,7 @@ import {
 } from '../utils/priceCalculator';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useEffectiveLimits } from '../hooks/useEffectiveLimits';
+import { getValidationMessage } from '../../../utils/validationMessages';
 import ReadOnlyView from './ReadOnlyView';
 import PersonCard from './PersonCard';
 import EventInfoHeader from './EventInfoHeader';
@@ -299,7 +300,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
       // Validate person-level required fields (name is always required)
       if (!person.name || person.name.trim().length === 0) {
         if (!newPersonErrors[pIdx]) newPersonErrors[pIdx] = {};
-        newPersonErrors[pIdx].name = 'Name is required';
+        newPersonErrors[pIdx].name = getValidationMessage(t, 'required', { field: t('person_card.name') });
         hasErrors = true;
       }
 
@@ -326,7 +327,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
           if (isEmpty) {
             if (!newFieldErrors[pIdx]) newFieldErrors[pIdx] = {};
             if (!newFieldErrors[pIdx][prodIdx]) newFieldErrors[pIdx][prodIdx] = {};
-            newFieldErrors[pIdx][prodIdx][field.id] = `${field.label} is required`;
+            newFieldErrors[pIdx][prodIdx][field.id] = getValidationMessage(t, 'required', { field: field.label });
             hasErrors = true;
           }
         }
@@ -336,7 +337,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
     setFieldErrors(newFieldErrors);
     setPersonErrors(newPersonErrors);
     return !hasErrors;
-  }, [formState, products]);
+  }, [formState, products, t]);
 
   /** Whether there are any active validation errors */
   const hasValidationErrors = useMemo(() => {

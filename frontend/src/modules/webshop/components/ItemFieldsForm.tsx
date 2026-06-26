@@ -16,6 +16,8 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { getValidationMessage } from '../../../utils/validationMessages';
 import { OrderItemField, ItemFieldsEntry } from '../types/unifiedProduct.types';
 
 /** Error for a specific field on a specific item */
@@ -46,11 +48,13 @@ export interface ItemFieldsFormProps {
 /**
  * Validates all fields for all items and returns any errors found.
  * Exported for use by parent components (e.g., CheckoutModal).
+ * When a `t` function is provided, validation messages are translated via the Validation_Helper.
  */
 export function validateItemFields(
   fields: OrderItemField[],
   values: ItemFieldsEntry[],
-  quantity: number
+  quantity: number,
+  t?: TFunction
 ): ItemFieldError[] {
   const errors: ItemFieldError[] = [];
 
@@ -60,7 +64,7 @@ export function validateItemFields(
 
     for (const field of fields) {
       const value = fieldValues[field.id] ?? '';
-      const fieldErrors = validateSingleField(field, value, itemIdx);
+      const fieldErrors = validateSingleField(field, value, itemIdx, t);
       errors.push(...fieldErrors);
     }
   }
@@ -71,7 +75,8 @@ export function validateItemFields(
 function validateSingleField(
   field: OrderItemField,
   value: string,
-  itemIndex: number
+  itemIndex: number,
+  t?: TFunction
 ): ItemFieldError[] {
   const errors: ItemFieldError[] = [];
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -82,7 +87,9 @@ function validateSingleField(
     errors.push({
       itemIndex,
       fieldId: field.id,
-      message: 'Dit veld is verplicht',
+      message: t
+        ? getValidationMessage(t, 'required', { field: field.label })
+        : 'Dit veld is verplicht',
     });
     // Don't validate constraints on empty required fields
     return errors;
@@ -101,14 +108,18 @@ function validateSingleField(
       errors.push({
         itemIndex,
         fieldId: field.id,
-        message: `Minimaal ${validation.min_length} tekens`,
+        message: t
+          ? getValidationMessage(t, 'min_length', { count: validation.min_length })
+          : `Minimaal ${validation.min_length} tekens`,
       });
     }
     if (validation?.max_length && trimmed.length > validation.max_length) {
       errors.push({
         itemIndex,
         fieldId: field.id,
-        message: `Maximaal ${validation.max_length} tekens`,
+        message: t
+          ? getValidationMessage(t, 'max_length', { count: validation.max_length })
+          : `Maximaal ${validation.max_length} tekens`,
       });
     }
     if (validation?.pattern) {
@@ -118,7 +129,9 @@ function validateSingleField(
           errors.push({
             itemIndex,
             fieldId: field.id,
-            message: 'Waarde voldoet niet aan het vereiste formaat',
+            message: t
+              ? getValidationMessage(t, 'pattern')
+              : 'Waarde voldoet niet aan het vereiste formaat',
           });
         }
       } catch {
@@ -134,7 +147,9 @@ function validateSingleField(
       errors.push({
         itemIndex,
         fieldId: field.id,
-        message: 'Ongeldig e-mailadres',
+        message: t
+          ? getValidationMessage(t, 'email')
+          : 'Ongeldig e-mailadres',
       });
     }
   }
@@ -146,21 +161,27 @@ function validateSingleField(
       errors.push({
         itemIndex,
         fieldId: field.id,
-        message: 'Voer een geldig getal in',
+        message: t
+          ? getValidationMessage(t, 'invalid_number')
+          : 'Voer een geldig getal in',
       });
     } else {
       if (validation?.minimum !== undefined && numValue < validation.minimum) {
         errors.push({
           itemIndex,
           fieldId: field.id,
-          message: `Minimale waarde is ${validation.minimum}`,
+          message: t
+            ? getValidationMessage(t, 'min', { value: validation.minimum })
+            : `Minimale waarde is ${validation.minimum}`,
         });
       }
       if (validation?.maximum !== undefined && numValue > validation.maximum) {
         errors.push({
           itemIndex,
           fieldId: field.id,
-          message: `Maximale waarde is ${validation.maximum}`,
+          message: t
+            ? getValidationMessage(t, 'max', { value: validation.maximum })
+            : `Maximale waarde is ${validation.maximum}`,
         });
       }
     }
@@ -172,7 +193,9 @@ function validateSingleField(
       errors.push({
         itemIndex,
         fieldId: field.id,
-        message: 'Selecteer een geldige optie',
+        message: t
+          ? getValidationMessage(t, 'invalid_option')
+          : 'Selecteer een geldige optie',
       });
     }
   }
