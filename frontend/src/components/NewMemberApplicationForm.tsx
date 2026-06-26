@@ -35,6 +35,7 @@ import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getVisibleFields, getFilteredEnum
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { ApiService } from '../services/apiService';
 import { getCalculatedFieldValue } from '../utils/calculatedFields';
+import { getValidationMessage } from '../utils/validationMessages';
 
 interface NewMemberApplicationFormProps {
   userEmail: string; // From Cognito
@@ -95,7 +96,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         
         // Skip email validation - it's pre-filled from Cognito
         if (fieldKey === 'email') {
-          schemaFields[fieldKey] = Yup.string().email('Voer een geldig emailadres in');
+          schemaFields[fieldKey] = Yup.string().email(() => getValidationMessage(t, 'email'));
           return;
         }
         
@@ -107,7 +108,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
             fieldSchema = Yup.date();
             // Add max date validation for birth date
             if (fieldConfig.fieldKey === 'geboortedatum') {
-              fieldSchema = fieldSchema.max(new Date(), 'Geboortedatum kan niet in de toekomst liggen');
+              fieldSchema = fieldSchema.max(new Date(), () => getValidationMessage(t, 'max', { field: t('form.birth_date', { defaultValue: 'Geboortedatum' }) }));
             }
             break;
           case 'number':
@@ -115,7 +116,7 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
             break;
           case 'enum':
             const filteredOptions = getFilteredEnumOptions(field, userRole);
-            fieldSchema = Yup.string().oneOf(filteredOptions, `Selecteer een geldige ${field.label.toLowerCase()}`);
+            fieldSchema = Yup.string().oneOf(filteredOptions, () => getValidationMessage(t, 'invalid_option'));
             break;
           default:
             fieldSchema = Yup.string();
@@ -128,22 +129,32 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
               case 'required':
                 // Check if condition applies
                 if (!rule.condition) {
-                  fieldSchema = fieldSchema.required(rule.message || `${field.label} is verplicht`);
+                  fieldSchema = fieldSchema.required(
+                    () => rule.message || getValidationMessage(t, 'required', { field: field.label })
+                  );
                 }
                 break;
               case 'email':
                 if (field.dataType === 'string') {
-                  fieldSchema = fieldSchema.email(rule.message || 'Voer een geldig emailadres in');
+                  fieldSchema = fieldSchema.email(
+                    () => rule.message || getValidationMessage(t, 'email')
+                  );
                 }
                 break;
               case 'min_length':
                 if (field.dataType === 'string') {
-                  fieldSchema = fieldSchema.min(rule.value, rule.message || `Minimaal ${rule.value} karakters`);
+                  fieldSchema = fieldSchema.min(
+                    rule.value,
+                    () => rule.message || getValidationMessage(t, 'min_length', { count: rule.value })
+                  );
                 }
                 break;
               case 'max_length':
                 if (field.dataType === 'string') {
-                  fieldSchema = fieldSchema.max(rule.value, rule.message || `Maximaal ${rule.value} karakters`);
+                  fieldSchema = fieldSchema.max(
+                    rule.value,
+                    () => rule.message || getValidationMessage(t, 'max_length', { count: rule.value })
+                  );
                 }
                 break;
               case 'iban':
@@ -151,24 +162,33 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
                   // Use exact same IBAN validation as MemberEditView for consistency
                   fieldSchema = fieldSchema.test(
                     'iban',
-                    rule.message || 'Ongeldig IBAN nummer',
+                    () => rule.message || getValidationMessage(t, 'iban'),
                     (value) => !value || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value)
                   );
                 }
                 break;
               case 'pattern':
                 if (field.dataType === 'string') {
-                  fieldSchema = fieldSchema.matches(new RegExp(rule.value), rule.message || 'Ongeldige format');
+                  fieldSchema = fieldSchema.matches(
+                    new RegExp(rule.value),
+                    () => rule.message || getValidationMessage(t, 'pattern')
+                  );
                 }
                 break;
               case 'min':
                 if (field.dataType === 'number') {
-                  fieldSchema = fieldSchema.min(rule.value, rule.message || `Minimaal ${rule.value}`);
+                  fieldSchema = fieldSchema.min(
+                    rule.value,
+                    () => rule.message || getValidationMessage(t, 'min', { value: rule.value })
+                  );
                 }
                 break;
               case 'max':
                 if (field.dataType === 'number') {
-                  fieldSchema = fieldSchema.max(rule.value, rule.message || `Maximaal ${rule.value}`);
+                  fieldSchema = fieldSchema.max(
+                    rule.value,
+                    () => rule.message || getValidationMessage(t, 'max', { value: rule.value })
+                  );
                 }
                 break;
             }
@@ -177,8 +197,10 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         
         // Check if field is required
         if (isRequiredField(fieldConfig.fieldKey)) {
-          const requiredMessage = field.validation?.find(r => r.type === 'required')?.message || `${field.label} is verplicht`;
-          fieldSchema = fieldSchema.required(requiredMessage);
+          const requiredMessage = field.validation?.find(r => r.type === 'required')?.message;
+          fieldSchema = fieldSchema.required(
+            () => requiredMessage || getValidationMessage(t, 'required', { field: field.label })
+          );
         }
         
         schemaFields[fieldConfig.fieldKey] = fieldSchema;
@@ -187,8 +209,8 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
     
     // Override privacy validation - both 'Ja' and 'Nee' should be valid, but field is required
     schemaFields.privacy = Yup.string()
-      .required('Privacy keuze is verplicht')
-      .oneOf(['Ja', 'Nee'], 'Selecteer Ja of Nee voor privacy');
+      .required(() => getValidationMessage(t, 'required', { field: 'Privacy' }))
+      .oneOf(['Ja', 'Nee'], () => getValidationMessage(t, 'invalid_option'));
     
     // Add conditional validation for minors
     schemaFields.minderjarigNaam = Yup.string().when('geboortedatum', {
@@ -197,7 +219,9 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         const age = (new Date().getTime() - new Date(birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365);
         return age < 18;
       },
-      then: (schema) => schema.required('Naam ouder/voogd is verplicht voor minderjarigen'),
+      then: (schema) => schema.required(
+        () => getValidationMessage(t, 'required', { field: t('form.guardian_name', { defaultValue: 'Naam ouder/voogd' }) })
+      ),
       otherwise: (schema) => schema.notRequired()
     });
     
@@ -207,12 +231,14 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         const requiredMembershipTypes = ['Gewoon lid', 'Gezins lid', 'Donateur', 'Gezins donateur', 'Sponsor'];
         return requiredMembershipTypes.includes(lidmaatschap);
       },
-      then: (schema) => schema.required('IBAN is verplicht voor dit lidmaatschapstype')
-        .test('iban', 'Voer een geldig IBAN nummer in', (value) => 
+      then: (schema) => schema.required(
+          () => getValidationMessage(t, 'required', { field: 'IBAN' })
+        )
+        .test('iban', () => getValidationMessage(t, 'iban'), (value) => 
           !value || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value)
         )
-        .min(15, 'IBAN moet minimaal 15 karakters bevatten')
-        .max(34, 'IBAN mag maximaal 34 karakters bevatten'),
+        .min(15, () => getValidationMessage(t, 'min_length', { count: 15 }))
+        .max(34, () => getValidationMessage(t, 'max_length', { count: 34 })),
       otherwise: (schema) => schema.notRequired()
     });
     

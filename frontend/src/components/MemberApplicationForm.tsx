@@ -26,7 +26,9 @@ import {
 } from '@chakra-ui/react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
+import { useTranslation } from 'react-i18next';
 import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, getFieldsByGroup, getFilteredEnumOptions } from '../config/memberFields';
+import { getValidationMessage } from '../utils/validationMessages';
 
 interface MemberApplicationFormProps {
   onSubmit: (data: any) => Promise<void>;
@@ -41,6 +43,7 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
 }) => {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation('members');
   
   // Get memberRegistration context
   const applicationContext = MEMBER_MODAL_CONTEXTS.memberRegistration;
@@ -57,9 +60,13 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
           if (field && field.validation) {
             field.validation.forEach(rule => {
               if (rule.type === 'required') {
-                schema[field.key] = Yup.string().required(rule.message || `${field.label} is verplicht`);
+                schema[field.key] = Yup.string().required(
+                  () => rule.message || getValidationMessage(t, 'required', { field: field.label })
+                );
               } else if (rule.type === 'email') {
-                schema[field.key] = Yup.string().email(rule.message || 'Ongeldig emailadres');
+                schema[field.key] = Yup.string().email(
+                  () => rule.message || getValidationMessage(t, 'email')
+                );
               } else if (rule.type === 'min_length') {
                 schema[field.key] = Yup.string().min(rule.value, rule.message);
               }
@@ -85,9 +92,13 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
             if (field.validation) {
               field.validation.forEach(rule => {
                 if (rule.type === 'required') {
-                  schema[field.key] = Yup.string().required(rule.message || `${field.label} is verplicht`);
+                  schema[field.key] = Yup.string().required(
+                    () => rule.message || getValidationMessage(t, 'required', { field: field.label })
+                  );
                 } else if (rule.type === 'email') {
-                  schema[field.key] = Yup.string().email(rule.message || 'Ongeldig emailadres');
+                  schema[field.key] = Yup.string().email(
+                    () => rule.message || getValidationMessage(t, 'email')
+                  );
                 } else if (rule.type === 'min_length') {
                   schema[field.key] = Yup.string().min(rule.value, rule.message);
                 }
