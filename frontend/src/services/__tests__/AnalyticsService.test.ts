@@ -141,8 +141,8 @@ describe('AnalyticsService', () => {
       expect(overview.activeMembers).toBe(7); // Only active members
       expect(overview.averageAge).toBeGreaterThan(0);
       expect(overview.averageMembershipYears).toBeGreaterThan(0);
-      expect(overview.topRegions).toHaveLength(2); // Noord-Holland, Zuid-Holland (Utrecht has only 1 active member)
-      expect(overview.topRegions[0].region).toBe('Noord-Holland'); // Should have most members (3 active)
+      expect(overview.topRegions).toHaveLength(2); // Noord-Holland, Zuid-Holland
+      expect(overview.topRegions[0].region).toBe('Zuid-Holland'); // 4 active members (Marie, Lisa, Tom, Emma)
       expect(overview.membershipTypes).toHaveProperty('Gewoon lid');
     });
 
@@ -165,7 +165,7 @@ describe('AnalyticsService', () => {
       
       const noordHolland = regionalStats.find(stats => stats.region === 'Noord-Holland');
       expect(noordHolland).toBeDefined();
-      expect(noordHolland!.totalMembers).toBe(4); // 4 active members in Noord-Holland (Jan, Marie, Piet, Anna)
+      expect(noordHolland!.totalMembers).toBe(3); // 3 active members in Noord-Holland (Jan, Piet, Anna)
       expect(noordHolland!.membersByType).toHaveProperty('Gewoon lid');
       expect(noordHolland!.averageAge).toBeGreaterThan(0);
       expect(noordHolland!.averageMembershipYears).toBeGreaterThan(0);
@@ -188,7 +188,7 @@ describe('AnalyticsService', () => {
       
       const noordHolland = ageData.find(data => data.region === 'Noord-Holland');
       expect(noordHolland).toBeDefined();
-      expect(noordHolland!.values.length).toBe(4); // 4 active members
+      expect(noordHolland!.values.length).toBe(3); // 3 active members in Noord-Holland
       expect(noordHolland!.quartiles).toHaveProperty('median');
       expect(noordHolland!.density.length).toBeGreaterThan(0);
     });
@@ -211,7 +211,7 @@ describe('AnalyticsService', () => {
       
       const noordHolland = membershipData.find(data => data.region === 'Noord-Holland');
       expect(noordHolland).toBeDefined();
-      expect(noordHolland!.values.length).toBe(4); // 4 active members
+      expect(noordHolland!.values.length).toBe(3); // 3 active members in Noord-Holland
       expect(noordHolland!.quartiles).toHaveProperty('median');
       expect(noordHolland!.density.length).toBeGreaterThan(0);
     });

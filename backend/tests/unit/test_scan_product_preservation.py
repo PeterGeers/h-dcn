@@ -3,15 +3,14 @@ Preservation property test for scan_product handler.
 
 **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5**
 
-Property 3: Preservation - scan_product existing fields unchanged
+Property 3: Preservation - scan_product canonical fields unchanged
 
 For any request to the scan_product endpoint, the handler SHALL continue to
-return `product_id`, `name`, `price`, `variant_schema`, `is_parent`, `event_id`,
-and `active` fields with identical values and Decimal-to-number conversion.
+return `product_id`, `naam`, `artikelcode`, `prijs`, `is_parent`, `active`,
+`groep`, `subgroep`, `images`, `order_item_fields`, `purchase_rules` fields
+with identical values and Decimal-to-number conversion.
 
-This test verifies the CURRENT (unfixed) behavior of the existing 7 fields.
-It MUST PASS on unfixed code to establish the baseline that must be preserved
-after the fix is applied.
+This test verifies the CURRENT behavior of the handler's canonical Dutch fields.
 """
 
 import json
@@ -112,8 +111,8 @@ def product_item_strategy(draw):
     """Generate a DynamoDB product item with varying Decimal values,
     missing optional fields, and None values.
 
-    This exercises the preservation of the 7 existing fields:
-    product_id, name, price, variant_schema, is_parent, event_id, active.
+    This exercises the preservation of the canonical Dutch fields:
+    product_id, naam, artikelcode, prijs, is_parent, active, groep, subgroep, images.
     """
     product_id = draw(st.uuids().map(str))
 
@@ -130,8 +129,9 @@ def product_item_strategy(draw):
     alt_price_value = draw(decimal_price_strategy())
 
     # Optional fields
-    has_variant_schema = draw(st.booleans())
-    has_event_id = draw(st.booleans())
+    has_groep = draw(st.booleans())
+    has_subgroep = draw(st.booleans())
+    has_images = draw(st.booleans())
     is_active = draw(st.one_of(st.just(True), st.just(False), st.just(None)))
 
     record = {
@@ -159,13 +159,17 @@ def product_item_strategy(draw):
         record['prijs'] = alt_price_value
     # 'none' → neither field present
 
-    # variant_schema
-    if has_variant_schema:
-        record['variant_schema'] = {'Maat': ['S', 'M', 'L']}
+    # groep
+    if has_groep:
+        record['groep'] = draw(st.sampled_from(['Kleding', 'Accessoires', 'Evenementen']))
 
-    # event_id
-    if has_event_id:
-        record['event_id'] = draw(st.uuids().map(str))
+    # subgroep
+    if has_subgroep:
+        record['subgroep'] = draw(st.sampled_from(['T-shirts', 'Petten', 'Stickers']))
+
+    # images
+    if has_images:
+        record['images'] = [draw(st.uuids().map(lambda u: f"s3://bucket/{u}.jpg"))]
 
     # active
     if is_active is not None:
@@ -182,20 +186,19 @@ class TestScanProductPreservation:
     """
     **Validates: Requirements 3.1, 3.2**
 
-    Property 3: Preservation - scan_product existing fields unchanged
+    Property 3: Preservation - scan_product canonical fields unchanged
 
     For any product item in DynamoDB, the scan_product handler returns
-    the 7 existing fields (product_id, name, price, variant_schema, is_parent,
-    event_id, active) with correct values and Decimal-to-number conversion.
-
-    These tests MUST PASS on unfixed code — they establish baseline behavior.
+    the canonical Dutch fields (product_id, naam, artikelcode, prijs, is_parent,
+    active, groep, subgroep, images, order_item_fields, purchase_rules)
+    with correct values and Decimal-to-number conversion.
     """
 
     @given(product=product_item_strategy())
     @settings(max_examples=50, deadline=None)
-    def test_existing_seven_fields_are_returned(self, product):
+    def test_canonical_fields_are_returned(self, product):
         """
-        For any generated product item, all 7 existing fields are present
+        For any generated product item, all canonical Dutch fields are present
         as keys in the response.
         """
         if 'app' in sys.modules:
@@ -225,12 +228,13 @@ class TestScanProductPreservation:
 
             result = body[0]
 
-            # All 7 existing fields must be present as keys
-            required_fields = ['product_id', 'name', 'price', 'variant_schema',
-                               'is_parent', 'event_id', 'active']
+            # All canonical fields must be present as keys
+            required_fields = ['product_id', 'naam', 'artikelcode', 'prijs',
+                               'is_parent', 'active', 'groep', 'subgroep',
+                               'images', 'order_item_fields', 'purchase_rules']
             for field in required_fields:
                 assert field in result, (
-                    f"Existing field '{field}' must remain in response. "
+                    f"Canonical field '{field}' must remain in response. "
                     f"Keys returned: {list(result.keys())}"
                 )
 
@@ -293,36 +297,36 @@ class TestScanProductPreservation:
             body = json.loads(response['body'])
             result = body[0]
 
-            # Determine expected price
-            if 'price' in product and product['price'] is not None:
-                expected_decimal = product['price']
-            elif 'prijs' in product and product['prijs'] is not None:
+            # Determine expected price (handler uses prijs > price fallback)
+            if 'prijs' in product and product['prijs'] is not None:
                 expected_decimal = product['prijs']
+            elif 'price' in product and product['price'] is not None:
+                expected_decimal = product['price']
             else:
                 # No price field → should be None
-                assert result['price'] is None
+                assert result['prijs'] is None
                 return
 
             # Check Decimal conversion
             if expected_decimal == int(expected_decimal):
                 # Whole number → should be int
-                assert result['price'] == int(expected_decimal), (
+                assert result['prijs'] == int(expected_decimal), (
                     f"Decimal {expected_decimal} should convert to int {int(expected_decimal)}, "
-                    f"got {result['price']}"
+                    f"got {result['prijs']}"
                 )
             else:
                 # Fractional → should be float
-                assert result['price'] == float(expected_decimal), (
+                assert result['prijs'] == float(expected_decimal), (
                     f"Decimal {expected_decimal} should convert to float {float(expected_decimal)}, "
-                    f"got {result['price']}"
+                    f"got {result['prijs']}"
                 )
 
     @given(product=product_item_strategy())
     @settings(max_examples=50, deadline=None)
-    def test_name_fallback_logic_preserved(self, product):
+    def test_naam_fallback_logic_preserved(self, product):
         """
-        Name resolution logic: 'name' takes precedence, 'naam' is fallback.
-        This behavior must be preserved after the fix.
+        Name resolution logic: 'naam' takes precedence, 'name' is fallback.
+        The handler returns canonical 'naam' field.
         """
         if 'app' in sys.modules:
             del sys.modules['app']
@@ -347,13 +351,14 @@ class TestScanProductPreservation:
             body = json.loads(response['body'])
             result = body[0]
 
-            # Verify name fallback: name > naam > None
-            if 'name' in product and product['name'] is not None:
-                assert result['name'] == product['name']
-            elif 'naam' in product and product['naam'] is not None:
-                assert result['name'] == product['naam']
+            # Verify naam fallback: naam > name > None
+            # Handler uses: item.get('naam') or item.get('name')
+            if 'naam' in product and product['naam'] is not None:
+                assert result['naam'] == product['naam']
+            elif 'name' in product and product['name'] is not None:
+                assert result['naam'] == product['name']
             else:
-                assert result['name'] is None
+                assert result['naam'] is None
 
     @given(product=product_item_strategy())
     @settings(max_examples=50, deadline=None)

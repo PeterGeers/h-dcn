@@ -57,6 +57,7 @@ jest.mock('@chakra-ui/icons', () => ({
   DeleteIcon: () => <span data-testid="delete-icon" />,
   CheckIcon: () => <span data-testid="check-icon" />,
   AddIcon: () => <span data-testid="add-icon" />,
+  CopyIcon: () => <span data-testid="copy-icon" />,
 }));
 
 // Mock Formik — render children with mock form context
@@ -197,7 +198,7 @@ describe('ProductCard Integration', () => {
     it('renders "Varianten" section header for parent products', () => {
       render(<ProductCard {...defaultProps} />);
 
-      expect(screen.getByText('Varianten')).toBeInTheDocument();
+      expect(screen.getByText(/^Varianten\s*\(\d+\)$/)).toBeInTheDocument();
     });
   });
 

@@ -5,7 +5,6 @@ import sys
 import os
 from unittest.mock import patch, MagicMock
 
-import pytest
 from hypothesis import given, settings, assume
 from hypothesis import strategies as st
 
@@ -769,7 +768,7 @@ class TestProperty6ValidPdfGeneration:
     @patch('app.log_successful_access')
     @patch('app.cors_headers', return_value={'Access-Control-Allow-Origin': '*'})
     def test_valid_pdf_generation_for_any_order(
-        self, mock_cors, mock_log, mock_extract_creds, mock_boto_resource, mock_boto_client, order
+        self, _mock_cors, _mock_log, mock_extract_creds, mock_boto_resource, mock_boto_client, order
     ):
         """For any valid order record, the lambda_handler SHALL return HTTP 200
         with Content-Type application/pdf, Content-Disposition containing
