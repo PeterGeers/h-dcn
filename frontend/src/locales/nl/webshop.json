@@ -199,7 +199,18 @@
   "toast": {
     "payment_recorded": "Betaling geregistreerd",
     "payment_recorded_desc": "Betaling van € {{amount}} is succesvol verwerkt.",
-    "payment_record_error": "Fout bij registreren"
+    "payment_record_error": "Fout bij registreren",
+    "status_updated": "Status bijgewerkt",
+    "status_updated_desc": "Bestelling naar \"{{status}}\" gezet.",
+    "status_update_error": "Status wijzigen mislukt",
+    "order_locked": "Bestelling vergrendeld",
+    "lock_error": "Vergrendelen mislukt",
+    "order_unlocked": "Bestelling ontgrendeld",
+    "unlock_error": "Ontgrendelen mislukt",
+    "all_orders_locked": "Alle bestellingen vergrendeld",
+    "all_orders_locked_desc": "Alle ingediende bestellingen zijn vergrendeld.",
+    "bulk_lock_error": "Bulk vergrendelen mislukt",
+    "error_title": "Fout"
   },
   "payment_record": {
     "order_id_label": "Bestelling ID",

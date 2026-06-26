@@ -187,7 +187,18 @@
   "toast": {
     "payment_recorded": "Betaling registreret",
     "payment_recorded_desc": "Betaling på € {{amount}} er behandlet.",
-    "payment_record_error": "Fejl ved registrering"
+    "payment_record_error": "Fejl ved registrering",
+    "status_updated": "Status opdateret",
+    "status_updated_desc": "Bestilling sat til \"{{status}}\".",
+    "status_update_error": "Kunne ikke ændre status",
+    "order_locked": "Bestilling låst",
+    "lock_error": "Låsning mislykkedes",
+    "order_unlocked": "Bestilling låst op",
+    "unlock_error": "Oplåsning mislykkedes",
+    "all_orders_locked": "Alle bestillinger låst",
+    "all_orders_locked_desc": "Alle indsendte bestillinger er blevet låst.",
+    "bulk_lock_error": "Masselåsning mislykkedes",
+    "error_title": "Fejl"
   },
   "payment_record": {
     "order_id_label": "Ordre-ID",

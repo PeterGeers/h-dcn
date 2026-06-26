@@ -188,7 +188,18 @@
   "toast": {
     "payment_recorded": "Payment recorded",
     "payment_recorded_desc": "Payment of € {{amount}} has been processed successfully.",
-    "payment_record_error": "Error recording payment"
+    "payment_record_error": "Error recording payment",
+    "status_updated": "Status updated",
+    "status_updated_desc": "Order set to \"{{status}}\".",
+    "status_update_error": "Failed to change status",
+    "order_locked": "Order locked",
+    "lock_error": "Locking failed",
+    "order_unlocked": "Order unlocked",
+    "unlock_error": "Unlocking failed",
+    "all_orders_locked": "All orders locked",
+    "all_orders_locked_desc": "All submitted orders have been locked.",
+    "bulk_lock_error": "Bulk locking failed",
+    "error_title": "Error"
   },
   "payment_record": {
     "order_id_label": "Order ID",

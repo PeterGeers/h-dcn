@@ -187,7 +187,18 @@
   "toast": {
     "payment_recorded": "Paiement enregistré",
     "payment_recorded_desc": "Paiement de € {{amount}} traité avec succès.",
-    "payment_record_error": "Erreur lors de l'enregistrement"
+    "payment_record_error": "Erreur lors de l'enregistrement",
+    "status_updated": "Statut mis à jour",
+    "status_updated_desc": "Commande passée à \"{{status}}\".",
+    "status_update_error": "Échec du changement de statut",
+    "order_locked": "Commande verrouillée",
+    "lock_error": "Échec du verrouillage",
+    "order_unlocked": "Commande déverrouillée",
+    "unlock_error": "Échec du déverrouillage",
+    "all_orders_locked": "Toutes les commandes verrouillées",
+    "all_orders_locked_desc": "Toutes les commandes soumises ont été verrouillées.",
+    "bulk_lock_error": "Échec du verrouillage en masse",
+    "error_title": "Erreur"
   },
   "payment_record": {
     "order_id_label": "ID de commande",

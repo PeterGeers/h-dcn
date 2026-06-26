@@ -175,7 +175,18 @@
   "toast": {
     "payment_recorded": "Zahlung registriert",
     "payment_recorded_desc": "Zahlung von € {{amount}} wurde erfolgreich verarbeitet.",
-    "payment_record_error": "Fehler bei der Registrierung"
+    "payment_record_error": "Fehler bei der Registrierung",
+    "status_updated": "Status aktualisiert",
+    "status_updated_desc": "Bestellung auf \"{{status}}\" gesetzt.",
+    "status_update_error": "Status konnte nicht geändert werden",
+    "order_locked": "Bestellung gesperrt",
+    "lock_error": "Sperren fehlgeschlagen",
+    "order_unlocked": "Bestellung entsperrt",
+    "unlock_error": "Entsperren fehlgeschlagen",
+    "all_orders_locked": "Alle Bestellungen gesperrt",
+    "all_orders_locked_desc": "Alle eingereichten Bestellungen wurden gesperrt.",
+    "bulk_lock_error": "Massensperrung fehlgeschlagen",
+    "error_title": "Fehler"
   },
   "payment_record": {
     "order_id_label": "Bestellnummer",

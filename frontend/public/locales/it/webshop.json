@@ -188,7 +188,18 @@
   "toast": {
     "payment_recorded": "Pagamento registrato",
     "payment_recorded_desc": "Pagamento di € {{amount}} elaborato con successo.",
-    "payment_record_error": "Errore durante la registrazione"
+    "payment_record_error": "Errore durante la registrazione",
+    "status_updated": "Stato aggiornato",
+    "status_updated_desc": "Ordine impostato su \"{{status}}\".",
+    "status_update_error": "Impossibile modificare lo stato",
+    "order_locked": "Ordine bloccato",
+    "lock_error": "Blocco fallito",
+    "order_unlocked": "Ordine sbloccato",
+    "unlock_error": "Sblocco fallito",
+    "all_orders_locked": "Tutti gli ordini bloccati",
+    "all_orders_locked_desc": "Tutti gli ordini inviati sono stati bloccati.",
+    "bulk_lock_error": "Blocco di massa fallito",
+    "error_title": "Errore"
   },
   "payment_record": {
     "order_id_label": "ID ordine",
