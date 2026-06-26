@@ -89,5 +89,16 @@
     "toast_invalid_price": "Ogiltigt pris",
     "toast_save_error": "Fel vid sparande",
     "toast_unknown_error": "Okänt fel"
+  },
+  "validation": {
+    "required": "{{field}} är obligatoriskt",
+    "email": "Ange en giltig e-postadress",
+    "min_length": "Minst {{count}} tecken krävs",
+    "max_length": "Högst {{count}} tecken tillåtna",
+    "min": "Värdet måste vara minst {{value}}",
+    "max": "Värdet får vara högst {{value}}",
+    "pattern": "Ogiltig inmatning",
+    "invalid_number": "Ange ett giltigt nummer",
+    "invalid_option": "Välj ett giltigt alternativ"
   }
 }

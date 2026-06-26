@@ -119,5 +119,16 @@
     "membership": "Iscrizione",
     "motor": "Motocicletta",
     "financial": "Dati finanziari"
+  },
+  "validation": {
+    "required": "{{field}} è obbligatorio",
+    "email": "Inserisci un indirizzo email valido",
+    "min_length": "Minimo {{count}} caratteri richiesti",
+    "max_length": "Massimo {{count}} caratteri consentiti",
+    "min": "Il valore deve essere almeno {{value}}",
+    "max": "Il valore deve essere al massimo {{value}}",
+    "pattern": "Input non valido",
+    "invalid_number": "Inserisci un numero valido",
+    "invalid_option": "Seleziona un'opzione valida"
   }
 }

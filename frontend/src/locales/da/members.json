@@ -119,5 +119,16 @@
     "membership": "Medlemskab",
     "motor": "Motorcykel",
     "financial": "Økonomi"
+  },
+  "validation": {
+    "required": "{{field}} er påkrævet",
+    "email": "Indtast en gyldig e-mailadresse",
+    "min_length": "Minimum {{count}} tegn påkrævet",
+    "max_length": "Maksimalt {{count}} tegn tilladt",
+    "min": "Værdien skal være mindst {{value}}",
+    "max": "Værdien må højst være {{value}}",
+    "pattern": "Ugyldigt input",
+    "invalid_number": "Indtast et gyldigt nummer",
+    "invalid_option": "Vælg en gyldig mulighed"
   }
 }

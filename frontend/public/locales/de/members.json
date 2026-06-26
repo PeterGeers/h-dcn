@@ -119,5 +119,16 @@
     "membership": "Mitgliedschaft",
     "motor": "Motorrad",
     "financial": "Finanzen"
+  },
+  "validation": {
+    "required": "{{field}} ist erforderlich",
+    "email": "Geben Sie eine gültige E-Mail-Adresse ein",
+    "min_length": "Mindestens {{count}} Zeichen erforderlich",
+    "max_length": "Maximal {{count}} Zeichen erlaubt",
+    "min": "Wert muss mindestens {{value}} sein",
+    "max": "Wert darf höchstens {{value}} sein",
+    "pattern": "Ungültige Eingabe",
+    "invalid_number": "Geben Sie eine gültige Nummer ein",
+    "invalid_option": "Wählen Sie eine gültige Option"
   }
 }

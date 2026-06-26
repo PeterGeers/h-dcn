@@ -89,5 +89,16 @@
     "toast_invalid_price": "Ongeldige prijs",
     "toast_save_error": "Fout bij opslaan",
     "toast_unknown_error": "Onbekende fout"
+  },
+  "validation": {
+    "required": "{{field}} is verplicht",
+    "email": "Voer een geldig emailadres in",
+    "min_length": "Minimaal {{count}} karakters vereist",
+    "max_length": "Maximaal {{count}} karakters toegestaan",
+    "min": "Waarde moet minimaal {{value}} zijn",
+    "max": "Waarde mag maximaal {{value}} zijn",
+    "pattern": "Ongeldige invoer",
+    "invalid_number": "Voer een geldig nummer in",
+    "invalid_option": "Selecteer een geldige optie"
   }
 }

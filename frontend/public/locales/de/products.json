@@ -89,5 +89,16 @@
     "toast_invalid_price": "Ungültiger Preis",
     "toast_save_error": "Fehler beim Speichern",
     "toast_unknown_error": "Unbekannter Fehler"
+  },
+  "validation": {
+    "required": "{{field}} ist erforderlich",
+    "email": "Geben Sie eine gültige E-Mail-Adresse ein",
+    "min_length": "Mindestens {{count}} Zeichen erforderlich",
+    "max_length": "Maximal {{count}} Zeichen erlaubt",
+    "min": "Wert muss mindestens {{value}} sein",
+    "max": "Wert darf höchstens {{value}} sein",
+    "pattern": "Ungültige Eingabe",
+    "invalid_number": "Geben Sie eine gültige Nummer ein",
+    "invalid_option": "Wählen Sie eine gültige Option"
   }
 }
