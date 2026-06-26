@@ -4,7 +4,9 @@
  * Utilities for rendering field values and generating form inputs based on field definitions
  */
 
+import type { TFunction } from 'i18next';
 import { FieldDefinition, HDCNGroup } from '../config/memberFields';
+import { getValidationMessage } from './validationMessages';
 
 /**
  * Format a field value for display based on field definition
@@ -254,7 +256,8 @@ function getValidationValue(field: FieldDefinition, validationType: string): any
 export function validateFieldValue(
   field: FieldDefinition, 
   value: any, 
-  memberData?: any
+  memberData?: any,
+  t?: TFunction,
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
@@ -271,7 +274,7 @@ export function validateFieldValue(
       }
     }
 
-    const error = validateRule(rule, value, field);
+    const error = validateRule(rule, value, field, t);
     if (error) {
       errors.push(error);
     }
@@ -284,61 +287,118 @@ export function validateFieldValue(
 }
 
 /**
+ * Resolve a rule.message override:
+ * - If it contains ':' (namespace prefix), treat as a translation key and call t()
+ * - Otherwise, return it as a literal string
+ */
+function resolveRuleMessage(ruleMessage: string, t?: TFunction): string {
+  if (ruleMessage.includes(':')) {
+    return t?.(ruleMessage) || ruleMessage;
+  }
+  return ruleMessage;
+}
+
+/**
  * Validate a single validation rule
  */
-function validateRule(rule: any, value: any, field: FieldDefinition): string | null {
+export function validateRule(rule: any, value: any, field: FieldDefinition, t?: TFunction): string | null {
   switch (rule.type) {
     case 'required':
       if (!value || (typeof value === 'string' && value.trim() === '')) {
-        return rule.message || `${field.label} is verplicht`;
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'required', { field: field.label })
+          : `${field.label} is verplicht`;
       }
       break;
     
     case 'email':
       if (value && !isValidEmail(value)) {
-        return rule.message || 'Voer een geldig emailadres in';
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'email')
+          : 'Voer een geldig emailadres in';
       }
       break;
     
     case 'phone':
       if (value && !isValidPhone(value)) {
-        return rule.message || 'Voer een geldig telefoonnummer in';
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'phone')
+          : 'Voer een geldig telefoonnummer in';
       }
       break;
     
     case 'iban':
       if (value && !isValidIBAN(value)) {
-        return rule.message || 'Voer een geldig IBAN nummer in';
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'iban')
+          : 'Voer een geldig IBAN nummer in';
       }
       break;
     
     case 'min_length':
       if (value && value.length < rule.value) {
-        return rule.message || `Minimaal ${rule.value} karakters vereist`;
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'min_length', { count: rule.value })
+          : `Minimaal ${rule.value} karakters vereist`;
       }
       break;
     
     case 'max_length':
       if (value && value.length > rule.value) {
-        return rule.message || `Maximaal ${rule.value} karakters toegestaan`;
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'max_length', { count: rule.value })
+          : `Maximaal ${rule.value} karakters toegestaan`;
       }
       break;
     
     case 'min':
       if (value !== null && value !== undefined && Number(value) < rule.value) {
-        return rule.message || `Waarde moet minimaal ${rule.value} zijn`;
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'min', { value: rule.value })
+          : `Waarde moet minimaal ${rule.value} zijn`;
       }
       break;
     
     case 'max':
       if (value !== null && value !== undefined && Number(value) > rule.value) {
-        return rule.message || `Waarde mag maximaal ${rule.value} zijn`;
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'max', { value: rule.value })
+          : `Waarde mag maximaal ${rule.value} zijn`;
       }
       break;
     
     case 'pattern':
       if (value && !new RegExp(rule.value).test(value)) {
-        return rule.message || 'Ongeldige invoer';
+        if (rule.message) {
+          return resolveRuleMessage(rule.message, t);
+        }
+        return t
+          ? getValidationMessage(t, 'pattern')
+          : 'Ongeldige invoer';
       }
       break;
   }
