@@ -4,6 +4,7 @@ import {
   Table, Thead, Tbody, Tr, Th, Td, Alert, AlertIcon
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import cognitoService from '../services/cognitoService';
 
 interface CsvUser {
@@ -38,6 +39,7 @@ function CsvUpload({ onUsersCreated }: CsvUploadProps) {
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<UploadResult[]>([]);
   const toast = useToast();
+  const { t } = useTranslation('members');
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files[0];
@@ -46,8 +48,7 @@ function CsvUpload({ onUsersCreated }: CsvUploadProps) {
       parseCSV(selectedFile);
     } else {
       toast({
-        title: 'Ongeldig bestand',
-        description: 'Selecteer een CSV bestand',
+        title: t('errors.invalid_file_type', { defaultValue: 'Ongeldig bestandstype. Alleen CSV-bestanden zijn toegestaan.' }),
         status: 'error',
         duration: 3000,
       });
