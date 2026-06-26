@@ -22,6 +22,7 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { bulkCreateVariants } from '../services/adminApi';
 
 export interface BulkVariantCreatorProps {
@@ -40,14 +41,15 @@ export const BulkVariantCreator: React.FC<BulkVariantCreatorProps> = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+  const { t } = useTranslation('products');
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
     try {
       await bulkCreateVariants(productId);
       toast({
-        title: 'Varianten aangemaakt',
-        description: `Alle attribuutcombinaties zijn gegenereerd voor "${productName}".`,
+        title: t('toast.bulk_create_success'),
+        description: t('toast.bulk_create_success_desc', { productName }),
         status: 'success',
         duration: 4000,
       });
@@ -55,8 +57,8 @@ export const BulkVariantCreator: React.FC<BulkVariantCreatorProps> = ({
       onSuccess();
     } catch (err: any) {
       toast({
-        title: 'Fout bij aanmaken varianten',
-        description: err?.response?.data?.message || err?.message || 'Onbekende fout',
+        title: t('toast.bulk_create_error'),
+        description: err?.response?.data?.message || err?.message || t('toast.unknown_error'),
         status: 'error',
         duration: 5000,
       });

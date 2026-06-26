@@ -43,6 +43,7 @@ import {
   AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { CheckIcon, CloseIcon, DeleteIcon, NotAllowedIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { AdminProduct, AdminVariant } from '../types/admin.types';
 import { updateVariant, deleteVariant } from '../services/adminApi';
 import { AddStockForm } from './AddStockForm';
@@ -68,6 +69,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
   onRowClick,
 }) => {
   const toast = useToast();
+  const { t } = useTranslation('products');
   const { canMutate } = useAdminPermissions();
   const disabledTooltip = 'Products_CRUD vereist';
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
@@ -89,8 +91,8 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
       await onUpdate();
     } catch (err: any) {
       toast({
-        title: 'Fout bij verversen',
-        description: err?.message || 'Kon de variantenlijst niet bijwerken. Eerder getoonde data wordt behouden.',
+        title: t('toast.refresh_error'),
+        description: err?.message || t('toast.refresh_error_desc'),
         status: 'error',
         duration: 5000,
       });
@@ -111,16 +113,16 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
         allow_oversell: newValue,
       });
       toast({
-        title: 'Bijgewerkt',
-        description: `Oversell ${newValue ? 'ingeschakeld' : 'uitgeschakeld'}`,
+        title: t('toast.oversell_updated'),
+        description: newValue ? t('toast.oversell_enabled') : t('toast.oversell_disabled'),
         status: 'success',
         duration: 5000,
       });
       triggerRefetch();
     } catch (err: any) {
       toast({
-        title: 'Fout',
-        description: err?.message || 'Kon oversell niet bijwerken',
+        title: t('toast.error'),
+        description: err?.message || t('toast.oversell_error'),
         status: 'error',
         duration: 5000,
       });
@@ -137,16 +139,16 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
         active: false,
       });
       toast({
-        title: 'Variant gedeactiveerd',
-        description: 'De variant is niet meer zichtbaar in de webshop.',
+        title: t('toast.variant_deactivated'),
+        description: t('toast.variant_deactivated_desc'),
         status: 'success',
         duration: 3000,
       });
       triggerRefetch();
     } catch (err: any) {
       toast({
-        title: 'Fout',
-        description: err?.response?.data?.message || err?.message || 'Kon variant niet deactiveren',
+        title: t('toast.error'),
+        description: err?.response?.data?.message || err?.message || t('toast.variant_deactivate_error'),
         status: 'error',
         duration: 3000,
       });
@@ -164,7 +166,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
     try {
       await deleteVariant(variantToDelete.parent_id, variantToDelete.product_id);
       toast({
-        title: 'Variant verwijderd',
+        title: t('toast.variant_deleted'),
         status: 'success',
         duration: 3000,
       });
@@ -175,17 +177,17 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
       const status = err?.response?.status;
       if (status === 409) {
         toast({
-          title: 'Kan niet verwijderen',
+          title: t('toast.variant_delete_conflict'),
           description:
             err?.response?.data?.message ||
-            'Deze variant heeft gerelateerde bestellingen. Deactiveer i.p.v. verwijderen.',
+            t('toast.variant_delete_conflict_desc'),
           status: 'warning',
           duration: 5000,
         });
       } else {
         toast({
-          title: 'Fout',
-          description: err?.response?.data?.message || err?.message || 'Kon variant niet verwijderen',
+          title: t('toast.error'),
+          description: err?.response?.data?.message || err?.message || t('toast.variant_delete_error'),
           status: 'error',
           duration: 3000,
         });
@@ -231,7 +233,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
     const validationError = validatePrice(editPriceValue);
     if (validationError) {
       toast({
-        title: 'Ongeldige prijs',
+        title: t('toast.invalid_price'),
         description: validationError,
         status: 'warning',
         duration: 3000,
@@ -247,7 +249,7 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
         prijs: newPrice,
       });
       toast({
-        title: 'Prijs bijgewerkt',
+        title: t('toast.price_updated'),
         status: 'success',
         duration: 5000,
       });
@@ -255,8 +257,8 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
       triggerRefetch();
     } catch (err: any) {
       toast({
-        title: 'Fout',
-        description: err?.message || 'Kon prijs niet bijwerken',
+        title: t('toast.error'),
+        description: err?.message || t('toast.price_update_error'),
         status: 'error',
         duration: 5000,
       });
