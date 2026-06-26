@@ -15,6 +15,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.i18n.locale_resolver import resolve_request_locale
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -30,10 +31,14 @@ table_name = os.environ.get('DYNAMODB_TABLE', 'Producten')
 table = dynamodb.Table(table_name)
 
 def lambda_handler(event, context):
+    locale = 'nl'  # Default locale in case of early exception
     try:
         # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
+        
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
         
         # Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
@@ -52,7 +57,8 @@ def lambda_handler(event, context):
             user_roles, required_permissions, user_email, None
         )
         if not is_authorized:
-            return error_response
+            return create_error_response(403, 'Access denied: insufficient permissions',
+                                         error_key='forbidden', locale=locale)
         
         # Log successful access
         log_successful_access(user_email, user_roles, 'update_product')
@@ -102,10 +108,13 @@ def lambda_handler(event, context):
         })
         
     except KeyError as e:
-        return create_error_response(400, f'Missing required parameter: {str(e)}')
+        return create_error_response(400, f'Missing required parameter: {str(e)}',
+                                     error_key='validation_error', locale=locale)
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(400, 'Invalid JSON in request body',
+                                     error_key='validation_error', locale=locale)
     except Exception as e:
         print(f"Unexpected error in update_product: {str(e)}")
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)
 
