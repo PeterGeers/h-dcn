@@ -173,5 +173,16 @@
     "combination_unavailable": "Combination not available",
     "select_all_prompt": "Select all options",
     "fetch_error": "Variants could not be loaded"
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "email": "Enter a valid email address",
+    "min_length": "Minimum {{count}} characters required",
+    "max_length": "Maximum {{count}} characters allowed",
+    "min": "Value must be at least {{value}}",
+    "max": "Value must be at most {{value}}",
+    "pattern": "Invalid input",
+    "invalid_number": "Enter a valid number",
+    "invalid_option": "Select a valid option"
   }
 }

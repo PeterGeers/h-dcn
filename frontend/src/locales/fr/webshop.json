@@ -172,5 +172,16 @@
     "out_of_stock": "En rupture de stock",
     "combination_unavailable": "Combinaison non disponible",
     "select_all_prompt": "Sélectionnez toutes les options"
+  },
+  "validation": {
+    "required": "{{field}} est obligatoire",
+    "email": "Entrez une adresse e-mail valide",
+    "min_length": "Minimum {{count}} caractères requis",
+    "max_length": "Maximum {{count}} caractères autorisés",
+    "min": "La valeur doit être d'au moins {{value}}",
+    "max": "La valeur doit être d'au plus {{value}}",
+    "pattern": "Saisie invalide",
+    "invalid_number": "Entrez un numéro valide",
+    "invalid_option": "Sélectionnez une option valide"
   }
 }

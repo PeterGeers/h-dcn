@@ -173,5 +173,16 @@
     "return_success_title": "Pago exitoso",
     "return_failed_title": "Pago no completado",
     "retry_button": "Intentar de nuevo"
+  },
+  "validation": {
+    "required": "{{field}} es obligatorio",
+    "email": "Introduce una dirección de correo electrónico válida",
+    "min_length": "Mínimo {{count}} caracteres requeridos",
+    "max_length": "Máximo {{count}} caracteres permitidos",
+    "min": "El valor debe ser al menos {{value}}",
+    "max": "El valor debe ser como máximo {{value}}",
+    "pattern": "Entrada no válida",
+    "invalid_number": "Introduce un número válido",
+    "invalid_option": "Selecciona una opción válida"
   }
 }

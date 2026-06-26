@@ -172,5 +172,16 @@
     "out_of_stock": "Slut i lager",
     "combination_unavailable": "Kombination ej tillgänglig",
     "select_all_prompt": "Välj alla alternativ"
+  },
+  "validation": {
+    "required": "{{field}} är obligatoriskt",
+    "email": "Ange en giltig e-postadress",
+    "min_length": "Minst {{count}} tecken krävs",
+    "max_length": "Högst {{count}} tecken tillåtna",
+    "min": "Värdet måste vara minst {{value}}",
+    "max": "Värdet får vara högst {{value}}",
+    "pattern": "Ogiltig inmatning",
+    "invalid_number": "Ange ett giltigt nummer",
+    "invalid_option": "Välj ett giltigt alternativ"
   }
 }
