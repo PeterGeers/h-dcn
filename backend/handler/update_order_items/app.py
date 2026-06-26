@@ -36,6 +36,7 @@ try:
         log_successful_access,
     )
     from shared.event_access import verify_order_event_access
+    from shared.i18n.locale_resolver import resolve_request_locale
     print("Using shared auth layer for update_order_items")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -70,9 +71,13 @@ def _resolve_member_for_access(user_email: str) -> dict | None:
 
 def lambda_handler(event, context):
     """Main handler for PUT /orders/{id}/items."""
+    locale = 'nl'  # Default locale for error responses before resolution
     try:
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
+
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
 
         # Authentication
         user_email, user_roles, auth_error = extract_user_credentials(event)
@@ -87,7 +92,8 @@ def lambda_handler(event, context):
         has_event_booking_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant'))
 
         if not is_admin_authorized and not has_webshop_access and not has_event_booking_access:
-            return create_error_response(403, 'Access denied: Requires webshop or event access')
+            return create_error_response(403, 'Access denied: Requires webshop or event access',
+                                         error_key='forbidden', locale=locale)
 
         log_successful_access(user_email, user_roles, 'update_order_items')
 
@@ -95,7 +101,8 @@ def lambda_handler(event, context):
         path_params = event.get('pathParameters') or {}
         order_id = path_params.get('id')
         if not order_id:
-            return create_error_response(400, 'Missing order_id in path')
+            return create_error_response(400, 'Missing order_id in path',
+                                         error_key='validation_error', locale=locale)
 
         # Parse request body
         body = json.loads(event.get('body', '{}'))
@@ -105,22 +112,27 @@ def lambda_handler(event, context):
 
         # Validate required fields
         if version is None:
-            return create_error_response(400, 'version is required for optimistic locking')
+            return create_error_response(400, 'version is required for optimistic locking',
+                                         error_key='validation_error', locale=locale)
 
         # Must provide either items or persons (persons takes precedence for event orders)
         if items is None and persons is None:
-            return create_error_response(400, 'items or persons is required')
+            return create_error_response(400, 'items or persons is required',
+                                         error_key='validation_error', locale=locale)
 
         # Validate types
         if items is not None and not isinstance(items, list):
-            return create_error_response(400, 'items must be an array')
+            return create_error_response(400, 'items must be an array',
+                                         error_key='validation_error', locale=locale)
         if persons is not None and not isinstance(persons, list):
-            return create_error_response(400, 'persons must be an array')
+            return create_error_response(400, 'persons must be an array',
+                                         error_key='validation_error', locale=locale)
 
         # Fetch existing order
         order_response = orders_table.get_item(Key={'order_id': order_id})
         if 'Item' not in order_response:
-            return create_error_response(404, 'Order not found', {'order_id': order_id})
+            return create_error_response(404, 'Order not found', {'order_id': order_id},
+                                         error_key='order_not_found', locale=locale)
 
         order = order_response['Item']
 
@@ -133,10 +145,12 @@ def lambda_handler(event, context):
                 # Resolve member_id from email for event access check
                 member_record = _resolve_member_for_access(user_email)
                 if not member_record:
-                    return create_error_response(403, 'Insufficient event access')
+                    return create_error_response(403, 'Insufficient event access',
+                                                 error_key='forbidden', locale=locale)
                 member_id = member_record['member_id']
                 if not verify_order_event_access(order, member_id):
-                    return create_error_response(403, 'Insufficient event access')
+                    return create_error_response(403, 'Insufficient event access',
+                                                 error_key='forbidden', locale=locale)
 
         # Verify order belongs to this user (unless admin)
         if not is_admin_authorized:
@@ -157,13 +171,15 @@ def lambda_handler(event, context):
                         delegates.get('secondary_member_id'),
                     ]
             if order_email.lower() != user_email.lower() and not is_delegate:
-                return create_error_response(403, 'Access denied: order belongs to another user')
+                return create_error_response(403, 'Access denied: order belongs to another user',
+                                             error_key='forbidden', locale=locale)
 
         # Verify order is in draft status
         if order.get('status') != 'draft':
             return create_error_response(
                 400, 'Only draft orders can be updated',
-                {'current_status': order.get('status')}
+                {'current_status': order.get('status')},
+                error_key='validation_error', locale=locale
             )
 
         # Optimistic locking: check version matches
@@ -172,7 +188,8 @@ def lambda_handler(event, context):
         if provided_version != stored_version:
             return create_error_response(
                 409, 'Version conflict',
-                {'current_version': stored_version}
+                {'current_version': stored_version},
+                error_key='validation_error', locale=locale
             )
 
         # Process items: either from persons array or flat items array
@@ -227,7 +244,8 @@ def lambda_handler(event, context):
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
                 return create_error_response(
                     409, 'Version conflict',
-                    {'current_version': stored_version}
+                    {'current_version': stored_version},
+                    error_key='validation_error', locale=locale
                 )
             raise
 
@@ -246,10 +264,12 @@ def lambda_handler(event, context):
         return create_success_response(response_data)
 
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(400, 'Invalid JSON in request body',
+                                     error_key='invalid_input', locale=locale)
     except Exception as e:
         logger.error(f"Error updating order items: {str(e)}", exc_info=True)
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)
 
 
 # ---------------------------------------------------------------------------
