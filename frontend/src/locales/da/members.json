@@ -97,6 +97,8 @@
     "apply_link": "Klik her for at blive medlem"
   },
   "form": {
+    "group_name": "Gruppenavn",
+    "email": "E-mail",
     "name": "Navn",
     "description": "Beskrivelse",
     "price": "Pris",
@@ -135,5 +137,17 @@
     "pattern": "Ugyldigt input",
     "invalid_number": "Indtast et gyldigt nummer",
     "invalid_option": "Vælg en gyldig mulighed"
+  },
+  "toast": {
+    "required_fields": "Påkrævede felter",
+    "group_created": "Gruppe oprettet",
+    "group_cannot_update": "Gruppe kan ikke opdateres",
+    "group_cannot_update_desc": "Cognito understøtter ikke ændring af gruppebeskrivelse efter oprettelse",
+    "save_error": "Fejl ved gemning",
+    "user_updated": "Bruger opdateret",
+    "user_created": "Bruger oprettet"
+  },
+  "errors": {
+    "invalid_file_type": "Ugyldig filtype. Kun CSV-filer er tilladt."
   }
 }

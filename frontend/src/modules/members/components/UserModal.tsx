@@ -4,7 +4,9 @@ import {
   VStack, Button, FormControl, FormLabel, Input, SimpleGrid, useToast,
   Checkbox, CheckboxGroup, Stack
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import cognitoService from '../services/cognitoService';
+import { getValidationMessage } from '../../../utils/validationMessages';
 
 interface CognitoAttribute {
   Name: string;
@@ -48,6 +50,7 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
   const [userGroups, setUserGroups] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+  const { t } = useTranslation('members');
 
   useEffect(() => {
     if (user) {
@@ -99,8 +102,8 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
   const handleSubmit = async () => {
     if (!formData.email) {
       toast({
-        title: 'Vereiste velden',
-        description: 'Email is verplicht',
+        title: t('toast.required_fields'),
+        description: getValidationMessage(t, 'required', { field: t('form.email') }),
         status: 'error',
         duration: 3000,
       });
@@ -156,13 +159,13 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
       onSave();
       onClose();
       toast({
-        title: user ? 'Gebruiker bijgewerkt' : 'Gebruiker aangemaakt',
+        title: user ? t('toast.user_updated') : t('toast.user_created'),
         status: 'success',
         duration: 3000,
       });
     } catch (error: any) {
       toast({
-        title: 'Fout bij opslaan',
+        title: t('toast.save_error'),
         description: error.message,
         status: 'error',
         duration: 5000,

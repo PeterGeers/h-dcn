@@ -3,7 +3,9 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
   VStack, Button, FormControl, FormLabel, Input, Textarea, useToast
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import cognitoService from '../services/cognitoService';
+import { getValidationMessage } from '../../../utils/validationMessages';
 
 interface CognitoGroup {
   GroupName: string;
@@ -31,6 +33,7 @@ function GroupModal({ isOpen, onClose, group, onSave }: GroupModalProps) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+  const { t } = useTranslation('members');
 
   useEffect(() => {
     if (group) {
@@ -56,8 +59,8 @@ function GroupModal({ isOpen, onClose, group, onSave }: GroupModalProps) {
   const handleSubmit = async () => {
     if (!formData.groupName) {
       toast({
-        title: 'Vereiste velden',
-        description: 'Groepsnaam is verplicht',
+        title: t('toast.required_fields'),
+        description: getValidationMessage(t, 'required', { field: t('form.group_name') }),
         status: 'error',
         duration: 3000,
       });
@@ -70,15 +73,15 @@ function GroupModal({ isOpen, onClose, group, onSave }: GroupModalProps) {
         // Create new group
         await cognitoService.createGroup(formData.groupName, formData.description);
         toast({
-          title: 'Groep aangemaakt',
+          title: t('toast.group_created'),
           status: 'success',
           duration: 3000,
         });
       } else {
         // Note: Cognito doesn't support updating group description after creation
         toast({
-          title: 'Groep kan niet worden bijgewerkt',
-          description: 'Cognito ondersteunt geen wijziging van groepsbeschrijving na aanmaak',
+          title: t('toast.group_cannot_update'),
+          description: t('toast.group_cannot_update_desc'),
           status: 'warning',
           duration: 5000,
         });
@@ -88,7 +91,7 @@ function GroupModal({ isOpen, onClose, group, onSave }: GroupModalProps) {
       onClose();
     } catch (error: any) {
       toast({
-        title: 'Fout bij opslaan',
+        title: t('toast.save_error'),
         description: error.message,
         status: 'error',
         duration: 5000,

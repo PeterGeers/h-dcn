@@ -97,6 +97,8 @@
     "apply_link": "Clicca qui per diventare membro"
   },
   "form": {
+    "group_name": "Nome del gruppo",
+    "email": "E-mail",
     "name": "Nome",
     "description": "Descrizione",
     "price": "Prezzo",
@@ -135,5 +137,17 @@
     "pattern": "Input non valido",
     "invalid_number": "Inserisci un numero valido",
     "invalid_option": "Seleziona un'opzione valida"
+  },
+  "toast": {
+    "required_fields": "Campi obbligatori",
+    "group_created": "Gruppo creato",
+    "group_cannot_update": "Il gruppo non può essere aggiornato",
+    "group_cannot_update_desc": "Cognito non supporta la modifica della descrizione del gruppo dopo la creazione",
+    "save_error": "Errore durante il salvataggio",
+    "user_updated": "Utente aggiornato",
+    "user_created": "Utente creato"
+  },
+  "errors": {
+    "invalid_file_type": "Tipo di file non valido. Sono consentiti solo file CSV."
   }
 }
