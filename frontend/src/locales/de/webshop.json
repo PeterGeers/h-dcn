@@ -170,7 +170,9 @@
     "max": "Wert darf höchstens {{value}} sein",
     "pattern": "Ungültige Eingabe",
     "invalid_number": "Geben Sie eine gültige Nummer ein",
-    "invalid_option": "Wählen Sie eine gültige Option"
+    "invalid_option": "Wählen Sie eine gültige Option",
+    "unique": "{{field}} muss eindeutig sein",
+    "select_min_options": "Auswahl muss mindestens {{count}} Option haben"
   },
   "toast": {
     "payment_recorded": "Zahlung registriert",

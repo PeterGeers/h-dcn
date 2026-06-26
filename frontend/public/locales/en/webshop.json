@@ -183,7 +183,9 @@
     "max": "Value must be at most {{value}}",
     "pattern": "Invalid input",
     "invalid_number": "Enter a valid number",
-    "invalid_option": "Select a valid option"
+    "invalid_option": "Select a valid option",
+    "unique": "{{field}} must be unique",
+    "select_min_options": "Selection must have at least {{count}} option"
   },
   "toast": {
     "payment_recorded": "Payment recorded",

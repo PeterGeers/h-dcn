@@ -182,7 +182,9 @@
     "max": "El valor debe ser como máximo {{value}}",
     "pattern": "Entrada no válida",
     "invalid_number": "Introduce un número válido",
-    "invalid_option": "Selecciona una opción válida"
+    "invalid_option": "Selecciona una opción válida",
+    "unique": "{{field}} debe ser único",
+    "select_min_options": "La selección debe tener al menos {{count}} opción"
   },
   "toast": {
     "payment_recorded": "Pago registrado",

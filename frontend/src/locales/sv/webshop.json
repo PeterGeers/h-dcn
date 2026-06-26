@@ -182,7 +182,9 @@
     "max": "Värdet får vara högst {{value}}",
     "pattern": "Ogiltig inmatning",
     "invalid_number": "Ange ett giltigt nummer",
-    "invalid_option": "Välj ett giltigt alternativ"
+    "invalid_option": "Välj ett giltigt alternativ",
+    "unique": "{{field}} måste vara unikt",
+    "select_min_options": "Urval måste ha minst {{count}} alternativ"
   },
   "toast": {
     "payment_recorded": "Betalning registrerad",

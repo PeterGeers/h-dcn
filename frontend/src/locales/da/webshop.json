@@ -182,7 +182,9 @@
     "max": "Værdien må højst være {{value}}",
     "pattern": "Ugyldig indtastning",
     "invalid_number": "Indtast et gyldigt tal",
-    "invalid_option": "Vælg en gyldig mulighed"
+    "invalid_option": "Vælg en gyldig mulighed",
+    "unique": "{{field}} skal være unikt",
+    "select_min_options": "Valg skal have mindst {{count}} mulighed"
   },
   "toast": {
     "payment_recorded": "Betaling registreret",

@@ -182,7 +182,9 @@
     "max": "La valeur doit être d'au plus {{value}}",
     "pattern": "Saisie invalide",
     "invalid_number": "Entrez un numéro valide",
-    "invalid_option": "Sélectionnez une option valide"
+    "invalid_option": "Sélectionnez une option valide",
+    "unique": "{{field}} doit être unique",
+    "select_min_options": "La sélection doit avoir au moins {{count}} option"
   },
   "toast": {
     "payment_recorded": "Paiement enregistré",

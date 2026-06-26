@@ -194,7 +194,9 @@
     "max": "Waarde mag maximaal {{value}} zijn",
     "pattern": "Ongeldige invoer",
     "invalid_number": "Voer een geldig nummer in",
-    "invalid_option": "Selecteer een geldige optie"
+    "invalid_option": "Selecteer een geldige optie",
+    "unique": "{{field}} moet uniek zijn",
+    "select_min_options": "Selectie moet minimaal {{count}} optie hebben"
   },
   "toast": {
     "payment_recorded": "Betaling geregistreerd",
