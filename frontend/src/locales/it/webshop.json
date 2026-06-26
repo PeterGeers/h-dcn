@@ -183,5 +183,16 @@
     "pattern": "Input non valido",
     "invalid_number": "Inserisci un numero valido",
     "invalid_option": "Seleziona un'opzione valida"
+  },
+  "toast": {
+    "payment_recorded": "Pagamento registrato",
+    "payment_recorded_desc": "Pagamento di € {{amount}} elaborato con successo.",
+    "payment_record_error": "Errore durante la registrazione"
+  },
+  "payment_record": {
+    "order_id_label": "ID ordine",
+    "amount_label": "Importo",
+    "date_label": "Data",
+    "date_format_error": "Usa il formato data ISO (AAAA-MM-GG)"
   }
 }

@@ -183,5 +183,16 @@
     "pattern": "Saisie invalide",
     "invalid_number": "Entrez un numéro valide",
     "invalid_option": "Sélectionnez une option valide"
+  },
+  "toast": {
+    "payment_recorded": "Paiement enregistré",
+    "payment_recorded_desc": "Paiement de € {{amount}} traité avec succès.",
+    "payment_record_error": "Erreur lors de l'enregistrement"
+  },
+  "payment_record": {
+    "order_id_label": "ID de commande",
+    "amount_label": "Montant",
+    "date_label": "Date",
+    "date_format_error": "Utilisez le format de date ISO (AAAA-MM-JJ)"
   }
 }

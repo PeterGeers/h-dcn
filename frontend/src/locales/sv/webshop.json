@@ -183,5 +183,16 @@
     "pattern": "Ogiltig inmatning",
     "invalid_number": "Ange ett giltigt nummer",
     "invalid_option": "Välj ett giltigt alternativ"
+  },
+  "toast": {
+    "payment_recorded": "Betalning registrerad",
+    "payment_recorded_desc": "Betalning på € {{amount}} har behandlats.",
+    "payment_record_error": "Fel vid registrering"
+  },
+  "payment_record": {
+    "order_id_label": "Order-ID",
+    "amount_label": "Belopp",
+    "date_label": "Datum",
+    "date_format_error": "Använd ISO-datumformat (ÅÅÅÅ-MM-DD)"
   }
 }

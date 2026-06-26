@@ -171,5 +171,16 @@
     "pattern": "Ungültige Eingabe",
     "invalid_number": "Geben Sie eine gültige Nummer ein",
     "invalid_option": "Wählen Sie eine gültige Option"
+  },
+  "toast": {
+    "payment_recorded": "Zahlung registriert",
+    "payment_recorded_desc": "Zahlung von € {{amount}} wurde erfolgreich verarbeitet.",
+    "payment_record_error": "Fehler bei der Registrierung"
+  },
+  "payment_record": {
+    "order_id_label": "Bestellnummer",
+    "amount_label": "Betrag",
+    "date_label": "Datum",
+    "date_format_error": "ISO-Datumsformat verwenden (JJJJ-MM-TT)"
   }
 }

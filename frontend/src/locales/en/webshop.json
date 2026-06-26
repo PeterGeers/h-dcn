@@ -184,5 +184,16 @@
     "pattern": "Invalid input",
     "invalid_number": "Enter a valid number",
     "invalid_option": "Select a valid option"
+  },
+  "toast": {
+    "payment_recorded": "Payment recorded",
+    "payment_recorded_desc": "Payment of € {{amount}} has been processed successfully.",
+    "payment_record_error": "Error recording payment"
+  },
+  "payment_record": {
+    "order_id_label": "Order ID",
+    "amount_label": "Amount",
+    "date_label": "Date",
+    "date_format_error": "Use ISO date format (YYYY-MM-DD)"
   }
 }

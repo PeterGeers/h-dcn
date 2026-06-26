@@ -195,5 +195,16 @@
     "pattern": "Ongeldige invoer",
     "invalid_number": "Voer een geldig nummer in",
     "invalid_option": "Selecteer een geldige optie"
+  },
+  "toast": {
+    "payment_recorded": "Betaling geregistreerd",
+    "payment_recorded_desc": "Betaling van € {{amount}} is succesvol verwerkt.",
+    "payment_record_error": "Fout bij registreren"
+  },
+  "payment_record": {
+    "order_id_label": "Bestelling ID",
+    "amount_label": "Bedrag",
+    "date_label": "Datum",
+    "date_format_error": "Gebruik ISO datumformaat (YYYY-MM-DD)"
   }
 }
