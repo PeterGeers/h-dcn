@@ -56,7 +56,11 @@ export const uploadToS3 = async (
     // Convert File to base64 for API upload
     const fileBuffer = await resizedFile.arrayBuffer();
     const uint8Array = new Uint8Array(fileBuffer);
-    const base64String = btoa(String.fromCharCode(...uint8Array));
+    let binaryString = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      binaryString += String.fromCharCode(uint8Array[i]);
+    }
+    const base64String = btoa(binaryString);
     
     // Get auth from Amplify session
     const { authToken, groups } = await getSessionAuth();
