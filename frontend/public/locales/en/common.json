@@ -48,8 +48,14 @@
   },
   "errors": {
     "generic": "An error occurred. Please try again later.",
-    "network": "Network error. Check your connection and try again.",
-    "not_found": "Not found",
+    "network": "Network error - check your internet connection",
+    "unauthorized": "You are not authorized for this action",
+    "forbidden": "Access denied - insufficient permissions",
+    "not_found": "Requested data not found",
+    "server_error": "Server error - please try again later",
+    "maintenance": "The system is temporarily unavailable for maintenance",
+    "timeout": "Request took too long - please try again",
+    "unknown": "An unknown error occurred",
     "no_access": "No access",
     "session_expired": "Session expired. Please log in again."
   },
@@ -57,7 +63,26 @@
     "save_success": "Data saved successfully",
     "save_error": "Error saving. Please try again.",
     "delete_success": "Successfully deleted",
-    "delete_error": "Error deleting"
+    "delete_error": "Error deleting",
+    "action_success": "{{action}} successful",
+    "action_error": "Error during {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Authorization required",
+    "forbidden": "Access denied",
+    "not_found": "Not found",
+    "validation_error": "Validation error",
+    "internal_error": "Internal server error",
+    "member_not_found": "Member not found",
+    "member_already_exists": "Member already exists",
+    "invalid_input": "Invalid input",
+    "payment_failed": "Payment failed",
+    "order_not_found": "Order not found",
+    "product_not_found": "Product not found",
+    "cart_empty": "Cart is empty",
+    "insufficient_stock": "Insufficient stock",
+    "email_already_exists": "Email address already in use",
+    "invalid_membership": "Invalid membership"
   },
   "account": {
     "info_title": "Account Information",

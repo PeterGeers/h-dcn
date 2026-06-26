@@ -26,7 +26,6 @@
     "export": "Exporteren",
     "add": "Toevoegen",
     "refresh": "Vernieuwen",
-    "open": "Openen",
     "open": "Openen"
   },
   "labels": {
@@ -49,8 +48,14 @@
   },
   "errors": {
     "generic": "Er is een fout opgetreden. Probeer het later opnieuw.",
-    "network": "Netwerkfout. Controleer je verbinding en probeer opnieuw.",
-    "not_found": "Niet gevonden",
+    "network": "Netwerkfout - controleer je internetverbinding",
+    "unauthorized": "Je bent niet geautoriseerd voor deze actie",
+    "forbidden": "Toegang geweigerd - onvoldoende rechten",
+    "not_found": "Gevraagde gegevens niet gevonden",
+    "server_error": "Serverfout - probeer het later opnieuw",
+    "maintenance": "Het systeem is tijdelijk niet beschikbaar voor onderhoud",
+    "timeout": "Verzoek duurde te lang - probeer opnieuw",
+    "unknown": "Er is een onbekende fout opgetreden",
     "no_access": "Geen toegang",
     "session_expired": "Sessie verlopen. Log opnieuw in."
   },
@@ -58,7 +63,26 @@
     "save_success": "Gegevens succesvol opgeslagen",
     "save_error": "Fout bij opslaan. Probeer het opnieuw.",
     "delete_success": "Succesvol verwijderd",
-    "delete_error": "Fout bij verwijderen"
+    "delete_error": "Fout bij verwijderen",
+    "action_success": "{{action}} succesvol",
+    "action_error": "Fout bij {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Autorisatie vereist",
+    "forbidden": "Toegang geweigerd",
+    "not_found": "Niet gevonden",
+    "validation_error": "Validatiefout",
+    "internal_error": "Interne serverfout",
+    "member_not_found": "Lid niet gevonden",
+    "member_already_exists": "Lid bestaat al",
+    "invalid_input": "Ongeldige invoer",
+    "payment_failed": "Betaling mislukt",
+    "order_not_found": "Bestelling niet gevonden",
+    "product_not_found": "Product niet gevonden",
+    "cart_empty": "Winkelwagen is leeg",
+    "insufficient_stock": "Onvoldoende voorraad",
+    "email_already_exists": "E-mailadres is al in gebruik",
+    "invalid_membership": "Ongeldig lidmaatschap"
   },
   "account": {
     "info_title": "Account Informatie",

@@ -48,8 +48,14 @@
   },
   "errors": {
     "generic": "Der opstod en fejl. Prøv igen senere.",
-    "network": "Netværksfejl. Kontroller din forbindelse og prøv igen.",
-    "not_found": "Ikke fundet",
+    "network": "Netværksfejl - kontroller din internetforbindelse",
+    "unauthorized": "Du er ikke autoriseret til denne handling",
+    "forbidden": "Adgang nægtet - utilstrækkelige rettigheder",
+    "not_found": "Anmodede data ikke fundet",
+    "server_error": "Serverfejl - prøv igen senere",
+    "maintenance": "Systemet er midlertidigt utilgængeligt på grund af vedligeholdelse",
+    "timeout": "Anmodningen tog for lang tid - prøv igen",
+    "unknown": "Der opstod en ukendt fejl",
     "no_access": "Ingen adgang",
     "session_expired": "Sessionen er udløbet. Log ind igen."
   },
@@ -57,7 +63,26 @@
     "save_success": "Data gemt",
     "save_error": "Fejl ved gemning. Prøv igen.",
     "delete_success": "Slettet",
-    "delete_error": "Fejl ved sletning"
+    "delete_error": "Fejl ved sletning",
+    "action_success": "{{action}} gennemført",
+    "action_error": "Fejl ved {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Godkendelse påkrævet",
+    "forbidden": "Adgang nægtet",
+    "not_found": "Ikke fundet",
+    "validation_error": "Valideringsfejl",
+    "internal_error": "Intern serverfejl",
+    "member_not_found": "Medlem ikke fundet",
+    "member_already_exists": "Medlem eksisterer allerede",
+    "invalid_input": "Ugyldig input",
+    "payment_failed": "Betaling mislykkedes",
+    "order_not_found": "Ordre ikke fundet",
+    "product_not_found": "Produkt ikke fundet",
+    "cart_empty": "Indkøbskurven er tom",
+    "insufficient_stock": "Utilstrækkelig lagerbeholdning",
+    "email_already_exists": "E-mailadressen er allerede i brug",
+    "invalid_membership": "Ugyldigt medlemskab"
   },
   "account": {
     "info_title": "Kontoinformation",

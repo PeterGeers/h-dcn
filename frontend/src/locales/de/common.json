@@ -48,8 +48,14 @@
   },
   "errors": {
     "generic": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
-    "network": "Netzwerkfehler. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
-    "not_found": "Nicht gefunden",
+    "network": "Netzwerkfehler - überprüfen Sie Ihre Internetverbindung",
+    "unauthorized": "Sie sind für diese Aktion nicht autorisiert",
+    "forbidden": "Zugriff verweigert - unzureichende Berechtigungen",
+    "not_found": "Angeforderte Daten nicht gefunden",
+    "server_error": "Serverfehler - bitte versuchen Sie es später erneut",
+    "maintenance": "Das System ist vorübergehend wegen Wartungsarbeiten nicht verfügbar",
+    "timeout": "Anfrage hat zu lange gedauert - bitte erneut versuchen",
+    "unknown": "Ein unbekannter Fehler ist aufgetreten",
     "no_access": "Kein Zugang",
     "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an."
   },
@@ -57,7 +63,26 @@
     "save_success": "Daten erfolgreich gespeichert",
     "save_error": "Fehler beim Speichern. Bitte versuchen Sie es erneut.",
     "delete_success": "Erfolgreich gelöscht",
-    "delete_error": "Fehler beim Löschen"
+    "delete_error": "Fehler beim Löschen",
+    "action_success": "{{action}} erfolgreich",
+    "action_error": "Fehler bei {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Autorisierung erforderlich",
+    "forbidden": "Zugriff verweigert",
+    "not_found": "Nicht gefunden",
+    "validation_error": "Validierungsfehler",
+    "internal_error": "Interner Serverfehler",
+    "member_not_found": "Mitglied nicht gefunden",
+    "member_already_exists": "Mitglied existiert bereits",
+    "invalid_input": "Ungültige Eingabe",
+    "payment_failed": "Zahlung fehlgeschlagen",
+    "order_not_found": "Bestellung nicht gefunden",
+    "product_not_found": "Produkt nicht gefunden",
+    "cart_empty": "Warenkorb ist leer",
+    "insufficient_stock": "Unzureichender Bestand",
+    "email_already_exists": "E-Mail-Adresse wird bereits verwendet",
+    "invalid_membership": "Ungültige Mitgliedschaft"
   },
   "account": {
     "info_title": "Kontoinformationen",
