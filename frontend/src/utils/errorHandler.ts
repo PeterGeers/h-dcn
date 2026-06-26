@@ -1,4 +1,6 @@
 import { useToast } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 // Error types for consistent handling
 export interface ApiError {
@@ -6,6 +8,7 @@ export interface ApiError {
   message: string;
   details?: string;
   isMaintenanceMode?: boolean;
+  errorKey?: string;
 }
 
 // Global maintenance screen state
@@ -27,7 +30,22 @@ export const hideMaintenanceScreen = () => {
   }
 };
 
-// Standard error messages
+// Translated error messages using common namespace
+// Replaces the static ERROR_MESSAGES object (Requirement 6.1)
+export function getErrorMessages(t: TFunction) {
+  return {
+    NETWORK: t('errors.network'),
+    UNAUTHORIZED: t('errors.unauthorized'),
+    FORBIDDEN: t('errors.forbidden'),
+    NOT_FOUND: t('errors.not_found'),
+    SERVER_ERROR: t('errors.server_error'),
+    MAINTENANCE: t('errors.maintenance'),
+    TIMEOUT: t('errors.timeout'),
+    UNKNOWN: t('errors.unknown'),
+  };
+}
+
+// Backward-compatible static fallback for code that imports ERROR_MESSAGES directly
 export const ERROR_MESSAGES = {
   NETWORK: 'Netwerkfout - controleer je internetverbinding',
   UNAUTHORIZED: 'Je bent niet geautoriseerd voor deze actie',
@@ -40,10 +58,19 @@ export const ERROR_MESSAGES = {
   UNKNOWN: 'Er is een onbekende fout opgetreden'
 };
 
+// Map API error_key to frontend translation (Requirement 6a.1)
+export function getApiErrorMessage(t: TFunction, errorKey: string): string {
+  return t(`api_errors.${errorKey}`, { defaultValue: '' });
+}
+
 // Parse API response errors
+// Priority chain: backend `error` field > `message` field > `error_key` lookup > status mapping
 export const parseApiError = async (response: Response): Promise<ApiError> => {
   let message = ERROR_MESSAGES.UNKNOWN;
   let details = '';
+  let errorKey: string | undefined;
+  let backendError: string | undefined;
+  let backendMessage: string | undefined;
 
   try {
     const errorData = await response.text();
@@ -52,50 +79,68 @@ export const parseApiError = async (response: Response): Promise<ApiError> => {
     // Try to parse JSON error
     try {
       const jsonError = JSON.parse(errorData);
-      message = jsonError.message || jsonError.error || message;
+      // Extract error_key from response body (Requirement 6a)
+      if (jsonError.error_key) {
+        errorKey = jsonError.error_key;
+      }
+      // Priority: specific backend `error` field first, then `message` field
+      backendError = jsonError.error || undefined;
+      backendMessage = jsonError.message || undefined;
+
+      // Use backend error (specific detail) first, then message (localized generic)
+      if (backendError) {
+        message = backendError;
+      } else if (backendMessage) {
+        message = backendMessage;
+      }
     } catch {
       // Use text as is if not JSON
-      message = errorData || message;
+      if (errorData) {
+        message = errorData;
+      }
     }
   } catch {
     // Fallback to status-based messages
   }
 
-  // Map status codes to user-friendly messages (only override if no specific message was found)
-  switch (response.status) {
-    case 400:
-      // Keep the specific backend message if available, otherwise use generic
-      if (message === ERROR_MESSAGES.UNKNOWN) {
-        message = ERROR_MESSAGES.VALIDATION;
-      }
-      break;
-    case 401:
-      message = ERROR_MESSAGES.UNAUTHORIZED;
-      break;
-    case 403:
-      message = ERROR_MESSAGES.FORBIDDEN;
-      break;
-    case 404:
-      message = ERROR_MESSAGES.NOT_FOUND;
-      break;
-    case 408:
-      message = ERROR_MESSAGES.TIMEOUT;
-      break;
-    case 500:
-    case 502:
-    case 504:
-      message = ERROR_MESSAGES.SERVER_ERROR;
-      break;
-    case 503:
-      message = ERROR_MESSAGES.MAINTENANCE;
-      break;
+  // Map status codes to user-friendly messages only when no specific backend message was found
+  const hasSpecificMessage = !!(backendError || backendMessage);
+  if (!hasSpecificMessage) {
+    switch (response.status) {
+      case 400:
+        if (message === ERROR_MESSAGES.UNKNOWN) {
+          message = ERROR_MESSAGES.VALIDATION;
+        }
+        break;
+      case 401:
+        message = ERROR_MESSAGES.UNAUTHORIZED;
+        break;
+      case 403:
+        message = ERROR_MESSAGES.FORBIDDEN;
+        break;
+      case 404:
+        message = ERROR_MESSAGES.NOT_FOUND;
+        break;
+      case 408:
+        message = ERROR_MESSAGES.TIMEOUT;
+        break;
+      case 500:
+      case 502:
+      case 504:
+        message = ERROR_MESSAGES.SERVER_ERROR;
+        break;
+      case 503:
+        message = ERROR_MESSAGES.MAINTENANCE;
+        break;
+    }
   }
 
   return {
     status: response.status,
     message,
     details,
-    isMaintenanceMode: response.status === 503
+    isMaintenanceMode: response.status === 503,
+    errorKey
   };
 };
 
@@ -110,8 +155,9 @@ export const handleFetchError = (error: any): ApiError => {
   return { status: 0, message: error.message || ERROR_MESSAGES.UNKNOWN };
 };
 
-// Standardized error handler hook
+// Standardized error handler hook (Requirement 6.2)
 export const useErrorHandler = () => {
+  const { t } = useTranslation('common');
   const toast = useToast();
 
   const handleError = (error: ApiError, context?: string) => {
@@ -121,11 +167,36 @@ export const useErrorHandler = () => {
       return; // Don't show toast for maintenance mode
     }
 
-    const title = context ? `Fout bij ${context}` : 'Fout';
-    
+    // Use translated toast title (Requirement 6.3)
+    const title = context
+      ? t('notifications.action_error', { action: context })
+      : t('labels.error');
+
+    // Priority chain for description:
+    // 1. error.details (backend specific `error` field) — already set by parseApiError
+    // 2. error.message (backend `message` field or status mapping) — already set by parseApiError
+    // 3. error_key lookup via t('api_errors.{errorKey}')
+    // 4. Fallback to status-based translated message
+    let description = error.message;
+
+    // If message is still the generic unknown fallback, try error_key lookup
+    const messages = getErrorMessages(t);
+    if (description === ERROR_MESSAGES.UNKNOWN || !description) {
+      if (error.errorKey) {
+        const keyLookup = getApiErrorMessage(t, error.errorKey);
+        if (keyLookup) {
+          description = keyLookup;
+        }
+      }
+      // Final fallback: translated unknown error
+      if (!description || description === ERROR_MESSAGES.UNKNOWN) {
+        description = messages.UNKNOWN;
+      }
+    }
+
     toast({
       title,
-      description: error.message,
+      description,
       status: 'error',
       duration: 5000,
       isClosable: true
@@ -136,8 +207,11 @@ export const useErrorHandler = () => {
   };
 
   const handleSuccess = (message: string, context?: string) => {
-    const title = context ? `${context} succesvol` : 'Succesvol';
-    
+    // Use translated toast title (Requirement 6.4)
+    const title = context
+      ? t('notifications.action_success', { action: context })
+      : t('labels.success');
+
     toast({
       title,
       description: message,
@@ -157,18 +231,18 @@ export const apiCall = async <T>(
 ): Promise<T> => {
   try {
     const response = await fetchPromise;
-    
+
     if (!response.ok) {
       const error = await parseApiError(response);
-      
+
       // Handle 503 maintenance mode globally
       if (error.status === 503 || error.isMaintenanceMode) {
         showMaintenanceScreen(error);
       }
-      
+
       throw error;
     }
-    
+
     return await response.json();
   } catch (error: any) {
     if (error.status !== undefined) {
@@ -193,7 +267,7 @@ export const handleApiError = (error: any) => {
     showMaintenanceScreen(apiError);
     return;
   }
-  
+
   // Handle other errors normally
   console.error('API Error:', error);
 };
