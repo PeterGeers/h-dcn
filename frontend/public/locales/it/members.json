@@ -97,6 +97,11 @@
     "apply_link": "Clicca qui per diventare membro"
   },
   "form": {
+    "name": "Nome",
+    "description": "Descrizione",
+    "price": "Prezzo",
+    "duration": "Durata",
+    "status": "Stato",
     "first_name": "Nome",
     "last_name": "Cognome",
     "street": "Via",

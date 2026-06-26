@@ -97,6 +97,11 @@
     "apply_link": "Klicken Sie hier, um Mitglied zu werden"
   },
   "form": {
+    "name": "Name",
+    "description": "Beschreibung",
+    "price": "Preis",
+    "duration": "Dauer",
+    "status": "Status",
     "first_name": "Vorname",
     "last_name": "Nachname",
     "street": "Straße",

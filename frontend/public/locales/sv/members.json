@@ -97,6 +97,11 @@
     "apply_link": "Klicka här för att bli medlem"
   },
   "form": {
+    "name": "Namn",
+    "description": "Beskrivning",
+    "price": "Pris",
+    "duration": "Varaktighet",
+    "status": "Status",
     "first_name": "Förnamn",
     "last_name": "Efternamn",
     "street": "Gata",

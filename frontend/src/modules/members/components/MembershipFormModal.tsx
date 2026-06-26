@@ -7,6 +7,8 @@ import {
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { FormControl, FormLabel, Input, Textarea } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
+import { getValidationMessage } from '../../../utils/validationMessages';
 
 interface Membership {
   membership_id?: string;
@@ -63,13 +65,23 @@ export interface MembershipFormValues {
   clubblad_standaard?: string;
 }
 
-const validationSchema = Yup.object({
-  name: Yup.string().required('Naam is verplicht'),
-  description: Yup.string().required('Beschrijving is verplicht'),
-  price: Yup.number().min(0, 'Prijs moet positief zijn').required('Prijs is verplicht'),
-  duration_months: Yup.number().min(1, 'Duur moet minimaal 1 maand zijn').required('Duur is verplicht'),
-  status: Yup.string().required('Status is verplicht')
-});
+function useValidationSchema() {
+  const { t } = useTranslation('members');
+  return Yup.object({
+    name: Yup.string()
+      .required(() => getValidationMessage(t, 'required', { field: t('form.name', { defaultValue: 'Naam' }) })),
+    description: Yup.string()
+      .required(() => getValidationMessage(t, 'required', { field: t('form.description', { defaultValue: 'Beschrijving' }) })),
+    price: Yup.number()
+      .min(0, () => getValidationMessage(t, 'min', { value: 0 }))
+      .required(() => getValidationMessage(t, 'required', { field: t('form.price', { defaultValue: 'Prijs' }) })),
+    duration_months: Yup.number()
+      .min(1, () => getValidationMessage(t, 'min', { value: 1 }))
+      .required(() => getValidationMessage(t, 'required', { field: t('form.duration', { defaultValue: 'Duur' }) })),
+    status: Yup.string()
+      .required(() => getValidationMessage(t, 'required', { field: t('form.status', { defaultValue: 'Status' }) })),
+  });
+}
 
 interface MembershipFormModalProps {
   isOpen: boolean;
@@ -79,6 +91,7 @@ interface MembershipFormModalProps {
 }
 
 export function MembershipFormModal({ isOpen, onClose, editingMembership, onSave }: MembershipFormModalProps) {
+  const validationSchema = useValidationSchema();
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />

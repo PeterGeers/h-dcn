@@ -97,6 +97,11 @@
     "apply_link": "Klik hier om lid te worden"
   },
   "form": {
+    "name": "Naam",
+    "description": "Beschrijving",
+    "price": "Prijs",
+    "duration": "Duur",
+    "status": "Status",
     "first_name": "Voornaam",
     "last_name": "Achternaam",
     "street": "Straat",

@@ -97,6 +97,11 @@
     "apply_link": "Klik her for at blive medlem"
   },
   "form": {
+    "name": "Navn",
+    "description": "Beskrivelse",
+    "price": "Pris",
+    "duration": "Varighed",
+    "status": "Status",
     "first_name": "Fornavn",
     "last_name": "Efternavn",
     "street": "Gade",

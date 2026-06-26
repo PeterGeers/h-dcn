@@ -97,6 +97,11 @@
     "apply_link": "Haz clic aquí para hacerte miembro"
   },
   "form": {
+    "name": "Nombre",
+    "description": "Descripción",
+    "price": "Precio",
+    "duration": "Duración",
+    "status": "Estado",
     "first_name": "Nombre",
     "last_name": "Apellidos",
     "street": "Calle",
