@@ -9,13 +9,16 @@
  */
 
 import { fetchAuthSession } from 'aws-amplify/auth';
+import type { TFunction } from 'i18next';
 import { resizeImage } from '../../../utils/imageResize';
 
 const DEFAULT_DATA_BUCKET = process.env.REACT_APP_DATA_BUCKET || 'h-dcn-data-506221081911';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE_MB = '10MB';
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+const ALLOWED_TYPES_DISPLAY = 'PDF, PNG, JPG';
 
 async function getSessionAuth(): Promise<{ authToken: string; groups: string[] }> {
   const session = await fetchAuthSession();
@@ -32,13 +35,25 @@ export interface PosterUploadResult {
 
 /**
  * Validate a file before upload.
- * Returns an error message or null if valid.
+ * Returns a translated error message (when `t` is provided) or a fallback Dutch string, or null if valid.
  */
-export function validatePosterFile(file: File): string | null {
+export function validatePosterFile(file: File, t?: TFunction): string | null {
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return 'Ongeldig bestandstype. Toegestaan: PDF, PNG, JPG.';
+    if (t) {
+      return t('validation.poster_invalid_type', {
+        types: ALLOWED_TYPES_DISPLAY,
+        defaultValue: `Ongeldig bestandstype. Toegestaan: ${ALLOWED_TYPES_DISPLAY}`,
+      });
+    }
+    return `Ongeldig bestandstype. Toegestaan: ${ALLOWED_TYPES_DISPLAY}.`;
   }
   if (file.size > MAX_FILE_SIZE) {
+    if (t) {
+      return t('validation.poster_file_too_large', {
+        maxSize: MAX_FILE_SIZE_MB,
+        defaultValue: `Bestand is te groot. Maximaal ${MAX_FILE_SIZE_MB} toegestaan`,
+      });
+    }
     return `Bestand te groot (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum: 10MB.`;
   }
   return null;

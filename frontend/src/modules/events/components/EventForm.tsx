@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
-  VStack, Button, FormControl, FormLabel, Input, Textarea, SimpleGrid, Select,
-  Alert, AlertIcon, Text, Accordion, AccordionItem, AccordionButton, AccordionPanel,
-  AccordionIcon, Box, HStack, Checkbox, Spinner, Stack
+  VStack, Button, Alert, AlertIcon, Text, Accordion, AccordionItem, AccordionButton,
+  AccordionPanel, AccordionIcon, Box, HStack,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { getAllowedRegions } from '../../../utils/regionalMapping';
 import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
@@ -13,17 +13,16 @@ import { useErrorHandler, apiCall } from '../../../utils/errorHandler';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 import { scanProducts } from '../../products/api/productApi';
 import {
-  EVENT_TYPES_BY_CATEGORY,
-  EVENT_TYPE_LABELS,
-  EVENT_CATEGORY_LABELS,
-  PARTICIPATION_MODE_LABELS,
   EVENT_REGIOS,
   getCategoryForType,
   EventType,
-  EventCategory,
 } from '../../../config/eventFields/eventTypes';
 import { uploadEventPoster, validatePosterFile } from '../services/eventPosterUpload';
 import LandingPageSection, { LandingPageFormData, DEFAULT_LANDING_PAGE } from './LandingPageSection';
+import EventCoreSection from './EventCoreSection';
+import EventRegistrationSection from './EventRegistrationSection';
+import EventConfigSection from './EventConfigSection';
+import EventFinancialSection from './EventFinancialSection';
 
 // ============================================================================
 // TYPES
@@ -78,9 +77,7 @@ interface EventFormProps {
 /** Normalize a date/datetime string for datetime-local input (requires yyyy-MM-ddTHH:mm) */
 function toDatetimeLocal(value: string | undefined): string {
   if (!value) return '';
-  // Already in datetime-local format
   if (value.includes('T')) return value.slice(0, 16);
-  // Date-only: append T00:00
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T00:00`;
   return value;
 }
@@ -137,12 +134,12 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
   const [availableProducts, setAvailableProducts] = useState<{ product_id: string; naam: string; groep?: string }[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const { handleError, handleSuccess } = useErrorHandler();
+  const { t } = useTranslation('events');
 
   const userRoles = getUserRoles(user || {});
   const canEditFinancials = permissionManager?.hasFieldAccess('events', 'write', { fieldType: 'financial' }) || false;
   const hasFullEventAccess = permissionManager?.hasAccess('events', 'write') || false;
 
-  // Get user's allowed regions - memoized
   const allowedRegions = useMemo(
     () => getAllowedRegions(userRoles, hasFullEventAccess),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +153,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       scanProducts()
         .then((res: any) => {
           const products = (res.data || [])
-            .filter((p: any) => p.is_parent !== false) // Only parent products
+            .filter((p: any) => p.is_parent !== false)
             .map((p: any) => ({ product_id: p.product_id, naam: p.naam || p.name || p.product_id, groep: p.groep }))
             .sort((a: any, b: any) => (a.naam || '').localeCompare(b.naam || ''));
           setAvailableProducts(products);
@@ -165,7 +162,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         .finally(() => setProductsLoading(false));
     }
   }, [isOpen, availableProducts.length]);
-  // Available regions for the dropdown
+
   const availableRegions = useMemo(() => {
     const allRegions = [...EVENT_REGIOS];
     if (hasFullEventAccess) return allRegions;
@@ -173,14 +170,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
     return allRegions.filter(r => r === 'regio_all' || allowedRegions.includes(r));
   }, [hasFullEventAccess, allowedRegions]);
 
-  // Determine which accordion sections should be open by default
   const defaultOpenSections = useMemo(() => {
     const sections: number[] = [];
     if (!event) {
-      // New event: registration section open by default
       sections.push(0);
     } else {
-      // Editing: open sections that have data
       if (sectionHasData(formData, 'registration')) sections.push(0);
       if (sectionHasData(formData, 'config')) sections.push(1);
       if (canEditFinancials && sectionHasData(formData, 'financial')) sections.push(2);
@@ -208,7 +202,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         registration_close: toDatetimeLocal(event.registration_close),
         payment_deadline: toDatetimeLocal(event.payment_deadline),
         product_ids: Array.isArray(event.product_ids) ? event.product_ids : [],
-        event_password: '', // writeOnly: never returned by API, always empty on edit
+        event_password: '',
         registry_s3_path: event.registry_config?.s3_path || '',
         registry_row_label: event.registry_config?.row_label || 'club',
         registry_claim_mode: event.registry_config?.claim_mode || 'first_come_first_served',
@@ -230,7 +224,6 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
           : { ...DEFAULT_LANDING_PAGE },
       });
     } else {
-      // New event: set default region
       const defaultRegion = allowedRegions.length === 1 ? allowedRegions[0] : '';
       setFormData({ ...EMPTY_FORM, linked_regio: defaultRegion });
     }
@@ -244,7 +237,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validationError = validatePosterFile(file);
+    const validationError = validatePosterFile(file, t);
     if (validationError) {
       handleError({ status: 400, message: validationError }, 'poster upload');
       return;
@@ -259,13 +252,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       handleError(error as any, 'poster upload');
     } finally {
       setIsUploading(false);
-      // Reset file input
       e.target.value = '';
     }
   };
 
   const handleSubmit = async () => {
-    // Validate required core fields
     if (!formData.name || !formData.event_type || !formData.start_date || !formData.end_date || !formData.linked_regio) {
       handleError(
         { status: 400, message: 'Naam, type, start- en einddatum, en regio zijn verplicht' },
@@ -274,7 +265,6 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       return;
     }
 
-    // Validate regional permissions
     if (allowedRegions.length > 0 && formData.linked_regio !== 'regio_all' && !allowedRegions.includes(formData.linked_regio)) {
       handleError(
         { status: 403, message: 'Je hebt geen rechten om evenementen in deze regio aan te maken' },
@@ -291,7 +281,6 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
 
       const method = event?.event_id ? 'PUT' : 'POST';
 
-      // Build payload with registry field names
       const payload: Record<string, unknown> = {
         name: formData.name,
         event_type: formData.event_type,
@@ -303,27 +292,21 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         linked_regio: formData.linked_regio,
       };
 
-      // Optional registration dates (only send if filled)
       if (formData.registration_open) payload.registration_open = formData.registration_open;
       if (formData.registration_close) payload.registration_close = formData.registration_close;
-
-      // Optional core fields
       if (formData.location) payload.location = formData.location;
       if (formData.poster_url) payload.poster_url = formData.poster_url;
       if (formData.slug) payload.slug = formData.slug;
       if (formData.payment_deadline) payload.payment_deadline = formData.payment_deadline;
 
-      // Config fields
       if (formData.product_ids.length > 0) {
         payload.product_ids = formData.product_ids;
       }
 
-      // Booking fields (only send password if user filled it in)
       if (formData.event_password) {
         payload.event_password = formData.event_password;
       }
 
-      // Registry config (assemble map from individual form fields)
       if (formData.registry_s3_path || formData.registry_row_label !== 'club' || formData.registry_claim_mode !== 'first_come_first_served' || formData.registry_allow_logo_upload) {
         payload.registry_config = {
           s3_path: formData.registry_s3_path,
@@ -333,13 +316,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         };
       }
 
-      // Financial fields (send as strings - backend handles Decimal coercion)
       if (formData.participants) payload.participants = formData.participants;
       if (formData.cost) payload.cost = formData.cost;
       if (formData.revenue) payload.revenue = formData.revenue;
       if (formData.notes) payload.notes = formData.notes;
 
-      // Landing page
       payload.landing_page = formData.landing_page;
 
       const headers = await getAuthHeaders();
@@ -379,157 +360,14 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
           )}
           <VStack spacing={4}>
             {/* ============ CORE SECTION (always visible) ============ */}
-            <SimpleGrid columns={2} spacing={4} w="full">
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Eventnaam</FormLabel>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="Naam van het evenement"
-                  bg="gray.700"
-                  borderColor="orange.400"
-                />
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Type</FormLabel>
-                <Select
-                  value={formData.event_type}
-                  onChange={(e) => handleChange('event_type', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                  placeholder="Selecteer type..."
-                >
-                  {(Object.entries(EVENT_TYPES_BY_CATEGORY) as [EventCategory, readonly string[]][]).map(
-                    ([category, types]) => (
-                      <optgroup key={category} label={EVENT_CATEGORY_LABELS[category]}>
-                        {types.map((type) => (
-                          <option key={type} value={type} style={{ backgroundColor: '#2D3748', color: 'white' }}>
-                            {EVENT_TYPE_LABELS[type as EventType]}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
-                  )}
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Deelname</FormLabel>
-                <Select
-                  value={formData.participation}
-                  onChange={(e) => handleChange('participation', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                >
-                  {Object.entries(PARTICIPATION_MODE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value} style={{ backgroundColor: '#2D3748', color: 'white' }}>
-                      {label}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl>
-                <FormLabel color="orange.300">Publicatiestatus</FormLabel>
-                <Select
-                  value={formData.status || 'draft'}
-                  onChange={(e) => handleChange('status', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                >
-                  <option value="draft" style={{ backgroundColor: '#2D3748', color: 'white' }}>Draft (niet zichtbaar)</option>
-                  <option value="published" style={{ backgroundColor: '#2D3748', color: 'white' }}>Published (live)</option>
-                  <option value="archived" style={{ backgroundColor: '#2D3748', color: 'white' }}>Archived (niet meer actief)</option>
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Regio</FormLabel>
-                <Select
-                  value={formData.linked_regio}
-                  onChange={(e) => handleChange('linked_regio', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                  placeholder="Selecteer regio..."
-                  isDisabled={allowedRegions.length === 1}
-                >
-                  {availableRegions.map((region) => (
-                    <option key={region} value={region} style={{ backgroundColor: '#2D3748', color: 'white' }}>
-                      {region === 'regio_all' ? 'Alle regio\'s (landelijk)' : region}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Startdatum</FormLabel>
-                <Input
-                  type="datetime-local"
-                  value={formData.start_date}
-                  onChange={(e) => handleChange('start_date', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                />
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel color="orange.300">Einddatum</FormLabel>
-                <Input
-                  type="datetime-local"
-                  value={formData.end_date}
-                  onChange={(e) => handleChange('end_date', e.target.value)}
-                  bg="gray.700"
-                  borderColor="orange.400"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel color="orange.300">Locatie</FormLabel>
-                <Input
-                  value={formData.location}
-                  onChange={(e) => handleChange('location', e.target.value)}
-                  placeholder="Bijv. Clubhuis H-DCN, Amsterdam"
-                  bg="gray.700"
-                  borderColor="orange.400"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel color="orange.300">Poster / Afbeelding</FormLabel>
-                <HStack>
-                  <Input
-                    value={formData.poster_url}
-                    onChange={(e) => handleChange('poster_url', e.target.value)}
-                    placeholder="URL of upload een bestand"
-                    bg="gray.700"
-                    borderColor="orange.400"
-                    flex={1}
-                  />
-                  <Button
-                    size="sm"
-                    colorScheme="orange"
-                    variant="outline"
-                    onClick={() => document.getElementById('poster-upload')?.click()}
-                    isLoading={isUploading}
-                  >
-                    Upload
-                  </Button>
-                  <Input
-                    id="poster-upload"
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    display="none"
-                    onChange={handlePosterUpload}
-                  />
-                </HStack>
-                {formData.poster_url && (
-                  <Text fontSize="xs" color="gray.400" mt={1} isTruncated>
-                    {formData.poster_url}
-                  </Text>
-                )}
-              </FormControl>
-            </SimpleGrid>
+            <EventCoreSection
+              formData={formData}
+              availableRegions={availableRegions}
+              allowedRegions={allowedRegions}
+              isUploading={isUploading}
+              onChange={(field, value) => handleChange(field as keyof EventFormData, value)}
+              onPosterUpload={handlePosterUpload}
+            />
 
             {/* ============ COLLAPSIBLE SECTIONS ============ */}
             <Accordion allowMultiple defaultIndex={defaultOpenSections} w="full">
@@ -542,51 +380,10 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                   <AccordionIcon color="orange.300" />
                 </AccordionButton>
                 <AccordionPanel pb={4}>
-                  <SimpleGrid columns={2} spacing={4}>
-                    <FormControl>
-                      <FormLabel color="orange.300">Registratie open</FormLabel>
-                      <Input
-                        type="datetime-local"
-                        value={formData.registration_open}
-                        onChange={(e) => handleChange('registration_open', e.target.value)}
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      />
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel color="orange.300">Registratie sluit</FormLabel>
-                      <Input
-                        type="datetime-local"
-                        value={formData.registration_close}
-                        onChange={(e) => handleChange('registration_close', e.target.value)}
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      />
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel color="orange.300">Betaaldeadline</FormLabel>
-                      <Input
-                        type="datetime-local"
-                        value={formData.payment_deadline}
-                        onChange={(e) => handleChange('payment_deadline', e.target.value)}
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      />
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel color="orange.300">URL Slug</FormLabel>
-                      <Input
-                        value={formData.slug}
-                        onChange={(e) => handleChange('slug', e.target.value)}
-                        placeholder="bijv. presmeet-2026"
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      />
-                    </FormControl>
-                  </SimpleGrid>
+                  <EventRegistrationSection
+                    formData={formData}
+                    onChange={(field, value) => handleChange(field as keyof EventFormData, value)}
+                  />
                 </AccordionPanel>
               </AccordionItem>
 
@@ -599,122 +396,15 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                   <AccordionIcon color="orange.300" />
                 </AccordionButton>
                 <AccordionPanel pb={4}>
-                  <FormControl>
-                    <FormLabel color="orange.300">Producten koppelen</FormLabel>
-                    {productsLoading ? (
-                      <HStack spacing={2}>
-                        <Spinner size="sm" color="orange.300" />
-                        <Text color="gray.400" fontSize="sm">Producten laden...</Text>
-                      </HStack>
-                    ) : availableProducts.length === 0 ? (
-                      <Text color="gray.400" fontSize="sm">Geen producten beschikbaar</Text>
-                    ) : (
-                      <Box maxH="200px" overflowY="auto" p={2} bg="gray.700" borderRadius="md" borderColor="orange.400" borderWidth="1px">
-                        <Stack spacing={1}>
-                          {availableProducts.map(product => (
-                            <Checkbox
-                              key={product.product_id}
-                              isChecked={formData.product_ids.includes(product.product_id)}
-                              onChange={(e) => {
-                                const newIds = e.target.checked
-                                  ? [...formData.product_ids, product.product_id]
-                                  : formData.product_ids.filter(id => id !== product.product_id);
-                                setFormData(prev => ({ ...prev, product_ids: newIds }));
-                              }}
-                              colorScheme="orange"
-                              size="sm"
-                            >
-                              <Text fontSize="sm" color="white">
-                                {product.naam}
-                                {product.groep && <Text as="span" color="gray.400"> ({product.groep})</Text>}
-                              </Text>
-                            </Checkbox>
-                          ))}
-                        </Stack>
-                      </Box>
-                    )}
-                    {formData.product_ids.length > 0 && (
-                      <Text fontSize="xs" color="gray.400" mt={1}>
-                        {formData.product_ids.length} product(en) geselecteerd
-                      </Text>
-                    )}
-                  </FormControl>
-
-                  <FormControl mt={4}>
-                    <FormLabel color="orange.300">Event Wachtwoord</FormLabel>
-                    <Input
-                      type="password"
-                      value={formData.event_password}
-                      onChange={(e) => handleChange('event_password', e.target.value)}
-                      placeholder={event?.event_id ? '••••••• (laat leeg om niet te wijzigen)' : 'Wachtwoord voor deelnemers'}
-                      bg="gray.700"
-                      borderColor="orange.400"
-                    />
-                    <Text fontSize="xs" color="gray.400" mt={1}>
-                      Gedeeld wachtwoord dat deelnemers moeten invoeren om te boeken. Wordt versleuteld opgeslagen.
-                    </Text>
-                  </FormControl>
-
-                  <Text fontWeight="bold" color="orange.300" mt={6} mb={2}>
-                    Registry Configuratie
-                  </Text>
-
-                  <SimpleGrid columns={2} spacing={4}>
-                    <FormControl>
-                      <FormLabel color="orange.300">S3 Pad (registry JSON)</FormLabel>
-                      <Input
-                        value={formData.registry_s3_path}
-                        onChange={(e) => handleChange('registry_s3_path', e.target.value)}
-                        placeholder="events/{event_id}/invitee_registry.json"
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      />
-                      <Text fontSize="xs" color="gray.400" mt={1}>
-                        S3 key naar het JSON bestand met de uitgenodigde rijen.
-                      </Text>
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel color="orange.300">Rij label</FormLabel>
-                      <Input
-                        value={formData.registry_row_label}
-                        onChange={(e) => handleChange('registry_row_label', e.target.value)}
-                        placeholder="club"
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      />
-                      <Text fontSize="xs" color="gray.400" mt={1}>
-                        Hoe een rij heet in de UI (bijv. "club", "team", "chapter").
-                      </Text>
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel color="orange.300">Claim modus</FormLabel>
-                      <Select
-                        value={formData.registry_claim_mode}
-                        onChange={(e) => handleChange('registry_claim_mode', e.target.value)}
-                        bg="gray.700"
-                        borderColor="orange.400"
-                      >
-                        <option value="first_come_first_served" style={{ backgroundColor: '#2D3748', color: 'white' }}>
-                          First come, first served
-                        </option>
-                        <option value="email_restricted" style={{ backgroundColor: '#2D3748', color: 'white' }}>
-                          E-mail restricted
-                        </option>
-                      </Select>
-                    </FormControl>
-
-                    <FormControl display="flex" alignItems="center" pt={8}>
-                      <Checkbox
-                        isChecked={formData.registry_allow_logo_upload}
-                        onChange={(e) => setFormData(prev => ({ ...prev, registry_allow_logo_upload: e.target.checked }))}
-                        colorScheme="orange"
-                      >
-                        <Text fontSize="sm" color="white">Logo upload toestaan</Text>
-                      </Checkbox>
-                    </FormControl>
-                  </SimpleGrid>
+                  <EventConfigSection
+                    formData={formData}
+                    availableProducts={availableProducts}
+                    productsLoading={productsLoading}
+                    isEditing={!!event?.event_id}
+                    onChange={(field, value) => handleChange(field as keyof EventFormData, value)}
+                    onProductIdsChange={(ids) => setFormData(prev => ({ ...prev, product_ids: ids }))}
+                    onRegistryLogoToggle={(checked) => setFormData(prev => ({ ...prev, registry_allow_logo_upload: checked }))}
+                  />
                 </AccordionPanel>
               </AccordionItem>
 
@@ -728,57 +418,10 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
                     <AccordionIcon color="orange.300" />
                   </AccordionButton>
                   <AccordionPanel pb={4}>
-                    <SimpleGrid columns={2} spacing={4}>
-                      <FormControl>
-                        <FormLabel color="orange.300">Aantal deelnemers</FormLabel>
-                        <Input
-                          type="number"
-                          value={formData.participants}
-                          onChange={(e) => handleChange('participants', e.target.value)}
-                          placeholder="0"
-                          bg="gray.700"
-                          borderColor="orange.400"
-                        />
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel color="orange.300">Kosten (€)</FormLabel>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={formData.cost}
-                          onChange={(e) => handleChange('cost', e.target.value)}
-                          placeholder="0.00"
-                          bg="gray.700"
-                          borderColor="orange.400"
-                        />
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel color="orange.300">Inkomsten (€)</FormLabel>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={formData.revenue}
-                          onChange={(e) => handleChange('revenue', e.target.value)}
-                          placeholder="0.00"
-                          bg="gray.700"
-                          borderColor="orange.400"
-                        />
-                      </FormControl>
-                    </SimpleGrid>
-
-                    <FormControl mt={4}>
-                      <FormLabel color="orange.300">Opmerkingen</FormLabel>
-                      <Textarea
-                        value={formData.notes}
-                        onChange={(e) => handleChange('notes', e.target.value)}
-                        placeholder="Interne notities over kosten, afspraken, etc."
-                        bg="gray.700"
-                        borderColor="orange.400"
-                        rows={3}
-                      />
-                    </FormControl>
+                    <EventFinancialSection
+                      formData={formData}
+                      onChange={(field, value) => handleChange(field as keyof EventFormData, value)}
+                    />
                   </AccordionPanel>
                 </AccordionItem>
               )}
