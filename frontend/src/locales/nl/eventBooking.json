@@ -173,6 +173,8 @@
     "failed": "Indienen mislukt — los de volgende fouten op:",
     "button": "Booking indienen",
     "button_resubmit": "Booking opnieuw indienen",
+    "save_button": "Opslaan",
+    "saved": "Opgeslagen",
     "fix_fields": "Los alle gemarkeerde velden op voordat u indient.",
     "person_field": "Persoon {{index}}, {{field}}:",
     "confirmation_title": "Booking ingediend",

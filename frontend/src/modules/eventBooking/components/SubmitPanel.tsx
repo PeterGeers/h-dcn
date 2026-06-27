@@ -17,6 +17,7 @@ import {
   Box,
   Button,
   Heading,
+  HStack,
   List,
   ListIcon,
   ListItem,
@@ -57,6 +58,12 @@ export interface SubmitPanelProps {
   isDisabled?: boolean;
   /** Whether to show the confirmation view (order just submitted) */
   showConfirmation?: boolean;
+  /** Callback to trigger manual save */
+  onSave?: () => Promise<boolean>;
+  /** Whether a save is currently in progress */
+  isSaving?: boolean;
+  /** Current auto-save status */
+  saveStatus?: 'idle' | 'saving' | 'saved' | 'failed';
 }
 
 // --- Helpers ---
@@ -94,6 +101,9 @@ const SubmitPanel: React.FC<SubmitPanelProps> = ({
   onSubmit,
   isDisabled = false,
   showConfirmation = false,
+  onSave,
+  isSaving = false,
+  saveStatus,
 }) => {
   const { t } = useTranslation('eventBooking');
   const errorContainerRef = useRef<HTMLDivElement>(null);
@@ -213,18 +223,35 @@ const SubmitPanel: React.FC<SubmitPanelProps> = ({
         </Alert>
       )}
 
-      {/* Submit button */}
-      <Button
-        colorScheme={isSubmitted ? 'green' : 'orange'}
-        size="md"
-        onClick={onSubmit}
-        isLoading={isSubmitting}
-        isDisabled={isDisabled || isSubmitting}
-        leftIcon={isSubmitted ? <CheckIcon /> : undefined}
-        width="full"
-      >
-        {isSubmitted ? t('submit.button_resubmit') : t('submit.button')}
-      </Button>
+      {/* Action buttons: Save + Submit */}
+      <HStack spacing={3} width="full">
+        {onSave && (
+          <Button
+            colorScheme="blue"
+            variant="outline"
+            size="md"
+            onClick={onSave}
+            isLoading={isSaving}
+            isDisabled={isDisabled || isSaving || isSubmitting}
+            leftIcon={saveStatus === 'saved' ? <CheckIcon /> : undefined}
+            flex={1}
+          >
+            {saveStatus === 'saved' ? t('submit.saved') : t('submit.save_button')}
+          </Button>
+        )}
+        <Button
+          colorScheme={isSubmitted ? 'green' : 'orange'}
+          size="md"
+          onClick={onSubmit}
+          isLoading={isSubmitting}
+          isDisabled={isDisabled || isSubmitting}
+          leftIcon={isSubmitted ? <CheckIcon /> : undefined}
+          flex={onSave ? 1 : undefined}
+          width={onSave ? undefined : 'full'}
+        >
+          {isSubmitted ? t('submit.button_resubmit') : t('submit.button')}
+        </Button>
+      </HStack>
 
       {hasErrors && (
         <Text fontSize="xs" color="red.500" textAlign="center">

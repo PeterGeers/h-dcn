@@ -247,7 +247,9 @@
     "capacity_errors_title": "Kapacitet överskriden",
     "remaining_capacity": "Återstående: {{count}}",
     "person_header": "Person {{index}}",
-    "generic_error": "Inskickning misslyckades. Dina data är bevarade — vänligen försök igen."
+    "generic_error": "Inskickning misslyckades. Dina data är bevarade — vänligen försök igen.",
+    "save_button": "Spara",
+    "saved": "Sparat"
   },
   "read_only": {
     "order_submitted": "Din bokning har skickats. Detaljerna visas nedan i skrivskyddat läge.",

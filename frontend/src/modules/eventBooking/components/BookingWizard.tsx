@@ -39,7 +39,7 @@ import {
   VStack,
   useToast,
 } from '@chakra-ui/react';
-import { AddIcon, CheckIcon, RepeatIcon } from '@chakra-ui/icons';
+import { AddIcon, RepeatIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { Event, Order, Product, ValidationError } from '../types/eventBooking.types';
 import { eventBookingApi, isVersionConflict } from '../services/eventBookingApi';
@@ -637,22 +637,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({ eventId, delegateName, on
           onSubmit={handleSubmit}
           isDisabled={isSaving || isLocked}
           showConfirmation={showConfirmation}
+          onSave={saveNow}
+          isSaving={isSaving}
+          saveStatus={saveStatus}
         />
       )}
 
       {/* Save status indicator */}
       <HStack justify="space-between" fontSize="xs" color="gray.500">
         <SaveStatusIndicator status={saveStatus} lastSavedAt={lastSavedAt} />
-        <Button
-          size="xs"
-          variant="ghost"
-          leftIcon={<CheckIcon />}
-          onClick={saveNow}
-          isLoading={isSaving}
-          isDisabled={isSaving}
-        >
-          {t('booking.save_now')}
-        </Button>
       </HStack>
     </VStack>
   );

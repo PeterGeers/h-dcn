@@ -173,6 +173,8 @@
     "failed": "Submission failed — please fix the following errors:",
     "button": "Submit Booking",
     "button_resubmit": "Resubmit Booking",
+    "save_button": "Save",
+    "saved": "Saved",
     "fix_fields": "Please fix all highlighted fields before submitting.",
     "person_field": "Person {{index}}, {{field}}:",
     "confirmation_title": "Booking Submitted",

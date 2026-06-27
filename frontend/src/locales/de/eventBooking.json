@@ -179,7 +179,9 @@
     "capacity_errors_title": "Kapazität überschritten",
     "remaining_capacity": "Verbleibend: {{count}}",
     "person_header": "Person {{index}}",
-    "generic_error": "Einreichung fehlgeschlagen. Ihre Daten sind gespeichert — bitte versuchen Sie es erneut."
+    "generic_error": "Einreichung fehlgeschlagen. Ihre Daten sind gespeichert — bitte versuchen Sie es erneut.",
+    "save_button": "Speichern",
+    "saved": "Gespeichert"
   },
   "pdf": {
     "download_button": "Buchungsübersicht herunterladen",

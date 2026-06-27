@@ -180,7 +180,9 @@
     "capacity_errors_title": "Capacità superata",
     "remaining_capacity": "Rimanente: {{count}}",
     "person_header": "Persona {{index}}",
-    "generic_error": "Invio fallito. I tuoi dati sono conservati — riprova."
+    "generic_error": "Invio fallito. I tuoi dati sono conservati — riprova.",
+    "save_button": "Salva",
+    "saved": "Salvato"
   },
   "pdf": {
     "download_button": "Scarica riepilogo prenotazione",

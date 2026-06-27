@@ -180,7 +180,9 @@
     "capacity_errors_title": "Kapacitet overskredet",
     "remaining_capacity": "Resterende: {{count}}",
     "person_header": "Person {{index}}",
-    "generic_error": "Indsendelse mislykkedes. Dine data er bevaret — prøv venligst igen."
+    "generic_error": "Indsendelse mislykkedes. Dine data er bevaret — prøv venligst igen.",
+    "save_button": "Gem",
+    "saved": "Gemt"
   },
   "pdf": {
     "download_button": "Download reservationsoversigt",

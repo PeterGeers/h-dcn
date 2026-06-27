@@ -180,7 +180,9 @@
     "capacity_errors_title": "Capacidad excedida",
     "remaining_capacity": "Restante: {{count}}",
     "person_header": "Persona {{index}}",
-    "generic_error": "Envío fallido. Sus datos están guardados — inténtelo de nuevo."
+    "generic_error": "Envío fallido. Sus datos están guardados — inténtelo de nuevo.",
+    "save_button": "Guardar",
+    "saved": "Guardado"
   },
   "pdf": {
     "download_button": "Descargar resumen de reserva",

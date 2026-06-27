@@ -164,7 +164,9 @@
     "capacity_errors_title": "Capacité dépassée",
     "remaining_capacity": "Restant : {{count}}",
     "person_header": "Personne {{index}}",
-    "generic_error": "Échec de la soumission. Vos données sont préservées — veuillez réessayer."
+    "generic_error": "Échec de la soumission. Vos données sont préservées — veuillez réessayer.",
+    "save_button": "Enregistrer",
+    "saved": "Enregistré"
   },
   "pdf": {
     "download_button": "Télécharger le résumé",
