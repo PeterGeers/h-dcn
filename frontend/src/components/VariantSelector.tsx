@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   FormControl,
@@ -80,6 +80,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
 
   // Internal state: one selection per axis
   const [selections, setSelections] = useState<Record<string, string>>({});
+  const isInitializingRef = useRef(false);
 
   // Reset selections when derived schema changes (unless we have a selectedVariantId to restore)
   useEffect(() => {
@@ -87,6 +88,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
       // Restore selections from the pre-selected variant's attributes
       const variant = variants.find((v) => v.product_id === selectedVariantId);
       if (variant && variant.variant_attributes) {
+        isInitializingRef.current = true;
         setSelections({ ...variant.variant_attributes });
         return;
       }
@@ -106,8 +108,13 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
     [allAxesSelected, selections, variants, variantSchema]
   );
 
-  // Notify parent of resolved variant (or null)
+  // Notify parent of resolved variant (or null) — skip null during initialization
   useEffect(() => {
+    if (isInitializingRef.current && resolvedVariant === null) {
+      // Don't notify null during initialization — wait for selections to be set
+      return;
+    }
+    isInitializingRef.current = false;
     onVariantSelect(resolvedVariant);
   }, [resolvedVariant]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -152,8 +159,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
         </FormControl>
       ))}
 
-      {/* Stock display when variant is resolved and available */}
-      {resolvedVariant && !isOutOfStock && (
+      {/* Stock display when variant is resolved and available (skip when oversell allowed) */}
+      {resolvedVariant && !isOutOfStock && !resolvedVariant.allow_oversell && (
         <HStack aria-live="polite">
           <Badge colorScheme="green" fontSize="xs" px={2} py={0.5} borderRadius="sm">
             {t('variant.in_stock', { count: resolvedVariant.stock })}
