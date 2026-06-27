@@ -186,7 +186,7 @@
   },
   "pdf": {
     "download_button": "Scarica riepilogo prenotazione",
-    "row_label": "{{rowLabel}}: {{clubId}}",
+    "row_label": "{{rowLabel}}: {{name}}",
     "row_label_default": "Club",
     "location": "Luogo: {{location}}",
     "event_dates": "Date: {{start}} – {{end}}",

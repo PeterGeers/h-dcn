@@ -338,18 +338,19 @@ export function generateBookingSummaryPdf(
 
   // --- Delegates section (Requirement 12.2) ---
   doc.setFontSize(10);
-  if (order.delegates) {
-    const primaryLabel = t('pdf.delegate_primary', { email: order.delegates.primary || '' });
+  if (order.delegates || order.created_by) {
+    const primaryEmail = order.delegates?.primary || order.created_by || '';
+    const primaryLabel = t('pdf.delegate_primary', { email: primaryEmail });
     doc.text(primaryLabel, 14, yPos);
     yPos += 5;
 
-    if (order.delegates.secondary) {
+    if (order.delegates?.secondary) {
       const secondaryLabel = t('pdf.delegate_secondary', { email: order.delegates.secondary });
       doc.text(secondaryLabel, 14, yPos);
       yPos += 5;
     }
 
-    if (order.delegates.pending_secondary_email) {
+    if (order.delegates?.pending_secondary_email) {
       const pendingLabel = t('pdf.delegate_pending', { email: order.delegates.pending_secondary_email });
       doc.text(pendingLabel, 14, yPos);
       yPos += 5;

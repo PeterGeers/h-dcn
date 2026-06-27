@@ -170,7 +170,7 @@
   },
   "pdf": {
     "download_button": "Télécharger le résumé",
-    "row_label": "{{rowLabel}} : {{clubId}}",
+    "row_label": "{{rowLabel}} : {{name}}",
     "row_label_default": "Club",
     "location": "Lieu : {{location}}",
     "event_dates": "Dates : {{start}} – {{end}}",

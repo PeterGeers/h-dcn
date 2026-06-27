@@ -186,7 +186,7 @@
   },
   "pdf": {
     "download_button": "Download reservationsoversigt",
-    "row_label": "{{rowLabel}}: {{clubId}}",
+    "row_label": "{{rowLabel}}: {{name}}",
     "row_label_default": "Club",
     "location": "Sted: {{location}}",
     "event_dates": "Datoer: {{start}} – {{end}}",

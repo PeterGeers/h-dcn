@@ -186,7 +186,7 @@
   },
   "pdf": {
     "download_button": "Descargar resumen de reserva",
-    "row_label": "{{rowLabel}}: {{clubId}}",
+    "row_label": "{{rowLabel}}: {{name}}",
     "row_label_default": "Club",
     "location": "Ubicación: {{location}}",
     "event_dates": "Fechas: {{start}} – {{end}}",

@@ -263,7 +263,7 @@
   },
   "pdf": {
     "download_button": "Ladda ner bokningsöversikt",
-    "row_label": "{{rowLabel}}: {{clubId}}",
+    "row_label": "{{rowLabel}}: {{name}}",
     "row_label_default": "Club",
     "location": "Plats: {{location}}",
     "event_dates": "Datum: {{start}} – {{end}}",

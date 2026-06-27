@@ -186,7 +186,7 @@
   },
   "pdf": {
     "download_button": "Download Booking Samenvatting",
-    "row_label": "{{rowLabel}}: {{clubId}}",
+    "row_label": "{{rowLabel}}: {{name}}",
     "row_label_default": "Club",
     "location": "Locatie: {{location}}",
     "event_dates": "Evenement data: {{start}} – {{end}}",
