@@ -21,6 +21,8 @@ export interface VariantSelectorProps {
   onVariantSelect: (variant: VariantRecord | null) => void;
   /** Whether the selector is disabled (e.g., during loading) */
   isDisabled?: boolean;
+  /** Use dark-themed styling (for dark background contexts like event booking) */
+  darkMode?: boolean;
 }
 
 /**
@@ -64,6 +66,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   variants,
   onVariantSelect,
   isDisabled = false,
+  darkMode = false,
 }) => {
   const { t } = useTranslation('webshop');
 
@@ -115,7 +118,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
     <VStack spacing={3} align="stretch" role="group" aria-label="Variant selectie">
       {axes.map((axis) => (
         <FormControl key={axis} isDisabled={isDisabled}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={1}>
+          <FormLabel fontSize="sm" fontWeight="medium" mb={1} color={darkMode ? 'gray.200' : undefined}>
             {axis}
           </FormLabel>
           <Select
@@ -124,9 +127,13 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
             onChange={(e) => handleAxisChange(axis, e.target.value)}
             aria-label={`Selecteer ${axis}`}
             size="md"
+            bg={darkMode ? 'gray.700' : undefined}
+            color={darkMode ? 'white' : undefined}
+            borderColor={darkMode ? 'gray.600' : undefined}
+            _placeholder={{ color: darkMode ? 'gray.400' : undefined }}
           >
             {sortSizeValues(variantSchema[axis]).map((value) => (
-              <option key={value} value={value}>
+              <option key={value} value={value} style={darkMode ? { backgroundColor: '#2D3748', color: 'white' } : undefined}>
                 {value}
               </option>
             ))}

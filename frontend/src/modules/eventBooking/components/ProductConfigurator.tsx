@@ -83,9 +83,13 @@ function renderField(
           onChange={(e) => onChange(e.target.value)}
           isDisabled={isDisabled}
           placeholder={`Select ${field.label}`}
+          bg="gray.700"
+          color="white"
+          borderColor="gray.600"
+          _placeholder={{ color: 'gray.400' }}
         >
           {(field.options || []).map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
+            <option key={opt} value={opt} style={{ backgroundColor: '#2D3748', color: 'white' }}>{opt}</option>
           ))}
         </Select>
       );
@@ -211,6 +215,7 @@ const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
             variants={variants}
             onVariantSelect={handleVariantSelect}
             isDisabled={isDisabled}
+            darkMode
           />
         </Box>
       )}
