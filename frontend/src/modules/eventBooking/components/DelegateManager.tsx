@@ -78,7 +78,7 @@ const DelegateManager: React.FC<DelegateManagerProps> = ({
 
   // Delegate state from order
   const delegates = order.delegates;
-  const primaryEmail = delegates?.primary || '';
+  const primaryEmail = delegates?.primary || currentUserEmail || '';
   const secondaryEmail = delegates?.secondary || null;
   const secondaryMemberId = delegates?.secondary_member_id || null;
   const pendingEmail = delegates?.pending_secondary_email || null;

@@ -69,6 +69,7 @@ export interface Order {
   updated_at: string;
   submitted_at?: string | null;
   created_by?: string;
+  user_email?: string;
 }
 
 // --- Event Models ---

@@ -339,7 +339,7 @@ export function generateBookingSummaryPdf(
   // --- Delegates section (Requirement 12.2) ---
   doc.setFontSize(10);
   if (order.delegates || order.created_by) {
-    const primaryEmail = order.delegates?.primary || order.created_by || '';
+    const primaryEmail = order.delegates?.primary || order.user_email || order.created_by || '';
     const primaryLabel = t('pdf.delegate_primary', { email: primaryEmail });
     doc.text(primaryLabel, 14, yPos);
     yPos += 5;
