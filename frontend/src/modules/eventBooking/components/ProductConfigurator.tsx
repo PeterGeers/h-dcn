@@ -216,6 +216,7 @@ const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
             onVariantSelect={handleVariantSelect}
             isDisabled={isDisabled}
             darkMode
+            selectedVariantId={variantId}
           />
         </Box>
       )}

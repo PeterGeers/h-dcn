@@ -16,6 +16,7 @@ import { OrderItem, Product } from '../types/eventBooking.types';
 export interface PersonProduct {
   product_id: string;
   variant_id: string | null;
+  variant_attributes?: Record<string, string>;
   fields: Record<string, any>;
 }
 
@@ -98,6 +99,7 @@ export function orderItemsToFormState(items: OrderItem[]): PersonFormState {
     const personProduct: PersonProduct = {
       product_id: item.product_id,
       variant_id: item.variant_id,
+      variant_attributes: item.variant_attributes,
       fields: productFields,
     };
 

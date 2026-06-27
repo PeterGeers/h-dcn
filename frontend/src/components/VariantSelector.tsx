@@ -23,6 +23,8 @@ export interface VariantSelectorProps {
   isDisabled?: boolean;
   /** Use dark-themed styling (for dark background contexts like event booking) */
   darkMode?: boolean;
+  /** Pre-selected variant ID to restore selections from (e.g., after reload) */
+  selectedVariantId?: string | null;
 }
 
 /**
@@ -67,6 +69,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   onVariantSelect,
   isDisabled = false,
   darkMode = false,
+  selectedVariantId,
 }) => {
   const { t } = useTranslation('webshop');
 
@@ -78,10 +81,18 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   // Internal state: one selection per axis
   const [selections, setSelections] = useState<Record<string, string>>({});
 
-  // Reset selections when derived schema changes
+  // Reset selections when derived schema changes (unless we have a selectedVariantId to restore)
   useEffect(() => {
+    if (selectedVariantId && variants.length > 0) {
+      // Restore selections from the pre-selected variant's attributes
+      const variant = variants.find((v) => v.product_id === selectedVariantId);
+      if (variant && variant.variant_attributes) {
+        setSelections({ ...variant.variant_attributes });
+        return;
+      }
+    }
     setSelections({});
-  }, [variantSchema]);
+  }, [variantSchema, selectedVariantId, variants]);
 
   // Whether all axes have a value selected
   const allAxesSelected = useMemo(

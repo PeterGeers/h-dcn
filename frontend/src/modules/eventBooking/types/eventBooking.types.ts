@@ -26,6 +26,7 @@ export type FieldType = 'text' | 'select' | 'number' | 'date';
 export interface OrderItem {
   product_id: string;
   variant_id: string | null;
+  variant_attributes?: Record<string, string>;
   item_fields_data: Record<string, any>;
   unit_price: number;
   line_total: number;

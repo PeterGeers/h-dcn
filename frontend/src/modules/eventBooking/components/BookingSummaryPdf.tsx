@@ -88,17 +88,38 @@ function getProductName(productId: string, products: Product[]): string {
 }
 
 /**
- * Look up variant display string from product variant_schema and variant_id.
+ * Look up variant display string from variant_attributes or product variants array.
+ * Formats variant_attributes as "Axis1: Value1, Axis2: Value2".
  * Returns empty string if no variant.
  */
 function getVariantLabel(
   variantId: string | null,
   productId: string,
-  products: Product[]
+  products: Product[],
+  variantAttributes?: Record<string, string>
 ): string {
   if (!variantId) return '';
+
+  // Prefer variant_attributes stored directly on the order item
+  if (variantAttributes && Object.keys(variantAttributes).length > 0) {
+    return Object.entries(variantAttributes)
+      .map(([axis, value]) => `${axis}: ${value}`)
+      .join(', ');
+  }
+
+  // Fallback: look up in product's variants array
   const product = products.find((p) => p.product_id === productId);
-  if (!product?.variant_schema) return variantId;
+  if (!product) return variantId;
+
+  if (product.variants && product.variants.length > 0) {
+    const variant = product.variants.find((v) => v.variant_id === variantId);
+    if (variant && variant.variant_attributes) {
+      return Object.entries(variant.variant_attributes)
+        .map(([axis, value]) => `${axis}: ${value}`)
+        .join(', ');
+    }
+  }
+
   return variantId;
 }
 
@@ -364,7 +385,7 @@ export function generateBookingSummaryPdf(
         for (let i = 0; i < person.products.length; i++) {
           const pp = person.products[i];
           const productName = getProductName(pp.product_id, products);
-          const variantLabel = getVariantLabel(pp.variant_id, pp.product_id, products);
+          const variantLabel = getVariantLabel(pp.variant_id, pp.product_id, products, pp.variant_attributes);
           const fieldValues = formatFieldValues(pp.fields);
 
           const matchingItem = order.items.find(
