@@ -6,8 +6,7 @@
     "admin_no_personal_booking": "No personal booking found. Use the Admin tab to manage orders.",
     "tab_booking": "Booking",
     "tab_overview": "Overview",
-    "tab_admin": "Admin",
-    "logo_uploaded": "Logo uploaded successfully"
+    "tab_admin": "Admin"
   },
   "info": {
     "days_remaining": "{{count}} days to register"

@@ -15,7 +15,8 @@
     "save_hint": "Tilføj først produkter for at gemme.",
     "option_label": "Mulighed",
     "item_total_label": "Antal varer",
-    "total_label": "Total"
+    "total_label": "Total",
+    "item_fields_label": "Deltageroplysninger"
   },
   "product": {
     "added": "Produkt tilføjet",
@@ -40,6 +41,7 @@
     "total": "Total",
     "processing": "Behandler...",
     "pay_button": "Betal €{{amount}}",
+    "place_order": "Afgiv bestilling",
     "placeholder_name": "Navn",
     "placeholder_street": "Gade og husnummer",
     "placeholder_postal": "Postnummer",
@@ -134,45 +136,42 @@
     "title": "Demotilstand",
     "description": "Bruger testdata fordi API'et er utilgængeligt"
   },
+  "item_fields": {
+    "item_label": "Vare {{current}} af {{total}}",
+    "select_placeholder": "Vælg...",
+    "email_placeholder": "E-mailadresse"
+  },
+  "payment": {
+    "return_success_title": "Betaling gennemført",
+    "return_failed_title": "Betaling ikke gennemført",
+    "retry_button": "Prøv igen",
+    "method_title": "Betalingsmetode",
+    "ideal_description": "Betal via din egen bank",
+    "creditcard_description": "Betal med Visa, Mastercard eller American Express",
+    "bank_transfer": "Bankoverførsel",
+    "bank_transfer_description": "Overfør beløbet manuelt",
+    "transfer_instructions_title": "Overførselsoplysninger",
+    "reference": "Reference:",
+    "amount": "Beløb:",
+    "return_success_message": "Betaling gennemført! Din bestilling er bekræftet.",
+    "return_failed_message": "Betalingen mislykkedes. Prøv igen eller vælg en anden betalingsmetode.",
+    "return_expired_message": "Betalingen er udløbet. Prøv igen eller vælg en anden betalingsmetode.",
+    "return_cancelled_message": "Betalingen er annulleret. Prøv igen eller vælg en anden betalingsmetode.",
+    "return_pending_message": "Betalingen behandles. Du modtager en bekræftelse, når betalingen er gennemført.",
+    "return_unknown_message": "Status for din betaling kontrolleres."
+  },
+  "purchase_rules": {
+    "max_per_order": "Maksimalt {{limit}} pr. bestilling",
+    "max_per_member": "{{remaining}} tilgængelig(e) (maks {{limit}} pr. medlem)",
+    "max_per_club": "{{remaining}} tilgængelig(e) for din klub (maks {{limit}} pr. klub)",
+    "requires_membership": "Et aktivt medlemskab er påkrævet"
+  },
   "variant": {
     "select_placeholder": "Vælg {{axis}}",
     "in_stock": "{{count}} på lager",
     "out_of_stock": "Ikke på lager",
     "combination_unavailable": "Kombination ikke tilgængelig",
-    "select_all_prompt": "Vælg alle muligheder for at se tilgængelighed"
-  },
-  "item_fields": {
-    "item_label": "Vare {{current}} af {{total}}",
-    "required": "Dette felt er påkrævet",
-    "min_length": "Minimum {{count}} tegn",
-    "max_length": "Maksimum {{count}} tegn",
-    "minimum": "Minimumsværdi er {{value}}",
-    "maximum": "Maksimumsværdi er {{value}}",
-    "invalid_email": "Ugyldig e-mailadresse",
-    "invalid_number": "Indtast et gyldigt tal",
-    "invalid_option": "Vælg en gyldig mulighed",
-    "pattern_mismatch": "Værdien matcher ikke det påkrævede format",
-    "select_placeholder": "Vælg...",
-    "email_placeholder": "email@eksempel.dk"
-  },
-  "purchase_rules": {
-    "max_per_order": "Maksimalt {{limit}} styk pr. ordre",
-    "max_per_member": "Du har {{remaining}} styk til rådighed (grænse: {{limit}} pr. medlem)",
-    "max_per_club": "Din klub har {{remaining}} styk til rådighed (grænse: {{limit}} pr. klub)",
-    "requires_membership": "Et aktivt medlemskab er påkrævet for at bestille dette produkt"
-  },
-  "payment": {
-    "method_title": "Betalingsmetode",
-    "ideal_description": "iDEAL - betal direkte via din bank",
-    "creditcard_description": "Kreditkort (Visa, Mastercard)",
-    "bank_transfer": "Bankoverførsel",
-    "bank_transfer_description": "Manuel bankoverførsel",
-    "transfer_instructions_title": "Overførselsoplysninger",
-    "reference": "Reference:",
-    "amount": "Beløb:",
-    "return_success_title": "Betaling gennemført",
-    "return_failed_title": "Betaling ikke gennemført",
-    "retry_button": "Prøv igen"
+    "select_all_prompt": "Vælg alle muligheder"
   },
   "validation": {
     "required": "{{field}} er påkrævet",

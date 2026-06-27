@@ -15,7 +15,8 @@
     "save_hint": "Fügen Sie zuerst Produkte hinzu, um zu speichern.",
     "option_label": "Option",
     "item_total_label": "Anzahl Artikel",
-    "total_label": "Gesamt"
+    "total_label": "Gesamt",
+    "item_fields_label": "Teilnehmerdaten"
   },
   "product": {
     "added": "Produkt hinzugefügt",
@@ -40,6 +41,7 @@
     "total": "Gesamt",
     "processing": "Verarbeitung...",
     "pay_button": "€{{amount}} bezahlen",
+    "place_order": "Bestellung aufgeben",
     "placeholder_name": "Name",
     "placeholder_street": "Straße und Hausnummer",
     "placeholder_postal": "Postleitzahl",
@@ -49,7 +51,8 @@
     "test_expiry": "Ablaufdatum: Beliebiges zukünftiges Datum (z.B. 12/34)",
     "test_cvc": "CVC: Beliebige 3 Ziffern (z.B. 123)",
     "test_name": "Name: Beliebiger Name (z.B. Test Benutzer)",
-    "test_postal": "Postleitzahl: Beliebiges Format (z.B. 1234AB)"
+    "test_postal": "Postleitzahl: Beliebiges Format (z.B. 1234AB)",
+    "order_number_label": "Bestellnummer"
   },
   "confirmation": {
     "title": "Bestellbestätigung",
@@ -121,45 +124,42 @@
     "title": "Demomodus",
     "description": "Verwendet Mock-Daten, da die API nicht verfügbar ist"
   },
-  "variant": {
-    "select_placeholder": "Wähle {{axis}}",
-    "in_stock": "{{count}} auf Lager",
-    "out_of_stock": "Nicht auf Lager",
-    "combination_unavailable": "Kombination nicht verfügbar",
-    "select_all_prompt": "Wähle alle Optionen um die Verfügbarkeit zu sehen"
-  },
   "item_fields": {
     "item_label": "Artikel {{current}} von {{total}}",
-    "required": "Dieses Feld ist erforderlich",
-    "min_length": "Mindestens {{count}} Zeichen",
-    "max_length": "Höchstens {{count}} Zeichen",
-    "minimum": "Mindestwert ist {{value}}",
-    "maximum": "Höchstwert ist {{value}}",
-    "invalid_email": "Ungültige E-Mail-Adresse",
-    "invalid_number": "Geben Sie eine gültige Zahl ein",
-    "invalid_option": "Wählen Sie eine gültige Option",
-    "pattern_mismatch": "Wert entspricht nicht dem erforderlichen Format",
     "select_placeholder": "Auswählen...",
-    "email_placeholder": "email@beispiel.de"
-  },
-  "purchase_rules": {
-    "max_per_order": "Maximal {{limit}} Stück pro Bestellung",
-    "max_per_member": "Sie haben noch {{remaining}} Stück verfügbar (Limit: {{limit}} pro Mitglied)",
-    "max_per_club": "Ihr Club hat noch {{remaining}} Stück verfügbar (Limit: {{limit}} pro Club)",
-    "requires_membership": "Eine aktive Mitgliedschaft ist erforderlich um dieses Produkt zu bestellen"
+    "email_placeholder": "E-Mail-Adresse"
   },
   "payment": {
+    "return_success_title": "Zahlung erfolgreich",
+    "return_failed_title": "Zahlung nicht abgeschlossen",
+    "retry_button": "Erneut versuchen",
     "method_title": "Zahlungsmethode",
-    "ideal_description": "iDEAL - direkt über Ihre Bank bezahlen",
-    "creditcard_description": "Kreditkarte (Visa, Mastercard)",
+    "ideal_description": "Zahlen Sie über Ihre eigene Bank",
+    "creditcard_description": "Zahlen Sie mit Visa, Mastercard oder American Express",
     "bank_transfer": "Überweisung",
-    "bank_transfer_description": "Manuelle Banküberweisung",
+    "bank_transfer_description": "Überweisen Sie den Betrag manuell",
     "transfer_instructions_title": "Überweisungsdaten",
     "reference": "Verwendungszweck:",
     "amount": "Betrag:",
-    "return_success_title": "Zahlung erfolgreich",
-    "return_failed_title": "Zahlung nicht abgeschlossen",
-    "retry_button": "Erneut versuchen"
+    "return_success_message": "Zahlung erfolgreich! Ihre Bestellung wurde bestätigt.",
+    "return_failed_message": "Die Zahlung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wählen Sie eine andere Zahlungsmethode.",
+    "return_expired_message": "Die Zahlung ist abgelaufen. Bitte versuchen Sie es erneut oder wählen Sie eine andere Zahlungsmethode.",
+    "return_cancelled_message": "Die Zahlung wurde storniert. Bitte versuchen Sie es erneut oder wählen Sie eine andere Zahlungsmethode.",
+    "return_pending_message": "Die Zahlung wird verarbeitet. Sie erhalten eine Bestätigung, sobald die Zahlung abgeschlossen ist.",
+    "return_unknown_message": "Der Status Ihrer Zahlung wird überprüft."
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximal {{limit}} pro Bestellung",
+    "max_per_member": "Noch {{remaining}} verfügbar (max {{limit}} pro Mitglied)",
+    "max_per_club": "Noch {{remaining}} für Ihren Club verfügbar (max {{limit}} pro Club)",
+    "requires_membership": "Eine aktive Mitgliedschaft ist erforderlich"
+  },
+  "variant": {
+    "select_placeholder": "{{axis}} wählen",
+    "in_stock": "{{count}} auf Lager",
+    "out_of_stock": "Nicht auf Lager",
+    "combination_unavailable": "Kombination nicht verfügbar",
+    "select_all_prompt": "Alle Optionen auswählen"
   },
   "validation": {
     "required": "{{field}} ist erforderlich",

@@ -15,7 +15,8 @@
     "save_hint": "Ajoutez d'abord des produits pour sauvegarder.",
     "option_label": "Option",
     "item_total_label": "Nombre d'articles",
-    "total_label": "Total"
+    "total_label": "Total",
+    "item_fields_label": "Données des participants"
   },
   "product": {
     "added": "Produit ajouté",
@@ -40,6 +41,7 @@
     "total": "Total",
     "processing": "Traitement en cours...",
     "pay_button": "Payer €{{amount}}",
+    "place_order": "Passer la commande",
     "placeholder_name": "Nom",
     "placeholder_street": "Rue et numéro",
     "placeholder_postal": "Code postal",
@@ -134,45 +136,42 @@
     "title": "Mode démo",
     "description": "Utilisation de données fictives car l'API est indisponible"
   },
+  "item_fields": {
+    "item_label": "Article {{current}} sur {{total}}",
+    "select_placeholder": "Sélectionner...",
+    "email_placeholder": "Adresse e-mail"
+  },
+  "payment": {
+    "return_success_title": "Paiement réussi",
+    "return_failed_title": "Paiement non effectué",
+    "retry_button": "Réessayer",
+    "method_title": "Méthode de paiement",
+    "ideal_description": "Payez via votre propre banque",
+    "creditcard_description": "Payez avec Visa, Mastercard ou American Express",
+    "bank_transfer": "Virement bancaire",
+    "bank_transfer_description": "Transférez le montant manuellement",
+    "transfer_instructions_title": "Détails du virement",
+    "reference": "Référence :",
+    "amount": "Montant :",
+    "return_success_message": "Paiement réussi ! Votre commande a été confirmée.",
+    "return_failed_message": "Le paiement a échoué. Veuillez réessayer ou choisir une autre méthode de paiement.",
+    "return_expired_message": "Le paiement a expiré. Veuillez réessayer ou choisir une autre méthode de paiement.",
+    "return_cancelled_message": "Le paiement a été annulé. Veuillez réessayer ou choisir une autre méthode de paiement.",
+    "return_pending_message": "Le paiement est en cours de traitement. Vous recevrez une confirmation dès que le paiement sera effectué.",
+    "return_unknown_message": "Le statut de votre paiement est en cours de vérification."
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximum {{limit}} par commande",
+    "max_per_member": "{{remaining}} restant(s) (max {{limit}} par membre)",
+    "max_per_club": "{{remaining}} restant(s) pour votre club (max {{limit}} par club)",
+    "requires_membership": "Une adhésion active est requise"
+  },
   "variant": {
     "select_placeholder": "Choisir {{axis}}",
     "in_stock": "{{count}} en stock",
     "out_of_stock": "En rupture de stock",
     "combination_unavailable": "Combinaison non disponible",
-    "select_all_prompt": "Sélectionnez toutes les options pour voir la disponibilité"
-  },
-  "item_fields": {
-    "item_label": "Article {{current}} sur {{total}}",
-    "required": "Ce champ est obligatoire",
-    "min_length": "Minimum {{count}} caractères",
-    "max_length": "Maximum {{count}} caractères",
-    "minimum": "La valeur minimale est {{value}}",
-    "maximum": "La valeur maximale est {{value}}",
-    "invalid_email": "Adresse e-mail invalide",
-    "invalid_number": "Entrez un nombre valide",
-    "invalid_option": "Sélectionnez une option valide",
-    "pattern_mismatch": "La valeur ne correspond pas au format requis",
-    "select_placeholder": "Sélectionner...",
-    "email_placeholder": "email@exemple.fr"
-  },
-  "purchase_rules": {
-    "max_per_order": "Maximum {{limit}} articles par commande",
-    "max_per_member": "Il vous reste {{remaining}} articles disponibles (limite : {{limit}} par membre)",
-    "max_per_club": "Votre club a encore {{remaining}} articles disponibles (limite : {{limit}} par club)",
-    "requires_membership": "Un abonnement actif est requis pour commander ce produit"
-  },
-  "payment": {
-    "method_title": "Mode de paiement",
-    "ideal_description": "iDEAL - payer directement via votre banque",
-    "creditcard_description": "Carte de crédit (Visa, Mastercard)",
-    "bank_transfer": "Virement bancaire",
-    "bank_transfer_description": "Virement bancaire manuel",
-    "transfer_instructions_title": "Instructions de virement",
-    "reference": "Référence :",
-    "amount": "Montant :",
-    "return_success_title": "Paiement réussi",
-    "return_failed_title": "Paiement non finalisé",
-    "retry_button": "Réessayer"
+    "select_all_prompt": "Sélectionnez toutes les options"
   },
   "validation": {
     "required": "{{field}} est obligatoire",
