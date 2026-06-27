@@ -90,7 +90,7 @@ def convert_decimals(obj):
         return obj
 
 
-def _resolve_member_id(user_email):
+def _resolve_member_id(user_email, locale='nl'):
     """
     Resolve member_id from the Members table by email scan.
     Returns (member_record, error_response) tuple.
@@ -102,11 +102,13 @@ def _resolve_member_id(user_email):
         )
         items = response.get('Items', [])
         if not items:
-            return None, create_error_response(404, 'Member record not found')
+            return None, create_error_response(404, 'Member record not found',
+                                               error_key='member_not_found', locale=locale)
         return items[0], None
     except Exception as e:
         logger.error(f"Error resolving member: {str(e)}")
-        return None, create_error_response(500, 'Failed to resolve member record')
+        return None, create_error_response(500, 'Failed to resolve member record',
+                                           error_key='internal_error', locale=locale)
 
 
 def _get_order(order_id):
@@ -450,7 +452,7 @@ def lambda_handler(event, context):
                                          error_key='validation_error', locale=locale)
 
         # 3. Resolve member record from email
-        member_record, member_error = _resolve_member_id(user_email)
+        member_record, member_error = _resolve_member_id(user_email, locale)
         if member_error:
             return member_error
 
@@ -491,7 +493,8 @@ def lambda_handler(event, context):
         current_status = order.get('status', 'draft')
         if current_status != 'draft':
             return create_error_response(
-                409, f'Cannot submit order in "{current_status}" status'
+                409, f'Cannot submit order in "{current_status}" status',
+                error_key='validation_error', locale=locale
             )
 
         # 7. Check items exist
@@ -604,7 +607,8 @@ def lambda_handler(event, context):
             )
         except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
             return create_error_response(
-                409, 'Order was modified concurrently. Please reload and retry.'
+                409, 'Order was modified concurrently. Please reload and retry.',
+                error_key='validation_error', locale=locale
             )
 
         updated_order = updated.get('Attributes', {})

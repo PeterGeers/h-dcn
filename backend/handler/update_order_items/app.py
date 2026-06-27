@@ -302,7 +302,8 @@ def _process_persons(persons: list) -> tuple[list, list, dict | None]:
     for person_index, person in enumerate(persons):
         if not isinstance(person, dict):
             return None, None, create_error_response(
-                400, f'Person at index {person_index} must be an object'
+                400, f'Person at index {person_index} must be an object',
+                error_key='validation_error', locale='nl'
             )
 
         person_name = person.get('name', '')
@@ -310,7 +311,8 @@ def _process_persons(persons: list) -> tuple[list, list, dict | None]:
 
         if not isinstance(person_lines, list):
             return None, None, create_error_response(
-                400, f'Person at index {person_index}: items must be an array'
+                400, f'Person at index {person_index}: items must be an array',
+                error_key='validation_error', locale='nl'
             )
 
         # Store person metadata
@@ -349,13 +351,15 @@ def _process_persons(persons: list) -> tuple[list, list, dict | None]:
             product = _get_product(product_id)
             if product is None:
                 return None, None, create_error_response(
-                    404, 'Product not found', {'product_id': product_id}
+                    404, 'Product not found', {'product_id': product_id},
+                    error_key='product_not_found', locale='nl'
                 )
 
             price = product.get('price') or product.get('prijs')
             if price is None or price == '' or price == 0:
                 return None, None, create_error_response(
-                    400, 'Product has no configured price', {'product_id': product_id}
+                    400, 'Product has no configured price', {'product_id': product_id},
+                    error_key='validation_error', locale='nl'
                 )
 
             unit_price = Decimal(str(price))
@@ -431,14 +435,16 @@ def _process_items(items):
         product = _get_product(product_id)
         if product is None:
             return None, create_error_response(
-                404, 'Product not found', {'product_id': product_id}
+                404, 'Product not found', {'product_id': product_id},
+                error_key='product_not_found', locale='nl'
             )
 
         # Get price: reject if null/empty/zero
         price = product.get('price') or product.get('prijs')
         if price is None or price == '' or price == 0:
             return None, create_error_response(
-                400, 'Product has no configured price', {'product_id': product_id}
+                400, 'Product has no configured price', {'product_id': product_id},
+                error_key='validation_error', locale='nl'
             )
 
         unit_price = Decimal(str(price))
@@ -503,20 +509,23 @@ def _validate_variant(variant_id, product_id):
 
         if variant is None:
             return None, create_error_response(
-                404, 'Variant not found', {'variant_id': variant_id}
+                404, 'Variant not found', {'variant_id': variant_id},
+                error_key='product_not_found', locale='nl'
             )
 
         # Verify variant's parent_id matches the provided product_id
         if variant.get('parent_id') != product_id:
             return None, create_error_response(
                 400, 'Variant does not belong to product',
-                {'variant_id': variant_id, 'product_id': product_id}
+                {'variant_id': variant_id, 'product_id': product_id},
+                error_key='validation_error', locale='nl'
             )
 
         return variant, None
     except Exception as e:
         logger.error(f"Error fetching variant {variant_id}: {e}")
-        return None, create_error_response(500, 'Error validating variant')
+        return None, create_error_response(500, 'Error validating variant',
+                                           error_key='internal_error', locale='nl')
 
 
 def _calculate_total(items):

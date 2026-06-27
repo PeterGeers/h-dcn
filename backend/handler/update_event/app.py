@@ -164,7 +164,8 @@ def lambda_handler(event, context):
             user_roles, required_permissions, user_email, None
         )
         if not is_authorized:
-            return error_response
+            return create_error_response(403, 'Access denied: insufficient permissions',
+                                         error_key='forbidden', locale=locale)
 
         # Log successful access
         log_successful_access(user_email, user_roles, 'update_event')
