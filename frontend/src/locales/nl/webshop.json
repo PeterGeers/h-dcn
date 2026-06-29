@@ -1,5 +1,9 @@
 {
   "title": "H-DCN Webshop",
+  "filter": {
+    "all_groups": "Alle groepen",
+    "all_subgroups": "Alle subgroepen"
+  },
   "cart": {
     "title": "Winkelwagen",
     "item_count": "Winkelwagen ({{count}})",

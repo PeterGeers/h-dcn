@@ -1,5 +1,9 @@
 {
   "title": "Tienda H-DCN",
+  "filter": {
+    "all_groups": "Todos los grupos",
+    "all_subgroups": "Todos los subgrupos"
+  },
   "cart": {
     "title": "Carrito de compras",
     "item_count": "Carrito ({{count}})",
