@@ -346,12 +346,12 @@ function Dashboard() {
             />
           </FunctionGuard>
           
-          {/* Event Booking - For all members with hdcnLeden, shows events user has access to */}
+          {/* Event Booking - For members without event admin roles */}
           <FunctionGuard 
             user={functionGuardUser} 
             requiredRoles={['hdcnLeden', 'event_participant']}
           >
-            <EventBookingCard navigate={navigate} />
+            {!hasAdminRoles && <EventBookingCard navigate={navigate} />}
           </FunctionGuard>
           
           {/* Administrative modules - Only for users with specific admin roles */}

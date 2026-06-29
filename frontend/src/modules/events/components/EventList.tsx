@@ -4,7 +4,8 @@ import {
   Badge, useToast, Text, IconButton, Stack, useBreakpointValue,
   Tooltip
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, CopyIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, CopyIcon, ExternalLinkIcon } from '@chakra-ui/icons';
+import { useNavigate } from 'react-router-dom';
 import EventForm from './EventForm';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';
@@ -24,6 +25,7 @@ interface EventListProps {
 const INITIAL_FILTERS = { name: '', start_date: '', location: '', linked_regio: '', participants: '', cost: '', revenue: '' };
 
 function EventList({ events, onEventUpdate, user, permissionManager, canWriteEvents = false }: EventListProps) {
+  const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const toast = useToast();
@@ -420,6 +422,16 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                           />
                         </Tooltip>
                       )}
+                      <Tooltip label="Test booking flow">
+                        <IconButton
+                          icon={<ExternalLinkIcon />}
+                          size="xs"
+                          colorScheme="purple"
+                          onClick={() => navigate(`/events/${(event as Event).event_id}/booking`)}
+                          title="Test booking"
+                          aria-label="Test booking flow"
+                        />
+                      </Tooltip>
                     </HStack>
                   </Td>
                 </Tr>
