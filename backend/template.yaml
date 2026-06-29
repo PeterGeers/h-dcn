@@ -1536,6 +1536,8 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
           PRODUCTEN_TABLE_NAME: !Ref Table
           COUNTERS_TABLE_NAME: !Ref CountersTable
       Events:
