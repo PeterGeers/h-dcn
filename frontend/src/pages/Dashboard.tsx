@@ -23,11 +23,11 @@ function EventBookingCard({ navigate }: { navigate: (path: string) => void }) {
       try {
         const allEvents = await eventBookingApi.getEvent();
         if (!cancelled) {
-          // Show open events preferentially
+          // Show published events, exclude webshop pseudo-event
           const relevantEvents = allEvents.filter(
-            (e) => e.status === 'open'
+            (e: any) => e.status === 'published' && e.event_type !== 'webshop'
           );
-          setEvents(relevantEvents.length > 0 ? relevantEvents : allEvents.slice(0, 3));
+          setEvents(relevantEvents);
         }
       } catch (err) {
         // If events can't be loaded, show nothing

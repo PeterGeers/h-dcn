@@ -93,8 +93,8 @@ export const coreFields: Record<string, FieldDefinition> = {
       { type: 'required', message: 'Deelname modus is verplicht' },
     ],
     permissions: createPermissionConfig('admin', 'admin'),
-    placeholder: 'Open of besloten',
-    helpText: 'Open: iedereen kan deelnemen. Besloten: alleen leden of genodigden.',
+    placeholder: 'Open, leden, of besloten',
+    helpText: 'Open: iedereen mag deelnemen. Leden: alleen H-DCN leden (optioneel per type). Besloten: alleen genodigden (allowed_events lijst).',
     width: 'medium',
   },
 

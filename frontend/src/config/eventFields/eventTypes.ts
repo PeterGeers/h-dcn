@@ -36,8 +36,20 @@ export type EventType = (typeof EVENT_TYPES_BY_CATEGORY)[EventCategory][number];
 // PARTICIPATION MODE (orthogonal to category/type)
 // ============================================================================
 
-export const PARTICIPATION_MODES = ['open', 'closed'] as const;
+export const PARTICIPATION_MODES = ['open', 'members', 'closed'] as const;
 export type ParticipationMode = (typeof PARTICIPATION_MODES)[number];
+
+// ============================================================================
+// ORDER FLOW (how the ordering process works)
+// ============================================================================
+
+export const ORDER_FLOWS = ['catalog', 'attendee'] as const;
+export type OrderFlow = (typeof ORDER_FLOWS)[number];
+
+export const ORDER_FLOW_LABELS: Record<OrderFlow, string> = {
+  catalog: 'Catalogus (webshop-achtig)',
+  attendee: 'Per deelnemer (registry-based)',
+};
 
 // ============================================================================
 // LINKED REGIO (for region-scoped events: RLV, regio_rit)
@@ -97,7 +109,8 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
 
 export const PARTICIPATION_MODE_LABELS: Record<ParticipationMode, string> = {
   open: 'Open (deelname voor iedereen)',
-  closed: 'Besloten (alleen leden / genodigden)',
+  members: 'Leden (alleen H-DCN leden)',
+  closed: 'Besloten (alleen genodigden)',
 };
 
 // ============================================================================

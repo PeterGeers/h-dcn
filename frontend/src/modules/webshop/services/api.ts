@@ -73,6 +73,39 @@ export const productService = {
     return ApiService.get('/scan-product/');
   },
 
+  /**
+   * Load products for the webshop using the unified pipeline:
+   * 1. Fetch all events → find evt-webshop → get product_ids
+   * 2. Scan products → filter by product_ids
+   * Falls back to showing all active products if evt-webshop has no product_ids.
+   */
+  getWebshopProducts: async () => {
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    // Step 1: Get the evt-webshop event to retrieve product_ids
+    let productIds: string[] = [];
+    try {
+      const eventsResponse = await ApiService.get<any[]>('/events');
+      const events = eventsResponse.data || [];
+      const webshopEvent = events.find((e: any) => e.event_id === 'evt-webshop');
+      if (webshopEvent && Array.isArray(webshopEvent.product_ids)) {
+        productIds = webshopEvent.product_ids;
+      }
+    } catch (err) {
+      console.warn('Could not fetch webshop event, showing all products', err);
+    }
+
+    // Step 2: Scan products and filter by product_ids
+    const response = await ApiService.get('/scan-product/');
+    const allProducts = response.data || [];
+    if (productIds.length > 0) {
+      return allProducts.filter((p: any) => productIds.includes(p.product_id));
+    }
+    // Fallback: if no product_ids configured, show all active products
+    return allProducts.filter((p: any) => p.active !== false);
+  },
+
   getProducts: async (eventId?: string | null) => {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');

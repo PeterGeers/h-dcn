@@ -30,8 +30,9 @@
 - **Platform**: GitHub Actions
 - **Backend deploy**: `sam build --use-container` → `sam deploy` to CloudFormation stack `h-dcn`
 - **Frontend deploy**: `npm run build` → S3 sync → CloudFront invalidation
-- **Security scanning**: GitGuardian (ggshield) — CI `commit-range` scan + Kiro preToolUse hook for local commits
-- **Pre-commit**: Kiro hook (`.kiro/hooks/ggshield-pre-commit.kiro.hook`) — syncs auth layer + runs `ggshield secret scan pre-commit`
+- **Security scanning**: GitGuardian (ggshield) — native git pre-push hook + CI `commit-range` scan
+- **Pre-commit**: Kiro hook (`.kiro/hooks/ggshield-pre-commit.kiro.hook`) — syncs auth layer + runs local regex secret scanner (no API calls)
+- **Pre-push**: Native git hook (`.githooks/pre-push`) — runs ggshield API scan, falls back to local scanner if quota exhausted
 - **Trigger**: Push to `main` branch (path-filtered)
 
 ## DynamoDB Tables
@@ -54,7 +55,7 @@
 
 ```bash
 # IMPORTANT: Always use the MCP git tool (mcp_git_git_commit) for commits — NOT execute_pwsh with "git commit".
-# This ensures the ggshield preToolUse hook fires for secret scanning + auth layer sync.
+# This ensures the pre-commit hook fires for local secret scanning + auth layer sync.
 # The MCP tool automatically uses --no-verify.
 
 # For staging files, use the MCP git_add tool:
@@ -64,6 +65,7 @@
 # mcp_git_git_commit(repo_path, message)
 
 # Only use shell for git push (no MCP tool available for push):
+# Secret scanning is enforced by the native git pre-push hook (.githooks/pre-push)
 git push
 ```
 

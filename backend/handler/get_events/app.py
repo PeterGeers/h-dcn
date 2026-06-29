@@ -63,9 +63,30 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'get_events')
 
+        # Check if user is admin (events_crud or system_crud)
+        is_admin, _, _ = validate_permissions_with_regions(
+            user_roles, ['events_crud'], user_email, None
+        )
+        if not is_admin:
+            is_admin, _, _ = validate_permissions_with_regions(
+                user_roles, ['system_crud'], user_email, None
+            )
+
         # Get events from database
         response = table.scan()
         events = response['Items']
+
+        # Handle pagination
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            events.extend(response['Items'])
+
+        # Filter for non-admins: only published events, exclude webshop
+        if not is_admin:
+            events = [
+                e for e in events
+                if e.get('status') == 'published' and e.get('event_type') != 'webshop'
+            ]
         
         # Convert Decimal objects to JSON-serializable types
         events = convert_decimals(events)

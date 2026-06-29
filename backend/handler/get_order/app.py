@@ -129,6 +129,7 @@ def _query_orders_by_source(source_id):
 def _create_draft_order(
     source_id: str,
     member_id: str,
+    user_email: str | None = None,
     registry_row_id: str | None = None,
     registry_row_label: str | None = None,
     registry_row_logo_url: str | None = None,
@@ -151,12 +152,16 @@ def _create_draft_order(
         'updated_at': now,
     }
 
+    if user_email:
+        order['user_email'] = user_email
+
     if is_row_scope and registry_row_id:
         order['registry_row_id'] = registry_row_id
         order['registry_row_label'] = registry_row_label
         order['registry_row_logo_url'] = registry_row_logo_url
         order['delegates'] = {
             'primary_member_id': member_id,
+            'primary': user_email,
         }
 
     orders_table.put_item(Item=order)
@@ -245,20 +250,47 @@ def lambda_handler(event, context):
             if not event_record:
                 return create_error_response(404, 'Event not found')
 
-            # Check event access:
-            # - Open events: any authenticated member (hdcnLeden) can access
-            # - Closed events: member must be in allowed_events
+            # --- Sequential access checks with specific error messages ---
+
+            # Check 1: Is the event published?
+            event_status = event_record.get('status', 'draft')
+            if event_status != 'published':
+                return create_error_response(403, 'Event niet beschikbaar',
+                    details={'error_code': 'EVENT_NOT_PUBLISHED'})
+
+            # Check 2: Participation-based access
             participation = event_record.get('participation', 'open')
             if participation == 'closed':
                 if not has_event_access(member_id, source_id):
-                    return create_error_response(403, 'Event access required')
-            else:
-                # Open event: any logged-in member can book
-                if 'hdcnLeden' not in user_roles and not has_event_access(member_id, source_id):
-                    return create_error_response(403, 'Member access required for open events')
+                    return create_error_response(403, 'Geen toegang tot dit event',
+                        details={'error_code': 'EVENT_ACCESS_DENIED'})
+            elif participation == 'members':
+                if 'hdcnLeden' not in user_roles:
+                    return create_error_response(403, 'Alleen voor H-DCN leden',
+                        details={'error_code': 'MEMBERS_ONLY'})
+                # Optional: check allowed_membership_types
+                allowed_types = event_record.get('allowed_membership_types', [])
+                if allowed_types:
+                    member_type = member_record.get('member_type', '')
+                    if member_type not in allowed_types:
+                        return create_error_response(403, 'Lidmaatschapstype niet toegestaan',
+                            details={'error_code': 'MEMBERSHIP_TYPE_DENIED'})
+            # participation == 'open': no access restriction
 
-            # Check event status for new order creation
-            # (we still allow viewing existing orders for non-open events)
+            # Check 3: Registration window
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M')
+            reg_open = event_record.get('registration_open', '')
+            reg_close = event_record.get('registration_close', '')
+
+            if reg_open and now < reg_open:
+                return create_error_response(403, 'Registratie is nog niet geopend',
+                    details={'error_code': 'REGISTRATION_NOT_OPEN'})
+            if reg_close and now > reg_close:
+                return create_error_response(403, 'Registratie is gesloten',
+                    details={'error_code': 'REGISTRATION_CLOSED'})
+
+            # Access granted — resolve order scope
             order_scope = _resolve_order_scope(event_record)
 
         # Log access
@@ -271,12 +303,8 @@ def lambda_handler(event, context):
             if existing:
                 return create_success_response(convert_decimals(existing[0]))
 
-            # No existing order — check event status before creating
-            if event_record and event_record.get('status') != 'published':
-                return create_error_response(403, 'Registration is not open')
-
-            # Create draft
-            order = _create_draft_order(source_id, member_id)
+            # No existing order — create draft
+            order = _create_draft_order(source_id, member_id, user_email=user_email)
             return create_success_response(convert_decimals(order), status_code=201)
 
         elif order_scope == 'registry_row':
@@ -317,6 +345,7 @@ def lambda_handler(event, context):
                 order = _create_draft_order(
                     source_id,
                     member_id,
+                    user_email=user_email,
                     registry_row_id=registry_row_id,
                     registry_row_label=registry_row_label,
                     registry_row_logo_url=registry_row_logo_url,

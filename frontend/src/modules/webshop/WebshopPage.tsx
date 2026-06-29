@@ -98,14 +98,7 @@ function WebshopPage({ user }: WebshopPageProps) {
 
   const loadProducts = useCallback(async () => {
     try {
-      const response = await productService.scanProducts();
-      const allProducts: Product[] = response.data || [];
-      const webshopProducts = allProducts.filter(
-        (p: any) => {
-          const eventIds = p.event_ids || [];
-          return eventIds.includes('evt-webshop');
-        }
-      );
+      const webshopProducts = await productService.getWebshopProducts();
       setProducts(webshopProducts);
     } catch (error) {
       const mockProducts: Product[] = [
