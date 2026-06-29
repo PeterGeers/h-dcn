@@ -359,8 +359,6 @@ function Dashboard() {
           {/* Members Admin - Only for users with member management roles */}
           <FunctionGuard 
             user={functionGuardUser} 
-            functionName="members" 
-            action="read"
             requiredRoles={['Members_Read', 'Members_CRUD', 'System_User_Management']}
           >
             <AppCard 
@@ -379,8 +377,6 @@ function Dashboard() {
           {/* Events Admin - Only for users with event management roles */}
           <FunctionGuard 
             user={functionGuardUser} 
-            functionName="events" 
-            action="read"
             requiredRoles={['Events_Read', 'Events_CRUD', 'System_User_Management']}
           >
             <AppCard 
