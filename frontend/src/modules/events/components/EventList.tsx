@@ -422,16 +422,18 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                           />
                         </Tooltip>
                       )}
-                      <Tooltip label="Test booking flow">
-                        <IconButton
-                          icon={<ExternalLinkIcon />}
-                          size="xs"
-                          colorScheme="purple"
-                          onClick={() => navigate(`/events/${(event as Event).event_id}/booking`)}
-                          title="Test booking"
-                          aria-label="Test booking flow"
-                        />
-                      </Tooltip>
+                      {(event as Event & { product_ids?: string[] }).product_ids?.length ? (
+                        <Tooltip label="Test booking flow">
+                          <IconButton
+                            icon={<ExternalLinkIcon />}
+                            size="xs"
+                            colorScheme="purple"
+                            onClick={() => navigate(`/events/${(event as Event).event_id}/booking`)}
+                            title="Test booking"
+                            aria-label="Test booking flow"
+                          />
+                        </Tooltip>
+                      ) : null}
                     </HStack>
                   </Td>
                 </Tr>
