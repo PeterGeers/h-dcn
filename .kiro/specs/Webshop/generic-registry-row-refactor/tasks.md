@@ -278,7 +278,7 @@ Replace all `club_*` naming with generic `registry_row_*` names across backend h
     - Document the rename from `club_*` to `registry_row_*` as architectural decision
     - Include rationale: generic naming enables multi-tenant use (clubs, teams, schools)
 
-- [-] 15. Final checkpoint — Ensure all tests pass, commit, push and deploy
+- [x] 15. Final checkpoint — Ensure all tests pass, commit, push and deploy
   - Ensure all tests pass, ask the user if questions arise.
   - Commit on current feature branch using `mcp_git_git_commit`
   - Push and trigger both deploy workflows:

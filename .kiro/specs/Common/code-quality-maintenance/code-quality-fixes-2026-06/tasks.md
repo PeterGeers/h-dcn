@@ -1,342 +1,149 @@
-# Implementation Plan: Code Quality Fixes June 2026
+# Code Quality Fixes — June 2026 Tasks
 
-## Overview
+Priority order: broken tests → dead code → file length → missing tests → stale docs
 
-Refactoring sprint addressing critical file length issues, dead code consolidation, missing test coverage, and stale documentation. All changes are internal — no API or runtime behavior modifications. Ordered by priority: file length → dead code → missing tests → stale docs.
+---
 
-## Tasks
+## Priority 1: Broken Tests (fix test infrastructure)
 
-- [x] 1. Split `hdcn_cognito_admin/app.py` (2567 lines) into sub-modules
-  - [x] 1.1 Extract `backend/handler/hdcn_cognito_admin/user_operations.py`
-    - Move `get_users`, `verify_user_exists`, `create_user`, `update_user`, `delete_user`, `import_users`, `passwordless_signup`, `passkey_migration_check` into this module
-    - Each function keeps its existing signature
-    - _Requirements: 1.1_
+### Backend
 
-  - [x] 1.2 Extract `backend/handler/hdcn_cognito_admin/group_operations.py`
-    - Move `get_groups`, `create_group`, `delete_group`, `add_user_to_group`, `remove_user_from_group`, `get_user_groups`, `import_groups`, `assign_user_groups`, `get_users_in_group`
-    - _Requirements: 1.1_
+- [x] **Task 1.1** — Fix `scan_product` test table setup (25 tests)
+  - Files: `backend/tests/unit/test_scan_product.py`, `test_property_scan_product.py`, `test_scan_product_bug_condition.py`, `test_scan_product_preservation.py`
+  - Root cause: Moto mock table not found — handler likely uses `os.environ.get('PRODUCTS_TABLE_NAME', 'Producten')` but tests don't set the env var or create the table with the right name
+  - Fix: Ensure `PRODUCTS_TABLE_NAME` is set and table is created inside `mock_aws()` context before handler load
+  - Category: **Test bug**
 
-  - [x] 1.3 Extract `backend/handler/hdcn_cognito_admin/auth_operations.py`
-    - Move `get_auth_login`, `get_auth_permissions`, `get_pool_info`
-    - _Requirements: 1.1_
+- [x] **Task 1.2** — Fix `test_create_default_variant_creates_correct_record` (1 test)
+  - File: `backend/tests/integration/test_admin_endpoints.py:303`
+  - Root cause: Asserts `variant['price']` but field was renamed to `prijs`
+  - Fix: Change assertion to use `prijs` (canonical Dutch field name per registry)
+  - Category: **Stale test**
 
-  - [x] 1.4 Extract `backend/handler/hdcn_cognito_admin/role_operations.py`
-    - Move `get_user_roles`, `assign_user_roles_auth`, `remove_user_role_auth`, `validate_role_assignment_rules`, `validate_role_assignment_permission`, `calculate_user_permissions`
-    - _Requirements: 1.1_
+### Frontend
 
-  - [x] 1.5 Extract `backend/handler/hdcn_cognito_admin/permission_utils.py`
-    - Move `validate_field_permissions`, `get_user_field_permissions`, `check_role_permission`, `get_role_summary`
-    - _Requirements: 1.1_
+- [x] **Task 1.3** — Fix `memberReportingIntegration` tests (15 tests, 2 files)
+  - Files: `frontend/src/__tests__/memberReportingIntegration.test.tsx`, `frontend/src/__tests__/integration/memberReportingIntegration.test.ts`
+  - Root cause: Mock response shape doesn't match current `MemberDataService.fetchMembers()` — service accesses `.length` on undefined at line 116
+  - Fix: Update mock to match current response structure (check what `fetchMembers` now returns)
+  - Category: **Test bug**
 
-  - [x] 1.6 Rewrite `backend/handler/hdcn_cognito_admin/app.py` as router
-    - Keep `lambda_handler` as sole entry point (path unchanged in template.yaml)
-    - Import from sub-modules, dispatch based on `httpMethod` + `path`
-    - Shared state (Cognito client, table refs) initialized here, passed to sub-module functions
-    - Target: ~220 lines
-    - _Requirements: 1.1_
+- [x] **Task 1.4** — Fix `VariantEditModal` tests (6 tests)
+  - File: `frontend/src/modules/products/__tests__/VariantEditModal.test.tsx`
+  - Root cause: Placeholder texts `Bijv. Maat, Kleur...` and `Bijv. S, Rood, 42...` not found — component now uses i18n translation keys
+  - Fix: Either add i18n mock that returns expected strings, or update test queries to match actual rendered text (check component's `useTranslation` keys)
+  - Category: **Test bug**
 
-  - [x] 1.7 Write property test: backend split preserves public API
-    - **Property 1: Backend split preserves public API**
-    - Verify all 31 original function names remain importable from the refactored package
-    - Create `backend/tests/unit/test_hdcn_cognito_admin_split.py`
-    - **Validates: Requirements 1.1**
+- [x] **Task 1.5** — Fix `EventSelector` tests (6 tests) ✓ Already resolved (component + test deleted in event_id removal spec)
+  - File: `frontend/src/modules/products/__tests__/EventSelector.test.tsx`
+  - Root cause: Component refactored (likely event_id removal spec) — "Webshop (algemeen)" text gone, event ordering changed, onChange callback args changed
+  - Fix: Rewrite tests to match current component behavior
+  - Category: **Stale test** — delete and rewrite
 
-- [x] 2. Split `frontend/src/config/memberFields.ts` (2086 lines) into module directory
-  - [x] 2.1 Create `frontend/src/config/memberFields/types.ts`
-    - Extract all interfaces: `FieldDefinition`, `ConditionalRule`, `ValidationRule`, `PermissionConfig`, etc.
-    - _Requirements: 1.2_
+- [x] **Task 1.6** — Fix `ProductCard` test (1 test)
+  - File: `frontend/src/modules/products/__tests__/ProductCard.test.tsx`
+  - Root cause: "Varianten" text not found — likely now uses translation key or conditional rendering changed
+  - Fix: Check what the component renders for parent products and update assertion
+  - Category: **Test bug**
 
-  - [x] 2.2 Create `frontend/src/config/memberFields/permissions.ts`
-    - Extract `createPermissionConfig` and permission constants
-    - _Requirements: 1.2_
+- [x] **Task 1.7** — Fix `WebWorkerManager` test (1 test)
+  - File: `frontend/src/services/__tests__/WebWorkerManager.test.ts`
+  - Root cause: Worker initialization fails in jsdom environment — missing Worker/MessageChannel mock
+  - Fix: Add proper Worker mock or mark as integration-only test
+  - Category: **Test bug**
 
-  - [x] 2.3 Create field definition files in `frontend/src/config/memberFields/fields/`
-    - `personalFields.ts` — fields with `group: 'personal'`
-    - `addressFields.ts` — fields with `group: 'address'`
-    - `membershipFields.ts` — fields with `group: 'membership'`
-    - `motorFields.ts` — fields with `group: 'motor'`
-    - `financialFields.ts` — fields with `group: 'financial'`
-    - `administrativeFields.ts` — fields with `group: 'administrative'`
-    - Each file exports a partial `Record<string, FieldDefinition>`
-    - _Requirements: 1.2_
+- [x] **Task 1.8** — Fix `AnalyticsService` tests (4 tests)
+  - File: `frontend/src/services/__tests__/AnalyticsService.test.ts`
+  - Root cause: Same `MemberDataService` mock issue as Task 1.3
+  - Fix: Update mock response shape (will likely be resolved by Task 1.3 fix)
+  - Category: **Test bug**
 
-  - [x] 2.4 Create `frontend/src/config/memberFields/tableConfig.ts`
-    - Extract `TableColumnConfig`, `TableContextConfig`, table context definitions
-    - _Requirements: 1.2_
+- [x] **Task 1.9** — Fix `PresMeetPage.preservation` test (1 test) ✓ Already resolved (module refactored/deleted)
+  - File: `frontend/src/modules/presmeet/__tests__/PresMeetPage.preservation.test.tsx`
+  - Root cause: Async 403 response handling shows spinner; test doesn't await state resolution
+  - Fix: Add `waitFor` wrapper around `data-testid="onboarding-flow"` assertion
+  - Category: **Test bug** (out of scope per steering — PresMeet module)
 
-  - [x] 2.5 Create `frontend/src/config/memberFields/modalConfig.ts`
-    - Extract `ModalFieldConfig`, `ModalGroupConfig`, `ModalSectionConfig`, `ModalContextConfig`, modal context definitions
-    - _Requirements: 1.2_
+---
 
-  - [x] 2.6 Create `frontend/src/config/memberFields/helpers.ts`
-    - Extract all exported functions: `getModalContext`, `getVisibleSections`, `getFieldsByGroup`, etc.
-    - _Requirements: 1.2_
+## Priority 2: Dead Code Cleanup
 
-  - [x] 2.7 Create `frontend/src/config/memberFields/index.ts` barrel re-export
-    - Re-export all symbols from sub-modules for backward compatibility
-    - Merge field partials into single `MEMBER_FIELDS` constant
-    - Existing imports (`from '../config/memberFields'`) must continue working unchanged
-    - _Requirements: 1.2_
+- [x] **Task 2.1** — Remove unused imports in `hdcn_cognito_admin/app.py`
+  - Line 60: Remove `check_role_permission`, `get_role_summary`, `get_user_field_permissions` (moved to submodule but import left behind)
 
-  - [x] 2.8 Delete original `frontend/src/config/memberFields.ts` file
-    - Only after verifying `npm run build:prod` succeeds with the new directory structure
-    - _Requirements: 1.2_
+- [x] **Task 2.2** — Remove unused imports/variables in `generate_order_pdf/tests/`
+  - `test_logo_fetch.py:3` — remove unused `pytest` import
+  - `test_logo_fetch.py:5` — remove unused `ReadTimeoutError` import
+  - `test_properties.py:8` — remove unused `pytest` import
+  - `test_properties.py:772` — remove unused `mock_cors`, `mock_log` variables
 
-  - [x] 2.9 Write property test: frontend split preserves field registry
-    - **Property 2: Frontend split preserves field registry**
-    - Verify reassembled `MEMBER_FIELDS` contains identical keys and values as original
-    - Create `frontend/src/config/memberFields/__tests__/memberFields.integrity.test.ts`
-    - **Validates: Requirements 1.2**
+- [x] **Task 2.3** — Delete stale migration template files (9 files)
+  - All `*_migration_template.py` files have syntax errors and serve no purpose
+  - Files: `delete_payment/`, `get_customer_orders/`, `get_orders/`, `get_order_byid/`, `hdcn_cognito_admin/`, `update_member/`, `update_order_status/`, `update_payment/`, `update_product/`
 
-- [x] 3. Checkpoint — File length refactoring
-  - Ensure all tests pass, ask the user if questions arise.
-  - Backend: run `sam build` to verify Lambda packaging for `hdcn_cognito_admin`
-  - Frontend: run `npm run build:prod` to verify TypeScript compilation
+- [x] **Task 2.4** — Fix or delete null-byte `__init__.py` files (9 files)
+  - These contain null bytes and can't be parsed — likely corrupted
+  - Replace with empty files or delete if not needed (Lambda handlers don't need `__init__.py`)
 
-- [x] 4. Consolidate duplicated `role_permissions.py` into shared layer
-  - [x] 4.1 Diff the three local copies and create `backend/layers/auth-layer/python/shared/role_permissions.py`
-    - Compare `backend/handler/get_member_self/role_permissions.py`, `backend/handler/update_member/role_permissions.py`, `backend/handler/hdcn_cognito_admin/role_permissions.py`
-    - Merge any handler-specific divergences into a single canonical module
-    - _Requirements: 6.1_
+---
 
-  - [x] 4.2 Update handler imports to use shared layer
-    - In `backend/handler/get_member_self/app.py`: change `from role_permissions import ...` → `from shared.role_permissions import ...`
-    - In `backend/handler/update_member/app.py`: change `from role_permissions import ...` → `from shared.role_permissions import ...`
-    - In `backend/handler/hdcn_cognito_admin/app.py`: change `from role_permissions import ...` → `from shared.role_permissions import ...`
-    - _Requirements: 6.1_
+## Priority 3: File Length (>700 lines — highest impact to refactor)
 
-  - [x] 4.3 Delete the three local `role_permissions.py` copies
-    - `backend/handler/get_member_self/role_permissions.py`
-    - `backend/handler/update_member/role_permissions.py`
-    - `backend/handler/hdcn_cognito_admin/role_permissions.py`
-    - _Requirements: 6.1_
+- [x] **Task 3.1** — Refactor `backend/handler/update_member/app.py` (913 lines) ✓ Already at 304 lines
+  - Extract validation logic and field-specific update logic into helper modules
 
-  - [x] 4.4 Write property test: role_permissions consolidation preserves function availability
-    - **Property 3: Role permissions consolidation preserves function availability**
-    - Verify all function names from the three local copies are available in `shared.role_permissions`
-    - Create `backend/tests/unit/test_role_permissions_consolidation.py`
-    - **Validates: Requirements 6.1**
+- [x] **Task 3.2** — Refactor `backend/handler/hdcn_cognito_admin/role_operations.py` (909 lines) ✓ Already split into sub-modules
+  - Already split from main app.py — consider further splitting by operation type
 
-- [x] 5. Remove `auth_utils_local.py` duplication
-  - [x] 5.1 Update `backend/handler/update_member/app.py` to import from shared layer
-    - Replace `from auth_utils_local import ...` with `from shared.auth_utils import ...`
-    - Verify all imported functions exist in the shared `auth_utils.py`
-    - _Requirements: 6.2_
+- [x] **Task 3.3** — Refactor `frontend/src/modules/events/components/EventForm.tsx` (763 lines) ✓ Already at 462 lines
+  - Extract form sections into sub-components
 
-  - [x] 5.2 Delete `backend/handler/update_member/auth_utils_local.py`
-    - _Requirements: 6.2_
+- [x] **Task 3.4** — Refactor `frontend/src/modules/webshop/WebshopPage.tsx` (761 lines) ✓ Already at 347 lines
+  - Extract product list, filters, cart summary into sub-components
 
-  - [x] 5.3 Write property test: shared layer subsumes local auth utils
-    - **Property 4: Shared layer subsumes local auth utils**
-    - Verify all functions from `auth_utils_local.py` are available in `shared.auth_utils`
-    - Create `backend/tests/unit/test_auth_utils_consolidation.py`
-    - **Validates: Requirements 6.2**
+- [x] **Task 3.5** — Refactor `frontend/src/modules/products/components/ProductCard.tsx` (724 lines) ✓ Already at 456 lines
+  - Extract variant sub-table, image section, action buttons into sub-components
 
-- [x] 6. Checkpoint — Dead code removal
-  - Ensure all tests pass, ask the user if questions arise.
-  - Run `sam build` to verify Lambda packaging for `get_member_self`, `update_member`, `hdcn_cognito_admin`
-  - Run existing auth tests: `pytest tests/unit/test_comprehensive_auth_flows.py tests/unit/test_auth_logging.py`
+- [x] **Task 3.6** — Refactor `frontend/src/pages/MembershipManagement.tsx` (721 lines)
+  - Extract membership type list and form into separate components
 
-- [x] 7. Create backend test stubs (10 priority handlers)
-  - [x] 7.1 Create `backend/tests/unit/test_create_order.py`
-    - Import `from handler.create_order.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+---
 
-  - [x] 7.2 Create `backend/tests/unit/test_update_member.py`
-    - Import `from handler.update_member.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+## Priority 4: Missing Tests (high-priority handlers only)
 
-  - [x] 7.3 Create `backend/tests/unit/test_hdcn_cognito_admin.py`
-    - Import `from handler.hdcn_cognito_admin.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+- [x] **Task 4.1** — Add tests for `admin_bulk_create_variants`
+- [x] **Task 4.2** — Add tests for `admin_delete_product`
+- [x] **Task 4.3** — Add tests for `delete_member`
+- [x] **Task 4.4** — Add tests for `insert_product`
+- [x] **Task 4.5** — Add tests for `update_order_status`
+- [x] **Task 4.6** — Add tests for `cognito_pre_signup` (security-critical)
+- [x] **Task 4.7** — Add tests for `cognito_post_authentication` (security-critical)
 
-  - [x] 7.4 Create `backend/tests/unit/test_get_member_self.py`
-    - Import `from handler.get_member_self.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+---
 
-  - [x] 7.5 Create `backend/tests/unit/test_cognito_role_assignment.py`
-    - Import `from handler.cognito_role_assignment.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+## Priority 5: Stale Documentation
 
-  - [x] 7.6 Create `backend/tests/unit/test_generate_order_pdf.py`
-    - Import `from handler.generate_order_pdf.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+- [x] **Task 5.1** — Move completed fix docs to archive
+  - `docs/fixes/membership-dropdown-parameter-table-fix.md` → `docs/archive/`
+  - `docs/fixes/parameter-system-fix.md` → `docs/archive/`
+  - `docs/data-management/image-recovery-plan.md` → `docs/archive/`
+  - `docs/data-management/image-restoration-completed.md` → `docs/archive/`
+  - `docs/FOLDER_REORGANIZATION_2026-01-18.md` → `docs/archive/`
 
-  - [x] 7.7 Create `backend/tests/unit/test_create_member.py`
-    - Import `from handler.create_member.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+- [x] **Task 5.2** — Review `docs/architecture/bucket-separation-strategy.md`
+  - Last updated Dec 2025 — verify it reflects current S3 bucket setup
 
-  - [x] 7.8 Create `backend/tests/unit/test_export_members.py`
-    - Import `from handler.export_members.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+---
 
-  - [x] 7.9 Create `backend/tests/unit/test_admin_get_orders.py`
-    - Import `from handler.admin_get_orders.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+## Summary
 
-  - [x] 7.10 Create `backend/tests/unit/test_admin_record_payment.py`
-    - Import `from handler.admin_record_payment.app import lambda_handler`
-    - Include `api_gateway_event` fixture, `test_handler_exists`, `test_returns_401_without_auth`
-    - Must pass `pytest --collect-only`
-    - _Requirements: 4.3_
+| Category                | Items                                                         | Effort |
+| ----------------------- | ------------------------------------------------------------- | ------ |
+| Broken tests (backend)  | 26 failures, 2 root causes                                    | ~2h    |
+| Broken tests (frontend) | 35 failures, 7 root causes                                    | ~4h    |
+| Dead code               | 8 unused imports/vars + 9 stale templates + 9 corrupted files | ~1h    |
+| File length             | 6 high-priority refactors                                     | ~8h    |
+| Missing tests           | 7 priority handlers                                           | ~6h    |
+| Stale docs              | 5 files to archive, 1 to review                               | ~30min |
 
-  - [x] 7.11 Write property test: generated backend test stubs are valid and importable
-    - **Property 5: Generated test stubs are valid and importable**
-    - Verify each stub file parses without syntax errors, imports its handler, and contains `test_` functions
-    - Create `backend/tests/unit/test_stub_validity.py`
-    - **Validates: Requirements 4.3**
-
-- [x] 8. Create frontend test stubs (5 priority components)
-  - [x] 8.1 Create `frontend/src/components/__tests__/MemberAdminTable.test.tsx`
-    - Import `MemberAdminTable` from `../MemberAdminTable`
-    - Mock `useAuth` context, wrap in `ChakraProvider`
-    - Include `renders without crashing` test
-    - Must pass `npm test -- --watchAll=false --testPathPattern=MemberAdminTable`
-    - _Requirements: 5.4_
-
-  - [x] 8.2 Create `frontend/src/components/__tests__/MemberEditView.test.tsx`
-    - Import `MemberEditView` from `../MemberEditView`
-    - Mock `useAuth` context, wrap in `ChakraProvider`
-    - Include `renders without crashing` test
-    - Must pass `npm test -- --watchAll=false --testPathPattern=MemberEditView`
-    - _Requirements: 5.4_
-
-  - [x] 8.3 Create `frontend/src/components/__tests__/NewMemberApplicationForm.test.tsx`
-    - Import `NewMemberApplicationForm` from `../NewMemberApplicationForm`
-    - Mock `useAuth` context, wrap in `ChakraProvider`
-    - Include `renders without crashing` test
-    - Must pass `npm test -- --watchAll=false --testPathPattern=NewMemberApplicationForm`
-    - _Requirements: 5.4_
-
-  - [x] 8.4 Create `frontend/src/components/auth/__tests__/CustomAuthenticator.test.tsx`
-    - Import `CustomAuthenticator` from `../CustomAuthenticator`
-    - Mock Amplify auth modules
-    - Include `renders without crashing` test
-    - Must pass `npm test -- --watchAll=false --testPathPattern=CustomAuthenticator`
-    - _Requirements: 5.4_
-
-  - [x] 8.5 Create `frontend/src/modules/webshop/__tests__/WebshopPage.test.tsx`
-    - Import `WebshopPage` from `../WebshopPage`
-    - Mock `useAuth` context, wrap in `ChakraProvider`
-    - Include `renders without crashing` test
-    - Must pass `npm test -- --watchAll=false --testPathPattern=WebshopPage`
-    - _Requirements: 5.4_
-
-  - [x] 8.6 Write property test: generated frontend test stubs are valid
-    - **Property 6: Generated frontend test stubs are valid**
-    - Verify each stub file passes TypeScript type-checking and contains `it()` or `test()` blocks
-    - Create `frontend/src/__tests__/stubValidity.test.ts`
-    - **Validates: Requirements 5.4**
-
-- [x] 9. Checkpoint — Test stubs
-  - Ensure all tests pass, ask the user if questions arise.
-  - Backend: run `pytest --collect-only backend/tests/unit/test_create_order.py backend/tests/unit/test_update_member.py backend/tests/unit/test_hdcn_cognito_admin.py backend/tests/unit/test_get_member_self.py backend/tests/unit/test_cognito_role_assignment.py backend/tests/unit/test_generate_order_pdf.py backend/tests/unit/test_create_member.py backend/tests/unit/test_export_members.py backend/tests/unit/test_admin_get_orders.py backend/tests/unit/test_admin_record_payment.py`
-  - Frontend: run `npm test -- --watchAll=false`
-
-- [x] 10. Update stale documentation
-  - [x] 10.1 Update `docs/README.md`
-    - Correct handler count from 51 → 85
-    - Add PresMeet feature section
-    - Add product unification feature section
-    - Update architecture diagram if present
-    - _Requirements: 7.1_
-
-  - [x] 10.2 Update `docs/webshop/image-management-system.md`
-    - Reflect product unification rework (March 2026)
-    - Update references to product/variant structure
-    - _Requirements: 7.2_
-
-  - [x] 10.3 Update `docs/development/test-environment-setup.md`
-    - Add setup instructions for new handlers (39 added since last update)
-    - Add PresMeet configuration section
-    - Add product variants setup
-    - _Requirements: 7.5_
-
-  - [x] 10.4 Update `docs/security/security-scan-report.md`
-    - Re-run scan metrics against current codebase (85 handlers)
-    - Update vulnerability counts and dependency audit
-    - _Requirements: 7.6_
-
-  - [x] 10.5 Update `docs/architecture/parameter-id-mapping-system.md`
-    - Reflect i18n changes to parameter handling
-    - Reflect product unification parameter changes
-    - _Requirements: 7.3_
-
-  - [x] 10.6 Mark `docs/deployment/role-migration-deployment-guide.md` as archived
-    - Add archive header noting migration completed January 2026
-    - Move to `docs/archive/` or add prominent deprecation notice
-    - _Requirements: 7.4_
-
-- [x] 11. Final checkpoint
-  - Ensure all tests pass, ask the user if questions arise.
-  - Backend: `sam build` (verify full Lambda packaging)
-  - Frontend: `npm run build:prod` (verify TypeScript compilation)
-  - Run full test suites: `pytest backend/tests/` and `npm test -- --watchAll=false`
-
-## Notes
-
-- Tasks marked with `*` are optional and can be skipped for faster MVP
-- Each task references specific requirements for traceability
-- Checkpoints ensure incremental validation
-- No changes to `template.yaml` — Lambda handler paths remain unchanged
-- Frontend split uses barrel re-export (`index.ts`) for backward compatibility
-- Backend `role_permissions.py` goes into the existing shared layer at `backend/layers/auth-layer/python/shared/`
-- Test stubs are designed to be immediately runnable (pass `pytest --collect-only` / `npm test`)
-- Property tests validate universal correctness properties from the design document
-- Unit tests validate specific examples and edge cases
-
-## Task Dependency Graph
-
-```json
-{
-  "waves": [
-    { "id": 0, "tasks": ["1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2"] },
-    { "id": 1, "tasks": ["1.6", "2.3", "2.4", "2.5", "2.6"] },
-    { "id": 2, "tasks": ["1.7", "2.7"] },
-    { "id": 3, "tasks": ["2.8", "2.9"] },
-    { "id": 4, "tasks": ["4.1"] },
-    { "id": 5, "tasks": ["4.2", "5.1"] },
-    { "id": 6, "tasks": ["4.3", "4.4", "5.2", "5.3"] },
-    {
-      "id": 7,
-      "tasks": [
-        "7.1",
-        "7.2",
-        "7.3",
-        "7.4",
-        "7.5",
-        "7.6",
-        "7.7",
-        "7.8",
-        "7.9",
-        "7.10",
-        "8.1",
-        "8.2",
-        "8.3",
-        "8.4",
-        "8.5"
-      ]
-    },
-    { "id": 8, "tasks": ["7.11", "8.6"] },
-    { "id": 9, "tasks": ["10.1", "10.2", "10.3", "10.4", "10.5", "10.6"] }
-  ]
-}
-```
+**Total estimated effort: ~21h**

@@ -1,147 +1,230 @@
-# Requirements Document
+# Code Quality Scan — June 2026
 
-## Introduction
+**Run date:** 2026-06-25  
+**Backend tests:** 28 failed / 1229 passed / 21 skipped (33 min)  
+**Frontend tests:** 35 failed / 1478 passed (26s)
 
-Monthly code quality scan for the H-DCN codebase (June 2026). This document captures findings from automated scanning of file lengths, test coverage gaps, duplicated code, and stale documentation. Findings are categorized by severity: files exceeding 1000 lines require refactoring tasks; files between 500–1000 lines are documented as warnings only.
+---
 
-## Glossary
+## 1. File Length Violations
 
-- **Scanner**: The automated code quality scanning process
-- **Handler**: A Python Lambda function entry point located in `backend/handler/<name>/app.py`
-- **Layer**: Shared Python code deployed as a Lambda Layer from `backend/layers/auth-layer/`
-- **Component**: A React TypeScript component file (`.tsx`) in `frontend/src/components/` or `frontend/src/modules/`
-- **Service**: A TypeScript service file (`.ts`) in `frontend/src/services/`
-- **Stale_Document**: A documentation file in `docs/` whose content no longer reflects the current state of the code it describes
-- **Dead_Code**: Unused functions, imports, variables, or duplicated modules that serve no runtime purpose
+### Backend (>500 lines, target 500, max 1000)
 
-## Requirements
+| Lines | File                                                            | Status                          |
+| ----- | --------------------------------------------------------------- | ------------------------------- |
+| 970   | `backend/handler/generate_order_pdf/tests/test_properties.py`   | ⚠️ Warning (test file — exempt) |
+| 940   | `backend/layers/auth-layer/python/shared/role_permissions.py`   | ⚠️ Warning                      |
+| 913   | `backend/handler/update_member/app.py`                          | ⚠️ Warning                      |
+| 909   | `backend/handler/hdcn_cognito_admin/role_operations.py`         | ⚠️ Warning                      |
+| 680   | `backend/layers/auth-layer/python/shared/product_validation.py` | ⚠️ Warning                      |
+| 630   | `backend/handler/generate_preparation_pdf/app.py`               | ⚠️ Warning                      |
+| 629   | `backend/handler/generate_order_pdf/app.py`                     | ⚠️ Warning                      |
+| 626   | `backend/handler/cognito_role_assignment/app.py`                | ⚠️ Warning                      |
+| 617   | `backend/layers/auth-layer/python/shared/auth_utils.py`         | ⚠️ Warning                      |
+| 581   | `backend/handler/pay_order/app.py`                              | ⚠️ Warning                      |
+| 573   | `backend/handler/mollie_webhook/app.py`                         | ⚠️ Warning                      |
+| 561   | `backend/handler/hdcn_cognito_admin/user_operations.py`         | ⚠️ Warning                      |
+| 542   | `backend/handler/admin_event_claims/app.py`                     | ⚠️ Warning                      |
+| 515   | `backend/handler/submit_order/app.py`                           | ⚠️ Warning                      |
+| 513   | `backend/handler/event_onboard/app.py`                          | ⚠️ Warning                      |
 
-### Requirement 1: File Length — Critical (Over 1000 Lines)
+### Frontend (>500 lines)
 
-**User Story:** As a developer, I want oversized files to be refactored into smaller modules, so that the codebase remains maintainable and navigable.
+| Lines | File                                                                 | Status                       |
+| ----- | -------------------------------------------------------------------- | ---------------------------- |
+| 763   | `frontend/src/modules/events/components/EventForm.tsx`               | ⚠️ Warning                   |
+| 761   | `frontend/src/modules/webshop/WebshopPage.tsx`                       | ⚠️ Warning                   |
+| 724   | `frontend/src/modules/products/components/ProductCard.tsx`           | ⚠️ Warning                   |
+| 721   | `frontend/src/pages/MembershipManagement.tsx`                        | ⚠️ Warning                   |
+| 706   | `frontend/src/components/NewMemberApplicationForm.tsx`               | ⚠️ Warning                   |
+| 704   | `frontend/src/components/MemberEditView.tsx`                         | ⚠️ Warning                   |
+| 701   | `frontend/src/utils/functionPermissions.ts`                          | ⚠️ Warning                   |
+| 696   | `frontend/src/modules/members/components/MemberEditModal.tsx`        | ⚠️ Warning                   |
+| 663   | `frontend/src/services/DataProcessingService.ts`                     | ⚠️ Warning                   |
+| 656   | `frontend/src/config/memberFields/modalConfig.ts`                    | ⚠️ Warning (config — exempt) |
+| 622   | `frontend/src/services/GoogleMailService.ts`                         | ⚠️ Warning                   |
+| 591   | `frontend/src/modules/eventBooking/admin/AdminClaimsManagement.tsx`  | ⚠️ Warning                   |
+| 591   | `frontend/src/components/MemberAdminTable.tsx`                       | ⚠️ Warning                   |
+| 576   | `frontend/src/modules/eventBooking/components/BookingWizard.tsx`     | ⚠️ Warning                   |
+| 562   | `frontend/src/modules/products/ProductManagementPage.tsx`            | ⚠️ Warning                   |
+| 560   | `frontend/src/modules/products/components/OrderItemFieldsEditor.tsx` | ⚠️ Warning                   |
+| 559   | `frontend/src/components/reporting/GoogleMailIntegration.tsx`        | ⚠️ Warning                   |
+| 548   | `frontend/src/modules/eventBooking/pages/EventRegisterPage.tsx`      | ⚠️ Warning                   |
+| 540   | `frontend/src/services/MemberExportService.ts`                       | ⚠️ Warning                   |
+| 519   | `frontend/src/components/reporting/AddressLabelGenerator.tsx`        | ⚠️ Warning                   |
+| 508   | `frontend/src/components/auth/CustomAuthenticator.tsx`               | ⚠️ Warning                   |
+| 507   | `frontend/src/modules/webshop/components/CheckoutModal.tsx`          | ⚠️ Warning                   |
+| 503   | `frontend/src/modules/eventBooking/admin/EventDashboard.tsx`         | ⚠️ Warning                   |
+| 502   | `frontend/src/components/reporting/AnalyticsSection.tsx`             | ⚠️ Warning                   |
 
-#### Acceptance Criteria
+**No files exceed 1000 lines** — no critical errors.
 
-1. WHEN the Scanner identifies `backend/handler/hdcn_cognito_admin/app.py` (2567 lines), THE Scanner SHALL flag the file as critical and generate a refactoring task to split it into sub-modules by Cognito operation category (user management, group management, password operations).
-2. WHEN the Scanner identifies `frontend/src/config/memberFields.ts` (2086 lines), THE Scanner SHALL flag the file as critical and generate a refactoring task to split field definitions into separate files per domain (personal fields, address fields, membership fields, club fields).
+---
 
-### Requirement 2: File Length — Warning (500–1000 Lines, Backend)
+## 2. Missing Tests
 
-**User Story:** As a developer, I want visibility into backend files approaching the maximum threshold, so that I can plan refactoring before they become critical.
+### Backend — 40 handlers without test files (out of 91 total = 44% uncovered)
 
-#### Acceptance Criteria
+Key gaps (non-trivial handlers without tests):
 
-1. THE Scanner SHALL document `backend/handler/update_member/app.py` (913 lines) as a warning-level finding.
-2. THE Scanner SHALL document `backend/handler/get_member_self/role_permissions.py` (889 lines) as a warning-level finding.
-3. THE Scanner SHALL document `backend/handler/update_member/role_permissions.py` (889 lines) as a warning-level finding.
-4. THE Scanner SHALL document `backend/handler/hdcn_cognito_admin/role_permissions.py` (882 lines) as a warning-level finding.
-5. THE Scanner SHALL document `backend/handler/update_member/auth_utils_local.py` (764 lines) as a warning-level finding.
-6. THE Scanner SHALL document `backend/layers/auth-layer/python/shared/product_validation.py` (680 lines) as a warning-level finding.
-7. THE Scanner SHALL document `backend/handler/create_order/app.py` (629 lines) as a warning-level finding.
-8. THE Scanner SHALL document `backend/handler/cognito_role_assignment/app.py` (626 lines) as a warning-level finding.
-9. THE Scanner SHALL document `backend/handler/generate_order_pdf/app.py` (606 lines) as a warning-level finding.
-10. THE Scanner SHALL document `backend/layers/auth-layer/python/shared/auth_utils.py` (608 lines) as a warning-level finding.
+- `admin_bulk_create_variants`, `admin_confirm_payment`, `admin_delete_product`
+- `admin_export_report`, `admin_generate_report`, `admin_get_payments`
+- `admin_get_products`, `admin_get_stock_movements`, `admin_lock_orders`
+- `admin_unlock_order`, `admin_update_order_status`
+- `cognito_post_authentication`, `cognito_pre_signup`, `cognito_user_migration`
+- `create_membership`, `delete_event`, `delete_member`, `delete_membership`, `delete_payment`, `delete_product`
+- `get_club_registry`, `get_event_byid`, `get_events`, `get_member_byid`
+- `get_member_payments`, `get_membership_byid`, `get_memberships`
+- `get_order_byid`, `get_payment_byid`, `get_payments`
+- `insert_product`, `s3_file_manager`
+- `update_membership`, `update_order_status`, `update_parameters`, `update_payment`
+- `upload_image`, `upload_registry_logo`
 
-### Requirement 3: File Length — Warning (500–1000 Lines, Frontend)
+### Frontend — Not scanned (too many components to enumerate; focus on test failures instead)
 
-**User Story:** As a developer, I want visibility into frontend files approaching the maximum threshold, so that I can plan component decomposition proactively.
+---
 
-#### Acceptance Criteria
+## 3. Dead Code
 
-1. THE Scanner SHALL document `frontend/src/pages/MembershipManagement.tsx` (721 lines) as a warning-level finding.
-2. THE Scanner SHALL document `frontend/src/modules/webshop/WebshopPage.tsx` (711 lines) as a warning-level finding.
-3. THE Scanner SHALL document `frontend/src/components/NewMemberApplicationForm.tsx` (706 lines) as a warning-level finding.
-4. THE Scanner SHALL document `frontend/src/components/MemberEditView.tsx` (704 lines) as a warning-level finding.
-5. THE Scanner SHALL document `frontend/src/components/MemberAdminTable.tsx` (699 lines) as a warning-level finding.
-6. THE Scanner SHALL document `frontend/src/modules/members/components/MemberEditModal.tsx` (696 lines) as a warning-level finding.
-7. THE Scanner SHALL document `frontend/src/utils/functionPermissions.ts` (695 lines) as a warning-level finding.
-8. THE Scanner SHALL document `frontend/src/modules/products/components/AdvancedImageEditor.tsx` (668 lines) as a warning-level finding.
-9. THE Scanner SHALL document `frontend/src/services/DataProcessingService.ts` (663 lines) as a warning-level finding.
-10. THE Scanner SHALL document `frontend/src/modules/products/components/ProductCard.tsx` (661 lines) as a warning-level finding.
-11. THE Scanner SHALL document `frontend/src/modules/products/components/ImageEditor.tsx` (629 lines) as a warning-level finding.
-12. THE Scanner SHALL document `frontend/src/services/GoogleMailService.ts` (622 lines) as a warning-level finding.
-13. THE Scanner SHALL document `frontend/src/modules/presmeet/components/AdminDashboard.tsx` (588 lines) as a warning-level finding.
-14. THE Scanner SHALL document `frontend/src/components/reporting/GoogleMailIntegration.tsx` (559 lines) as a warning-level finding.
-15. THE Scanner SHALL document `frontend/src/modules/products/components/OrderItemFieldsEditor.tsx` (559 lines) as a warning-level finding.
-16. THE Scanner SHALL document `frontend/src/components/reporting/AddressLabelGenerator.tsx` (519 lines) as a warning-level finding.
-17. THE Scanner SHALL document `frontend/src/components/auth/CustomAuthenticator.tsx` (508 lines) as a warning-level finding.
-18. THE Scanner SHALL document `frontend/src/components/reporting/AnalyticsSection.tsx` (502 lines) as a warning-level finding.
+### Vulture findings (≥80% confidence)
 
-### Requirement 4: Missing Tests — Backend Handlers
+| File                                                          | Line | Issue                                      |
+| ------------------------------------------------------------- | ---- | ------------------------------------------ |
+| `backend/handler/generate_order_pdf/tests/test_logo_fetch.py` | 3    | unused import `pytest`                     |
+| `backend/handler/generate_order_pdf/tests/test_logo_fetch.py` | 5    | unused import `ReadTimeoutError`           |
+| `backend/handler/generate_order_pdf/tests/test_properties.py` | 8    | unused import `pytest`                     |
+| `backend/handler/generate_order_pdf/tests/test_properties.py` | 772  | unused variable `mock_cors`                |
+| `backend/handler/generate_order_pdf/tests/test_properties.py` | 772  | unused variable `mock_log`                 |
+| `backend/handler/hdcn_cognito_admin/app.py`                   | 60   | unused import `check_role_permission`      |
+| `backend/handler/hdcn_cognito_admin/app.py`                   | 60   | unused import `get_role_summary`           |
+| `backend/handler/hdcn_cognito_admin/app.py`                   | 60   | unused import `get_user_field_permissions` |
 
-**User Story:** As a developer, I want all backend handlers to have at minimum a unit test stub, so that regressions can be caught before deployment.
+### Stale migration templates (parse errors — broken/incomplete code)
 
-#### Acceptance Criteria
+These files have syntax errors and are likely leftover scaffolding:
 
-1. WHEN the Scanner identifies a handler without a corresponding `test_*.py` file in `backend/tests/unit/` or `backend/tests/integration/`, THE Scanner SHALL flag the handler as missing test coverage.
-2. THE Scanner SHALL report 67 out of 85 handlers (79%) lack dedicated test files. The untested handlers include:
-   - Admin webshop handlers (16): `admin_add_stock`, `admin_bulk_create_variants`, `admin_create_variant`, `admin_export_report`, `admin_generate_report`, `admin_get_orders`, `admin_get_payments`, `admin_get_products`, `admin_get_report`, `admin_get_stock_movements`, `admin_lock_orders`, `admin_record_payment`, `admin_unlock_order`, `admin_update_order_status`, `admin_update_variant`, `assign_club`
-   - Cart/Order handlers (5): `clear_cart`, `get_cart`, `get_customer_orders`, `get_order_byid`, `get_orders`
-   - Cognito handlers (5): `cognito_post_authentication`, `cognito_post_confirmation`, `cognito_pre_signup`, `cognito_role_assignment`, `cognito_user_migration`
-   - Member handlers (8): `create_member`, `delete_member`, `export_members`, `get_member_byid`, `get_member_self`, `hdcn_cognito_admin`, `update_member`, `get_member_payments`
-   - Event handlers (4): `create_event`, `delete_event`, `get_event_byid`, `get_events`
-   - Membership handlers (5): `create_membership`, `delete_membership`, `get_membership_byid`, `get_memberships`, `update_membership`
-   - Payment handlers (5): `create_payment`, `delete_payment`, `get_payment_byid`, `get_payments`, `update_payment`
-   - Product handlers (4): `delete_product`, `get_product_byid`, `insert_product`, `scan_product`
-   - PresMeet handlers (5): `get_presmeet_config`, `get_presmeet_report`, `generate_presmeet_report`, `lock_presmeet_orders`, `manual_presmeet_payment`
-   - Other handlers (10): `create_order`, `generate_order_pdf`, `s3_file_manager`, `update_event`, `update_order_status`, `update_parameters`, `upload_image`, `get_club_registry`, `create_presmeet_payment`, `update_member`
-3. THE Scanner SHALL generate test stub tasks for the 10 highest-priority untested handlers: `create_order`, `update_member`, `hdcn_cognito_admin`, `get_member_self`, `cognito_role_assignment`, `generate_order_pdf`, `create_member`, `export_members`, `admin_get_orders`, `admin_record_payment`.
+- `backend/handler/delete_payment/delete_payment_migration_template.py`
+- `backend/handler/get_customer_orders/get_customer_orders_migration_template.py`
+- `backend/handler/get_orders/get_orders_migration_template.py`
+- `backend/handler/get_order_byid/get_order_byid_migration_template.py`
+- `backend/handler/hdcn_cognito_admin/hdcn_cognito_admin_migration_template.py`
+- `backend/handler/update_member/update_member_migration_template.py`
+- `backend/handler/update_order_status/update_order_status_migration_template.py`
+- `backend/handler/update_payment/update_payment_migration_template.py`
+- `backend/handler/update_product/update_product_migration_template.py`
 
-### Requirement 5: Missing Tests — Frontend Components
+### Null-byte `__init__.py` files (corrupted)
 
-**User Story:** As a developer, I want critical frontend components to have test coverage, so that UI regressions are detected before release.
+- `backend/handler/delete_member/__init__.py`
+- `backend/handler/get_events/__init__.py`
+- `backend/handler/get_members/__init__.py`
+- `backend/handler/get_memberships/__init__.py`
+- `backend/handler/get_member_byid/__init__.py`
+- `backend/handler/get_member_payments/__init__.py`
+- `backend/handler/get_orders/__init__.py`
+- `backend/handler/get_order_byid/__init__.py`
+- `backend/handler/update_order_status/__init__.py`
 
-#### Acceptance Criteria
+---
 
-1. THE Scanner SHALL report 29 out of 40 components in `frontend/src/components/` (73%) lack test files.
-2. THE Scanner SHALL report 75 out of 75 module components in `frontend/src/modules/` lack co-located test files.
-3. THE Scanner SHALL report 2 frontend services lack test files: `googleAuthService.ts` and `MemberService.ts` (note: `DataProcessingService.example.ts` is an example file, not a service requiring tests).
-4. THE Scanner SHALL generate test stub tasks for the 5 highest-priority untested components: `MemberAdminTable.tsx`, `MemberEditView.tsx`, `NewMemberApplicationForm.tsx`, `CustomAuthenticator.tsx`, `WebshopPage.tsx`.
+## 4. Stale Documentation
 
-### Requirement 6: Dead Code — Duplicated Role Permissions Modules
+### Likely stale (last updated Dec 2025 – Jan 2026, 6+ months old)
 
-**User Story:** As a developer, I want duplicated code to be consolidated into the shared layer, so that maintenance burden is reduced and behavior stays consistent.
+| Last Modified | File                                                    | Risk                                 |
+| ------------- | ------------------------------------------------------- | ------------------------------------ |
+| 2025-12-30    | `docs/architecture/bucket-separation-strategy.md`       | May not reflect current S3 layout    |
+| 2025-12-30    | `docs/data-management/image-recovery-plan.md`           | Completed action — archive candidate |
+| 2025-12-30    | `docs/data-management/image-restoration-completed.md`   | Archive candidate                    |
+| 2025-12-30    | `docs/deployment/powershell-tips.md`                    | Low risk                             |
+| 2025-12-30    | `docs/fixes/membership-dropdown-parameter-table-fix.md` | Archive candidate                    |
+| 2025-12-30    | `docs/fixes/parameter-system-fix.md`                    | Archive candidate                    |
+| 2025-12-30    | `docs/infrastructure/custom-domain-setup.md`            | Low risk (infra rarely changes)      |
+| 2026-01-18    | `docs/FOLDER_REORGANIZATION_2026-01-18.md`              | Archive candidate                    |
 
-#### Acceptance Criteria
+### Archive folder (all Jan 2026 or older)
 
-1. WHEN the Scanner identifies `role_permissions.py` duplicated in 3 handler directories (`get_member_self`, `hdcn_cognito_admin`, `update_member`) with 882–889 lines each, THE Scanner SHALL flag the duplication and generate a consolidation task.
-2. WHEN the Scanner identifies `auth_utils_local.py` (764 lines) in `backend/handler/update_member/`, THE Scanner SHALL flag the file as a local copy that should use the shared layer `backend/layers/auth-layer/python/shared/auth_utils.py` instead.
+The entire `docs/archive/` folder (8 files) is explicitly archival — no action needed.
 
-### Requirement 7: Stale Documentation
+---
 
-**User Story:** As a developer, I want documentation to reflect the current state of the system, so that onboarding and troubleshooting remain effective.
+## 5. Broken/Stale Tests
 
-#### Acceptance Criteria
+### Backend — 28 failures
 
-1. WHEN the Scanner identifies `docs/README.md` (last updated 2026-01-10) stating "51 Lambda functions" while the codebase has 85 handler directories, THE Scanner SHALL flag the document as stale and generate an update task.
-2. WHEN the Scanner identifies `docs/webshop/image-management-system.md` (last updated 2025-12-30) and the webshop product system was significantly reworked in the product unification feature (March 2026), THE Scanner SHALL flag the document as stale and generate an update task.
-3. WHEN the Scanner identifies `docs/architecture/parameter-id-mapping-system.md` (last updated 2025-12-30) and parameter handling has changed with the i18n and product unification features (2026), THE Scanner SHALL flag the document as stale.
-4. WHEN the Scanner identifies `docs/deployment/role-migration-deployment-guide.md` (last updated 2026-01-10) and the role system was migrated to the new permission model by January 2026, THE Scanner SHALL flag the document as potentially archivable.
-5. WHEN the Scanner identifies `docs/development/test-environment-setup.md` (last updated 2025-12-29) and 39 new handlers plus PresMeet and product unification features have been added since, THE Scanner SHALL flag the document as stale and generate an update task.
-6. WHEN the Scanner identifies `docs/security/security-scan-report.md` (last updated 2025-12-29) and the codebase has changed significantly since, THE Scanner SHALL flag the document as stale and generate an update task.
+**Root cause cluster A: `scan_product` handler — ResourceNotFoundException (25 failures)**
 
-## Summary of Findings
+Tests: `test_scan_product.py`, `test_property_scan_product.py`, `test_scan_product_bug_condition.py`, `test_scan_product_preservation.py`
 
-| Category                 | Critical                                           | Warning                  | Total Findings                          |
-| ------------------------ | -------------------------------------------------- | ------------------------ | --------------------------------------- |
-| File Length (Backend)    | 1 file (2567 lines)                                | 9 files (606–913 lines)  | 10                                      |
-| File Length (Frontend)   | 1 file (2086 lines)                                | 18 files (502–721 lines) | 19                                      |
-| Missing Tests (Backend)  | —                                                  | —                        | 67 handlers untested                    |
-| Missing Tests (Frontend) | —                                                  | —                        | 29 components + 75 modules + 2 services |
-| Dead Code / Duplication  | 4 files (role_permissions ×3, auth_utils_local ×1) | —                        | 4                                       |
-| Stale Documentation      | —                                                  | —                        | 6 documents                             |
+Error: `DynamoDB error in scan_product: ResourceNotFoundException - Requested resource not found`  
+→ The moto mock table is not created/found. Tests access `body[0]` which fails as `KeyError: 0` because the response body is empty (handler returned 500).
 
-### Action Items (Tasks to Generate)
+**Diagnosis: Test bug** — The handler's DynamoDB table name likely changed (possibly from `Producten` to env-var based), and these tests don't set up the mock table correctly or load the handler outside `mock_aws()` context.
 
-| Priority | Category      | Action                                                      |
-| -------- | ------------- | ----------------------------------------------------------- |
-| P1       | File Length   | Refactor `hdcn_cognito_admin/app.py` (2567 lines)           |
-| P1       | File Length   | Refactor `frontend/src/config/memberFields.ts` (2086 lines) |
-| P2       | Dead Code     | Consolidate 3× `role_permissions.py` into shared layer      |
-| P2       | Dead Code     | Remove `auth_utils_local.py` and use shared layer           |
-| P3       | Missing Tests | Create test stubs for 10 priority backend handlers          |
-| P3       | Missing Tests | Create test stubs for 5 priority frontend components        |
-| P4       | Stale Docs    | Update `docs/README.md` (handler count, features)           |
-| P4       | Stale Docs    | Update `docs/webshop/image-management-system.md`            |
-| P4       | Stale Docs    | Update `docs/development/test-environment-setup.md`         |
-| P4       | Stale Docs    | Update `docs/security/security-scan-report.md`              |
+**Root cause cluster B: `test_create_default_variant_creates_correct_record` (1 failure)**
+
+Error: `KeyError: 'price'`  
+Test asserts `variant['price'] is None` but the field was renamed to `prijs` (Dutch canonical name per field registry).
+
+**Diagnosis: Stale test** — Test references old field name `price` that was renamed to `prijs`.
+
+**Root cause cluster C: `test_normalized_response_includes_all_required_fields` (2 failures from property tests)**
+
+Error: `assert 500 == 200` — Same underlying ResourceNotFoundException.
+
+**Diagnosis: Same as cluster A** — test infrastructure issue.
+
+---
+
+### Frontend — 35 failures across 8 test suites
+
+**Cluster 1: memberReportingIntegration (2 files, ~15 tests)**
+
+Error: `TypeError: Cannot read properties of undefined (reading 'length')` at `MemberDataService.ts:116`  
+→ The mock doesn't return the expected response shape. Service tries to access `.length` on undefined.
+
+**Diagnosis: Test bug** — Mock response shape doesn't match current `MemberDataService.fetchMembers()` implementation (likely the response wrapper changed).
+
+**Cluster 2: VariantEditModal (6 tests)**
+
+Error: `Unable to find an element with the placeholder text of: Bijv. Maat, Kleur...`  
+→ Component uses i18n translation keys for placeholders. The test doesn't set up i18n, so translated placeholders don't render.
+
+**Diagnosis: Test bug** — Missing i18n provider in test setup, or placeholder text changed to use translation keys instead of hardcoded Dutch strings.
+
+**Cluster 3: EventSelector (6 tests)**
+
+Errors:
+
+- `Unable to find an element with the text: Webshop (algemeen)` — Text changed or uses i18n
+- Checkbox checked state mismatches — Event ordering/selection logic changed
+- `onChange` called with wrong event IDs — Component implementation changed
+
+**Diagnosis: Stale test** — The EventSelector component was refactored (likely the `event_id` removal spec). Tests assert old behavior.
+
+**Cluster 4: ProductCard (1 test)**
+
+Error: `Unable to find an element with the text: Varianten`  
+→ The "Varianten" section header text may now use a translation key or the rendering condition changed.
+
+**Diagnosis: Test bug** — Missing i18n setup or component conditionally renders differently now.
+
+**Cluster 5: WebWorkerManager (1 test)**
+
+Error: `Worker initialization failed`  
+→ Web Workers aren't available in jsdom test environment.
+
+**Diagnosis: Test bug** — Missing Worker mock in test setup.
+
+**Cluster 6: AnalyticsService (4 tests)**
+
+Error: Same `MemberDataService` TypeError propagating through analytics calculations.
+
+**Diagnosis: Test bug** — Same root cause as Cluster 1 (mock response shape).
+
+**Cluster 7: PresMeetPage.preservation (1 test)**
+
+Error: `Unable to find an element by: [data-testid="onboarding-flow"]` — shows spinner instead.  
+→ The async 403 handling isn't completing before assertion.
+
+**Diagnosis: Test bug** — Missing `waitFor` or `act()` wrapper; async state update not awaited.
