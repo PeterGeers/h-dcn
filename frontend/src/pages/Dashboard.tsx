@@ -6,7 +6,7 @@ import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { membershipService } from '../utils/membershipService';
 import { useAuth } from '../context/AuthProvider';
-import { presmeetApi } from '../modules/presmeet/services/presmeetApi';
+import { eventBookingApi } from '../modules/eventBooking/services/eventBookingApi';
 
 /**
  * EventBookingCard — Displays a card for each event the user has access to.
@@ -21,13 +21,13 @@ function EventBookingCard({ navigate }: { navigate: (path: string) => void }) {
     let cancelled = false;
     async function fetchEvents() {
       try {
-        const allEvents = await presmeetApi.getEvent();
+        const allEvents = await eventBookingApi.getEvent();
         if (!cancelled) {
-          // Show open events preferentially
+          // Show published events, exclude webshop pseudo-event
           const relevantEvents = allEvents.filter(
-            (e) => e.status === 'open'
+            (e: any) => e.status === 'published' && e.event_type !== 'webshop'
           );
-          setEvents(relevantEvents.length > 0 ? relevantEvents : allEvents.slice(0, 3));
+          setEvents(relevantEvents);
         }
       } catch (err) {
         // If events can't be loaded, show nothing
@@ -346,12 +346,12 @@ function Dashboard() {
             />
           </FunctionGuard>
           
-          {/* Event Booking - For all members with hdcnLeden, shows events user has access to */}
+          {/* Event Booking - For members without event admin roles */}
           <FunctionGuard 
             user={functionGuardUser} 
             requiredRoles={['hdcnLeden', 'event_participant']}
           >
-            <EventBookingCard navigate={navigate} />
+            {!hasAdminRoles && <EventBookingCard navigate={navigate} />}
           </FunctionGuard>
           
           {/* Administrative modules - Only for users with specific admin roles */}
@@ -359,8 +359,6 @@ function Dashboard() {
           {/* Members Admin - Only for users with member management roles */}
           <FunctionGuard 
             user={functionGuardUser} 
-            functionName="members" 
-            action="read"
             requiredRoles={['Members_Read', 'Members_CRUD', 'System_User_Management']}
           >
             <AppCard 
@@ -379,8 +377,6 @@ function Dashboard() {
           {/* Events Admin - Only for users with event management roles */}
           <FunctionGuard 
             user={functionGuardUser} 
-            functionName="events" 
-            action="read"
             requiredRoles={['Events_Read', 'Events_CRUD', 'System_User_Management']}
           >
             <AppCard 

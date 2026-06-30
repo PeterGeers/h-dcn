@@ -71,6 +71,12 @@ Parameters:
     Type: String
     Default: "2025-12-28"
   
+  JwtSecretBase:
+    Type: String
+    NoEcho: true
+    Default: "h-dcn-event-session-secret-default"
+    Description: "Base secret for signing event session tokens (JWT). Override via parameter overrides in deploy."
+
   # Email template customization parameters
   OrganizationName:
     Type: String
@@ -148,6 +154,13 @@ Parameters:
     Default: "Counters"
     Description: "DynamoDB table name for atomic counters (order numbers, invoice numbers). Managed externally."
 
+  # Closed Community Booking
+  SessionTokenSecret:
+    Type: String
+    NoEcho: true
+    Description: "HMAC secret for signing event session tokens (verify-password flow)"
+    Default: "h-dcn-event-session-default-secret"
+
 Mappings:
   StageConfig:
     prod:
@@ -174,7 +187,7 @@ Globals:
     TracingEnabled: True
     Cors:
       AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language,x-session-token'"
       AllowOrigin: !Sub
         - "'${Origin}'"
         - Origin: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
@@ -393,9 +406,14 @@ Resources:
       OpenApiVersion: '3.0'
       BinaryMediaTypes:
         - application/pdf
+      MethodSettings:
+        - HttpMethod: POST
+          ResourcePath: /events/{event_id}/verify-password
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 10
       Cors:
         AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE,PATCH'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Enhanced-Groups,X-User-Email,x-requested-with,Accept-Language,x-session-token'"
         AllowOrigin: !Sub
           - "'${Origin}'"
           - Origin: !FindInMap [StageConfig, !Ref Stage, CorsOrigin]
@@ -472,6 +490,23 @@ Resources:
                 Condition:
                   StringLike:
                     "s3:prefix": "analytics/*"
+        - PolicyName: S3RegistryReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucket}/events/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucket}"
+                Condition:
+                  StringLike:
+                    "s3:prefix": "events/*"
         - PolicyName: CognitoReadAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -507,6 +542,29 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
+        - PolicyName: SESEmailSendAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: "*"
+        - PolicyName: S3EmailTemplatesReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "${EmailTemplatesBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt EmailTemplatesBucket.Arn
 
   # IAM Role for Cognito Admin access
   CognitoAdminRole:
@@ -552,6 +610,65 @@ Resources:
                 Resource: 
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}/*"
+
+  # IAM Role for Event Onboard Lambda (DynamoDB + Cognito Admin + S3 Registry)
+  EventOnboardRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
+        - PolicyName: CognitoAdminAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminListGroupsForUser
+                  - cognito-idp:ListUsers
+                Resource:
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
+        - PolicyName: S3RegistryReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucket}/events/*"
 
   InsertProductFunction:
     Type: AWS::Serverless::Function
@@ -948,7 +1065,6 @@ Resources:
       Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
-          DYNAMODB_TABLE: Events
           EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         GetEvents:
@@ -1192,13 +1308,20 @@ Resources:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
-        ManageDelegates:
+        ManageDelegatesPost:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
             Path: /booking/{id}/delegates
             Method: post
+        ManageDelegatesDelete:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/delegates
+            Method: delete
 
   # --- Unified Order: Lock Orders (admin — bulk lock by source_id) ---
   LockOrdersFunction:
@@ -1242,6 +1365,28 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /admin/booking/{id}/unlock
+            Method: post
+
+  # --- Unified Order: Batch Unlock Orders (admin — bulk unlock by source_id) ---
+  BatchUnlockOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/lock_orders
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+      Events:
+        BatchUnlockOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/booking/unlock
             Method: post
 
   # --- Unified Order: Manage Event Access (admin — grant/revoke access) ---
@@ -1307,6 +1452,28 @@ Resources:
             Path: /events/public/{slug}
             Method: get
 
+  # --- Verify Event Password (NO auth required, rate-limited) ---
+  VerifyEventPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/verify_event_password
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          JWT_SECRET_BASE: !Ref JwtSecretBase
+      Events:
+        VerifyEventPassword:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}/verify-password
+            Method: post
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1369,6 +1536,8 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
           PRODUCTEN_TABLE_NAME: !Ref Table
           COUNTERS_TABLE_NAME: !Ref CountersTable
       Events:
@@ -1532,6 +1701,7 @@ Resources:
                 Action:
                   - dynamodb:GetItem
                   - dynamodb:Query
+                  - dynamodb:Scan
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
@@ -1544,7 +1714,26 @@ Resources:
                   - dynamodb:GetItem
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
-        - PolicyName: S3LogoRead
+        - PolicyName: DynamoDBEventsRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
+        - PolicyName: DynamoDBProductenRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}/index/*"
+        - PolicyName: S3DataRead
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -1552,7 +1741,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub "arn:aws:s3:::${DataBucket}/imagesWebsite/*"
+                  - !Sub "arn:aws:s3:::${DataBucket}/*"
 
   # Event Management Functions
   GetEventByIdFunction:
@@ -1606,7 +1795,7 @@ Resources:
       Role: !GetAtt DynamoDBRole.Arn
       Environment:
         Variables:
-          DYNAMODB_TABLE: Events
+          EVENTS_TABLE_NAME: !Ref EventsTable
       Events:
         DeleteEvent:
           Type: Api
@@ -1765,6 +1954,30 @@ Resources:
             Path: /admin/orders/{id}/confirm-payment
             Method: post
 
+  # --- Admin: Export Orders CSV (Closed Community Booking) ---
+  AdminExportOrdersCsvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_export_orders_csv
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminExportOrdersCsv:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/export-csv
+            Method: get
+
   # --- Get Club Registry (Onboarding) ---
   GetClubRegistryFunction:
     Type: AWS::Serverless::Function
@@ -1786,6 +1999,129 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /presmeet/clubs
+            Method: get
+
+  # --- Get Event Registry (Closed Community Booking) ---
+  GetEventRegistryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_event_registry
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+          JWT_SECRET_BASE: !Ref JwtSecretBase
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        GetEventRegistry:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}/registry
+            Method: get
+
+  # --- Event Onboard (Closed Community Booking — atomic registration) ---
+  EventOnboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/event_onboard
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt EventOnboardRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+          JWT_SECRET_BASE: !Ref JwtSecretBase
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        EventOnboard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events/{event_id}/onboard
+            Method: post
+
+  # --- Get Product Sold Counts (Closed Community Booking) ---
+  GetProductSoldCountsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_product_sold_counts
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+      Events:
+        GetProductSoldCounts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /products/sold-counts
+            Method: get
+
+  # --- Admin Event Dashboard (Closed Community Booking) ---
+  AdminEventDashboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_event_dashboard
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+      Events:
+        AdminEventDashboard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/dashboard
+            Method: get
+
+  # --- Admin Preparation PDF (Closed Community Booking) ---
+  GeneratePreparationPdfFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerTag: generate-preparation-pdf
+      DockerContext: .
+      Dockerfile: handler/generate_preparation_pdf/Dockerfile
+    Properties:
+      PackageType: Image
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt PdfGeneratorRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+      Events:
+        GeneratePreparationPdf:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/preparation-pdf
             Method: get
 
   # --- Assign Club (Onboarding) ---
@@ -1811,11 +2147,11 @@ Resources:
             Path: /presmeet/clubs/assign
             Method: post
 
-  # --- Upload Club Logo ---
-  UploadClubLogoFunction:
+  # --- Upload Registry Logo ---
+  UploadRegistryLogoFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: handler/upload_club_logo
+      CodeUri: handler/upload_registry_logo
       Handler: app.lambda_handler
       Runtime: python3.11
       Timeout: 30
@@ -1829,11 +2165,11 @@ Resources:
           FRONTEND_BUCKET_NAME: "h-dcn-frontend-506221081911"
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
-        UploadClubLogo:
+        UploadRegistryLogo:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /presmeet/logo
+            Path: /events/{event_id}/registry-logo
             Method: post
 
   # ============================================================
@@ -2336,6 +2672,72 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /admin/reports/export
             Method: get
+
+  # --- Admin: Event Claims Management (Closed Community Booking) ---
+  AdminEventClaimsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_event_claims
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          REGISTRY_BUCKET_NAME: !Ref DataBucket
+      Events:
+        AdminEventClaimsGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/claims
+            Method: get
+        AdminEventClaimsPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/claims/{row_id}
+            Method: post
+        AdminEventClaimsDelete:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/events/{event_id}/claims/{row_id}
+            Method: delete
+
+  # --- Send Delegate Invitation Email (Closed Community Booking) ---
+  SendDelegateInvitationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/send_delegate_invitation
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
+          SENDER_EMAIL: !Ref OrganizationEmail
+          PORTAL_BASE_URL: !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
+          ORGANIZATION_NAME: !Ref OrganizationName
+          ORGANIZATION_WEBSITE: !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
+          ORGANIZATION_EMAIL: !Ref OrganizationEmail
+          ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
+      Events:
+        SendDelegateInvitation:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /booking/{id}/invite-email
+            Method: post
 
 Outputs:
   ApiUrl:

@@ -57,6 +57,7 @@ jest.mock('@chakra-ui/icons', () => ({
   DeleteIcon: () => <span data-testid="delete-icon" />,
   CheckIcon: () => <span data-testid="check-icon" />,
   AddIcon: () => <span data-testid="add-icon" />,
+  CopyIcon: () => <span data-testid="copy-icon" />,
 }));
 
 // Mock Formik — render children with mock form context
@@ -128,12 +129,6 @@ jest.mock('../components/VariantEditModal', () => ({
   VariantEditModal: () => <div data-testid="variant-edit-modal" />,
 }));
 
-// Mock EventSelectorSection
-jest.mock('../components/EventSelectorSection', () => ({
-  __esModule: true,
-  default: () => <div data-testid="event-selector-section">EventSelectorSection</div>,
-}));
-
 // Mock OrderItemFieldsEditor
 jest.mock('../components/OrderItemFieldsEditor', () => ({
   __esModule: true,
@@ -169,7 +164,6 @@ const mockParentProduct: Product = {
   images: ['https://s3.example.com/image1.jpg'],
   is_parent: true,
   active: true,
-  event_ids: [],
 };
 
 const defaultProps = {
@@ -204,7 +198,7 @@ describe('ProductCard Integration', () => {
     it('renders "Varianten" section header for parent products', () => {
       render(<ProductCard {...defaultProps} />);
 
-      expect(screen.getByText('Varianten')).toBeInTheDocument();
+      expect(screen.getByText(/^Varianten\s*\(\d+\)$/)).toBeInTheDocument();
     });
   });
 

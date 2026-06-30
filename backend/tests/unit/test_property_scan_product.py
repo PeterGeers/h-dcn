@@ -5,9 +5,9 @@ Property-Based Tests for scan_product handler (Properties 6 & 7)
 
 Property 6: scan_product response uses canonical Dutch fields
     For any product record where is_parent is true or absent, the response SHALL
-    include product_id, naam, artikelcode, prijs, variant_schema, is_parent,
-    event_ids, active, groep, subgroep, images — using legacy 'name' as fallback
-    for 'naam' and legacy 'price' as fallback for 'prijs'.
+    include product_id, naam, artikelcode, prijs, is_parent, active, groep,
+    subgroep, images, order_item_fields, purchase_rules — using legacy 'name'
+    as fallback for 'naam' and legacy 'price' as fallback for 'prijs'.
 
 Property 7: scan_product excludes variant and migration records
     The scan_product handler SHALL return only records where is_parent is true or
@@ -244,9 +244,9 @@ class TestProperty6ScanProductNormalization:
 
     Property 6: For any product record where is_parent is true or absent,
     the response SHALL include product_id, naam, artikelcode, prijs,
-    variant_schema, is_parent, event_ids, active, groep, subgroep, images —
-    using legacy 'name' as fallback for 'naam' and legacy 'price' as fallback
-    for 'prijs'.
+    is_parent, active, groep, subgroep, images, order_item_fields,
+    purchase_rules — using legacy 'name' as fallback for 'naam' and legacy
+    'price' as fallback for 'prijs'.
     """
 
     @given(product=parent_product_strategy())
@@ -255,7 +255,7 @@ class TestProperty6ScanProductNormalization:
         """
         For any parent product record, the normalized response contains all
         required canonical Dutch fields: product_id, naam, artikelcode, prijs,
-        variant_schema, is_parent, event_ids, active, groep, subgroep, images.
+        is_parent, active, groep, subgroep, images, order_item_fields, purchase_rules.
         """
         if 'app' in sys.modules:
             del sys.modules['app']
@@ -286,8 +286,8 @@ class TestProperty6ScanProductNormalization:
 
             # All required canonical Dutch fields must be present as keys
             required_fields = ['product_id', 'naam', 'artikelcode', 'prijs',
-                               'variant_schema', 'is_parent', 'event_ids', 'active',
-                               'groep', 'subgroep', 'images']
+                               'is_parent', 'active', 'groep', 'subgroep',
+                               'images', 'order_item_fields', 'purchase_rules']
             for field in required_fields:
                 assert field in result, f"Field '{field}' must be present in response"
 
@@ -422,8 +422,8 @@ class TestProperty6ScanProductNormalization:
 
             # All required canonical Dutch fields present
             required_fields = ['product_id', 'naam', 'artikelcode', 'prijs',
-                               'variant_schema', 'is_parent', 'event_ids', 'active',
-                               'groep', 'subgroep', 'images']
+                               'is_parent', 'active', 'groep', 'subgroep',
+                               'images', 'order_item_fields', 'purchase_rules']
             for field in required_fields:
                 assert field in result, f"Field '{field}' must be in response"
 

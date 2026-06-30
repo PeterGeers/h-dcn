@@ -11,6 +11,39 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+// Mock react-i18next — return Dutch translations for keys used in tests
+const translationMap: Record<string, string> = {
+  'variant_modal.axis_name_placeholder': 'Bijv. Maat, Kleur...',
+  'variant_modal.axis_select_placeholder': 'Kies een as...',
+  'variant_modal.axis_new_option': 'Nieuw...',
+  'variant_modal.axis_new_placeholder': 'Nieuwe as-naam...',
+  'variant_modal.value_placeholder': 'Bijv. S, Rood, 42...',
+  'variant_modal.add_title': 'Variant toevoegen',
+  'variant_modal.edit_title': 'Variant bewerken',
+  'variant_modal.btn_create': 'Aanmaken',
+  'variant_modal.btn_create_loading': 'Aanmaken...',
+  'variant_modal.btn_save': 'Opslaan',
+  'variant_modal.btn_cancel': 'Annuleren',
+  'variant_modal.toast_duplicate': 'Variant bestaat al',
+  'variant_modal.toast_fields_required': 'Velden verplicht',
+  'variant_modal.toast_fields_required_desc': 'Vul een as-naam en waarde in.',
+};
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, any>) => {
+      const value = translationMap[key] || key;
+      if (params) {
+        return Object.entries(params).reduce(
+          (str, [k, v]) => str.replace(`{{${k}}}`, String(v)),
+          value
+        );
+      }
+      return value;
+    },
+    i18n: { language: 'nl', changeLanguage: jest.fn() },
+  }),
+}));
+
 // Mock toast
 const mockToast = jest.fn();
 

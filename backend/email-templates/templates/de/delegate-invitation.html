@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ORGANIZATION_SHORT_NAME}} — Einladung für {{EVENT_NAME}}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Du wurdest zu {{EVENT_NAME}} eingeladen</h2>
+
+        <p>Hallo,</p>
+
+        <p><strong>{{INVITER_NAME}}</strong> hat dich als Co-Delegierte(r) für
+        <strong>{{ROW_NAME}}</strong> bei der Veranstaltung <strong>{{EVENT_NAME}}</strong> eingeladen.</p>
+
+        <p>Als Co-Delegierte(r) kannst du die Buchung im Namen eurer Gruppe einsehen und bearbeiten.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{REGISTRATION_LINK}}"
+               style="background-color: #d2691e; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Für {{EVENT_NAME}} registrieren
+            </a>
+        </div>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Veranstaltungsdetails:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Veranstaltung:</strong> {{EVENT_NAME}}</li>
+                <li><strong>Eingeladen von:</strong> {{INVITER_NAME}}</li>
+                <li><strong>{{ROW_LABEL}}:</strong> {{ROW_NAME}}</li>
+            </ul>
+        </div>
+
+        <p>Benutze den obigen Button zur Registrierung. Wenn du bereits ein Konto hast, kannst du dich mit deinen bestehenden Zugangsdaten anmelden.</p>
+
+        <p>Falls du den Link nicht öffnen kannst, kopiere die folgende Adresse in deinen Browser:<br>
+        <a href="{{REGISTRATION_LINK}}" style="word-break: break-all;">{{REGISTRATION_LINK}}</a></p>
+
+        <p>Mit freundlichen Grüßen,<br>
+        Das {{ORGANIZATION_SHORT_NAME}} Team</p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>{{ORGANIZATION_NAME}}</strong><br>
+            Website: <a href="{{ORGANIZATION_WEBSITE}}">{{ORGANIZATION_WEBSITE}}</a><br>
+            E-Mail: <a href="mailto:{{ORGANIZATION_EMAIL}}">{{ORGANIZATION_EMAIL}}</a>
+        </footer>
+    </div>
+</body>
+</html>

@@ -3,6 +3,7 @@ Unit Tests for manage_delegates Lambda Handler.
 
 Tests the delegate management endpoint:
 - POST /booking/{id}/delegates
+- DELETE /booking/{id}/delegates
 
 Test cases:
 - Returns 400 when order is not club-scoped (no delegates field)
@@ -11,6 +12,10 @@ Test cases:
 - Successfully removes secondary delegate
 - Returns 400 when target member doesn't exist
 - Returns 400 when target member has different club_id
+- Invite: validates email, rejects self-invitation, enforces max_delegates_per_row
+- Invite: stores pending_secondary_email lowercased
+- Revoke: only allowed when order status is draft
+- Revoke: clears pending invitation or linked secondary
 """
 
 import importlib.util
@@ -32,6 +37,7 @@ os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
 os.environ['ORDERS_TABLE_NAME'] = 'Orders'
 os.environ['MEMBERS_TABLE_NAME'] = 'Members'
+os.environ['EVENTS_TABLE_NAME'] = 'Events'
 
 # Path to the handler under test
 _handler_file = os.path.abspath(
@@ -63,6 +69,8 @@ TEST_PRIMARY_EMAIL = 'primary@h-dcn.nl'
 TEST_NON_DELEGATE_EMAIL = 'outsider@h-dcn.nl'
 TEST_CLUB_ID = 'club-abc-123'
 TEST_ORDER_ID = 'order-001'
+TEST_EVENT_ID = 'evt-test-event-uuid'
+TEST_INVITE_EMAIL = 'invited@example.com'
 
 
 def _make_event(order_id=TEST_ORDER_ID, body=None, method='POST'):
@@ -158,13 +166,32 @@ def setup_tables():
             BillingMode='PAY_PER_REQUEST',
         )
 
+        # Events table
+        events_table = dynamodb.create_table(
+            TableName='Events',
+            KeySchema=[{'AttributeName': 'event_id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'event_id', 'AttributeType': 'S'}],
+            BillingMode='PAY_PER_REQUEST',
+        )
+
+        # Seed event with registry_config
+        events_table.put_item(Item={
+            'event_id': TEST_EVENT_ID,
+            'name': 'Test Event',
+            'registry_config': {
+                'max_delegates_per_row': 2,
+                'row_label': 'club',
+                'claim_mode': 'first_come_first_served',
+            },
+        })
+
         # Seed members
         members_table.put_item(Item={
             'member_id': TEST_PRIMARY_MEMBER_ID,
             'email': TEST_PRIMARY_EMAIL,
             'club_id': TEST_CLUB_ID,
             'member_type': 'hdcn_member',
-            'allowed_events': [],
+            'allowed_events': [TEST_EVENT_ID, 'evt-member-event-uuid'],
         })
         members_table.put_item(Item={
             'member_id': TEST_TARGET_MEMBER_ID,
@@ -201,23 +228,32 @@ def setup_tables():
         yield {
             'orders': orders_table,
             'members': members_table,
+            'events': events_table,
             'handler': handler,
         }
 
 
 def _seed_club_order(orders_table, order_id=TEST_ORDER_ID, primary_member_id=TEST_PRIMARY_MEMBER_ID,
-                     secondary_member_id=None, club_id=TEST_CLUB_ID):
+                     secondary_member_id=None, club_id=TEST_CLUB_ID, status='draft',
+                     pending_secondary_email=None):
     """Seed a club-scoped order with delegates."""
-    delegates = {'primary_member_id': primary_member_id}
+    delegates = {
+        'primary_member_id': primary_member_id,
+        'primary': TEST_PRIMARY_EMAIL,
+    }
     if secondary_member_id:
         delegates['secondary_member_id'] = secondary_member_id
+        delegates['secondary'] = 'secondary@h-dcn.nl'
+    if pending_secondary_email:
+        delegates['pending_secondary_email'] = pending_secondary_email
 
     orders_table.put_item(Item={
         'order_id': order_id,
-        'source_id': 'evt-test-event-uuid',
+        'source_id': TEST_EVENT_ID,
+        'event_id': TEST_EVENT_ID,
         'member_id': primary_member_id,
         'club_id': club_id,
-        'status': 'draft',
+        'status': status,
         'items': [],
         'delegates': delegates,
         'version': 1,
@@ -273,7 +309,7 @@ class TestAuthorization:
     """Tests for delegate management access control."""
 
     def test_returns_403_when_requester_is_not_primary_or_admin(self, setup_tables):
-        """Non-primary, non-admin user cannot manage delegates."""
+        """Non-primary, non-admin user cannot manage delegates (Req 16.5, 16.7)."""
         handler = setup_tables['handler']
         orders_table = setup_tables['orders']
         _seed_club_order(orders_table)
@@ -284,7 +320,11 @@ class TestAuthorization:
 
         assert response['statusCode'] == 403
         body = json.loads(response['body'])
-        assert 'primary delegate' in body.get('error', '').lower() or 'admin' in body.get('error', '').lower()
+        # May return "Insufficient event access" (Req 16.7) or "primary delegate" depending on
+        # whether the user fails event access check first or delegate check.
+        error_msg = body.get('error', '').lower()
+        assert ('primary delegate' in error_msg or 'admin' in error_msg
+                or 'insufficient event access' in error_msg)
 
     def test_admin_can_manage_delegates(self, setup_tables):
         """Admin (events_crud) can manage delegates even if not primary."""
@@ -500,4 +540,437 @@ class TestCORS:
             {'httpMethod': 'OPTIONS', 'headers': {}, 'body': None},
             None
         )
+        assert response['statusCode'] == 200
+
+
+# ---------------------------------------------------------------------------
+# Tests: Invite secondary delegate (Req 5.1, 5.2, 5.3)
+# ---------------------------------------------------------------------------
+
+class TestInviteDelegate:
+    """Tests for inviting a secondary delegate by email."""
+
+    def test_invite_stores_pending_email_lowercased(self, setup_tables):
+        """Invite action stores pending_secondary_email lowercased (Req 5.3)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': 'Invited@Example.COM'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        delegates = body['order']['delegates']
+        assert delegates['pending_secondary_email'] == 'invited@example.com'
+
+    def test_invite_rejects_self_invitation(self, setup_tables):
+        """Self-invitation is rejected (Req 5.2)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': TEST_PRIMARY_EMAIL})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'self-invitation' in body.get('error', '').lower()
+
+    def test_invite_rejects_self_invitation_case_insensitive(self, setup_tables):
+        """Self-invitation check is case-insensitive."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': 'PRIMARY@H-DCN.NL'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'self-invitation' in body.get('error', '').lower()
+
+    def test_invite_rejects_invalid_email(self, setup_tables):
+        """Invalid email format returns 400."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': 'not-an-email'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'email' in body.get('error', '').lower()
+
+    def test_invite_rejects_empty_email(self, setup_tables):
+        """Empty email returns 400."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': ''})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+
+    def test_invite_enforces_max_delegates_per_row(self, setup_tables):
+        """Cannot invite when max_delegates_per_row is already reached (Req 5.1)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        events_table = setup_tables['events']
+
+        # Set max_delegates_per_row to 1 (only primary allowed)
+        events_table.update_item(
+            Key={'event_id': TEST_EVENT_ID},
+            UpdateExpression='SET registry_config.max_delegates_per_row = :val',
+            ExpressionAttributeValues={':val': 1},
+        )
+
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': TEST_INVITE_EMAIL})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'maximum' in body.get('error', '').lower()
+
+    def test_invite_allowed_within_limit(self, setup_tables):
+        """Invite succeeds when within max_delegates_per_row limit (Req 5.1)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        events_table = setup_tables['events']
+
+        # Set max_delegates_per_row to 3 (plenty of room)
+        events_table.update_item(
+            Key={'event_id': TEST_EVENT_ID},
+            UpdateExpression='SET registry_config.max_delegates_per_row = :val',
+            ExpressionAttributeValues={':val': 3},
+        )
+
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': TEST_INVITE_EMAIL})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+
+    def test_invite_rejects_when_secondary_already_linked(self, setup_tables):
+        """Cannot invite when a secondary delegate is already linked."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, secondary_member_id=TEST_SECONDARY_MEMBER_ID)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': TEST_INVITE_EMAIL})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'already linked' in body.get('error', '').lower()
+
+    def test_invite_rejects_when_invitation_already_pending(self, setup_tables):
+        """Cannot invite when a pending invitation already exists."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, pending_secondary_email='other@example.com')
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': TEST_INVITE_EMAIL})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'pending' in body.get('error', '').lower()
+
+    def test_invite_increments_version(self, setup_tables):
+        """Invite action increments the order version."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'invite', 'email': TEST_INVITE_EMAIL})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['version'] == 2
+
+
+# ---------------------------------------------------------------------------
+# Tests: Revoke delegation (Req 5.7)
+# ---------------------------------------------------------------------------
+
+class TestRevokeDelegate:
+    """Tests for revoking a pending invitation or removing a linked secondary."""
+
+    def test_revoke_clears_pending_invitation(self, setup_tables):
+        """Revoke action clears pending_secondary_email in draft status (Req 5.7)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, pending_secondary_email='pending@example.com')
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'revoke'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        delegates = body['order']['delegates']
+        assert 'pending_secondary_email' not in delegates
+        assert 'pending' in body['message'].lower() or 'revoked' in body['message'].lower()
+
+    def test_revoke_removes_linked_secondary_delegate(self, setup_tables):
+        """Revoke action removes linked secondary delegate in draft status."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, secondary_member_id=TEST_SECONDARY_MEMBER_ID)
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'revoke'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        delegates = body['order']['delegates']
+        assert 'secondary_member_id' not in delegates
+        assert 'secondary' not in delegates
+
+    def test_revoke_rejected_in_submitted_status(self, setup_tables):
+        """Revoke is rejected when order is not in draft status (Req 5.7)."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(
+            orders_table,
+            status='submitted',
+            pending_secondary_email='pending@example.com'
+        )
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'revoke'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'draft' in body.get('error', '').lower()
+
+    def test_revoke_rejected_in_locked_status(self, setup_tables):
+        """Revoke is rejected when order is locked."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(
+            orders_table,
+            status='locked',
+            secondary_member_id=TEST_SECONDARY_MEMBER_ID,
+        )
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'revoke'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'draft' in body.get('error', '').lower()
+
+    def test_revoke_returns_400_when_nothing_to_revoke(self, setup_tables):
+        """Revoke returns 400 when no secondary delegate or pending invitation exists."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table)  # No secondary, no pending
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'revoke'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'no secondary' in body.get('error', '').lower() or 'no' in body.get('error', '').lower()
+
+    def test_revoke_increments_version(self, setup_tables):
+        """Revoke action increments the order version."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, pending_secondary_email='pending@example.com')
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'revoke'})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['version'] == 2
+
+
+# ---------------------------------------------------------------------------
+# Tests: DELETE method (alternative to revoke)
+# ---------------------------------------------------------------------------
+
+class TestDeleteMethod:
+    """Tests for DELETE /booking/{id}/delegates endpoint."""
+
+    def test_delete_method_revokes_pending_invitation(self, setup_tables):
+        """DELETE method revokes a pending invitation in draft status."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, pending_secondary_email='pending@example.com')
+
+        with _primary_delegate_auth():
+            event = _make_event(body=None, method='DELETE')
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert 'pending_secondary_email' not in body['order']['delegates']
+
+    def test_delete_method_rejected_when_not_draft(self, setup_tables):
+        """DELETE method is rejected when order is not in draft status."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(
+            orders_table,
+            status='submitted',
+            secondary_member_id=TEST_SECONDARY_MEMBER_ID,
+        )
+
+        with _primary_delegate_auth():
+            event = _make_event(body=None, method='DELETE')
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+
+    def test_delete_method_requires_authorization(self, setup_tables):
+        """DELETE method requires primary delegate or admin."""
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        _seed_club_order(orders_table, pending_secondary_email='pending@example.com')
+
+        with _non_delegate_auth():
+            event = _make_event(body=None, method='DELETE')
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 403
+
+
+# ---------------------------------------------------------------------------
+# Tests: Registry Row — delegate registry_row_id mismatch rejection
+# Requirements: 2.5
+# ---------------------------------------------------------------------------
+
+class TestRegistryRowMismatch:
+    """Tests for delegate assignment validation with registry_row_id."""
+
+    def test_delegate_mismatch_returns_403_with_error_code(self, setup_tables):
+        """
+        When target member's registry_row_id differs from order's registry_row_id,
+        the assignment is rejected with 403 and error_code DELEGATE_ROW_MISMATCH.
+        Validates: Requirements 2.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        members_table = setup_tables['members']
+
+        # Seed order with registry_row_id
+        orders_table.put_item(Item={
+            'order_id': TEST_ORDER_ID,
+            'source_id': TEST_EVENT_ID,
+            'event_id': TEST_EVENT_ID,
+            'member_id': TEST_PRIMARY_MEMBER_ID,
+            'registry_row_id': 'row-amsterdam',
+            'status': 'draft',
+            'items': [],
+            'delegates': {
+                'primary_member_id': TEST_PRIMARY_MEMBER_ID,
+                'primary': TEST_PRIMARY_EMAIL,
+            },
+            'version': 1,
+        })
+
+        # Create target member with DIFFERENT registry_row_id
+        mismatch_member_id = 'mem-mismatch-999'
+        members_table.put_item(Item={
+            'member_id': mismatch_member_id,
+            'email': 'mismatch@h-dcn.nl',
+            'registry_row_id': 'row-rotterdam',
+            'member_type': 'hdcn_member',
+            'allowed_events': [TEST_EVENT_ID],
+        })
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': mismatch_member_id})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 403
+        body = json.loads(response['body'])
+        assert body.get('error_code') == 'DELEGATE_ROW_MISMATCH'
+        assert 'registry row' in body.get('error', '').lower()
+
+    def test_delegate_same_registry_row_succeeds(self, setup_tables):
+        """
+        When target member's registry_row_id matches order's registry_row_id,
+        delegate assignment succeeds.
+        Validates: Requirements 2.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        members_table = setup_tables['members']
+
+        # Seed order with registry_row_id
+        orders_table.put_item(Item={
+            'order_id': TEST_ORDER_ID,
+            'source_id': TEST_EVENT_ID,
+            'event_id': TEST_EVENT_ID,
+            'member_id': TEST_PRIMARY_MEMBER_ID,
+            'registry_row_id': TEST_CLUB_ID,
+            'status': 'draft',
+            'items': [],
+            'delegates': {
+                'primary_member_id': TEST_PRIMARY_MEMBER_ID,
+                'primary': TEST_PRIMARY_EMAIL,
+            },
+            'version': 1,
+        })
+
+        # Target member with same registry_row_id
+        target_member_id = 'mem-same-row-777'
+        members_table.put_item(Item={
+            'member_id': target_member_id,
+            'email': 'samerow@h-dcn.nl',
+            'registry_row_id': TEST_CLUB_ID,
+            'member_type': 'hdcn_member',
+            'allowed_events': [TEST_EVENT_ID],
+        })
+
+        with _primary_delegate_auth():
+            event = _make_event(body={'action': 'add', 'member_id': target_member_id})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['order']['delegates']['secondary_member_id'] == target_member_id
+
+    def test_delegate_no_registry_row_on_order_skips_check(self, setup_tables):
+        """
+        When order has no registry_row_id (member-scoped), the mismatch check
+        is skipped and the old club_id check applies instead.
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        # Seed a club-scoped order WITHOUT registry_row_id (uses club_id)
+        _seed_club_order(orders_table)
+
+        with _primary_delegate_auth():
+            # Target member has the same club_id (TEST_CLUB_ID)
+            event = _make_event(body={'action': 'add', 'member_id': TEST_TARGET_MEMBER_ID})
+            response = handler.lambda_handler(event, None)
+
         assert response['statusCode'] == 200

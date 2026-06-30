@@ -103,7 +103,6 @@ export interface Product {
   groep?: string;
   subgroep?: string;
   images?: string[];
-  event_ids?: string[];
   is_parent?: boolean;
   active?: boolean;
   order_item_fields?: any[];
@@ -120,26 +119,27 @@ export interface Product {
 
 export interface Event {
   event_id?: string;
-  title?: string;
-  naam?: string;
-  event_date?: string;
-  datum_van?: string;
+  // New schema (Field Registry)
+  name?: string;
+  event_type?: string;
+  event_category?: string;
+  participation?: string;
+  linked_regio?: string;
+  status?: string;
+  start_date?: string;
   end_date?: string;
-  datum_tot?: string;
   location?: string;
-  locatie?: string;
-  region?: string;
-  regio?: string;
+  slug?: string;
+  poster_url?: string;
+  registration_open?: string;
+  registration_close?: string;
+  payment_deadline?: string;
+  product_ids?: string[];
+  constraints?: Array<{ key: string; max: number; counting_rule: string }>;
   participants?: string | number;
-  aantal_deelnemers?: string | number;
   cost?: string | number;
-  kosten?: string | number;
   revenue?: string | number;
-  inkomsten?: string | number;
   notes?: string;
-  opmerkingen?: string;
-  betaalstatus?: string;
-  factuurnummer?: string;
   landing_page?: {
     enabled: boolean;
     slug: string;
@@ -149,6 +149,17 @@ export interface Event {
     logos: Array<{ name: string; logo_url: string }>;
     sections: Array<{ type: string; title: string; content?: string; items?: Array<{ name: string; logo_url: string }> }>;
   };
+  registry_config?: {
+    s3_path?: string;
+    row_label?: string;
+    claim_mode?: 'first_come_first_served' | 'email_restricted';
+    max_delegates_per_row?: number;
+    allow_logo_upload?: boolean;
+  };
+  // Metadata
+  created_at?: string;
+  created_by?: string;
+  updated_at?: string;
 }
 
 export interface ApiResponse<T> {

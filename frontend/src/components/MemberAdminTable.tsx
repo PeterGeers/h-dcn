@@ -4,7 +4,7 @@
  * Dynamic member table with context switching and field registry integration
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -19,7 +19,6 @@ import {
   Th,
   Td,
   Badge,
-  Input,
   Flex,
   Spacer,
   Card,
@@ -33,6 +32,9 @@ import { MEMBER_TABLE_CONTEXTS, MEMBER_FIELDS, HDCNGroup, getFilteredEnumOptions
 import { canViewField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { computeCalculatedFieldsForArray, getMemberFullName } from '../utils/calculatedFields';
+import { useFilterableTable } from '../hooks/useFilterableTable';
+import { FilterableHeader } from '../components/filters';
+import { FilterPanel, GenericFilter } from '../components/filters';
 
 
 interface MemberAdminTableProps {
@@ -56,10 +58,9 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   onExport,
   onAddMember
 }) => {
-  const [selectedContext, setSelectedContext] = useState('memberCompact'); // Changed to memberCompact
-  const [sortField, setSortField] = useState('lidnummer');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [selectedContext, setSelectedContext] = useState('memberCompact');
+  // Select-type filters (dropdown pre-filters, outside framework)
+  const [selectFilters, setSelectFilters] = useState<Record<string, string>>({});
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _filterBg = useColorModeValue('gray.50', 'gray.700');
@@ -74,220 +75,97 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   // Get current table context
   const tableContext = MEMBER_TABLE_CONTEXTS[selectedContext];
 
-  // Filter members based on regional restrictions and column filters
-  const filteredMembers = useMemo(() => {
-    // First, process all members with calculated fields
-    const processedMembers = computeCalculatedFieldsForArray(members);
-    
-    let filtered = processedMembers;
-
-    // Apply regional filtering if needed
-    if (tableContext?.regionalRestricted && userRole === 'Members_Read' && userRegion) {
-      filtered = filtered.filter(member => member.regio === userRegion);
-    }
-
-    // Apply column-specific filters
-    Object.entries(columnFilters).forEach(([fieldKey, filterValue]) => {
-      if (filterValue) {
-        if (fieldKey === 'fullName') {
-          // Special handling for full name filter (mobile) - use calculated field
-          filtered = filtered.filter(member => {
-            const fullName = getMemberFullName(member).toLowerCase();
-            return fullName.includes(filterValue.toLowerCase());
-          });
-        } else {
-          const field = MEMBER_FIELDS[fieldKey];
-          if (field) {
-            filtered = filtered.filter(member => {
-              const memberValue = member[fieldKey];
-              
-              if (field.inputType === 'select' || field.dataType === 'enum') {
-                return memberValue === filterValue;
-              } else if (field.dataType === 'date') {
-                // For date filters, you might want more sophisticated logic
-                return memberValue?.toString().includes(filterValue);
-              } else if (field.dataType === 'number') {
-                // For number fields (like lidnummer), support partial matching
-                // This allows searching for "65" to find "6534"
-                return memberValue?.toString().includes(filterValue);
-              } else {
-                // Text filter
-                return memberValue?.toString().toLowerCase().includes(filterValue.toLowerCase());
-              }
-            });
-          }
-        }
-      }
-    });
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      
-      // Get field definition to check data type
-      const field = MEMBER_FIELDS[sortField];
-      
-      // Handle numeric sorting for number fields (lidnummer, jaren_lid, etc.)
-      if (field && field.dataType === 'number') {
-        const aNum = Number(aValue) || 0;
-        const bNum = Number(bValue) || 0;
-        
-        if (sortDirection === 'asc') {
-          return aNum - bNum;
-        } else {
-          return bNum - aNum;
-        }
-      }
-      
-      // Handle date sorting
-      if (field && field.dataType === 'date') {
-        const aDate = aValue ? new Date(aValue).getTime() : 0;
-        const bDate = bValue ? new Date(bValue).getTime() : 0;
-        
-        if (sortDirection === 'asc') {
-          return aDate - bDate;
-        } else {
-          return bDate - aDate;
-        }
-      }
-      
-      // Handle string sorting for other fields
-      const aStr = (aValue || '').toString();
-      const bStr = (bValue || '').toString();
-      
-      if (sortDirection === 'asc') {
-        return aStr.localeCompare(bStr);
-      } else {
-        return bStr.localeCompare(aStr);
-      }
-    });
-
-    return filtered;
-  }, [members, tableContext?.regionalRestricted, userRole, userRegion, columnFilters, sortField, sortDirection]);
-
   // Get visible columns based on context and permissions
   const visibleColumns = useMemo(() => {
-    if (!tableContext) {
-      return [];
-    }
-    
+    if (!tableContext) return [];
     const visibleCols = tableContext.columns.filter(col => col.visible);
-    
     const permissionFilteredCols = visibleCols.filter(col => {
       const field = MEMBER_FIELDS[col.fieldKey];
-      if (!field) {
-        return false;
-      }
-      
-      return canViewField(field, userRole, filteredMembers[0]);
+      if (!field) return false;
+      return canViewField(field, userRole, members[0]);
     });
-    
     return permissionFilteredCols.sort((a, b) => a.order - b.order);
-  }, [tableContext, userRole, filteredMembers]);
+  }, [tableContext, userRole, members]);
 
-  const handleSort = (fieldKey: string) => {
-    if (sortField === fieldKey) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(fieldKey);
-      setSortDirection('asc');
-    }
-  };
+  // Determine which columns are text-filterable (for framework) vs select-filterable (pre-filter)
+  const { textFilterColumns, selectFilterColumns } = useMemo(() => {
+    const textCols: string[] = [];
+    const selectCols: string[] = [];
+    visibleColumns.forEach(col => {
+      if (!col.filterable) return;
+      if (col.filterType === 'select') {
+        selectCols.push(col.fieldKey);
+      } else {
+        textCols.push(col.fieldKey);
+      }
+    });
+    return { textFilterColumns: textCols, selectFilterColumns: selectCols };
+  }, [visibleColumns]);
 
-  const handleColumnFilter = (fieldKey: string, value: string) => {
-    setColumnFilters(prev => ({
-      ...prev,
-      [fieldKey]: value
+  // Build initial filters for the framework (text columns only)
+  const initialFilters = useMemo(() => {
+    const filters: Record<string, string> = {};
+    textFilterColumns.forEach(key => { filters[key] = ''; });
+    // Always include fullName for mobile
+    filters['fullName'] = '';
+    return filters;
+  }, [textFilterColumns]);
+
+  // Pre-process members with calculated fields
+  const processedMembers = useMemo(() => {
+    return computeCalculatedFieldsForArray(members).map(m => ({
+      ...m,
+      fullName: getMemberFullName(m),
     }));
-  };
+  }, [members]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _clearAllFilters = () => {
-    setColumnFilters({});
-  };
+  // Pre-filter: regional permissions
+  const regionalFiltered = useMemo(() => {
+    if (tableContext?.regionalRestricted && userRole === 'Members_Read' && userRegion) {
+      return processedMembers.filter(member => member.regio === userRegion);
+    }
+    return processedMembers;
+  }, [processedMembers, tableContext?.regionalRestricted, userRole, userRegion]);
+
+  // Pre-filter: select/dropdown filters (exact match)
+  const preFilteredMembers = useMemo(() => {
+    let data = regionalFiltered;
+    Object.entries(selectFilters).forEach(([fieldKey, filterValue]) => {
+      if (filterValue) {
+        data = data.filter(member => member[fieldKey] === filterValue);
+      }
+    });
+    return data;
+  }, [regionalFiltered, selectFilters]);
+
+  // Framework: text filters + sort
+  const { filters, setFilter, handleSort, sortField, sortDirection, processedData, resetFilters, hasActiveFilters } =
+    useFilterableTable(preFilteredMembers as unknown as Record<string, unknown>[], {
+      initialFilters,
+      defaultSort: { field: 'lidnummer', direction: 'desc' },
+    });
+
+  const filteredMembers = processedData as any[];
+
+  // Reset filters when context changes
+  const handleContextChange = useCallback((newContext: string) => {
+    setSelectedContext(newContext);
+    setSelectFilters({});
+    resetFilters();
+  }, [resetFilters]);
+
+  // Select filter handler
+  const handleSelectFilter = useCallback((fieldKey: string, value: string) => {
+    setSelectFilters(prev => ({ ...prev, [fieldKey]: value }));
+  }, []);
 
   const getFilterOptions = (fieldKey: string) => {
     const field = MEMBER_FIELDS[fieldKey];
     if (field?.enumOptions) {
-      // Use filtered enum options based on user role
       return getFilteredEnumOptions(field, userRole);
     }
-    
-    // For non-enum fields, get unique values from data
     const uniqueValues = [...new Set(members.map(m => m[fieldKey]).filter(Boolean))];
     return uniqueValues.sort();
-  };
-
-  const renderColumnFilter = (column: any) => {
-    const field = MEMBER_FIELDS[column.fieldKey];
-    if (!field || !column.filterable) return null;
-
-    const filterValue = columnFilters[column.fieldKey] || '';
-
-    if (column.filterType === 'select') {
-      const options = getFilterOptions(column.fieldKey);
-      return (
-        <Select
-          size="xs"
-          placeholder="Alle"
-          value={filterValue}
-          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
-          bg="white"
-          color="black"
-          maxW="120px"
-          fontSize={{ base: "xs", md: "sm" }}
-        >
-          {options.map(option => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </Select>
-      );
-    } else if (column.filterType === 'text') {
-      return (
-        <Input
-          size="xs"
-          placeholder="Filter..."
-          value={filterValue}
-          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
-          bg="white"
-          color="black"
-          maxW="120px"
-          fontSize={{ base: "xs", md: "sm" }}
-        />
-      );
-    } else if (column.filterType === 'number') {
-      return (
-        <Input
-          size="xs"
-          type="number"
-          placeholder="Nr..."
-          value={filterValue}
-          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
-          bg="white"
-          color="black"
-          maxW="120px"
-          fontSize={{ base: "xs", md: "sm" }}
-        />
-      );
-    } else if (column.filterType === 'date') {
-      return (
-        <Input
-          size="xs"
-          type="date"
-          value={filterValue}
-          onChange={(e) => handleColumnFilter(column.fieldKey, e.target.value)}
-          bg="white"
-          color="black"
-          maxW="120px"
-          fontSize={{ base: "xs", md: "sm" }}
-        />
-      );
-    }
-
-    return null;
   };
 
   const getStatusColor = (status: string) => {
@@ -366,7 +244,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                 </Text>
                 <Select 
                   value={selectedContext} 
-                  onChange={(e) => setSelectedContext(e.target.value)}
+                  onChange={(e) => handleContextChange(e.target.value)}
                   size="sm"
                   bg="white"
                   color="black"
@@ -388,7 +266,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                   </Text>
                   <Select 
                     value={selectedContext} 
-                    onChange={(e) => setSelectedContext(e.target.value)}
+                    onChange={(e) => handleContextChange(e.target.value)}
                     size="sm"
                     bg="white"
                     color="black"
@@ -553,56 +431,71 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           </CardBody>
         </Card>
 
+        {/* Select Filters (dropdown pre-filters) */}
+        {selectFilterColumns.length > 0 && (
+          <FilterPanel
+            hasActiveFilters={Object.values(selectFilters).some(v => v !== '') || hasActiveFilters}
+            onReset={() => { setSelectFilters({}); resetFilters(); }}
+            filteredCount={filteredMembers.length}
+            totalCount={members.length}
+          >
+            {selectFilterColumns.map(fieldKey => {
+              const field = MEMBER_FIELDS[fieldKey];
+              if (!field) return null;
+              return (
+                <GenericFilter
+                  key={fieldKey}
+                  label={field.label}
+                  value={selectFilters[fieldKey] || ''}
+                  options={getFilterOptions(fieldKey).map(opt => ({ value: opt, label: opt }))}
+                  onChange={(v) => handleSelectFilter(fieldKey, v)}
+                  placeholder="Alle"
+                  width="150px"
+                />
+              );
+            })}
+          </FilterPanel>
+        )}
+
         {/* Table */}
         <Card bg="gray.800" borderColor="orange.400" border="1px">
           <Box overflowX="auto">
             <Table variant="simple" size="xs">
               <Thead bg="gray.700">
                 <Tr>
-                  {/* Mobile Portrait: Only Lidnummer and Full Name */}
+                  {/* Mobile Portrait: Lidnummer, Name, Status */}
                   <Th 
                     py={2}
                     color="orange.300"
                     display={{ base: 'table-cell', md: 'none' }}
                     minW="60px"
                   >
-                    <VStack spacing={1} align="start">
-                      <Text fontSize="xs">Lidnr</Text>
-                      <Box onClick={(e) => e.stopPropagation()}>
-                        <Input
-                          size="xs"
-                          type="number"
-                          placeholder="Nr..."
-                          value={columnFilters['lidnummer'] || ''}
-                          onChange={(e) => handleColumnFilter('lidnummer', e.target.value)}
-                          bg="white"
-                          color="black"
-                          maxW="50px"
-                          fontSize="xs"
-                        />
-                      </Box>
-                    </VStack>
+                    <FilterableHeader
+                      label="Lidnr"
+                      filterValue={filters.lidnummer || ''}
+                      onFilterChange={(v) => setFilter('lidnummer' as any, v)}
+                      sortable
+                      sortDirection={sortField === 'lidnummer' ? sortDirection : null}
+                      onSort={() => handleSort('lidnummer')}
+                      minW="60px"
+                      placeholder="Nr..."
+                    />
                   </Th>
                   <Th 
                     py={2}
                     color="orange.300"
                     display={{ base: 'table-cell', md: 'none' }}
                   >
-                    <VStack spacing={1} align="start">
-                      <Text fontSize="xs">Naam</Text>
-                      <Box onClick={(e) => e.stopPropagation()}>
-                        <Input
-                          size="xs"
-                          placeholder="Naam..."
-                          value={columnFilters['fullName'] || ''}
-                          onChange={(e) => handleColumnFilter('fullName', e.target.value)}
-                          bg="white"
-                          color="black"
-                          maxW="120px"
-                          fontSize="xs"
-                        />
-                      </Box>
-                    </VStack>
+                    <FilterableHeader
+                      label="Naam"
+                      filterValue={filters.fullName || ''}
+                      onFilterChange={(v) => setFilter('fullName' as any, v)}
+                      sortable
+                      sortDirection={sortField === 'fullName' ? sortDirection : null}
+                      onSort={() => handleSort('fullName')}
+                      minW="120px"
+                      placeholder="Naam..."
+                    />
                   </Th>
                   <Th 
                     py={2}
@@ -610,61 +503,60 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     display={{ base: 'table-cell', md: 'none' }}
                     minW="80px"
                   >
-                    <VStack spacing={1} align="start">
-                      <Text fontSize="xs">Status</Text>
-                      <Box onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          size="xs"
-                          placeholder="Alle"
-                          value={columnFilters['status'] || ''}
-                          onChange={(e) => handleColumnFilter('status', e.target.value)}
-                          bg="white"
-                          color="black"
-                          maxW="80px"
-                          fontSize="xs"
-                        >
-                          {getFilterOptions('status').map(option => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </Select>
-                      </Box>
-                    </VStack>
+                    <GenericFilter
+                      label="Status"
+                      value={selectFilters['status'] || ''}
+                      options={getFilterOptions('status').map(opt => ({ value: opt, label: opt }))}
+                      onChange={(v) => handleSelectFilter('status', v)}
+                      placeholder="Alle"
+                      width="90px"
+                    />
                   </Th>
                   
-                  {/* Desktop: Regular columns */}
+                  {/* Desktop: Dynamic columns from context with FilterableHeader */}
                   {visibleColumns.map(column => {
                     const field = MEMBER_FIELDS[column.fieldKey];
                     if (!field) return null;
-                    
-                    return (
-                      <Th 
-                        key={column.fieldKey}
-                        minW={column.width ? `${column.width}px` : '120px'}
-                        cursor={column.sortable ? 'pointer' : 'default'}
-                        onClick={column.sortable ? () => handleSort(column.fieldKey) : undefined}
-                        _hover={column.sortable ? { bg: 'gray.600' } : {}}
-                        py={2}
-                        color="orange.300"
-                        display={{ base: 'none', md: 'table-cell' }}
-                      >
-                        <VStack spacing={1} align="start">
+
+                    // Select columns get a plain Th (their filter is in FilterPanel above)
+                    if (column.filterType === 'select') {
+                      return (
+                        <Th
+                          key={column.fieldKey}
+                          minW={column.width ? `${column.width}px` : '120px'}
+                          cursor={column.sortable ? 'pointer' : 'default'}
+                          onClick={column.sortable ? () => handleSort(column.fieldKey) : undefined}
+                          _hover={column.sortable ? { bg: 'gray.600' } : {}}
+                          py={2}
+                          color="orange.300"
+                          display={{ base: 'none', md: 'table-cell' }}
+                        >
                           <HStack spacing={1}>
                             <Text fontSize="xs">{field.label}</Text>
                             {column.sortable && sortField === column.fieldKey && (
-                              <Text fontSize="xs">
+                              <Text fontSize="xs" color="orange.400">
                                 {sortDirection === 'asc' ? '↑' : '↓'}
                               </Text>
                             )}
                           </HStack>
-                          
-                          {/* Column Filter - Always Visible */}
-                          <Box onClick={(e) => e.stopPropagation()}>
-                            {renderColumnFilter(column)}
-                          </Box>
-                        </VStack>
-                      </Th>
+                        </Th>
+                      );
+                    }
+
+                    // Text/number/date columns get FilterableHeader
+                    return (
+                      <FilterableHeader
+                        key={column.fieldKey}
+                        label={field.label}
+                        filterValue={column.filterable ? (filters[column.fieldKey as keyof typeof filters] || '') : undefined}
+                        onFilterChange={column.filterable ? (v) => setFilter(column.fieldKey as any, v) : undefined}
+                        sortable={column.sortable}
+                        sortDirection={sortField === column.fieldKey ? sortDirection : null}
+                        onSort={() => handleSort(column.fieldKey)}
+                        minW={column.width ? `${column.width}px` : '120px'}
+                        showFilter={column.filterable}
+                        display={{ base: 'none', md: 'table-cell' }}
+                      />
                     );
                   })}
                 </Tr>

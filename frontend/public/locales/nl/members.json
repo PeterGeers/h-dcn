@@ -97,6 +97,13 @@
     "apply_link": "Klik hier om lid te worden"
   },
   "form": {
+    "group_name": "Groepsnaam",
+    "email": "Email",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "price": "Prijs",
+    "duration": "Duur",
+    "status": "Status",
     "first_name": "Voornaam",
     "last_name": "Achternaam",
     "street": "Straat",
@@ -119,5 +126,28 @@
     "membership": "Lidmaatschap",
     "motor": "Motor",
     "financial": "Financieel"
+  },
+  "validation": {
+    "required": "{{field}} is verplicht",
+    "email": "Voer een geldig emailadres in",
+    "min_length": "Minimaal {{count}} karakters vereist",
+    "max_length": "Maximaal {{count}} karakters toegestaan",
+    "min": "Waarde moet minimaal {{value}} zijn",
+    "max": "Waarde mag maximaal {{value}} zijn",
+    "pattern": "Ongeldige invoer",
+    "invalid_number": "Voer een geldig nummer in",
+    "invalid_option": "Selecteer een geldige optie"
+  },
+  "toast": {
+    "required_fields": "Vereiste velden",
+    "group_created": "Groep aangemaakt",
+    "group_cannot_update": "Groep kan niet worden bijgewerkt",
+    "group_cannot_update_desc": "Cognito ondersteunt geen wijziging van groepsbeschrijving na aanmaak",
+    "save_error": "Fout bij opslaan",
+    "user_updated": "Gebruiker bijgewerkt",
+    "user_created": "Gebruiker aangemaakt"
+  },
+  "errors": {
+    "invalid_file_type": "Ongeldig bestandstype. Alleen CSV-bestanden zijn toegestaan."
   }
 }

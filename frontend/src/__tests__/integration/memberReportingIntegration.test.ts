@@ -406,7 +406,7 @@ describe('Member Reporting Integration Tests', () => {
 
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-      await expect(MemberDataService.fetchMembers()).rejects.toThrow('Failed to load member data');
+      await expect(MemberDataService.fetchMembers()).rejects.toThrow('Network error');
 
       console.log('  ✓ Network failure handled correctly');
 

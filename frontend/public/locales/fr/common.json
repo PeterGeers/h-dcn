@@ -48,8 +48,14 @@
   },
   "errors": {
     "generic": "Une erreur est survenue. Veuillez réessayer plus tard.",
-    "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
-    "not_found": "Non trouvé",
+    "network": "Erreur réseau - vérifiez votre connexion internet",
+    "unauthorized": "Vous n'êtes pas autorisé pour cette action",
+    "forbidden": "Accès refusé - permissions insuffisantes",
+    "not_found": "Données demandées non trouvées",
+    "server_error": "Erreur serveur - veuillez réessayer plus tard",
+    "maintenance": "Le système est temporairement indisponible pour maintenance",
+    "timeout": "La requête a pris trop de temps - veuillez réessayer",
+    "unknown": "Une erreur inconnue est survenue",
     "no_access": "Pas d'accès",
     "session_expired": "Session expirée. Veuillez vous reconnecter."
   },
@@ -57,7 +63,26 @@
     "save_success": "Données enregistrées avec succès",
     "save_error": "Erreur lors de l'enregistrement. Veuillez réessayer.",
     "delete_success": "Supprimé avec succès",
-    "delete_error": "Erreur lors de la suppression"
+    "delete_error": "Erreur lors de la suppression",
+    "action_success": "{{action}} réussi",
+    "action_error": "Erreur lors de {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Autorisation requise",
+    "forbidden": "Accès refusé",
+    "not_found": "Non trouvé",
+    "validation_error": "Erreur de validation",
+    "internal_error": "Erreur interne du serveur",
+    "member_not_found": "Membre non trouvé",
+    "member_already_exists": "Le membre existe déjà",
+    "invalid_input": "Entrée invalide",
+    "payment_failed": "Paiement échoué",
+    "order_not_found": "Commande non trouvée",
+    "product_not_found": "Produit non trouvé",
+    "cart_empty": "Le panier est vide",
+    "insufficient_stock": "Stock insuffisant",
+    "email_already_exists": "L'adresse e-mail est déjà utilisée",
+    "invalid_membership": "Adhésion invalide"
   },
   "account": {
     "info_title": "Informations du compte",

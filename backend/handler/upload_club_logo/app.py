@@ -16,7 +16,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.event_access import get_club_id
+    from shared.event_access import get_registry_row_id
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -72,7 +72,7 @@ def lambda_handler(event, context):
             return create_error_response(400, 'Missing required field: content_type')
 
         # Look up user's club_id from Members table
-        user_club_id = get_club_id(user_email)
+        user_club_id = get_registry_row_id(user_email)
         if not user_club_id:
             return create_error_response(403, 'No club assignment found')
 

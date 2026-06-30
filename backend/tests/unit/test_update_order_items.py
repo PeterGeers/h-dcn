@@ -8,8 +8,11 @@ Tests the unified update_order_items handler that:
 - Validates variant parent_id matches product_id
 - Accepts incomplete item data (draft mode)
 - Increments version on success
+- Accepts persons array structure with per-person product lines
+- Syncs item_fields_data.name when person name is updated
+- Removes all product lines when a person is removed
 
-Requirements: 7.6, 7.7, 7.8, 7.9, 7.10, 10.9, 12.21
+Requirements: 5.5, 6.4, 6.5, 7.6, 7.7, 7.8, 7.9, 7.10, 8.3, 10.9, 12.21
 """
 
 import sys
@@ -457,3 +460,448 @@ class TestOrderAccess:
         event = _make_event('nonexistent', {'version': 1, 'items': []})
         response = lambda_handler(event, None)
         assert response['statusCode'] == 404
+
+
+class TestPersonsStructure:
+    """Tests for persons array structure (Requirements 6.4, 6.5, 5.5, 8.3)."""
+
+    def test_accepts_persons_array(self, mock_dynamodb, mock_auth):
+        """Handler accepts persons array instead of items array."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('25.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {
+                    'name': 'Jan de Vries',
+                    'items': [{'product_id': 'prod-1', 'quantity': 1}],
+                },
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['person_count'] == 1
+        assert body['item_count'] == 1
+        assert body['total_amount'] == 25.0
+
+    def test_syncs_name_to_item_fields_data(self, mock_dynamodb, mock_auth):
+        """Person name is synced to item_fields_data.name on product lines (Req 6.4)."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('10.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {
+                    'name': 'Maria Janssen',
+                    'items': [
+                        {'product_id': 'prod-1', 'quantity': 1, 'item_fields_data': {'name': 'old name'}},
+                    ],
+                },
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+        # Verify the update_item call contains synced name
+        call_kwargs = mock_dynamodb['orders'].update_item.call_args[1]
+        items = call_kwargs['ExpressionAttributeValues'][':items']
+        assert items[0]['item_fields_data']['name'] == 'Maria Janssen'
+
+    def test_syncs_name_when_no_item_fields_data(self, mock_dynamodb, mock_auth):
+        """Name is synced even when item_fields_data is initially absent (Req 6.4)."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('10.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {
+                    'name': 'Pieter Bakker',
+                    'items': [
+                        {'product_id': 'prod-1', 'quantity': 1},  # no item_fields_data
+                    ],
+                },
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+        call_kwargs = mock_dynamodb['orders'].update_item.call_args[1]
+        items = call_kwargs['ExpressionAttributeValues'][':items']
+        assert items[0]['item_fields_data']['name'] == 'Pieter Bakker'
+
+    def test_person_removal_removes_product_lines(self, mock_dynamodb, mock_auth):
+        """Removing a person removes all their product lines (Req 6.5)."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('20.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        # Send only person 0 — person 1 was "removed"
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {
+                    'name': 'Jan',
+                    'items': [{'product_id': 'prod-1', 'quantity': 1}],
+                },
+                # Person 1 removed (not present)
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['person_count'] == 1
+        assert body['item_count'] == 1
+
+    def test_multiple_persons_with_multiple_items(self, mock_dynamodb, mock_auth):
+        """Multiple persons each with multiple product lines."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('15.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {
+                    'name': 'Alice',
+                    'items': [
+                        {'product_id': 'prod-1', 'quantity': 2},
+                        {'product_id': 'prod-1', 'quantity': 1},
+                    ],
+                },
+                {
+                    'name': 'Bob',
+                    'items': [
+                        {'product_id': 'prod-1', 'quantity': 3},
+                    ],
+                },
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['person_count'] == 2
+        assert body['item_count'] == 3
+        # Total: (2*15) + (1*15) + (3*15) = 90
+        assert body['total_amount'] == 90.0
+
+    def test_persons_stores_persons_metadata(self, mock_dynamodb, mock_auth):
+        """Persons metadata is stored alongside items."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {'name': 'Jan', 'items': []},
+                {'name': 'Piet', 'items': []},
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+        # Verify persons data is stored
+        call_kwargs = mock_dynamodb['orders'].update_item.call_args[1]
+        assert ':persons' in call_kwargs['ExpressionAttributeValues']
+        persons_stored = call_kwargs['ExpressionAttributeValues'][':persons']
+        assert len(persons_stored) == 2
+        assert persons_stored[0]['name'] == 'Jan'
+        assert persons_stored[1]['name'] == 'Piet'
+
+    def test_accepts_empty_persons_array(self, mock_dynamodb, mock_auth):
+        """Empty persons array is valid (all persons removed)."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['person_count'] == 0
+        assert body['item_count'] == 0
+
+    def test_rejects_invalid_person_type(self, mock_dynamodb, mock_auth):
+        """Rejects non-object entries in persons array."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': ['not-an-object'],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'must be an object' in body['error'].lower()
+
+    def test_persons_with_empty_name_accepted_in_draft(self, mock_dynamodb, mock_auth):
+        """Draft orders accept persons with empty names (validation at submit)."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {'name': '', 'items': []},
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+    def test_person_index_stored_on_items(self, mock_dynamodb, mock_auth):
+        """Each processed item has person_index for association."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('10.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [
+                {'name': 'Person A', 'items': [{'product_id': 'prod-1', 'quantity': 1}]},
+                {'name': 'Person B', 'items': [{'product_id': 'prod-1', 'quantity': 1}]},
+            ],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+        call_kwargs = mock_dynamodb['orders'].update_item.call_args[1]
+        items = call_kwargs['ExpressionAttributeValues'][':items']
+        assert items[0]['person_index'] == 0
+        assert items[1]['person_index'] == 1
+
+
+class TestPersonsOptimisticLocking:
+    """Tests for optimistic locking with persons structure (Req 5.5, 8.3)."""
+
+    def test_version_conflict_with_persons(self, mock_dynamodb, mock_auth):
+        """409 Conflict when version doesn't match (persons path)."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=5)
+        }
+
+        event = _make_event('order-1', {
+            'version': 3,  # stale
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 409
+        body = json.loads(response['body'])
+        assert body.get('current_version') == 5
+
+    def test_version_increments_on_persons_save(self, mock_dynamodb, mock_auth):
+        """Version increments when saving with persons structure."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=3)
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 3,
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['version'] == 4
+
+    def test_conditional_check_failure_with_persons(self, mock_dynamodb, mock_auth):
+        """409 on DynamoDB race condition with persons path."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['orders'].update_item.side_effect = ClientError(
+            {'Error': {'Code': 'ConditionalCheckFailedException', 'Message': 'Condition not met'}},
+            'UpdateItem'
+        )
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 409
+
+
+class TestDelegateAccess:
+    """Tests for delegate access to event orders (Req 5.5)."""
+
+    def test_allows_primary_delegate_access(self, mock_dynamodb, mock_auth):
+        """Primary delegate can update the order."""
+        from app import lambda_handler
+
+        order = _draft_order(version=1, user_email='owner@test.nl')
+        order['delegates'] = {
+            'primary': 'user@test.nl',
+            'primary_member_id': 'member-1',
+        }
+        mock_dynamodb['orders'].get_item.return_value = {'Item': order}
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+    def test_allows_secondary_delegate_access(self, mock_dynamodb, mock_auth):
+        """Secondary delegate can update the order."""
+        from app import lambda_handler
+
+        order = _draft_order(version=1, user_email='owner@test.nl')
+        order['delegates'] = {
+            'primary': 'owner@test.nl',
+            'secondary': 'user@test.nl',
+            'primary_member_id': 'member-owner',
+            'secondary_member_id': 'member-1',
+        }
+        mock_dynamodb['orders'].get_item.return_value = {'Item': order}
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+
+    def test_rejects_non_delegate(self, mock_dynamodb, mock_auth):
+        """Non-delegate cannot update event order."""
+        from app import lambda_handler
+
+        order = _draft_order(version=1, user_email='owner@test.nl')
+        order['delegates'] = {
+            'primary': 'other@test.nl',
+            'secondary': 'another@test.nl',
+            'primary_member_id': 'member-other',
+            'secondary_member_id': 'member-another',
+        }
+        mock_dynamodb['orders'].get_item.return_value = {'Item': order}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 403
+
+
+class TestBackwardCompatibility:
+    """Tests to ensure backward compatibility with flat items array."""
+
+    def test_items_still_works(self, mock_dynamodb, mock_auth):
+        """Flat items array still works for webshop orders."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['producten'].get_item.return_value = {
+            'Item': {'product_id': 'prod-1', 'price': Decimal('10.00')}
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'items': [{'product_id': 'prod-1', 'quantity': 2}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert 'person_count' not in body  # No persons in flat items mode
+        assert body['item_count'] == 1
+
+    def test_persons_takes_precedence_over_items(self, mock_dynamodb, mock_auth):
+        """When both persons and items are provided, persons is used."""
+        from app import lambda_handler
+
+        mock_dynamodb['orders'].get_item.return_value = {
+            'Item': _draft_order(version=1)
+        }
+        mock_dynamodb['orders'].update_item.return_value = {}
+
+        event = _make_event('order-1', {
+            'version': 1,
+            'items': [{'product_id': 'prod-1', 'quantity': 1}],
+            'persons': [{'name': 'Jan', 'items': []}],
+        })
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['person_count'] == 1  # Persons was used
+
+    def test_rejects_neither_items_nor_persons(self, mock_dynamodb, mock_auth):
+        """Rejects request with neither items nor persons."""
+        from app import lambda_handler
+
+        event = _make_event('order-1', {'version': 1})
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'items or persons' in body['error'].lower()

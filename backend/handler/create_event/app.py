@@ -1,8 +1,10 @@
 import json
 import boto3
+import bcrypt
 import uuid
 import os
 from datetime import datetime
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -15,6 +17,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.price_validation import validate_price_field
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -25,18 +28,21 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
-table_name = os.environ.get('DYNAMODB_TABLE', os.environ.get('EVENTS_TABLE_NAME', 'Events'))
+table_name = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 table = dynamodb.Table(table_name)
 
 # Valid event statuses and counting rules
 VALID_STATUSES = {'draft', 'open', 'closed', 'archived'}
 VALID_COUNTING_RULES = {'count_items_by_product', 'count_distinct_clubs', 'sum_field'}
-REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'registration_open', 'registration_close']
+REQUIRED_FIELDS = ['name', 'event_type', 'start_date', 'end_date', 'linked_regio']
 
 
 def validate_dates(body):
     """
     Validate date ordering: registration_open < registration_close <= start_date <= end_date.
+    Only validates relationships between dates that are actually provided.
+    Compares date portions only (first 10 chars: yyyy-mm-dd) to handle mixed
+    date-only and datetime-local formats correctly.
 
     Returns list of error strings (empty if valid).
     """
@@ -46,10 +52,15 @@ def validate_dates(body):
     start = body.get('start_date')
     end = body.get('end_date')
 
+    # Normalize to comparable strings (full datetime for same-type, date portion for cross-type)
+    def to_date(val: str) -> str:
+        """Extract date portion (yyyy-mm-dd) for comparison."""
+        return val[:10] if val else ''
+
     if reg_open and reg_close and reg_open >= reg_close:
         errors.append('registration_open must be before registration_close')
-    if reg_close and start and reg_close > start:
-        errors.append('registration_close must be before or equal to start_date')
+    if reg_close and end and to_date(reg_close) > to_date(end):
+        errors.append('registration_close must be before or equal to end_date')
     if start and end and start > end:
         errors.append('start_date must be before or equal to end_date')
 
@@ -210,6 +221,34 @@ def lambda_handler(event, context):
             if slug_error:
                 return slug_error
 
+        # Validate and coerce financial fields
+        for field in ['cost', 'revenue']:
+            if field in body and body[field] is not None:
+                decimal_value, error = validate_price_field(body[field], field)
+                if error:
+                    return create_error_response(400, error)
+                body[field] = decimal_value
+
+        # Validate participants as non-negative integer
+        if 'participants' in body and body['participants'] is not None:
+            try:
+                body['participants'] = int(body['participants'])
+                if body['participants'] < 0:
+                    return create_error_response(400, 'participants must be non-negative')
+            except (ValueError, TypeError):
+                return create_error_response(400, 'participants must be an integer')
+
+        # Hash event_password if provided (store as bcrypt hash, never plaintext)
+        if 'event_password' in body:
+            raw_password = body['event_password']
+            if raw_password and isinstance(raw_password, str):
+                if len(raw_password) < 4:
+                    return create_error_response(400, 'event_password must be at least 4 characters')
+                password_bytes = raw_password.encode('utf-8')[:72]
+                body['event_password'] = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
+            else:
+                body.pop('event_password', None)
+
         # Generate event ID and create event item
         event_id = str(uuid.uuid4())
         event_item = {
@@ -221,9 +260,17 @@ def lambda_handler(event, context):
 
         # Copy allowed fields from body
         allowed_fields = [
-            'name', 'event_type', 'location', 'start_date', 'end_date',
-            'registration_open', 'registration_close', 'payment_deadline',
-            'constraints', 'product_ids', 'landing_page'
+            # core
+            'name', 'event_type', 'event_category', 'participation',
+            'linked_regio', 'location', 'slug', 'poster_url',
+            # dates
+            'start_date', 'end_date', 'registration_open', 'registration_close', 'payment_deadline',
+            # config
+            'constraints', 'product_ids', 'landing_page',
+            # booking
+            'event_password', 'registry_config',
+            # financial
+            'participants', 'cost', 'revenue', 'notes',
         ]
         for field in allowed_fields:
             if field in body:

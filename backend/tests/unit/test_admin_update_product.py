@@ -419,3 +419,169 @@ class TestAdminUpdateProductVariantSchemaRejection:
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
         assert body['product']['naam'] == 'Updated Name'
+
+
+class TestAdminUpdateProductEventIdIgnored:
+    """Test that event_id and event_ids in update payload are silently ignored.
+
+    Validates: Requirements 4.1, 4.2, 4.3
+    The handler's UPDATABLE_FIELDS list does not include event_id or event_ids,
+    so these fields are ignored during update operations.
+    """
+
+    @mock_aws
+    @patch('app.extract_user_credentials')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.log_successful_access')
+    def test_event_ids_in_payload_is_ignored(self, mock_log, mock_validate, mock_extract):
+        """event_ids in update payload is silently ignored and not written to DynamoDB."""
+        mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
+        mock_validate.return_value = (True, None, {})
+
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = _create_table(dynamodb)
+        _seed_parent_product(table)
+
+        import app
+        app.table = table
+
+        event = _make_event('prod_test123', {
+            'naam': 'Updated Name',
+            'event_ids': ['event_001', 'event_002']
+        })
+        response = app.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['product']['naam'] == 'Updated Name'
+        # event_ids must not appear in the updated product
+        assert 'event_ids' not in body['product']
+
+        # Verify in DynamoDB directly
+        db_item = table.get_item(Key={'product_id': 'prod_test123'})['Item']
+        assert 'event_ids' not in db_item
+
+    @mock_aws
+    @patch('app.extract_user_credentials')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.log_successful_access')
+    def test_event_id_in_payload_is_ignored(self, mock_log, mock_validate, mock_extract):
+        """event_id in update payload is silently ignored and not written to DynamoDB."""
+        mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
+        mock_validate.return_value = (True, None, {})
+
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = _create_table(dynamodb)
+        _seed_parent_product(table)
+
+        import app
+        app.table = table
+
+        event = _make_event('prod_test123', {
+            'naam': 'Another Name',
+            'event_id': 'event_999'
+        })
+        response = app.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['product']['naam'] == 'Another Name'
+        # event_id must not appear in the updated product
+        assert 'event_id' not in body['product']
+
+        # Verify in DynamoDB directly
+        db_item = table.get_item(Key={'product_id': 'prod_test123'})['Item']
+        assert 'event_id' not in db_item
+
+    @mock_aws
+    @patch('app.extract_user_credentials')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.log_successful_access')
+    def test_event_id_and_event_ids_together_are_ignored(self, mock_log, mock_validate, mock_extract):
+        """Both event_id and event_ids in update payload are silently ignored."""
+        mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
+        mock_validate.return_value = (True, None, {})
+
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = _create_table(dynamodb)
+        _seed_parent_product(table)
+
+        import app
+        app.table = table
+
+        event = _make_event('prod_test123', {
+            'active': False,
+            'event_id': 'event_abc',
+            'event_ids': ['event_abc', 'event_def']
+        })
+        response = app.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        assert body['product']['active'] is False
+        assert 'event_id' not in body['product']
+        assert 'event_ids' not in body['product']
+
+        # Verify in DynamoDB directly
+        db_item = table.get_item(Key={'product_id': 'prod_test123'})['Item']
+        assert 'event_id' not in db_item
+        assert 'event_ids' not in db_item
+
+    @mock_aws
+    @patch('app.extract_user_credentials')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.log_successful_access')
+    def test_valid_updatable_fields_still_work(self, mock_log, mock_validate, mock_extract):
+        """Valid updatable fields (naam, active, groep, prijs) are still updated correctly."""
+        mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
+        mock_validate.return_value = (True, None, {})
+
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = _create_table(dynamodb)
+        _seed_parent_product(table)
+
+        import app
+        app.table = table
+
+        event = _make_event('prod_test123', {
+            'naam': 'H-DCN Shirt XL',
+            'groep': 'Merchandise',
+            'active': True,
+            'prijs': 35.50,
+        })
+        response = app.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+        body = json.loads(response['body'])
+        product = body['product']
+        assert product['naam'] == 'H-DCN Shirt XL'
+        assert product['groep'] == 'Merchandise'
+        assert product['active'] is True
+        assert float(product['prijs']) == 35.50
+
+    @mock_aws
+    @patch('app.extract_user_credentials')
+    @patch('app.validate_permissions_with_regions')
+    @patch('app.log_successful_access')
+    def test_only_event_ids_in_payload_returns_no_updatable_fields_error(self, mock_log, mock_validate, mock_extract):
+        """Sending only event_id/event_ids (no valid fields) returns 400 'No updatable fields'."""
+        mock_extract.return_value = ('admin@h-dcn.nl', ['Products_CRUD'], None)
+        mock_validate.return_value = (True, None, {})
+
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = _create_table(dynamodb)
+        _seed_parent_product(table)
+
+        import app
+        app.table = table
+
+        # Only deprecated fields — no valid updatable field
+        event = _make_event('prod_test123', {
+            'event_id': 'event_999',
+            'event_ids': ['event_001']
+        })
+        response = app.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'no updatable fields' in body['error'].lower()

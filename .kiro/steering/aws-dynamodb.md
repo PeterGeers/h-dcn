@@ -44,6 +44,18 @@
 
 DynamoDB tables, Cognito User Pool, and S3 data buckets are managed OUTSIDE the SAM template. They were created manually. **Never** add them as CloudFormation resources without `DeletionPolicy: Retain` — a previous deploy deleted production data this way.
 
+### Clearing Optional Fields (REMOVE pattern)
+
+When a user empties an optional field (removes all items from a list, clears a map), the frontend MUST send `[]` or `null` — never `undefined`. The backend MUST use DynamoDB `REMOVE` for empty/null values instead of `SET`.
+
+- `[]` or `null` → REMOVE attribute from DynamoDB
+- `undefined` (key absent) → no action (field unchanged)
+- Non-empty value → SET attribute
+
+See: `docs/patterns/dynamodb-remove-pattern.md` for implementation examples.
+
+**Applies to:** `order_item_fields`, `purchase_rules`, `variant_schema`, `images`, and any other optional list/map attributes.
+
 ## Cognito Configuration
 
 - Pool `eu-west-1_fcUkvwjH5` is managed externally (not in SAM template)

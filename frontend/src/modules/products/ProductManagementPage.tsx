@@ -1,13 +1,13 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { scanProducts, updateProduct, deleteProduct, insertProduct, softDeleteProduct, hardDeleteProduct } from './api/productApi';
 import ProductTable from './components/ProductTable';
 import ProductCard from './components/ProductCard';
-import ProductFilter from './components/ProductFilter';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
 import { isActive, isDeactivated } from '../../utils/productHelpers';
+import { FilterPanel, GenericFilter } from '../../components/filters';
 
 import {
   Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription,
@@ -16,13 +16,7 @@ import {
   AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader,
   AlertDialogContent, AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { DeleteIcon, NotAllowedIcon, CheckIcon } from '@chakra-ui/icons';
-
-interface FilterOption {
-  type: 'group' | 'subgroup';
-  value: string;
-  group?: string;
-}
+import { DeleteIcon, NotAllowedIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
 
 interface User {
   attributes?: {
@@ -257,31 +251,43 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     setActionProduct(null);
   };
 
-  const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
+  const [selectedGroep, setSelectedGroep] = useState<string>('');
+  const [selectedSubgroep, setSelectedSubgroep] = useState<string>('');
+
+  // Build dynamic filter options from product data
+  const { groepOptions, subgroepOptions } = useMemo(() => {
+    const groups = new Set<string>();
+    const subgroups = new Set<string>();
+    products.forEach(p => {
+      if (p.groep) groups.add(p.groep);
+      if (p.subgroep && (!selectedGroep || p.groep === selectedGroep)) {
+        subgroups.add(p.subgroep);
+      }
+    });
+    return {
+      groepOptions: Array.from(groups).sort().map(g => ({ value: g, label: g })),
+      subgroepOptions: Array.from(subgroups).sort().map(s => ({ value: s, label: s })),
+    };
+  }, [products, selectedGroep]);
+
   const filteredProducts = products.filter((p: Product) => {
     // Apply active/inactive filter (default: show only active)
     if (!showInactive && isDeactivated(p)) return false;
 
     // Apply event_ids filter based on the active event filter
     if (activeFilter === 'webshop') {
-      // Show only products in the webshop event
       const eventIds = (p as any).event_ids || [];
       if (!eventIds.includes('evt-webshop')) return false;
     } else if (activeFilter && activeFilter !== '') {
-      // Show only products linked to a specific event
       const eventIds = (p as any).event_ids || [];
       if (!eventIds.includes(activeFilter)) return false;
     }
-    // When activeFilter is "" (Alle), show all products — no event filtering
 
-    // Apply group/subgroup filter
-    if (!selectedFilter) return true;
-    if (selectedFilter.type === 'group') {
-      return p.groep === selectedFilter.value;
-    }
-    if (selectedFilter.type === 'subgroup') {
-      return p.groep === selectedFilter.group && p.subgroep === selectedFilter.value;
-    }
+    // Apply group filter
+    if (selectedGroep && p.groep !== selectedGroep) return false;
+    // Apply subgroup filter
+    if (selectedSubgroep && p.subgroep !== selectedSubgroep) return false;
+
     return true;
   });
 
@@ -397,11 +403,41 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
 
         <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
           <Box w={{ base: 'full', lg: '300px' }}>
-            <ProductFilter
-              products={products}
-              selectedFilter={selectedFilter}
-              onFilterChange={setSelectedFilter}
-            />
+            <FilterPanel
+              hasActiveFilters={!!selectedGroep || !!selectedSubgroep}
+              onReset={() => { setSelectedGroep(''); setSelectedSubgroep(''); }}
+              filteredCount={filteredProducts.length}
+              totalCount={products.length}
+            >
+              {hasProductsFullAccess && (
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="green"
+                  size="sm"
+                  w="full"
+                  mb={3}
+                  onClick={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
+                >
+                  {t('management.new_product', 'Nieuw product')}
+                </Button>
+              )}
+              <GenericFilter
+                label={t('management.group', 'Groep')}
+                value={selectedGroep}
+                options={groepOptions}
+                onChange={(v) => { setSelectedGroep(v); setSelectedSubgroep(''); }}
+                placeholder={t('management.all_groups', 'Alle groepen')}
+              />
+              {subgroepOptions.length > 0 && (
+                <GenericFilter
+                  label={t('management.subgroup', 'Subgroep')}
+                  value={selectedSubgroep}
+                  options={subgroepOptions}
+                  onChange={setSelectedSubgroep}
+                  placeholder={t('management.all_subgroups', 'Alle subgroepen')}
+                />
+              )}
+            </FilterPanel>
           </Box>
           <Box flex={1}>
             <ProductTable
@@ -478,6 +514,14 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               onSave={handleSave}
               onDelete={handleDelete}
               onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
+              onCopy={(sourceProduct) => {
+                const { product_id, id, created_at, updated_at, ...rest } = sourceProduct as any;
+                setSelected({
+                  ...rest,
+                  product_id: '',
+                  naam: `${rest.naam || ''} (kopie)`,
+                });
+              }}
               onClose={() => setSelected(null)}
               readOnly={false}
             />

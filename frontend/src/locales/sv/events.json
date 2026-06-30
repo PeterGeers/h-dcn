@@ -1,38 +1,27 @@
 {
   "title": "Evenemang",
-  "loading": {
-    "permissions": "Laddar behörigheter...",
-    "events": "Laddar evenemang..."
-  },
-  "tabs": {
-    "events": "Evenemang",
-    "finance": "Ekonomi",
-    "analytics": "Analys"
-  },
-  "access": {
-    "no_access": "Du har inte åtkomst till evenemangsadministrationen. Kontakta en administratör om du behöver åtkomst.",
-    "no_financial_access": "Du har inte åtkomst till finansiella data.",
-    "no_analytics_access": "Du har inte åtkomst till analys.",
-    "current_roles": "Nuvarande roller: {{roles}}",
-    "no_roles": "Inga roller tilldelade",
-    "required_roles": "Erforderliga roller: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman eller andra evenemangsrelaterade roller"
-  },
-  "communication": {
-    "title": "Evenemangskommunikation & Export",
-    "export_participants": "Exportera deltagarlistor",
-    "newsletter_content": "Nyhetsbrevinnehåll"
-  },
-  "overview": {
-    "title": "Evenemangsöversikt & Rapportering",
-    "event_overview": "Evenemangsöversikt",
-    "regional_summary": "Regional sammanfattning"
-  },
-  "fields": {
-    "name": "Namn",
-    "date": "Datum",
-    "location": "Plats",
-    "participants": "Deltagare",
-    "revenue": "Intäkter",
-    "costs": "Kostnader"
+  "loading": { "permissions": "Laddar behörigheter...", "events": "Laddar evenemang..." },
+  "tabs": { "events": "Evenemang", "finance": "Ekonomi", "analytics": "Analys" },
+  "access": { "no_access": "Du har inte åtkomst till evenemangsadministration.", "no_financial_access": "Du har inte åtkomst till ekonomiska data.", "no_analytics_access": "Du har inte åtkomst till analyser.", "current_roles": "Nuvarande roller: {{roles}}", "no_roles": "Inga roller tilldelade", "required_roles": "Nödvändiga roller: Events_Read, Events_CRUD eller andra evenemangsrelaterade roller", "region_limited": "Du kan hantera evenemang för: {{regions}}" },
+  "communication": { "title": "Evenemangskommunikation & Export", "export_participants": "Exportera deltagarlistor", "newsletter_content": "Nyhetsbrevinnehåll" },
+  "overview": { "title": "Evenemangsöversikt & Rapporter", "event_overview": "Evenemangsöversikt", "regional_summary": "Regional sammanfattning" },
+  "form": { "title_new": "Nytt evenemang", "title_edit": "Redigera evenemang", "save_new": "Skapa", "save_edit": "Uppdatera", "cancel": "Avbryt", "success_created": "Evenemang skapat", "success_updated": "Evenemang uppdaterat", "error_save": "Fel vid sparning", "validation": { "required_fields": "Namn, typ, start- och slutdatum och region krävs", "required_registration": "Registrering öppnings- och stängningsdatum krävs", "no_region_access": "Du har inte behörighet att skapa evenemang i denna region" }, "sections": { "registration": "Registrering & Deadlines", "registration_required": "obligatoriskt", "config": "Konfiguration", "financial": "Ekonomi", "landing_page": "Landningssida" } },
+  "fields": { "name": "Evenemangsnamn", "name_placeholder": "Namn på evenemanget", "event_type": "Typ", "event_type_placeholder": "Välj typ...", "participation": "Deltagande", "linked_regio": "Region", "linked_regio_placeholder": "Välj region...", "regio_all_label": "Alla regioner (nationellt)", "start_date": "Startdatum", "end_date": "Slutdatum", "location": "Plats", "location_placeholder": "T.ex. H-DCN Klubbhus, Amsterdam", "poster_url": "Affisch / Bild", "poster_placeholder": "URL eller ladda upp fil", "poster_upload": "Ladda upp", "poster_success": "Affisch uppladdad", "slug": "URL Slug", "slug_placeholder": "t.ex. presmeet-2026", "registration_open": "Registrering öppnar", "registration_close": "Registrering stänger", "payment_deadline": "Betalningsfrist", "product_ids": "Produkt-ID:n (kommaseparerade)", "product_ids_placeholder": "produkt-id-1, produkt-id-2", "participants": "Antal deltagare", "cost": "Kostnader (€)", "revenue": "Intäkter (€)", "notes": "Anteckningar", "notes_placeholder": "Interna anteckningar om kostnader, överenskommelser, etc.", "date": "Datum", "costs": "Kostnader" },
+  "event_types": { "presmeet": "PresMeet", "alv": "ALV (Årsmöte)", "rlv": "RLV (Regionalt möte)", "vbv": "VBV", "vergader_queue": "Möteskö", "internationaal_treffen": "Internationellt Träff", "nationaal_treffen": "Nationellt Träff", "openingsrit": "Öppningstur", "regio_rit": "Regional tur", "tourweekend": "Tour-helg", "sluitingsrit": "Avslutningstur", "webshop": "Webbshop", "other": "Övrigt" },
+  "event_categories": { "vergadering": "Möten", "rally": "Rallies", "rit": "Turer", "overig": "Övrigt" },
+  "participation_modes": { "open": "Öppen (deltagande för alla)", "closed": "Stängd (endast medlemmar / inbjudna)" },
+  "list": { "search_placeholder": "Sök evenemang...", "new_event": "Nytt evenemang", "new_event_short": "Nytt", "no_events": "Inga evenemang hittades", "edit": "Redigera", "duplicate": "Duplicera", "delete": "Ta bort", "no_edit_access": "Ingen behörighet att redigera", "no_duplicate_access": "Ingen behörighet att duplicera", "no_delete_access": "Ingen behörighet att ta bort", "confirm_delete": "Är du säker på att du vill ta bort \"{{name}}\"?", "deleted_success": "Evenemang borttaget", "delete_error": "Fel vid borttagning", "profit": "Vinst" },
+  "validation": {
+    "required": "{{field}} krävs",
+    "email": "Ange en giltig e-postadress",
+    "min_length": "Minst {{count}} tecken krävs",
+    "max_length": "Högst {{count}} tecken tillåtna",
+    "min": "Värdet måste vara minst {{value}}",
+    "max": "Värdet får vara högst {{value}}",
+    "pattern": "Ogiltig inmatning",
+    "invalid_number": "Ange ett giltigt nummer",
+    "invalid_option": "Välj ett giltigt alternativ",
+    "poster_invalid_type": "Ogiltig filtyp. Tillåtna: {{types}}",
+    "poster_file_too_large": "Filen är för stor. Högst {{maxSize}} tillåtet"
   }
 }

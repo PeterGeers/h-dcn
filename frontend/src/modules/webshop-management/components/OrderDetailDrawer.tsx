@@ -36,6 +36,7 @@ import {
   Tooltip,
   useToast,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import { StatusBadge } from './StatusBadge';
 import {
@@ -56,7 +57,7 @@ export interface OrderDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderUpdated: () => void;
-  eventFilter: string;
+  eventFilter?: string;
 }
 
 /**
@@ -127,6 +128,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   eventFilter,
 }) => {
   const { canMutate } = useAdminPermissions();
+  const { t } = useTranslation('webshop');
   const toast = useToast();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
@@ -140,8 +142,8 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     try {
       await updateOrderStatus(order.order_id, nextStatus);
       toast({
-        title: 'Status bijgewerkt',
-        description: `Bestelling naar "${nextStatus}" gezet.`,
+        title: t('toast.status_updated'),
+        description: t('toast.status_updated_desc', { status: nextStatus }),
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -150,9 +152,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       onClose();
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Status wijzigen mislukt';
+        err instanceof Error ? err.message : t('toast.status_update_error');
       toast({
-        title: 'Fout',
+        title: t('toast.error_title'),
         description: message,
         status: 'error',
         duration: 5000,
@@ -168,7 +170,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     try {
       await updateOrderStatus(order.order_id, 'locked');
       toast({
-        title: 'Bestelling vergrendeld',
+        title: t('toast.order_locked'),
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -177,9 +179,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       onClose();
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Vergrendelen mislukt';
+        err instanceof Error ? err.message : t('toast.lock_error');
       toast({
-        title: 'Fout',
+        title: t('toast.error_title'),
         description: message,
         status: 'error',
         duration: 5000,
@@ -195,7 +197,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     try {
       await unlockOrder(order.order_id);
       toast({
-        title: 'Bestelling ontgrendeld',
+        title: t('toast.order_unlocked'),
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -204,9 +206,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       onClose();
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Ontgrendelen mislukt';
+        err instanceof Error ? err.message : t('toast.unlock_error');
       toast({
-        title: 'Fout',
+        title: t('toast.error_title'),
         description: message,
         status: 'error',
         duration: 5000,
@@ -222,8 +224,8 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     try {
       await lockOrders(eventFilter || undefined);
       toast({
-        title: 'Alle bestellingen vergrendeld',
-        description: 'Alle ingediende bestellingen zijn vergrendeld.',
+        title: t('toast.all_orders_locked'),
+        description: t('toast.all_orders_locked_desc'),
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -232,9 +234,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       onClose();
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Bulk vergrendelen mislukt';
+        err instanceof Error ? err.message : t('toast.bulk_lock_error');
       toast({
-        title: 'Fout',
+        title: t('toast.error_title'),
         description: message,
         status: 'error',
         duration: 5000,

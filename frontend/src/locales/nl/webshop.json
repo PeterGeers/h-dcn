@@ -1,5 +1,9 @@
 {
   "title": "H-DCN Webshop",
+  "filter": {
+    "all_groups": "Alle groepen",
+    "all_subgroups": "Alle subgroepen"
+  },
   "cart": {
     "title": "Winkelwagen",
     "item_count": "Winkelwagen ({{count}})",
@@ -184,5 +188,40 @@
     "combination_unavailable": "Combinatie niet beschikbaar",
     "select_all_prompt": "Selecteer alle opties",
     "fetch_error": "Varianten konden niet worden geladen"
+  },
+  "validation": {
+    "required": "{{field}} is verplicht",
+    "email": "Voer een geldig emailadres in",
+    "min_length": "Minimaal {{count}} karakters vereist",
+    "max_length": "Maximaal {{count}} karakters toegestaan",
+    "min": "Waarde moet minimaal {{value}} zijn",
+    "max": "Waarde mag maximaal {{value}} zijn",
+    "pattern": "Ongeldige invoer",
+    "invalid_number": "Voer een geldig nummer in",
+    "invalid_option": "Selecteer een geldige optie",
+    "unique": "{{field}} moet uniek zijn",
+    "select_min_options": "Selectie moet minimaal {{count}} optie hebben"
+  },
+  "toast": {
+    "payment_recorded": "Betaling geregistreerd",
+    "payment_recorded_desc": "Betaling van € {{amount}} is succesvol verwerkt.",
+    "payment_record_error": "Fout bij registreren",
+    "status_updated": "Status bijgewerkt",
+    "status_updated_desc": "Bestelling naar \"{{status}}\" gezet.",
+    "status_update_error": "Status wijzigen mislukt",
+    "order_locked": "Bestelling vergrendeld",
+    "lock_error": "Vergrendelen mislukt",
+    "order_unlocked": "Bestelling ontgrendeld",
+    "unlock_error": "Ontgrendelen mislukt",
+    "all_orders_locked": "Alle bestellingen vergrendeld",
+    "all_orders_locked_desc": "Alle ingediende bestellingen zijn vergrendeld.",
+    "bulk_lock_error": "Bulk vergrendelen mislukt",
+    "error_title": "Fout"
+  },
+  "payment_record": {
+    "order_id_label": "Bestelling ID",
+    "amount_label": "Bedrag",
+    "date_label": "Datum",
+    "date_format_error": "Gebruik ISO datumformaat (YYYY-MM-DD)"
   }
 }

@@ -40,14 +40,16 @@ describe('Error Handler Utilities', () => {
 
       const error = await parseApiError(mockResponse);
 
+      // Priority chain: backend `message` field wins over status mapping
       expect(error).toEqual({
         status: 503,
-        message: ERROR_MESSAGES.MAINTENANCE, // The function overrides with default message for 503
+        message: 'Het authenticatiesysteem is tijdelijk niet beschikbaar voor onderhoud',
         details: JSON.stringify({
           message: 'Het authenticatiesysteem is tijdelijk niet beschikbaar voor onderhoud',
           details: 'AUTH_SYSTEM_FAILURE'
         }),
-        isMaintenanceMode: true
+        isMaintenanceMode: true,
+        errorKey: undefined
       });
     });
 
@@ -63,7 +65,8 @@ describe('Error Handler Utilities', () => {
         status: 503,
         message: ERROR_MESSAGES.MAINTENANCE,
         details: 'Service temporarily unavailable',
-        isMaintenanceMode: true
+        isMaintenanceMode: true,
+        errorKey: undefined
       });
     });
 
@@ -77,11 +80,13 @@ describe('Error Handler Utilities', () => {
 
       const error = await parseApiError(mockResponse);
 
+      // Priority chain: backend `error` field wins over status mapping
       expect(error).toEqual({
         status: 401,
-        message: ERROR_MESSAGES.UNAUTHORIZED,
+        message: 'Invalid JWT token',
         details: JSON.stringify({ error: 'Invalid JWT token' }),
-        isMaintenanceMode: false
+        isMaintenanceMode: false,
+        errorKey: undefined
       });
     });
 
@@ -97,7 +102,8 @@ describe('Error Handler Utilities', () => {
         status: 403,
         message: ERROR_MESSAGES.FORBIDDEN,
         details: 'Insufficient permissions',
-        isMaintenanceMode: false
+        isMaintenanceMode: false,
+        errorKey: undefined
       });
     });
 
@@ -113,7 +119,8 @@ describe('Error Handler Utilities', () => {
         status: 404,
         message: ERROR_MESSAGES.NOT_FOUND,
         details: '',
-        isMaintenanceMode: false
+        isMaintenanceMode: false,
+        errorKey: undefined
       });
     });
 
@@ -128,14 +135,16 @@ describe('Error Handler Utilities', () => {
 
       const error = await parseApiError(mockResponse);
 
+      // Priority chain: backend `message` field wins over status mapping
       expect(error).toEqual({
         status: 500,
-        message: ERROR_MESSAGES.SERVER_ERROR,
+        message: 'Internal server error',
         details: JSON.stringify({
           message: 'Internal server error',
           stack: 'Error stack trace...'
         }),
-        isMaintenanceMode: false
+        isMaintenanceMode: false,
+        errorKey: undefined
       });
     });
 
@@ -151,7 +160,8 @@ describe('Error Handler Utilities', () => {
         status: 500,
         message: ERROR_MESSAGES.SERVER_ERROR,
         details: '',
-        isMaintenanceMode: false
+        isMaintenanceMode: false,
+        errorKey: undefined
       });
     });
   });

@@ -7,32 +7,133 @@
   "tabs": {
     "events": "Événements",
     "finance": "Finances",
-    "analytics": "Analytique"
+    "analytics": "Analyses"
   },
   "access": {
-    "no_access": "Vous n'avez pas accès à l'administration des événements. Contactez un administrateur si vous avez besoin d'un accès.",
+    "no_access": "Vous n'avez pas accès à l'administration des événements. Contactez un administrateur.",
     "no_financial_access": "Vous n'avez pas accès aux données financières.",
-    "no_analytics_access": "Vous n'avez pas accès aux analytiques.",
+    "no_analytics_access": "Vous n'avez pas accès aux analyses.",
     "current_roles": "Rôles actuels : {{roles}}",
     "no_roles": "Aucun rôle attribué",
-    "required_roles": "Rôles requis : Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, ou autres rôles liés aux événements"
+    "required_roles": "Rôles requis : Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman ou autres rôles liés aux événements",
+    "region_limited": "Vous pouvez gérer les événements pour : {{regions}}"
   },
   "communication": {
     "title": "Communication & Export d'événements",
     "export_participants": "Exporter les listes de participants",
-    "newsletter_content": "Contenu de la newsletter"
+    "newsletter_content": "Contenu newsletter"
   },
   "overview": {
     "title": "Aperçu & Rapports des événements",
     "event_overview": "Aperçu des événements",
     "regional_summary": "Résumé régional"
   },
+  "form": {
+    "title_new": "Nouvel événement",
+    "title_edit": "Modifier l'événement",
+    "save_new": "Créer",
+    "save_edit": "Mettre à jour",
+    "cancel": "Annuler",
+    "success_created": "Événement créé avec succès",
+    "success_updated": "Événement mis à jour avec succès",
+    "error_save": "Erreur lors de la sauvegarde",
+    "validation": {
+      "required_fields": "Nom, type, dates de début et fin, et région sont obligatoires",
+      "required_registration": "Les dates d'ouverture et de fermeture des inscriptions sont obligatoires",
+      "no_region_access": "Vous n'avez pas l'autorisation de créer des événements dans cette région"
+    },
+    "sections": {
+      "registration": "Inscriptions & Délais",
+      "registration_required": "obligatoire",
+      "config": "Configuration",
+      "financial": "Financier",
+      "landing_page": "Page d'accueil"
+    }
+  },
   "fields": {
-    "name": "Nom",
-    "date": "Date",
+    "name": "Nom de l'événement",
+    "name_placeholder": "Nom de l'événement",
+    "event_type": "Type",
+    "event_type_placeholder": "Sélectionner le type...",
+    "participation": "Participation",
+    "linked_regio": "Région",
+    "linked_regio_placeholder": "Sélectionner la région...",
+    "regio_all_label": "Toutes les régions (national)",
+    "start_date": "Date de début",
+    "end_date": "Date de fin",
     "location": "Lieu",
-    "participants": "Participants",
-    "revenue": "Recettes",
+    "location_placeholder": "Ex. Clubhouse H-DCN, Amsterdam",
+    "poster_url": "Affiche / Image",
+    "poster_placeholder": "URL ou télécharger un fichier",
+    "poster_upload": "Télécharger",
+    "poster_success": "Affiche téléchargée avec succès",
+    "slug": "Slug URL",
+    "slug_placeholder": "ex. presmeet-2026",
+    "registration_open": "Inscriptions ouvertes",
+    "registration_close": "Inscriptions fermées",
+    "payment_deadline": "Date limite de paiement",
+    "product_ids": "IDs produits (séparés par virgule)",
+    "product_ids_placeholder": "produit-id-1, produit-id-2",
+    "participants": "Nombre de participants",
+    "cost": "Coûts (€)",
+    "revenue": "Revenus (€)",
+    "notes": "Notes",
+    "notes_placeholder": "Notes internes sur les coûts, arrangements, etc.",
+    "date": "Date",
     "costs": "Coûts"
+  },
+  "event_types": {
+    "presmeet": "PresMeet",
+    "alv": "ALV (Assemblée Générale)",
+    "rlv": "RLV (Réunion Régionale)",
+    "vbv": "VBV",
+    "vergader_queue": "File de réunion",
+    "internationaal_treffen": "Rencontre Internationale",
+    "nationaal_treffen": "Rencontre Nationale",
+    "openingsrit": "Balade d'ouverture",
+    "regio_rit": "Balade régionale",
+    "tourweekend": "Week-end tour",
+    "sluitingsrit": "Balade de clôture",
+    "webshop": "Boutique",
+    "other": "Autre"
+  },
+  "event_categories": {
+    "vergadering": "Réunions",
+    "rally": "Rallies",
+    "rit": "Balades",
+    "overig": "Autre"
+  },
+  "participation_modes": {
+    "open": "Ouvert (participation pour tous)",
+    "closed": "Fermé (membres / invités uniquement)"
+  },
+  "list": {
+    "search_placeholder": "Rechercher des événements...",
+    "new_event": "Nouvel événement",
+    "new_event_short": "Nouveau",
+    "no_events": "Aucun événement trouvé",
+    "edit": "Modifier",
+    "duplicate": "Dupliquer",
+    "delete": "Supprimer",
+    "no_edit_access": "Pas d'autorisation pour modifier",
+    "no_duplicate_access": "Pas d'autorisation pour dupliquer",
+    "no_delete_access": "Pas d'autorisation pour supprimer",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ?",
+    "deleted_success": "Événement supprimé",
+    "delete_error": "Erreur lors de la suppression",
+    "profit": "Bénéfice"
+  },
+  "validation": {
+    "required": "{{field}} est obligatoire",
+    "email": "Entrez une adresse e-mail valide",
+    "min_length": "Minimum {{count}} caractères requis",
+    "max_length": "Maximum {{count}} caractères autorisés",
+    "min": "La valeur doit être au moins {{value}}",
+    "max": "La valeur doit être au maximum {{value}}",
+    "pattern": "Saisie invalide",
+    "invalid_number": "Entrez un nombre valide",
+    "invalid_option": "Sélectionnez une option valide",
+    "poster_invalid_type": "Type de fichier invalide. Autorisé : {{types}}",
+    "poster_file_too_large": "Fichier trop volumineux. Maximum {{maxSize}} autorisé"
   }
 }

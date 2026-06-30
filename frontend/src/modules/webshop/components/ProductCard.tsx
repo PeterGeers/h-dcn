@@ -21,7 +21,7 @@ import {
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { formatPrice } from '../../../utils/formatPrice';
-import VariantSelector from './VariantSelector';
+import VariantSelector from '../../../components/VariantSelector';
 import PurchaseRulesFeedback from './PurchaseRulesFeedback';
 import { productService } from '../services/api';
 import {

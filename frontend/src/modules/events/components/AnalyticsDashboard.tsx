@@ -9,16 +9,15 @@ import { FunctionPermissionManager, getUserRoles } from '../../../utils/function
 interface Event {
   event_id?: string;
   name?: string;
-  event_date?: string;
-  datum_van?: string;
+  event_type?: string;
+  start_date?: string;
+  end_date?: string;
   location?: string;
-  locatie?: string;
+  linked_regio?: string;
   participants?: string | number;
-  aantal_deelnemers?: string | number;
   revenue?: string | number;
-  inkomsten?: string | number;
   cost?: string | number;
-  kosten?: string | number;
+  status?: string;
 }
 
 interface AnalyticsDashboardProps {
@@ -87,31 +86,31 @@ function AnalyticsDashboard({ events, permissionManager, user }: AnalyticsDashbo
     }
 
     const totalEvents = events.length;
-    const totalParticipants = events.reduce((sum, event) => sum + (parseInt(String(event.participants || event.aantal_deelnemers)) || 0), 0);
+    const totalParticipants = events.reduce((sum, event) => sum + (parseInt(String(event.participants)) || 0), 0);
     const averageAttendance = totalEvents > 0 ? Math.round(totalParticipants / totalEvents) : 0;
     
-    const totalRevenue = events.reduce((sum, event) => sum + (parseFloat(String(event.revenue || event.inkomsten)) || 0), 0);
-    const totalCosts = events.reduce((sum, event) => sum + (parseFloat(String(event.cost || event.kosten)) || 0), 0);
+    const totalRevenue = events.reduce((sum, event) => sum + (parseFloat(String(event.revenue)) || 0), 0);
+    const totalCosts = events.reduce((sum, event) => sum + (parseFloat(String(event.cost)) || 0), 0);
     const totalProfit = totalRevenue - totalCosts;
     
     const avgCostPerParticipant = totalParticipants > 0 ? totalCosts / totalParticipants : 0;
     const profitableEvents = events.filter(event => 
-      (parseFloat(String(event.revenue || event.inkomsten)) || 0) > (parseFloat(String(event.cost || event.kosten)) || 0)
+      (parseFloat(String(event.revenue)) || 0) > (parseFloat(String(event.cost)) || 0)
     ).length;
 
     // Monthly statistics
     const monthlyData: Record<string, MonthlyData> = {};
     events.forEach(event => {
-      const eventDate = event.event_date || event.datum_van;
+      const eventDate = event.start_date;
       if (eventDate) {
         const month = new Date(eventDate).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long' });
         if (!monthlyData[month]) {
           monthlyData[month] = { events: 0, participants: 0, revenue: 0, costs: 0 };
         }
         monthlyData[month].events += 1;
-        monthlyData[month].participants += parseInt(String(event.participants || event.aantal_deelnemers)) || 0;
-        monthlyData[month].revenue += parseFloat(String(event.revenue || event.inkomsten)) || 0;
-        monthlyData[month].costs += parseFloat(String(event.cost || event.kosten)) || 0;
+        monthlyData[month].participants += parseInt(String(event.participants)) || 0;
+        monthlyData[month].revenue += parseFloat(String(event.revenue)) || 0;
+        monthlyData[month].costs += parseFloat(String(event.cost)) || 0;
       }
     });
 
@@ -125,15 +124,15 @@ function AnalyticsDashboard({ events, permissionManager, user }: AnalyticsDashbo
     // Location statistics
     const locationData: Record<string, MonthlyData> = {};
     events.forEach(event => {
-      const location = event.location || event.locatie;
+      const location = event.location;
       if (location) {
         if (!locationData[location]) {
           locationData[location] = { events: 0, participants: 0, revenue: 0, costs: 0 };
         }
         locationData[location].events += 1;
-        locationData[location].participants += parseInt(String(event.participants || event.aantal_deelnemers)) || 0;
-        locationData[location].revenue += parseFloat(String(event.revenue || event.inkomsten)) || 0;
-        locationData[location].costs += parseFloat(String(event.cost || event.kosten)) || 0;
+        locationData[location].participants += parseInt(String(event.participants)) || 0;
+        locationData[location].revenue += parseFloat(String(event.revenue)) || 0;
+        locationData[location].costs += parseFloat(String(event.cost)) || 0;
       }
     });
 

@@ -15,7 +15,6 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.order_state_machine import is_valid_transition
     print("Using shared auth layer")
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -81,11 +80,11 @@ def lambda_handler(event, context):
         order = response['Item']
         current_status = order.get('status', 'draft')
 
-        # Only locked orders can be unlocked
-        if current_status != 'locked':
+        # Only submitted or locked orders can be unlocked (Req 10.3)
+        if current_status not in ('submitted', 'locked'):
             return create_error_response(
                 400,
-                f'Cannot unlock order with status "{current_status}". Only locked orders can be unlocked.'
+                f'Cannot unlock order with status "{current_status}". Only submitted or locked orders can be unlocked.'
             )
 
         # Check if the linked event is closed — reject unlock if so
@@ -101,14 +100,10 @@ def lambda_handler(event, context):
                         'Event is closed. Edit the order directly instead.'
                     )
 
-        # Validate transition (locked → submitted)
-        if not is_valid_transition('locked', 'submitted'):
-            return create_error_response(400, 'Invalid state transition')
-
         now = datetime.now(timezone.utc).isoformat()
         history_entry = {
-            'from': 'locked',
-            'to': 'submitted',
+            'from': current_status,
+            'to': 'draft',
             'at': now,
             'by': user_email,
             'source': 'manual'
@@ -118,16 +113,17 @@ def lambda_handler(event, context):
         try:
             updated = table.update_item(
                 Key={'order_id': order_id},
-                UpdateExpression='SET #status = :submitted, updated_at = :now, status_history = list_append(if_not_exists(status_history, :empty_list), :history_entry)',
+                UpdateExpression='SET #status = :draft, updated_at = :now, status_history = list_append(if_not_exists(status_history, :empty_list), :history_entry)',
                 ExpressionAttributeNames={'#status': 'status'},
                 ExpressionAttributeValues={
-                    ':submitted': 'submitted',
+                    ':draft': 'draft',
                     ':now': now,
+                    ':submitted': 'submitted',
                     ':locked': 'locked',
                     ':history_entry': [history_entry],
                     ':empty_list': []
                 },
-                ConditionExpression='#status = :locked',
+                ConditionExpression='#status = :submitted OR #status = :locked',
                 ReturnValues='ALL_NEW'
             )
         except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:

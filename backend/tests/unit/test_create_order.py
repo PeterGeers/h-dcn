@@ -253,6 +253,50 @@ class TestEventOrderCreation:
         # Creates new since no non-cancelled order found
         assert response['statusCode'] == 201
 
+    def test_rejects_event_order_without_club_id(self, mock_dynamodb, mock_auth):
+        """Event order returns 400 when club_id is null/empty (Req 18.3)."""
+        from handler.create_order.app import lambda_handler
+
+        mock_dynamodb['members'].scan.return_value = {
+            'Items': [{'member_id': 'member-1'}]
+        }
+        # get_club_id returns None (no club_id resolvable)
+        mock_auth['get_club_id'].return_value = None
+
+        event = _make_event({
+            'event_id': 'event-abc',
+            'club_id': None,
+            'items': [{'product_id': 'prod-1', 'quantity': 1}],
+        })
+
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 400
+
+        body = json.loads(response['body'])
+        assert 'club_id' in body.get('error', body.get('message', ''))
+
+    def test_rejects_event_order_with_empty_club_id(self, mock_dynamodb, mock_auth):
+        """Event order returns 400 when club_id is empty string (Req 18.3)."""
+        from handler.create_order.app import lambda_handler
+
+        mock_dynamodb['members'].scan.return_value = {
+            'Items': [{'member_id': 'member-1'}]
+        }
+        # get_club_id also returns empty string
+        mock_auth['get_club_id'].return_value = ''
+
+        event = _make_event({
+            'event_id': 'event-abc',
+            'club_id': '',
+            'items': [{'product_id': 'prod-1', 'quantity': 1}],
+        })
+
+        response = lambda_handler(event, None)
+        assert response['statusCode'] == 400
+
+        body = json.loads(response['body'])
+        assert 'club_id' in body.get('error', body.get('message', ''))
+
 
 class TestPriceValidation:
     """Tests for product price fetching and validation."""

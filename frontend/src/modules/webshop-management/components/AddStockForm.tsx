@@ -31,8 +31,10 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { addStock } from '../services/adminApi';
 import { AddStockRequest } from '../types/admin.types';
+import { getValidationMessage } from '../../../utils/validationMessages';
 
 export interface AddStockFormProps {
   productId: string;
@@ -51,6 +53,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation('products');
   const toast = useToast();
 
   const [quantity, setQuantity] = useState<string>('');
@@ -76,8 +79,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 
     if (!qty || qty <= 0 || !Number.isInteger(qty) || quantity.trim() !== String(qty)) {
       toast({
-        title: 'Ongeldig aantal',
-        description: 'Voer een geheel getal tussen 1 en 10.000 in.',
+        title: t('toast.stock_invalid_quantity'),
+        description: t('toast.stock_invalid_quantity_desc'),
         status: 'warning',
         duration: 3000,
       });
@@ -86,8 +89,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 
     if (qty > 10000) {
       toast({
-        title: 'Ongeldig aantal',
-        description: 'Voer een geheel getal tussen 1 en 10.000 in.',
+        title: t('toast.stock_invalid_quantity'),
+        description: t('toast.stock_invalid_quantity_desc'),
         status: 'warning',
         duration: 3000,
       });
@@ -96,8 +99,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 
     if (!price || price <= 0) {
       toast({
-        title: 'Ongeldige inkoopprijs',
-        description: 'Voer een bedrag groter dan €0,00 in.',
+        title: t('toast.stock_invalid_price'),
+        description: t('toast.stock_invalid_price_desc'),
         status: 'warning',
         duration: 3000,
       });
@@ -106,8 +109,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
 
     if (!supplierName.trim()) {
       toast({
-        title: 'Leverancier verplicht',
-        description: 'Vul de naam van de leverancier in.',
+        title: getValidationMessage(t, 'required', { field: t('toast.stock_supplier_label') }),
+        description: t('toast.stock_supplier_required_desc'),
         status: 'warning',
         duration: 3000,
       });
@@ -125,8 +128,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
     try {
       await addStock(productId, variantId, data);
       toast({
-        title: 'Voorraad toegevoegd',
-        description: `${qty} stuks toegevoegd aan "${variantLabel}".`,
+        title: t('toast.stock_added'),
+        description: t('toast.stock_added_desc', { quantity: qty, variant: variantLabel }),
         status: 'success',
         duration: 3000,
       });
@@ -134,8 +137,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({
       onSuccess();
     } catch (err: any) {
       toast({
-        title: 'Fout bij toevoegen voorraad',
-        description: err?.response?.data?.message || err?.message || 'Onbekende fout',
+        title: t('toast.stock_error'),
+        description: err?.response?.data?.message || err?.message || t('toast.stock_unknown_error'),
         status: 'error',
         duration: 4000,
       });

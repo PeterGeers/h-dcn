@@ -14,7 +14,7 @@ A spec task is only complete when ALL of the following are satisfied:
 6. **Migration** — If DynamoDB data changed: migration script in `scripts/`, run with `--dry-run` first
 7. **Documentation** — ADR in `docs/decisions/` for architectural changes
 8. **Commit** — Committed on the current feature branch (never create a new branch unless asked)
-9. **Push + Deploy** — Push and trigger both workflows:
+9. **Push + Deploy** — Push (pre-push hook scans automatically) and trigger both workflows:
    ```bash
    git push
    gh workflow run deploy-backend.yml --ref {branch} -f stage=test
@@ -25,7 +25,7 @@ A spec task is only complete when ALL of the following are satisfied:
 
 - Work on the current feature branch (check `git branch` first)
 - Never push directly to `main`
-- Commit with `--no-verify` (Kiro hook handles secret scanning)
+- Always use `mcp_git_git_commit` (MCP tool) for commits — never `execute_pwsh` with `git commit`. This ensures the pre-commit hook fires for local secret scanning + auth layer sync.
 
 ## Dead Code
 

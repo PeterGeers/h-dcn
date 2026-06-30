@@ -25,6 +25,8 @@ import {
 } from '@chakra-ui/react';
 import { Formik, Form, Field, FieldProps, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
+import { useTranslation } from 'react-i18next';
+import { getValidationMessage } from '../../../utils/validationMessages';
 import { RecordPaymentRequest } from '../types/admin.types';
 
 interface PaymentRecordFormProps {
@@ -38,22 +40,6 @@ interface PaymentFormValues {
   description: string;
 }
 
-const validationSchema = Yup.object().shape({
-  order_id: Yup.string().required('Bestelling ID is verplicht'),
-  amount: Yup.number()
-    .typeError('Voer een geldig bedrag in')
-    .min(0.01, 'Minimaal € 0.01')
-    .max(999999.99, 'Maximaal € 999.999,99')
-    .required('Bedrag is verplicht'),
-  date: Yup.string()
-    .required('Datum is verplicht')
-    .matches(
-      /^\d{4}-\d{2}-\d{2}/,
-      'Gebruik ISO datumformaat (YYYY-MM-DD)'
-    ),
-  description: Yup.string().max(255, 'Maximaal 255 tekens'),
-});
-
 const initialValues: PaymentFormValues = {
   order_id: '',
   amount: '',
@@ -62,7 +48,24 @@ const initialValues: PaymentFormValues = {
 };
 
 export const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({ onSubmit }) => {
+  const { t } = useTranslation('webshop');
   const toast = useToast();
+
+  const validationSchema = Yup.object().shape({
+    order_id: Yup.string().required(() => getValidationMessage(t, 'required', { field: t('payment_record.order_id_label', { defaultValue: 'Bestelling ID' }) })),
+    amount: Yup.number()
+      .typeError(() => getValidationMessage(t, 'invalid_number'))
+      .min(0.01, () => getValidationMessage(t, 'min', { value: 0.01 }))
+      .max(999999.99, () => getValidationMessage(t, 'max', { value: 999999.99 }))
+      .required(() => getValidationMessage(t, 'required', { field: t('payment_record.amount_label', { defaultValue: 'Bedrag' }) })),
+    date: Yup.string()
+      .required(() => getValidationMessage(t, 'required', { field: t('payment_record.date_label', { defaultValue: 'Datum' }) }))
+      .matches(
+        /^\d{4}-\d{2}-\d{2}/,
+        () => t('payment_record.date_format_error', { defaultValue: 'Gebruik ISO datumformaat (YYYY-MM-DD)' })
+      ),
+    description: Yup.string().max(255, () => getValidationMessage(t, 'max_length', { count: 255 })),
+  });
 
   const handleSubmit = async (
     values: PaymentFormValues,
@@ -77,8 +80,8 @@ export const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({ onSubmit }
       };
       await onSubmit(payload);
       toast({
-        title: 'Betaling geregistreerd',
-        description: `Betaling van € ${payload.amount.toFixed(2)} is succesvol verwerkt.`,
+        title: t('toast.payment_recorded', { defaultValue: 'Betaling geregistreerd' }),
+        description: t('toast.payment_recorded_desc', { amount: payload.amount.toFixed(2), defaultValue: `Betaling van € ${payload.amount.toFixed(2)} is succesvol verwerkt.` }),
         status: 'success',
         duration: 4000,
         isClosable: true,
@@ -86,8 +89,8 @@ export const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({ onSubmit }
       resetForm();
     } catch (err: any) {
       toast({
-        title: 'Fout bij registreren',
-        description: err?.response?.data?.message || err?.message || 'Er ging iets mis.',
+        title: t('toast.payment_record_error', { defaultValue: 'Fout bij registreren' }),
+        description: err?.response?.data?.message || err?.message || t('errors.generic', { defaultValue: 'Er ging iets mis.' }),
         status: 'error',
         duration: 5000,
         isClosable: true,

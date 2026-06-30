@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   ModalOverlay,
@@ -47,6 +48,7 @@ import { MEMBER_MODAL_CONTEXTS, MEMBER_FIELDS, HDCNGroup } from '../config/membe
 import { canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { getMemberFullName } from '../utils/calculatedFields';
+import { getValidationMessage } from '../utils/validationMessages';
 
 interface MemberEditViewProps {
   isOpen: boolean;
@@ -67,6 +69,7 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+  const { t } = useTranslation('members');
 
   // Get member view context
   const memberContext = MEMBER_MODAL_CONTEXTS.memberView;
@@ -136,30 +139,30 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
             
             if (rule.type === 'required') {
               if (field.dataType === 'number') {
-                fieldSchema = fieldSchema.required(rule.message || `${field.label} is verplicht`);
+                fieldSchema = fieldSchema.required(() => getValidationMessage(t, 'required', { field: field.label }));
               } else {
-                fieldSchema = fieldSchema.required(rule.message || `${field.label} is verplicht`);
+                fieldSchema = fieldSchema.required(() => getValidationMessage(t, 'required', { field: field.label }));
               }
             } else if (rule.type === 'email') {
               // Make email validation optional if field is empty
               fieldSchema = Yup.string().nullable().test(
                 'email',
-                rule.message || 'Ongeldig emailadres',
+                () => getValidationMessage(t, 'email'),
                 (value) => !value || Yup.string().email().isValidSync(value)
               );
             } else if (rule.type === 'min_length') {
-              fieldSchema = fieldSchema.min(rule.value, rule.message);
+              fieldSchema = fieldSchema.min(rule.value, () => getValidationMessage(t, 'min_length', { count: rule.value }));
             } else if (rule.type === 'min') {
               // For number fields
-              fieldSchema = fieldSchema.min(rule.value, rule.message);
+              fieldSchema = fieldSchema.min(rule.value, () => getValidationMessage(t, 'min', { value: rule.value }));
             } else if (rule.type === 'max') {
               // For number fields
-              fieldSchema = fieldSchema.max(rule.value, rule.message);
+              fieldSchema = fieldSchema.max(rule.value, () => getValidationMessage(t, 'max', { value: rule.value }));
             } else if (rule.type === 'iban') {
               // Make IBAN validation optional if field is empty
               fieldSchema = Yup.string().nullable().test(
                 'iban',
-                rule.message || 'Ongeldig IBAN nummer',
+                () => getValidationMessage(t, 'iban'),
                 (value) => !value || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value)
               );
             }

@@ -1,18 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { scanProducts, updateProduct, deleteProduct, insertProduct } from '../api/productApi';
 import ProductTable from '../components/ProductTable';
 import ProductCard from '../components/ProductCard';
-import ProductFilter from '../components/ProductFilter';
 import Header from '../components/Header';
 import { cleanupUnusedImages } from '../services/s3Upload';
 import { Button, Box, HStack } from '@chakra-ui/react';
 import { Product } from '../../../types';
-
-interface FilterOption {
-  type: 'group' | 'subgroup';
-  value: string;
-  group?: string;
-}
+import { FilterPanel, GenericFilter } from '../../../components/filters';
 
 export default function Dashboard(): React.ReactElement {
   const [products, setProducts] = useState<Product[]>([]);
@@ -61,17 +55,28 @@ export default function Dashboard(): React.ReactElement {
     setSelected(null);
   };
 
-  const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
+  const [selectedGroep, setSelectedGroep] = useState<string>('');
+  const [selectedSubgroep, setSelectedSubgroep] = useState<string>('');
   const [cleaning, setCleaning] = useState(false);
 
+  const { groepOptions, subgroepOptions } = useMemo(() => {
+    const groups = new Set<string>();
+    const subgroups = new Set<string>();
+    products.forEach(p => {
+      if (p.groep) groups.add(p.groep);
+      if (p.subgroep && (!selectedGroep || p.groep === selectedGroep)) {
+        subgroups.add(p.subgroep);
+      }
+    });
+    return {
+      groepOptions: Array.from(groups).sort().map(g => ({ value: g, label: g })),
+      subgroepOptions: Array.from(subgroups).sort().map(s => ({ value: s, label: s })),
+    };
+  }, [products, selectedGroep]);
+
   const filteredProducts = products.filter((p: Product) => {
-    if (!selectedFilter) return true;
-    if (selectedFilter.type === 'group') {
-      return p.groep === selectedFilter.value;
-    }
-    if (selectedFilter.type === 'subgroup') {
-      return p.groep === selectedFilter.group && p.subgroep === selectedFilter.value;
-    }
+    if (selectedGroep && p.groep !== selectedGroep) return false;
+    if (selectedSubgroep && p.subgroep !== selectedSubgroep) return false;
     return true;
   });
 
@@ -104,11 +109,29 @@ export default function Dashboard(): React.ReactElement {
         </Button>
       </Box>
       <HStack align="start" spacing={6}>
-        <ProductFilter
-          products={products}
-          selectedFilter={selectedFilter}
-          onFilterChange={setSelectedFilter}
-        />
+        <Box w="300px">
+          <FilterPanel
+            hasActiveFilters={!!selectedGroep || !!selectedSubgroep}
+            onReset={() => { setSelectedGroep(''); setSelectedSubgroep(''); }}
+          >
+            <GenericFilter
+              label="Groep"
+              value={selectedGroep}
+              options={groepOptions}
+              onChange={(v) => { setSelectedGroep(v); setSelectedSubgroep(''); }}
+              placeholder="Alle groepen"
+            />
+            {subgroepOptions.length > 0 && (
+              <GenericFilter
+                label="Subgroep"
+                value={selectedSubgroep}
+                options={subgroepOptions}
+                onChange={setSelectedSubgroep}
+                placeholder="Alle subgroepen"
+              />
+            )}
+          </FilterPanel>
+        </Box>
         <Box flex={1}>
           <ProductTable
             products={filteredProducts}

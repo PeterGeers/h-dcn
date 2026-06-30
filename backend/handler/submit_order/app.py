@@ -46,13 +46,14 @@ try:
         handle_options_request,
         log_successful_access,
     )
-    from shared.event_access import has_event_access
+    from shared.event_access import has_event_access, verify_order_event_access
     from shared.event_validation import (
         validate_item_fields,
         validate_purchase_rules,
         validate_submission,
     )
     from shared.number_generator import generate_order_number
+    from shared.i18n.locale_resolver import resolve_request_locale
 except ImportError as e:
     print(f"⚠️ Shared auth unavailable: {str(e)}")
     from shared.maintenance_fallback import create_smart_fallback_handler
@@ -89,7 +90,7 @@ def convert_decimals(obj):
         return obj
 
 
-def _resolve_member_id(user_email):
+def _resolve_member_id(user_email, locale='nl'):
     """
     Resolve member_id from the Members table by email scan.
     Returns (member_record, error_response) tuple.
@@ -97,15 +98,17 @@ def _resolve_member_id(user_email):
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(user_email),
-            ProjectionExpression='member_id, club_id, member_type, allowed_events'
+            ProjectionExpression='member_id, registry_row_id, member_type, allowed_events'
         )
         items = response.get('Items', [])
         if not items:
-            return None, create_error_response(404, 'Member record not found')
+            return None, create_error_response(404, 'Member record not found',
+                                               error_key='member_not_found', locale=locale)
         return items[0], None
     except Exception as e:
         logger.error(f"Error resolving member: {str(e)}")
-        return None, create_error_response(500, 'Failed to resolve member record')
+        return None, create_error_response(500, 'Failed to resolve member record',
+                                           error_key='internal_error', locale=locale)
 
 
 def _get_order(order_id):
@@ -195,12 +198,243 @@ def _validate_webshop_items(items, products):
     return errors
 
 
+def _validate_event_persons(order, products, all_source_orders):
+    """
+    Validate an event order with persons structure.
+
+    Validates (Requirements 9.1-9.9):
+    - Every person has a non-empty name (≥1 non-whitespace char)
+    - Every item has item_fields_data.name populated (non-empty)
+    - All required order_item_fields are filled per product line
+    - Per-order quantity limits (max_per_order) not exceeded
+    - Per-event capacity (max_per_event) via current Sold_Count
+    - All variant_id references exist in product's variant list
+    - Errors are grouped per person
+
+    Returns list of error dicts with person_index, product_id, field, message.
+    """
+    persons = order.get('persons', [])
+    items = order.get('items', [])
+    registry_row_id = order.get('registry_row_id')
+    errors = []
+
+    # 1. Validate person names (Req 9.1)
+    for idx, person in enumerate(persons):
+        name = person.get('name', '')
+        if not isinstance(name, str) or not name.strip():
+            errors.append({
+                'person_index': idx,
+                'product_id': None,
+                'field': 'name',
+                'message': f'Persoon {idx + 1}: naam is verplicht (minimaal 1 niet-witruimte teken)',
+            })
+
+    # 2. Validate item_fields_data.name on every line (Req 9.2)
+    for item_idx, item in enumerate(items):
+        person_index = item.get('person_index')
+        product_id = item.get('product_id')
+        fields_data = item.get('item_fields_data') or {}
+
+        item_name = fields_data.get('name', '') if isinstance(fields_data, dict) else ''
+        if not isinstance(item_name, str) or not item_name.strip():
+            errors.append({
+                'person_index': person_index,
+                'product_id': product_id,
+                'field': 'item_fields_data.name',
+                'message': (
+                    f'Productlijn voor persoon {(person_index or 0) + 1}: '
+                    f'item_fields_data.name is verplicht'
+                ),
+            })
+
+    # 3. Validate required order_item_fields (Req 9.3)
+    for item_idx, item in enumerate(items):
+        person_index = item.get('person_index')
+        product_id = item.get('product_id')
+        if not product_id:
+            continue
+
+        product = products.get(product_id)
+        if not product:
+            continue
+
+        field_definitions = product.get('order_item_fields', [])
+        if not field_definitions:
+            continue
+
+        fields_data = item.get('item_fields_data') or {}
+        if not isinstance(fields_data, dict):
+            fields_data = {}
+
+        for field_def in field_definitions:
+            field_id = field_def.get('id')
+            if not field_id:
+                continue
+            # Skip 'name' field — auto-injected from person entry, not user-submitted
+            if field_id == 'name':
+                continue
+            required = field_def.get('required', False)
+            if not required:
+                continue
+
+            value = fields_data.get(field_id)
+            label = field_def.get('label', field_id)
+
+            if value is None or (isinstance(value, str) and not value.strip()):
+                errors.append({
+                    'person_index': person_index,
+                    'product_id': product_id,
+                    'field': field_id,
+                    'message': (
+                        f"Persoon {(person_index or 0) + 1}, product '{product.get('name', product_id)}': "
+                        f"veld '{label}' is verplicht"
+                    ),
+                })
+
+    # 4. Validate per-order quantity limits: max_per_order (Req 5.5, 5.8)
+    product_counts: dict[str, int] = {}
+    for item in items:
+        product_id = item.get('product_id')
+        if product_id:
+            quantity = item.get('quantity', 1)
+            if isinstance(quantity, Decimal):
+                quantity = int(quantity)
+            product_counts[product_id] = product_counts.get(product_id, 0) + quantity
+
+    for product_id, count in product_counts.items():
+        product = products.get(product_id)
+        if not product:
+            continue
+        purchase_rules = product.get('purchase_rules') or {}
+        # max_per_order is authoritative; fall back to max_per_club for backward compat (Req 5.8)
+        max_per_order = purchase_rules.get('max_per_order')
+        if max_per_order is None:
+            max_per_order = purchase_rules.get('max_per_club')
+        if max_per_order is not None:
+            max_val = int(max_per_order) if isinstance(max_per_order, Decimal) else int(max_per_order)
+            if count > max_val:
+                errors.append({
+                    'person_index': None,
+                    'product_id': product_id,
+                    'field': 'max_per_order',
+                    'message': (
+                        f"Product '{product.get('name', product_id)}': "
+                        f"maximaal {max_val} per bestelling, maar {count} geselecteerd"
+                    ),
+                })
+
+    # 5. Validate per-event capacity: max_per_event via Sold_Count (Req 9.5, 9.9)
+    # Calculate sold counts from other submitted/locked orders (exclude current order)
+    sold_counts = _calculate_sold_counts(all_source_orders, registry_row_id)
+
+    for product_id, count in product_counts.items():
+        product = products.get(product_id)
+        if not product:
+            continue
+        purchase_rules = product.get('purchase_rules') or {}
+        max_per_event = purchase_rules.get('max_per_event')
+        if max_per_event is not None:
+            max_val = int(max_per_event) if isinstance(max_per_event, Decimal) else int(max_per_event)
+            sold = sold_counts.get(product_id, 0)
+            remaining = max_val - sold
+            if count > remaining:
+                errors.append({
+                    'person_index': None,
+                    'product_id': product_id,
+                    'field': 'max_per_event',
+                    'message': (
+                        f"Product '{product.get('name', product_id)}': "
+                        f"evenementcapaciteit overschreden. "
+                        f"Resterende capaciteit: {remaining}, gevraagd: {count}"
+                    ),
+                    'remaining': remaining,
+                })
+
+    # 6. Validate variant_id references exist in product's variant list (Req 9.6)
+    for item_idx, item in enumerate(items):
+        variant_id = item.get('variant_id')
+        if not variant_id:
+            continue
+
+        person_index = item.get('person_index')
+        product_id = item.get('product_id')
+        if not product_id:
+            continue
+
+        # Fetch variant record from Producten table
+        variant = _get_variant(variant_id)
+        if variant is None:
+            errors.append({
+                'person_index': person_index,
+                'product_id': product_id,
+                'field': 'variant_id',
+                'message': (
+                    f"Persoon {(person_index or 0) + 1}, product '{products.get(product_id, {}).get('name', product_id)}': "
+                    f"variant '{variant_id}' bestaat niet"
+                ),
+            })
+        elif variant.get('parent_id') != product_id:
+            errors.append({
+                'person_index': person_index,
+                'product_id': product_id,
+                'field': 'variant_id',
+                'message': (
+                    f"Persoon {(person_index or 0) + 1}, product '{products.get(product_id, {}).get('name', product_id)}': "
+                    f"variant '{variant_id}' behoort niet tot dit product"
+                ),
+            })
+
+    return errors
+
+
+def _calculate_sold_counts(all_source_orders, current_registry_row_id):
+    """
+    Calculate sold counts from submitted/locked orders, excluding the current registry row's order.
+    This mirrors the logic in get_product_sold_counts but excludes the current order.
+
+    Returns dict mapping product_id -> sold count.
+    """
+    sold_counts: dict[str, int] = {}
+
+    for order in all_source_orders:
+        # Only count submitted/locked orders
+        if order.get('status') not in ('submitted', 'locked'):
+            continue
+        # Exclude current registry row's order (will be replaced by this submission)
+        if current_registry_row_id and order.get('registry_row_id') == current_registry_row_id:
+            continue
+
+        for item in order.get('items', []):
+            product_id = item.get('product_id')
+            if not product_id:
+                continue
+            quantity = item.get('quantity', 1)
+            if isinstance(quantity, Decimal):
+                quantity = int(quantity)
+            sold_counts[product_id] = sold_counts.get(product_id, 0) + quantity
+
+    return sold_counts
+
+
+def _get_variant(variant_id):
+    """Fetch a variant record from the Producten table."""
+    try:
+        response = producten_table.get_item(Key={'product_id': variant_id})
+        return response.get('Item')
+    except Exception as e:
+        logger.warning(f"Error fetching variant {variant_id}: {e}")
+        return None
+
+
 def lambda_handler(event, context):
     """POST /orders/{order_id}/submit"""
     try:
         # Handle OPTIONS (CORS preflight)
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
+
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
 
         # 1. Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
@@ -214,10 +448,11 @@ def lambda_handler(event, context):
         path_params = event.get('pathParameters') or {}
         order_id = path_params.get('id') or path_params.get('order_id')
         if not order_id:
-            return create_error_response(400, 'Order ID is required')
+            return create_error_response(400, 'Order ID is required',
+                                         error_key='validation_error', locale=locale)
 
         # 3. Resolve member record from email
-        member_record, member_error = _resolve_member_id(user_email)
+        member_record, member_error = _resolve_member_id(user_email, locale)
         if member_error:
             return member_error
 
@@ -226,45 +461,61 @@ def lambda_handler(event, context):
         # 4. Load order by order_id
         order = _get_order(order_id)
         if not order:
-            return create_error_response(404, 'Order not found')
+            return create_error_response(404, 'Order not found',
+                                         error_key='order_not_found', locale=locale)
+
+        # 4a. Event access verification (Req 16.5, 16.7):
+        # For event-scoped orders, verify allowed_events + delegate ownership.
+        # On failure, return 403 without revealing order existence.
+        admin = _is_admin(user_roles, user_email)
+        if not admin:
+            event_id = order.get('event_id') or order.get('source_id')
+            if event_id and event_id != 'webshop':
+                if not verify_order_event_access(order, member_id):
+                    return create_error_response(403, 'Insufficient event access',
+                                                 error_key='forbidden', locale=locale)
 
         # 5. Verify ownership: order's member_id must match authenticated member (or admin)
         order_member_id = order.get('member_id')
-        admin = _is_admin(user_roles, user_email)
 
         if order_member_id != member_id and not admin:
-            # For club-scoped orders, also check delegate access
+            # For row-scoped orders, also check delegate access
             delegates = order.get('delegates', {})
             is_delegate = member_id in [
                 delegates.get('primary_member_id'),
                 delegates.get('secondary_member_id'),
             ]
             if not is_delegate:
-                return create_error_response(403, 'Access denied: not the order owner')
+                return create_error_response(403, 'Access denied: not the order owner',
+                                             error_key='forbidden', locale=locale)
 
         # 6. Verify order is in draft status
         current_status = order.get('status', 'draft')
         if current_status != 'draft':
             return create_error_response(
-                409, f'Cannot submit order in "{current_status}" status'
+                409, f'Cannot submit order in "{current_status}" status',
+                error_key='validation_error', locale=locale
             )
 
         # 7. Check items exist
         items = order.get('items', [])
         if not items:
-            return create_error_response(400, 'Cannot submit order with no items')
+            return create_error_response(400, 'Cannot submit order with no items',
+                                         error_key='validation_error', locale=locale)
 
         # 8. Determine source and validate accordingly
         source_id = order.get('source_id')
         if not source_id:
-            return create_error_response(400, 'Order missing source_id')
+            return create_error_response(400, 'Order missing source_id',
+                                         error_key='validation_error', locale=locale)
 
         validation_errors = []
 
         if source_id == 'webshop':
             # --- Webshop source ---
             if 'hdcnLeden' not in user_roles and not admin:
-                return create_error_response(403, 'Member access required for webshop')
+                return create_error_response(403, 'Member access required for webshop',
+                                             error_key='forbidden', locale=locale)
 
             # Load products referenced by order items
             products = _get_products_for_items(items)
@@ -276,16 +527,28 @@ def lambda_handler(event, context):
             # --- Event source (UUID) ---
             event_record = _get_event(source_id)
             if not event_record:
-                return create_error_response(404, 'Event not found')
+                return create_error_response(404, 'Event not found',
+                                             error_key='not_found', locale=locale)
 
-            # Check event access
-            if not has_event_access(member_id, source_id) and not admin:
-                return create_error_response(403, 'Event access required')
+            # Check event access:
+            # - Open events: any authenticated member (hdcnLeden) can access
+            # - Closed events: member must be in allowed_events (or be admin)
+            participation = event_record.get('participation', 'open')
+            if participation == 'closed':
+                if not has_event_access(member_id, source_id) and not admin:
+                    return create_error_response(403, 'Event access required',
+                                                 error_key='forbidden', locale=locale)
+            else:
+                # Open event: any logged-in member can submit
+                if 'hdcnLeden' not in user_roles and not has_event_access(member_id, source_id) and not admin:
+                    return create_error_response(403, 'Member access required for open events',
+                                                 error_key='forbidden', locale=locale)
 
             # Check event status
             event_status = event_record.get('status')
             if event_status != 'open':
-                return create_error_response(403, 'Registration is not open')
+                return create_error_response(403, 'Registration is not open',
+                                             error_key='forbidden', locale=locale)
 
             # Load products via event's product_ids[]
             event_product_ids = event_record.get('product_ids', [])
@@ -294,17 +557,25 @@ def lambda_handler(event, context):
             # Query all orders for this source for constraint validation
             all_source_orders = _query_all_orders_for_source(source_id)
 
-            # Full event validation: fields + purchase rules + event constraints
-            validation_errors = validate_submission(
-                order, event_record, products, all_source_orders
-            )
+            # Check if order uses persons structure (closed community booking)
+            if order.get('persons'):
+                # Person-based event validation (Req 9.1-9.9)
+                validation_errors = _validate_event_persons(
+                    order, products, all_source_orders
+                )
+            else:
+                # Legacy event validation: fields + purchase rules + event constraints
+                validation_errors = validate_submission(
+                    order, event_record, products, all_source_orders
+                )
 
         # 9. If validation fails: return 400 with errors
         if validation_errors:
             return create_error_response(
                 400,
                 'Validation failed',
-                {'errors': convert_decimals(validation_errors)}
+                {'errors': convert_decimals(validation_errors)},
+                error_key='validation_error', locale=locale
             )
 
         # 10. Validation passed — submit the order with optimistic locking (version check)
@@ -336,7 +607,8 @@ def lambda_handler(event, context):
             )
         except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
             return create_error_response(
-                409, 'Order was modified concurrently. Please reload and retry.'
+                409, 'Order was modified concurrently. Please reload and retry.',
+                error_key='validation_error', locale=locale
             )
 
         updated_order = updated.get('Attributes', {})
@@ -351,4 +623,5 @@ def lambda_handler(event, context):
 
     except Exception as e:
         logger.error(f"Error in submit_order handler: {str(e)}", exc_info=True)
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)

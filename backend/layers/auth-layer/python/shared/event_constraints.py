@@ -1,14 +1,15 @@
 """
 Event-level capacity constraint validation for event registration.
 
-Validates that adding a club's order items would not exceed event-wide
+Validates that adding a registry row's order items would not exceed event-wide
 capacity limits defined in the event's constraints array.
 
 Each constraint has a counting_rule that determines how items are counted
 across all submitted/locked orders for the event:
 
 - count_items_by_product: count items matching a specific product_id
-- count_distinct_clubs: count distinct club_ids with submitted/locked orders
+- count_distinct_rows: count distinct registry_row_ids with submitted/locked orders
+- count_distinct_clubs: accepted as equivalent to count_distinct_rows (backward compat)
 - sum_field: sum a numeric field across items in submitted/locked orders
 
 Returns structured validation errors with constraint key, label,
@@ -27,32 +28,32 @@ def validate_event_constraints(
     order_items: List[Dict[str, Any]],
     event_constraints: List[Dict[str, Any]],
     all_event_orders: List[Dict[str, Any]],
-    current_club_id: Optional[str] = None,
+    current_registry_row_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Validate that adding order_items would not exceed any event constraint.
 
     Counts existing usage from all submitted/locked orders for the event
-    (excluding the current club's order to avoid double-counting on resubmit),
+    (excluding the current registry row's order to avoid double-counting on resubmit),
     then checks if adding the new order's items would exceed each constraint's max.
 
     Args:
-        order_items: The items array from the club's order being submitted.
+        order_items: The items array from the registry row's order being submitted.
         event_constraints: The constraints array from the Event record.
             Each constraint has: key, label, max, counting_rule, and optionally
             product_id or field_name.
         all_event_orders: All orders for this event (any status). The function
             filters to submitted/locked internally.
-        current_club_id: The club_id of the order being submitted. Used to
-            exclude the current club's existing order from the count (prevents
-            double-counting on resubmission).
+        current_registry_row_id: The registry_row_id of the order being submitted.
+            Used to exclude the current row's existing order from the count
+            (prevents double-counting on resubmission).
 
     Returns:
         List of validation error dicts. Empty list if all constraints pass.
         Each error contains:
             - constraint_key: the constraint's key identifier
             - label: human-readable constraint label
-            - current_count: items already counted (excluding current club)
+            - current_count: items already counted (excluding current row)
             - new_count: what the total would be after adding this order
             - max: the constraint's maximum
             - message: human-readable error message
@@ -68,11 +69,11 @@ def validate_event_constraints(
         if order.get("status") in COUNTABLE_STATUSES
     ]
 
-    # Exclude current club's order (will be replaced by new submission)
-    if current_club_id:
+    # Exclude current registry row's order (will be replaced by new submission)
+    if current_registry_row_id:
         other_orders = [
             order for order in countable_orders
-            if order.get("club_id") != current_club_id
+            if order.get("registry_row_id") != current_registry_row_id
         ]
     else:
         other_orders = countable_orders
@@ -124,8 +125,9 @@ def _count_existing(
 
     if counting_rule == "count_items_by_product":
         return _count_items_by_product(constraint.get("product_id"), orders)
-    elif counting_rule == "count_distinct_clubs":
-        return _count_distinct_clubs(orders)
+    elif counting_rule in ("count_distinct_rows", "count_distinct_clubs"):
+        # count_distinct_clubs accepted as equivalent per Req 5.7 (backward compat)
+        return _count_distinct_rows(orders)
     elif counting_rule == "sum_field":
         return _sum_field(constraint.get("field_name"), constraint.get("product_id"), orders)
     else:
@@ -147,8 +149,8 @@ def _count_new_items(
             1 for item in order_items
             if item.get("product_id") == product_id
         )
-    elif counting_rule == "count_distinct_clubs":
-        # A single order submission always adds exactly 1 distinct club
+    elif counting_rule in ("count_distinct_rows", "count_distinct_clubs"):
+        # A single order submission always adds exactly 1 distinct registry row
         return 1
     elif counting_rule == "sum_field":
         field_name = constraint.get("field_name")
@@ -176,16 +178,16 @@ def _count_items_by_product(
     return count
 
 
-def _count_distinct_clubs(orders: List[Dict[str, Any]]) -> int:
+def _count_distinct_rows(orders: List[Dict[str, Any]]) -> int:
     """
-    Count distinct club_ids across submitted/locked orders.
+    Count distinct registry_row_ids across submitted/locked orders.
     """
-    club_ids = set()
+    row_ids = set()
     for order in orders:
-        club_id = order.get("club_id")
-        if club_id:
-            club_ids.add(club_id)
-    return len(club_ids)
+        row_id = order.get("registry_row_id")
+        if row_id:
+            row_ids.add(row_id)
+    return len(row_ids)
 
 
 def _sum_field(

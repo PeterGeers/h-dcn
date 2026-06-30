@@ -1,14 +1,16 @@
 # Bucket Separation Strategy
 
+> **Verified: June 2026** — reflects current S3 bucket setup as defined in `backend/template.yaml` and `.github/workflows/deploy-frontend.yml`.
+
 ## Overview
 
-The H-DCN application uses a **two-bucket architecture** to separate code from data, ensuring safer deployments and better data protection.
+The H-DCN application uses a **multi-bucket architecture** to separate code from data and isolate concerns by function. This ensures safer deployments and better data protection.
 
 ## Bucket Architecture
 
-### 🚀 Frontend Bucket: `testportal-h-dcn-frontend`
+### 🚀 Frontend Bucket: `h-dcn-frontend-506221081911`
 
-**Purpose**: Static website hosting for frontend code
+**Purpose**: Static website hosting for the React SPA (production)
 **Contents**:
 
 - HTML files (`index.html`)
@@ -16,133 +18,178 @@ The H-DCN application uses a **two-bucket architecture** to separate code from d
 - JavaScript files (`static/js/`)
 - Asset manifest (`asset-manifest.json`)
 - Build artifacts
+- PresMeet logos (`assets/presmeet/logos/`)
 
-**Deployment**: Automated via `deploy-frontend-safe.ps1`
+**Deployment**: Automated via GitHub Actions (`deploy-frontend.yml`) → `aws s3 sync --delete`
+**CDN**: CloudFront distribution (managed via GitHub Actions vars `CLOUDFRONT_DISTRIBUTION_ID`)
 **Lifecycle**: Overwritten with each code deployment
 
-### 📊 Data Bucket: `my-hdcn-bucket`
+**Test environment**: `testportal-h-dcn-frontend` (separate bucket for test stage)
 
-**Purpose**: Persistent data and user content
+### 📊 Data Bucket: `h-dcn-data-506221081911`
+
+**Purpose**: Persistent data, user content, and business assets
 **Contents**:
 
-- `parameters.json` - Business configuration data
-- `imagesWebsite/` - Logo and UI assets
-  - `hdcnFavico.png` - H-DCN logo
-  - `info-icon-orange.svg` - UI icons
-- `product-images/` - Product photos
-  - `G1.jpg`, `G2.jpg`, etc. - Product images
+- `parameters.json` — Business configuration data
+- `imagesWebsite/` — Logo and UI assets (e.g., `hdcnFavico.png`)
+- `product-images/` — Product photos
+- `events/` — Event registry data
+- `analytics/` — Analytics output data
 
-**Deployment**: Manual via dedicated scripts
+**Deployment**: Manual via dedicated scripts or S3FileManager API (`/s3/files`)
 **Lifecycle**: Persistent, never overwritten by code deployments
+
+**Test environment**: `h-dcn-data-test-506221081911` (separate bucket for test stage)
+
+### 📋 Reports Bucket: `h-dcn-reports`
+
+**Purpose**: Admin report storage (member exports, analytics reports)
+**Used by**: `admin_export_report`, `admin_generate_report` Lambda functions
+**Lifecycle**: Reports generated on demand, managed independently
+
+### 📋 Webshop Reports Bucket: `h-dcn-webshop-reports`
+
+**Purpose**: Webshop admin report storage (stock reports, order exports)
+**Used by**: Webshop admin Lambda functions
+**Lifecycle**: Reports generated on demand, managed independently
+
+### 📧 Email Templates Bucket: `h-dcn-email-templates`
+
+**Purpose**: SES email template storage
+**Managed by**: CloudFormation (`EmailTemplatesBucket` resource in SAM template)
+**Used by**: Email sender Lambda functions
+**Lifecycle**: Versioned, deployed via SAM
 
 ## Environment Variables
 
+### Frontend (set in `.env` / CI workflow)
+
 ```bash
-# Frontend/Code bucket
-REACT_APP_S3_BUCKET=testportal-h-dcn-frontend
+# Data bucket (images, parameters, events)
+REACT_APP_DATA_BUCKET=h-dcn-data-506221081911          # prod
+REACT_APP_DATA_BUCKET=h-dcn-data-test-506221081911     # test
 
-# Data/Images bucket
-REACT_APP_IMAGES_BUCKET=my-hdcn-bucket
-REACT_APP_IMAGES_BASE_URL=https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com
-REACT_APP_LOGO_BUCKET_URL=https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com
+# Legacy env vars (set from GitHub vars, point to same data bucket)
+REACT_APP_S3_BUCKET=<from vars.REACT_APP_S3_BUCKET>
+REACT_APP_IMAGES_BUCKET=<from vars.REACT_APP_IMAGES_BUCKET>
+REACT_APP_IMAGES_BASE_URL=<from vars.REACT_APP_IMAGES_BASE_URL>
+REACT_APP_LOGO_BUCKET_URL=<from vars.REACT_APP_LOGO_BUCKET_URL>
 ```
 
-## Deployment Scripts
+### Backend (set in SAM template → Lambda environment)
 
-### Frontend Code Deployment
+```yaml
+# Data bucket (passed as SAM parameter, default: h-dcn-data-506221081911)
+DataBucket → DATA_BUCKET_NAME, S3_BUCKET, REGISTRY_BUCKET_NAME
 
-```powershell
-# Deploys only code, preserves data
-.\scripts\deployment\deploy-frontend-safe.ps1
+# Reports bucket
+S3ReportsBucket → REPORTS_BUCKET_NAME (default: h-dcn-reports)
+ReportsBucketName → REPORTS_BUCKET_NAME (default: h-dcn-webshop-reports)
+
+# Frontend bucket (hardcoded in some handlers)
+FRONTEND_BUCKET_NAME: "h-dcn-frontend-506221081911"
+
+# Email templates (CloudFormation-managed)
+EmailTemplatesBucket → EMAIL_TEMPLATES_BUCKET
 ```
 
-### Data Management
+## Deployment
+
+### Frontend Code (GitHub Actions)
+
+```bash
+# Production
+aws s3 sync frontend/build/ s3://h-dcn-frontend-506221081911/ --delete
+aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+
+# Test
+aws s3 sync frontend/build/ s3://testportal-h-dcn-frontend/ --delete
+```
+
+### Data Management (manual/scripts)
 
 ```powershell
-# Deploy parameters.json changes
-.\scripts\utilities\deploy-parameters.ps1
-
-# Backup current parameters.json
-.\scripts\utilities\backup-parameters.ps1
-
-# Fix product image URLs
-.\scripts\utilities\fix-product-image-urls.ps1
+# S3 File Manager API endpoint (CRUD for data bucket files)
+# POST /s3/files — upload
+# GET /s3/files?bucketName=...&prefix=...&recursive=true — list
+# DELETE /s3/files — delete
 ```
 
 ## Benefits
 
 ### 🛡️ Data Protection
 
-- User content never deleted during code deployments
-- Business data (parameters.json) preserved across deployments
-- Accidental `--delete` flags only affect code, not data
+- User content never deleted during code deployments (`--delete` only affects frontend bucket)
+- Business data (parameters.json, product images) preserved across deployments
+- Separate test/prod buckets prevent accidental cross-contamination
 
 ### 🚀 Deployment Safety
 
-- Frontend deployments are fast and safe
-- Data changes are deliberate and tracked
-- Clear separation of concerns
+- Frontend deployments are fast, safe, and fully automated
+- Data changes are deliberate and tracked via the S3FileManager API
+- Clear separation of concerns per bucket
 
 ### 📈 Scalability
 
-- Different backup strategies for code vs data
-- Different access patterns and permissions
-- Independent scaling and optimization
+- Different backup/versioning strategies per bucket
+- Different IAM permissions per function (least privilege)
+- Independent lifecycle management
 
 ## File Loading Strategy
 
 ### Frontend Code
 
-- Loaded from CloudFront CDN
-- Fast global distribution
-- Cached and optimized
+- Served via CloudFront CDN (cache invalidation on each deploy)
+- Fast global distribution with edge caching
 
 ### Parameters & Data
 
-- Loaded directly from S3 data bucket
-- Cache-busted with timestamps
-- Immediate updates without CDN delays
+- Loaded directly from S3 data bucket via CloudFront or direct S3 URL
+- Cache-busted with timestamps for immediate updates
 
 ### Images
 
 - Served from S3 data bucket
-- Persistent URLs
-- User uploads preserved
+- Persistent URLs (e.g., `https://h-dcn-data-506221081911.s3.eu-west-1.amazonaws.com/product-images/...`)
+- User uploads preserved across deployments
 
-## Migration Notes
+## Migration History
 
-**Previous Architecture**: Single bucket with mixed content
-**Current Architecture**: Separated buckets by content type
-**Migration**: Completed December 30, 2025
-
-All product image URLs updated to point to data bucket.
-Parameters.json moved to data bucket for persistence.
-Frontend deployment no longer affects business data.
+| Date     | Change                                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------ |
+| Dec 2025 | Migrated from single `my-hdcn-bucket` to separated architecture                                                    |
+| Dec 2025 | Product image URLs migrated to `h-dcn-data-506221081911` (see `scripts/migrate_image_urls_to_nonprofit_bucket.py`) |
+| 2026     | Reports buckets added for admin export functionality                                                               |
+| 2026     | Email templates bucket added (CloudFormation managed)                                                              |
 
 ## Best Practices
 
-1. **Never use `--delete` on data bucket**
-2. **Always backup parameters.json before changes**
-3. **Test parameter changes in development first**
-4. **Use dedicated scripts for data operations**
-5. **Keep frontend deployments separate from data updates**
+1. **Never use `--delete` on data bucket** — only the frontend bucket uses `--delete` during sync
+2. **Use the S3FileManager API** for data bucket operations (provides auth + audit trail)
+3. **Always deploy to test stage first** (`gh workflow run deploy-frontend.yml --ref branch -f stage=test`)
+4. **Keep frontend deployments separate from data updates**
+5. **IAM policies use least privilege** — each Lambda only gets access to the buckets it needs
 
 ## Troubleshooting
 
 ### Images Not Loading
 
-- Check `REACT_APP_IMAGES_BUCKET` environment variable
-- Verify images exist in `my-hdcn-bucket`
-- Run `fix-product-image-urls.ps1` to update database URLs
+- Check `REACT_APP_DATA_BUCKET` / `REACT_APP_IMAGES_BASE_URL` environment variables
+- Verify images exist in `h-dcn-data-506221081911/product-images/`
+- Check CORS configuration on the data bucket
 
 ### Parameters Not Loading
 
-- Check `REACT_APP_IMAGES_BASE_URL` environment variable
-- Verify `parameters.json` exists in `my-hdcn-bucket`
-- Use `backup-parameters.ps1` to download current version
+- Verify `parameters.json` exists in the data bucket
+- Check the S3FileManager API endpoint is working (`GET /s3/files?bucketName=h-dcn-data-506221081911&prefix=parameters`)
 
 ### Deployment Issues
 
-- Use `deploy-frontend-safe.ps1` for code-only deployments
-- Use `deploy-parameters.ps1` for data updates
+- Frontend: Check GitHub Actions workflow `deploy-frontend.yml` — uses `FRONTEND_BUCKET_NAME` var
+- Backend: SAM template passes `DataBucket` parameter (default: `h-dcn-data-506221081911`)
 - Never mix code and data deployments
+
+## Legacy References
+
+> **Note**: Some utility scripts in `scripts/` still reference the old bucket name `my-hdcn-bucket`. These scripts were written during the migration period (Dec 2025) and point to the old personal-account bucket. The canonical data bucket is `h-dcn-data-506221081911` in the nonprofit account (506221081911).

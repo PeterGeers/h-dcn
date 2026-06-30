@@ -167,8 +167,9 @@ def validate_purchase_rules(
     Counts items per product_id in the order (using quantity), then checks
     against each product's purchase_rules limits:
     - max_per_order: maximum quantity of this product in a single order
-    - max_per_club: maximum items for club-scoped orders
-    - min_per_club: minimum items for club-scoped orders
+      (also checks max_per_club as backward-compatible equivalent)
+    - min_per_order: minimum items for row-scoped orders
+      (also checks min_per_club as backward-compatible equivalent)
 
     Args:
         items: The order's items array.
@@ -195,8 +196,10 @@ def validate_purchase_rules(
         count = counts.get(product_id, 0)
         product_name = product.get("name", product_id)
 
-        # max_per_order check
+        # max_per_order check (authoritative; fall back to max_per_club per Req 5.8)
         max_per_order = purchase_rules.get("max_per_order")
+        if max_per_order is None:
+            max_per_order = purchase_rules.get("max_per_club")
         if max_per_order is not None:
             max_val = _to_int(max_per_order)
             if max_val is not None and count > max_val:
@@ -209,24 +212,12 @@ def validate_purchase_rules(
                     ),
                 })
 
-        # max_per_club check
-        max_per_club = purchase_rules.get("max_per_club")
-        if max_per_club is not None:
-            max_val = _to_int(max_per_club)
-            if max_val is not None and count > max_val:
-                errors.append({
-                    "item_index": None,
-                    "field": "purchase_rules",
-                    "message": (
-                        f"Maximum {max_val} items toegestaan voor "
-                        f"'{product_name}', maar {count} gevonden"
-                    ),
-                })
-
-        # min_per_club check
-        min_per_club = purchase_rules.get("min_per_club")
-        if min_per_club is not None:
-            min_val = _to_int(min_per_club)
+        # min_per_order check (fall back to min_per_club for backward compat)
+        min_per_order = purchase_rules.get("min_per_order")
+        if min_per_order is None:
+            min_per_order = purchase_rules.get("min_per_club")
+        if min_per_order is not None:
+            min_val = _to_int(min_per_order)
             if min_val is not None and min_val > 0 and count < min_val:
                 errors.append({
                     "item_index": None,
@@ -252,7 +243,7 @@ def validate_submission(
     Runs all three validation checks and returns ALL errors combined.
 
     Args:
-        order: The order being submitted, with items array and club_id.
+        order: The order being submitted, with items array and registry_row_id.
         event: The event record with constraints array.
         products: Dict mapping product_id -> product record.
         all_event_orders: All orders for this event (any status).
@@ -261,7 +252,7 @@ def validate_submission(
         List of all validation error dicts. Empty list means submission is valid.
     """
     items = order.get("items", [])
-    club_id = order.get("club_id")
+    registry_row_id = order.get("registry_row_id")
     all_errors = []
 
     # 1. Validate item fields
@@ -279,7 +270,7 @@ def validate_submission(
             order_items=items,
             event_constraints=event_constraints,
             all_event_orders=all_event_orders,
-            current_club_id=club_id,
+            current_registry_row_id=registry_row_id,
         )
         # Convert constraint errors to our standard format
         for ce in constraint_errors:

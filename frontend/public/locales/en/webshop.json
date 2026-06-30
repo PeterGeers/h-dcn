@@ -1,5 +1,9 @@
 {
   "title": "H-DCN Webshop",
+  "filter": {
+    "all_groups": "All groups",
+    "all_subgroups": "All subgroups"
+  },
   "cart": {
     "title": "Shopping Cart",
     "item_count": "Shopping Cart ({{count}})",
@@ -15,7 +19,8 @@
     "save_hint": "Add products first to save.",
     "option_label": "Option",
     "item_total_label": "Number of items",
-    "total_label": "Total"
+    "total_label": "Total",
+    "item_fields_label": "Participant details"
   },
   "product": {
     "added": "Product added",
@@ -40,6 +45,7 @@
     "total": "Total",
     "processing": "Processing...",
     "pay_button": "Pay €{{amount}}",
+    "place_order": "Place order",
     "placeholder_name": "Name",
     "placeholder_street": "Street and house number",
     "placeholder_postal": "Postcode",
@@ -134,44 +140,77 @@
     "title": "Demo mode",
     "description": "Using mock data because API is unavailable"
   },
+  "item_fields": {
+    "item_label": "Item {{current}} of {{total}}",
+    "select_placeholder": "Select...",
+    "email_placeholder": "Email address"
+  },
+  "payment": {
+    "return_success_title": "Payment successful",
+    "return_failed_title": "Payment not completed",
+    "retry_button": "Try again",
+    "method_title": "Payment method",
+    "ideal_description": "Pay through your own bank",
+    "creditcard_description": "Pay with Visa, Mastercard or American Express",
+    "bank_transfer": "Bank transfer",
+    "bank_transfer_description": "Transfer the amount manually",
+    "transfer_instructions_title": "Transfer details",
+    "reference": "Reference:",
+    "amount": "Amount:",
+    "return_success_message": "Payment successful! Your order has been confirmed.",
+    "return_failed_message": "The payment has failed. Please try again or choose a different payment method.",
+    "return_expired_message": "The payment has expired. Please try again or choose a different payment method.",
+    "return_cancelled_message": "The payment has been cancelled. Please try again or choose a different payment method.",
+    "return_pending_message": "The payment is being processed. You will receive a confirmation once the payment is completed.",
+    "return_unknown_message": "The status of your payment is being checked."
+  },
+  "purchase_rules": {
+    "max_per_order": "Maximum {{limit}} per order",
+    "max_per_member": "{{remaining}} remaining (max {{limit}} per member)",
+    "max_per_club": "{{remaining}} remaining for your club (max {{limit}} per club)",
+    "requires_membership": "An active membership is required"
+  },
   "variant": {
     "select_placeholder": "Choose {{axis}}",
     "in_stock": "{{count}} in stock",
     "out_of_stock": "Out of stock",
     "combination_unavailable": "Combination not available",
-    "select_all_prompt": "Select all options to see availability"
+    "select_all_prompt": "Select all options",
+    "fetch_error": "Variants could not be loaded"
   },
-  "item_fields": {
-    "item_label": "Item {{current}} of {{total}}",
-    "required": "This field is required",
-    "min_length": "Minimum {{count}} characters",
-    "max_length": "Maximum {{count}} characters",
-    "minimum": "Minimum value is {{value}}",
-    "maximum": "Maximum value is {{value}}",
-    "invalid_email": "Invalid email address",
+  "validation": {
+    "required": "{{field}} is required",
+    "email": "Enter a valid email address",
+    "min_length": "Minimum {{count}} characters required",
+    "max_length": "Maximum {{count}} characters allowed",
+    "min": "Value must be at least {{value}}",
+    "max": "Value must be at most {{value}}",
+    "pattern": "Invalid input",
     "invalid_number": "Enter a valid number",
     "invalid_option": "Select a valid option",
-    "pattern_mismatch": "Value does not match the required format",
-    "select_placeholder": "Select...",
-    "email_placeholder": "email@example.com"
+    "unique": "{{field}} must be unique",
+    "select_min_options": "Selection must have at least {{count}} option"
   },
-  "purchase_rules": {
-    "max_per_order": "Maximum {{limit}} items per order",
-    "max_per_member": "You have {{remaining}} items available (limit: {{limit}} per member)",
-    "max_per_club": "Your club has {{remaining}} items available (limit: {{limit}} per club)",
-    "requires_membership": "An active membership is required to order this product"
+  "toast": {
+    "payment_recorded": "Payment recorded",
+    "payment_recorded_desc": "Payment of € {{amount}} has been processed successfully.",
+    "payment_record_error": "Error recording payment",
+    "status_updated": "Status updated",
+    "status_updated_desc": "Order set to \"{{status}}\".",
+    "status_update_error": "Failed to change status",
+    "order_locked": "Order locked",
+    "lock_error": "Locking failed",
+    "order_unlocked": "Order unlocked",
+    "unlock_error": "Unlocking failed",
+    "all_orders_locked": "All orders locked",
+    "all_orders_locked_desc": "All submitted orders have been locked.",
+    "bulk_lock_error": "Bulk locking failed",
+    "error_title": "Error"
   },
-  "payment": {
-    "method_title": "Payment method",
-    "ideal_description": "iDEAL - pay directly via your bank",
-    "creditcard_description": "Credit card (Visa, Mastercard)",
-    "bank_transfer": "Bank transfer",
-    "bank_transfer_description": "Manual bank transfer",
-    "transfer_instructions_title": "Transfer instructions",
-    "reference": "Reference:",
-    "amount": "Amount:",
-    "return_success_title": "Payment successful",
-    "return_failed_title": "Payment not completed",
-    "retry_button": "Try again"
+  "payment_record": {
+    "order_id_label": "Order ID",
+    "amount_label": "Amount",
+    "date_label": "Date",
+    "date_format_error": "Use ISO date format (YYYY-MM-DD)"
   }
 }

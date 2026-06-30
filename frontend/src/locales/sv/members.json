@@ -97,6 +97,13 @@
     "apply_link": "Klicka här för att bli medlem"
   },
   "form": {
+    "group_name": "Gruppnamn",
+    "email": "E-post",
+    "name": "Namn",
+    "description": "Beskrivning",
+    "price": "Pris",
+    "duration": "Varaktighet",
+    "status": "Status",
     "first_name": "Förnamn",
     "last_name": "Efternamn",
     "street": "Gata",
@@ -119,5 +126,28 @@
     "membership": "Medlemskap",
     "motor": "Motorcykel",
     "financial": "Ekonomi"
+  },
+  "validation": {
+    "required": "{{field}} är obligatoriskt",
+    "email": "Ange en giltig e-postadress",
+    "min_length": "Minst {{count}} tecken krävs",
+    "max_length": "Högst {{count}} tecken tillåtna",
+    "min": "Värdet måste vara minst {{value}}",
+    "max": "Värdet får vara högst {{value}}",
+    "pattern": "Ogiltig inmatning",
+    "invalid_number": "Ange ett giltigt nummer",
+    "invalid_option": "Välj ett giltigt alternativ"
+  },
+  "toast": {
+    "required_fields": "Obligatoriska fält",
+    "group_created": "Grupp skapad",
+    "group_cannot_update": "Gruppen kan inte uppdateras",
+    "group_cannot_update_desc": "Cognito stöder inte ändring av gruppbeskrivning efter skapande",
+    "save_error": "Fel vid sparande",
+    "user_updated": "Användare uppdaterad",
+    "user_created": "Användare skapad"
+  },
+  "errors": {
+    "invalid_file_type": "Ogiltig filtyp. Endast CSV-filer är tillåtna."
   }
 }

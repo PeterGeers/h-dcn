@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  Box, VStack, HStack, Heading, Table, Thead, Tbody, Tr, Th, Td,
+  Box, VStack, HStack, Heading, Table, Thead, Tbody, Tr, Td,
   Badge, Select, Text, SimpleGrid, Stat, StatLabel, StatNumber,
 } from '@chakra-ui/react';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
+import { useFilterableTable } from '../../../hooks/useFilterableTable';
+import { FilterableHeader } from '../../../components/filters';
+import { FilterPanel, GenericFilter } from '../../../components/filters';
 
 interface ProcessedEvent extends Event {
   naam: string;
@@ -62,27 +65,38 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
 
   // Access check is now handled by FunctionGuard wrapper - no need for duplicate check here
 
-  const eventsWithFinance: ProcessedEvent[] = events.map(event => {
-    const kosten = parseFloat(String(event.cost || event.kosten || 0));
-    const inkomsten = parseFloat(String(event.revenue || event.inkomsten || 0));
+  const eventsWithFinance: ProcessedEvent[] = useMemo(() => events.map(event => {
+    const kosten = parseFloat(String(event.cost || 0));
+    const inkomsten = parseFloat(String(event.revenue || 0));
     
-    const processedEvent = {
+    return {
       ...event,
-      naam: event.title || event.naam,
-      datum_van: event.event_date || event.datum_van,
+      naam: event.name || '',
+      datum_van: event.start_date || '',
       kosten: kosten,
       inkomsten: inkomsten,
       winst: inkomsten - kosten,
-      betaalstatus: event.betaalstatus || 'open',
-      factuurnummer: event.factuurnummer || '-'
+      betaalstatus: 'open',
+      factuurnummer: '-'
     };
-    
-    return processedEvent;
-  });
+  }), [events]);
 
-  const filteredEvents = statusFilter === 'all' 
-    ? eventsWithFinance 
-    : eventsWithFinance.filter(event => event.betaalstatus === statusFilter);
+  // Pre-filter by status dropdown (before framework)
+  const preFilteredEvents = useMemo(() => {
+    if (statusFilter === 'all') return eventsWithFinance;
+    return eventsWithFinance.filter(event => event.betaalstatus === statusFilter);
+  }, [eventsWithFinance, statusFilter]);
+
+  const INITIAL_FILTERS = { naam: '', datum_van: '', kosten: '', inkomsten: '', winst: '' };
+
+  // Framework: filter + sort on pre-filtered data
+  const { filters, setFilter, handleSort, sortField, sortDirection, processedData, hasActiveFilters, resetFilters } =
+    useFilterableTable(preFilteredEvents as unknown as Record<string, unknown>[], {
+      initialFilters: INITIAL_FILTERS,
+      defaultSort: { field: 'datum_van', direction: 'desc' },
+    });
+
+  const filteredEvents = processedData as unknown as ProcessedEvent[];
 
   const totals: FinanceTotals = eventsWithFinance.reduce((acc, event) => ({
     kosten: acc.kosten + event.kosten,
@@ -130,19 +144,6 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
       <HStack justify="space-between">
         <Heading size="lg" color="orange.400">Financieel Overzicht</Heading>
         <HStack>
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            bg="gray.800"
-            color="orange.400"
-            borderColor="orange.400"
-            maxW="200px"
-          >
-            <option value="all">Alle statussen</option>
-            <option value="open">Open</option>
-            <option value="betaald">Betaald</option>
-            <option value="achterstallig">Achterstallig</option>
-          </Select>
           <CSVExportButton 
             data={filteredEvents} 
             filename="financien"
@@ -152,6 +153,26 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
           />
         </HStack>
       </HStack>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        hasActiveFilters={statusFilter !== 'all' || hasActiveFilters}
+        onReset={() => { setStatusFilter('all'); resetFilters(); }}
+        filteredCount={filteredEvents.length}
+        totalCount={eventsWithFinance.length}
+      >
+        <GenericFilter
+          label="Betaalstatus"
+          value={statusFilter === 'all' ? '' : statusFilter}
+          options={[
+            { value: 'open', label: 'Open' },
+            { value: 'betaald', label: 'Betaald' },
+            { value: 'achterstallig', label: 'Achterstallig' },
+          ]}
+          onChange={(v) => setStatusFilter(v || 'all')}
+          placeholder="Alle statussen"
+        />
+      </FilterPanel>
 
       {/* Financial Summary */}
       <SimpleGrid columns={3} spacing={6}>
@@ -182,14 +203,69 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
         <Table variant="simple">
           <Thead bg="gray.700">
             <Tr>
-              <Th color="orange.300">Evenement</Th>
-              <Th color="orange.300">Datum</Th>
-              <Th color="orange.300">Kosten</Th>
-              <Th color="orange.300">Inkomsten</Th>
-              <Th color="orange.300">Winst</Th>
-              <Th color="orange.300">Betaalstatus</Th>
-              <Th color="orange.300">Factuurnummer</Th>
-              <Th color="orange.300">Acties</Th>
+              <FilterableHeader
+                label="Evenement"
+                filterValue={filters.naam}
+                onFilterChange={(v) => setFilter('naam', v)}
+                sortable
+                sortDirection={sortField === 'naam' ? sortDirection : null}
+                onSort={() => handleSort('naam')}
+                minW="150px"
+              />
+              <FilterableHeader
+                label="Datum"
+                filterValue={filters.datum_van}
+                onFilterChange={(v) => setFilter('datum_van', v)}
+                sortable
+                sortDirection={sortField === 'datum_van' ? sortDirection : null}
+                onSort={() => handleSort('datum_van')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Kosten"
+                filterValue={filters.kosten}
+                onFilterChange={(v) => setFilter('kosten', v)}
+                sortable
+                sortDirection={sortField === 'kosten' ? sortDirection : null}
+                onSort={() => handleSort('kosten')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Inkomsten"
+                filterValue={filters.inkomsten}
+                onFilterChange={(v) => setFilter('inkomsten', v)}
+                sortable
+                sortDirection={sortField === 'inkomsten' ? sortDirection : null}
+                onSort={() => handleSort('inkomsten')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Winst"
+                filterValue={filters.winst}
+                onFilterChange={(v) => setFilter('winst', v)}
+                sortable
+                sortDirection={sortField === 'winst' ? sortDirection : null}
+                onSort={() => handleSort('winst')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Status"
+                showFilter={false}
+                sortable
+                sortDirection={sortField === 'betaalstatus' ? sortDirection : null}
+                onSort={() => handleSort('betaalstatus')}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Factuurnr"
+                showFilter={false}
+                minW="100px"
+              />
+              <FilterableHeader
+                label="Acties"
+                showFilter={false}
+                minW="120px"
+              />
             </Tr>
           </Thead>
           <Tbody>

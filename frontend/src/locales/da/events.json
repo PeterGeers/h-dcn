@@ -1,38 +1,27 @@
 {
-  "title": "Arrangementer",
-  "loading": {
-    "permissions": "Indlæser tilladelser...",
-    "events": "Indlæser arrangementer..."
-  },
-  "tabs": {
-    "events": "Arrangementer",
-    "finance": "Økonomi",
-    "analytics": "Analyse"
-  },
-  "access": {
-    "no_access": "Du har ikke adgang til arrangementadministrationen. Kontakt en administrator, hvis du har brug for adgang.",
-    "no_financial_access": "Du har ikke adgang til finansielle data.",
-    "no_analytics_access": "Du har ikke adgang til analyse.",
-    "current_roles": "Nuværende roller: {{roles}}",
-    "no_roles": "Ingen roller tildelt",
-    "required_roles": "Påkrævede roller: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman eller andre arrangementrelaterede roller"
-  },
-  "communication": {
-    "title": "Arrangementkommunikation & Eksport",
-    "export_participants": "Eksporter deltagerlister",
-    "newsletter_content": "Nyhedsbrevsindhold"
-  },
-  "overview": {
-    "title": "Arrangementoversigt & Rapportering",
-    "event_overview": "Arrangementoversigt",
-    "regional_summary": "Regional oversigt"
-  },
-  "fields": {
-    "name": "Navn",
-    "date": "Dato",
-    "location": "Sted",
-    "participants": "Deltagere",
-    "revenue": "Indtægter",
-    "costs": "Omkostninger"
+  "title": "Begivenheder",
+  "loading": { "permissions": "Indlæser tilladelser...", "events": "Indlæser begivenheder..." },
+  "tabs": { "events": "Begivenheder", "finance": "Økonomi", "analytics": "Analyse" },
+  "access": { "no_access": "Du har ikke adgang til begivenhedsadministration.", "no_financial_access": "Du har ikke adgang til finansielle data.", "no_analytics_access": "Du har ikke adgang til analyser.", "current_roles": "Nuværende roller: {{roles}}", "no_roles": "Ingen roller tildelt", "required_roles": "Påkrævede roller: Events_Read, Events_CRUD eller andre begivenhedsrelaterede roller", "region_limited": "Du kan administrere begivenheder for: {{regions}}" },
+  "communication": { "title": "Begivenhedskommunikation & Eksport", "export_participants": "Eksporter deltagerlister", "newsletter_content": "Nyhedsbrev-indhold" },
+  "overview": { "title": "Begivenhedsoversigt & Rapporter", "event_overview": "Begivenhedsoversigt", "regional_summary": "Regional oversigt" },
+  "form": { "title_new": "Ny begivenhed", "title_edit": "Rediger begivenhed", "save_new": "Opret", "save_edit": "Opdater", "cancel": "Annuller", "success_created": "Begivenhed oprettet", "success_updated": "Begivenhed opdateret", "error_save": "Fejl ved gemning", "validation": { "required_fields": "Navn, type, start- og slutdato og region er påkrævet", "required_registration": "Tilmelding åbnings- og lukkedato er påkrævet", "no_region_access": "Du har ikke tilladelse til at oprette begivenheder i denne region" }, "sections": { "registration": "Tilmelding & Frister", "registration_required": "påkrævet", "config": "Konfiguration", "financial": "Økonomi", "landing_page": "Landingsside" } },
+  "fields": { "name": "Begivenhedsnavn", "name_placeholder": "Navn på begivenheden", "event_type": "Type", "event_type_placeholder": "Vælg type...", "participation": "Deltagelse", "linked_regio": "Region", "linked_regio_placeholder": "Vælg region...", "regio_all_label": "Alle regioner (national)", "start_date": "Startdato", "end_date": "Slutdato", "location": "Sted", "location_placeholder": "F.eks. H-DCN Klubhus, Amsterdam", "poster_url": "Plakat / Billede", "poster_placeholder": "URL eller upload en fil", "poster_upload": "Upload", "poster_success": "Plakat uploadet", "slug": "URL Slug", "slug_placeholder": "f.eks. presmeet-2026", "registration_open": "Tilmelding åbner", "registration_close": "Tilmelding lukker", "payment_deadline": "Betalingsfrist", "product_ids": "Produkt-ID'er (kommasepareret)", "product_ids_placeholder": "produkt-id-1, produkt-id-2", "participants": "Antal deltagere", "cost": "Omkostninger (€)", "revenue": "Indtægter (€)", "notes": "Noter", "notes_placeholder": "Interne noter om omkostninger, aftaler, osv.", "date": "Dato", "costs": "Omkostninger" },
+  "event_types": { "presmeet": "PresMeet", "alv": "ALV (Generalforsamling)", "rlv": "RLV (Regionalt møde)", "vbv": "VBV", "vergader_queue": "Mødekø", "internationaal_treffen": "Internationalt Træf", "nationaal_treffen": "Nationalt Træf", "openingsrit": "Åbningstur", "regio_rit": "Regional tur", "tourweekend": "Tour-weekend", "sluitingsrit": "Afslutningstur", "webshop": "Webshop", "other": "Andet" },
+  "event_categories": { "vergadering": "Møder", "rally": "Rallies", "rit": "Ture", "overig": "Andet" },
+  "participation_modes": { "open": "Åben (deltagelse for alle)", "closed": "Lukket (kun medlemmer / inviterede)" },
+  "list": { "search_placeholder": "Søg begivenheder...", "new_event": "Ny begivenhed", "new_event_short": "Ny", "no_events": "Ingen begivenheder fundet", "edit": "Rediger", "duplicate": "Dupliker", "delete": "Slet", "no_edit_access": "Ingen tilladelse til at redigere", "no_duplicate_access": "Ingen tilladelse til at duplikere", "no_delete_access": "Ingen tilladelse til at slette", "confirm_delete": "Er du sikker på, at du vil slette \"{{name}}\"?", "deleted_success": "Begivenhed slettet", "delete_error": "Fejl ved sletning", "profit": "Fortjeneste" },
+  "validation": {
+    "required": "{{field}} er påkrævet",
+    "email": "Indtast en gyldig e-mailadresse",
+    "min_length": "Minimum {{count}} tegn påkrævet",
+    "max_length": "Maksimalt {{count}} tegn tilladt",
+    "min": "Værdien skal være mindst {{value}}",
+    "max": "Værdien må højst være {{value}}",
+    "pattern": "Ugyldig indtastning",
+    "invalid_number": "Indtast et gyldigt nummer",
+    "invalid_option": "Vælg en gyldig mulighed",
+    "poster_invalid_type": "Ugyldig filtype. Tilladt: {{types}}",
+    "poster_file_too_large": "Filen er for stor. Maksimalt {{maxSize}} tilladt"
   }
 }

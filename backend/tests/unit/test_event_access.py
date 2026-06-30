@@ -175,3 +175,149 @@ class TestGetMemberAllowedEvents:
 
         result = mod.get_member_allowed_events('member-1')
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Tests: verify_order_event_access
+# ---------------------------------------------------------------------------
+
+class TestVerifyOrderEventAccess:
+    """Tests for verify_order_event_access(order, member_id) — Req 16.5, 16.7."""
+
+    def test_grants_access_when_event_in_allowed_and_is_primary_delegate(self, members_table_with_module):
+        """Access granted: event in allowed_events AND member is primary delegate."""
+        table, mod = members_table_with_module
+        table.put_item(Item={
+            'member_id': 'member-1',
+            'allowed_events': ['event-abc'],
+        })
+
+        order = {
+            'order_id': 'order-1',
+            'event_id': 'event-abc',
+            'source_id': 'event-abc',
+            'delegates': {
+                'primary_member_id': 'member-1',
+                'secondary_member_id': None,
+            },
+        }
+
+        assert mod.verify_order_event_access(order, 'member-1') is True
+
+    def test_grants_access_when_event_in_allowed_and_is_secondary_delegate(self, members_table_with_module):
+        """Access granted: event in allowed_events AND member is secondary delegate."""
+        table, mod = members_table_with_module
+        table.put_item(Item={
+            'member_id': 'member-2',
+            'allowed_events': ['event-abc'],
+        })
+
+        order = {
+            'order_id': 'order-1',
+            'event_id': 'event-abc',
+            'source_id': 'event-abc',
+            'delegates': {
+                'primary_member_id': 'member-1',
+                'secondary_member_id': 'member-2',
+            },
+        }
+
+        assert mod.verify_order_event_access(order, 'member-2') is True
+
+    def test_denies_access_when_event_not_in_allowed_events(self, members_table_with_module):
+        """Access denied: event NOT in allowed_events (even if user is a delegate)."""
+        table, mod = members_table_with_module
+        table.put_item(Item={
+            'member_id': 'member-1',
+            'allowed_events': ['event-other'],
+        })
+
+        order = {
+            'order_id': 'order-1',
+            'event_id': 'event-abc',
+            'source_id': 'event-abc',
+            'delegates': {
+                'primary_member_id': 'member-1',
+                'secondary_member_id': None,
+            },
+        }
+
+        assert mod.verify_order_event_access(order, 'member-1') is False
+
+    def test_denies_access_when_not_a_delegate(self, members_table_with_module):
+        """Access denied: event in allowed_events but user is NOT a delegate."""
+        table, mod = members_table_with_module
+        table.put_item(Item={
+            'member_id': 'member-3',
+            'allowed_events': ['event-abc'],
+        })
+
+        order = {
+            'order_id': 'order-1',
+            'event_id': 'event-abc',
+            'source_id': 'event-abc',
+            'delegates': {
+                'primary_member_id': 'member-1',
+                'secondary_member_id': 'member-2',
+            },
+        }
+
+        assert mod.verify_order_event_access(order, 'member-3') is False
+
+    def test_grants_access_for_webshop_orders(self, members_table_with_module):
+        """Webshop orders (source_id='webshop') skip event access check."""
+        _table, mod = members_table_with_module
+
+        order = {
+            'order_id': 'order-1',
+            'source_id': 'webshop',
+            'member_id': 'member-1',
+        }
+
+        # No event access setup needed — webshop orders always pass
+        assert mod.verify_order_event_access(order, 'member-1') is True
+
+    def test_grants_access_for_orders_without_event_id(self, members_table_with_module):
+        """Orders without event_id skip event access check."""
+        _table, mod = members_table_with_module
+
+        order = {
+            'order_id': 'order-1',
+            'member_id': 'member-1',
+        }
+
+        assert mod.verify_order_event_access(order, 'member-1') is True
+
+    def test_falls_back_to_member_id_when_no_delegates_field(self, members_table_with_module):
+        """Orders without delegates field use member_id for ownership check."""
+        table, mod = members_table_with_module
+        table.put_item(Item={
+            'member_id': 'member-1',
+            'allowed_events': ['event-abc'],
+        })
+
+        order = {
+            'order_id': 'order-1',
+            'event_id': 'event-abc',
+            'source_id': 'event-abc',
+            'member_id': 'member-1',
+            # No delegates field
+        }
+
+        assert mod.verify_order_event_access(order, 'member-1') is True
+        assert mod.verify_order_event_access(order, 'member-other') is False
+
+    def test_denies_when_member_does_not_exist(self, members_table_with_module):
+        """Access denied when member record doesn't exist (no allowed_events)."""
+        _table, mod = members_table_with_module
+
+        order = {
+            'order_id': 'order-1',
+            'event_id': 'event-abc',
+            'source_id': 'event-abc',
+            'delegates': {
+                'primary_member_id': 'nonexistent',
+            },
+        }
+
+        assert mod.verify_order_event_access(order, 'nonexistent') is False

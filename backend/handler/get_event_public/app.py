@@ -60,18 +60,48 @@ def _resolve_event_by_slug(slug):
 
 
 def _determine_registration_status(event_item):
-    """Determine if registration is open or closed based on event status."""
+    """
+    Determine if registration is open based on publication status + date fields.
+
+    Rules:
+    - status 'draft' or 'archived' → always closed
+    - status 'published' (or 'open' for backward compat, or missing) → check dates
+    - registration_open/close determine the registration window
+    - If dates are not set, that boundary is not enforced
+    """
+    from datetime import date
+
     status = event_item.get('status', '')
-    return 'open' if status == 'open' else 'closed'
+
+    # Draft and archived: never allow registration
+    if status in ('draft', 'archived', 'closed', 'locked'):
+        return 'closed'
+
+    # Published (or 'open' backward compat, or no status field): check dates
+    today = date.today().isoformat()  # yyyy-mm-dd
+    reg_open = event_item.get('registration_open', '')
+    reg_close = event_item.get('registration_close', '')
+
+    if reg_open and today < reg_open[:10]:
+        return 'closed'  # Registration not yet open
+    if reg_close and today > reg_close[:10]:
+        return 'closed'  # Registration past deadline
+
+    return 'open'
 
 
 def _build_public_response(event_item):
     """
     Build the public-safe response, excluding sensitive fields.
-    Includes: event_id, name, dates, location, landing_page config, registration status.
-    Excludes: constraints, product_ids, order counts, order_scope.
+    Includes: event_id, name, dates, location, landing_page config, registration status,
+              has_event_password (bool), landing_page_enabled (bool).
+    Excludes: constraints, product_ids, order counts, order_scope, actual password hash.
     """
     landing_page = event_item.get('landing_page', {})
+
+    # Expose whether a password gate exists (not the hash itself)
+    has_event_password = bool(event_item.get('event_password'))
+    landing_page_enabled = bool(landing_page.get('enabled', False))
 
     return {
         'event_id': event_item.get('event_id', ''),
@@ -81,6 +111,8 @@ def _build_public_response(event_item):
         'end_date': event_item.get('end_date', ''),
         'location': event_item.get('location', ''),
         'registration_status': _determine_registration_status(event_item),
+        'has_event_password': has_event_password,
+        'landing_page_enabled': landing_page_enabled,
         'landing_page': {
             'slug': landing_page.get('slug', ''),
             'hero_image_url': landing_page.get('hero_image_url', ''),

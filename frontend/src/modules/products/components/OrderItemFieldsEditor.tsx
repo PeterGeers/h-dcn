@@ -20,11 +20,13 @@ import {
   WrapItem,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import type { TFunction } from 'i18next';
 import {
   OrderItemField,
   OrderItemFieldType,
   OrderItemFieldValidation,
 } from '../../webshop/types/unifiedProduct.types';
+import { getValidationMessage } from '../../../utils/validationMessages';
 
 // --- Constants ---
 
@@ -52,13 +54,13 @@ export interface OrderItemFieldsEditorProps {
 // --- Helpers ---
 
 /** Convert label text to a kebab-case id */
-function toKebabCase(text: string): string {
+function toSnakeCase(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s_-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/[^a-z0-9\s_]/g, '')
+    .replace(/[\s-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
     .slice(0, 50);
 }
 
@@ -74,7 +76,8 @@ function createEmptyField(): OrderItemField {
 
 /** Validate all fields and return errors keyed by `${index}.${property}` */
 export function validateOrderItemFields(
-  fields: OrderItemField[]
+  fields: OrderItemField[],
+  t?: TFunction
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   const seenIds = new Set<string>();
@@ -82,14 +85,20 @@ export function validateOrderItemFields(
   fields.forEach((field, index) => {
     // Label required
     if (!field.label.trim()) {
-      errors[`${index}.label`] = 'Label is verplicht';
+      errors[`${index}.label`] = t
+        ? getValidationMessage(t, 'required', { field: 'Label' })
+        : 'Label is verplicht';
     }
 
     // ID required
     if (!field.id.trim()) {
-      errors[`${index}.id`] = 'ID is verplicht';
+      errors[`${index}.id`] = t
+        ? getValidationMessage(t, 'required', { field: 'ID' })
+        : 'ID is verplicht';
     } else if (seenIds.has(field.id)) {
-      errors[`${index}.id`] = 'ID moet uniek zijn';
+      errors[`${index}.id`] = t
+        ? t('validation.unique', { field: 'ID', defaultValue: 'ID moet uniek zijn' })
+        : 'ID moet uniek zijn';
     } else {
       seenIds.add(field.id);
     }
@@ -97,7 +106,9 @@ export function validateOrderItemFields(
     // Select must have at least one option
     if (field.type === 'select') {
       if (!field.options || field.options.length === 0) {
-        errors[`${index}.options`] = 'Selectie moet minimaal 1 optie hebben';
+        errors[`${index}.options`] = t
+          ? t('validation.select_min_options', { count: 1, defaultValue: 'Selectie moet minimaal 1 optie hebben' })
+          : 'Selectie moet minimaal 1 optie hebben';
       }
     }
   });
@@ -143,10 +154,10 @@ const OrderItemFieldsEditor: React.FC<OrderItemFieldsEditorProps> = ({
   const handleLabelChange = useCallback(
     (index: number, label: string) => {
       const field = value[index];
-      const autoId = !field.id || field.id === toKebabCase(field.label);
+      const autoId = !field.id || field.id === toSnakeCase(field.label);
       const updates: Partial<OrderItemField> = { label };
       if (autoId) {
-        updates.id = toKebabCase(label);
+        updates.id = toSnakeCase(label);
       }
       handleFieldChange(index, updates);
     },

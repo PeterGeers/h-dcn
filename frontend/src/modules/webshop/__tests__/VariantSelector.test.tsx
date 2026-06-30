@@ -47,7 +47,7 @@ jest.mock('@chakra-ui/react', () => ({
   Badge: ({ children, ...props }: any) => <span {...props}>{children}</span>,
 }));
 
-import VariantSelector, { resolveVariant, VariantSelectorProps } from '../components/VariantSelector';
+import VariantSelector, { resolveVariant, VariantSelectorProps } from '../../../components/VariantSelector';
 import { VariantRecord, VariantSchema } from '../types/unifiedProduct.types';
 
 // --- Test helpers ---

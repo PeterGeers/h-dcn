@@ -10,10 +10,10 @@ Tests the unified get_order handler:
 - Event source: returns 403 when member doesn't have event access
 - Event source (member scope): creates draft order for new member
 - Event source (member scope): returns existing order
-- Event source (club scope): creates draft order with member as primary delegate
-- Event source (club scope): returns 403 when member has no club_id
-- Event source (club scope): returns existing club order when member is delegate
-- Event source (club scope): returns 403 when member is not a delegate
+- Event source (registry_row scope): creates draft order with member as primary delegate
+- Event source (registry_row scope): returns 403 when member has no registry_row_id
+- Event source (registry_row scope): returns existing row order when member is delegate
+- Event source (registry_row scope): returns 403 when member is not a delegate
 """
 
 import importlib.util
@@ -36,6 +36,7 @@ os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
 os.environ['ORDERS_TABLE_NAME'] = 'Orders'
 os.environ['EVENTS_TABLE_NAME'] = 'Events'
 os.environ['MEMBERS_TABLE_NAME'] = 'Members'
+os.environ['REGISTRY_BUCKET_NAME'] = 'test-registry-bucket'
 
 # Path to the handler under test
 _handler_file = os.path.abspath(
@@ -61,7 +62,8 @@ def _load_handler():
 TEST_EVENT_ID = 'evt-12345678-1234-1234-1234-123456789abc'
 TEST_MEMBER_ID = 'mem-001'
 TEST_MEMBER_EMAIL = 'user@h-dcn.nl'
-TEST_CLUB_ID = 'club-nl-001'
+TEST_REGISTRY_ROW_ID = 'row-nl-001'
+TEST_REGISTRY_S3_PATH = 'events/test-event/invitee_registry.json'
 
 
 def _make_event(query_params=None, method='GET'):
@@ -148,15 +150,14 @@ def setup_tables():
             'email': TEST_MEMBER_EMAIL,
             'member_type': 'hdcn_member',
             'allowed_events': [TEST_EVENT_ID],
-            'club_id': TEST_CLUB_ID,
+            'registry_row_id': TEST_REGISTRY_ROW_ID,
         })
 
-        # Seed test event (member-scoped)
+        # Seed test event (member-scoped, no registry_config)
         events_table.put_item(Item={
             'event_id': TEST_EVENT_ID,
             'name': 'Test Rally 2025',
-            'status': 'open',
-            'order_scope': 'member',
+            'status': 'published',
         })
 
         # Load handler inside mock context
@@ -171,9 +172,10 @@ def setup_tables():
 
 
 @pytest.fixture
-def setup_tables_club_scope():
+def setup_tables_registry_row_scope():
     """
-    Same as setup_tables but with a club-scoped event.
+    Same as setup_tables but with a registry-row-scoped event (has registry_config).
+    Includes S3 mock with registry data.
     """
     with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
@@ -216,29 +218,51 @@ def setup_tables_club_scope():
             BillingMode='PAY_PER_REQUEST',
         )
 
-        # Seed member WITH club_id
+        # S3 bucket with registry file
+        s3_client = boto3.client('s3', region_name='eu-west-1')
+        s3_client.create_bucket(
+            Bucket='test-registry-bucket',
+            CreateBucketConfiguration={'LocationConstraint': 'eu-west-1'},
+        )
+        registry_data = json.dumps({
+            'rows': [
+                {'row_id': TEST_REGISTRY_ROW_ID, 'label': 'H-DCN Nederland', 'logo_url': 'https://cdn.example.com/logo.png'},
+                {'row_id': 'row-nl-002', 'label': 'H-DCN Belgium'},
+            ]
+        })
+        s3_client.put_object(
+            Bucket='test-registry-bucket',
+            Key=TEST_REGISTRY_S3_PATH,
+            Body=registry_data.encode('utf-8'),
+        )
+
+        # Seed member WITH registry_row_id
         members_table.put_item(Item={
             'member_id': TEST_MEMBER_ID,
             'email': TEST_MEMBER_EMAIL,
             'member_type': 'hdcn_member',
             'allowed_events': [TEST_EVENT_ID],
-            'club_id': TEST_CLUB_ID,
+            'registry_row_id': TEST_REGISTRY_ROW_ID,
         })
 
-        # Seed member WITHOUT club_id
+        # Seed member WITHOUT registry_row_id
         members_table.put_item(Item={
-            'member_id': 'mem-no-club',
-            'email': 'noclubuser@h-dcn.nl',
+            'member_id': 'mem-no-row',
+            'email': 'norowuser@h-dcn.nl',
             'member_type': 'hdcn_member',
             'allowed_events': [TEST_EVENT_ID],
         })
 
-        # Seed club-scoped event
+        # Seed registry-row-scoped event (has registry_config)
         events_table.put_item(Item={
             'event_id': TEST_EVENT_ID,
             'name': 'Presidents Meeting 2025',
-            'status': 'open',
-            'order_scope': 'club',
+            'status': 'published',
+            'participation': 'closed',
+            'registry_config': {
+                's3_path': TEST_REGISTRY_S3_PATH,
+                'row_label': 'club',
+            },
         })
 
         # Load handler inside mock context
@@ -353,9 +377,18 @@ class TestEventSource:
         assert 'not found' in body.get('error', '').lower()
 
     def test_returns_403_when_member_has_no_event_access(self, setup_tables):
-        """Returns 403 when member doesn't have the event in allowed_events."""
+        """Returns 403 when member doesn't have the event in allowed_events (closed event)."""
         handler = setup_tables['handler']
         members_table = setup_tables['members']
+        events_table = setup_tables['events']
+
+        # Update event to closed participation
+        events_table.put_item(Item={
+            'event_id': TEST_EVENT_ID,
+            'name': 'Test Rally 2025',
+            'status': 'published',
+            'participation': 'closed',
+        })
 
         # Create a member WITHOUT access to the test event
         members_table.put_item(Item={
@@ -395,7 +428,7 @@ class TestEventMemberScope:
         assert body['source_id'] == TEST_EVENT_ID
         assert body['member_id'] == TEST_MEMBER_ID
         assert 'order_id' in body
-        # Member-scoped orders should NOT have club_id or delegates
+        # Member-scoped orders should NOT have registry_row_id or delegates
         assert 'delegates' not in body
 
     def test_returns_existing_order(self, setup_tables):
@@ -424,15 +457,15 @@ class TestEventMemberScope:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Event source - club scope
+# Tests: Event source - registry_row scope
 # ---------------------------------------------------------------------------
 
-class TestEventClubScope:
-    """Tests for event source with order_scope = 'club'."""
+class TestEventRegistryRowScope:
+    """Tests for event source with registry_config (row-scoped)."""
 
-    def test_creates_draft_order_with_member_as_primary_delegate(self, setup_tables_club_scope):
-        """Creates a new club-scoped draft with requesting member as primary delegate."""
-        handler = setup_tables_club_scope['handler']
+    def test_creates_draft_order_with_member_as_primary_delegate(self, setup_tables_registry_row_scope):
+        """Creates a new row-scoped draft with requesting member as primary delegate."""
+        handler = setup_tables_registry_row_scope['handler']
 
         with _auth_patches():
             event = _make_event(query_params={'source_id': TEST_EVENT_ID})
@@ -443,32 +476,36 @@ class TestEventClubScope:
         assert body['status'] == 'draft'
         assert body['source_id'] == TEST_EVENT_ID
         assert body['member_id'] == TEST_MEMBER_ID
-        assert body['club_id'] == TEST_CLUB_ID
+        assert body['registry_row_id'] == TEST_REGISTRY_ROW_ID
+        assert body['registry_row_label'] == 'H-DCN Nederland'
+        assert body['registry_row_logo_url'] == 'https://cdn.example.com/logo.png'
         assert body['delegates']['primary_member_id'] == TEST_MEMBER_ID
 
-    def test_returns_403_when_member_has_no_club_id(self, setup_tables_club_scope):
-        """Returns 403 when member record has no club_id for a club-scoped event."""
-        handler = setup_tables_club_scope['handler']
+    def test_returns_403_when_member_has_no_registry_row_id(self, setup_tables_registry_row_scope):
+        """Returns 403 with REGISTRY_ROW_REQUIRED when member has no registry_row_id."""
+        handler = setup_tables_registry_row_scope['handler']
 
-        with _auth_patches(email='noclubuser@h-dcn.nl'):
+        with _auth_patches(email='norowuser@h-dcn.nl'):
             event = _make_event(query_params={'source_id': TEST_EVENT_ID})
             response = handler.lambda_handler(event, None)
 
         assert response['statusCode'] == 403
         body = json.loads(response['body'])
-        assert 'club' in body.get('error', '').lower()
+        assert body.get('error_code') == 'REGISTRY_ROW_REQUIRED'
 
-    def test_returns_existing_club_order_when_member_is_delegate(self, setup_tables_club_scope):
-        """Returns existing club order when requesting member is a delegate."""
-        handler = setup_tables_club_scope['handler']
-        orders_table = setup_tables_club_scope['orders']
+    def test_returns_existing_row_order_when_member_is_delegate(self, setup_tables_registry_row_scope):
+        """Returns existing row order when requesting member is a delegate."""
+        handler = setup_tables_registry_row_scope['handler']
+        orders_table = setup_tables_registry_row_scope['orders']
 
-        # Seed an existing club-scoped order
+        # Seed an existing registry-row-scoped order
         orders_table.put_item(Item={
-            'order_id': 'club-order-001',
+            'order_id': 'row-order-001',
             'source_id': TEST_EVENT_ID,
             'member_id': TEST_MEMBER_ID,
-            'club_id': TEST_CLUB_ID,
+            'registry_row_id': TEST_REGISTRY_ROW_ID,
+            'registry_row_label': 'H-DCN Nederland',
+            'registry_row_logo_url': 'https://cdn.example.com/logo.png',
             'status': 'draft',
             'items': [],
             'version': 1,
@@ -483,30 +520,32 @@ class TestEventClubScope:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert body['order_id'] == 'club-order-001'
-        assert body['club_id'] == TEST_CLUB_ID
+        assert body['order_id'] == 'row-order-001'
+        assert body['registry_row_id'] == TEST_REGISTRY_ROW_ID
 
-    def test_returns_403_when_member_is_not_a_delegate(self, setup_tables_club_scope):
-        """Returns 403 when existing club order exists but member is not a delegate."""
-        handler = setup_tables_club_scope['handler']
-        orders_table = setup_tables_club_scope['orders']
-        members_table = setup_tables_club_scope['members']
+    def test_returns_403_when_member_is_not_a_delegate(self, setup_tables_registry_row_scope):
+        """Returns 403 when existing row order exists but member is not a delegate."""
+        handler = setup_tables_registry_row_scope['handler']
+        orders_table = setup_tables_registry_row_scope['orders']
+        members_table = setup_tables_registry_row_scope['members']
 
-        # Create another member from the same club (different member_id)
+        # Create another member from the same row (different member_id)
         members_table.put_item(Item={
             'member_id': 'mem-other',
             'email': 'other@h-dcn.nl',
             'member_type': 'hdcn_member',
             'allowed_events': [TEST_EVENT_ID],
-            'club_id': TEST_CLUB_ID,  # Same club
+            'registry_row_id': TEST_REGISTRY_ROW_ID,  # Same row
         })
 
-        # Seed an existing club order where mem-001 is the primary delegate
+        # Seed an existing row order where mem-001 is the primary delegate
         orders_table.put_item(Item={
-            'order_id': 'club-order-002',
+            'order_id': 'row-order-002',
             'source_id': TEST_EVENT_ID,
             'member_id': TEST_MEMBER_ID,
-            'club_id': TEST_CLUB_ID,
+            'registry_row_id': TEST_REGISTRY_ROW_ID,
+            'registry_row_label': 'H-DCN Nederland',
+            'registry_row_logo_url': 'https://cdn.example.com/logo.png',
             'status': 'draft',
             'items': [],
             'version': 1,
@@ -524,3 +563,29 @@ class TestEventClubScope:
         assert response['statusCode'] == 403
         body = json.loads(response['body'])
         assert 'delegate' in body.get('error', '').lower()
+
+    def test_stores_null_logo_url_when_absent(self, setup_tables_registry_row_scope):
+        """Creates order with registry_row_logo_url=null when row has no logo."""
+        handler = setup_tables_registry_row_scope['handler']
+        members_table = setup_tables_registry_row_scope['members']
+
+        # Create a member mapped to row-nl-002 (which has no logo_url in registry)
+        members_table.put_item(Item={
+            'member_id': 'mem-no-logo',
+            'email': 'nologo@h-dcn.nl',
+            'member_type': 'hdcn_member',
+            'allowed_events': [TEST_EVENT_ID],
+            'registry_row_id': 'row-nl-002',
+        })
+
+        with _auth_patches(email='nologo@h-dcn.nl'):
+            event = _make_event(query_params={'source_id': TEST_EVENT_ID})
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 201
+        body = json.loads(response['body'])
+        assert body['registry_row_id'] == 'row-nl-002'
+        assert body['registry_row_label'] == 'H-DCN Belgium'
+        # logo_url should be explicitly null (not omitted)
+        assert 'registry_row_logo_url' in body
+        assert body['registry_row_logo_url'] is None

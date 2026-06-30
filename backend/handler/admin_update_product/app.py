@@ -46,7 +46,6 @@ UPDATABLE_FIELDS = [
     # categorization
     'groep',
     'subgroep',
-    'event_ids',
     # media
     'images',
     # metadata
@@ -126,16 +125,23 @@ def lambda_handler(event, context):
         update_parts = []
         expression_values = {}
         expression_names = {}
+        remove_parts = []
 
         for field in UPDATABLE_FIELDS:
             if field in body:
-                attr_name = f'#{field}'
-                attr_val = f':{field}'
-                update_parts.append(f'{attr_name} = {attr_val}')
-                expression_names[attr_name] = field
-                expression_values[attr_val] = body[field]
+                value = body[field]
+                # Empty list/None/null → REMOVE the field from DynamoDB
+                if value is None or (isinstance(value, list) and len(value) == 0):
+                    remove_parts.append(f'#{field}')
+                    expression_names[f'#{field}'] = field
+                else:
+                    attr_name = f'#{field}'
+                    attr_val = f':{field}'
+                    update_parts.append(f'{attr_name} = {attr_val}')
+                    expression_names[attr_name] = field
+                    expression_values[attr_val] = value
 
-        if not update_parts:
+        if not update_parts and not remove_parts:
             return create_error_response(400, 'No updatable fields provided')
 
         # Always update updated_at
@@ -144,6 +150,8 @@ def lambda_handler(event, context):
         expression_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
 
         update_expression = 'SET ' + ', '.join(update_parts)
+        if remove_parts:
+            update_expression += ' REMOVE ' + ', '.join(remove_parts)
 
         # Update the parent product record
         updated = table.update_item(

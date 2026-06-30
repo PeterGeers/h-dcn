@@ -578,3 +578,200 @@ class TestOptimisticLocking:
         assert response['statusCode'] == 409
         body = json.loads(response['body'])
         assert 'concurrent' in body.get('error', '').lower() or 'modified' in body.get('error', '').lower()
+
+
+# ---------------------------------------------------------------------------
+# Tests: Registry Row — sold count filtering and max_per_order validation
+# Requirements: 5.5, 5.7
+# ---------------------------------------------------------------------------
+
+class TestRegistryRowSoldCounts:
+    """Tests for _calculate_sold_counts filtering by registry_row_id."""
+
+    def test_sold_counts_excludes_current_registry_row(self, setup_tables):
+        """
+        _calculate_sold_counts excludes orders matching the current registry_row_id.
+        This ensures a row doesn't count its own submitted order against capacity.
+        Validates: Requirements 5.5, 5.7
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+
+        # Seed submitted orders for different registry rows
+        orders_table.put_item(Item={
+            'order_id': 'order-row-a',
+            'source_id': TEST_EVENT_ID,
+            'member_id': 'mem-a',
+            'registry_row_id': 'row-amsterdam',
+            'status': 'submitted',
+            'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 3}],
+            'version': 1,
+        })
+        orders_table.put_item(Item={
+            'order_id': 'order-row-b',
+            'source_id': TEST_EVENT_ID,
+            'member_id': 'mem-b',
+            'registry_row_id': 'row-rotterdam',
+            'status': 'submitted',
+            'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 5}],
+            'version': 1,
+        })
+        orders_table.put_item(Item={
+            'order_id': 'order-row-c',
+            'source_id': TEST_EVENT_ID,
+            'member_id': 'mem-c',
+            'registry_row_id': 'row-amsterdam',
+            'status': 'submitted',
+            'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 2}],
+            'version': 1,
+        })
+
+        # Query all orders for the source
+        all_orders = [
+            {'order_id': 'order-row-a', 'source_id': TEST_EVENT_ID, 'registry_row_id': 'row-amsterdam', 'status': 'submitted', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 3}]},
+            {'order_id': 'order-row-b', 'source_id': TEST_EVENT_ID, 'registry_row_id': 'row-rotterdam', 'status': 'submitted', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 5}]},
+            {'order_id': 'order-row-c', 'source_id': TEST_EVENT_ID, 'registry_row_id': 'row-amsterdam', 'status': 'submitted', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 2}]},
+        ]
+
+        # When current_registry_row_id is 'row-amsterdam', only row-rotterdam's counts remain
+        sold_counts = handler._calculate_sold_counts(all_orders, 'row-amsterdam')
+        assert sold_counts.get(TEST_PRODUCT_ID, 0) == 5
+
+    def test_sold_counts_includes_all_when_no_registry_row_id(self, setup_tables):
+        """
+        When current_registry_row_id is None, all submitted/locked orders are counted.
+        This is the member-scoped case (no row filtering).
+        Validates: Requirements 5.5
+        """
+        handler = setup_tables['handler']
+
+        all_orders = [
+            {'order_id': 'order-1', 'status': 'submitted', 'registry_row_id': 'row-x', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 2}]},
+            {'order_id': 'order-2', 'status': 'submitted', 'registry_row_id': 'row-y', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 3}]},
+            {'order_id': 'order-3', 'status': 'draft', 'registry_row_id': 'row-x', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 10}]},
+        ]
+
+        sold_counts = handler._calculate_sold_counts(all_orders, None)
+        # Only submitted/locked orders counted, draft excluded
+        assert sold_counts.get(TEST_PRODUCT_ID, 0) == 5
+
+    def test_sold_counts_only_counts_submitted_and_locked(self, setup_tables):
+        """
+        Draft and cancelled orders are never counted in sold counts.
+        Validates: Requirements 5.5
+        """
+        handler = setup_tables['handler']
+
+        all_orders = [
+            {'order_id': 'o-1', 'status': 'submitted', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 1}]},
+            {'order_id': 'o-2', 'status': 'locked', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 2}]},
+            {'order_id': 'o-3', 'status': 'draft', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 99}]},
+            {'order_id': 'o-4', 'status': 'cancelled', 'items': [{'product_id': TEST_PRODUCT_ID, 'quantity': 99}]},
+        ]
+
+        sold_counts = handler._calculate_sold_counts(all_orders, None)
+        assert sold_counts.get(TEST_PRODUCT_ID, 0) == 3
+
+
+class TestMaxPerOrderValidation:
+    """Tests for max_per_order purchase_rules enforcement."""
+
+    def test_max_per_order_rejects_exceeding_quantity(self, setup_tables):
+        """
+        Returns 400 when order quantity exceeds max_per_order from purchase_rules.
+        Validates: Requirements 5.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        producten_table = setup_tables['producten']
+
+        # Update product with max_per_order = 2
+        producten_table.update_item(
+            Key={'product_id': TEST_PRODUCT_ID},
+            UpdateExpression='SET purchase_rules = :pr',
+            ExpressionAttributeValues={':pr': {'max_per_order': 2}},
+        )
+
+        # Seed a draft event order with 3 items (exceeds max_per_order)
+        _seed_draft_order(
+            orders_table,
+            source_id=TEST_EVENT_ID,
+            items=[
+                {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': 'Person 1'}},
+                {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': 'Person 2'}},
+                {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': 'Person 3'}},
+            ],
+        )
+
+        with _auth_patches():
+            event = _make_event(order_id=TEST_ORDER_ID)
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'errors' in body
+        # Check there's an error about max_per_order (field is 'purchase_rules' per shared validation)
+        error_messages = ' '.join(e.get('message', '') for e in body['errors'])
+        assert 'max_per_order' in error_messages
+
+    def test_max_per_order_allows_within_limit(self, setup_tables):
+        """
+        Submission succeeds when quantity is within max_per_order limit.
+        Validates: Requirements 5.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        producten_table = setup_tables['producten']
+
+        # Update product with max_per_order = 3
+        producten_table.update_item(
+            Key={'product_id': TEST_PRODUCT_ID},
+            UpdateExpression='SET purchase_rules = :pr',
+            ExpressionAttributeValues={':pr': {'max_per_order': 3}},
+        )
+
+        # Seed a draft event order with exactly 3 items (at limit)
+        _seed_draft_order(
+            orders_table,
+            source_id=TEST_EVENT_ID,
+            items=[
+                {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': 'Person 1'}},
+                {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': 'Person 2'}},
+                {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': 'Person 3'}},
+            ],
+        )
+
+        with _auth_patches():
+            event = _make_event(order_id=TEST_ORDER_ID)
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200
+
+    def test_max_per_order_absent_means_unlimited(self, setup_tables):
+        """
+        When max_per_order is not set in purchase_rules, no limit is enforced.
+        Validates: Requirements 5.5
+        """
+        handler = setup_tables['handler']
+        orders_table = setup_tables['orders']
+        producten_table = setup_tables['producten']
+
+        # Ensure product has no purchase_rules with max_per_order
+        producten_table.update_item(
+            Key={'product_id': TEST_PRODUCT_ID},
+            UpdateExpression='SET purchase_rules = :pr',
+            ExpressionAttributeValues={':pr': {}},
+        )
+
+        # Seed a draft event order with many items
+        items = [
+            {'product_id': TEST_PRODUCT_ID, 'item_fields_data': {'guest_name': f'Person {i}'}}
+            for i in range(10)
+        ]
+        _seed_draft_order(orders_table, source_id=TEST_EVENT_ID, items=items)
+
+        with _auth_patches():
+            event = _make_event(order_id=TEST_ORDER_ID)
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 200

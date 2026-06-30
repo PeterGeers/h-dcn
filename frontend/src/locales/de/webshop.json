@@ -1,5 +1,9 @@
 {
   "title": "H-DCN Webshop",
+  "filter": {
+    "all_groups": "Alle Gruppen",
+    "all_subgroups": "Alle Untergruppen"
+  },
   "cart": {
     "title": "Warenkorb",
     "item_count": "Warenkorb ({{count}})",
@@ -160,5 +164,40 @@
     "out_of_stock": "Nicht auf Lager",
     "combination_unavailable": "Kombination nicht verfügbar",
     "select_all_prompt": "Alle Optionen auswählen"
+  },
+  "validation": {
+    "required": "{{field}} ist erforderlich",
+    "email": "Geben Sie eine gültige E-Mail-Adresse ein",
+    "min_length": "Mindestens {{count}} Zeichen erforderlich",
+    "max_length": "Maximal {{count}} Zeichen erlaubt",
+    "min": "Wert muss mindestens {{value}} sein",
+    "max": "Wert darf höchstens {{value}} sein",
+    "pattern": "Ungültige Eingabe",
+    "invalid_number": "Geben Sie eine gültige Nummer ein",
+    "invalid_option": "Wählen Sie eine gültige Option",
+    "unique": "{{field}} muss eindeutig sein",
+    "select_min_options": "Auswahl muss mindestens {{count}} Option haben"
+  },
+  "toast": {
+    "payment_recorded": "Zahlung registriert",
+    "payment_recorded_desc": "Zahlung von € {{amount}} wurde erfolgreich verarbeitet.",
+    "payment_record_error": "Fehler bei der Registrierung",
+    "status_updated": "Status aktualisiert",
+    "status_updated_desc": "Bestellung auf \"{{status}}\" gesetzt.",
+    "status_update_error": "Status konnte nicht geändert werden",
+    "order_locked": "Bestellung gesperrt",
+    "lock_error": "Sperren fehlgeschlagen",
+    "order_unlocked": "Bestellung entsperrt",
+    "unlock_error": "Entsperren fehlgeschlagen",
+    "all_orders_locked": "Alle Bestellungen gesperrt",
+    "all_orders_locked_desc": "Alle eingereichten Bestellungen wurden gesperrt.",
+    "bulk_lock_error": "Massensperrung fehlgeschlagen",
+    "error_title": "Fehler"
+  },
+  "payment_record": {
+    "order_id_label": "Bestellnummer",
+    "amount_label": "Betrag",
+    "date_label": "Datum",
+    "date_format_error": "ISO-Datumsformat verwenden (JJJJ-MM-TT)"
   }
 }

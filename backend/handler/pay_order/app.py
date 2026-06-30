@@ -46,7 +46,7 @@ try:
         create_success_response,
         log_successful_access,
     )
-    from shared.event_access import get_club_id
+    from shared.event_access import get_registry_row_id, verify_order_event_access
     from shared.mollie_client import create_payment, MollieError
     from shared.stock_reservation import (
         reserve_stock_for_order,
@@ -70,6 +70,7 @@ dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
 payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
 producten_table = dynamodb.Table(os.environ.get('PRODUCTEN_TABLE_NAME', 'Producten'))
+members_table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
 # Payment configuration
 REDIRECT_BASE_URL = os.environ.get('PAYMENT_REDIRECT_URL', 'https://portal.h-dcn.nl')
@@ -78,6 +79,20 @@ WEBHOOK_URL = os.environ.get('MOLLIE_WEBHOOK_URL', '')
 # Supported payment methods
 SUPPORTED_METHODS = ('ideal', 'creditcard', 'banktransfer')
 DEFAULT_METHOD = 'ideal'
+
+
+def _resolve_member_for_access(user_email: str) -> dict | None:
+    """Resolve member record from Members table by email for access checks."""
+    from boto3.dynamodb.conditions import Attr as AttrFilter
+    try:
+        response = members_table.scan(
+            FilterExpression=AttrFilter('email').eq(user_email),
+            ProjectionExpression='member_id, allowed_events'
+        )
+        items = response.get('Items', [])
+        return items[0] if items else None
+    except Exception:
+        return None
 
 
 def lambda_handler(event, context):
@@ -128,6 +143,19 @@ def lambda_handler(event, context):
             return create_error_response(404, 'Order not found', {
                 'order_id': order_id,
             })
+
+        # Event access verification (Req 16.5, 16.7):
+        # For event-scoped orders, verify allowed_events + delegate ownership.
+        # On failure, return 403 without revealing order existence.
+        if not is_admin:
+            event_id = order.get('event_id') or order.get('source_id')
+            if event_id and event_id != 'webshop':
+                member_record = _resolve_member_for_access(user_email)
+                if not member_record:
+                    return create_error_response(403, 'Insufficient event access')
+                member_id = member_record['member_id']
+                if not verify_order_event_access(order, member_id):
+                    return create_error_response(403, 'Insufficient event access')
 
         # Authorization: verify the user can pay this order
         auth_error = _check_payment_authorization(
@@ -182,8 +210,8 @@ def lambda_handler(event, context):
         # Build payment description
         event_id = order.get('event_id')
         if event_id:
-            club_id = order.get('club_id', 'unknown')
-            description = f"H-DCN Order {order_id[:8]} - {club_id}"
+            registry_row_id = order.get('registry_row_id', 'unknown')
+            description = f"H-DCN Order {order_id[:8]} - {registry_row_id}"
         else:
             description = f"H-DCN Webshop - Order {order_id[:8]}"
 
@@ -242,8 +270,8 @@ def lambda_handler(event, context):
                 'created_at': now,
                 'created_by': user_email,
             }
-            if order.get('club_id'):
-                payment_record['club_id'] = order['club_id']
+            if order.get('registry_row_id'):
+                payment_record['registry_row_id'] = order['registry_row_id']
             if variant_items:
                 payment_record['variant_items'] = variant_items
 
@@ -340,9 +368,9 @@ def lambda_handler(event, context):
             'created_by': user_email,
         }
 
-        # Include club_id for event orders
-        if order.get('club_id'):
-            payment_record['club_id'] = order['club_id']
+        # Include registry_row_id for event orders
+        if order.get('registry_row_id'):
+            payment_record['registry_row_id'] = order['registry_row_id']
 
         # Store variant_items for stock reservation on payment confirmation
         # Works for both webshop and event orders — same flow regardless of product type
@@ -440,9 +468,9 @@ def _check_payment_authorization(order, user_email, user_roles, is_admin):
         return None
 
     # Check club membership for event orders
-    if order.get('event_id') and order.get('club_id'):
-        user_club_id = get_club_id(user_email)
-        if user_club_id and user_club_id == order.get('club_id'):
+    if order.get('event_id') and order.get('registry_row_id'):
+        user_registry_row_id = get_registry_row_id(user_email)
+        if user_registry_row_id and user_registry_row_id == order.get('registry_row_id'):
             return None
 
     return create_error_response(403, 'Access denied: You cannot pay this order')

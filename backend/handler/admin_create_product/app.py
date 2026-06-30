@@ -151,7 +151,10 @@ def lambda_handler(event, context):
         # Generate product ID
         product_id = f"prod_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc).isoformat()
-        event_id = body.get('event_id', None)
+
+        # Strip deprecated event association fields (event.product_ids is the sole source of truth)
+        body.pop('event_id', None)
+        body.pop('event_ids', None)
 
         # Ensure price is stored as numeric Decimal
         raw_price = body.get('price')
@@ -165,7 +168,6 @@ def lambda_handler(event, context):
         # Build product record (parent)
         product = {
             'product_id': product_id,
-            'event_id': event_id,
             'name': body.get('name'),
             'description': body.get('description', ''),
             'category': body.get('category', ''),

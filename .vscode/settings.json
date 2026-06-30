@@ -81,6 +81,7 @@
   "problems.decorations.enabled": true,
   
   // === TERMINAL INTEGRATION ===
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
   "terminal.integrated.enableMultiLinePasteWarning": false,
   
   // === EDITOR SETTINGS FOR BETTER TRACKING ===

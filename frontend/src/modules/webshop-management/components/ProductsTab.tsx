@@ -1,13 +1,8 @@
 /**
- * ProductsTab — Wraps the existing ProductManagementPage with event-based filtering.
+ * ProductsTab — Wraps the existing ProductManagementPage inside the Webshop Beheer tab.
  *
  * This embeds the full existing product management UI (with group/subgroup filters,
  * edit modal, create/delete functionality) inside the Webshop Beheer tab.
- *
- * Filter values from EventFilter:
- * - "" (empty) = "Alle" — show all products
- * - "webshop" = show products where event_id is null
- * - "<event_id>" = show products linked to that specific event
  *
  * Validates: Requirements 2.1, 2.3, 10.5, 12.6
  */
@@ -18,10 +13,10 @@ import { useAuth } from '../../../hooks/useAuth';
 import ProductManagementPage from '../../products/ProductManagementPage';
 
 export interface ProductsTabProps {
-  eventFilter: string;
+  eventFilter?: string;
 }
 
-export const ProductsTab: React.FC<ProductsTabProps> = ({ eventFilter }) => {
+export const ProductsTab: React.FC<ProductsTabProps> = ({ eventFilter = '' }) => {
   const { user } = useAuth();
 
   // Build the user object that ProductManagementPage expects

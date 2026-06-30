@@ -15,6 +15,7 @@ try:
         create_success_response,
         log_successful_access
     )
+    from shared.i18n.locale_resolver import resolve_request_locale
     print("Using shared auth layer")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
@@ -83,10 +84,14 @@ def log_payment_audit(event_type, payment_id, user_email, user_roles, additional
         # Don't fail the payment operation if logging fails
 
 def lambda_handler(event, context):
+    locale = 'nl'  # Default locale in case of early exception
     try:
         # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
+        
+        # Resolve locale from Accept-Language header
+        locale = resolve_request_locale(event)
         
         # Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
@@ -109,7 +114,7 @@ def lambda_handler(event, context):
                 'required_admin_permissions': required_permissions,
                 'required_user_role': 'hdcnLeden',
                 'user_roles': user_roles
-            })
+            }, error_key='forbidden', locale=locale)
         
         # Log successful access
         log_successful_access(user_email, user_roles, 'update_payment')
@@ -121,7 +126,8 @@ def lambda_handler(event, context):
         existing_payment_response = table.get_item(Key={'payment_id': payment_id})
         
         if 'Item' not in existing_payment_response:
-            return create_error_response(404, 'Payment not found')
+            return create_error_response(404, 'Payment not found',
+                                         error_key='not_found', locale=locale)
         
         existing_payment = existing_payment_response['Item']
         
@@ -133,7 +139,7 @@ def lambda_handler(event, context):
             print(f"SECURITY ALERT: User {user_email} attempted to update payment {payment_id} owned by {payment_owner_email}")
             return create_error_response(403, 'Access denied: You can only update your own payments', {
                 'payment_id': payment_id
-            })
+            }, error_key='forbidden', locale=locale)
         
         # Dynamically build update expression and attribute values
         update_expression_parts = []
@@ -184,9 +190,12 @@ def lambda_handler(event, context):
         })
         
     except KeyError as e:
-        return create_error_response(400, f'Missing required parameter: {str(e)}')
+        return create_error_response(400, f'Missing required parameter: {str(e)}',
+                                     error_key='validation_error', locale=locale)
     except json.JSONDecodeError:
-        return create_error_response(400, 'Invalid JSON in request body')
+        return create_error_response(400, 'Invalid JSON in request body',
+                                     error_key='validation_error', locale=locale)
     except Exception as e:
         print(f"Unexpected error in update_payment: {str(e)}")
-        return create_error_response(500, 'Internal server error')
+        return create_error_response(500, 'Internal server error',
+                                     error_key='internal_error', locale=locale)

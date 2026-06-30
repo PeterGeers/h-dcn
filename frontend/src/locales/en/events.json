@@ -10,12 +10,13 @@
     "analytics": "Analytics"
   },
   "access": {
-    "no_access": "You do not have access to event administration. Contact an administrator if you need access.",
-    "no_financial_access": "You do not have access to financial data.",
-    "no_analytics_access": "You do not have access to analytics.",
+    "no_access": "You don't have access to event administration. Contact an administrator if you need access.",
+    "no_financial_access": "You don't have access to financial data.",
+    "no_analytics_access": "You don't have access to analytics.",
     "current_roles": "Current roles: {{roles}}",
     "no_roles": "No roles assigned",
-    "required_roles": "Required roles: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, or other event-related roles"
+    "required_roles": "Required roles: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, or other event-related roles",
+    "region_limited": "You can manage events for: {{regions}}"
   },
   "communication": {
     "title": "Event Communication & Export",
@@ -27,12 +28,112 @@
     "event_overview": "Event Overview",
     "regional_summary": "Regional Summary"
   },
+  "form": {
+    "title_new": "New Event",
+    "title_edit": "Edit Event",
+    "save_new": "Create",
+    "save_edit": "Update",
+    "cancel": "Cancel",
+    "success_created": "Event created successfully",
+    "success_updated": "Event updated successfully",
+    "error_save": "Error saving event",
+    "validation": {
+      "required_fields": "Name, type, start and end date, and region are required",
+      "required_registration": "Registration open and close dates are required",
+      "no_region_access": "You don't have permission to create events in this region"
+    },
+    "sections": {
+      "registration": "Registration & Deadlines",
+      "registration_required": "required",
+      "config": "Configuration",
+      "financial": "Financial",
+      "landing_page": "Landing Page"
+    }
+  },
   "fields": {
-    "name": "Name",
-    "date": "Date",
+    "name": "Event name",
+    "name_placeholder": "Name of the event",
+    "event_type": "Type",
+    "event_type_placeholder": "Select type...",
+    "participation": "Participation",
+    "linked_regio": "Region",
+    "linked_regio_placeholder": "Select region...",
+    "regio_all_label": "All regions (national)",
+    "start_date": "Start date",
+    "end_date": "End date",
     "location": "Location",
-    "participants": "Participants",
-    "revenue": "Revenue",
+    "location_placeholder": "E.g. H-DCN Clubhouse, Amsterdam",
+    "poster_url": "Poster / Image",
+    "poster_placeholder": "URL or upload a file",
+    "poster_upload": "Upload",
+    "poster_success": "Poster uploaded successfully",
+    "slug": "URL Slug",
+    "slug_placeholder": "e.g. presmeet-2026",
+    "registration_open": "Registration opens",
+    "registration_close": "Registration closes",
+    "payment_deadline": "Payment deadline",
+    "product_ids": "Product IDs (comma-separated)",
+    "product_ids_placeholder": "product-id-1, product-id-2",
+    "participants": "Number of participants",
+    "cost": "Costs (€)",
+    "revenue": "Revenue (€)",
+    "notes": "Notes",
+    "notes_placeholder": "Internal notes about costs, arrangements, etc.",
+    "date": "Date",
     "costs": "Costs"
+  },
+  "event_types": {
+    "presmeet": "PresMeet",
+    "alv": "ALV (General Members Meeting)",
+    "rlv": "RLV (Regional Meeting)",
+    "vbv": "VBV",
+    "vergader_queue": "Meeting Queue",
+    "internationaal_treffen": "International Meeting",
+    "nationaal_treffen": "National Meeting",
+    "openingsrit": "Opening Ride",
+    "regio_rit": "Regional Ride",
+    "tourweekend": "Tour Weekend",
+    "sluitingsrit": "Closing Ride",
+    "webshop": "Webshop",
+    "other": "Other"
+  },
+  "event_categories": {
+    "vergadering": "Meetings",
+    "rally": "Rallies",
+    "rit": "Rides",
+    "overig": "Other"
+  },
+  "participation_modes": {
+    "open": "Open (participation for everyone)",
+    "closed": "Closed (members / invitees only)"
+  },
+  "list": {
+    "search_placeholder": "Search events...",
+    "new_event": "New Event",
+    "new_event_short": "New",
+    "no_events": "No events found",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "no_edit_access": "No permission to edit",
+    "no_duplicate_access": "No permission to duplicate",
+    "no_delete_access": "No permission to delete",
+    "confirm_delete": "Are you sure you want to delete \"{{name}}\"?",
+    "deleted_success": "Event deleted",
+    "delete_error": "Error deleting event",
+    "profit": "Profit"
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "email": "Enter a valid email address",
+    "min_length": "Minimum {{count}} characters required",
+    "max_length": "Maximum {{count}} characters allowed",
+    "min": "Value must be at least {{value}}",
+    "max": "Value must be at most {{value}}",
+    "pattern": "Invalid input",
+    "invalid_number": "Enter a valid number",
+    "invalid_option": "Select a valid option",
+    "poster_invalid_type": "Invalid file type. Allowed: {{types}}",
+    "poster_file_too_large": "File is too large. Maximum {{maxSize}} allowed"
   }
 }

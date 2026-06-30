@@ -1,5 +1,9 @@
 {
   "title": "Negozio H-DCN",
+  "filter": {
+    "all_groups": "Tutti i gruppi",
+    "all_subgroups": "Tutti i sottogruppi"
+  },
   "cart": {
     "title": "Carrello",
     "item_count": "Carrello ({{count}})",
@@ -172,5 +176,40 @@
     "out_of_stock": "Esaurito",
     "combination_unavailable": "Combinazione non disponibile",
     "select_all_prompt": "Seleziona tutte le opzioni"
+  },
+  "validation": {
+    "required": "{{field}} è obbligatorio",
+    "email": "Inserisci un indirizzo e-mail valido",
+    "min_length": "Minimo {{count}} caratteri richiesti",
+    "max_length": "Massimo {{count}} caratteri consentiti",
+    "min": "Il valore deve essere almeno {{value}}",
+    "max": "Il valore deve essere al massimo {{value}}",
+    "pattern": "Input non valido",
+    "invalid_number": "Inserisci un numero valido",
+    "invalid_option": "Seleziona un'opzione valida",
+    "unique": "{{field}} deve essere unico",
+    "select_min_options": "La selezione deve avere almeno {{count}} opzione"
+  },
+  "toast": {
+    "payment_recorded": "Pagamento registrato",
+    "payment_recorded_desc": "Pagamento di € {{amount}} elaborato con successo.",
+    "payment_record_error": "Errore durante la registrazione",
+    "status_updated": "Stato aggiornato",
+    "status_updated_desc": "Ordine impostato su \"{{status}}\".",
+    "status_update_error": "Impossibile modificare lo stato",
+    "order_locked": "Ordine bloccato",
+    "lock_error": "Blocco fallito",
+    "order_unlocked": "Ordine sbloccato",
+    "unlock_error": "Sblocco fallito",
+    "all_orders_locked": "Tutti gli ordini bloccati",
+    "all_orders_locked_desc": "Tutti gli ordini inviati sono stati bloccati.",
+    "bulk_lock_error": "Blocco di massa fallito",
+    "error_title": "Errore"
+  },
+  "payment_record": {
+    "order_id_label": "ID ordine",
+    "amount_label": "Importo",
+    "date_label": "Data",
+    "date_format_error": "Usa il formato data ISO (AAAA-MM-GG)"
   }
 }

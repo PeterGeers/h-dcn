@@ -59,9 +59,6 @@ from role_operations import (
 )
 from permission_utils import (
     validate_field_permissions,
-    get_user_field_permissions,
-    check_role_permission,
-    get_role_summary,
 )
 
 # Public endpoints that don't require authentication

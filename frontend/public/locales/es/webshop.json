@@ -1,5 +1,9 @@
 {
   "title": "Tienda H-DCN",
+  "filter": {
+    "all_groups": "Todos los grupos",
+    "all_subgroups": "Todos los subgrupos"
+  },
   "cart": {
     "title": "Carrito de compras",
     "item_count": "Carrito ({{count}})",
@@ -15,7 +19,8 @@
     "save_hint": "Añade primero productos para guardar.",
     "option_label": "Opción",
     "item_total_label": "Número de artículos",
-    "total_label": "Total"
+    "total_label": "Total",
+    "item_fields_label": "Datos de participantes"
   },
   "product": {
     "added": "Producto añadido",
@@ -40,6 +45,7 @@
     "total": "Total",
     "processing": "Procesando...",
     "pay_button": "Pagar €{{amount}}",
+    "place_order": "Realizar pedido",
     "placeholder_name": "Nombre",
     "placeholder_street": "Calle y número",
     "placeholder_postal": "Código postal",
@@ -134,44 +140,76 @@
     "title": "Modo demo",
     "description": "Usando datos simulados porque la API no está disponible"
   },
+  "item_fields": {
+    "item_label": "Artículo {{current}} de {{total}}",
+    "select_placeholder": "Seleccionar...",
+    "email_placeholder": "Dirección de correo electrónico"
+  },
+  "payment": {
+    "return_success_title": "Pago exitoso",
+    "return_failed_title": "Pago no completado",
+    "retry_button": "Intentar de nuevo",
+    "method_title": "Método de pago",
+    "ideal_description": "Paga a través de tu propio banco",
+    "creditcard_description": "Paga con Visa, Mastercard o American Express",
+    "bank_transfer": "Transferencia bancaria",
+    "bank_transfer_description": "Transfiere el importe manualmente",
+    "transfer_instructions_title": "Datos de transferencia",
+    "reference": "Referencia:",
+    "amount": "Importe:",
+    "return_success_message": "¡Pago exitoso! Tu pedido ha sido confirmado.",
+    "return_failed_message": "El pago ha fallado. Inténtalo de nuevo o elige otro método de pago.",
+    "return_expired_message": "El pago ha caducado. Inténtalo de nuevo o elige otro método de pago.",
+    "return_cancelled_message": "El pago ha sido cancelado. Inténtalo de nuevo o elige otro método de pago.",
+    "return_pending_message": "El pago se está procesando. Recibirás una confirmación cuando se complete el pago.",
+    "return_unknown_message": "Se está verificando el estado de tu pago."
+  },
+  "purchase_rules": {
+    "max_per_order": "Máximo {{limit}} por pedido",
+    "max_per_member": "{{remaining}} disponible(s) (máx {{limit}} por miembro)",
+    "max_per_club": "{{remaining}} disponible(s) para tu club (máx {{limit}} por club)",
+    "requires_membership": "Se requiere una membresía activa"
+  },
   "variant": {
     "select_placeholder": "Elegir {{axis}}",
     "in_stock": "{{count}} en stock",
     "out_of_stock": "Agotado",
     "combination_unavailable": "Combinación no disponible",
-    "select_all_prompt": "Selecciona todas las opciones para ver la disponibilidad"
+    "select_all_prompt": "Selecciona todas las opciones"
   },
-  "item_fields": {
-    "item_label": "Artículo {{current}} de {{total}}",
-    "required": "Este campo es obligatorio",
-    "min_length": "Mínimo {{count}} caracteres",
-    "max_length": "Máximo {{count}} caracteres",
-    "minimum": "El valor mínimo es {{value}}",
-    "maximum": "El valor máximo es {{value}}",
-    "invalid_email": "Dirección de correo electrónico no válida",
+  "validation": {
+    "required": "{{field}} es obligatorio",
+    "email": "Introduce una dirección de correo electrónico válida",
+    "min_length": "Mínimo {{count}} caracteres requeridos",
+    "max_length": "Máximo {{count}} caracteres permitidos",
+    "min": "El valor debe ser al menos {{value}}",
+    "max": "El valor debe ser como máximo {{value}}",
+    "pattern": "Entrada no válida",
     "invalid_number": "Introduce un número válido",
     "invalid_option": "Selecciona una opción válida",
-    "pattern_mismatch": "El valor no coincide con el formato requerido",
-    "select_placeholder": "Seleccionar...",
-    "email_placeholder": "email@ejemplo.es"
+    "unique": "{{field}} debe ser único",
+    "select_min_options": "La selección debe tener al menos {{count}} opción"
   },
-  "purchase_rules": {
-    "max_per_order": "Máximo {{limit}} artículos por pedido",
-    "max_per_member": "Te quedan {{remaining}} artículos disponibles (límite: {{limit}} por miembro)",
-    "max_per_club": "Tu club tiene {{remaining}} artículos disponibles (límite: {{limit}} por club)",
-    "requires_membership": "Se requiere una membresía activa para pedir este producto"
+  "toast": {
+    "payment_recorded": "Pago registrado",
+    "payment_recorded_desc": "Pago de € {{amount}} procesado correctamente.",
+    "payment_record_error": "Error al registrar el pago",
+    "status_updated": "Estado actualizado",
+    "status_updated_desc": "Pedido cambiado a \"{{status}}\".",
+    "status_update_error": "Error al cambiar el estado",
+    "order_locked": "Pedido bloqueado",
+    "lock_error": "Error al bloquear",
+    "order_unlocked": "Pedido desbloqueado",
+    "unlock_error": "Error al desbloquear",
+    "all_orders_locked": "Todos los pedidos bloqueados",
+    "all_orders_locked_desc": "Todos los pedidos enviados han sido bloqueados.",
+    "bulk_lock_error": "Error al bloquear en masa",
+    "error_title": "Error"
   },
-  "payment": {
-    "method_title": "Método de pago",
-    "ideal_description": "iDEAL - pagar directamente a través de tu banco",
-    "creditcard_description": "Tarjeta de crédito (Visa, Mastercard)",
-    "bank_transfer": "Transferencia bancaria",
-    "bank_transfer_description": "Transferencia bancaria manual",
-    "transfer_instructions_title": "Instrucciones de transferencia",
-    "reference": "Referencia:",
-    "amount": "Importe:",
-    "return_success_title": "Pago exitoso",
-    "return_failed_title": "Pago no completado",
-    "retry_button": "Intentar de nuevo"
+  "payment_record": {
+    "order_id_label": "ID de pedido",
+    "amount_label": "Importe",
+    "date_label": "Fecha",
+    "date_format_error": "Usa el formato de fecha ISO (AAAA-MM-DD)"
   }
 }

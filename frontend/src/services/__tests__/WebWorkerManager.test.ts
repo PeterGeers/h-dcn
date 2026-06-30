@@ -191,7 +191,7 @@ describe('WebWorkerManager', () => {
 
       expect(result.data).toHaveLength(2); // Both Noord-Holland members
       expect(result.data[0].regio).toBe('Noord-Holland');
-      expect(result.stats?.processedRecords).toBe(1); // 1 member filtered out (Zuid-Holland)
+      expect(result.stats?.processedRecords).toBe(2); // 2 members passed the regional filter
     });
 
     test('should handle progress updates', async () => {

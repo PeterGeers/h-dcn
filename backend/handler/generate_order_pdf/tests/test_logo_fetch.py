@@ -1,8 +1,7 @@
 """Unit tests for fetch_logo_as_data_uri function."""
 import base64
-import pytest
 from unittest.mock import patch, MagicMock
-from botocore.exceptions import ClientError, BotoCoreError, ReadTimeoutError
+from botocore.exceptions import ClientError, BotoCoreError
 
 import sys
 import os

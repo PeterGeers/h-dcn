@@ -27,18 +27,8 @@ jest.mock('../utils/authHeaders', () => ({
   }))
 }));
 
-jest.mock('../utils/calculatedFields', () => ({
-  computeCalculatedFieldsForArray: jest.fn((members) => 
-    members.map((m: any) => ({
-      ...m,
-      korte_naam: `${m.voornaam} ${m.achternaam}`,
-      leeftijd: 45,
-      verjaardag: 'mei 15',
-      jaren_lid: 5,
-      aanmeldingsjaar: 2020
-    }))
-  )
-}));
+// Use real computeCalculatedFieldsForArray — it works fine with test data
+// and avoids mock/module resolution issues with MemberDataService
 
 describe('Member Reporting Integration Tests', () => {
   

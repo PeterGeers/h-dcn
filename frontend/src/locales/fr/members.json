@@ -97,6 +97,13 @@
     "apply_link": "Cliquez ici pour devenir membre"
   },
   "form": {
+    "group_name": "Nom du groupe",
+    "email": "E-mail",
+    "name": "Nom",
+    "description": "Description",
+    "price": "Prix",
+    "duration": "Durée",
+    "status": "Statut",
     "first_name": "Prénom",
     "last_name": "Nom de famille",
     "street": "Rue",
@@ -119,5 +126,28 @@
     "membership": "Adhésion",
     "motor": "Moto",
     "financial": "Financier"
+  },
+  "validation": {
+    "required": "{{field}} est requis",
+    "email": "Entrez une adresse e-mail valide",
+    "min_length": "Minimum {{count}} caractères requis",
+    "max_length": "Maximum {{count}} caractères autorisés",
+    "min": "La valeur doit être au moins {{value}}",
+    "max": "La valeur doit être au maximum {{value}}",
+    "pattern": "Entrée invalide",
+    "invalid_number": "Entrez un numéro valide",
+    "invalid_option": "Sélectionnez une option valide"
+  },
+  "toast": {
+    "required_fields": "Champs obligatoires",
+    "group_created": "Groupe créé",
+    "group_cannot_update": "Le groupe ne peut pas être mis à jour",
+    "group_cannot_update_desc": "Cognito ne prend pas en charge la modification de la description du groupe après la création",
+    "save_error": "Erreur lors de l'enregistrement",
+    "user_updated": "Utilisateur mis à jour",
+    "user_created": "Utilisateur créé"
+  },
+  "errors": {
+    "invalid_file_type": "Type de fichier invalide. Seuls les fichiers CSV sont autorisés."
   }
 }

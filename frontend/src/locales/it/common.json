@@ -48,8 +48,14 @@
   },
   "errors": {
     "generic": "Si è verificato un errore. Riprova più tardi.",
-    "network": "Errore di rete. Verifica la connessione e riprova.",
-    "not_found": "Non trovato",
+    "network": "Errore di rete - verifica la tua connessione internet",
+    "unauthorized": "Non sei autorizzato per questa azione",
+    "forbidden": "Accesso negato - permessi insufficienti",
+    "not_found": "Dati richiesti non trovati",
+    "server_error": "Errore del server - riprova più tardi",
+    "maintenance": "Il sistema è temporaneamente non disponibile per manutenzione",
+    "timeout": "La richiesta ha impiegato troppo tempo - riprova",
+    "unknown": "Si è verificato un errore sconosciuto",
     "no_access": "Nessun accesso",
     "session_expired": "Sessione scaduta. Accedi nuovamente."
   },
@@ -57,7 +63,26 @@
     "save_success": "Dati salvati con successo",
     "save_error": "Errore durante il salvataggio. Riprova.",
     "delete_success": "Eliminato con successo",
-    "delete_error": "Errore durante l'eliminazione"
+    "delete_error": "Errore durante l'eliminazione",
+    "action_success": "{{action}} riuscito",
+    "action_error": "Errore durante {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Autorizzazione richiesta",
+    "forbidden": "Accesso negato",
+    "not_found": "Non trovato",
+    "validation_error": "Errore di validazione",
+    "internal_error": "Errore interno del server",
+    "member_not_found": "Membro non trovato",
+    "member_already_exists": "Il membro esiste già",
+    "invalid_input": "Input non valido",
+    "payment_failed": "Pagamento fallito",
+    "order_not_found": "Ordine non trovato",
+    "product_not_found": "Prodotto non trovato",
+    "cart_empty": "Il carrello è vuoto",
+    "insufficient_stock": "Stock insufficiente",
+    "email_already_exists": "L'indirizzo e-mail è già in uso",
+    "invalid_membership": "Abbonamento non valido"
   },
   "account": {
     "info_title": "Informazioni account",

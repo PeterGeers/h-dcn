@@ -1,5 +1,6 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Product as BaseProduct } from '../../../types';
+import { resizeImage } from '../../../utils/imageResize';
 
 // S3 bucket for product data — backend overrides this, but frontend needs it for URL generation
 const DEFAULT_DATA_BUCKET = process.env.REACT_APP_DATA_BUCKET || 'h-dcn-data-506221081911';
@@ -49,10 +50,17 @@ export const uploadToS3 = async (
   }
   
   try {
+    // Resize image before upload (max 1200×1200 for product images)
+    const resizedFile = await resizeImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+
     // Convert File to base64 for API upload
-    const fileBuffer = await file.arrayBuffer();
+    const fileBuffer = await resizedFile.arrayBuffer();
     const uint8Array = new Uint8Array(fileBuffer);
-    const base64String = btoa(String.fromCharCode(...uint8Array));
+    let binaryString = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      binaryString += String.fromCharCode(uint8Array[i]);
+    }
+    const base64String = btoa(binaryString);
     
     // Get auth from Amplify session
     const { authToken, groups } = await getSessionAuth();
@@ -74,7 +82,7 @@ export const uploadToS3 = async (
       bucketName: targetBucket,
       fileKey: fileName,
       fileData: base64String,
-      contentType: file.type,
+      contentType: resizedFile.type,
       cacheControl: 'public, max-age=31536000' // Cache images for 1 year
     };
     

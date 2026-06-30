@@ -1,5 +1,9 @@
 {
   "title": "Negozio H-DCN",
+  "filter": {
+    "all_groups": "Tutti i gruppi",
+    "all_subgroups": "Tutti i sottogruppi"
+  },
   "cart": {
     "title": "Carrello",
     "item_count": "Carrello ({{count}})",
@@ -15,7 +19,8 @@
     "save_hint": "Aggiungi prima dei prodotti per salvare.",
     "option_label": "Opzione",
     "item_total_label": "Numero di articoli",
-    "total_label": "Totale"
+    "total_label": "Totale",
+    "item_fields_label": "Dati dei partecipanti"
   },
   "product": {
     "added": "Prodotto aggiunto",
@@ -40,6 +45,7 @@
     "total": "Totale",
     "processing": "Elaborazione...",
     "pay_button": "Paga €{{amount}}",
+    "place_order": "Effettua ordine",
     "placeholder_name": "Nome",
     "placeholder_street": "Via e numero civico",
     "placeholder_postal": "Codice postale",
@@ -134,44 +140,76 @@
     "title": "Modalità demo",
     "description": "Utilizzo di dati simulati perché l'API non è disponibile"
   },
+  "item_fields": {
+    "item_label": "Articolo {{current}} di {{total}}",
+    "select_placeholder": "Seleziona...",
+    "email_placeholder": "Indirizzo e-mail"
+  },
+  "payment": {
+    "return_success_title": "Pagamento riuscito",
+    "return_failed_title": "Pagamento non completato",
+    "retry_button": "Riprova",
+    "method_title": "Metodo di pagamento",
+    "ideal_description": "Paga tramite la tua banca",
+    "creditcard_description": "Paga con Visa, Mastercard o American Express",
+    "bank_transfer": "Bonifico bancario",
+    "bank_transfer_description": "Trasferisci l'importo manualmente",
+    "transfer_instructions_title": "Dati del bonifico",
+    "reference": "Causale:",
+    "amount": "Importo:",
+    "return_success_message": "Pagamento riuscito! Il tuo ordine è stato confermato.",
+    "return_failed_message": "Il pagamento non è andato a buon fine. Riprova o scegli un altro metodo di pagamento.",
+    "return_expired_message": "Il pagamento è scaduto. Riprova o scegli un altro metodo di pagamento.",
+    "return_cancelled_message": "Il pagamento è stato annullato. Riprova o scegli un altro metodo di pagamento.",
+    "return_pending_message": "Il pagamento è in fase di elaborazione. Riceverai una conferma non appena il pagamento sarà completato.",
+    "return_unknown_message": "Lo stato del tuo pagamento è in fase di verifica."
+  },
+  "purchase_rules": {
+    "max_per_order": "Massimo {{limit}} per ordine",
+    "max_per_member": "{{remaining}} disponibile/i (max {{limit}} per membro)",
+    "max_per_club": "{{remaining}} disponibile/i per il tuo club (max {{limit}} per club)",
+    "requires_membership": "È richiesta un'iscrizione attiva"
+  },
   "variant": {
     "select_placeholder": "Scegli {{axis}}",
     "in_stock": "{{count}} disponibili",
-    "out_of_stock": "Non disponibile",
+    "out_of_stock": "Esaurito",
     "combination_unavailable": "Combinazione non disponibile",
-    "select_all_prompt": "Seleziona tutte le opzioni per vedere la disponibilità"
+    "select_all_prompt": "Seleziona tutte le opzioni"
   },
-  "item_fields": {
-    "item_label": "Articolo {{current}} di {{total}}",
-    "required": "Questo campo è obbligatorio",
-    "min_length": "Minimo {{count}} caratteri",
-    "max_length": "Massimo {{count}} caratteri",
-    "minimum": "Il valore minimo è {{value}}",
-    "maximum": "Il valore massimo è {{value}}",
-    "invalid_email": "Indirizzo email non valido",
+  "validation": {
+    "required": "{{field}} è obbligatorio",
+    "email": "Inserisci un indirizzo e-mail valido",
+    "min_length": "Minimo {{count}} caratteri richiesti",
+    "max_length": "Massimo {{count}} caratteri consentiti",
+    "min": "Il valore deve essere almeno {{value}}",
+    "max": "Il valore deve essere al massimo {{value}}",
+    "pattern": "Input non valido",
     "invalid_number": "Inserisci un numero valido",
     "invalid_option": "Seleziona un'opzione valida",
-    "pattern_mismatch": "Il valore non corrisponde al formato richiesto",
-    "select_placeholder": "Seleziona...",
-    "email_placeholder": "email@esempio.it"
+    "unique": "{{field}} deve essere unico",
+    "select_min_options": "La selezione deve avere almeno {{count}} opzione"
   },
-  "purchase_rules": {
-    "max_per_order": "Massimo {{limit}} articoli per ordine",
-    "max_per_member": "Hai ancora {{remaining}} articoli disponibili (limite: {{limit}} per membro)",
-    "max_per_club": "Il tuo club ha ancora {{remaining}} articoli disponibili (limite: {{limit}} per club)",
-    "requires_membership": "È richiesta un'iscrizione attiva per ordinare questo prodotto"
+  "toast": {
+    "payment_recorded": "Pagamento registrato",
+    "payment_recorded_desc": "Pagamento di € {{amount}} elaborato con successo.",
+    "payment_record_error": "Errore durante la registrazione",
+    "status_updated": "Stato aggiornato",
+    "status_updated_desc": "Ordine impostato su \"{{status}}\".",
+    "status_update_error": "Impossibile modificare lo stato",
+    "order_locked": "Ordine bloccato",
+    "lock_error": "Blocco fallito",
+    "order_unlocked": "Ordine sbloccato",
+    "unlock_error": "Sblocco fallito",
+    "all_orders_locked": "Tutti gli ordini bloccati",
+    "all_orders_locked_desc": "Tutti gli ordini inviati sono stati bloccati.",
+    "bulk_lock_error": "Blocco di massa fallito",
+    "error_title": "Errore"
   },
-  "payment": {
-    "method_title": "Metodo di pagamento",
-    "ideal_description": "iDEAL - paga direttamente tramite la tua banca",
-    "creditcard_description": "Carta di credito (Visa, Mastercard)",
-    "bank_transfer": "Bonifico bancario",
-    "bank_transfer_description": "Bonifico bancario manuale",
-    "transfer_instructions_title": "Istruzioni per il bonifico",
-    "reference": "Causale:",
-    "amount": "Importo:",
-    "return_success_title": "Pagamento riuscito",
-    "return_failed_title": "Pagamento non completato",
-    "retry_button": "Riprova"
+  "payment_record": {
+    "order_id_label": "ID ordine",
+    "amount_label": "Importo",
+    "date_label": "Data",
+    "date_format_error": "Usa il formato data ISO (AAAA-MM-GG)"
   }
 }

@@ -339,3 +339,126 @@ def test_groep_too_long_rejected(producten_table):
         response = handler_module.lambda_handler(event, {})
 
     assert response['statusCode'] == 400
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Tests for event_id / event_ids stripping (Requirements 3.1, 3.2, 3.3)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def test_event_id_stripped_from_stored_product(producten_table):
+    """event_id in payload is stripped and not persisted to DynamoDB.
+
+    Validates: Requirements 3.1
+    """
+    import app as handler_module
+
+    event = _make_event({
+        'name': 'Product With Event ID',
+        'price': 20,
+        'event_id': 'evt-presmeet-2025',
+    })
+
+    with _auth_patches():
+        response = handler_module.lambda_handler(event, {})
+
+    assert response['statusCode'] == 200
+    body = json.loads(response['body'])
+    product_id = body['product']['product_id']
+
+    # Verify directly in DynamoDB that event_id is not stored
+    stored_item = producten_table.get_item(Key={'product_id': product_id})['Item']
+    assert 'event_id' not in stored_item
+
+
+def test_event_ids_stripped_from_stored_product(producten_table):
+    """event_ids in payload is stripped and not persisted to DynamoDB.
+
+    Validates: Requirements 3.2
+    """
+    import app as handler_module
+
+    event = _make_event({
+        'name': 'Product With Event IDs',
+        'price': 25,
+        'event_ids': ['evt-001', 'evt-002', 'evt-003'],
+    })
+
+    with _auth_patches():
+        response = handler_module.lambda_handler(event, {})
+
+    assert response['statusCode'] == 200
+    body = json.loads(response['body'])
+    product_id = body['product']['product_id']
+
+    # Verify directly in DynamoDB that event_ids is not stored
+    stored_item = producten_table.get_item(Key={'product_id': product_id})['Item']
+    assert 'event_ids' not in stored_item
+
+
+def test_both_event_id_and_event_ids_stripped(producten_table):
+    """Both event_id and event_ids in payload are stripped simultaneously.
+
+    Validates: Requirements 3.1, 3.2
+    """
+    import app as handler_module
+
+    event = _make_event({
+        'name': 'Product With Both Event Fields',
+        'price': 30,
+        'event_id': 'evt-main-event',
+        'event_ids': ['evt-001', 'evt-002'],
+    })
+
+    with _auth_patches():
+        response = handler_module.lambda_handler(event, {})
+
+    assert response['statusCode'] == 200
+    body = json.loads(response['body'])
+    product_id = body['product']['product_id']
+
+    # Verify neither field is stored in DynamoDB
+    stored_item = producten_table.get_item(Key={'product_id': product_id})['Item']
+    assert 'event_id' not in stored_item
+    assert 'event_ids' not in stored_item
+
+
+def test_valid_fields_still_stored_when_event_id_stripped(producten_table):
+    """Valid fields are persisted correctly even when event_id/event_ids are present in payload.
+
+    Validates: Requirements 3.3
+    """
+    import app as handler_module
+
+    event = _make_event({
+        'name': 'Full Product',
+        'price': 45,
+        'description': 'A nice product',
+        'category': 'Merchandise',
+        'groep': 'Kleding',
+        'subgroep': 'Shirts',
+        'event_id': 'evt-should-be-stripped',
+        'event_ids': ['evt-also-stripped'],
+    })
+
+    with _auth_patches():
+        response = handler_module.lambda_handler(event, {})
+
+    assert response['statusCode'] == 200
+    body = json.loads(response['body'])
+    product_id = body['product']['product_id']
+
+    # Verify valid fields are stored in DynamoDB
+    stored_item = producten_table.get_item(Key={'product_id': product_id})['Item']
+    assert stored_item['name'] == 'Full Product'
+    assert stored_item['description'] == 'A nice product'
+    assert stored_item['category'] == 'Merchandise'
+    assert stored_item['groep'] == 'Kleding'
+    assert stored_item['subgroep'] == 'Shirts'
+    assert 'product_id' in stored_item
+    assert 'created_at' in stored_item
+    assert 'updated_at' in stored_item
+
+    # And event fields are NOT stored
+    assert 'event_id' not in stored_item
+    assert 'event_ids' not in stored_item

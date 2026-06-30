@@ -10,7 +10,6 @@ import {
   Th,
   Td,
   Badge,
-  Select,
   HStack,
   Spinner,
   Alert,
@@ -19,6 +18,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAdminOrders } from '../../webshop-management/hooks/useAdminOrders';
 import { AdminOrder } from '../../webshop-management/types/admin.types';
+import { FilterPanel, GenericFilter } from '../../../components/filters';
 
 const PAYMENT_STATUS_COLOR: Record<string, string> = {
   paid: 'green',
@@ -80,19 +80,26 @@ const OrdersAdmin: React.FC = () => {
           <Text fontSize="xl" fontWeight="bold">
             {t('orders_admin.title')}
           </Text>
-          <Select
-            placeholder={t('orders_admin.filter_all')}
-            value={paymentStatusFilter}
-            onChange={(e) => setPaymentStatusFilter(e.target.value)}
-            maxW="220px"
-            size="sm"
-          >
-            <option value="unpaid">{t('orders_admin.status_unpaid')}</option>
-            <option value="pending">{t('orders_admin.status_pending')}</option>
-            <option value="awaiting_payment">{t('orders_admin.status_awaiting_payment')}</option>
-            <option value="paid">{t('orders_admin.status_paid')}</option>
-          </Select>
         </HStack>
+
+        <FilterPanel
+          hasActiveFilters={!!paymentStatusFilter}
+          onReset={() => setPaymentStatusFilter('')}
+        >
+          <GenericFilter
+            label={t('orders_admin.col_payment_status')}
+            value={paymentStatusFilter}
+            options={[
+              { value: 'unpaid', label: t('orders_admin.status_unpaid') },
+              { value: 'pending', label: t('orders_admin.status_pending') },
+              { value: 'awaiting_payment', label: t('orders_admin.status_awaiting_payment') },
+              { value: 'paid', label: t('orders_admin.status_paid') },
+            ]}
+            onChange={setPaymentStatusFilter}
+            placeholder={t('orders_admin.filter_all')}
+            width="220px"
+          />
+        </FilterPanel>
 
         {orders.length === 0 ? (
           <Text color="gray.500">{t('orders_admin.no_orders')}</Text>

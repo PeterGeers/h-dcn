@@ -2,7 +2,7 @@
 Unit tests for the scan_product handler.
 
 Tests:
-- Canonical Dutch response fields (product_id, naam, artikelcode, prijs, is_parent, event_ids, active)
+- Canonical Dutch response fields (product_id, naam, artikelcode, prijs, is_parent, active, groep, subgroep, images)
 - Fallback: name → naam, price → prijs (for unmigrated records)
 - Exclusion of variant records (is_parent: false)
 - Exclusion of migration source records (source: "migration")
@@ -97,7 +97,7 @@ class TestScanProductNormalization:
     """Tests for response field normalization — canonical Dutch fields."""
 
     def test_returns_canonical_dutch_fields(self, producten_table):
-        """Returns all canonical Dutch fields for a product (without variant_schema)."""
+        """Returns all canonical Dutch fields for a product."""
         table, handler = producten_table
 
         table.put_item(Item={
@@ -106,8 +106,10 @@ class TestScanProductNormalization:
             'prijs': 25,
             'artikelcode': 'CT-01',
             'is_parent': True,
-            'event_ids': ['evt-webshop'],
             'active': True,
+            'groep': 'Kleding',
+            'subgroep': 'T-shirts',
+            'images': ['s3://bucket/tshirt.jpg'],
         })
 
         with _auth_patches():
@@ -121,10 +123,14 @@ class TestScanProductNormalization:
         assert product['naam'] == 'Club T-shirt'
         assert product['artikelcode'] == 'CT-01'
         assert product['prijs'] == 25
-        assert 'variant_schema' not in product
         assert product['is_parent'] is True
-        assert product['event_ids'] == ['evt-webshop']
         assert product['active'] is True
+        assert product['groep'] == 'Kleding'
+        assert product['subgroep'] == 'T-shirts'
+        assert product['images'] == ['s3://bucket/tshirt.jpg']
+        # variant_schema and event_ids are NOT in normalized response
+        assert 'variant_schema' not in product
+        assert 'event_ids' not in product
 
     def test_naam_fallback_from_legacy_name(self, producten_table):
         """Uses legacy 'name' field as fallback for 'naam' when not present."""
@@ -205,8 +211,8 @@ class TestScanProductNormalization:
         # Canonical 'prijs' is the preferred source
         assert body[0]['prijs'] == 25
 
-    def test_event_ids_returned_as_list(self, producten_table):
-        """event_ids is returned as a list (not the old event_id string)."""
+    def test_order_item_fields_returned_when_present(self, producten_table):
+        """order_item_fields is returned when present in DynamoDB item."""
         table, handler = producten_table
 
         table.put_item(Item={
@@ -214,15 +220,15 @@ class TestScanProductNormalization:
             'naam': 'Event Product',
             'prijs': 50,
             'is_parent': True,
-            'event_ids': ['evt-pm2027', 'evt-webshop'],
             'active': True,
+            'order_item_fields': [{'name': 'maat', 'type': 'select'}],
         })
 
         with _auth_patches():
             response = handler.lambda_handler(_make_event(), {})
 
         body = json.loads(response['body'])
-        assert body[0]['event_ids'] == ['evt-pm2027', 'evt-webshop']
+        assert body[0]['order_item_fields'] == [{'name': 'maat', 'type': 'select'}]
 
 
 class TestScanProductVariantSchemaRemoval:

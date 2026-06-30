@@ -1,21 +1,24 @@
-import { Box, Button, Image, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, DeleteIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
+import { Box, Button, VStack, Input, HStack, Text, InputGroup, InputLeftAddon, FormControl, FormErrorMessage, IconButton, Collapse, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Badge } from '@chakra-ui/react';
+import { ChevronDownIcon, ChevronRightIcon as ChevronRight, CloseIcon, AddIcon } from '@chakra-ui/icons';
 import { Formik, Form, Field, FormikProps } from 'formik';
 import * as Yup from 'yup';
-import { uploadToS3 } from '../services/s3Upload';
-import { useState, useEffect, useCallback } from 'react';
-import { Product, Event as HDCNEvent } from '../../../types';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Product } from '../../../types';
 import OrderItemFieldsEditor from './OrderItemFieldsEditor';
 import PurchaseRulesEditor from './PurchaseRulesEditor';
 import { OrderItemField, PurchaseRules } from '../../webshop/types/unifiedProduct.types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
 import { getRequiredFields, getProductField } from '../../../config/productFields';
+import { getValidationMessage } from '../../../utils/validationMessages';
 import { VariantSubTable } from '../../webshop-management/components/VariantSubTable';
 import { AdminVariant, AdminProduct } from '../../webshop-management/types/admin.types';
 import { VariantEditModal } from './VariantEditModal';
-import EventSelectorSection from './EventSelectorSection';
 import { canHaveVariants } from '../../../utils/productHelpers';
+import { ProductImageSection } from './ProductImageSection';
+import { ProductCardActions } from './ProductCardActions';
+import { CategoryDisplay, CategorySelector, CategoryStructure } from './CategorySelector';
 
 /**
  * CollapsibleSection renders a titled, expandable/collapsible box
@@ -54,52 +57,34 @@ interface ProductCardProps {
   onSave: (values: Product) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
+  onCopy?: (product: Product) => void;
   onClose: () => void;
   filteredProducts: Product[];
-  readOnly?: boolean; // Add read-only mode support
+  readOnly?: boolean;
 }
 
-interface CategoryStructure {
-  [key: string]: {
-    children?: {
-      [key: string]: any;
-    };
-  };
-}
-
-interface CategorySelectorProps {
-  setFieldValue: (field: string, value: any) => void;
-}
-
-interface GroupItemProps {
-  groupName: string;
-  groupData: {
-    children?: {
-      [key: string]: any;
-    };
-  };
-}
-
-// Validation schema derived from the productFields registry.
-// Required fields for parent products are checked; all else is optional.
+// Required fields for parent products — computed once outside the component.
 const requiredParentFields = getRequiredFields('parent');
-const schemaShape: Record<string, any> = {};
-for (const key of requiredParentFields) {
-  const fieldDef = getProductField(key);
-  if (!fieldDef || fieldDef.inputType === 'hidden') continue; // skip auto-generated fields
-  const label = fieldDef.label || key;
-  schemaShape[key] = Yup.mixed().required(`${label} is verplicht`);
-}
-const schema = Yup.object().shape(schemaShape);
 
-export default function ProductCard({ product, products, onSave, onDelete, onNew, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
-  const [uploading, setUploading] = useState<boolean>(false);
+export default function ProductCard({ product, products, onSave, onDelete, onNew, onCopy, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
+  const { t } = useTranslation('products');
+
+  // Validation schema derived from the productFields registry.
+  // Built inside the component so the `t` function is available for i18n messages.
+  const schema = useMemo(() => {
+    const schemaShape: Record<string, any> = {};
+    for (const key of requiredParentFields) {
+      const fieldDef = getProductField(key);
+      if (!fieldDef || fieldDef.inputType === 'hidden') continue; // skip auto-generated fields
+      const label = fieldDef.label || key;
+      schemaShape[key] = Yup.mixed().required(() => getValidationMessage(t, 'required', { field: label }));
+    }
+    return Yup.object().shape(schemaShape);
+  }, [t]);
   const [categoryStructure, setCategoryStructure] = useState<CategoryStructure>({});
   const [selectedCategory, setSelectedCategory] = useState<{ groep: string; subgroep: string }>({ groep: '', subgroep: '' });
   const { isOpen: isCategoryModalOpen, onOpen: onCategoryModalOpen, onClose: onCategoryModalClose } = useDisclosure();
   const [mainFormSetFieldValue, setMainFormSetFieldValue] = useState<((field: string, value: any) => void) | null>(null);
-  const [events, setEvents] = useState<HDCNEvent[]>([]);
-  const [eventsLoading, setEventsLoading] = useState<boolean>(false);
   const [variants, setVariants] = useState<AdminVariant[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState<boolean>(false);
   const [variantModalOpen, setVariantModalOpen] = useState<boolean>(false);
@@ -137,7 +122,6 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
   useEffect(() => {
     // Build category structure dynamically from actual product data.
-    // Categories appear once at least one product uses them.
     const derived: CategoryStructure = {};
 
     products.forEach(p => {
@@ -158,242 +142,21 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
     setSelectedCategory({ groep: product.groep || '', subgroep: product.subgroep || '' });
   }, [product]);
 
-  // Fetch events for the event_id selector
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setEventsLoading(true);
-      try {
-        const headers = await getAuthHeadersForGet();
-        const response = await fetch(API_URLS.events(), { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setEvents(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error('Error fetching events:', err);
-      } finally {
-        setEventsLoading(false);
-      }
-    };
-    fetchEvents();
-  }, []);
-
-  const CategoryDisplay = ({ groep, subgroep, onClick }: { groep: string; subgroep: string; onClick: () => void }) => {
-    const displayText = groep && subgroep 
-      ? `${groep} - ${subgroep}`
-      : groep 
-        ? groep
-        : 'Selecteer categorie...';
-    
-    return (
-      <Box
-        height="40px"
-        px={4}
-        py={2}
-        bg="gray.600"
-        borderRadius="md"
-        border="1px solid"
-        borderColor="gray.500"
-        cursor={readOnly ? 'default' : 'pointer'}
-        onClick={readOnly ? undefined : onClick}
-        _hover={readOnly ? {} : { borderColor: 'gray.400' }}
-        display="flex"
-        alignItems="center"
-        fontSize="md"
-        width="100%"
-        _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
-      >
-        <Text color={groep ? 'white' : 'gray.300'}>
-          {displayText}
-        </Text>
-      </Box>
-    );
-  };
-
-  const CategorySelector = ({ setFieldValue }: CategorySelectorProps) => {
-    const GroupItem = ({ groupName, groupData }: GroupItemProps) => {
-      const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: selectedCategory.groep === groupName });
-      const hasChildren = groupData.children && Object.keys(groupData.children).length > 0;
-      
-      return (
-        <Box>
-          <Button
-            variant="ghost"
-            justifyContent="flex-start"
-            width="full"
-            size="sm"
-            fontSize="md"
-            py={2}
-            leftIcon={hasChildren ? (isOpen ? <ChevronDownIcon /> : <ChevronRight />) : undefined}
-            onClick={() => {
-              if (hasChildren) {
-                onToggle();
-              } else if (!readOnly) {
-                // If no children, select this as both groep and subgroep
-                setSelectedCategory({ groep: groupName, subgroep: '' });
-                setFieldValue('groep', groupName);
-                setFieldValue('subgroep', '');
-                onCategoryModalClose(); // Close modal after selection
-              }
-            }}
-            color="white"
-            bg={selectedCategory.groep === groupName && !selectedCategory.subgroep ? 'orange.600' : 'transparent'}
-            _hover={{ bg: readOnly ? 'transparent' : 'gray.700' }}
-            isDisabled={readOnly}
-            fontWeight={selectedCategory.groep === groupName ? 'bold' : 'normal'}
-          >
-            {groupName}
-            {!hasChildren && <Text fontSize="xs" color="gray.500" ml={2}>(geen subgroepen)</Text>}
-          </Button>
-          
-          {hasChildren && (
-            <Collapse in={isOpen}>
-              <VStack align="stretch" pl={6} spacing={1} mt={1}>
-                {Object.entries(groupData.children).map(([subgroup, subgroupData]) => (
-                  <Button
-                    key={subgroup}
-                    variant="ghost"
-                    size="sm"
-                    fontSize="sm"
-                    py={2}
-                    justifyContent="flex-start"
-                    onClick={() => {
-                      if (!readOnly) {
-                        setSelectedCategory({ groep: groupName, subgroep: subgroup });
-                        setFieldValue('groep', groupName);
-                        setFieldValue('subgroep', subgroup);
-                        onCategoryModalClose(); // Close modal after selection
-                      }
-                    }}
-                    color="white"
-                    bg={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'orange.700' : 'transparent'}
-                    _hover={{ bg: readOnly ? 'transparent' : 'gray.700' }}
-                    isDisabled={readOnly}
-                    fontWeight={selectedCategory.groep === groupName && selectedCategory.subgroep === subgroup ? 'bold' : 'normal'}
-                    borderLeft="2px solid"
-                    borderColor="orange.400"
-                    borderRadius="0"
-                    ml={2}
-                  >
-                    📁 {subgroup}
-                  </Button>
-                ))}
-              </VStack>
-            </Collapse>
-          )}
-        </Box>
-      );
-    };
-
-    return (
-      <Box p={3} bg="gray.800" borderRadius="md" border="1px solid" borderColor="gray.600" maxH="400px" overflowY="auto">
-        <Text fontSize="md" fontWeight="bold" mb={3} color="white">
-          {readOnly ? 'Categorie (alleen-lezen):' : 'Selecteer Categorie:'}
-        </Text>
-        
-        <VStack align="stretch" spacing={1}>
-          {Object.keys(categoryStructure).length === 0 ? (
-            <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-              Geen categorieën beschikbaar
-            </Text>
-          ) : (
-            Object.entries(categoryStructure).map(([groupName, groupData]) => (
-              <GroupItem key={groupName} groupName={groupName} groupData={groupData} />
-            ))
-          )}
-        </VStack>
-
-        {/* New group/subgroup inputs */}
-        {!readOnly && (
-          <Box mt={4} pt={3} borderTop="1px solid" borderColor="gray.300">
-            <Text fontSize="sm" fontWeight="bold" color="gray.200" mb={2}>Nieuwe categorie toevoegen:</Text>
-            <HStack spacing={2} mb={2}>
-              <Input
-                size="sm"
-                placeholder="Nieuwe groep"
-                bg="gray.600"
-                color="white"
-                borderColor="gray.500"
-                _placeholder={{ color: 'gray.300' }}
-                id="new-group-input"
-                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                  if (e.key === 'Enter') {
-                    const val = (e.target as HTMLInputElement).value.trim();
-                    if (val) {
-                      setSelectedCategory({ groep: val, subgroep: '' });
-                      setFieldValue('groep', val);
-                      setFieldValue('subgroep', '');
-                      onCategoryModalClose();
-                    }
-                  }
-                }}
-              />
-              <Button size="sm" colorScheme="orange" onClick={() => {
-                const input = document.getElementById('new-group-input') as HTMLInputElement;
-                const val = input?.value?.trim();
-                if (val) {
-                  setSelectedCategory({ groep: val, subgroep: '' });
-                  setFieldValue('groep', val);
-                  setFieldValue('subgroep', '');
-                  onCategoryModalClose();
-                }
-              }}>+</Button>
-            </HStack>
-            <HStack spacing={2}>
-              <Input
-                size="sm"
-                placeholder="Nieuwe subgroep"
-                bg="gray.600"
-                color="white"
-                borderColor="gray.500"
-                _placeholder={{ color: 'gray.300' }}
-                id="new-subgroup-input"
-                isDisabled={!selectedCategory.groep}
-                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                  if (e.key === 'Enter' && selectedCategory.groep) {
-                    const val = (e.target as HTMLInputElement).value.trim();
-                    if (val) {
-                      setSelectedCategory({ groep: selectedCategory.groep, subgroep: val });
-                      setFieldValue('groep', selectedCategory.groep);
-                      setFieldValue('subgroep', val);
-                      onCategoryModalClose();
-                    }
-                  }
-                }}
-              />
-              <Button size="sm" colorScheme="orange" isDisabled={!selectedCategory.groep} onClick={() => {
-                const input = document.getElementById('new-subgroup-input') as HTMLInputElement;
-                const val = input?.value?.trim();
-                if (val && selectedCategory.groep) {
-                  setSelectedCategory({ groep: selectedCategory.groep, subgroep: val });
-                  setFieldValue('groep', selectedCategory.groep);
-                  setFieldValue('subgroep', val);
-                  onCategoryModalClose();
-                }
-              }}>+</Button>
-            </HStack>
-            <Text fontSize="xs" color="gray.500" mt={1}>Typ een naam en druk Enter of klik +</Text>
-          </Box>
-        )}
-      </Box>
-    );
-  };
-
   if (!filteredProducts || filteredProducts.length === 0) {
     return null;
   }
 
   return (
-    <Box 
-      bg="orange.100" 
-      p={6} 
-      borderRadius="md" 
-      boxShadow="xl" 
-      border="2px solid orange" 
-      position="fixed" 
-      top="50%" 
-      left="50%" 
-      transform="translate(-50%, -50%)" 
+    <Box
+      bg="orange.100"
+      p={6}
+      borderRadius="md"
+      boxShadow="xl"
+      border="2px solid orange"
+      position="fixed"
+      top="50%"
+      left="50%"
+      transform="translate(-50%, -50%)"
       zIndex={1000}
       maxHeight="80vh"
       overflowY="auto"
@@ -422,14 +185,13 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           images: (product as any).images || [],
           groep: product.groep || '',
           subgroep: product.subgroep || '',
-          event_ids: (product as any).event_ids || [],
           order_item_fields: (product as any).order_item_fields || undefined,
           purchase_rules: (product as any).purchase_rules || undefined,
         }}
         validationSchema={schema}
         onSubmit={(values) => {
           // Remove legacy fields from payload, send only canonical registry fields
-          const { opties, nietInWinkel, event_id, id, name, price, image, ...cleanValues } = values as any;
+          const { opties, nietInWinkel, event_id, event_ids, id, name, price, image, ...cleanValues } = values as any;
 
           // Coerce numeric validation fields in order_item_fields to integers
           if (cleanValues.order_item_fields) {
@@ -474,10 +236,10 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           if (!mainFormSetFieldValue) {
             setMainFormSetFieldValue(() => setFieldValue);
           }
-          
+
           // Show errors after at least one submit attempt
           const hasErrors = submitCount > 0 && Object.keys(errors).length > 0;
-          
+
           return (
           <Form>
             <VStack spacing={4}>
@@ -510,12 +272,12 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                     {({ field, form }: any) => (
                       <InputGroup>
                         <InputLeftAddon bg="orange.300" color="black" fontWeight="bold">€</InputLeftAddon>
-                        <Input 
-                          {...field} 
-                          placeholder="0.00" 
-                          type="number" 
-                          step="0.01" 
-                          color="white" 
+                        <Input
+                          {...field}
+                          placeholder="0.00"
+                          type="number"
+                          step="0.01"
+                          color="white"
                           bg="gray.600"
                           fontWeight="bold"
                           borderColor={errors.prijs && touched.prijs ? 'red.500' : 'gray.500'}
@@ -541,22 +303,14 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
               {/* Category field */}
               <FormControl isInvalid={!!((errors.groep && touched.groep) || (errors.subgroep && touched.subgroep))}>
-                <CategoryDisplay 
-                  groep={values.groep || ''} 
-                  subgroep={values.subgroep || ''} 
+                <CategoryDisplay
+                  groep={values.groep || ''}
+                  subgroep={values.subgroep || ''}
                   onClick={onCategoryModalOpen}
+                  readOnly={readOnly}
                 />
                 <FormErrorMessage>{(errors.groep || errors.subgroep) as string}</FormErrorMessage>
               </FormControl>
-
-              {/* Evenementen — CollapsibleSection with badges */}
-              <EventSelectorSection
-                events={events}
-                selectedIds={values.event_ids || []}
-                onChange={(ids: string[]) => setFieldValue('event_ids', ids)}
-                isLoading={eventsLoading}
-                isDisabled={readOnly}
-              />
 
               {/* Legacy required_attributes display */}
               {(product as any).required_attributes && !values.order_item_fields && !values.purchase_rules && (
@@ -584,7 +338,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 </Box>
               )}
 
-              {/* Variant Sub-Table — collapsible for parent products (show unless explicitly a variant) */}
+              {/* Variant Sub-Table — collapsible for parent products */}
               {canHaveVariants(product as any) && (
                 <CollapsibleSection title={`Varianten (${variants.length})`} defaultOpen={false}>
                   {!readOnly && (
@@ -626,7 +380,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 <CollapsibleSection title="Bestelvelden per item" defaultOpen={false}>
                   <OrderItemFieldsEditor
                     value={values.order_item_fields || []}
-                    onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields.length > 0 ? fields : undefined)}
+                    onChange={(fields: OrderItemField[]) => setFieldValue('order_item_fields', fields)}
                   />
                 </CollapsibleSection>
               )}
@@ -646,112 +400,22 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
 
               {/* Images CollapsibleSection */}
               <CollapsibleSection title="Afbeeldingen" defaultOpen={false}>
-                <Button 
-                  colorScheme="orange" 
-                  size="sm"
-                  isDisabled={readOnly}
-                  onClick={async () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.multiple = true;
-                    input.onchange = async (e) => {
-                      const target = (e as any).target as HTMLInputElement;
-                      const files = Array.from(target.files || []);
-                      if (files.length > 0) {
-                        try {
-                          setUploading(true);
-                          const uploadPromises = files.map(file => uploadToS3(file, product.id));
-                          const s3Urls = await Promise.all(uploadPromises);
-                          const currentImages = values.images || [];
-                          setFieldValue('images', [...currentImages, ...s3Urls]);
-                        } catch (error: any) {
-                          console.error('Error uploading images:', error);
-                          alert('Upload failed: ' + error.message);
-                        } finally {
-                          setUploading(false);
-                        }
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  + Afbeeldingen
-                </Button>
-
-                {uploading && <Text color="blue.500">Uploading...</Text>}
-
-                {values.images && values.images.length > 0 && (
-                  <Box mt={3}>
-                    <Text fontSize="sm" fontWeight="bold" mb={2}>Afbeeldingen ({values.images.length}):</Text>
-                    <VStack spacing={2}>
-                      {values.images.map((imageUrl: string, index: number) => (
-                        <HStack key={index} spacing={2} width="100%">
-                          <Image 
-                            src={imageUrl} 
-                            boxSize="78px"
-                            objectFit="cover"
-                            border="1px solid gray"
-                            borderRadius="md"
-                          />
-                          <Text fontSize="xs" flex={1} isTruncated>{String(imageUrl || '').split('/').pop()?.replace(/[<>"'&]/g, '') || 'Unknown'}</Text>
-                          <Button 
-                            size="xs" 
-                            colorScheme="red" 
-                            isDisabled={readOnly}
-                            onClick={() => {
-                              const newImages = values.images.filter((_: string, i: number) => i !== index);
-                              setFieldValue('images', newImages);
-                            }}
-                          >
-                            ×
-                          </Button>
-                        </HStack>
-                      ))}
-                    </VStack>
-                  </Box>
-                )}
+                <ProductImageSection
+                  images={values.images || []}
+                  productId={product.id}
+                  readOnly={readOnly}
+                  setFieldValue={setFieldValue}
+                />
               </CollapsibleSection>
 
               {/* Action buttons */}
-              <HStack spacing={4}>
-                {!readOnly && (
-                  <IconButton
-                    icon={<CheckIcon />}
-                    colorScheme="orange"
-                    size="sm"
-                    type="submit"
-                    aria-label="Opslaan"
-                    isDisabled={false}
-                    _hover={{ bg: 'orange.600' }}
-                  />
-                )}
-                {!readOnly && product.id && (
-                  <IconButton
-                    icon={<DeleteIcon />}
-                    colorScheme="red"
-                    size="sm"
-                    onClick={() => onDelete(product.id)}
-                    aria-label="Verwijder product"
-                    _hover={{ bg: 'red.600' }}
-                  />
-                )}
-                {!readOnly && (
-                  <IconButton
-                    icon={<AddIcon />}
-                    colorScheme="green"
-                    size="sm"
-                    onClick={onNew}
-                    aria-label="Nieuw product"
-                    _hover={{ bg: 'green.600' }}
-                  />
-                )}
-                {readOnly && (
-                  <Text fontSize="sm" color="gray.600" fontStyle="italic">
-                    Alleen-lezen modus - geen bewerkingsrechten
-                  </Text>
-                )}
-              </HStack>
+              <ProductCardActions
+                product={product}
+                readOnly={readOnly}
+                onDelete={onDelete}
+                onNew={onNew}
+                onCopy={onCopy}
+              />
             </VStack>
           </Form>
           );
@@ -766,7 +430,14 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
           <ModalCloseButton />
           <ModalBody>
             {mainFormSetFieldValue && (
-              <CategorySelector setFieldValue={mainFormSetFieldValue} />
+              <CategorySelector
+                setFieldValue={mainFormSetFieldValue}
+                categoryStructure={categoryStructure}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                readOnly={readOnly}
+                onCategoryModalClose={onCategoryModalClose}
+              />
             )}
           </ModalBody>
           <ModalFooter>

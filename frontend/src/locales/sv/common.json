@@ -48,8 +48,14 @@
   },
   "errors": {
     "generic": "Ett fel uppstod. Försök igen senare.",
-    "network": "Nätverksfel. Kontrollera din anslutning och försök igen.",
-    "not_found": "Hittades inte",
+    "network": "Nätverksfel - kontrollera din internetanslutning",
+    "unauthorized": "Du är inte behörig för denna åtgärd",
+    "forbidden": "Åtkomst nekad - otillräckliga behörigheter",
+    "not_found": "Begärd data hittades inte",
+    "server_error": "Serverfel - försök igen senare",
+    "maintenance": "Systemet är tillfälligt otillgängligt för underhåll",
+    "timeout": "Begäran tog för lång tid - försök igen",
+    "unknown": "Ett okänt fel uppstod",
     "no_access": "Ingen åtkomst",
     "session_expired": "Sessionen har gått ut. Logga in igen."
   },
@@ -57,7 +63,26 @@
     "save_success": "Data sparades",
     "save_error": "Fel vid sparande. Försök igen.",
     "delete_success": "Borttaget",
-    "delete_error": "Fel vid borttagning"
+    "delete_error": "Fel vid borttagning",
+    "action_success": "{{action}} lyckades",
+    "action_error": "Fel vid {{action}}"
+  },
+  "api_errors": {
+    "authorization_required": "Auktorisering krävs",
+    "forbidden": "Åtkomst nekad",
+    "not_found": "Hittades inte",
+    "validation_error": "Valideringsfel",
+    "internal_error": "Internt serverfel",
+    "member_not_found": "Medlem hittades inte",
+    "member_already_exists": "Medlem finns redan",
+    "invalid_input": "Ogiltig inmatning",
+    "payment_failed": "Betalning misslyckades",
+    "order_not_found": "Order hittades inte",
+    "product_not_found": "Produkt hittades inte",
+    "cart_empty": "Varukorgen är tom",
+    "insufficient_stock": "Otillräckligt lager",
+    "email_already_exists": "E-postadressen används redan",
+    "invalid_membership": "Ogiltigt medlemskap"
   },
   "account": {
     "info_title": "Kontoinformation",

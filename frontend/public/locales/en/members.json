@@ -97,6 +97,13 @@
     "apply_link": "Click here to become a member"
   },
   "form": {
+    "group_name": "Group name",
+    "email": "Email",
+    "name": "Name",
+    "description": "Description",
+    "price": "Price",
+    "duration": "Duration",
+    "status": "Status",
     "first_name": "First name",
     "last_name": "Last name",
     "street": "Street",
@@ -119,5 +126,28 @@
     "membership": "Membership",
     "motor": "Motorcycle",
     "financial": "Financial"
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "email": "Enter a valid email address",
+    "min_length": "Minimum {{count}} characters required",
+    "max_length": "Maximum {{count}} characters allowed",
+    "min": "Value must be at least {{value}}",
+    "max": "Value must be at most {{value}}",
+    "pattern": "Invalid input",
+    "invalid_number": "Enter a valid number",
+    "invalid_option": "Select a valid option"
+  },
+  "toast": {
+    "required_fields": "Required fields",
+    "group_created": "Group created",
+    "group_cannot_update": "Group cannot be updated",
+    "group_cannot_update_desc": "Cognito does not support changing group description after creation",
+    "save_error": "Error saving",
+    "user_updated": "User updated",
+    "user_created": "User created"
+  },
+  "errors": {
+    "invalid_file_type": "Invalid file type. Only CSV files are allowed."
   }
 }

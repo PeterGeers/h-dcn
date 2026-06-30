@@ -15,7 +15,8 @@
     "no_analytics_access": "Je hebt geen toegang tot analytics.",
     "current_roles": "Huidige rollen: {{roles}}",
     "no_roles": "Geen rollen toegewezen",
-    "required_roles": "Vereiste rollen: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, of andere event-gerelateerde rollen"
+    "required_roles": "Vereiste rollen: Events_Read, Events_CRUD, Webmaster, Tour_Commissioner, National_Chairman, Regional_Chairman, of andere event-gerelateerde rollen",
+    "region_limited": "Je kunt evenementen beheren voor: {{regions}}"
   },
   "communication": {
     "title": "Evenement Communicatie & Export",
@@ -27,12 +28,112 @@
     "event_overview": "Evenement Overzicht",
     "regional_summary": "Regionale Samenvatting"
   },
+  "form": {
+    "title_new": "Nieuw Evenement",
+    "title_edit": "Evenement Bewerken",
+    "save_new": "Aanmaken",
+    "save_edit": "Bijwerken",
+    "cancel": "Annuleren",
+    "success_created": "Evenement succesvol aangemaakt",
+    "success_updated": "Evenement succesvol bijgewerkt",
+    "error_save": "Fout bij opslaan evenement",
+    "validation": {
+      "required_fields": "Naam, type, start- en einddatum, en regio zijn verplicht",
+      "required_registration": "Registratie open en sluit datum zijn verplicht",
+      "no_region_access": "Je hebt geen rechten om evenementen in deze regio aan te maken"
+    },
+    "sections": {
+      "registration": "Registratie & Deadlines",
+      "registration_required": "verplicht",
+      "config": "Configuratie",
+      "financial": "Financieel",
+      "landing_page": "Landing Page"
+    }
+  },
   "fields": {
-    "name": "Naam",
-    "date": "Datum",
+    "name": "Eventnaam",
+    "name_placeholder": "Naam van het evenement",
+    "event_type": "Type",
+    "event_type_placeholder": "Selecteer type...",
+    "participation": "Deelname",
+    "linked_regio": "Regio",
+    "linked_regio_placeholder": "Selecteer regio...",
+    "regio_all_label": "Alle regio's (landelijk)",
+    "start_date": "Startdatum",
+    "end_date": "Einddatum",
     "location": "Locatie",
-    "participants": "Deelnemers",
-    "revenue": "Inkomsten",
+    "location_placeholder": "Bijv. Clubhuis H-DCN, Amsterdam",
+    "poster_url": "Poster / Afbeelding",
+    "poster_placeholder": "URL of upload een bestand",
+    "poster_upload": "Upload",
+    "poster_success": "Poster succesvol geüpload",
+    "slug": "URL Slug",
+    "slug_placeholder": "bijv. presmeet-2026",
+    "registration_open": "Registratie open",
+    "registration_close": "Registratie sluit",
+    "payment_deadline": "Betaaldeadline",
+    "product_ids": "Product IDs (kommagescheiden)",
+    "product_ids_placeholder": "product-id-1, product-id-2",
+    "participants": "Aantal deelnemers",
+    "cost": "Kosten (€)",
+    "revenue": "Inkomsten (€)",
+    "notes": "Opmerkingen",
+    "notes_placeholder": "Interne notities over kosten, afspraken, etc.",
+    "date": "Datum",
     "costs": "Kosten"
+  },
+  "event_types": {
+    "presmeet": "PresMeet",
+    "alv": "ALV (Algemene Ledenvergadering)",
+    "rlv": "RLV (Regio Vergadering)",
+    "vbv": "VBV",
+    "vergader_queue": "Vergader Queue",
+    "internationaal_treffen": "Internationaal Treffen",
+    "nationaal_treffen": "Nationaal Treffen",
+    "openingsrit": "Openingsrit",
+    "regio_rit": "Regio Rit",
+    "tourweekend": "Tourweekend",
+    "sluitingsrit": "Sluitingsrit",
+    "webshop": "Webshop",
+    "other": "Anders"
+  },
+  "event_categories": {
+    "vergadering": "Vergaderingen / Meetings",
+    "rally": "Rallies",
+    "rit": "Ritten",
+    "overig": "Overig"
+  },
+  "participation_modes": {
+    "open": "Open (deelname voor iedereen)",
+    "closed": "Besloten (alleen leden / genodigden)"
+  },
+  "list": {
+    "search_placeholder": "Zoek evenementen...",
+    "new_event": "Nieuw Evenement",
+    "new_event_short": "Nieuw",
+    "no_events": "Geen evenementen gevonden",
+    "edit": "Bewerken",
+    "duplicate": "Dupliceren",
+    "delete": "Verwijderen",
+    "no_edit_access": "Geen rechten om te bewerken",
+    "no_duplicate_access": "Geen rechten om te dupliceren",
+    "no_delete_access": "Geen rechten om te verwijderen",
+    "confirm_delete": "Weet je zeker dat je \"{{name}}\" wilt verwijderen?",
+    "deleted_success": "Evenement verwijderd",
+    "delete_error": "Fout bij verwijderen",
+    "profit": "Winst"
+  },
+  "validation": {
+    "required": "{{field}} is verplicht",
+    "email": "Voer een geldig emailadres in",
+    "min_length": "Minimaal {{count}} karakters vereist",
+    "max_length": "Maximaal {{count}} karakters toegestaan",
+    "min": "Waarde moet minimaal {{value}} zijn",
+    "max": "Waarde mag maximaal {{value}} zijn",
+    "pattern": "Ongeldige invoer",
+    "invalid_number": "Voer een geldig nummer in",
+    "invalid_option": "Selecteer een geldige optie",
+    "poster_invalid_type": "Ongeldig bestandstype. Toegestaan: {{types}}",
+    "poster_file_too_large": "Bestand is te groot. Maximaal {{maxSize}} toegestaan"
   }
 }

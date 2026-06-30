@@ -300,7 +300,7 @@ class TestProductCRUD:
         assert variant['name'] == 'Default Variant'
         assert variant['is_parent'] is False
         assert variant['variant_attributes'] == {}
-        assert variant['price'] is None
+        assert variant['prijs'] is None
         assert variant['stock'] == 0
         assert variant['sold_count'] == 0
         assert variant['allow_oversell'] is False

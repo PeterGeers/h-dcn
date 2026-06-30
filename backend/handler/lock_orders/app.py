@@ -3,9 +3,15 @@ Unified lock/unlock orders handler for the generic event booking system.
 Replaces: admin_lock_orders (bulk lock by source_id via event-member-index GSI)
          + admin_unlock_order (single order unlock by order_id)
 
-Two endpoints served from the same CodeUri:
-  - POST /admin/booking/lock?source_id={id}  → lock all submitted orders for a source
-  - POST /admin/booking/{id}/unlock          → unlock a specific locked order
+Three endpoints served from the same CodeUri:
+  - POST /admin/booking/lock?source_id={id}    → lock all submitted orders for a source
+  - POST /admin/booking/unlock?source_id={id}  → unlock all submitted/locked orders for a source
+  - POST /admin/booking/{id}/unlock            → unlock a specific submitted/locked order
+
+Lock: submitted → locked (Req 10.1)
+Unlock: submitted or locked → draft (Req 10.3)
+Reject lock if not submitted (Req 10.4)
+Batch operations apply same rules per order (Req 10.5)
 
 Access: requires events_crud permission (admin only).
 """
@@ -178,8 +184,11 @@ def _lock_orders_by_source(source_id, user_email):
 
 def _unlock_order(order_id, user_email):
     """
-    Unlock a specific order (set status back to "submitted").
-    Only works on orders with status == "locked".
+    Unlock a specific order (set status back to "draft").
+    Works on orders with status == "submitted" or "locked".
+
+    Requirements 10.3: unlock transitions submitted/locked → draft
+    Requirements 10.4: reject if order is not in submitted or locked status
     """
     # Get current order
     response = orders_table.get_item(Key={'order_id': order_id})
@@ -189,43 +198,44 @@ def _unlock_order(order_id, user_email):
     order = response['Item']
     current_status = order.get('status', 'draft')
 
-    # Only locked orders can be unlocked
-    if current_status != 'locked':
+    # Only submitted or locked orders can be unlocked
+    if current_status not in ('submitted', 'locked'):
         return create_error_response(
             400,
-            f'Cannot unlock order with status "{current_status}". Only locked orders can be unlocked.'
+            f'Cannot unlock order with status "{current_status}". Only submitted or locked orders can be unlocked.'
         )
 
     now = datetime.now(timezone.utc).isoformat()
     current_version = order.get('version', 1)
 
     history_entry = {
-        'from': 'locked',
-        'to': 'submitted',
+        'from': current_status,
+        'to': 'draft',
         'at': now,
         'by': user_email,
         'source': 'manual'
     }
 
-    # Update with concurrency check
+    # Update with concurrency check — accept either submitted or locked
     try:
         updated = orders_table.update_item(
             Key={'order_id': order_id},
             UpdateExpression=(
-                'SET #status = :submitted, updated_at = :now, '
+                'SET #status = :draft, updated_at = :now, '
                 'version = :new_version, '
                 'status_history = list_append(if_not_exists(status_history, :empty_list), :history_entry)'
             ),
             ExpressionAttributeNames={'#status': 'status'},
             ExpressionAttributeValues={
-                ':submitted': 'submitted',
+                ':draft': 'draft',
                 ':now': now,
                 ':new_version': current_version + 1,
+                ':submitted': 'submitted',
                 ':locked': 'locked',
                 ':history_entry': [history_entry],
                 ':empty_list': [],
             },
-            ConditionExpression='#status = :locked',
+            ConditionExpression='#status = :submitted OR #status = :locked',
             ReturnValues='ALL_NEW',
         )
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
@@ -242,11 +252,95 @@ def _unlock_order(order_id, user_email):
     })
 
 
+def _unlock_orders_by_source(source_id, user_email):
+    """
+    Unlock all submitted/locked orders for a given source_id (batch unlock).
+    Transitions each qualifying order to "draft".
+
+    Requirement 10.5: batch unlock with same status transition rules per order.
+    """
+    # Query all orders for this source via GSI
+    all_orders = _query_orders_by_source(source_id)
+
+    # Filter for submitted or locked orders
+    unlockable_orders = [
+        o for o in all_orders if o.get('status') in ('submitted', 'locked')
+    ]
+
+    if not unlockable_orders:
+        return create_success_response({
+            'unlocked_count': 0,
+            'unlocked_order_ids': [],
+            'skipped_count': len(all_orders),
+            'message': 'No submitted or locked orders to unlock'
+        })
+
+    now = datetime.now(timezone.utc).isoformat()
+    unlocked_ids = []
+    failed_ids = []
+
+    for order in unlockable_orders:
+        order_id = order['order_id']
+        current_status = order.get('status')
+        current_version = order.get('version', 1)
+
+        history_entry = {
+            'from': current_status,
+            'to': 'draft',
+            'at': now,
+            'by': user_email,
+            'source': 'manual'
+        }
+
+        try:
+            orders_table.update_item(
+                Key={'order_id': order_id},
+                UpdateExpression=(
+                    'SET #status = :draft, updated_at = :now, '
+                    'version = :new_version, '
+                    'status_history = list_append(if_not_exists(status_history, :empty_list), :history_entry)'
+                ),
+                ExpressionAttributeNames={'#status': 'status'},
+                ExpressionAttributeValues={
+                    ':draft': 'draft',
+                    ':now': now,
+                    ':new_version': current_version + 1,
+                    ':submitted': 'submitted',
+                    ':locked': 'locked',
+                    ':history_entry': [history_entry],
+                    ':empty_list': [],
+                },
+                ConditionExpression='#status = :submitted OR #status = :locked',
+            )
+            unlocked_ids.append(order_id)
+        except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+            logger.warning(f"Concurrency conflict unlocking order {order_id}")
+            failed_ids.append(order_id)
+        except Exception as e:
+            logger.error(f"Failed to unlock order {order_id}: {str(e)}")
+            failed_ids.append(order_id)
+
+    skipped_count = len(all_orders) - len(unlockable_orders)
+
+    result = {
+        'unlocked_count': len(unlocked_ids),
+        'unlocked_order_ids': unlocked_ids,
+        'skipped_count': skipped_count,
+        'message': f'{len(unlocked_ids)} orders unlocked successfully'
+    }
+    if failed_ids:
+        result['failed_order_ids'] = failed_ids
+        result['failed_count'] = len(failed_ids)
+
+    return create_success_response(result)
+
+
 def lambda_handler(event, context):
     """
     Routes to lock or unlock based on path:
-      - POST /admin/booking/lock?source_id={id}  → bulk lock
-      - POST /admin/booking/{id}/unlock          → single unlock
+      - POST /admin/booking/lock?source_id={id}    → bulk lock all submitted orders
+      - POST /admin/booking/unlock?source_id={id}  → bulk unlock all submitted/locked orders
+      - POST /admin/booking/{id}/unlock            → single unlock (submitted/locked → draft)
     """
     try:
         # Handle OPTIONS (CORS preflight)
@@ -264,32 +358,42 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'lock_orders')
 
-        # 3. Determine action from path parameters
+        # 3. Determine action from path parameters and resource path
         path_params = event.get('pathParameters') or {}
         order_id = path_params.get('id')
+        resource_path = event.get('resource', '') or event.get('path', '')
 
         if order_id:
-            # --- Unlock mode: POST /admin/booking/{id}/unlock ---
+            # --- Single unlock mode: POST /admin/booking/{id}/unlock ---
             return _unlock_order(order_id, user_email)
-        else:
-            # --- Lock mode: POST /admin/booking/lock?source_id={id} ---
-            # Accept source_id from query params or body
-            query_params = event.get('queryStringParameters') or {}
-            source_id = query_params.get('source_id')
-
-            if not source_id:
-                # Try reading from body
-                try:
-                    body = json.loads(event.get('body') or '{}')
-                    source_id = body.get('source_id')
-                except (json.JSONDecodeError, TypeError):
-                    pass
-
+        elif '/unlock' in resource_path:
+            # --- Batch unlock mode: POST /admin/booking/unlock?source_id={id} ---
+            source_id = _extract_source_id(event)
             if not source_id:
                 return create_error_response(400, 'source_id is required (query param or body)')
-
+            return _unlock_orders_by_source(source_id, user_email)
+        else:
+            # --- Batch lock mode: POST /admin/booking/lock?source_id={id} ---
+            source_id = _extract_source_id(event)
+            if not source_id:
+                return create_error_response(400, 'source_id is required (query param or body)')
             return _lock_orders_by_source(source_id, user_email)
 
     except Exception as e:
         logger.error(f"Error in lock_orders handler: {str(e)}", exc_info=True)
         return create_error_response(500, 'Internal server error')
+
+
+def _extract_source_id(event: dict) -> str | None:
+    """Extract source_id from query params or request body."""
+    query_params = event.get('queryStringParameters') or {}
+    source_id = query_params.get('source_id')
+
+    if not source_id:
+        try:
+            body = json.loads(event.get('body') or '{}')
+            source_id = body.get('source_id')
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return source_id

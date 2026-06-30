@@ -32,7 +32,7 @@ import { PaymentRecordForm } from './PaymentRecordForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 
 interface PaymentsTabProps {
-  eventFilter: string;
+  eventFilter?: string;
 }
 
 function getPaymentStatusBadge(status: 'paid' | 'partial' | 'unpaid') {
@@ -52,7 +52,7 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
-export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter }) => {
+export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) => {
   const { aggregates, orderPayments, loading, error, recordPayment } =
     useAdminPayments(eventFilter);
   const { canMutate } = useAdminPermissions();
