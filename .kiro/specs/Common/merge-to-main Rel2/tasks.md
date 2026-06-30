@@ -37,49 +37,59 @@ No DynamoDB data migrations needed for production (Events table migration is for
 - [ ] 2. Checkpoint — Production readiness
   - Discuss findings from step 1 with user. Decide on migration strategy.
 
-- [-] 3. Create Pull Request
+- [x] 3. Create Pull Request
   - [ ] 3.1 Ensure working directory is clean (commit or stash remaining changes)
   - [ ] 3.2 Create PR targeting `main`
     - `gh pr create --base main --head feature/closed-community-booking --title "feat: closed community booking + event system alignment (Rel2)" --body-file .kiro/specs/Common/merge-to-main\ Rel2/pr-description.md`
   - [ ] 3.3 Verify PR URL is returned
 
-- [ ] 4. Pre-merge CI validation
-  - [ ] 4.1 Wait for CI checks: `gh pr checks --watch`
-  - [ ] 4.2 All checks pass (GitGuardian, branch protection)
-  - [ ] 4.3 If any check fails, halt and report
+- [x] 4. Pre-merge CI validation
+  - [x] 4.1 Wait for CI checks: `gh pr checks --watch`
+    - Result: GitGuardian Security Checks — SUCCESS
+  - [x] 4.2 All checks pass (GitGuardian, branch protection)
+    - Result: All 1/1 checks passed ✅
+  - [x] 4.3 If any check fails, halt and report
+    - Result: No failures — proceeding
 
-- [ ] 5. Checkpoint — CI passed
-  - Confirm all checks green. Ask user before proceeding.
+- [x] 5. Checkpoint — CI passed
+  - Confirmed: all checks green. User approved proceeding.
 
-- [ ] 6. Data migration (BEFORE merge)
-  - [ ] 6.1 Migrate prod Events table to new schema
-    - Dry-run: `python scripts/migrate_events_prod.py --profile nonprofit-deploy`
-    - Review output: verify event_type derivation is correct for each event
-    - Apply: `python scripts/migrate_events_prod.py --apply --profile nonprofit-deploy`
-    - Adds: `name`, `status: 'published'`, `event_type`, `participation: 'open'`, `linked_regio`
-  - [ ] 6.2 Populate `evt-webshop` product_ids in prod
-    - Record exists but has 0 product_ids — webshop will show nothing without this
-    - Script needed: scan Producten table for active parent products → set as product_ids on evt-webshop
-    - Dry-run first, then apply
-  - [ ] 6.3 Verify: re-run dry-run script → should show "0 would be updated, 13 skipped"
+- [x] 6. Data migration (BEFORE merge)
+  - [x] 6.1 Migrate prod Events table to new schema
+    - Dry-run: verified 13 events need updates
+    - Applied: all 13 updated (name, status='published', event_type, participation='open', linked_regio)
+  - [x] 6.2 Populate `evt-webshop` product_ids in prod
+    - Script: `scripts/populate_webshop_product_ids.py`
+    - Scanned 91 products → 29 active parent products
+    - Applied: evt-webshop now has 29 product_ids
+  - [x] 6.3 Verify: re-run dry-run script → should show "0 would be updated, 13 skipped"
+    - Result: ✅ "0 would be updated, 13 skipped" + evt-webshop has 29 product_ids
 
-- [ ] 7. Squash-merge the PR
-  - [ ] 7.1 Execute: `gh pr merge --squash --delete-branch`
-  - [ ] 7.2 Verify PR merged and branch deleted
+- [x] 7. Squash-merge the PR
+  - [x] 7.1 Execute: `gh pr merge --squash --delete-branch`
+    - Result: ✓ Squashed and merged PR #4
+    - Merge commit: 9e0327ea62a222790a663a98c158a101a59f1c9f
+  - [x] 7.2 Verify PR merged and branch deleted
+    - PR state: MERGED (2026-06-30T07:04:45Z)
+    - Remote branch: deleted
 
-- [ ] 8. Verify deployments
-  - [ ] 8.1 Monitor workflows: `gh run list --limit 5`
-  - [ ] 8.2 Watch backend deploy: `gh run watch <run-id>`
-  - [ ] 8.3 Watch frontend deploy: `gh run watch <run-id>`
-  - [ ] 8.4 Both succeed
+- [x] 8. Verify deployments
+  - [x] 8.1 Monitor workflows: `gh run list --limit 5`
+    - Both Deploy Backend and Deploy Frontend triggered on main push
+  - [x] 8.2 Watch backend deploy: run 28426591463
+    - Result: ✅ SUCCESS — SAM Build + SAM Deploy completed in 4m50s
+  - [x] 8.3 Watch frontend deploy: run 28426591406
+    - Result: ✅ SUCCESS
+  - [x] 8.4 Both succeed
 
-- [ ] 9. Post-merge verification
-  - [ ] 9.1 Verify portal.h-dcn.nl loads correctly
-  - [ ] 9.2 Verify webshop shows products
-  - [ ] 9.3 Verify dashboard shows correct cards per role
-  - [ ] 9.4 Confirm branch deleted: `git ls-remote --heads origin feature/closed-community-booking`
+- [x] 9. Post-merge verification
+  - [x] 9.1 Verify portal.h-dcn.nl loads correctly
+  - [x] 9.2 Verify webshop shows products
+  - [x] 9.3 Verify dashboard shows correct cards per role
+  - [x] 9.4 Confirm branch deleted: `git ls-remote --heads origin feature/closed-community-booking`
+    - Result: ✅ No output — branch is deleted
 
-- [ ] 10. Final checkpoint — Release complete
+- [x] 10. Final checkpoint — Release complete
 
 ## Key risks
 
