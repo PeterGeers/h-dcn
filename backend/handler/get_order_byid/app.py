@@ -92,15 +92,15 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
         
-        # UPDATED: Check for webshop access permission with new role structure
-        # Users need hdcnLeden role for webshop access
-        required_permissions = ['webshop_access']
-        
-        is_authorized, error_response, regional_info = validate_permissions_with_regions(
-            user_roles, required_permissions, user_email, None
+        # Access check: any authenticated member or admin
+        is_admin, _, _ = validate_permissions_with_regions(
+            user_roles, ['Products_CRUD'], user_email, None
         )
-        if not is_authorized:
-            return error_response
+        has_member_access = 'hdcnLeden' in user_roles
+        has_event_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant'))
+
+        if not is_admin and not has_member_access and not has_event_access:
+            return create_error_response(403, 'Access denied: Requires membership access')
         
         # Log successful access
         log_successful_access(user_email, user_roles, 'get_order_byid')
@@ -114,19 +114,11 @@ def lambda_handler(event, context):
         
         order = response['Item']
         
-        # Validate order ownership - users can only access their own orders unless they have admin role
+        # Validate order ownership - users can only access their own orders unless admin
         order_user_email = order.get('user_email')
-        # Check if user has admin permissions for accessing any order
-        has_admin_role = any(role in user_roles for role in ['Members_CRUD', 'Webshop_Management'])
+        has_admin_role = is_admin or any(role in user_roles for role in ['Members_CRUD', 'Webshop_Management'])
         
         if not has_admin_role and order_user_email and order_user_email.lower() != user_email.lower():
-            # Log unauthorized order access attempt for comprehensive audit trail
-            log_order_audit('ACCESS_DENIED', order_id, user_email, user_roles, {
-                'order_owner': order_user_email,
-                'access_method': 'direct_id_lookup',
-                'security_violation': True,
-                'severity': 'CRITICAL'
-            })
             return create_error_response(403, 'Access denied: You can only access your own orders')
         
         # Log order access for comprehensive audit trail
