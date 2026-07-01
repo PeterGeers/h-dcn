@@ -41,8 +41,31 @@ export function useWebshopCart(): UseWebshopCartReturn {
       const savedOrderId = localStorage.getItem('hdcn_cart_id');
 
       if (savedOrderId) {
-        setCartId(savedOrderId);
-        return;
+        // Validate the stored order still exists and is in draft status
+        const orderResponse = await orderService.getOrder(savedOrderId);
+
+        if (orderResponse.success && orderResponse.data) {
+          const existingOrder = orderResponse.data;
+          if (existingOrder.status === 'draft') {
+            setCartId(savedOrderId);
+            setOrderVersion(existingOrder.version || 1);
+            // Restore cart items from the order
+            if (existingOrder.items && existingOrder.items.length > 0) {
+              setCartItems(existingOrder.items.map((item: any) => ({
+                product_id: item.product_id,
+                variant_id: item.variant_id || '',
+                variant_attributes: item.variant_attributes,
+                name: item.name || item.product_name || '',
+                price: Number(item.unit_price || 0),
+                quantity: item.quantity || 1,
+              })));
+            }
+            return;
+          }
+        }
+
+        // Order not found or no longer draft — clear stale reference
+        localStorage.removeItem('hdcn_cart_id');
       }
 
       const response = await orderService.createDraft({ event_id: null });

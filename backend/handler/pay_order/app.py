@@ -130,7 +130,11 @@ def lambda_handler(event, context):
 
         # Parse request body for optional payment method
         body = _parse_body(event)
-        method = body.get('method', DEFAULT_METHOD) if body else DEFAULT_METHOD
+        method = body.get('payment_method', body.get('method', DEFAULT_METHOD)) if body else DEFAULT_METHOD
+
+        # Normalize payment method name (frontend sends bank_transfer, internal uses banktransfer)
+        if method == 'bank_transfer':
+            method = 'banktransfer'
 
         if method not in SUPPORTED_METHODS:
             return create_error_response(400, f'Unsupported payment method: {method}', {

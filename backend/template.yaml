@@ -1284,7 +1284,7 @@ Resources:
           MEMBERS_TABLE_NAME: !Ref MembersTable
           PRODUCTEN_TABLE_NAME: !Ref Table
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
-          MOLLIE_WEBHOOK_URL: ""
+          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/mollie-webhook"
           PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl/booking"
       Events:
         CreatePayment:
@@ -1491,7 +1491,7 @@ Resources:
           MEMBERS_TABLE_NAME: !Ref MembersTable
           CARTS_TABLE_NAME: !Ref CartsTable
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
-          MOLLIE_WEBHOOK_URL: ""
+          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/mollie-webhook"
           MOLLIE_REDIRECT_URL: "https://portal.h-dcn.nl/webshop/payment/return"
       Events:
         CreateOrder:
@@ -1642,7 +1642,7 @@ Resources:
           PRODUCTEN_TABLE_NAME: !Ref Table
           MEMBERS_TABLE_NAME: !Ref MembersTable
           MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
-          MOLLIE_WEBHOOK_URL: ""
+          MOLLIE_WEBHOOK_URL: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/mollie-webhook"
           PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl"
       Events:
         PayOrder:

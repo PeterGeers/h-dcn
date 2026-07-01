@@ -229,6 +229,20 @@ export const orderService = {
     }
     return ApiService.get('/orders/my');
   },
+
+  getOrder: async (orderId: string) => {
+    if (!orderId || typeof orderId !== 'string') {
+      throw new Error('Invalid order ID');
+    }
+    const sanitizedOrderId = orderId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedOrderId || sanitizedOrderId !== orderId) {
+      throw new Error('Order ID contains invalid characters');
+    }
+    if (!(await ApiService.isAuthenticated())) {
+      throw new Error('Authentication required');
+    }
+    return ApiService.get(`/orders/${sanitizedOrderId}`);
+  },
 };
 
 export const memberService = {
