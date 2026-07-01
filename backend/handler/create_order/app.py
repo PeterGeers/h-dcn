@@ -315,6 +315,7 @@ def _create_draft_order(event_id, member_id, user_email, club_id, items):
         'order_id': str(uuid.uuid4()),
         'status': 'draft',
         'payment_status': 'unpaid',
+        'source_id': event_id if event_id else 'webshop',
         'member_id': member_id,
         'user_email': user_email,
         'items': items,
