@@ -30,12 +30,11 @@ import {
   AlertIcon,
   useToast,
 } from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
 import { useAdminOrders } from '../hooks/useAdminOrders';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import { updateOrderStatus } from '../services/adminApi';
 import { StatusBadge } from './StatusBadge';
-import { AdminOrder, OrderStatus } from '../types/admin.types';
+import { OrderStatus } from '../types/admin.types';
 
 export interface EventPickListProps {
   /** Event ID to filter orders for */
@@ -54,7 +53,6 @@ function formatVariantLine(item: { name: string; quantity: number; variant_attri
 }
 
 export const EventPickList: React.FC<EventPickListProps> = ({ eventId }) => {
-  const { t } = useTranslation('webshop');
   const toast = useToast();
   const { canMutate } = useAdminPermissions();
   const { orders, loading, error, refetch } = useAdminOrders(eventId);

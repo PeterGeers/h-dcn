@@ -58,7 +58,6 @@ import { StatusBadge } from './StatusBadge';
 import {
   updateOrderStatus,
   lockOrders,
-  unlockOrder,
 } from '../services/adminApi';
 import {
   AdminOrder,
@@ -119,7 +118,6 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   const shippingModal = useDisclosure();
   const [trackingNumber, setTrackingNumber] = useState('');
   const [shippingCarrier, setShippingCarrier] = useState('PostNL');
-  const [pendingTransition, setPendingTransition] = useState<AvailableTransition | null>(null);
 
   const disabledTooltip = 'Je hebt geen rechten om deze actie uit te voeren (Products_CRUD vereist)';
 
@@ -129,7 +127,6 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   const handleTransition = async (transition: AvailableTransition) => {
     // If transition requires tracking, show the modal
     if (transition.requiresTrackingNumber) {
-      setPendingTransition(transition);
       setTrackingNumber(order.tracking_number || '');
       setShippingCarrier(order.shipping_carrier || 'PostNL');
       shippingModal.onOpen();
@@ -186,7 +183,6 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       tracking_number: trackingNumber.trim(),
       shipping_carrier: shippingCarrier,
     });
-    setPendingTransition(null);
   };
 
   const handleLockAll = async () => {
