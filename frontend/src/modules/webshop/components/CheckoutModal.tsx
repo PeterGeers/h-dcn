@@ -162,8 +162,26 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       url.searchParams.delete('payment_status');
       url.searchParams.delete('order_id');
       window.history.replaceState({}, '', url.toString());
+
+      // On successful payment return, trigger the order success flow
+      if (result.status === 'success' && result.orderId) {
+        // Build minimal order data for the success overlay
+        const finalTotal = cartItems.reduce(
+          (sum, item) => sum + (Number(item.price || 0) * item.quantity), 0
+        );
+        onPaymentSuccess({
+          paymentMethodId: 'mollie',
+          amount: finalTotal,
+          shippingAddress: memberInfo ? {
+            name: memberInfo.voornaam + ' ' + memberInfo.achternaam,
+            straat: memberInfo.straat,
+            postcode: memberInfo.postcode,
+            woonplaats: memberInfo.woonplaats,
+          } : undefined,
+        });
+      }
     }
-  }, []);
+  }, [cartItems, memberInfo, onPaymentSuccess]);
 
   /**
    * Validates all item fields across all cart items that have order_item_fields defined.
