@@ -47,8 +47,10 @@ logger.setLevel(logging.INFO)
 # Environment variables
 ORDERS_TABLE = os.environ.get('ORDERS_TABLE', 'Orders')
 MEMBERS_TABLE = os.environ.get('MEMBERS_TABLE_NAME', 'Members')
-S3_BUCKET = os.environ.get('S3_BUCKET', 'my-hdcn-bucket')
+S3_BUCKET = os.environ.get('S3_BUCKET', 'h-dcn-data-506221081911')
 LOGO_S3_KEY = os.environ.get('LOGO_S3_KEY', 'imagesWebsite/hdcnFavico.png')
+# Public URL fallback for logo (WeasyPrint can fetch remote images)
+LOGO_PUBLIC_URL = 'https://h-dcn-data-506221081911.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png'
 
 
 def fetch_logo_as_data_uri(bucket: str, key: str, timeout: int = 5) -> Optional[str]:
@@ -182,19 +184,21 @@ def build_css() -> str:
             padding: 0;
         }
 
-        /* Header with logo and title */
+        /* Header with logo right-aligned */
         .header {
             margin-bottom: 24px;
+            position: relative;
         }
         .header-inner {
             display: inline-block;
             vertical-align: middle;
         }
         .logo {
-            width: 80px;
-            height: 80px;
-            vertical-align: middle;
-            margin-right: 20px;
+            width: 70px;
+            height: 70px;
+            position: absolute;
+            top: 0;
+            right: 0;
         }
         .header-title {
             font-size: 24px;
@@ -208,18 +212,28 @@ def build_css() -> str:
             margin: 0;
         }
 
-        /* Order meta info */
+        /* Order meta info — compact table layout */
         .order-meta {
             margin-bottom: 24px;
+            width: 60%;
         }
         .meta-row {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .meta-label {
             font-weight: bold;
+            display: inline-block;
+            width: 130px;
+        }
+        .meta-value {
+            display: inline-block;
         }
         .status-paid {
             color: #22C55E;
+            font-weight: bold;
+        }
+        .status-shipped {
+            color: #3B82F6;
             font-weight: bold;
         }
 
@@ -244,36 +258,18 @@ def build_css() -> str:
             width: 3%;
         }
         .address-title {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            color: #374151;
         }
         .address-line {
             margin: 0 0 4px 0;
         }
 
-        /* Delivery section */
-        .delivery {
-            margin-bottom: 24px;
-        }
-        .delivery-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 12px;
-        }
-        .delivery-row {
-            margin-bottom: 8px;
-        }
-        .delivery-label {
-            display: inline-block;
-        }
-        .delivery-cost {
-            float: right;
-        }
-
         /* Products table */
         .products-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             margin-bottom: 12px;
         }
@@ -305,13 +301,16 @@ def build_css() -> str:
             margin-bottom: 24px;
         }
         .totals-row {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .totals-label {
             display: inline-block;
+            width: 180px;
         }
         .totals-value {
-            float: right;
+            display: inline-block;
+            text-align: right;
+            width: 100px;
         }
         .totals-separator {
             border: none;
@@ -319,12 +318,17 @@ def build_css() -> str:
             margin: 8px 0;
         }
         .totals-final {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
         }
         .totals-final .totals-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
+        }
+        .totals-vat {
+            font-size: 10px;
+            color: #6B7280;
+            margin-top: 4px;
         }
     """
 
@@ -375,12 +379,8 @@ def fetch_member_preferred_language(member_id: str) -> str | None:
 
 def build_header_html(logo_data_uri: Optional[str], order_id: str,
                       formatted_date: str, customer_name: str,
-                      locale: str = 'nl') -> str:
-    """Build the header section with logo, title, and order metadata.
-
-    Matches the frontend layout: logo left, title "H-DCN Webshop" in orange,
-    subtitle (localized document title), then order meta block below.
-    """
+                      locale: str = 'nl', order_status: str = '') -> str:
+    """Build the header section with logo (top-right), title, and order metadata."""
     logo_html = ''
     if logo_data_uri is not None:
         logo_html = f'<img src="{logo_data_uri}" alt="H-DCN Logo" class="logo" />'
@@ -392,6 +392,13 @@ def build_header_html(logo_data_uri: Optional[str], order_id: str,
     status_label = get_pdf_text('status', locale)
     status_paid = get_pdf_text('status_paid', locale)
 
+    # Show order status (payment + fulfilment)
+    status_display = status_paid
+    status_class = 'status-paid'
+    if order_status in ('shipped', 'delivered', 'completed'):
+        status_display = get_pdf_text(f'status_{order_status}', locale)
+        status_class = 'status-shipped'
+
     return f'''    <div class="header">
         {logo_html}<div class="header-inner">
             <div class="header-title">H-DCN Webshop</div>
@@ -402,19 +409,19 @@ def build_header_html(logo_data_uri: Optional[str], order_id: str,
     <div class="order-meta">
         <div class="meta-row">
             <span class="meta-label">{order_number_label}:</span>
-            <span style="float: right;">{order_id}</span>
+            <span class="meta-value">{order_id}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">{order_date_label}:</span>
-            <span style="float: right;">{formatted_date}</span>
+            <span class="meta-value">{formatted_date}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">{customer_label}:</span>
-            <span style="float: right;">{customer_name}</span>
+            <span class="meta-value">{customer_name}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">{status_label}:</span>
-            <span class="status-paid" style="float: right;">{status_paid}</span>
+            <span class="meta-value {status_class}">{status_display}</span>
         </div>
     </div>'''
 
@@ -455,7 +462,7 @@ def build_addresses_html(customer_info: dict, shipping_address: Optional[dict],
     # Shipping address - fallback to customer_info
     ship = shipping_address if shipping_address else customer_info
     if ship:
-        ship_name = ship.get('name', '') or _resolve_customer_name(ship, locale)
+        ship_name = ship.get('naam', '') or ship.get('name', '') or _resolve_customer_name(customer_info, locale)
         ship_straat = ship.get('straat', '')
         ship_postcode = ship.get('postcode', '')
         ship_woonplaats = ship.get('woonplaats', '')
@@ -502,42 +509,17 @@ def format_variant_attributes(variant_attributes) -> str:
 def build_products_table_html(items: list, delivery_option,
                               delivery_cost: Optional[str],
                               locale: str = 'nl') -> str:
-    """Build product table with optional delivery section above it.
-
-    Table has light grey header (#F9FAFB), right-aligned numeric columns.
-    Delivery section appears ABOVE the products table when present.
+    """Build product table. No separate delivery section (shown in totals only).
 
     Uses unified field names with backward compatibility:
     - name (fallback: naam)
     - unit_price (fallback: price)
     - variant_attributes (fallback: selectedOption)
     """
-    shipping_label = get_pdf_text('shipping', locale)
     product_label = get_pdf_text('product', locale)
     quantity_label = get_pdf_text('quantity', locale)
     unit_price_label = get_pdf_text('unit_price', locale)
     total_label = get_pdf_text('total', locale)
-
-    # Delivery section (above the table)
-    delivery_html = ''
-    if delivery_option:
-        # delivery_option can be a string (label) or a dict with 'label'/'name' key
-        if isinstance(delivery_option, dict):
-            delivery_label = delivery_option.get('label', delivery_option.get('name', shipping_label))
-        else:
-            delivery_label = str(delivery_option) if delivery_option else shipping_label
-        delivery_cost_val = delivery_cost if delivery_cost else '0.00'
-        delivery_html = f'''    <div class="delivery">
-        <div class="delivery-title">{shipping_label}</div>
-        <div class="delivery-row">
-            <span class="delivery-label">{delivery_label}</span>
-            <span class="delivery-cost">{format_euro(delivery_cost_val, locale)}</span>
-        </div>
-    </div>
-
-    <hr class="separator" />
-
-'''
 
     # Product rows — unified field names with backward compatibility
     product_rows_html = ''
@@ -564,7 +546,7 @@ def build_products_table_html(items: list, delivery_option,
             </tr>
 '''
 
-    return f'''{delivery_html}    <div class="products-title">{get_pdf_text('ordered_products', locale)}</div>
+    return f'''    <div class="products-title">{get_pdf_text('ordered_products', locale)}</div>
     <table>
         <thead>
             <tr>
@@ -581,32 +563,63 @@ def build_products_table_html(items: list, delivery_option,
 
 
 def build_totals_html(subtotal_amount: str, delivery_cost: Optional[str],
-                      total_amount: str, locale: str = 'nl') -> str:
-    """Build totals section with subtotal, optional shipping, and bold final total.
+                      total_amount: str, items: list, locale: str = 'nl') -> str:
+    """Build totals section with subtotal, delivery, total, and VAT line.
 
-    Final total displayed as localized "Total paid:" in 18px bold, matching the frontend.
+    Subtotal is calculated from items if stored value is 0.
+    VAT line shows: "BTW (21%) inbegrepen: €X.XX"
     """
     subtotal_label = get_pdf_text('subtotal', locale)
     shipping_label = get_pdf_text('shipping', locale)
     total_paid_label = get_pdf_text('total_paid', locale)
 
+    # Calculate subtotal from items if stored value is 0 or empty
+    subtotal_val = 0.0
+    try:
+        subtotal_val = float(subtotal_amount)
+    except (TypeError, ValueError):
+        subtotal_val = 0.0
+
+    if subtotal_val == 0.0 and items:
+        # Compute from items
+        for item in items:
+            unit_price = item.get('unit_price') if item.get('unit_price') is not None else item.get('price', 0)
+            quantity = item.get('quantity', 0)
+            subtotal_val += float(quantity) * float(unit_price)
+
+    # Ensure total_amount is valid
+    total_val = 0.0
+    try:
+        total_val = float(total_amount)
+    except (TypeError, ValueError):
+        total_val = subtotal_val + float(delivery_cost or 0)
+
+    # Calculate VAT (21% included in total)
+    vat_amount = total_val / 121 * 21
+
     html = f'''    <div class="totals">
         <div class="totals-row">
             <span class="totals-label">{subtotal_label}:</span>
-            <span class="totals-value">{format_euro(subtotal_amount, locale)}</span>
+            <span class="totals-value">{format_euro(subtotal_val, locale)}</span>
         </div>
 '''
     if delivery_cost:
-        html += f'''        <div class="totals-row">
+        try:
+            dc_val = float(delivery_cost)
+        except (TypeError, ValueError):
+            dc_val = 0.0
+        if dc_val > 0:
+            html += f'''        <div class="totals-row">
             <span class="totals-label">{shipping_label}:</span>
-            <span class="totals-value">{format_euro(delivery_cost, locale)}</span>
+            <span class="totals-value">{format_euro(dc_val, locale)}</span>
         </div>
 '''
     html += f'''        <hr class="totals-separator" />
         <div class="totals-row totals-final">
             <span class="totals-label">{total_paid_label}:</span>
-            <span class="totals-value">{format_euro(total_amount, locale)}</span>
+            <span class="totals-value">{format_euro(total_val, locale)}</span>
         </div>
+        <div class="totals-vat">BTW (21%) inbegrepen: {format_euro(vat_amount, locale)}</div>
     </div>'''
 
     return html
@@ -630,7 +643,8 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     """
     # Extract data from order
     order_id = order.get('order_id', '')
-    timestamp = order.get('timestamp', '')
+    # Try multiple date fields (timestamp, created_at, submitted_at)
+    timestamp = order.get('timestamp', '') or order.get('submitted_at', '') or order.get('created_at', '')
     formatted_date = format_date_localized(timestamp, locale)
     shipping_address = order.get('shipping_address')
     items = order.get('items', [])
@@ -638,6 +652,7 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     delivery_cost = order.get('delivery_cost')
     subtotal_amount = order.get('subtotal_amount', '0.00')
     total_amount = order.get('total_amount', '0.00')
+    order_status = order.get('status', 'paid')
 
     # Build customer_info from top-level fields (new format) or legacy customer_info map
     customer_info = order.get('customer_info', {})
@@ -660,10 +675,10 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     css = build_css()
     document_title = get_pdf_text('document_title', locale)
     header_html = build_header_html(logo_data_uri, order_id, formatted_date,
-                                    customer_name, locale)
+                                    customer_name, locale, order_status)
     addresses_html = build_addresses_html(customer_info, shipping_address, locale)
     products_html = build_products_table_html(items, delivery_option, delivery_cost, locale)
-    totals_html = build_totals_html(subtotal_amount, delivery_cost, total_amount, locale)
+    totals_html = build_totals_html(subtotal_amount, delivery_cost, total_amount, items, locale)
 
     # For pickup orders, show delivery option info instead of shipping address
     delivery_opt_raw = order.get('delivery_option', '')
@@ -1201,8 +1216,11 @@ def lambda_handler(event, context):
         else:
             locale = resolve_request_locale(event)
 
-        # Fetch logo from S3 (graceful degradation: PDF still generated if logo fails)
+        # Fetch logo from S3 (fallback to public URL if S3 API fails)
         logo_data_uri = fetch_logo_as_data_uri(S3_BUCKET, LOGO_S3_KEY)
+        if not logo_data_uri:
+            # Fallback: use public HTTPS URL directly (WeasyPrint can fetch it)
+            logo_data_uri = LOGO_PUBLIC_URL
 
         # Render HTML based on document type
         if doc_type == 'packing_slip':
