@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { isDeactivated } from '../../utils/productHelpers';
 import { FilterPanel, GenericFilter } from '../../components/filters';
 import { useFilterableTable } from '../../hooks/useFilterableTable';
+import { ApiService } from '../../services/apiService';
 
 import {
   Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription,
@@ -97,6 +98,10 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     role.includes('Regional_Treasurer_')
   );
 
+  // Event-product mapping: events have product_ids[], build reverse lookup
+  const [eventProductMap, setEventProductMap] = useState<Record<string, string[]>>({});
+  const [eventNames, setEventNames] = useState<Record<string, string>>({});
+
   useEffect(() => {
     scanProducts()
       .then(res => {
@@ -105,6 +110,30 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
       .catch((error: any) => {
         alert('Fout bij laden producten: ' + (error.response?.data?.error || error.message));
         setProducts([]);
+      });
+
+    // Fetch events to build product → event(s) reverse lookup
+    ApiService.get('/events')
+      .then((res: any) => {
+        const events = res.data || res || [];
+        if (!Array.isArray(events)) return;
+        const reverseMap: Record<string, string[]> = {};
+        const names: Record<string, string> = {};
+        events.forEach((evt: any) => {
+          const eventId = evt.event_id;
+          const eventName = evt.name || evt.event_id;
+          if (eventId) names[eventId] = eventName;
+          const pids: string[] = evt.product_ids || [];
+          pids.forEach((pid: string) => {
+            if (!reverseMap[pid]) reverseMap[pid] = [];
+            reverseMap[pid].push(eventId);
+          });
+        });
+        setEventProductMap(reverseMap);
+        setEventNames(names);
+      })
+      .catch(() => {
+        // Silently fail — source column will just show empty
       });
   }, []);
 
@@ -257,21 +286,17 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   // Source/event filter state (dropdown above table)
   const [sourceFilter, setSourceFilter] = useState<string>(activeFilter);
 
-  // Build event options from product data
+  // Build event options from the event-product reverse map
   const sourceOptions = useMemo(() => {
-    const eventSet = new Set<string>();
-    products.forEach(p => {
-      const ids = (p as any).event_ids || [];
-      ids.forEach((id: string) => eventSet.add(id));
+    const opts: { value: string; label: string }[] = [];
+    // Add each event that has products
+    Object.entries(eventNames).forEach(([eventId, name]) => {
+      opts.push({ value: eventId, label: name });
     });
-    const opts = [{ value: 'evt-webshop', label: 'Webshop' }];
-    eventSet.forEach(id => {
-      if (id !== 'evt-webshop') {
-        opts.push({ value: id, label: id.slice(0, 12) + '…' });
-      }
-    });
+    // Sort alphabetically by label
+    opts.sort((a, b) => a.label.localeCompare(b.label));
     return opts;
-  }, [products]);
+  }, [eventNames]);
 
   // Prepare data for useFilterableTable: add computed display fields
   const tableData = useMemo(() => {
@@ -280,24 +305,21 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     if (!showInactive) {
       filtered = filtered.filter(p => !isDeactivated(p));
     }
-    // Apply source/event filter
+    // Apply source/event filter: only show products that belong to the selected event
     const effectiveFilter = sourceFilter || activeFilter;
-    if (effectiveFilter === 'evt-webshop' || effectiveFilter === 'webshop') {
+    if (effectiveFilter) {
       filtered = filtered.filter(p => {
-        const eventIds = (p as any).event_ids || [];
-        return eventIds.includes('evt-webshop');
-      });
-    } else if (effectiveFilter && effectiveFilter !== '') {
-      filtered = filtered.filter(p => {
-        const eventIds = (p as any).event_ids || [];
-        return eventIds.includes(effectiveFilter);
+        const pid = p.product_id || (p as any).id || '';
+        const productEvents = eventProductMap[pid] || [];
+        return productEvents.includes(effectiveFilter);
       });
     }
     // Map to records with computed display fields for column filtering
     return filtered.map(p => {
-      const eventIds = (p as any).event_ids || [];
-      const sourceDisplay = eventIds.length === 0 ? '-'
-        : eventIds.map((id: string) => id === 'evt-webshop' ? 'Webshop' : id.slice(0, 8)).join(', ');
+      const pid = p.product_id || (p as any).id || '';
+      const productEvents = eventProductMap[pid] || [];
+      const sourceDisplay = productEvents.length === 0 ? '-'
+        : productEvents.map(eid => eventNames[eid] || eid.slice(0, 8)).join(', ');
       return {
         ...p,
         _groepDisplay: `${p.groep || ''} - ${p.subgroep || ''}`,
@@ -305,7 +327,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         _sourceDisplay: sourceDisplay,
       };
     });
-  }, [products, showInactive, activeFilter, sourceFilter]);
+  }, [products, showInactive, activeFilter, sourceFilter, eventProductMap, eventNames]);
 
   const INITIAL_FILTERS = {
     artikelcode: '',
