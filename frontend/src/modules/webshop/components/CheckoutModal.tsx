@@ -147,41 +147,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [isOpen]);
 
   const checkPaymentReturn = useCallback(() => {
+    // Payment return is now handled at the WebshopPage level.
+    // If the modal opens with payment=complete params still in URL, do nothing —
+    // the page-level handler will pick them up.
     const urlParams = new URLSearchParams(window.location.search);
-    const status = urlParams.get('payment_status');
+    const paymentParam = urlParams.get('payment');
     const returnOrderId = urlParams.get('order_id');
 
-    if (status) {
-      const result = handlePaymentReturn(
-        status as any,
-        returnOrderId
-      );
+    if (paymentParam === 'complete' && returnOrderId) {
+      // Mark as payment return so modal shows appropriate state
+      const result = handlePaymentReturn('success', returnOrderId);
       setPaymentReturn(result);
-      // Clean up URL params
-      const url = new URL(window.location.href);
-      url.searchParams.delete('payment_status');
-      url.searchParams.delete('order_id');
-      window.history.replaceState({}, '', url.toString());
-
-      // On successful payment return, trigger the order success flow
-      if (result.status === 'success' && result.orderId) {
-        // Build minimal order data for the success overlay
-        const finalTotal = cartItems.reduce(
-          (sum, item) => sum + (Number(item.price || 0) * item.quantity), 0
-        );
-        onPaymentSuccess({
-          paymentMethodId: 'mollie',
-          amount: finalTotal,
-          shippingAddress: memberInfo ? {
-            name: memberInfo.voornaam + ' ' + memberInfo.achternaam,
-            straat: memberInfo.straat,
-            postcode: memberInfo.postcode,
-            woonplaats: memberInfo.woonplaats,
-          } : undefined,
-        });
-      }
     }
-  }, [cartItems, memberInfo, onPaymentSuccess]);
+  }, []);
 
   /**
    * Validates all item fields across all cart items that have order_item_fields defined.

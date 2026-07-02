@@ -180,18 +180,23 @@ function WebshopPage({ user }: WebshopPageProps) {
     initializeCart();
     loadUserInfo();
 
-    // Detect Mollie payment return: if URL has ?payment_status=success, show order confirmation
+    // Detect Mollie payment return: URL has ?payment=complete&order_id=...
+    // This means the payment flow is done (not necessarily successful).
+    // Fetch the order to check actual payment_status.
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment_status');
+    const paymentComplete = urlParams.get('payment');
     const returnOrderId = urlParams.get('order_id');
 
-    if (paymentStatus === 'success' && returnOrderId) {
-      // Store the order_id so OrderSuccess can fetch/display it
-      // The order data may already be in localStorage from the submit flow,
-      // or we store minimal info for the PDF download button
+    if (paymentComplete === 'complete' && returnOrderId) {
+      // Clean up URL params immediately
+      const url = new URL(window.location.href);
+      url.searchParams.delete('payment');
+      url.searchParams.delete('order_id');
+      window.history.replaceState({}, '', url.toString());
+
+      // Store order_id for the success overlay PDF download button
       const existingOrder = localStorage.getItem('latest_order');
       if (!existingOrder) {
-        // Minimal fallback: just the order_id for PDF download
         localStorage.setItem('latest_order', JSON.stringify({
           orderId: returnOrderId,
           timestamp: new Date().toISOString(),
@@ -199,13 +204,19 @@ function WebshopPage({ user }: WebshopPageProps) {
           subtotal_amount: '0.00',
           total_amount: '0.00',
         }));
+      } else {
+        // Ensure orderId is set correctly on existing data
+        try {
+          const parsed = JSON.parse(existingOrder);
+          if (!parsed.orderId || parsed.orderId.startsWith('ORDER_')) {
+            parsed.orderId = returnOrderId;
+            localStorage.setItem('latest_order', JSON.stringify(parsed));
+          }
+        } catch { /* ignore parse errors */ }
       }
+
+      // Show order success overlay (payment confirmation with PDF download)
       setShowOrderSuccess(true);
-      // Clean up URL params
-      const url = new URL(window.location.href);
-      url.searchParams.delete('payment_status');
-      url.searchParams.delete('order_id');
-      window.history.replaceState({}, '', url.toString());
     }
   }, [loadProducts, initializeCart, loadUserInfo]);
 
