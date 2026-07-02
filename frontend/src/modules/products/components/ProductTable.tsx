@@ -1,30 +1,117 @@
 import React from 'react';
-import { Table, Tbody, Td, Th, Thead, Tr, Box, Text, Badge } from '@chakra-ui/react';
+import { Table, Tbody, Td, Thead, Tr, Box, Text, Badge } from '@chakra-ui/react';
 import { Product } from '../../../types';
 import { useTranslation } from 'react-i18next';
 import { isDeactivated } from '../../../utils/productHelpers';
+import { FilterableHeader } from '../../../components/filters';
+import type { SortDirection } from '../../../hooks/useTableSort';
+
+export interface ProductColumnFilters {
+  artikelcode: string;
+  groep: string;
+  naam: string;
+  prijs: string;
+  status: string;
+}
 
 interface ProductTableProps {
   products: Product[];
   onSelect: (product: Product) => void;
   renderActions?: (product: Product) => React.ReactNode;
   showStatusColumn?: boolean;
+  /** Column filter values */
+  filters?: ProductColumnFilters;
+  /** Set a column filter */
+  onFilterChange?: (key: keyof ProductColumnFilters, value: string) => void;
+  /** Current sort field */
+  sortField?: string | null;
+  /** Current sort direction */
+  sortDirection?: SortDirection | null;
+  /** Sort toggle handler */
+  onSort?: (field: string) => void;
 }
 
-export default function ProductTable({ products, onSelect, renderActions, showStatusColumn }: ProductTableProps): React.ReactElement {
+export default function ProductTable({
+  products,
+  onSelect,
+  renderActions,
+  showStatusColumn,
+  filters,
+  onFilterChange,
+  sortField,
+  sortDirection,
+  onSort,
+}: ProductTableProps): React.ReactElement {
   const { t } = useTranslation('products');
+
+  const isFilterable = !!filters && !!onFilterChange;
 
   return (
     <Box overflow="auto" maxW="100%" bg="gray.800" borderRadius="md" border="1px" borderColor="orange.400">
       <Table variant="simple" colorScheme="orange" size={{ base: 'sm', md: 'md' }}>
         <Thead bg="gray.700">
           <Tr>
-            <Th color="orange.300" minW="60px">Artikelcode</Th>
-            <Th color="orange.300" minW="120px" display={{ base: 'none', md: 'table-cell' }}>Categorie</Th>
-            <Th color="orange.300" w="50%">Naam</Th>
-            <Th color="orange.300" minW="80px">Prijs</Th>
-            {showStatusColumn && <Th color="orange.300" minW="80px">Status</Th>}
-            {renderActions && <Th color="orange.300" minW="120px">{t('table.actions')}</Th>}
+            {isFilterable ? (
+              <>
+                <FilterableHeader
+                  label="Artikelcode"
+                  filterValue={filters.artikelcode}
+                  onFilterChange={(v) => onFilterChange('artikelcode', v)}
+                  sortable
+                  sortDirection={sortField === 'artikelcode' ? sortDirection : null}
+                  onSort={() => onSort?.('artikelcode')}
+                  minW="80px"
+                />
+                <FilterableHeader
+                  label="Categorie"
+                  filterValue={filters.groep}
+                  onFilterChange={(v) => onFilterChange('groep', v)}
+                  sortable
+                  sortDirection={sortField === 'groep' ? sortDirection : null}
+                  onSort={() => onSort?.('groep')}
+                  minW="120px"
+                  display={{ base: 'none', md: 'table-cell' }}
+                />
+                <FilterableHeader
+                  label="Naam"
+                  filterValue={filters.naam}
+                  onFilterChange={(v) => onFilterChange('naam', v)}
+                  sortable
+                  sortDirection={sortField === 'naam' ? sortDirection : null}
+                  onSort={() => onSort?.('naam')}
+                  minW="150px"
+                />
+                <FilterableHeader
+                  label="Prijs"
+                  filterValue={filters.prijs}
+                  onFilterChange={(v) => onFilterChange('prijs', v)}
+                  sortable
+                  sortDirection={sortField === 'prijs' ? sortDirection : null}
+                  onSort={() => onSort?.('prijs')}
+                  minW="80px"
+                />
+                {showStatusColumn && (
+                  <FilterableHeader
+                    label="Status"
+                    filterValue={filters.status}
+                    onFilterChange={(v) => onFilterChange('status', v)}
+                    sortable
+                    sortDirection={sortField === 'status' ? sortDirection : null}
+                    onSort={() => onSort?.('status')}
+                    minW="80px"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <FilterableHeader label="Artikelcode" showFilter={false} minW="60px" />
+                <FilterableHeader label="Categorie" showFilter={false} minW="120px" display={{ base: 'none', md: 'table-cell' }} />
+                <FilterableHeader label="Naam" showFilter={false} minW="150px" />
+                <FilterableHeader label="Prijs" showFilter={false} minW="80px" />
+                {showStatusColumn && <FilterableHeader label="Status" showFilter={false} minW="80px" />}
+              </>
+            )}
+            {renderActions && <FilterableHeader label={t('table.actions')} showFilter={false} minW="120px" />}
           </Tr>
         </Thead>
         <Tbody>

@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { scanProducts, updateProduct, deleteProduct, insertProduct, softDeleteProduct, hardDeleteProduct } from './api/productApi';
 import ProductTable from './components/ProductTable';
+import type { ProductColumnFilters } from './components/ProductTable';
 import ProductCard from './components/ProductCard';
 import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
 import { isActive, isDeactivated } from '../../utils/productHelpers';
-import { FilterPanel, GenericFilter } from '../../components/filters';
+import { FilterPanel } from '../../components/filters';
+import { useFilterableTable } from '../../hooks/useFilterableTable';
 
 import {
   Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription,
@@ -251,45 +253,76 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     setActionProduct(null);
   };
 
-  const [selectedGroep, setSelectedGroep] = useState<string>('');
-  const [selectedSubgroep, setSelectedSubgroep] = useState<string>('');
 
-  // Build dynamic filter options from product data
-  const { groepOptions, subgroepOptions } = useMemo(() => {
-    const groups = new Set<string>();
-    const subgroups = new Set<string>();
-    products.forEach(p => {
-      if (p.groep) groups.add(p.groep);
-      if (p.subgroep && (!selectedGroep || p.groep === selectedGroep)) {
-        subgroups.add(p.subgroep);
-      }
-    });
-    return {
-      groepOptions: Array.from(groups).sort().map(g => ({ value: g, label: g })),
-      subgroepOptions: Array.from(subgroups).sort().map(s => ({ value: s, label: s })),
-    };
-  }, [products, selectedGroep]);
-
-  const filteredProducts = products.filter((p: Product) => {
+  // Prepare data for useFilterableTable: add a combined 'groep' field for filtering
+  const tableData = useMemo(() => {
+    let filtered = products;
     // Apply active/inactive filter (default: show only active)
-    if (!showInactive && isDeactivated(p)) return false;
-
+    if (!showInactive) {
+      filtered = filtered.filter(p => !isDeactivated(p));
+    }
     // Apply event_ids filter based on the active event filter
     if (activeFilter === 'webshop') {
-      const eventIds = (p as any).event_ids || [];
-      if (!eventIds.includes('evt-webshop')) return false;
+      filtered = filtered.filter(p => {
+        const eventIds = (p as any).event_ids || [];
+        return eventIds.includes('evt-webshop');
+      });
     } else if (activeFilter && activeFilter !== '') {
-      const eventIds = (p as any).event_ids || [];
-      if (!eventIds.includes(activeFilter)) return false;
+      filtered = filtered.filter(p => {
+        const eventIds = (p as any).event_ids || [];
+        return eventIds.includes(activeFilter);
+      });
     }
+    // Map to records with a combined 'groep' field for category column filtering
+    return filtered.map(p => ({
+      ...p,
+      _groepDisplay: `${p.groep || ''} - ${p.subgroep || ''}`,
+      _statusDisplay: isDeactivated(p) ? 'inactief' : 'actief',
+    }));
+  }, [products, showInactive, activeFilter]);
 
-    // Apply group filter
-    if (selectedGroep && p.groep !== selectedGroep) return false;
-    // Apply subgroup filter
-    if (selectedSubgroep && p.subgroep !== selectedSubgroep) return false;
+  const INITIAL_FILTERS = {
+    artikelcode: '',
+    groep: '',
+    naam: '',
+    prijs: '',
+    status: '',
+  };
 
-    return true;
+  // useFilterableTable: column text filters + sort on the pre-filtered data
+  const {
+    filters,
+    setFilter,
+    resetFilters,
+    hasActiveFilters,
+    sortField,
+    sortDirection,
+    handleSort,
+    processedData,
+    filteredCount,
+  } = useFilterableTable(tableData as unknown as Record<string, unknown>[], {
+    initialFilters: INITIAL_FILTERS,
+    defaultSort: { field: 'naam', direction: 'asc' },
   });
+
+  // Cast filters to the expected shape for ProductTable
+  const columnFilters: ProductColumnFilters = filters as unknown as ProductColumnFilters;
+
+  // Custom filter: override 'groep' filter to match _groepDisplay, 'status' to match _statusDisplay
+  const filteredProducts = useMemo(() => {
+    let data = processedData as unknown as (Product & { _groepDisplay: string; _statusDisplay: string })[];
+    // Apply groep filter on the combined _groepDisplay field
+    if (columnFilters.groep) {
+      const lower = columnFilters.groep.toLowerCase();
+      data = data.filter(p => p._groepDisplay.toLowerCase().includes(lower));
+    }
+    // Apply status filter on the _statusDisplay field
+    if (columnFilters.status) {
+      const lower = columnFilters.status.toLowerCase();
+      data = data.filter(p => p._statusDisplay.toLowerCase().includes(lower));
+    }
+    return data;
+  }, [processedData, columnFilters.groep, columnFilters.status]);
 
   return (
     <>
@@ -402,48 +435,33 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         )}
 
         <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
-          <Box w={{ base: 'full', lg: '300px' }}>
+          <Box flex={1}>
             <FilterPanel
-              hasActiveFilters={!!selectedGroep || !!selectedSubgroep}
-              onReset={() => { setSelectedGroep(''); setSelectedSubgroep(''); }}
-              filteredCount={filteredProducts.length}
-              totalCount={products.length}
+              hasActiveFilters={hasActiveFilters}
+              onReset={resetFilters}
+              filteredCount={filteredCount}
+              totalCount={tableData.length}
             >
               {hasProductsFullAccess && (
                 <Button
                   leftIcon={<AddIcon />}
                   colorScheme="green"
                   size="sm"
-                  w="full"
-                  mb={3}
                   onClick={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
                 >
-                  {t('management.new_product', 'Nieuw product')}
+                  {t('management.add_product', 'Nieuw product')}
                 </Button>
               )}
-              <GenericFilter
-                label={t('management.group', 'Groep')}
-                value={selectedGroep}
-                options={groepOptions}
-                onChange={(v) => { setSelectedGroep(v); setSelectedSubgroep(''); }}
-                placeholder={t('management.all_groups', 'Alle groepen')}
-              />
-              {subgroepOptions.length > 0 && (
-                <GenericFilter
-                  label={t('management.subgroup', 'Subgroep')}
-                  value={selectedSubgroep}
-                  options={subgroepOptions}
-                  onChange={setSelectedSubgroep}
-                  placeholder={t('management.all_subgroups', 'Alle subgroepen')}
-                />
-              )}
             </FilterPanel>
-          </Box>
-          <Box flex={1}>
             <ProductTable
-              products={filteredProducts}
+              products={filteredProducts as Product[]}
               onSelect={setSelected}
               showStatusColumn={hasProductsFullAccess}
+              filters={columnFilters}
+              onFilterChange={(key, value) => setFilter(key, value)}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
               renderActions={hasProductsFullAccess ? (product: Product) => (
                 <HStack spacing={1}>
                   {isActive(product) ? (
@@ -497,7 +515,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                 key={selected.id}
                 product={selected}
                 products={products}
-                filteredProducts={filteredProducts}
+                filteredProducts={filteredProducts as Product[]}
                 onSave={() => {}} // Disabled save function
                 onDelete={() => {}} // Disabled delete function
                 onNew={() => {}} // Disabled new function
@@ -510,7 +528,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               key={selected.id}
               product={selected}
               products={products}
-              filteredProducts={filteredProducts}
+              filteredProducts={filteredProducts as Product[]}
               onSave={handleSave}
               onDelete={handleDelete}
               onNew={() => setSelected({ product_id: '', naam: '', prijs: '', groep: '', subgroep: '' })}
