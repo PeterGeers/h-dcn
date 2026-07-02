@@ -83,27 +83,14 @@ export const productService = {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    // Step 1: Get the evt-webshop event to retrieve product_ids
-    let productIds: string[] = [];
-    try {
-      const eventsResponse = await ApiService.get<any[]>('/events');
-      const events = eventsResponse.data || [];
-      const webshopEvent = events.find((e: any) => e.event_id === 'evt-webshop');
-      if (webshopEvent && Array.isArray(webshopEvent.product_ids)) {
-        productIds = webshopEvent.product_ids;
-      }
-    } catch (err) {
-      console.warn('Could not fetch webshop event, showing all products', err);
+    // Use the /products endpoint with event_id=evt-webshop
+    // This fetches only products linked to the webshop event (server-side filtering)
+    const response = await ApiService.get('/products?event_id=evt-webshop');
+    if (response.success && response.data) {
+      const products = Array.isArray(response.data) ? response.data : response.data.products || [];
+      return products.filter((p: any) => p.active !== false);
     }
-
-    // Step 2: Scan products and filter by product_ids
-    const response = await ApiService.get('/scan-product/');
-    const allProducts = response.data || [];
-    if (productIds.length > 0) {
-      return allProducts.filter((p: any) => productIds.includes(p.product_id));
-    }
-    // Fallback: if no product_ids configured, show all active products
-    return allProducts.filter((p: any) => p.active !== false);
+    return [];
   },
 
   getProducts: async (eventId?: string | null) => {
