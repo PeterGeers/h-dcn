@@ -759,6 +759,27 @@ Resources:
             Path: /scan-product/
             Method: get
 
+  # Batch-get products by explicit IDs (used by webshop + event booking via loadProductsForSource)
+  GetProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_products
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          PRODUCTEN_TABLE_NAME: !Ref Table
+      Events:
+        GetProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /products
+            Method: get
+
 
 
   # Member Management Functions
