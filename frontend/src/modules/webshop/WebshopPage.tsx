@@ -325,6 +325,7 @@ function WebshopPage({ user }: WebshopPageProps) {
           onClose={() => setIsCheckoutModalOpen(false)}
           cartItems={cartItems}
           userEmail={user?.attributes?.email || memberInfo?.email || ''}
+          memberInfo={memberInfo}
           orderId={cartId || undefined}
           onPaymentSuccess={handlePaymentSuccess}
         />

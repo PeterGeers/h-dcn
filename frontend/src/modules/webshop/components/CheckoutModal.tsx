@@ -15,6 +15,9 @@ import {
   Select,
   HStack,
   Divider,
+  Input,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
 import { RepeatIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +33,7 @@ import {
 } from '../types/unifiedProduct.types';
 import { processDeliveryOptions, getDefaultDeliveryOptions } from '../utils/deliveryOptionsProcessor';
 import { formatPrice, toPrice } from '../../../utils/formatPrice';
+import { MemberInfo } from '../hooks/useWebshopUser';
 
 interface CartItem {
   product_id?: string;
@@ -54,6 +58,7 @@ interface CheckoutModalProps {
   cartItems: CartItem[];
   onPaymentSuccess: (paymentData: any) => void;
   userEmail: string;
+  memberInfo?: MemberInfo | null;
   orderId?: string;
   /** @deprecated Use orderId instead */
   cartId?: string;
@@ -65,6 +70,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cartItems,
   onPaymentSuccess,
   userEmail,
+  memberInfo,
   orderId,
   cartId,
 }) => {
@@ -79,6 +85,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [selectedDelivery, setSelectedDelivery] = useState<string>('');
   const [conflictError, setConflictError] = useState<boolean>(false);
   const [orderNumber, setOrderNumber] = useState<string | undefined>(undefined);
+  const [shippingAddress, setShippingAddress] = useState({
+    naam: '',
+    straat: '',
+    postcode: '',
+    woonplaats: '',
+    land: 'Nederland',
+  });
   const { t } = useTranslation('webshop');
 
   // Use orderId prop, fall back to cartId for backward compat
@@ -118,6 +131,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (isOpen) {
       loadDeliveryOptions();
       checkPaymentReturn();
+      // Pre-fill shipping address from member info
+      if (memberInfo) {
+        const name = [memberInfo.voornaam, memberInfo.achternaam].filter(Boolean).join(' ');
+        setShippingAddress({
+          naam: name || memberInfo.name || '',
+          straat: memberInfo.straat || '',
+          postcode: memberInfo.postcode || '',
+          woonplaats: memberInfo.woonplaats || '',
+          land: 'Nederland',
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -189,6 +213,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const submitResponse = await orderService.submitOrder(activeOrderId, {
         delivery_option: deliveryOption?.label || '',
         delivery_cost: deliveryCost,
+        shipping_address: shippingAddress,
       });
 
       if (!submitResponse.success) {
@@ -488,6 +513,77 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </Select>
                 </Box>
               )}
+
+              {/* Shipping address */}
+              <Box>
+                <Text mb={2} fontWeight="medium">
+                  {t('checkout.shipping_address', { defaultValue: 'Afleveradres' })}:
+                </Text>
+                <VStack spacing={2}>
+                  <FormControl>
+                    <FormLabel fontSize="xs" color="gray.400" mb={0}>
+                      {t('checkout.address_name', { defaultValue: 'Naam ontvanger' })}
+                    </FormLabel>
+                    <Input
+                      size="sm"
+                      value={shippingAddress.naam}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, naam: e.target.value })}
+                      bg="white"
+                      color="black"
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel fontSize="xs" color="gray.400" mb={0}>
+                      {t('checkout.address_street', { defaultValue: 'Straat + huisnummer' })}
+                    </FormLabel>
+                    <Input
+                      size="sm"
+                      value={shippingAddress.straat}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, straat: e.target.value })}
+                      bg="white"
+                      color="black"
+                    />
+                  </FormControl>
+                  <HStack width="full">
+                    <FormControl flex="1">
+                      <FormLabel fontSize="xs" color="gray.400" mb={0}>
+                        {t('checkout.address_postcode', { defaultValue: 'Postcode' })}
+                      </FormLabel>
+                      <Input
+                        size="sm"
+                        value={shippingAddress.postcode}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, postcode: e.target.value })}
+                        bg="white"
+                        color="black"
+                      />
+                    </FormControl>
+                    <FormControl flex="2">
+                      <FormLabel fontSize="xs" color="gray.400" mb={0}>
+                        {t('checkout.address_city', { defaultValue: 'Woonplaats' })}
+                      </FormLabel>
+                      <Input
+                        size="sm"
+                        value={shippingAddress.woonplaats}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, woonplaats: e.target.value })}
+                        bg="white"
+                        color="black"
+                      />
+                    </FormControl>
+                  </HStack>
+                  <FormControl>
+                    <FormLabel fontSize="xs" color="gray.400" mb={0}>
+                      {t('checkout.address_country', { defaultValue: 'Land' })}
+                    </FormLabel>
+                    <Input
+                      size="sm"
+                      value={shippingAddress.land}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, land: e.target.value })}
+                      bg="white"
+                      color="black"
+                    />
+                  </FormControl>
+                </VStack>
+              </Box>
 
               <Divider borderColor="gray.600" />
 
