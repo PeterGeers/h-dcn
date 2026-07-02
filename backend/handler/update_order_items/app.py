@@ -469,6 +469,7 @@ def _process_items(items):
 
         processed_item = {
             'product_id': product_id,
+            'name': product.get('naam', product.get('name', '')),
             'quantity': qty,
             'unit_price': unit_price,
             'line_total': line_total,

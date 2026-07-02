@@ -195,7 +195,7 @@ export const orderService = {
     return ApiService.put(`/orders/${sanitizedOrderId}/items`, data);
   },
 
-  submitOrder: async (orderId: string) => {
+  submitOrder: async (orderId: string, data?: { delivery_option?: string; delivery_cost?: number; shipping_address?: Record<string, string> }) => {
     if (!orderId || typeof orderId !== 'string') {
       throw new Error('Invalid order ID');
     }
@@ -206,7 +206,7 @@ export const orderService = {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    return ApiService.post(`/orders/${sanitizedOrderId}/submit`, {});
+    return ApiService.post(`/orders/${sanitizedOrderId}/submit`, data || {});
   },
 
   payOrder: async (orderId: string, data: PayOrderRequest) => {

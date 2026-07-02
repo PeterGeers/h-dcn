@@ -339,10 +339,28 @@ def _handle_presmeet_payment(
 
     previous_payment_status = order.get('payment_status', 'unpaid')
 
-    # Step 5: Update order with new totals
+    # Step 5: Update order with new totals and status
     _update_order_payment_totals(order_id, total_paid, payment_status)
 
-    # Step 6: Trigger stock reservation if transitioning to "paid"
+    # Step 6: If fully paid, also transition order status to 'paid'
+    if payment_status == 'paid' and previous_payment_status != 'paid':
+        current_order_status = order.get('status', '')
+        if current_order_status in ('submitted', 'locked'):
+            try:
+                orders_table.update_item(
+                    Key={'order_id': order_id},
+                    UpdateExpression='SET #status = :paid, updated_at = :now',
+                    ExpressionAttributeNames={'#status': 'status'},
+                    ExpressionAttributeValues={
+                        ':paid': 'paid',
+                        ':now': _now_iso(),
+                    },
+                )
+                logger.info("Order %s status transitioned to 'paid'", order_id)
+            except Exception as e:
+                logger.error("Failed to transition order %s status to paid: %s", order_id, str(e))
+
+    # Step 7: Trigger stock reservation if transitioning to "paid"
     if payment_status == 'paid' and previous_payment_status != 'paid':
         _trigger_stock_reservation_with_guard(order)
 

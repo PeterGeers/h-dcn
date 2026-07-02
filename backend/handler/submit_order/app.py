@@ -92,13 +92,16 @@ def convert_decimals(obj):
 
 def _resolve_member_id(user_email, locale='nl'):
     """
-    Resolve member_id from the Members table by email scan.
+    Resolve member record from the Members table by email scan.
     Returns (member_record, error_response) tuple.
+    Fetches identity, address, and contact fields for order snapshot.
     """
     try:
         response = members_table.scan(
             FilterExpression=Attr('email').eq(user_email),
-            ProjectionExpression='member_id, registry_row_id, member_type, allowed_events'
+            ProjectionExpression='member_id, registry_row_id, member_type, allowed_events, '
+                                 'voornaam, tussenvoegsel, achternaam, email, telefoon, '
+                                 'straat, postcode, woonplaats, land'
         )
         items = response.get('Items', [])
         if not items:
@@ -585,24 +588,87 @@ def lambda_handler(event, context):
         # Generate order number
         order_number = generate_order_number(counters_table)
 
+        # Build customer name from member record
+        voornaam = member_record.get('voornaam', '')
+        tussenvoegsel = member_record.get('tussenvoegsel', '')
+        achternaam = member_record.get('achternaam', '')
+        name_parts = [voornaam, tussenvoegsel, achternaam]
+        customer_name = ' '.join(p for p in name_parts if p).strip()
+
+        # Build shipping address snapshot from member record
+        shipping_address = {
+            'naam': customer_name,
+            'straat': member_record.get('straat', ''),
+            'postcode': member_record.get('postcode', ''),
+            'woonplaats': member_record.get('woonplaats', ''),
+            'land': member_record.get('land', 'Nederland'),
+        }
+
+        # Parse optional delivery info from request body
+        body = {}
+        if event.get('body'):
+            try:
+                body = json.loads(event['body'])
+            except (json.JSONDecodeError, TypeError):
+                body = {}
+
+        # Allow shipping_address override from request body
+        if body.get('shipping_address') and isinstance(body['shipping_address'], dict):
+            override = body['shipping_address']
+            for field in ('naam', 'straat', 'postcode', 'woonplaats', 'land'):
+                if override.get(field):
+                    shipping_address[field] = override[field]
+
+        delivery_option = body.get('delivery_option', '')
+        delivery_cost = Decimal(str(body.get('delivery_cost', 0)))
+
+        # Recalculate total_amount including delivery cost
+        items_total = sum(
+            Decimal(str(item.get('line_total', 0))) for item in items
+        )
+        total_amount = items_total + delivery_cost
+
+        # Build update expression
+        update_expr = (
+            'SET #status = :submitted, submitted_at = :now, '
+            'updated_at = :now, version = :new_version, '
+            'order_number = :order_number, '
+            'customer_name = :customer_name, '
+            'customer_email = :customer_email, '
+            'shipping_address = :shipping_address, '
+            'total_amount = :total_amount'
+        )
+        expr_values = {
+            ':submitted': 'submitted',
+            ':now': now,
+            ':new_version': current_version + 1,
+            ':order_number': order_number,
+            ':customer_name': customer_name,
+            ':customer_email': user_email,
+            ':shipping_address': shipping_address,
+            ':total_amount': total_amount,
+        }
+
+        # Add optional fields
+        if member_record.get('telefoon'):
+            update_expr += ', customer_phone = :customer_phone'
+            expr_values[':customer_phone'] = member_record['telefoon']
+        if delivery_option:
+            update_expr += ', delivery_option = :delivery_option'
+            expr_values[':delivery_option'] = delivery_option
+        if delivery_cost > 0:
+            update_expr += ', delivery_cost = :delivery_cost'
+            expr_values[':delivery_cost'] = delivery_cost
+
         try:
             updated = orders_table.update_item(
                 Key={'order_id': order_id},
-                UpdateExpression=(
-                    'SET #status = :submitted, submitted_at = :now, '
-                    'updated_at = :now, version = :new_version, '
-                    'order_number = :order_number'
-                ),
+                UpdateExpression=update_expr,
                 ConditionExpression=(
                     Attr('status').eq('draft') & Attr('version').eq(current_version)
                 ),
                 ExpressionAttributeNames={'#status': 'status'},
-                ExpressionAttributeValues={
-                    ':submitted': 'submitted',
-                    ':now': now,
-                    ':new_version': current_version + 1,
-                    ':order_number': order_number,
-                },
+                ExpressionAttributeValues=expr_values,
                 ReturnValues='ALL_NEW',
             )
         except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:

@@ -186,7 +186,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     try {
       // Step 1: Submit the draft order (validates all items)
-      const submitResponse = await orderService.submitOrder(activeOrderId);
+      const submitResponse = await orderService.submitOrder(activeOrderId, {
+        delivery_option: deliveryOption?.label || '',
+        delivery_cost: deliveryCost,
+      });
 
       if (!submitResponse.success) {
         // Check for 409 Conflict (order was modified)
