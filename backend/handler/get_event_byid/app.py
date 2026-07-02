@@ -43,12 +43,15 @@ def lambda_handler(event, context):
         if auth_error:
             return auth_error
 
-        required_permissions = ['events_read']
-        is_authorized, error_response, regional_info = validate_permissions_with_regions(
-            user_roles, required_permissions, user_email, None
+        # Access: admin (events_read) OR any authenticated member (hdcnLeden/event_participant)
+        is_admin, _, _ = validate_permissions_with_regions(
+            user_roles, ['events_read'], user_email, None
         )
-        if not is_authorized:
-            return error_response
+        has_member_access = 'hdcnLeden' in user_roles
+        has_event_access = any(r in user_roles for r in ('Regio_Pressmeet', 'Regio_All', 'event_participant'))
+
+        if not is_admin and not has_member_access and not has_event_access:
+            return create_error_response(403, 'Access denied')
 
         log_successful_access(user_email, user_roles, 'get_event_byid')
 
@@ -58,7 +61,13 @@ def lambda_handler(event, context):
         if 'Item' not in response:
             return create_error_response(404, 'Event not found')
 
-        return create_success_response(convert_decimals(response['Item']))
+        event_record = response['Item']
+
+        # Non-admins can only see published events
+        if not is_admin and event_record.get('status') != 'published':
+            return create_error_response(404, 'Event not found')
+
+        return create_success_response(convert_decimals(event_record))
 
     except KeyError as e:
         return create_error_response(400, f'Missing required parameter: {str(e)}')

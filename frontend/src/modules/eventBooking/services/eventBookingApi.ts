@@ -197,30 +197,19 @@ export async function getEvent(eventType?: string): Promise<Event[]> {
 }
 
 /**
- * Get products by their IDs from the event's product_ids list.
- * Fetches all products and filters by the event's product_ids.
+ * Get products for an event source.
+ * Delegates to shared loadProductsForSource for consistent behavior.
  *
- * @param sourceId - the event_id (source_id) for context (unused in API call but kept for interface)
- * @param productIds - array of product_ids from the event record to filter by
+ * @param sourceId - the event_id (source_id)
+ * @param productIds - DEPRECATED: ignored, kept for backward compatibility. Product IDs are read from the event record.
  */
 export async function getProducts(
   sourceId: string,
   productIds?: string[]
 ): Promise<Product[]> {
-  const response = await eventBookingClient.get<Product[]>('/scan-product/');
-  let products = response.data;
-  // Filter to only active products (active !== false)
-  products = products.filter((p: any) => p.active !== false);
-  if (productIds && productIds.length > 0) {
-    products = products.filter((p) => productIds.includes(p.product_id));
-  }
-  // Normalize: ensure order_item_fields is always an array, prijs is always a number
-  return products.map((p: any) => ({
-    ...p,
-    naam: p.naam || p.product_id,
-    prijs: toPrice(p.prijs),
-    order_item_fields: p.order_item_fields || [],
-  }));
+  const { loadProductsForSource } = await import('../../../services/productLoader');
+  const products = await loadProductsForSource(sourceId);
+  return products as Product[];
 }
 
 /**

@@ -83,14 +83,8 @@ export const productService = {
     if (!(await ApiService.isAuthenticated())) {
       throw new Error('Authentication required');
     }
-    // Use the /products endpoint with event_id=evt-webshop
-    // This fetches only products linked to the webshop event (server-side filtering)
-    const response = await ApiService.get('/products?event_id=evt-webshop');
-    if (response.success && response.data) {
-      const products = Array.isArray(response.data) ? response.data : response.data.products || [];
-      return products.filter((p: any) => p.active !== false);
-    }
-    return [];
+    const { loadProductsForSource } = await import('../../../services/productLoader');
+    return loadProductsForSource('evt-webshop');
   },
 
   getProducts: async (eventId?: string | null) => {
