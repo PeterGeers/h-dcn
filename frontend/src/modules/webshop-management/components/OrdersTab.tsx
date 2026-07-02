@@ -35,10 +35,8 @@ import { StatusBadge } from './StatusBadge';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 import { EventPickList } from './EventPickList';
 import { AdminOrder } from '../types/admin.types';
-import { FilterPanel, GenericFilter, FilterableHeader } from '../../../components/filters';
+import { FilterPanel, FilterableHeader } from '../../../components/filters';
 import { useFilterableTable } from '../../../hooks/useFilterableTable';
-import type { FilterOption } from '../../../components/filters';
-import { ALL_ORDER_STATUSES, PAYMENT_STATUSES } from '../../../config/orderFields/types';
 
 export interface OrdersTabProps {
   /** Active event filter value (empty string = all, "webshop" = no event) */
@@ -53,13 +51,6 @@ const PAYMENT_STATUS_COLOR: Record<string, string> = {
   awaiting_payment: 'orange',
 };
 
-/** Filter state: dropdown filters (not column text filters) */
-interface DropdownFilters {
-  status: string;
-  payment_status: string;
-  source: string;
-}
-
 /** Column filter keys for text-based filtering */
 interface ColumnFilters {
   [key: string]: string;
@@ -67,6 +58,7 @@ interface ColumnFilters {
   customer_name: string;
   status: string;
   payment_status: string;
+  source: string;
   total_amount: string;
   created_at: string;
 }
@@ -76,6 +68,7 @@ const INITIAL_COLUMN_FILTERS: ColumnFilters = {
   customer_name: '',
   status: '',
   payment_status: '',
+  source: '',
   total_amount: '',
   created_at: '',
 };
@@ -97,59 +90,20 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
-/** Build status filter options from the field registry */
-function buildStatusOptions(): FilterOption[] {
-  return ALL_ORDER_STATUSES.map((s) => ({ value: s, label: s }));
-}
-
-function buildPaymentStatusOptions(): FilterOption[] {
-  return PAYMENT_STATUSES.map((s) => ({ value: s, label: s }));
-}
-
 export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
   const { orders, loading, error, refetch } = useAdminOrders(eventFilter);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
-  // Dropdown filters (above table)
-  const [dropdownFilters, setDropdownFilters] = useState<DropdownFilters>({
-    status: '',
-    payment_status: '',
-    source: '',
-  });
-
-  // Pick-list mode: show EventPickList when an event is selected
+  // Pick-list mode state
   const [showPickList, setShowPickList] = useState(false);
-  const selectedEventId = dropdownFilters.source && dropdownFilters.source !== 'webshop'
-    ? dropdownFilters.source
-    : null;
 
-  // Apply dropdown filters first, then pass to useFilterableTable for column filters + sort
-  const preFilteredOrders = useMemo(() => {
-    let filtered = orders;
-    if (dropdownFilters.status) {
-      filtered = filtered.filter((o) => o.status === dropdownFilters.status);
-    }
-    if (dropdownFilters.payment_status) {
-      filtered = filtered.filter((o) => o.payment_status === dropdownFilters.payment_status);
-    }
-    if (dropdownFilters.source === 'webshop') {
-      filtered = filtered.filter((o) => !o.event_id);
-    } else if (dropdownFilters.source) {
-      filtered = filtered.filter((o) => o.event_id === dropdownFilters.source);
-    }
-    return filtered;
-  }, [orders, dropdownFilters]);
-
-  // Derive unique event IDs for source filter
-  const sourceOptions = useMemo((): FilterOption[] => {
-    const events = new Set<string>();
-    orders.forEach((o) => {
-      if (o.event_id) events.add(o.event_id);
-    });
-    const opts: FilterOption[] = [{ value: 'webshop', label: 'Webshop' }];
-    events.forEach((eid) => opts.push({ value: eid, label: eid }));
-    return opts;
+  // Add a source display field to each order for column filtering
+  const ordersWithSource = useMemo(() => {
+    return orders.map(o => ({
+      ...o,
+      source: o.event_id || 'webshop',
+    }));
   }, [orders]);
 
   // Table filter framework: column text filters + sort
@@ -163,16 +117,23 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
     handleSort,
     processedData,
     filteredCount,
-  } = useFilterableTable(preFilteredOrders as unknown as Record<string, unknown>[], {
+  } = useFilterableTable(ordersWithSource as unknown as Record<string, unknown>[], {
     initialFilters: INITIAL_COLUMN_FILTERS,
     defaultSort: { field: 'created_at', direction: 'desc' },
   });
 
-  const hasDropdownFilters = dropdownFilters.status !== '' || dropdownFilters.payment_status !== '' || dropdownFilters.source !== '';
+  // Determine if current source filter selects a specific event (for pick-list)
+  const selectedEventId = useMemo(() => {
+    const sourceFilter = filters.source.trim();
+    if (!sourceFilter || sourceFilter === 'webshop') return null;
+    // Check if the filter value matches an event_id exactly
+    const matchingEvent = orders.find(o => o.event_id === sourceFilter);
+    return matchingEvent ? sourceFilter : null;
+  }, [filters.source, orders]);
 
   const handleResetAll = () => {
     resetFilters();
-    setDropdownFilters({ status: '', payment_status: '', source: '' });
+    setShowPickList(false);
   };
 
   const handleRowClick = (order: AdminOrder) => {
@@ -217,38 +178,13 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
 
   return (
     <Box>
-      {/* Dropdown FilterPanel */}
+      {/* Filter panel with reset + pick-list button */}
       <FilterPanel
-        hasActiveFilters={hasActiveFilters || hasDropdownFilters}
+        hasActiveFilters={hasActiveFilters}
         onReset={handleResetAll}
         filteredCount={filteredCount}
         totalCount={orders.length}
       >
-        <GenericFilter
-          label="Status"
-          value={dropdownFilters.status}
-          options={buildStatusOptions()}
-          onChange={(v) => setDropdownFilters((prev) => ({ ...prev, status: v }))}
-          width="180px"
-        />
-        <GenericFilter
-          label="Betaalstatus"
-          value={dropdownFilters.payment_status}
-          options={buildPaymentStatusOptions()}
-          onChange={(v) => setDropdownFilters((prev) => ({ ...prev, payment_status: v }))}
-          width="160px"
-        />
-        <GenericFilter
-          label="Bron"
-          value={dropdownFilters.source}
-          options={sourceOptions}
-          onChange={(v) => {
-            setDropdownFilters((prev) => ({ ...prev, source: v }));
-            // Reset pick-list when source changes
-            if (!v || v === 'webshop') setShowPickList(false);
-          }}
-          width="200px"
-        />
         {selectedEventId && (
           <Button
             size="sm"
@@ -307,6 +243,15 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 minW="100px"
               />
               <FilterableHeader
+                label="Bron"
+                filterValue={filters.source}
+                onFilterChange={(v) => setFilter('source', v)}
+                sortable
+                sortDirection={sortField === 'source' ? sortDirection : null}
+                onSort={() => handleSort('source')}
+                minW="100px"
+              />
+              <FilterableHeader
                 label="Totaal"
                 filterValue={filters.total_amount}
                 onFilterChange={(v) => setFilter('total_amount', v)}
@@ -357,6 +302,11 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                   >
                     {order.payment_status}
                   </Badge>
+                </Td>
+                <Td>
+                  <Text fontSize="xs" color="gray.400">
+                    {order.event_id ? order.event_id.slice(0, 8) : 'webshop'}
+                  </Text>
                 </Td>
                 <Td fontSize="sm">{formatCurrency(order.total_amount)}</Td>
                 <Td fontSize="xs">{formatDate(order.created_at)}</Td>
