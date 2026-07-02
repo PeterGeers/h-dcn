@@ -18,6 +18,8 @@ export type OrderStatus =
   | 'packed'
   | 'shipped'
   | 'delivered'
+  | 'ready_for_pickup'
+  | 'picked_up'
   | 'return_requested'
   | 'return_received'
   | 'completed';
@@ -79,18 +81,38 @@ export interface PaymentRecord {
   created_at: string;
 }
 
+export interface ShippingAddress {
+  naam?: string;
+  straat?: string;
+  postcode?: string;
+  woonplaats?: string;
+  land?: string;
+}
+
 export interface AdminOrder {
   order_id: string;
   order_number?: string;
   invoice_number?: string;
   event_id?: string | null;
+  source_id?: string;
   customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
   club_name?: string;
   status: OrderStatus;
   payment_status: 'paid' | 'partial' | 'unpaid' | 'pending' | 'awaiting_payment';
   total_amount: number;
   amount_paid: number;
   outstanding: number;
+  delivery_option?: string;
+  delivery_cost?: number;
+  shipping_address?: ShippingAddress;
+  pickup_location?: string;
+  tracking_number?: string;
+  shipping_carrier?: string;
+  shipped_at?: string;
+  picked_up_at?: string;
+  picked_up_by?: string;
   created_at: string;
   submitted_at?: string;
   items: OrderLineItem[];
@@ -129,6 +151,8 @@ export interface StockMovementsResponse {
 
 export interface UpdateOrderStatusRequest {
   target_status: OrderStatus;
+  tracking_number?: string;
+  shipping_carrier?: string;
 }
 
 export interface RecordPaymentRequest {

@@ -8,12 +8,18 @@ Provides two orthogonal state machines:
 The coupling rule (submitted→confirmed only when payment_status→paid) is
 enforced by the webhook/admin handler, not by this module.
 
+Fulfilment state machine (v2):
+- Webshop flow: draft → submitted → paid → order_received → picked → packed → shipped → delivered → completed
+- Event flow: draft → submitted → locked → paid → ready_for_pickup → picked_up → completed
+- Returns: delivered → return_requested → return_received → completed
+- Failures: submitted → payment_failed, payment_failed → submitted (retry)
+
 Legacy exports (ORDERED_STATES, SPECIAL_TRANSITIONS, is_valid_transition,
 get_next_valid_states) are preserved for backward compatibility with existing
 admin handlers.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 
 # =============================================================================
@@ -86,6 +92,139 @@ def transition_payment(current_status: str, target_status: str) -> str:
 
 
 # =============================================================================
+# Fulfilment state machine v2 — explicit transition map with actor + preconditions
+# =============================================================================
+
+# Actor types for transition validation
+ACTOR_CUSTOMER = 'customer'
+ACTOR_ADMIN = 'admin'
+ACTOR_SYSTEM = 'system'
+
+# Valid transitions: current_status → {target_status: {actors, preconditions}}
+# actors: list of actor types that may trigger this transition
+# preconditions: list of field names that must be non-empty on the order
+VALID_TRANSITIONS: Dict[str, Dict[str, Dict]] = {
+    'draft': {
+        'submitted': {'actors': [ACTOR_CUSTOMER, ACTOR_SYSTEM], 'preconditions': []},
+    },
+    'submitted': {
+        'paid': {'actors': [ACTOR_SYSTEM], 'preconditions': []},
+        'payment_failed': {'actors': [ACTOR_SYSTEM], 'preconditions': []},
+        'locked': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'locked': {
+        'submitted': {'actors': [ACTOR_ADMIN], 'preconditions': []},  # unlock
+        'paid': {'actors': [ACTOR_SYSTEM], 'preconditions': []},
+    },
+    'payment_failed': {
+        'submitted': {'actors': [ACTOR_CUSTOMER], 'preconditions': []},  # retry
+    },
+    'paid': {
+        'order_received': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+        'ready_for_pickup': {'actors': [ACTOR_ADMIN], 'preconditions': []},  # event shortcut
+    },
+    'order_received': {
+        'picked': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'picked': {
+        'packed': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'packed': {
+        'shipped': {'actors': [ACTOR_ADMIN], 'preconditions': ['tracking_number']},
+    },
+    'shipped': {
+        'delivered': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'delivered': {
+        'completed': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+        'return_requested': {'actors': [ACTOR_ADMIN, ACTOR_CUSTOMER], 'preconditions': []},
+    },
+    'return_requested': {
+        'return_received': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'return_received': {
+        'completed': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'ready_for_pickup': {
+        'picked_up': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'picked_up': {
+        'completed': {'actors': [ACTOR_ADMIN], 'preconditions': []},
+    },
+    'completed': {},
+}
+
+
+def validate_fulfilment_transition(
+    current: str,
+    target: str,
+    actor: str = ACTOR_ADMIN,
+    order: Optional[dict] = None,
+) -> Tuple[bool, Optional[str]]:
+    """
+    Validate a fulfilment status transition.
+
+    Args:
+        current: Current order status
+        target: Target order status
+        actor: Who is performing the transition (admin/customer/system)
+        order: The order dict (for precondition checks)
+
+    Returns:
+        (True, None) if transition is valid
+        (False, error_message) if transition is invalid
+    """
+    if current not in VALID_TRANSITIONS:
+        return False, f"Unknown status '{current}'. No transitions defined."
+
+    targets = VALID_TRANSITIONS[current]
+    if target not in targets:
+        allowed = list(targets.keys())
+        return False, (
+            f"Invalid transition from '{current}' to '{target}'. "
+            f"Allowed: {allowed}"
+        )
+
+    transition_config = targets[target]
+
+    # Validate actor
+    allowed_actors = transition_config.get('actors', [])
+    if actor not in allowed_actors:
+        return False, (
+            f"Actor '{actor}' is not allowed for transition "
+            f"'{current}' → '{target}'. Allowed actors: {allowed_actors}"
+        )
+
+    # Validate preconditions
+    preconditions = transition_config.get('preconditions', [])
+    if preconditions and order:
+        for field in preconditions:
+            value = order.get(field)
+            if not value:
+                return False, (
+                    f"Precondition failed: '{field}' is required for "
+                    f"transition to '{target}'."
+                )
+
+    return True, None
+
+
+def get_valid_transitions_for_actor(current: str, actor: str = ACTOR_ADMIN) -> List[str]:
+    """
+    Return all valid target statuses for the given current status and actor.
+    """
+    if current not in VALID_TRANSITIONS:
+        return []
+
+    targets = VALID_TRANSITIONS[current]
+    valid = []
+    for target, config in targets.items():
+        if actor in config.get('actors', []):
+            valid.append(target)
+    return valid
+
+
+# =============================================================================
 # Legacy state machine (backward compatibility for admin handlers)
 # =============================================================================
 
@@ -115,31 +254,30 @@ SPECIAL_TRANSITIONS: dict = {
 
 def is_valid_transition(current: str, target: str) -> bool:
     """
-    Check whether transitioning from current to target is allowed (legacy).
+    Check whether transitioning from current to target is allowed.
 
-    Rules:
-    - locked → submitted (unlock) is always valid
-    - payment_failed is a terminal state (no transitions out)
-    - Any forward skip within ORDERED_STATES is valid
-    - Special transitions define additional valid targets from specific states
-    - All other transitions are invalid
+    Uses the new VALID_TRANSITIONS map first, falls back to legacy logic
+    for backward compatibility.
     """
-    # Special case: unlock
-    if current == 'locked' and target == 'submitted':
-        return True
+    # Try new fulfilment state machine first
+    if current in VALID_TRANSITIONS:
+        targets = VALID_TRANSITIONS[current]
+        if target in targets:
+            return True
 
-    # Terminal state
+    # Legacy fallback: terminal state
     if current == 'payment_failed':
-        return False
+        # payment_failed → submitted is in VALID_TRANSITIONS already
+        return target == 'submitted'
 
-    # Check if target is reachable forward in the ordered sequence
+    # Legacy fallback: forward movement in ordered sequence
     if current in ORDERED_STATES and target in ORDERED_STATES:
         current_idx = ORDERED_STATES.index(current)
         target_idx = ORDERED_STATES.index(target)
         if target_idx > current_idx:
             return True
 
-    # Special transitions
+    # Special transitions (legacy)
     if current in SPECIAL_TRANSITIONS:
         return target in SPECIAL_TRANSITIONS[current]
 
@@ -148,8 +286,14 @@ def is_valid_transition(current: str, target: str) -> bool:
 
 def get_next_valid_states(current_status: str) -> List[str]:
     """
-    Return all states that are valid transition targets from the given state (legacy).
+    Return all states that are valid transition targets from the given state.
+    Uses the new VALID_TRANSITIONS map when available.
     """
+    # Use v2 fulfilment map
+    if current_status in VALID_TRANSITIONS:
+        return sorted(list(VALID_TRANSITIONS[current_status].keys()))
+
+    # Fallback for unknown states
     valid_states: List[str] = []
     all_possible_targets = set(ORDERED_STATES + ['payment_failed'])
 

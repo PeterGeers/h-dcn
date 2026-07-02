@@ -168,11 +168,12 @@ export const getAdminOrders = async (
 
 export const updateOrderStatus = async (
   orderId: string,
-  targetStatus: OrderStatus
+  targetStatus: OrderStatus,
+  options?: { tracking_number?: string; shipping_carrier?: string }
 ): Promise<void> => {
   await adminClient.put(
     `/admin/orders/${encodeURIComponent(orderId)}/status`,
-    { target_status: targetStatus }
+    { target_status: targetStatus, ...options }
   );
 };
 

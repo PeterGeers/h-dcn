@@ -26,6 +26,8 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
   packed: 'purple',
   shipped: 'orange',
   delivered: 'teal',
+  ready_for_pickup: 'cyan',
+  picked_up: 'green',
   return_requested: 'pink',
   return_received: 'pink',
   completed: 'green',

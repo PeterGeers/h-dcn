@@ -14,7 +14,11 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.order_state_machine import is_valid_transition
+    from shared.order_state_machine import (
+        validate_fulfilment_transition,
+        get_valid_transitions_for_actor,
+        ACTOR_ADMIN,
+    )
     from shared.stock_helpers import reserve_stock
     print("Using shared auth layer")
 except ImportError as e:
@@ -65,6 +69,10 @@ def lambda_handler(event, context):
         if not target_status:
             return create_error_response(400, 'target_status is required')
 
+        # Optional fields that can be set alongside transition
+        tracking_number = body.get('tracking_number')
+        shipping_carrier = body.get('shipping_carrier')
+
         # Get current order
         response = orders_table.get_item(Key={'order_id': order_id})
         if 'Item' not in response:
@@ -73,9 +81,26 @@ def lambda_handler(event, context):
         order = response['Item']
         current_status = order.get('status', 'draft')
 
-        # Validate state transition
-        if not is_valid_transition(current_status, target_status):
-            return create_error_response(400, f'Invalid transition from {current_status} to {target_status}')
+        # Merge tracking info into order dict for precondition checks
+        # (admin may send tracking_number in the same request as the transition)
+        order_for_validation = dict(order)
+        if tracking_number:
+            order_for_validation['tracking_number'] = tracking_number
+
+        # Validate state transition with actor + preconditions
+        is_valid, error_msg = validate_fulfilment_transition(
+            current=current_status,
+            target=target_status,
+            actor=ACTOR_ADMIN,
+            order=order_for_validation,
+        )
+        if not is_valid:
+            valid_targets = get_valid_transitions_for_actor(current_status, ACTOR_ADMIN)
+            return create_error_response(400, error_msg, {
+                'current_status': current_status,
+                'target_status': target_status,
+                'valid_transitions': valid_targets,
+            })
 
         now = datetime.now(timezone.utc).isoformat()
 
@@ -84,7 +109,8 @@ def lambda_handler(event, context):
             'from_status': current_status,
             'to_status': target_status,
             'timestamp': now,
-            'triggered_by': user_email
+            'triggered_by': user_email,
+            'source': 'admin',
         }
 
         # Reserve stock if transitioning to 'paid'
@@ -93,19 +119,48 @@ def lambda_handler(event, context):
             if order_items:
                 reserve_stock(order_items, producten_table, movements_table, order_id)
 
+        # Build update expression dynamically
+        update_parts = [
+            '#status = :target_status',
+            'updated_at = :now',
+            'status_history = list_append(if_not_exists(status_history, :empty_list), :history_entry)',
+        ]
+        expr_names = {'#status': 'status'}
+        expr_values = {
+            ':target_status': target_status,
+            ':now': now,
+            ':current_status': current_status,
+            ':history_entry': [history_entry],
+            ':empty_list': [],
+        }
+
+        # Set timestamps for specific transitions
+        if target_status == 'shipped':
+            update_parts.append('shipped_at = :shipped_at')
+            expr_values[':shipped_at'] = now
+        elif target_status == 'picked_up':
+            update_parts.append('picked_up_at = :picked_up_at')
+            expr_values[':picked_up_at'] = now
+            update_parts.append('picked_up_by = :picked_up_by')
+            expr_values[':picked_up_by'] = user_email
+
+        # Set tracking info if provided
+        if tracking_number:
+            update_parts.append('tracking_number = :tracking_number')
+            expr_values[':tracking_number'] = tracking_number
+        if shipping_carrier:
+            update_parts.append('shipping_carrier = :shipping_carrier')
+            expr_values[':shipping_carrier'] = shipping_carrier
+
+        update_expression = 'SET ' + ', '.join(update_parts)
+
         # Update order with optimistic locking on current status
         try:
             updated = orders_table.update_item(
                 Key={'order_id': order_id},
-                UpdateExpression='SET #status = :target_status, updated_at = :now, status_history = list_append(if_not_exists(status_history, :empty_list), :history_entry)',
-                ExpressionAttributeNames={'#status': 'status'},
-                ExpressionAttributeValues={
-                    ':target_status': target_status,
-                    ':now': now,
-                    ':current_status': current_status,
-                    ':history_entry': [history_entry],
-                    ':empty_list': []
-                },
+                UpdateExpression=update_expression,
+                ExpressionAttributeNames=expr_names,
+                ExpressionAttributeValues=expr_values,
                 ConditionExpression='#status = :current_status',
                 ReturnValues='ALL_NEW'
             )
