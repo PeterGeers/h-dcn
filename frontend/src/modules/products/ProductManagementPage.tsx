@@ -8,7 +8,7 @@ import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
 import { isDeactivated } from '../../utils/productHelpers';
-import { FilterPanel } from '../../components/filters';
+import { FilterPanel, GenericFilter } from '../../components/filters';
 import { useFilterableTable } from '../../hooks/useFilterableTable';
 
 import {
@@ -254,32 +254,58 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   };
 
 
-  // Prepare data for useFilterableTable: add a combined 'groep' field for filtering
+  // Source/event filter state (dropdown above table)
+  const [sourceFilter, setSourceFilter] = useState<string>(activeFilter);
+
+  // Build event options from product data
+  const sourceOptions = useMemo(() => {
+    const eventSet = new Set<string>();
+    products.forEach(p => {
+      const ids = (p as any).event_ids || [];
+      ids.forEach((id: string) => eventSet.add(id));
+    });
+    const opts = [{ value: 'evt-webshop', label: 'Webshop' }];
+    eventSet.forEach(id => {
+      if (id !== 'evt-webshop') {
+        opts.push({ value: id, label: id.slice(0, 12) + '…' });
+      }
+    });
+    return opts;
+  }, [products]);
+
+  // Prepare data for useFilterableTable: add computed display fields
   const tableData = useMemo(() => {
     let filtered = products;
     // Apply active/inactive filter (default: show only active)
     if (!showInactive) {
       filtered = filtered.filter(p => !isDeactivated(p));
     }
-    // Apply event_ids filter based on the active event filter
-    if (activeFilter === 'webshop') {
+    // Apply source/event filter
+    const effectiveFilter = sourceFilter || activeFilter;
+    if (effectiveFilter === 'evt-webshop' || effectiveFilter === 'webshop') {
       filtered = filtered.filter(p => {
         const eventIds = (p as any).event_ids || [];
         return eventIds.includes('evt-webshop');
       });
-    } else if (activeFilter && activeFilter !== '') {
+    } else if (effectiveFilter && effectiveFilter !== '') {
       filtered = filtered.filter(p => {
         const eventIds = (p as any).event_ids || [];
-        return eventIds.includes(activeFilter);
+        return eventIds.includes(effectiveFilter);
       });
     }
-    // Map to records with a combined 'groep' field for category column filtering
-    return filtered.map(p => ({
-      ...p,
-      _groepDisplay: `${p.groep || ''} - ${p.subgroep || ''}`,
-      _statusDisplay: isDeactivated(p) ? 'inactief' : 'actief',
-    }));
-  }, [products, showInactive, activeFilter]);
+    // Map to records with computed display fields for column filtering
+    return filtered.map(p => {
+      const eventIds = (p as any).event_ids || [];
+      const sourceDisplay = eventIds.length === 0 ? '-'
+        : eventIds.map((id: string) => id === 'evt-webshop' ? 'Webshop' : id.slice(0, 8)).join(', ');
+      return {
+        ...p,
+        _groepDisplay: `${p.groep || ''} - ${p.subgroep || ''}`,
+        _statusDisplay: isDeactivated(p) ? 'inactief' : 'actief',
+        _sourceDisplay: sourceDisplay,
+      };
+    });
+  }, [products, showInactive, activeFilter, sourceFilter]);
 
   const INITIAL_FILTERS = {
     artikelcode: '',
@@ -287,6 +313,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
     naam: '',
     prijs: '',
     status: '',
+    source: '',
   };
 
   // useFilterableTable: column text filters + sort on the pre-filtered data
@@ -310,7 +337,7 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
 
   // Custom filter: override 'groep' filter to match _groepDisplay, 'status' to match _statusDisplay
   const filteredProducts = useMemo(() => {
-    let data = processedData as unknown as (Product & { _groepDisplay: string; _statusDisplay: string })[];
+    let data = processedData as unknown as (Product & { _groepDisplay: string; _statusDisplay: string; _sourceDisplay: string })[];
     // Apply groep filter on the combined _groepDisplay field
     if (columnFilters.groep) {
       const lower = columnFilters.groep.toLowerCase();
@@ -321,8 +348,13 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
       const lower = columnFilters.status.toLowerCase();
       data = data.filter(p => p._statusDisplay.toLowerCase().includes(lower));
     }
+    // Apply source filter on the _sourceDisplay field
+    if (columnFilters.source) {
+      const lower = columnFilters.source.toLowerCase();
+      data = data.filter(p => p._sourceDisplay.toLowerCase().includes(lower));
+    }
     return data;
-  }, [processedData, columnFilters.groep, columnFilters.status]);
+  }, [processedData, columnFilters.groep, columnFilters.status, columnFilters.source]);
 
   return (
     <>
@@ -437,11 +469,19 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
         <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
           <Box flex={1}>
             <FilterPanel
-              hasActiveFilters={hasActiveFilters}
-              onReset={resetFilters}
+              hasActiveFilters={hasActiveFilters || !!sourceFilter}
+              onReset={() => { resetFilters(); setSourceFilter(''); }}
               filteredCount={filteredCount}
               totalCount={tableData.length}
             >
+              <GenericFilter
+                label="Bron / Event"
+                value={sourceFilter}
+                options={sourceOptions}
+                onChange={(v) => setSourceFilter(v)}
+                placeholder="Alle bronnen"
+                width="180px"
+              />
               {hasProductsFullAccess && (
                 <Button
                   leftIcon={<AddIcon />}

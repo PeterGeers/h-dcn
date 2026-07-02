@@ -12,6 +12,7 @@ export interface ProductColumnFilters {
   naam: string;
   prijs: string;
   status: string;
+  source: string;
 }
 
 interface ProductTableProps {
@@ -101,6 +102,15 @@ export default function ProductTable({
                     minW="80px"
                   />
                 )}
+                <FilterableHeader
+                  label="Bron"
+                  filterValue={filters.source}
+                  onFilterChange={(v) => onFilterChange('source', v)}
+                  sortable
+                  sortDirection={sortField === 'source' ? sortDirection : null}
+                  onSort={() => onSort?.('source')}
+                  minW="100px"
+                />
               </>
             ) : (
               <>
@@ -109,6 +119,7 @@ export default function ProductTable({
                 <FilterableHeader label="Naam" showFilter={false} minW="150px" />
                 <FilterableHeader label="Prijs" showFilter={false} minW="80px" />
                 {showStatusColumn && <FilterableHeader label="Status" showFilter={false} minW="80px" />}
+                <FilterableHeader label="Bron" showFilter={false} minW="100px" />
               </>
             )}
             {renderActions && <FilterableHeader label={t('table.actions')} showFilter={false} minW="120px" />}
@@ -140,6 +151,11 @@ export default function ProductTable({
                   )}
                 </Td>
               )}
+              <Td fontSize={{ base: 'xs', md: 'sm' }}>
+                <Text isTruncated maxW="100px" color="gray.400">
+                  {((p as any)._sourceDisplay) || ((p as any).event_ids || []).map((id: string) => id === 'evt-webshop' ? 'Webshop' : id.slice(0, 8)).join(', ') || '-'}
+                </Text>
+              </Td>
               {renderActions && (
                 <Td onClick={(e) => e.stopPropagation()}>
                   {renderActions(p)}
