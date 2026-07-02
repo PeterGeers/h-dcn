@@ -179,6 +179,34 @@ function WebshopPage({ user }: WebshopPageProps) {
     loadProducts();
     initializeCart();
     loadUserInfo();
+
+    // Detect Mollie payment return: if URL has ?payment_status=success, show order confirmation
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment_status');
+    const returnOrderId = urlParams.get('order_id');
+
+    if (paymentStatus === 'success' && returnOrderId) {
+      // Store the order_id so OrderSuccess can fetch/display it
+      // The order data may already be in localStorage from the submit flow,
+      // or we store minimal info for the PDF download button
+      const existingOrder = localStorage.getItem('latest_order');
+      if (!existingOrder) {
+        // Minimal fallback: just the order_id for PDF download
+        localStorage.setItem('latest_order', JSON.stringify({
+          orderId: returnOrderId,
+          timestamp: new Date().toISOString(),
+          items: [],
+          subtotal_amount: '0.00',
+          total_amount: '0.00',
+        }));
+      }
+      setShowOrderSuccess(true);
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.searchParams.delete('payment_status');
+      url.searchParams.delete('order_id');
+      window.history.replaceState({}, '', url.toString());
+    }
   }, [loadProducts, initializeCart, loadUserInfo]);
 
   if (loading) {
