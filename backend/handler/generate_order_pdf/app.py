@@ -39,7 +39,7 @@ from shared.i18n.pdf_translations import (
     format_date_for_locale,
     format_currency_for_locale,
 )
-from shared.i18n.locale_resolver import resolve_member_locale
+from shared.i18n.locale_resolver import resolve_member_locale, resolve_request_locale
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -632,13 +632,27 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     order_id = order.get('order_id', '')
     timestamp = order.get('timestamp', '')
     formatted_date = format_date_localized(timestamp, locale)
-    customer_info = order.get('customer_info', {})
     shipping_address = order.get('shipping_address')
     items = order.get('items', [])
     delivery_option = order.get('delivery_option')
     delivery_cost = order.get('delivery_cost')
     subtotal_amount = order.get('subtotal_amount', '0.00')
     total_amount = order.get('total_amount', '0.00')
+
+    # Build customer_info from top-level fields (new format) or legacy customer_info map
+    customer_info = order.get('customer_info', {})
+    if not customer_info or not customer_info.get('name', ''):
+        # Build from top-level order fields (Fase 1 format)
+        customer_info = {
+            'name': order.get('customer_name', ''),
+            'email': order.get('customer_email', order.get('user_email', '')),
+            'phone': order.get('customer_phone', ''),
+        }
+        # Also pull address fields from shipping_address for billing display
+        if shipping_address and isinstance(shipping_address, dict):
+            customer_info['straat'] = shipping_address.get('straat', '')
+            customer_info['postcode'] = shipping_address.get('postcode', '')
+            customer_info['woonplaats'] = shipping_address.get('woonplaats', '')
 
     customer_name = _resolve_customer_name(customer_info, locale)
 
@@ -1177,10 +1191,13 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'generate_order_pdf', {'order_id': order_id, 'doc_type': doc_type})
 
-        # Resolve locale from member's preferred_language
+        # Resolve locale: member preference > Accept-Language header > default (nl)
         member_id = order.get('member_id', '')
         preferred_language = fetch_member_preferred_language(member_id) if member_id else None
-        locale = resolve_member_locale(preferred_language)
+        if preferred_language:
+            locale = resolve_member_locale(preferred_language)
+        else:
+            locale = resolve_request_locale(event)
 
         # Fetch logo from S3 (graceful degradation: PDF still generated if logo fails)
         logo_data_uri = fetch_logo_as_data_uri(S3_BUCKET, LOGO_S3_KEY)

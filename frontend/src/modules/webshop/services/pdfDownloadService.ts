@@ -98,6 +98,7 @@ async function downloadOrderDocument(
       headers: {
         ...headers,
         'Accept': 'application/pdf',
+        'Accept-Language': i18next.language || navigator.language || 'nl',
       },
       signal: controller.signal,
     });
