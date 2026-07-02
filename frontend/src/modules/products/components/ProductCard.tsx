@@ -61,12 +61,15 @@ interface ProductCardProps {
   onClose: () => void;
   filteredProducts: Product[];
   readOnly?: boolean;
+  onDeactivate?: (product: Product) => void;
+  onActivate?: (product: Product) => void;
+  onHardDelete?: (product: Product) => void;
 }
 
 // Required fields for parent products — computed once outside the component.
 const requiredParentFields = getRequiredFields('parent');
 
-export default function ProductCard({ product, products, onSave, onDelete, onNew, onCopy, onClose, filteredProducts, readOnly = false }: ProductCardProps) {
+export default function ProductCard({ product, products, onSave, onDelete, onNew, onCopy, onClose, filteredProducts, readOnly = false, onDeactivate, onActivate, onHardDelete }: ProductCardProps) {
   const { t } = useTranslation('products');
 
   // Validation schema derived from the productFields registry.
@@ -415,6 +418,9 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
                 onDelete={onDelete}
                 onNew={onNew}
                 onCopy={onCopy}
+                onDeactivate={onDeactivate}
+                onActivate={onActivate}
+                onHardDelete={onHardDelete}
               />
             </VStack>
           </Form>

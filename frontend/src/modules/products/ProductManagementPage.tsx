@@ -7,18 +7,18 @@ import { Product } from '../../types';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
-import { isActive, isDeactivated } from '../../utils/productHelpers';
+import { isDeactivated } from '../../utils/productHelpers';
 import { FilterPanel } from '../../components/filters';
 import { useFilterableTable } from '../../hooks/useFilterableTable';
 
 import {
   Button, Box, HStack, Stack, Alert, AlertIcon, AlertTitle, AlertDescription,
-  Text, VStack, Heading, Switch, FormControl, FormLabel, IconButton, Tooltip,
+  Text, VStack, Heading, Switch, FormControl, FormLabel,
   useDisclosure, useToast,
   AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader,
   AlertDialogContent, AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { DeleteIcon, NotAllowedIcon, CheckIcon, AddIcon } from '@chakra-ui/icons';
+import { AddIcon } from '@chakra-ui/icons';
 
 interface User {
   attributes?: {
@@ -462,43 +462,6 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               sortField={sortField}
               sortDirection={sortDirection}
               onSort={handleSort}
-              renderActions={hasProductsFullAccess ? (product: Product) => (
-                <HStack spacing={1}>
-                  {isActive(product) ? (
-                    <Tooltip label={t('management.deactivate')}>
-                      <IconButton
-                        aria-label={t('management.deactivate')}
-                        icon={<NotAllowedIcon />}
-                        size="xs"
-                        colorScheme="yellow"
-                        variant="ghost"
-                        onClick={() => handleDeactivateClick(product)}
-                      />
-                    </Tooltip>
-                  ) : (
-                    <Tooltip label={t('management.activate')}>
-                      <IconButton
-                        aria-label={t('management.activate')}
-                        icon={<CheckIcon />}
-                        size="xs"
-                        colorScheme="green"
-                        variant="ghost"
-                        onClick={() => handleActivate(product)}
-                      />
-                    </Tooltip>
-                  )}
-                  <Tooltip label={t('management.hard_delete')}>
-                    <IconButton
-                      aria-label={t('management.hard_delete')}
-                      icon={<DeleteIcon />}
-                      size="xs"
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => handleHardDeleteClick(product)}
-                    />
-                  </Tooltip>
-                </HStack>
-              ) : undefined}
             />
           </Box>
         </Stack>
@@ -542,6 +505,9 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
               }}
               onClose={() => setSelected(null)}
               readOnly={false}
+              onDeactivate={handleDeactivateClick}
+              onActivate={handleActivate}
+              onHardDelete={handleHardDeleteClick}
             />
           </FunctionGuard>
         )}
