@@ -643,9 +643,9 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     """
     # Extract data from order
     order_id = order.get('order_id', '')
-    # Try multiple date fields (timestamp, created_at, submitted_at)
-    timestamp = order.get('timestamp', '') or order.get('submitted_at', '') or order.get('created_at', '')
-    formatted_date = format_date_localized(timestamp, locale)
+    # Order date = submitted_at (when order was placed). Fallback: created_at.
+    order_date = order.get('submitted_at', '') or order.get('created_at', '')
+    formatted_date = format_date_localized(order_date, locale)
     shipping_address = order.get('shipping_address')
     items = order.get('items', [])
     delivery_option = order.get('delivery_option')
@@ -867,8 +867,8 @@ def render_packing_slip_html(order: dict, logo_data_uri: Optional[str] = None,
         Complete HTML string ready for WeasyPrint rendering.
     """
     order_id = order.get('order_id', '')
-    timestamp = order.get('timestamp', '')
-    formatted_date = format_date_localized(timestamp, locale)
+    order_date = order.get('submitted_at', '') or order.get('created_at', '')
+    formatted_date = format_date_localized(order_date, locale)
 
     # Determine if this is a pickup or shipping order based on delivery_option
     delivery_option_val = order.get('delivery_option', '')
