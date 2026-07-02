@@ -26,6 +26,25 @@ except ImportError as e:
 dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('ORDERS_TABLE_NAME', 'Orders')
 table = dynamodb.Table(table_name)
+payments_table = dynamodb.Table(os.environ.get('PAYMENTS_TABLE_NAME', 'Payments'))
+
+
+def _decimal_default(obj):
+    """JSON serializer for Decimal types."""
+    if isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _enrich_order(order):
+    """Add computed fields (amount_paid, outstanding) for frontend compatibility."""
+    total_amount = float(order.get('total_amount', 0) or 0)
+    total_paid = float(order.get('total_paid', 0) or 0)
+    order['amount_paid'] = total_paid
+    order['outstanding'] = max(0, total_amount - total_paid)
+    return order
 
 
 def lambda_handler(event, context):
@@ -52,10 +71,11 @@ def lambda_handler(event, context):
         query_params = event.get('queryStringParameters') or {}
         event_id_filter = query_params.get('event_id')
         status_filter = query_params.get('status')
+        payment_status_filter = query_params.get('payment_status')
 
         # Build filter expression
         filter_conditions = []
-        if event_id_filter == 'null':
+        if event_id_filter == 'null' or event_id_filter == 'webshop':
             filter_conditions.append(
                 boto3.dynamodb.conditions.Attr('event_id').not_exists()
                 | boto3.dynamodb.conditions.Attr('event_id').eq(None)
@@ -64,6 +84,13 @@ def lambda_handler(event, context):
             filter_conditions.append(boto3.dynamodb.conditions.Attr('event_id').eq(event_id_filter))
         if status_filter:
             filter_conditions.append(boto3.dynamodb.conditions.Attr('status').eq(status_filter))
+        if payment_status_filter:
+            filter_conditions.append(boto3.dynamodb.conditions.Attr('payment_status').eq(payment_status_filter))
+
+        # Exclude draft orders from admin view (they are just carts)
+        filter_conditions.append(
+            boto3.dynamodb.conditions.Attr('status').ne('draft')
+        )
 
         # Combine filter conditions
         scan_kwargs = {}
@@ -83,10 +110,16 @@ def lambda_handler(event, context):
             response = table.scan(**scan_kwargs)
             orders.extend(response.get('Items', []))
 
+        # Enrich orders with computed fields
+        enriched_orders = [_enrich_order(order) for order in orders]
+
+        # Sort by created_at descending (newest first)
+        enriched_orders.sort(key=lambda o: o.get('created_at', ''), reverse=True)
+
         return {
             'statusCode': 200,
             'headers': cors_headers(),
-            'body': json.dumps({'orders': orders, 'total_count': len(orders)}, default=str)
+            'body': json.dumps({'orders': enriched_orders, 'total_count': len(enriched_orders)}, default=_decimal_default)
         }
 
     except Exception as e:

@@ -2477,6 +2477,7 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE_NAME: !Ref OrdersTable
+          PAYMENTS_TABLE_NAME: !Ref PaymentsTable
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
       Events:
         AdminGetOrders:
