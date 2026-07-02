@@ -499,7 +499,7 @@ def format_variant_attributes(variant_attributes) -> str:
     return ', '.join(parts) if parts else '-'
 
 
-def build_products_table_html(items: list, delivery_option: Optional[dict],
+def build_products_table_html(items: list, delivery_option,
                               delivery_cost: Optional[str],
                               locale: str = 'nl') -> str:
     """Build product table with optional delivery section above it.
@@ -521,7 +521,11 @@ def build_products_table_html(items: list, delivery_option: Optional[dict],
     # Delivery section (above the table)
     delivery_html = ''
     if delivery_option:
-        delivery_label = delivery_option.get('label', shipping_label)
+        # delivery_option can be a string (label) or a dict with 'label'/'name' key
+        if isinstance(delivery_option, dict):
+            delivery_label = delivery_option.get('label', delivery_option.get('name', shipping_label))
+        else:
+            delivery_label = str(delivery_option) if delivery_option else shipping_label
         delivery_cost_val = delivery_cost if delivery_cost else '0.00'
         delivery_html = f'''    <div class="delivery">
         <div class="delivery-title">{shipping_label}</div>
