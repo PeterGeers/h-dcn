@@ -8,7 +8,7 @@
  * Validates: Requirements 5.1, 5.2
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Stat,
@@ -81,7 +81,7 @@ const INITIAL_FILTERS: ColumnFilters = {
 };
 
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) => {
-  const { aggregates, orderPayments, loading, error, recordPayment, refetch } =
+  const { aggregates, orderPayments, loading, error, recordPayment } =
     useAdminPayments(eventFilter);
   const { canMutate } = useAdminPermissions();
   const { isOpen, onOpen, onClose } = useDisclosure();
