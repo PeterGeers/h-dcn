@@ -2,6 +2,7 @@ import json
 import os
 import boto3
 from datetime import datetime
+from decimal import Decimal
 
 # Import from shared auth layer (REQUIRED)
 try:
@@ -14,7 +15,7 @@ try:
         create_success_response,
         log_successful_access
     )
-    print("Using shared auth layer")
+    print("Using shared auth layer for get_order_byid")
 except ImportError as e:
     # Built-in smart fallback - no local auth_fallback.py needed
     print(f"⚠️ Shared auth unavailable: {str(e)}")
@@ -26,6 +27,17 @@ except ImportError as e:
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ.get('ORDERS_TABLE_NAME', 'Orders'))
+
+
+def _convert_decimals(obj):
+    """Recursively convert Decimal to int/float for JSON serialization."""
+    if isinstance(obj, list):
+        return [_convert_decimals(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: _convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    return obj
 
 def log_order_audit(event_type, order_id, user_email, user_roles, additional_data=None):
     """
@@ -86,7 +98,7 @@ def lambda_handler(event, context):
         # Handle OPTIONS request
         if event.get('httpMethod') == 'OPTIONS':
             return handle_options_request()
-        
+
         # Extract user credentials
         user_email, user_roles, auth_error = extract_user_credentials(event)
         if auth_error:
@@ -132,7 +144,7 @@ def lambda_handler(event, context):
             'admin_roles': [role for role in user_roles if role in ['Members_CRUD', 'Webshop_Management']] if has_admin_role else []
         })
         
-        return create_success_response(order)
+        return create_success_response(_convert_decimals(order))
         
     except KeyError as e:
         return create_error_response(400, f'Missing required parameter: {str(e)}')
