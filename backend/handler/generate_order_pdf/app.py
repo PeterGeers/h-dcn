@@ -1191,10 +1191,12 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'generate_order_pdf', {'order_id': order_id, 'doc_type': doc_type})
 
-        # Resolve locale: member preference > Accept-Language header > default (nl)
-        member_id = order.get('member_id', '')
-        preferred_language = fetch_member_preferred_language(member_id) if member_id else None
-        if preferred_language:
+        # Resolve locale based on who is requesting:
+        # - Owner (end-user): use member's preferred_language (their language)
+        # - Admin: use Accept-Language header (admin's portal language)
+        if is_owner:
+            member_id = order.get('member_id', '')
+            preferred_language = fetch_member_preferred_language(member_id) if member_id else None
             locale = resolve_member_locale(preferred_language)
         else:
             locale = resolve_request_locale(event)
