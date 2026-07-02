@@ -31,6 +31,8 @@ import { RecordPaymentRequest } from '../types/admin.types';
 
 interface PaymentRecordFormProps {
   onSubmit: (data: RecordPaymentRequest) => Promise<void>;
+  /** Pre-filled order ID (when opened from payment modal) */
+  orderId?: string;
 }
 
 interface PaymentFormValues {
@@ -40,16 +42,16 @@ interface PaymentFormValues {
   description: string;
 }
 
-const initialValues: PaymentFormValues = {
-  order_id: '',
-  amount: '',
-  date: new Date().toISOString().split('T')[0],
-  description: '',
-};
-
-export const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({ onSubmit }) => {
+export const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({ onSubmit, orderId }) => {
   const { t } = useTranslation('webshop');
   const toast = useToast();
+
+  const formInitialValues: PaymentFormValues = {
+    order_id: orderId || '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+  };
 
   const validationSchema = Yup.object().shape({
     order_id: Yup.string().required(() => getValidationMessage(t, 'required', { field: t('payment_record.order_id_label', { defaultValue: 'Bestelling ID' }) })),
@@ -107,31 +109,33 @@ export const PaymentRecordForm: React.FC<PaymentRecordFormProps> = ({ onSubmit }
         Betaling registreren
       </Text>
       <Formik
-        initialValues={initialValues}
+        initialValues={formInitialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
         {({ isSubmitting, errors, touched }) => (
           <Form>
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3} mb={3}>
-              {/* Order ID */}
-              <Field name="order_id">
-                {({ field, meta }: FieldProps) => (
-                  <FormControl isInvalid={!!(meta.touched && meta.error)}>
-                    <FormLabel color="gray.300" fontSize="sm">
-                      Bestelling ID
-                    </FormLabel>
-                    <Input
-                      {...field}
-                      placeholder="order-id..."
-                      bg="gray.600"
-                      color="white"
-                      size="sm"
-                    />
-                    <FormErrorMessage>{meta.error}</FormErrorMessage>
-                  </FormControl>
-                )}
-              </Field>
+            <SimpleGrid columns={{ base: 1, md: orderId ? 3 : 2, lg: orderId ? 3 : 4 }} spacing={3} mb={3}>
+              {/* Order ID — only show if not pre-filled */}
+              {!orderId && (
+                <Field name="order_id">
+                  {({ field, meta }: FieldProps) => (
+                    <FormControl isInvalid={!!(meta.touched && meta.error)}>
+                      <FormLabel color="gray.300" fontSize="sm">
+                        Bestelling ID
+                      </FormLabel>
+                      <Input
+                        {...field}
+                        placeholder="order-id..."
+                        bg="gray.600"
+                        color="white"
+                        size="sm"
+                      />
+                      <FormErrorMessage>{meta.error}</FormErrorMessage>
+                    </FormControl>
+                  )}
+                </Field>
+              )}
 
               {/* Amount */}
               <Field name="amount">

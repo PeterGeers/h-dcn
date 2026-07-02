@@ -1,13 +1,14 @@
 /**
- * PaymentsTab — Displays payment aggregates and order payment list.
+ * PaymentsTab — Displays payment aggregates and filterable order payment list.
  *
  * Top section: Aggregate stats cards (Total Charged, Total Paid, Total Outstanding)
- * Bottom section: Order payment list table with payment status badges
+ * Bottom section: Filterable/sortable table using Table Filter Framework.
+ * Click on row → opens PaymentDetailModal for viewing/recording payments.
  *
  * Validates: Requirements 5.1, 5.2
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Stat,
@@ -19,17 +20,27 @@ import {
   Thead,
   Tbody,
   Tr,
-  Th,
   Td,
   Badge,
   Spinner,
   Alert,
   AlertIcon,
   Text,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Divider,
+  VStack,
 } from '@chakra-ui/react';
-import { useAdminPayments } from '../hooks/useAdminPayments';
+import { useAdminPayments, OrderPaymentSummary } from '../hooks/useAdminPayments';
 import { PaymentRecordForm } from './PaymentRecordForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
+import { FilterPanel, FilterableHeader } from '../../../components/filters';
+import { useFilterableTable } from '../../../hooks/useFilterableTable';
 
 interface PaymentsTabProps {
   eventFilter?: string;
@@ -52,10 +63,60 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
+interface ColumnFilters {
+  [key: string]: string;
+  customer: string;
+  total: string;
+  paid: string;
+  outstanding: string;
+  payment_status: string;
+}
+
+const INITIAL_FILTERS: ColumnFilters = {
+  customer: '',
+  total: '',
+  paid: '',
+  outstanding: '',
+  payment_status: '',
+};
+
 export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) => {
-  const { aggregates, orderPayments, loading, error, recordPayment } =
+  const { aggregates, orderPayments, loading, error, recordPayment, refetch } =
     useAdminPayments(eventFilter);
   const { canMutate } = useAdminPermissions();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedPayment, setSelectedPayment] = useState<OrderPaymentSummary | null>(null);
+
+  // useFilterableTable for column text filters + sort
+  const {
+    filters,
+    setFilter,
+    resetFilters,
+    hasActiveFilters,
+    sortField,
+    sortDirection,
+    handleSort,
+    processedData,
+    filteredCount,
+  } = useFilterableTable(orderPayments as unknown as Record<string, unknown>[], {
+    initialFilters: INITIAL_FILTERS,
+    defaultSort: { field: 'customer', direction: 'asc' },
+  });
+
+  const handleRowClick = (payment: OrderPaymentSummary) => {
+    setSelectedPayment(payment);
+    onOpen();
+  };
+
+  const handleModalClose = () => {
+    setSelectedPayment(null);
+    onClose();
+  };
+
+  const handlePaymentRecorded = async (data: any) => {
+    await recordPayment(data);
+    handleModalClose();
+  };
 
   if (loading) {
     return (
@@ -95,44 +156,83 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
         </Stat>
       </SimpleGrid>
 
-      {/* Manual Payment Recording Form */}
-      {canMutate && <PaymentRecordForm onSubmit={recordPayment} />}
+      {/* Filter panel */}
+      <FilterPanel
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        filteredCount={filteredCount}
+        totalCount={orderPayments.length}
+      >
+        <></>
+      </FilterPanel>
 
-      {/* Order Payment List */}
-      <Box bg="gray.800" borderRadius="md" overflowX="auto" mt={6}>
-        <Text fontSize="lg" fontWeight="bold" color="white" p={4} pb={2}>
-          Betalingen per bestelling
-        </Text>
+      {/* Filterable Payment List */}
+      <Box bg="gray.800" borderRadius="md" overflowX="auto">
         <Table variant="simple" size="sm">
           <Thead>
             <Tr>
-              <Th color="gray.400">Bestelling ID</Th>
-              <Th color="gray.400">Event</Th>
-              <Th color="gray.400">Klant</Th>
-              <Th color="gray.400" isNumeric>Totaal</Th>
-              <Th color="gray.400" isNumeric>Betaald</Th>
-              <Th color="gray.400" isNumeric>Openstaand</Th>
-              <Th color="gray.400">Status</Th>
+              <FilterableHeader
+                label="Klant"
+                filterValue={filters.customer}
+                onFilterChange={(v) => setFilter('customer', v)}
+                sortable
+                sortDirection={sortField === 'customer' ? sortDirection : null}
+                onSort={() => handleSort('customer')}
+                minW="150px"
+              />
+              <FilterableHeader
+                label="Totaal"
+                filterValue={filters.total}
+                onFilterChange={(v) => setFilter('total', v)}
+                sortable
+                sortDirection={sortField === 'total' ? sortDirection : null}
+                onSort={() => handleSort('total')}
+                minW="90px"
+              />
+              <FilterableHeader
+                label="Betaald"
+                filterValue={filters.paid}
+                onFilterChange={(v) => setFilter('paid', v)}
+                sortable
+                sortDirection={sortField === 'paid' ? sortDirection : null}
+                onSort={() => handleSort('paid')}
+                minW="90px"
+              />
+              <FilterableHeader
+                label="Openstaand"
+                filterValue={filters.outstanding}
+                onFilterChange={(v) => setFilter('outstanding', v)}
+                sortable
+                sortDirection={sortField === 'outstanding' ? sortDirection : null}
+                onSort={() => handleSort('outstanding')}
+                minW="90px"
+              />
+              <FilterableHeader
+                label="Status"
+                filterValue={filters.payment_status}
+                onFilterChange={(v) => setFilter('payment_status', v)}
+                sortable
+                sortDirection={sortField === 'payment_status' ? sortDirection : null}
+                onSort={() => handleSort('payment_status')}
+                minW="100px"
+              />
             </Tr>
           </Thead>
           <Tbody>
-            {orderPayments.length === 0 ? (
+            {(processedData as unknown as OrderPaymentSummary[]).length === 0 ? (
               <Tr>
-                <Td colSpan={7} textAlign="center" color="gray.500">
+                <Td colSpan={5} textAlign="center" color="gray.500">
                   Geen betalingsgegevens gevonden
                 </Td>
               </Tr>
             ) : (
-              orderPayments.map((order) => (
-                <Tr key={order.order_id}>
-                  <Td color="white" fontFamily="mono" fontSize="xs">
-                    {order.order_id.substring(0, 8)}...
-                  </Td>
-                  <Td>
-                    <Badge colorScheme={order.event_id ? 'purple' : 'blue'}>
-                      {order.event_id || 'Webshop'}
-                    </Badge>
-                  </Td>
+              (processedData as unknown as OrderPaymentSummary[]).map((order) => (
+                <Tr
+                  key={order.order_id}
+                  cursor="pointer"
+                  _hover={{ bg: 'gray.700' }}
+                  onClick={() => handleRowClick(order)}
+                >
                   <Td color="white">{order.customer}</Td>
                   <Td color="white" isNumeric>{formatCurrency(order.total)}</Td>
                   <Td color="green.300" isNumeric>{formatCurrency(order.paid)}</Td>
@@ -144,6 +244,57 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
           </Tbody>
         </Table>
       </Box>
+
+      {/* Payment Detail Modal */}
+      {selectedPayment && (
+        <Modal isOpen={isOpen} onClose={handleModalClose} size="lg" isCentered>
+          <ModalOverlay />
+          <ModalContent bg="gray.800">
+            <ModalHeader color="white">
+              Betaling — {selectedPayment.customer}
+            </ModalHeader>
+            <ModalCloseButton color="white" />
+            <ModalBody pb={6}>
+              <VStack spacing={4} align="stretch">
+                {/* Payment summary */}
+                <SimpleGrid columns={2} spacing={3}>
+                  <Box>
+                    <Text fontSize="xs" color="gray.400">Totaal gefactureerd</Text>
+                    <Text color="white" fontWeight="bold">{formatCurrency(selectedPayment.total)}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="xs" color="gray.400">Reeds betaald</Text>
+                    <Text color="green.300" fontWeight="bold">{formatCurrency(selectedPayment.paid)}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="xs" color="gray.400">Openstaand</Text>
+                    <Text color="red.300" fontWeight="bold">{formatCurrency(selectedPayment.outstanding)}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="xs" color="gray.400">Status</Text>
+                    {getPaymentStatusBadge(selectedPayment.payment_status)}
+                  </Box>
+                </SimpleGrid>
+
+                <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                  Order: {selectedPayment.order_id}
+                </Text>
+
+                {/* Record payment form (inside modal) */}
+                {canMutate && selectedPayment.payment_status !== 'paid' && (
+                  <>
+                    <Divider borderColor="gray.600" />
+                    <PaymentRecordForm
+                      onSubmit={handlePaymentRecorded}
+                      orderId={selectedPayment.order_id}
+                    />
+                  </>
+                )}
+              </VStack>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      )}
     </Box>
   );
 };
