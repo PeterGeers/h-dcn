@@ -119,6 +119,28 @@ def format_euro(value, locale: str = 'nl') -> str:
     return format_currency_for_locale(amount, locale)
 
 
+# Keywords indicating a pickup delivery option (case-insensitive)
+_PICKUP_KEYWORDS = ('ophalen', 'afhalen', 'pickup', 'pick-up', 'pick up')
+
+
+def _is_pickup_delivery(delivery_option: str) -> bool:
+    """Determine if a delivery option represents pickup (not shipping).
+
+    Checks if the delivery option name contains pickup-related keywords.
+    Returns True for pickup options, False for actual shipping.
+
+    Args:
+        delivery_option: The delivery option label/name string.
+
+    Returns:
+        True if this is a pickup option, False if it's a shipping option.
+    """
+    if not delivery_option:
+        return False
+    option_lower = delivery_option.lower()
+    return any(keyword in option_lower for keyword in _PICKUP_KEYWORDS)
+
+
 def format_date_localized(iso_timestamp: str, locale: str = 'nl') -> str:
     """Format an ISO 8601 timestamp using locale-aware date formatting.
 
@@ -625,6 +647,16 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     products_html = build_products_table_html(items, delivery_option, delivery_cost, locale)
     totals_html = build_totals_html(subtotal_amount, delivery_cost, total_amount, locale)
 
+    # For pickup orders, show delivery option info instead of shipping address
+    delivery_opt_raw = order.get('delivery_option', '')
+    if isinstance(delivery_opt_raw, dict):
+        delivery_opt_name = delivery_opt_raw.get('name', delivery_opt_raw.get('label', ''))
+    else:
+        delivery_opt_name = str(delivery_opt_raw) if delivery_opt_raw else ''
+    if _is_pickup_delivery(delivery_opt_name):
+        # Don't show shipping address for pickup orders
+        addresses_html = build_addresses_html(customer_info, None, locale)
+
     html = f'''<!DOCTYPE html>
 <html lang="{locale}">
 <head>
@@ -647,8 +679,451 @@ def render_order_html(order: dict, logo_data_uri: Optional[str] = None,
     return html
 
 
+# =============================================================================
+# PACKING SLIP RENDERING
+# =============================================================================
+
+def build_packing_slip_css() -> str:
+    """CSS for packing slip PDF. No prices, prominent address, checkbox column."""
+    return """
+        @page { size: A4; margin: 20mm; }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #000;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 24px;
+        }
+        .header-inner {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+            vertical-align: middle;
+            margin-right: 16px;
+        }
+        .header-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #FF6B35;
+            margin: 0 0 4px 0;
+        }
+        .header-subtitle {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* Order meta */
+        .order-meta {
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        .meta-row {
+            margin-bottom: 4px;
+        }
+        .meta-label {
+            font-weight: bold;
+        }
+
+        /* Separator */
+        .separator {
+            border: none;
+            border-top: 1px solid #E5E7EB;
+            margin: 16px 0;
+        }
+
+        /* Address / pickup section */
+        .address-block {
+            margin-bottom: 20px;
+            padding: 12px;
+            border: 1px solid #E5E7EB;
+            background-color: #F9FAFB;
+        }
+        .address-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .address-line {
+            margin: 0 0 3px 0;
+            font-size: 13px;
+        }
+        .club-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #FF6B35;
+            margin-bottom: 4px;
+        }
+
+        /* Delivery method */
+        .delivery-info {
+            margin-bottom: 16px;
+            font-size: 11px;
+        }
+        .delivery-label {
+            font-weight: bold;
+        }
+
+        /* Products table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        th {
+            background-color: #F9FAFB;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #E5E7EB;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        th.center {
+            text-align: center;
+            width: 50px;
+        }
+        th.right {
+            text-align: right;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 11px;
+        }
+        td.center {
+            text-align: center;
+        }
+        td.right {
+            text-align: right;
+        }
+
+        /* Checkbox column */
+        .check-box {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #666;
+            vertical-align: middle;
+        }
+    """
+
+
+def render_packing_slip_html(order: dict, logo_data_uri: Optional[str] = None,
+                             locale: str = 'nl') -> str:
+    """Render packing slip HTML for an order.
+
+    Packing slip contains: order number, date, delivery address/pickup location,
+    product list (name, variant, quantity) with checkbox column. NO PRICES.
+    Event orders show club/member name prominently.
+
+    Args:
+        order: Order record dict from DynamoDB.
+        logo_data_uri: Base64 data URI for the logo, or None to omit.
+        locale: Locale code for translations.
+
+    Returns:
+        Complete HTML string ready for WeasyPrint rendering.
+    """
+    order_id = order.get('order_id', '')
+    timestamp = order.get('timestamp', '')
+    formatted_date = format_date_localized(timestamp, locale)
+
+    # Determine if this is a pickup or shipping order based on delivery_option
+    delivery_option_val = order.get('delivery_option', '')
+    if isinstance(delivery_option_val, dict):
+        delivery_option_display = delivery_option_val.get('name', delivery_option_val.get('label', ''))
+    else:
+        delivery_option_display = str(delivery_option_val) if delivery_option_val else ''
+    is_pickup = _is_pickup_delivery(delivery_option_display)
+
+    # Resolve customer name
+    customer_info = order.get('customer_info', {})
+    customer_name = order.get('customer_name', '') or _resolve_customer_name(customer_info, locale)
+
+    # Header
+    logo_html = ''
+    if logo_data_uri is not None:
+        logo_html = f'<img src="{logo_data_uri}" alt="H-DCN Logo" class="logo" />'
+
+    packing_slip_title = get_pdf_text('packing_slip_title', locale)
+    order_number_label = get_pdf_text('order_number', locale)
+    order_date_label = get_pdf_text('order_date', locale)
+
+    header_html = f'''<div class="header">
+    {logo_html}<div class="header-inner">
+        <div class="header-title">H-DCN Webshop</div>
+        <div class="header-subtitle">{packing_slip_title}</div>
+    </div>
+</div>
+<div class="order-meta">
+    <div class="meta-row">
+        <span class="meta-label">{order_number_label}:</span> {order_id}
+    </div>
+    <div class="meta-row">
+        <span class="meta-label">{order_date_label}:</span> {formatted_date}
+    </div>
+</div>'''
+
+    # Address or pickup section
+    if is_pickup:
+        # Pickup order: show customer/club name prominently + pickup location
+        pickup_location = order.get('pickup_location', '') or delivery_option_display
+        pickup_label = get_pdf_text('pickup_location', locale)
+        recipient_label = get_pdf_text('recipient', locale)
+        # Use registry_row_label if available (event orders), else customer_name
+        row_label = order.get('registry_row_label', '') or customer_name
+
+        address_html = f'''<div class="address-block">
+    <div class="address-title">{pickup_label}</div>
+    <div class="club-name">{row_label}</div>
+    <p class="address-line">{recipient_label}: {customer_name}</p>
+    <p class="address-line">{pickup_location}</p>
+</div>'''
+    else:
+        # Shipping order: show delivery address
+        shipping_address = order.get('shipping_address', {}) or {}
+        delivery_label = get_pdf_text('delivery_address', locale)
+        ship_name = shipping_address.get('naam', '') or customer_name
+        ship_straat = shipping_address.get('straat', '')
+        ship_postcode = shipping_address.get('postcode', '')
+        ship_woonplaats = shipping_address.get('woonplaats', '')
+        ship_land = shipping_address.get('land', '')
+
+        address_lines = f'<p class="address-line"><strong>{ship_name}</strong></p>\n'
+        if ship_straat:
+            address_lines += f'    <p class="address-line">{ship_straat}</p>\n'
+        postcode_plaats = f"{ship_postcode} {ship_woonplaats}".strip()
+        if postcode_plaats:
+            address_lines += f'    <p class="address-line">{postcode_plaats}</p>\n'
+        if ship_land and ship_land.lower() not in ('nl', 'nederland', 'netherlands'):
+            address_lines += f'    <p class="address-line">{ship_land}</p>\n'
+
+        address_html = f'''<div class="address-block">
+    <div class="address-title">{delivery_label}</div>
+    {address_lines}</div>'''
+
+    # Delivery method
+    delivery_method_label = get_pdf_text('delivery_method', locale)
+    delivery_html = ''
+    if delivery_option_display:
+        delivery_html = f'''<div class="delivery-info">
+    <span class="delivery-label">{delivery_method_label}:</span> {delivery_option_display}
+</div>'''
+
+    # Products table (no prices)
+    items = order.get('items', [])
+    product_label = get_pdf_text('product', locale)
+    option_label = get_pdf_text('option', locale)
+    quantity_label = get_pdf_text('quantity', locale)
+    pick_check_label = get_pdf_text('pick_check', locale)
+
+    product_rows = ''
+    for item in items:
+        item_name = item.get('name') or item.get('naam', '')
+        variant_attrs = item.get('variant_attributes')
+        if variant_attrs and isinstance(variant_attrs, dict):
+            variant_display = format_variant_attributes(variant_attrs)
+        else:
+            variant_display = item.get('selectedOption') or '-'
+        quantity = item.get('quantity', 1)
+
+        product_rows += f'''        <tr>
+            <td><span class="check-box"></span></td>
+            <td>{item_name}</td>
+            <td>{variant_display}</td>
+            <td class="right">{quantity}</td>
+        </tr>
+'''
+
+    products_html = f'''<table>
+    <thead>
+        <tr>
+            <th class="center">{pick_check_label}</th>
+            <th>{product_label}</th>
+            <th>{option_label}</th>
+            <th class="right">{quantity_label}</th>
+        </tr>
+    </thead>
+    <tbody>
+{product_rows}    </tbody>
+</table>'''
+
+    # Assemble full HTML
+    css = build_packing_slip_css()
+
+    return f'''<!DOCTYPE html>
+<html lang="{locale}">
+<head>
+    <meta charset="UTF-8" />
+    <title>{packing_slip_title} {order_id}</title>
+    <style>{css}
+    </style>
+</head>
+<body>
+{header_html}
+
+<hr class="separator" />
+
+{address_html}
+
+{delivery_html}
+
+{products_html}
+</body>
+</html>'''
+
+
+# =============================================================================
+# SHIPPING LABEL RENDERING
+# =============================================================================
+
+def build_shipping_label_css() -> str:
+    """CSS for shipping label PDF. Format: 10x15cm (standard shipping label)."""
+    return """
+        @page { size: 100mm 150mm; margin: 8mm; }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: #000;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sender (small, top) */
+        .sender {
+            font-size: 9px;
+            color: #666;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #CCC;
+        }
+
+        /* Recipient (large, prominent) */
+        .recipient {
+            margin-top: 16px;
+        }
+        .recipient-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .recipient-line {
+            font-size: 16px;
+            margin: 0 0 4px 0;
+        }
+        .recipient-postcode {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 8px 0 4px 0;
+        }
+        .recipient-country {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+
+        /* Order reference */
+        .order-ref {
+            margin-top: 20px;
+            padding-top: 8px;
+            border-top: 1px solid #CCC;
+            font-size: 11px;
+            color: #666;
+        }
+        .order-ref-label {
+            font-weight: bold;
+        }
+    """
+
+
+def render_shipping_label_html(order: dict, locale: str = 'nl') -> str:
+    """Render shipping label HTML (10x15cm format).
+
+    Shows: recipient name, full address, order number as reference.
+    Only for webshop orders (event orders use pickup).
+
+    Args:
+        order: Order record dict from DynamoDB.
+        locale: Locale code for translations.
+
+    Returns:
+        Complete HTML string ready for WeasyPrint rendering.
+    """
+    order_id = order.get('order_id', '')
+    customer_info = order.get('customer_info', {})
+    customer_name = order.get('customer_name', '') or _resolve_customer_name(customer_info, locale)
+    shipping_address = order.get('shipping_address', {}) or {}
+
+    ship_name = shipping_address.get('naam', '') or customer_name
+    ship_straat = shipping_address.get('straat', '')
+    ship_postcode = shipping_address.get('postcode', '')
+    ship_woonplaats = shipping_address.get('woonplaats', '')
+    ship_land = shipping_address.get('land', '')
+
+    shipping_label_title = get_pdf_text('shipping_label_title', locale)
+    order_ref_label = get_pdf_text('order_ref', locale)
+
+    # Sender info (H-DCN)
+    sender_html = '''<div class="sender">
+    H-DCN &mdash; Harley-Davidson Club Nederland
+</div>'''
+
+    # Recipient address
+    address_lines = ''
+    if ship_straat:
+        address_lines += f'<p class="recipient-line">{ship_straat}</p>\n'
+
+    postcode_html = ''
+    if ship_postcode or ship_woonplaats:
+        postcode_plaats = f"{ship_postcode}  {ship_woonplaats}".strip()
+        postcode_html = f'<p class="recipient-postcode">{postcode_plaats}</p>\n'
+
+    country_html = ''
+    if ship_land and ship_land.lower() not in ('nl', 'nederland', 'netherlands'):
+        country_html = f'<p class="recipient-country">{ship_land}</p>\n'
+
+    recipient_html = f'''<div class="recipient">
+    <div class="recipient-name">{ship_name}</div>
+    {address_lines}    {postcode_html}    {country_html}</div>'''
+
+    # Order reference
+    ref_html = f'''<div class="order-ref">
+    <span class="order-ref-label">{order_ref_label}:</span> {order_id}
+</div>'''
+
+    css = build_shipping_label_css()
+
+    return f'''<!DOCTYPE html>
+<html lang="{locale}">
+<head>
+    <meta charset="UTF-8" />
+    <title>{shipping_label_title} {order_id}</title>
+    <style>{css}
+    </style>
+</head>
+<body>
+{sender_html}
+
+{recipient_html}
+
+{ref_html}
+</body>
+</html>'''
+
+
 def lambda_handler(event, context):
-    """Lambda handler for generating order confirmation PDFs."""
+    """Lambda handler for generating order PDFs (confirmation, packing slip, shipping label)."""
     try:
         # Handle OPTIONS request (CORS preflight)
         if event.get('httpMethod') == 'OPTIONS':
@@ -665,6 +1140,10 @@ def lambda_handler(event, context):
 
         if not order_id or not order_id.strip():
             return create_error_response(400, 'Invalid order_id format')
+
+        # Determine document type from path
+        resource_path = event.get('resource', '') or event.get('path', '')
+        doc_type = _resolve_doc_type(resource_path)
 
         # Fetch order from DynamoDB
         dynamodb = boto3.resource('dynamodb')
@@ -687,8 +1166,12 @@ def lambda_handler(event, context):
         if not is_owner and not has_admin:
             return create_error_response(403, 'Access denied: You can only access your own orders')
 
+        # Packing slip and shipping label are admin-only
+        if doc_type in ('packing_slip', 'shipping_label') and not has_admin:
+            return create_error_response(403, 'Access denied: Admin permissions required')
+
         # Log successful access
-        log_successful_access(user_email, user_roles, 'generate_order_pdf', {'order_id': order_id})
+        log_successful_access(user_email, user_roles, 'generate_order_pdf', {'order_id': order_id, 'doc_type': doc_type})
 
         # Resolve locale from member's preferred_language
         member_id = order.get('member_id', '')
@@ -698,8 +1181,13 @@ def lambda_handler(event, context):
         # Fetch logo from S3 (graceful degradation: PDF still generated if logo fails)
         logo_data_uri = fetch_logo_as_data_uri(S3_BUCKET, LOGO_S3_KEY)
 
-        # Render HTML template with order data, logo, and locale
-        html = render_order_html(order, logo_data_uri, locale)
+        # Render HTML based on document type
+        if doc_type == 'packing_slip':
+            html = render_packing_slip_html(order, logo_data_uri, locale)
+        elif doc_type == 'shipping_label':
+            html = render_shipping_label_html(order, locale)
+        else:
+            html = render_order_html(order, logo_data_uri, locale)
 
         # Generate PDF with WeasyPrint
         try:
@@ -714,8 +1202,7 @@ def lambda_handler(event, context):
         base64_encoded_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
 
         # Use localized filename
-        document_title = get_pdf_text('document_title', locale).lower().replace(' ', '-')
-        filename = f"{document_title}-{order_id}.pdf"
+        filename = _build_filename(doc_type, order_id, locale)
 
         # Return PDF response
         return {
@@ -735,3 +1222,26 @@ def lambda_handler(event, context):
     except Exception as e:
         logger.error(f"Unexpected error in generate_order_pdf: {type(e).__name__} - {str(e)}")
         return create_error_response(500, 'Internal server error')
+
+
+def _resolve_doc_type(resource_path: str) -> str:
+    """Determine document type from API Gateway resource path.
+
+    Returns 'confirmation', 'packing_slip', or 'shipping_label'.
+    """
+    if 'packing-slip' in resource_path:
+        return 'packing_slip'
+    elif 'shipping-label' in resource_path:
+        return 'shipping_label'
+    return 'confirmation'
+
+
+def _build_filename(doc_type: str, order_id: str, locale: str) -> str:
+    """Build a localized filename for the PDF download."""
+    if doc_type == 'packing_slip':
+        title = get_pdf_text('packing_slip_title', locale).lower().replace(' ', '-')
+    elif doc_type == 'shipping_label':
+        title = get_pdf_text('shipping_label_title', locale).lower().replace(' ', '-')
+    else:
+        title = get_pdf_text('document_title', locale).lower().replace(' ', '-')
+    return f"{title}-{order_id}.pdf"

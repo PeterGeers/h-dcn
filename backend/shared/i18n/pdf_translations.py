@@ -77,6 +77,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "van",
         "no_data": "Geen gegevens beschikbaar",
         "thank_you_message": "Bedankt voor uw bestelling!",
+        # Packing slip
+        "packing_slip_title": "Pakbon",
+        "pick_check": "✓",
+        "delivery_method": "Leverwijze",
+        "pickup_location": "Afhaallocatie",
+        "recipient": "Ontvanger",
+        # Shipping label
+        "shipping_label_title": "Verzendlabel",
+        "order_ref": "Ordernr",
     },
     "en": {
         "document_title": "Order Confirmation",
@@ -106,6 +115,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "of",
         "no_data": "No data available",
         "thank_you_message": "Thank you for your order!",
+        # Packing slip
+        "packing_slip_title": "Packing Slip",
+        "pick_check": "✓",
+        "delivery_method": "Delivery Method",
+        "pickup_location": "Pickup Location",
+        "recipient": "Recipient",
+        # Shipping label
+        "shipping_label_title": "Shipping Label",
+        "order_ref": "Order No",
     },
     "fr": {
         "document_title": "Confirmation de commande",
@@ -135,6 +153,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "de",
         "no_data": "Aucune donnée disponible",
         "thank_you_message": "Merci pour votre commande !",
+        # Packing slip
+        "packing_slip_title": "Bon de livraison",
+        "pick_check": "✓",
+        "delivery_method": "Mode de livraison",
+        "pickup_location": "Lieu de retrait",
+        "recipient": "Destinataire",
+        # Shipping label
+        "shipping_label_title": "Étiquette d'expédition",
+        "order_ref": "N° commande",
     },
     "de": {
         "document_title": "Auftragsbestätigung",
@@ -164,6 +191,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "von",
         "no_data": "Keine Daten verfügbar",
         "thank_you_message": "Vielen Dank für Ihre Bestellung!",
+        # Packing slip
+        "packing_slip_title": "Lieferschein",
+        "pick_check": "✓",
+        "delivery_method": "Liefermethode",
+        "pickup_location": "Abholort",
+        "recipient": "Empfänger",
+        # Shipping label
+        "shipping_label_title": "Versandetikett",
+        "order_ref": "Bestell-Nr",
     },
     "sv": {
         "document_title": "Orderbekräftelse",
@@ -193,6 +229,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "av",
         "no_data": "Inga uppgifter tillgängliga",
         "thank_you_message": "Tack för din beställning!",
+        # Packing slip
+        "packing_slip_title": "Följesedel",
+        "pick_check": "✓",
+        "delivery_method": "Leveransmetod",
+        "pickup_location": "Upphämtningsplats",
+        "recipient": "Mottagare",
+        # Shipping label
+        "shipping_label_title": "Fraktetikett",
+        "order_ref": "Ordernr",
     },
     "da": {
         "document_title": "Ordrebekræftelse",
@@ -222,6 +267,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "af",
         "no_data": "Ingen data tilgængelig",
         "thank_you_message": "Tak for din bestilling!",
+        # Packing slip
+        "packing_slip_title": "Følgeseddel",
+        "pick_check": "✓",
+        "delivery_method": "Leveringsmetode",
+        "pickup_location": "Afhentningssted",
+        "recipient": "Modtager",
+        # Shipping label
+        "shipping_label_title": "Forsendelseslabel",
+        "order_ref": "Ordrenr",
     },
     "it": {
         "document_title": "Conferma dell'ordine",
@@ -251,6 +305,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "di",
         "no_data": "Nessun dato disponibile",
         "thank_you_message": "Grazie per il tuo ordine!",
+        # Packing slip
+        "packing_slip_title": "Bolla di consegna",
+        "pick_check": "✓",
+        "delivery_method": "Metodo di consegna",
+        "pickup_location": "Luogo di ritiro",
+        "recipient": "Destinatario",
+        # Shipping label
+        "shipping_label_title": "Etichetta di spedizione",
+        "order_ref": "N° ordine",
     },
     "es": {
         "document_title": "Confirmación de pedido",
@@ -280,6 +343,15 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         "of": "de",
         "no_data": "No hay datos disponibles",
         "thank_you_message": "¡Gracias por su pedido!",
+        # Packing slip
+        "packing_slip_title": "Albarán",
+        "pick_check": "✓",
+        "delivery_method": "Método de entrega",
+        "pickup_location": "Lugar de recogida",
+        "recipient": "Destinatario",
+        # Shipping label
+        "shipping_label_title": "Etiqueta de envío",
+        "order_ref": "N° pedido",
     },
 }
 

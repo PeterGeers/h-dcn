@@ -1699,6 +1699,18 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /orders/{id}/pdf
             Method: get
+        GeneratePackingSlip:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{id}/packing-slip
+            Method: get
+        GenerateShippingLabel:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /orders/{id}/shipping-label
+            Method: get
 
   # IAM Role for PDF Generator Lambda (DynamoDB + S3 read access)
   PdfGeneratorRole:

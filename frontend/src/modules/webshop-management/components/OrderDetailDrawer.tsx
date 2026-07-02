@@ -60,6 +60,11 @@ import {
   lockOrders,
 } from '../services/adminApi';
 import {
+  downloadOrderPdf,
+  downloadPackingSlipPdf,
+  downloadShippingLabelPdf,
+} from '../../webshop/services/pdfDownloadService';
+import {
   AdminOrder,
   OrderStatus,
   OrderLineItem,
@@ -204,6 +209,41 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       toast({
         title: t('toast.error_title'),
         description: message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handlePdfDownload = async (docType: 'confirmation' | 'packing_slip' | 'shipping_label') => {
+    const actionKey = `pdf_${docType}`;
+    setLoadingAction(actionKey);
+    try {
+      let result;
+      if (docType === 'confirmation') {
+        result = await downloadOrderPdf(order.order_id);
+      } else if (docType === 'packing_slip') {
+        result = await downloadPackingSlipPdf(order.order_id);
+      } else {
+        result = await downloadShippingLabelPdf(order.order_id);
+      }
+
+      if (!result.success && result.error) {
+        toast({
+          title: 'PDF download mislukt',
+          description: result.error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch {
+      toast({
+        title: 'PDF download mislukt',
+        description: 'Er is een onverwachte fout opgetreden.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -531,21 +571,34 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               <Box>
                 <Heading size="xs" mb={2}>Documenten</Heading>
                 <HStack spacing={2} flexWrap="wrap">
-                  <Button size="xs" variant="outline" colorScheme="gray" isDisabled>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="orange"
+                    isLoading={loadingAction === 'pdf_confirmation'}
+                    onClick={() => handlePdfDownload('confirmation')}
+                  >
                     Orderbevestiging
                   </Button>
-                  <Button size="xs" variant="outline" colorScheme="gray" isDisabled>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="orange"
+                    isLoading={loadingAction === 'pdf_packing_slip'}
+                    onClick={() => handlePdfDownload('packing_slip')}
+                  >
                     Pakbon
                   </Button>
-                  {!isEventOrder && (
-                    <Button size="xs" variant="outline" colorScheme="gray" isDisabled>
-                      Verzendlabel
-                    </Button>
-                  )}
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="orange"
+                    isLoading={loadingAction === 'pdf_shipping_label'}
+                    onClick={() => handlePdfDownload('shipping_label')}
+                  >
+                    Verzendlabel
+                  </Button>
                 </HStack>
-                <Text fontSize="xs" color="gray.500" mt={1}>
-                  PDF downloads beschikbaar in een volgende fase.
-                </Text>
               </Box>
             </VStack>
           </DrawerBody>
