@@ -19,7 +19,6 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { getAuthHeaders } from '../../../utils/authHeaders';
-import { toPrice } from '../../../utils/formatPrice';
 import {
   Order,
   Event,
