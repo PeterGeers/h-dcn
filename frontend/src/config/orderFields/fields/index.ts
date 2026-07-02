@@ -11,3 +11,4 @@ export { financialFields } from './financialFields';
 export { itemFields } from './itemFields';
 export { delegateFields } from './delegateFields';
 export { metadataFields } from './metadataFields';
+export { shippingFields } from './shippingFields';

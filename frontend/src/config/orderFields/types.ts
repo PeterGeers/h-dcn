@@ -19,7 +19,7 @@ export type { HDCNGroup } from '../../types/user';
 
 export type DataType = 'string' | 'number' | 'boolean' | 'enum' | 'map' | 'list' | 'datetime';
 export type InputType = 'text' | 'number' | 'select' | 'hidden' | 'json' | 'datetime' | 'multiselect';
-export type FieldGroup = 'identity' | 'source' | 'status' | 'financial' | 'items' | 'delegates' | 'metadata';
+export type FieldGroup = 'identity' | 'source' | 'status' | 'financial' | 'items' | 'delegates' | 'metadata' | 'shipping';
 
 // ============================================================================
 // ORDER STATUS TYPES (mirroring frontend type definitions)
@@ -45,6 +45,8 @@ export const WEBSHOP_ORDER_STATUSES = [
   'packed',
   'shipped',
   'delivered',
+  'ready_for_pickup',
+  'picked_up',
   'return_requested',
   'return_received',
   'completed',

@@ -12,6 +12,7 @@
  *   - items: items[], persons[]
  *   - delegates: delegates map (row-scoped orders)
  *   - metadata: created_at, updated_at, submitted_at, created_by
+ *   - shipping: customer_name, customer_email, shipping_address, delivery_option, tracking_number, etc.
  *
  * Architecture decision: Orders replace Carts table.
  * See: docs/decisions/orders-replace-carts.md
@@ -29,6 +30,7 @@ import {
   itemFields,
   delegateFields,
   metadataFields,
+  shippingFields,
 } from './fields';
 
 // ============================================================================
@@ -47,6 +49,7 @@ export const ORDER_FIELDS: Record<string, OrderFieldDefinition> = {
   ...itemFields,
   ...delegateFields,
   ...metadataFields,
+  ...shippingFields,
 };
 
 // ============================================================================
@@ -115,4 +118,5 @@ export {
   itemFields,
   delegateFields,
   metadataFields,
+  shippingFields,
 } from './fields';
