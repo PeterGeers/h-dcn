@@ -619,7 +619,7 @@ def build_totals_html(subtotal_amount: str, delivery_cost: Optional[str],
             <span class="totals-label">{total_paid_label}:</span>
             <span class="totals-value">{format_euro(total_val, locale)}</span>
         </div>
-        <div class="totals-vat">BTW (21%) inbegrepen: {format_euro(vat_amount, locale)}</div>
+        <div class="totals-vat">{get_pdf_text('vat_included', locale)}: {format_euro(vat_amount, locale)}</div>
     </div>'''
 
     return html

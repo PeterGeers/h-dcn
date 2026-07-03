@@ -86,6 +86,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Verzendlabel",
         "order_ref": "Ordernr",
+        # VAT
+        "vat_included": "BTW (21%) inbegrepen",
     },
     "en": {
         "document_title": "Order Confirmation",
@@ -124,6 +126,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Shipping Label",
         "order_ref": "Order No",
+        # VAT
+        "vat_included": "VAT (21%) included",
     },
     "fr": {
         "document_title": "Confirmation de commande",
@@ -162,6 +166,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Étiquette d'expédition",
         "order_ref": "N° commande",
+        # VAT
+        "vat_included": "TVA (21%) incluse",
     },
     "de": {
         "document_title": "Auftragsbestätigung",
@@ -200,6 +206,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Versandetikett",
         "order_ref": "Bestell-Nr",
+        # VAT
+        "vat_included": "MwSt. (21%) enthalten",
     },
     "sv": {
         "document_title": "Orderbekräftelse",
@@ -238,6 +246,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Fraktetikett",
         "order_ref": "Ordernr",
+        # VAT
+        "vat_included": "Moms (21%) ingår",
     },
     "da": {
         "document_title": "Ordrebekræftelse",
@@ -276,6 +286,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Forsendelseslabel",
         "order_ref": "Ordrenr",
+        # VAT
+        "vat_included": "Moms (21%) inkluderet",
     },
     "it": {
         "document_title": "Conferma dell'ordine",
@@ -314,6 +326,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Etichetta di spedizione",
         "order_ref": "N° ordine",
+        # VAT
+        "vat_included": "IVA (21%) inclusa",
     },
     "es": {
         "document_title": "Confirmación de pedido",
@@ -352,6 +366,8 @@ PDF_TRANSLATIONS: dict[str, dict[str, str]] = {
         # Shipping label
         "shipping_label_title": "Etiqueta de envío",
         "order_ref": "N° pedido",
+        # VAT
+        "vat_included": "IVA (21%) incluido",
     },
 }
 
