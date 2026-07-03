@@ -14,11 +14,6 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.order_state_machine import (
-        validate_fulfilment_transition,
-        get_valid_transitions_for_actor,
-        ACTOR_ADMIN,
-    )
     from shared.stock_helpers import reserve_stock
     print("Using shared auth layer")
 except ImportError as e:
@@ -80,27 +75,6 @@ def lambda_handler(event, context):
 
         order = response['Item']
         current_status = order.get('status', 'draft')
-
-        # Merge tracking info into order dict for precondition checks
-        # (admin may send tracking_number in the same request as the transition)
-        order_for_validation = dict(order)
-        if tracking_number:
-            order_for_validation['tracking_number'] = tracking_number
-
-        # Validate state transition with actor + preconditions
-        is_valid, error_msg = validate_fulfilment_transition(
-            current=current_status,
-            target=target_status,
-            actor=ACTOR_ADMIN,
-            order=order_for_validation,
-        )
-        if not is_valid:
-            valid_targets = get_valid_transitions_for_actor(current_status, ACTOR_ADMIN)
-            return create_error_response(400, error_msg, {
-                'current_status': current_status,
-                'target_status': target_status,
-                'valid_transitions': valid_targets,
-            })
 
         now = datetime.now(timezone.utc).isoformat()
 

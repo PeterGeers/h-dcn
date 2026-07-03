@@ -41,7 +41,7 @@ import {
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { useAdminOrders } from '../hooks/useAdminOrders';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge, formatStatus } from './StatusBadge';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 import { EventPickList } from './EventPickList';
 import { AdminOrder, OrderStatus } from '../types/admin.types';
@@ -101,14 +101,11 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
-/** Batch status transition options available to the admin */
-const BATCH_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
-  { value: 'order_received', label: 'Ontvangen' },
-  { value: 'picked', label: 'Gepickt' },
-  { value: 'packed', label: 'Ingepakt' },
-  { value: 'ready_for_pickup', label: 'Klaarzetten voor afhaal' },
-  { value: 'picked_up', label: 'Uitgereikt' },
-  { value: 'completed', label: 'Afgerond' },
+/** All order statuses the admin can batch-set (excludes draft — that's only for new carts) */
+const ALL_ORDER_STATUSES: OrderStatus[] = [
+  'submitted', 'locked', 'paid', 'order_received', 'payment_pending',
+  'payment_failed', 'picked', 'packed', 'shipped', 'delivered',
+  'ready_for_pickup', 'picked_up', 'return_requested', 'return_received', 'completed',
 ];
 
 export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
@@ -332,15 +329,15 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
               {t('orders_tab.batch_status', { defaultValue: 'Markeer als...' })}
             </MenuButton>
             <MenuList bg="gray.700" borderColor="gray.600">
-              {BATCH_STATUS_OPTIONS.map(opt => (
+              {ALL_ORDER_STATUSES.map(status => (
                 <MenuItem
-                  key={opt.value}
-                  onClick={() => handleBatchStatus(opt.value)}
+                  key={status}
+                  onClick={() => handleBatchStatus(status)}
                   bg="gray.700"
                   color="white"
                   _hover={{ bg: 'gray.600' }}
                 >
-                  {opt.label}
+                  {formatStatus(status)}
                 </MenuItem>
               ))}
             </MenuList>

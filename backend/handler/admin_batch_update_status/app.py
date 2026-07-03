@@ -26,10 +26,6 @@ try:
         create_success_response,
         log_successful_access
     )
-    from shared.order_state_machine import (
-        validate_fulfilment_transition,
-        ACTOR_ADMIN,
-    )
     from shared.stock_helpers import reserve_stock
     print("Using shared auth layer")
 except ImportError as e:
@@ -79,20 +75,9 @@ def _update_single_order(
         order = response['Item']
         current_status = order.get('status', 'draft')
 
-        # Merge tracking info for precondition checks
-        order_for_validation = dict(order)
-        if tracking_number:
-            order_for_validation['tracking_number'] = tracking_number
-
-        # Validate state transition
-        is_valid, error_msg = validate_fulfilment_transition(
-            current=current_status,
-            target=target_status,
-            actor=ACTOR_ADMIN,
-            order=order_for_validation,
-        )
-        if not is_valid:
-            return {'order_id': order_id, 'success': False, 'error': error_msg}
+        # Skip if already at target status
+        if current_status == target_status:
+            return {'order_id': order_id, 'success': True}
 
         now = datetime.now(timezone.utc).isoformat()
 
