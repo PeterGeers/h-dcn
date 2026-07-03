@@ -194,7 +194,14 @@ def lambda_handler(event, context):
             return _lock_single_order(order_id, user_email)
         else:
             # Bulk lock mode (legacy behavior)
-            body = json.loads(event.get('body') or '{}')
+            raw_body = event.get('body')
+            body = json.loads(raw_body) if raw_body and raw_body != 'null' else {}
+            if not isinstance(body, dict):
+                body = {}
+            # Also check query params for event_id (frontend sends it there)
+            query_params = event.get('queryStringParameters') or {}
+            if not body.get('event_id') and query_params.get('event_id'):
+                body['event_id'] = query_params['event_id']
             return _lock_bulk_orders(body, user_email)
 
     except json.JSONDecodeError:
