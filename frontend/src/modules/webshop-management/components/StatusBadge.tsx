@@ -31,6 +31,7 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
   return_requested: 'pink',
   return_received: 'pink',
   completed: 'green',
+  cancelled: 'red',
 };
 
 /**

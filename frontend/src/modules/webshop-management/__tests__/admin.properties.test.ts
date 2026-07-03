@@ -92,6 +92,7 @@ describe('Property 2: Status badge color mapping correctness', () => {
     return_requested: 'pink',
     return_received: 'pink',
     completed: 'green',
+    cancelled: 'red',
   };
 
   const ALL_ORDER_STATUSES: OrderStatus[] = [

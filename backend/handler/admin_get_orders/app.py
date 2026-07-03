@@ -87,9 +87,12 @@ def lambda_handler(event, context):
         if payment_status_filter:
             filter_conditions.append(boto3.dynamodb.conditions.Attr('payment_status').eq(payment_status_filter))
 
-        # Exclude draft orders from admin view (they are just carts)
+        # Exclude draft and cancelled orders from admin view by default
         filter_conditions.append(
             boto3.dynamodb.conditions.Attr('status').ne('draft')
+        )
+        filter_conditions.append(
+            boto3.dynamodb.conditions.Attr('status').ne('cancelled')
         )
 
         # Combine filter conditions

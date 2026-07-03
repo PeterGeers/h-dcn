@@ -52,9 +52,10 @@ def lambda_handler(event, context):
         query_params = event.get('queryStringParameters') or {}
         event_id_filter = query_params.get('event_id')
 
-        # Scan orders with optional event_id filter (exclude drafts — they are just carts)
+        # Scan orders with optional event_id filter (exclude drafts and cancelled)
         filter_conditions = []
         filter_conditions.append(boto3.dynamodb.conditions.Attr('status').ne('draft'))
+        filter_conditions.append(boto3.dynamodb.conditions.Attr('status').ne('cancelled'))
 
         if event_id_filter == 'null':
             filter_conditions.append(

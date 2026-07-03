@@ -22,7 +22,8 @@ export type OrderStatus =
   | 'picked_up'
   | 'return_requested'
   | 'return_received'
-  | 'completed';
+  | 'completed'
+  | 'cancelled';
 
 // --- Product & Variant Interfaces ---
 

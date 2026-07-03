@@ -105,7 +105,8 @@ function formatCurrency(amount: number): string {
 const ALL_ORDER_STATUSES: OrderStatus[] = [
   'submitted', 'locked', 'paid', 'order_received', 'payment_pending',
   'payment_failed', 'picked', 'packed', 'shipped', 'delivered',
-  'ready_for_pickup', 'picked_up', 'return_requested', 'return_received', 'completed',
+  'ready_for_pickup', 'picked_up', 'return_requested', 'return_received',
+  'completed', 'cancelled',
 ];
 
 export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
