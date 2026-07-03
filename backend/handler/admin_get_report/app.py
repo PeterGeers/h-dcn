@@ -45,9 +45,12 @@ def lambda_handler(event, context):
 
         log_successful_access(user_email, user_roles, 'admin_get_report')
 
-        # Get optional event_id filter from query params
+        # Get optional filters from query params
         query_params = event.get('queryStringParameters') or {}
         event_id_filter = query_params.get('event_id')
+        report_type = query_params.get('report_type', 'financial')
+        order_status_filter = query_params.get('order_status')
+        payment_status_filter = query_params.get('payment_status')
 
         # Read latest snapshot from S3
         s3_key = 'reports/latest_snapshot.json'
@@ -99,6 +102,21 @@ def lambda_handler(event, context):
                 snapshot_data['by_event'] = {}
 
         # Remove raw orders/movements from response for lighter payload
+        # Unless report_type needs them
+        orders_list = snapshot_data.get('orders', [])
+        movements_list = snapshot_data.get('movements', [])
+
+        # Exclude draft and cancelled from order lists
+        orders_list = [o for o in orders_list if o.get('status') not in ('draft', 'cancelled')]
+
+        # Apply order_status filter
+        if order_status_filter and order_status_filter != 'all':
+            orders_list = [o for o in orders_list if o.get('status') == order_status_filter]
+
+        # Apply payment_status filter
+        if payment_status_filter and payment_status_filter != 'all':
+            orders_list = [o for o in orders_list if o.get('payment_status') == payment_status_filter]
+
         result = {
             'generated_at': snapshot_data.get('generated_at'),
             'summary': snapshot_data.get('summary', {}),
@@ -106,6 +124,14 @@ def lambda_handler(event, context):
             'by_status': snapshot_data.get('by_status', {}),
             'stock_movements': snapshot_data.get('stock_movements', {}),
         }
+
+        # Include orders for orders/financial report types
+        if report_type in ('orders', 'financial'):
+            result['orders'] = orders_list
+
+        # Include movements for stock_movements report type
+        if report_type == 'stock_movements':
+            result['movements'] = movements_list
 
         if event_id_filter:
             result['filtered_by_event_id'] = event_id_filter

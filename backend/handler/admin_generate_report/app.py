@@ -56,10 +56,13 @@ def lambda_handler(event, context):
 
         # Fetch all orders
         orders_response = orders_table.scan()
-        orders = orders_response.get('Items', [])
+        all_orders = orders_response.get('Items', [])
         while 'LastEvaluatedKey' in orders_response:
             orders_response = orders_table.scan(ExclusiveStartKey=orders_response['LastEvaluatedKey'])
-            orders.extend(orders_response.get('Items', []))
+            all_orders.extend(orders_response.get('Items', []))
+
+        # Exclude draft and cancelled orders from financial calculations
+        orders = [o for o in all_orders if o.get('status') not in ('draft', 'cancelled')]
 
         # Fetch all stock movements
         movements_response = movements_table.scan()
