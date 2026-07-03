@@ -320,7 +320,10 @@ def lambda_handler(event, context):
             )
 
         return create_success_response({
-            'payment': payment_record,
+            'payment': {
+                **payment_record,
+                'amount': float(payment_amount),
+            },
             'order_id': order_id,
             'new_amount_paid': float(total_paid),
             'payment_status': new_payment_status,
