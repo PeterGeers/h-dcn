@@ -193,11 +193,18 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
     setBatchLoading(true);
     try {
       const result = await batchUpdateOrderStatus(Array.from(selectedIds), targetStatus);
+      const failedErrors = result.results
+        .filter(r => !r.success)
+        .map(r => r.error || 'Onbekende fout')
+        .filter((v, i, a) => a.indexOf(v) === i); // dedupe
+      const description = result.summary.failed > 0
+        ? `${result.summary.success} geslaagd, ${result.summary.failed} mislukt: ${failedErrors.join('; ')}`
+        : `${result.summary.success} geslaagd`;
       toast({
         title: t('orders_tab.batch_status_complete', { defaultValue: 'Batch status update voltooid' }),
-        description: `${result.summary.success} geslaagd, ${result.summary.failed} mislukt`,
+        description,
         status: result.summary.failed > 0 ? 'warning' : 'success',
-        duration: 5000,
+        duration: 8000,
         isClosable: true,
       });
       clearSelection();
@@ -324,9 +331,15 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
             >
               {t('orders_tab.batch_status', { defaultValue: 'Markeer als...' })}
             </MenuButton>
-            <MenuList>
+            <MenuList bg="gray.700" borderColor="gray.600">
               {BATCH_STATUS_OPTIONS.map(opt => (
-                <MenuItem key={opt.value} onClick={() => handleBatchStatus(opt.value)}>
+                <MenuItem
+                  key={opt.value}
+                  onClick={() => handleBatchStatus(opt.value)}
+                  bg="gray.700"
+                  color="white"
+                  _hover={{ bg: 'gray.600' }}
+                >
                   {opt.label}
                 </MenuItem>
               ))}
