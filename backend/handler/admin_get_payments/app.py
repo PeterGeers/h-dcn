@@ -52,15 +52,24 @@ def lambda_handler(event, context):
         query_params = event.get('queryStringParameters') or {}
         event_id_filter = query_params.get('event_id')
 
-        # Scan orders with optional event_id filter
-        scan_kwargs = {}
+        # Scan orders with optional event_id filter (exclude drafts — they are just carts)
+        filter_conditions = []
+        filter_conditions.append(boto3.dynamodb.conditions.Attr('status').ne('draft'))
+
         if event_id_filter == 'null':
-            scan_kwargs['FilterExpression'] = (
+            filter_conditions.append(
                 boto3.dynamodb.conditions.Attr('event_id').not_exists()
                 | boto3.dynamodb.conditions.Attr('event_id').eq(None)
             )
         elif event_id_filter:
-            scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('event_id').eq(event_id_filter)
+            filter_conditions.append(boto3.dynamodb.conditions.Attr('event_id').eq(event_id_filter))
+
+        scan_kwargs = {}
+        if filter_conditions:
+            combined = filter_conditions[0]
+            for cond in filter_conditions[1:]:
+                combined = combined & cond
+            scan_kwargs['FilterExpression'] = combined
 
         response = orders_table.scan(**scan_kwargs)
         orders = response.get('Items', [])

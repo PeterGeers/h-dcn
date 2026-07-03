@@ -117,9 +117,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter = '' }) => {
             onChange={(e) => setReportType(e.target.value as ReportType)}
             size="sm"
             maxW="200px"
+            bg="gray.700"
+            borderColor="gray.600"
+            color="white"
+            _focus={{ borderColor: 'orange.400' }}
           >
             {Object.entries(REPORT_TYPE_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+              <option key={key} value={key} style={{ backgroundColor: '#2D3748', color: 'white' }}>{label}</option>
             ))}
           </Select>
         </Box>
@@ -130,9 +134,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter = '' }) => {
             onChange={(e) => setOrderStatus(e.target.value as OrderStatusFilter)}
             size="sm"
             maxW="160px"
+            bg="gray.700"
+            borderColor="gray.600"
+            color="white"
+            _focus={{ borderColor: 'orange.400' }}
           >
             {ORDER_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value} style={{ backgroundColor: '#2D3748', color: 'white' }}>{opt.label}</option>
             ))}
           </Select>
         </Box>
@@ -143,9 +151,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter = '' }) => {
             onChange={(e) => setPaymentStatus(e.target.value as PaymentStatusFilter)}
             size="sm"
             maxW="160px"
+            bg="gray.700"
+            borderColor="gray.600"
+            color="white"
+            _focus={{ borderColor: 'orange.400' }}
           >
             {PAYMENT_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value} style={{ backgroundColor: '#2D3748', color: 'white' }}>{opt.label}</option>
             ))}
           </Select>
         </Box>
