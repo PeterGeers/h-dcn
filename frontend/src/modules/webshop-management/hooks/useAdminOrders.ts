@@ -30,11 +30,13 @@ export interface UseAdminOrdersReturn {
  * @param eventId - Filter by event_id value (empty string or undefined = all, "webshop" = event_id is null)
  * @param status - Filter by order status (optional)
  * @param paymentStatus - Filter by payment status (optional)
+ * @param includeCancelled - Include cancelled orders (default: false)
  */
 export function useAdminOrders(
   eventId?: string,
   status?: string,
-  paymentStatus?: string
+  paymentStatus?: string,
+  includeCancelled?: boolean
 ): UseAdminOrdersReturn {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -47,7 +49,8 @@ export function useAdminOrders(
       const response = await getAdminOrders(
         eventId || undefined,
         status || undefined,
-        paymentStatus || undefined
+        paymentStatus || undefined,
+        includeCancelled
       );
       setOrders(response.orders);
     } catch (err: unknown) {
@@ -58,7 +61,7 @@ export function useAdminOrders(
     } finally {
       setLoading(false);
     }
-  }, [eventId, status, paymentStatus]);
+  }, [eventId, status, paymentStatus, includeCancelled]);
 
   useEffect(() => {
     fetchOrders();

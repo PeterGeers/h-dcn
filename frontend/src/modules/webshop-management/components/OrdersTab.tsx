@@ -112,7 +112,8 @@ const ALL_ORDER_STATUSES: OrderStatus[] = [
 export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
   const { t } = useTranslation('webshop');
   const toast = useToast();
-  const { orders, loading, error, refetch } = useAdminOrders(eventFilter);
+  const [includeCancelled, setIncludeCancelled] = useState(false);
+  const { orders, loading, error, refetch } = useAdminOrders(eventFilter, undefined, undefined, includeCancelled);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
@@ -300,6 +301,16 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
         filteredCount={filteredCount}
         totalCount={orders.length}
       >
+        <Button
+          size="sm"
+          colorScheme={includeCancelled ? 'red' : 'gray'}
+          variant={includeCancelled ? 'solid' : 'outline'}
+          onClick={() => setIncludeCancelled(!includeCancelled)}
+        >
+          {includeCancelled
+            ? t('orders_tab.hide_cancelled', { defaultValue: 'Verberg geannuleerd' })
+            : t('orders_tab.show_cancelled', { defaultValue: 'Toon geannuleerd' })}
+        </Button>
         {selectedEventId && (
           <Button
             size="sm"
