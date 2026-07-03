@@ -14,13 +14,14 @@
  * Validates: Requirements 4.3, 4.4, 4.5, 4.6, 4.11, 4.12, 5.1, 7.1, 12.6
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Table,
   Thead,
   Tbody,
   Tr,
+  Th,
   Td,
   Badge,
   Text,
@@ -28,15 +29,25 @@ import {
   Alert,
   AlertIcon,
   useDisclosure,
+  useToast,
   Button,
+  Checkbox,
+  HStack,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from '@chakra-ui/react';
+import { ChevronDownIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { useAdminOrders } from '../hooks/useAdminOrders';
 import { StatusBadge } from './StatusBadge';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 import { EventPickList } from './EventPickList';
-import { AdminOrder } from '../types/admin.types';
+import { AdminOrder, OrderStatus } from '../types/admin.types';
 import { FilterPanel, FilterableHeader } from '../../../components/filters';
 import { useFilterableTable } from '../../../hooks/useFilterableTable';
+import { batchUpdateOrderStatus, batchDownloadPdf } from '../services/adminApi';
 
 export interface OrdersTabProps {
   /** Active event filter value (empty string = all, "webshop" = no event) */
@@ -90,13 +101,29 @@ function formatCurrency(amount: number): string {
   return `€ ${(Number(amount) || 0).toFixed(2)}`;
 }
 
+/** Batch status transition options available to the admin */
+const BATCH_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
+  { value: 'order_received', label: 'Ontvangen' },
+  { value: 'picked', label: 'Gepickt' },
+  { value: 'packed', label: 'Ingepakt' },
+  { value: 'ready_for_pickup', label: 'Klaarzetten voor afhaal' },
+  { value: 'picked_up', label: 'Uitgereikt' },
+  { value: 'completed', label: 'Afgerond' },
+];
+
 export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
+  const { t } = useTranslation('webshop');
+  const toast = useToast();
   const { orders, loading, error, refetch } = useAdminOrders(eventFilter);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
   // Pick-list mode state
   const [showPickList, setShowPickList] = useState(false);
+
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
 
   // Add a source display field to each order for column filtering
   const ordersWithSource = useMemo(() => {
@@ -131,9 +158,92 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
     return matchingEvent ? sourceFilter : null;
   }, [filters.source, orders]);
 
+  const displayedOrders = processedData as unknown as AdminOrder[];
+
+  // --- Multi-select helpers ---
+  const allDisplayedIds = useMemo(() => displayedOrders.map(o => o.order_id), [displayedOrders]);
+  const isAllSelected = allDisplayedIds.length > 0 && allDisplayedIds.every(id => selectedIds.has(id));
+  const isSomeSelected = allDisplayedIds.some(id => selectedIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allDisplayedIds));
+    }
+  }, [isAllSelected, allDisplayedIds]);
+
+  const handleSelectOne = useCallback((orderId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  // --- Batch action handlers ---
+  const handleBatchStatus = useCallback(async (targetStatus: OrderStatus) => {
+    if (selectedIds.size === 0) return;
+    setBatchLoading(true);
+    try {
+      const result = await batchUpdateOrderStatus(Array.from(selectedIds), targetStatus);
+      toast({
+        title: t('orders_tab.batch_status_complete', { defaultValue: 'Batch status update voltooid' }),
+        description: `${result.summary.success} geslaagd, ${result.summary.failed} mislukt`,
+        status: result.summary.failed > 0 ? 'warning' : 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      clearSelection();
+      refetch();
+    } catch {
+      toast({
+        title: t('orders_tab.batch_error', { defaultValue: 'Fout bij batch operatie' }),
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [selectedIds, toast, t, clearSelection, refetch]);
+
+  const handleBatchPdf = useCallback(async (docType: 'packing_slip' | 'shipping_label') => {
+    if (selectedIds.size === 0) return;
+    setBatchLoading(true);
+    try {
+      const blob = await batchDownloadPdf(Array.from(selectedIds), docType);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const label = docType === 'packing_slip' ? 'pakbonnen' : 'verzendlabels';
+      link.download = `batch-${label}-${selectedIds.size}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({
+        title: t('orders_tab.batch_pdf_error', { defaultValue: 'Fout bij PDF generatie' }),
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [selectedIds, toast, t]);
+
   const handleResetAll = () => {
     resetFilters();
     setShowPickList(false);
+    clearSelection();
   };
 
   const handleRowClick = (order: AdminOrder) => {
@@ -198,6 +308,42 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
         )}
       </FilterPanel>
 
+      {/* Bulk action toolbar — shown when orders are selected */}
+      {selectedIds.size > 0 && (
+        <HStack spacing={3} p={2} mb={2} bg="blue.900" borderRadius="md" flexWrap="wrap">
+          <Text fontSize="sm" fontWeight="bold" color="white">
+            {selectedIds.size} {t('orders_tab.selected', { defaultValue: 'geselecteerd' })}
+          </Text>
+          <Menu>
+            <MenuButton
+              as={Button}
+              size="sm"
+              rightIcon={<ChevronDownIcon />}
+              colorScheme="blue"
+              isLoading={batchLoading}
+            >
+              {t('orders_tab.batch_status', { defaultValue: 'Markeer als...' })}
+            </MenuButton>
+            <MenuList>
+              {BATCH_STATUS_OPTIONS.map(opt => (
+                <MenuItem key={opt.value} onClick={() => handleBatchStatus(opt.value)}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </MenuList>
+          </Menu>
+          <Button size="sm" variant="outline" colorScheme="blue" isLoading={batchLoading} onClick={() => handleBatchPdf('packing_slip')}>
+            {t('orders_tab.batch_packing_slips', { defaultValue: 'Download pakbonnen' })}
+          </Button>
+          <Button size="sm" variant="outline" colorScheme="blue" isLoading={batchLoading} onClick={() => handleBatchPdf('shipping_label')}>
+            {t('orders_tab.batch_labels', { defaultValue: 'Download labels' })}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={clearSelection}>
+            {t('orders_tab.deselect_all', { defaultValue: 'Deselecteer' })}
+          </Button>
+        </HStack>
+      )}
+
       {/* Pick-list mode OR regular table */}
       {showPickList && selectedEventId ? (
         <EventPickList eventId={selectedEventId} />
@@ -206,6 +352,15 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
         <Table variant="simple" size="sm">
           <Thead>
             <Tr>
+              <Th w="40px" px={2}>
+                <Checkbox
+                  isChecked={isAllSelected}
+                  isIndeterminate={isSomeSelected && !isAllSelected}
+                  onChange={handleSelectAll}
+                  colorScheme="blue"
+                  aria-label="Selecteer alles"
+                />
+              </Th>
               <FilterableHeader
                 label="Order ID"
                 filterValue={filters.order_id}
@@ -272,13 +427,22 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
             </Tr>
           </Thead>
           <Tbody>
-            {(processedData as unknown as AdminOrder[]).map((order) => (
+            {displayedOrders.map((order) => (
               <Tr
                 key={order.order_id}
                 cursor="pointer"
                 _hover={{ bg: 'gray.700' }}
+                bg={selectedIds.has(order.order_id) ? 'blue.900' : undefined}
                 onClick={() => handleRowClick(order)}
               >
+                <Td px={2} onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    isChecked={selectedIds.has(order.order_id)}
+                    onChange={() => handleSelectOne(order.order_id)}
+                    colorScheme="blue"
+                    aria-label={`Select order ${order.order_id}`}
+                  />
+                </Td>
                 <Td>
                   <Text fontSize="xs" fontFamily="mono">
                     {order.order_id.slice(0, 12)}…

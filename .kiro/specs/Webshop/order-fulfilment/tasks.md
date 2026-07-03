@@ -104,35 +104,36 @@
 
 ## Fase 4: Batch Operaties & Polish
 
-- [ ] 4.1 **Batch status update endpoint**
+- [x] 4.1 **Batch status update endpoint**
   - `POST /admin/orders/batch-status`
   - Accepteert array van order_ids + target_status
   - Valideert elke order individueel
   - Retourneert per-order success/failure
 
-- [ ] 4.2 **Batch PDF download**
+- [x] 4.2 **Batch PDF download**
   - `POST /admin/orders/batch-pdf`
   - Accepteert order_ids + document_type (packing_slip/shipping_label)
   - Genereert één PDF met alle documenten (één per pagina)
   - Event batch: alle pakbonnen voor één event in één PDF
 
-- [ ] 4.3 **Multi-select in OrdersTab**
+- [x] 4.3 **Multi-select in OrdersTab**
   - Checkboxes per rij
   - Bulk-actie toolbar: "Markeer als [status]", "Download pakbonnen", "Download labels"
   - Select all / deselect all
   - Event-specifiek: "Alle betaalde orders voor [event] klaarzetten"
 
-- [ ] 4.4 **Klant "Mijn bestellingen" verbeteren**
+- [x] 4.4 **Klant "Mijn bestellingen" verbeteren**
   - Status tonen met StatusBadge
   - Tracking nummer tonen bij shipped/delivered
   - Orderbevestiging PDF download knop
 
 ## Opruimtaken (kleine fixes)
 
-- [ ] 5.1 **Ledenadministratie: alle tabellen migreren naar Table Filter Framework**
-  - Alle tabelweergaven in de ledenadministratie module consistent maken
-  - Verwijder losse filter-knoppen/selectors boven tabellen (regio, status, etc.)
+- [ ] 5.1 **H-dcn omgeving: alle tabel weergaven migreren naar Table Filter Framework**
+  - Inventariseer alle tabellen van de h-dcn omgeving en in welke modules die tabellen getoond worden.
+  - Alle geidentificeerde tabelweergaven in de h-dcn omgeving module consistent maken
+  - Geen dubbele knoppen. Verwijder losse filter-knoppen/selectors boven tabellen (regio, status, etc.)
   - Vervang door `FilterPanel` + `GenericFilter` dropdowns (enum/categorie velden)
   - Voeg `FilterableHeader` toe op alle kolommen (inline tekst filter + sort)
   - Patroon: acties in modal (klik op rij), niet in de tabelrij
-  - Resultaat: één consistent filter-patroon door de hele ledenadministratie
+  - Resultaat: één consistent filter-patroon door de hele h-dcn omgeving

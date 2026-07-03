@@ -109,12 +109,18 @@ def lambda_handler(event, context):
         for order in orders:
             result_orders.append({
                 'order_id': order.get('order_id'),
+                'order_number': order.get('order_number'),
                 'event_id': order.get('event_id'),
                 'status': order.get('status'),
                 'payment_status': order.get('payment_status'),
                 'items': order.get('items', []),
                 'total_amount': order.get('total_amount', 0),
                 'total_paid': order.get('total_paid', 0),
+                'delivery_option': order.get('delivery_option'),
+                'delivery_cost': order.get('delivery_cost', 0),
+                'tracking_number': order.get('tracking_number'),
+                'shipping_carrier': order.get('shipping_carrier'),
+                'shipped_at': order.get('shipped_at'),
                 'created_at': order.get('created_at'),
                 'updated_at': order.get('updated_at'),
             })

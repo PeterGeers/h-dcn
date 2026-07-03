@@ -2589,6 +2589,56 @@ Resources:
             Path: /admin/orders/{id}/unlock
             Method: post
 
+  # --- Admin: Batch Update Order Status ---
+  AdminBatchUpdateStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/admin_batch_update_status
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AdminWebshopRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE_NAME: !Ref OrdersTable
+          STOCK_MOVEMENTS_TABLE_NAME: !Ref StockMovementsTableName
+          PRODUCTEN_TABLE_NAME: !Ref Table
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        AdminBatchUpdateStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders/batch-status
+            Method: post
+
+  # --- Admin: Batch PDF Download ---
+  AdminBatchPdfFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerTag: admin-batch-pdf
+      DockerContext: .
+      Dockerfile: handler/admin_batch_pdf/Dockerfile
+    Properties:
+      PackageType: Image
+      Timeout: 60
+      MemorySize: 512
+      Role: !GetAtt PdfGeneratorRole.Arn
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+          S3_BUCKET: !Ref DataBucket
+          LOGO_S3_KEY: "imagesWebsite/hdcnFavico.png"
+      Events:
+        AdminBatchPdf:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /admin/orders/batch-pdf
+            Method: post
+
   # --- Admin: Get Payments ---
   AdminGetPaymentsFunction:
     Type: AWS::Serverless::Function

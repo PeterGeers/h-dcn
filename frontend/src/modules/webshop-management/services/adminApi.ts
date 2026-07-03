@@ -189,6 +189,48 @@ export const unlockOrder = async (orderId: string): Promise<void> => {
   );
 };
 
+// --- Batch Order Endpoints ---
+
+export interface BatchStatusResult {
+  order_id: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface BatchStatusResponse {
+  results: BatchStatusResult[];
+  summary: {
+    total: number;
+    success: number;
+    failed: number;
+  };
+}
+
+export const batchUpdateOrderStatus = async (
+  orderIds: string[],
+  targetStatus: OrderStatus,
+  options?: { tracking_number?: string; shipping_carrier?: string }
+): Promise<BatchStatusResponse> => {
+  const response = await adminClient.post('/admin/orders/batch-status', {
+    order_ids: orderIds,
+    target_status: targetStatus,
+    ...options,
+  });
+  return response.data;
+};
+
+export const batchDownloadPdf = async (
+  orderIds: string[],
+  documentType: 'packing_slip' | 'shipping_label'
+): Promise<Blob> => {
+  const response = await adminClient.post(
+    '/admin/orders/batch-pdf',
+    { order_ids: orderIds, document_type: documentType },
+    { responseType: 'blob' }
+  );
+  return response.data;
+};
+
 // --- Payment Endpoints ---
 
 export const getAdminPayments = async (

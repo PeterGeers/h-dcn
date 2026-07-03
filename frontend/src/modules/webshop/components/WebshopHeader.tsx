@@ -20,11 +20,13 @@ interface WebshopHeaderProps {
   user: User;
   cartItemCount: number;
   showOrdersAdmin: boolean;
+  showMyOrders: boolean;
   onToggleOrdersAdmin: () => void;
+  onToggleMyOrders: () => void;
   onOpenCart: () => void;
 }
 
-function WebshopHeader({ user, cartItemCount, showOrdersAdmin, onToggleOrdersAdmin, onOpenCart }: WebshopHeaderProps) {
+function WebshopHeader({ user, cartItemCount, showOrdersAdmin, showMyOrders, onToggleOrdersAdmin, onToggleMyOrders, onOpenCart }: WebshopHeaderProps) {
   const navigate = useNavigate();
   const { t } = useTranslation('webshop');
   const { t: tCommon } = useTranslation('common');
@@ -36,6 +38,14 @@ function WebshopHeader({ user, cartItemCount, showOrdersAdmin, onToggleOrdersAdm
       </Button>
       <Box fontSize="xl" fontWeight="bold">{t('title')}</Box>
       <HStack>
+        <Button
+          onClick={onToggleMyOrders}
+          colorScheme="orange"
+          variant={showMyOrders ? 'solid' : 'ghost'}
+          size="sm"
+        >
+          {t('my_orders.title', { defaultValue: 'Mijn bestellingen' })}
+        </Button>
         <FunctionGuard
           user={user}
           functionName="orders"

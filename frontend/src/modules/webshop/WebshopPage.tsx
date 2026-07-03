@@ -6,6 +6,7 @@ import ProductCard from './components/ProductCard';
 import DraftOrderModal from './components/DraftOrderModal';
 import CheckoutModal from './components/CheckoutModal';
 import OrdersAdmin from './components/OrdersAdmin';
+import MyOrders from './components/MyOrders';
 import WebshopHeader from './components/WebshopHeader';
 import WebshopOrderSuccessOverlay from './components/WebshopOrderSuccessOverlay';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
@@ -77,6 +78,7 @@ function WebshopPage({ user }: WebshopPageProps) {
   const [isDraftOrderModalOpen, setIsDraftOrderModalOpen] = useState<boolean>(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState<boolean>(false);
   const [showOrdersAdmin, setShowOrdersAdmin] = useState<boolean>(false);
+  const [showMyOrders, setShowMyOrders] = useState<boolean>(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -253,12 +255,16 @@ function WebshopPage({ user }: WebshopPageProps) {
           user={user}
           cartItemCount={cartItems.length}
           showOrdersAdmin={showOrdersAdmin}
-          onToggleOrdersAdmin={() => setShowOrdersAdmin(!showOrdersAdmin)}
+          showMyOrders={showMyOrders}
+          onToggleOrdersAdmin={() => { setShowOrdersAdmin(!showOrdersAdmin); setShowMyOrders(false); }}
+          onToggleMyOrders={() => { setShowMyOrders(!showMyOrders); setShowOrdersAdmin(false); }}
           onOpenCart={() => setIsDraftOrderModalOpen(true)}
         />
 
         <Container maxW="container.xl" py={6}>
-          {showOrdersAdmin ? (
+          {showMyOrders ? (
+            <MyOrders />
+          ) : showOrdersAdmin ? (
             <FunctionGuard
               user={user}
               functionName="orders"
