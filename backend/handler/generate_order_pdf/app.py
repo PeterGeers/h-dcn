@@ -1206,16 +1206,22 @@ def lambda_handler(event, context):
         # Log successful access
         log_successful_access(user_email, user_roles, 'generate_order_pdf', {'order_id': order_id, 'doc_type': doc_type})
 
-        # Resolve locale based on who is requesting:
-        # - Owner (end-user): use member's preferred_language, fallback to Accept-Language
-        # - Admin: use Accept-Language header (admin's portal language)
-        if is_owner:
+        # Resolve locale:
+        # 1. Explicit ?locale= query param (sent by frontend with i18next.language)
+        # 2. Owner with preferred_language set on member record
+        # 3. Default: Dutch (nl)
+        query_params = event.get('queryStringParameters') or {}
+        explicit_locale = query_params.get('locale', '')
+
+        if explicit_locale:
+            from shared.i18n.locale_resolver import is_valid_locale
+            locale = explicit_locale if is_valid_locale(explicit_locale) else 'nl'
+        elif is_owner:
             member_id = order.get('member_id', '')
             preferred_language = fetch_member_preferred_language(member_id) if member_id else None
             if preferred_language:
                 locale = resolve_member_locale(preferred_language)
             else:
-                # No preferred_language set — use Accept-Language from request
                 locale = resolve_request_locale(event)
         else:
             locale = resolve_request_locale(event)

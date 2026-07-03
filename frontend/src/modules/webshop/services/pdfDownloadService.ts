@@ -89,16 +89,16 @@ async function downloadOrderDocument(
     'shipping-label': 'shipping-label',
   };
   const pathSegment = pathMap[docType];
+  const locale = i18next.language || 'nl';
 
   try {
     const headers = await getAuthHeadersForGet();
 
-    const response = await fetch(`${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/${pathSegment}`, {
+    const response = await fetch(`${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/${pathSegment}?locale=${locale}`, {
       method: 'GET',
       headers: {
         ...headers,
         'Accept': 'application/pdf',
-        'Accept-Language': i18next.language || 'nl',
       },
       signal: controller.signal,
     });
