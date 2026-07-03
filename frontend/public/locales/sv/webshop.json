@@ -211,5 +211,29 @@
     "amount_label": "Belopp",
     "date_label": "Datum",
     "date_format_error": "Använd ISO-datumformat (ÅÅÅÅ-MM-DD)"
+  },
+  "orders_tab": {
+    "batch_error": "Fel vid batch-operation",
+    "deselect_all": "Avmarkera",
+    "batch_status": "Markera som...",
+    "batch_labels": "Ladda ner etiketter",
+    "select_all": "Välj alla",
+    "batch_status_complete": "Batch-statusuppdatering klar",
+    "selected": "valda",
+    "batch_pdf_error": "Fel vid PDF-generering",
+    "batch_packing_slips": "Ladda ner följesedlar"
+  },
+  "my_orders": {
+    "col_total": "Totalt",
+    "loading": "Laddar beställningar...",
+    "load_error": "Fel vid hämtning av dina beställningar.",
+    "col_date": "Datum",
+    "title": "Mina beställningar",
+    "empty": "Du har inga beställningar ännu.",
+    "col_actions": "Åtgärder",
+    "download_pdf": "Ladda ner orderbekräftelse",
+    "col_tracking": "Spårning",
+    "col_order": "Beställning",
+    "col_status": "Status"
   }
 }

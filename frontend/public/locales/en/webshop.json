@@ -212,5 +212,29 @@
     "amount_label": "Amount",
     "date_label": "Date",
     "date_format_error": "Use ISO date format (YYYY-MM-DD)"
+  },
+  "orders_tab": {
+    "batch_error": "Error during batch operation",
+    "deselect_all": "Deselect",
+    "batch_status": "Mark as...",
+    "batch_labels": "Download labels",
+    "select_all": "Select all",
+    "batch_status_complete": "Batch status update complete",
+    "selected": "selected",
+    "batch_pdf_error": "Error generating PDF",
+    "batch_packing_slips": "Download packing slips"
+  },
+  "my_orders": {
+    "col_total": "Total",
+    "loading": "Loading orders...",
+    "load_error": "Error loading your orders.",
+    "col_date": "Date",
+    "title": "My orders",
+    "empty": "You don't have any orders yet.",
+    "col_actions": "Actions",
+    "download_pdf": "Download order confirmation",
+    "col_tracking": "Tracking",
+    "col_order": "Order",
+    "col_status": "Status"
   }
 }

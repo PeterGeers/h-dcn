@@ -223,5 +223,29 @@
     "amount_label": "Bedrag",
     "date_label": "Datum",
     "date_format_error": "Gebruik ISO datumformaat (YYYY-MM-DD)"
+  },
+  "orders_tab": {
+    "selected": "geselecteerd",
+    "batch_status": "Markeer als...",
+    "batch_status_complete": "Batch status update voltooid",
+    "batch_error": "Fout bij batch operatie",
+    "batch_packing_slips": "Download pakbonnen",
+    "batch_labels": "Download labels",
+    "batch_pdf_error": "Fout bij PDF generatie",
+    "deselect_all": "Deselecteer",
+    "select_all": "Selecteer alles"
+  },
+  "my_orders": {
+    "title": "Mijn bestellingen",
+    "loading": "Bestellingen laden...",
+    "load_error": "Fout bij het ophalen van je bestellingen.",
+    "empty": "Je hebt nog geen bestellingen.",
+    "col_order": "Bestelling",
+    "col_date": "Datum",
+    "col_status": "Status",
+    "col_tracking": "Tracking",
+    "col_total": "Totaal",
+    "col_actions": "Acties",
+    "download_pdf": "Download orderbevestiging"
   }
 }

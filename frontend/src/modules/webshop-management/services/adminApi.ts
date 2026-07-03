@@ -223,12 +223,41 @@ export const batchDownloadPdf = async (
   orderIds: string[],
   documentType: 'packing_slip' | 'shipping_label'
 ): Promise<Blob> => {
-  const response = await adminClient.post(
-    '/admin/orders/batch-pdf',
-    { order_ids: orderIds, document_type: documentType },
-    { responseType: 'blob' }
-  );
-  return response.data;
+  // Use fetch instead of Axios because API Gateway returns base64-encoded PDF
+  // (isBase64Encoded: true) which Axios responseType:'blob' doesn't decode correctly.
+  const { getAuthHeaders: getHeaders } = await import('../../../utils/authHeaders');
+  const headers = await getHeaders();
+
+  const response = await fetch(`${BASE_URL}/admin/orders/batch-pdf`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+      'Accept': 'application/pdf',
+    },
+    body: JSON.stringify({ order_ids: orderIds, document_type: documentType }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Batch PDF request failed: ${response.status}`);
+  }
+
+  const contentType = response.headers.get('Content-Type');
+
+  // If API Gateway correctly passes through binary, we get application/pdf directly
+  if (contentType && contentType.includes('application/pdf')) {
+    const arrayBuffer = await response.arrayBuffer();
+    return new Blob([arrayBuffer], { type: 'application/pdf' });
+  }
+
+  // Otherwise, API Gateway returns base64-encoded text — decode it
+  const base64Data = await response.text();
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: 'application/pdf' });
 };
 
 // --- Payment Endpoints ---

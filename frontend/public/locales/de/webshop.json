@@ -199,5 +199,29 @@
     "amount_label": "Betrag",
     "date_label": "Datum",
     "date_format_error": "ISO-Datumsformat verwenden (JJJJ-MM-TT)"
+  },
+  "orders_tab": {
+    "batch_error": "Fehler bei der Batch-Operation",
+    "deselect_all": "Abwählen",
+    "batch_status": "Markieren als...",
+    "batch_labels": "Etiketten herunterladen",
+    "select_all": "Alle auswählen",
+    "batch_status_complete": "Batch-Statusupdate abgeschlossen",
+    "selected": "ausgewählt",
+    "batch_pdf_error": "Fehler bei der PDF-Erstellung",
+    "batch_packing_slips": "Lieferscheine herunterladen"
+  },
+  "my_orders": {
+    "col_total": "Gesamt",
+    "loading": "Bestellungen laden...",
+    "load_error": "Fehler beim Laden deiner Bestellungen.",
+    "col_date": "Datum",
+    "title": "Meine Bestellungen",
+    "empty": "Du hast noch keine Bestellungen.",
+    "col_actions": "Aktionen",
+    "download_pdf": "Bestellbestätigung herunterladen",
+    "col_tracking": "Sendungsverfolgung",
+    "col_order": "Bestellung",
+    "col_status": "Status"
   }
 }

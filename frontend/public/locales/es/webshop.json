@@ -211,5 +211,29 @@
     "amount_label": "Importe",
     "date_label": "Fecha",
     "date_format_error": "Usa el formato de fecha ISO (AAAA-MM-DD)"
+  },
+  "orders_tab": {
+    "batch_error": "Error en la operación por lote",
+    "deselect_all": "Deseleccionar",
+    "batch_status": "Marcar como...",
+    "batch_labels": "Descargar etiquetas",
+    "select_all": "Seleccionar todo",
+    "batch_status_complete": "Actualización de estado por lote completada",
+    "selected": "seleccionados",
+    "batch_pdf_error": "Error al generar PDF",
+    "batch_packing_slips": "Descargar albaranes"
+  },
+  "my_orders": {
+    "col_total": "Total",
+    "loading": "Cargando pedidos...",
+    "load_error": "Error al cargar tus pedidos.",
+    "col_date": "Fecha",
+    "title": "Mis pedidos",
+    "empty": "Aún no tienes pedidos.",
+    "col_actions": "Acciones",
+    "download_pdf": "Descargar confirmación de pedido",
+    "col_tracking": "Seguimiento",
+    "col_order": "Pedido",
+    "col_status": "Estado"
   }
 }

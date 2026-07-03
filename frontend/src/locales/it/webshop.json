@@ -211,5 +211,29 @@
     "amount_label": "Importo",
     "date_label": "Data",
     "date_format_error": "Usa il formato data ISO (AAAA-MM-GG)"
+  },
+  "orders_tab": {
+    "batch_error": "Errore nell'operazione batch",
+    "deselect_all": "Deseleziona",
+    "batch_status": "Segna come...",
+    "batch_labels": "Scarica etichette",
+    "select_all": "Seleziona tutto",
+    "batch_status_complete": "Aggiornamento stato batch completato",
+    "selected": "selezionati",
+    "batch_pdf_error": "Errore nella generazione del PDF",
+    "batch_packing_slips": "Scarica bolle di accompagnamento"
+  },
+  "my_orders": {
+    "col_total": "Totale",
+    "loading": "Caricamento ordini...",
+    "load_error": "Errore nel caricamento dei tuoi ordini.",
+    "col_date": "Data",
+    "title": "I miei ordini",
+    "empty": "Non hai ancora ordini.",
+    "col_actions": "Azioni",
+    "download_pdf": "Scarica conferma ordine",
+    "col_tracking": "Tracciamento",
+    "col_order": "Ordine",
+    "col_status": "Stato"
   }
 }

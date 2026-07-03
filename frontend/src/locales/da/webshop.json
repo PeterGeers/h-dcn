@@ -211,5 +211,29 @@
     "amount_label": "Beløb",
     "date_label": "Dato",
     "date_format_error": "Brug ISO-datoformat (ÅÅÅÅ-MM-DD)"
+  },
+  "orders_tab": {
+    "batch_error": "Fejl ved batch-operation",
+    "deselect_all": "Fravælg",
+    "batch_status": "Markér som...",
+    "batch_labels": "Download labels",
+    "select_all": "Vælg alle",
+    "batch_status_complete": "Batch-statusopdatering gennemført",
+    "selected": "valgt",
+    "batch_pdf_error": "Fejl ved PDF-generering",
+    "batch_packing_slips": "Download følgesedler"
+  },
+  "my_orders": {
+    "col_total": "Total",
+    "loading": "Indlæser bestillinger...",
+    "load_error": "Fejl ved indlæsning af dine bestillinger.",
+    "col_date": "Dato",
+    "title": "Mine bestillinger",
+    "empty": "Du har endnu ingen bestillinger.",
+    "col_actions": "Handlinger",
+    "download_pdf": "Download ordrebekræftelse",
+    "col_tracking": "Sporing",
+    "col_order": "Bestilling",
+    "col_status": "Status"
   }
 }

@@ -211,5 +211,29 @@
     "amount_label": "Montant",
     "date_label": "Date",
     "date_format_error": "Utilisez le format de date ISO (AAAA-MM-JJ)"
+  },
+  "orders_tab": {
+    "batch_error": "Erreur lors de l'opération groupée",
+    "deselect_all": "Désélectionner",
+    "batch_status": "Marquer comme...",
+    "batch_labels": "Télécharger les étiquettes",
+    "select_all": "Tout sélectionner",
+    "batch_status_complete": "Mise à jour groupée terminée",
+    "selected": "sélectionnés",
+    "batch_pdf_error": "Erreur lors de la génération du PDF",
+    "batch_packing_slips": "Télécharger les bons de livraison"
+  },
+  "my_orders": {
+    "col_total": "Total",
+    "loading": "Chargement des commandes...",
+    "load_error": "Erreur lors du chargement de vos commandes.",
+    "col_date": "Date",
+    "title": "Mes commandes",
+    "empty": "Vous n'avez pas encore de commandes.",
+    "col_actions": "Actions",
+    "download_pdf": "Télécharger la confirmation de commande",
+    "col_tracking": "Suivi",
+    "col_order": "Commande",
+    "col_status": "Statut"
   }
 }
