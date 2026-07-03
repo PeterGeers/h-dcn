@@ -63,6 +63,19 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _convert_decimals(obj):
+    """Recursively convert Decimal values to int or float for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: _convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_decimals(item) for item in obj]
+    elif isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    return obj
+
+
 def _calculate_total_paid(order: dict, new_payment_amount: Decimal) -> Decimal:
     """
     Calculate total paid by summing all existing payments plus the new one.
@@ -319,16 +332,13 @@ def lambda_handler(event, context):
                 }
             )
 
-        return create_success_response({
-            'payment': {
-                **payment_record,
-                'amount': float(payment_amount),
-            },
+        return create_success_response(_convert_decimals({
+            'payment': payment_record,
             'order_id': order_id,
-            'new_amount_paid': float(total_paid),
+            'new_amount_paid': total_paid,
             'payment_status': new_payment_status,
             'message': 'Payment recorded successfully'
-        })
+        }))
 
     except json.JSONDecodeError:
         return create_error_response(
