@@ -23,11 +23,6 @@ secret:
     - "**/.venv/**"
     # Node modules
     - "**/node_modules/**"
-    # Test files
-    - "test_*.py"
-    - "test_*.html"
-    - "**/tests/**"
-    - "**/__tests__/**"
     # Utility scripts
     - "decode_*.py"
     - "trigger_*.py"
