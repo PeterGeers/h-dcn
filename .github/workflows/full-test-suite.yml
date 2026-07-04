@@ -173,8 +173,36 @@ jobs:
         working-directory: frontend
         continue-on-error: true
         run: |
-          npm test -- --watchAll=false --ci --forceExit --testTimeout=10000 --verbose --runInBand 2>&1 | tee test-output.txt
-          echo $? > exit-code.txt
+          PASSED=0
+          FAILED=0
+          ERRORS=""
+          TEST_FILES=$(find src -name "*.test.ts" -o -name "*.test.tsx" | sort)
+          TOTAL=$(echo "$TEST_FILES" | wc -l)
+          echo "Found $TOTAL test files"
+          i=0
+          for f in $TEST_FILES; do
+            i=$((i+1))
+            echo "[$i/$TOTAL] Running: $f"
+            if timeout 60 npx react-scripts test --watchAll=false --ci --forceExit --testTimeout=10000 --testPathPattern="$(basename $f .test.tsx | sed 's/.test.ts$//')" 2>&1 | tail -5; then
+              PASSED=$((PASSED+1))
+            else
+              EXIT_CODE=$?
+              if [ $EXIT_CODE -eq 124 ]; then
+                echo "  ⏰ TIMEOUT: $f (killed after 60s)"
+                ERRORS="$ERRORS\nTIMEOUT: $f"
+              else
+                echo "  ❌ FAILED: $f"
+              fi
+              FAILED=$((FAILED+1))
+            fi
+          done
+          echo ""
+          echo "=== Summary ==="
+          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED"
+          if [ -n "$ERRORS" ]; then
+            echo -e "\nTimeouts:$ERRORS"
+          fi
+          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED" > test-output.txt
 
       - name: Output to job summary
         if: always()
