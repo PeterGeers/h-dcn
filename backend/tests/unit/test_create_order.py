@@ -40,15 +40,15 @@ def mock_auth():
     with patch('handler.create_order.app.extract_user_credentials') as mock_extract, \
          patch('handler.create_order.app.validate_permissions_with_regions') as mock_validate, \
          patch('handler.create_order.app.log_successful_access') as mock_log, \
-         patch('handler.create_order.app.get_club_id') as mock_club:
+         patch('handler.create_order.app.get_registry_row_id') as mock_registry_row:
         mock_extract.return_value = ('user@test.nl', ['hdcnLeden'], None)
         mock_validate.return_value = (False, None, None)
-        mock_club.return_value = 'club-123'
+        mock_registry_row.return_value = 'club-123'
         yield {
             'extract': mock_extract,
             'validate': mock_validate,
             'log': mock_log,
-            'get_club_id': mock_club,
+            'get_registry_row_id': mock_registry_row,
         }
 
 
@@ -183,6 +183,7 @@ class TestEventOrderCreation:
 
         event = _make_event({
             'event_id': 'event-abc',
+            'club_id': 'club-123',
             'items': [{'product_id': 'prod-1', 'quantity': 1}],
         })
 
@@ -196,7 +197,7 @@ class TestEventOrderCreation:
         assert order['version'] == 1
 
     def test_returns_existing_event_order(self, mock_dynamodb, mock_auth):
-        """Event order returns existing order for same club_id + event_id."""
+        """Event order returns existing order for same registry_row_id + event_id."""
         from handler.create_order.app import lambda_handler
 
         mock_dynamodb['members'].scan.return_value = {
@@ -220,6 +221,7 @@ class TestEventOrderCreation:
 
         event = _make_event({
             'event_id': 'event-abc',
+            'club_id': 'club-123',
             'items': [{'product_id': 'prod-1', 'quantity': 1}],
         })
 
@@ -246,6 +248,7 @@ class TestEventOrderCreation:
 
         event = _make_event({
             'event_id': 'event-abc',
+            'club_id': 'club-123',
             'items': [{'product_id': 'prod-1', 'quantity': 1}],
         })
 
@@ -254,14 +257,14 @@ class TestEventOrderCreation:
         assert response['statusCode'] == 201
 
     def test_rejects_event_order_without_club_id(self, mock_dynamodb, mock_auth):
-        """Event order returns 400 when club_id is null/empty (Req 18.3)."""
+        """Event order returns 400 when registry_row_id is null/empty (Req 18.3)."""
         from handler.create_order.app import lambda_handler
 
         mock_dynamodb['members'].scan.return_value = {
             'Items': [{'member_id': 'member-1'}]
         }
-        # get_club_id returns None (no club_id resolvable)
-        mock_auth['get_club_id'].return_value = None
+        # get_registry_row_id returns None (no registry_row_id resolvable)
+        mock_auth['get_registry_row_id'].return_value = None
 
         event = _make_event({
             'event_id': 'event-abc',
@@ -276,14 +279,14 @@ class TestEventOrderCreation:
         assert 'club_id' in body.get('error', body.get('message', ''))
 
     def test_rejects_event_order_with_empty_club_id(self, mock_dynamodb, mock_auth):
-        """Event order returns 400 when club_id is empty string (Req 18.3)."""
+        """Event order returns 400 when registry_row_id is empty string (Req 18.3)."""
         from handler.create_order.app import lambda_handler
 
         mock_dynamodb['members'].scan.return_value = {
             'Items': [{'member_id': 'member-1'}]
         }
-        # get_club_id also returns empty string
-        mock_auth['get_club_id'].return_value = ''
+        # get_registry_row_id also returns empty string
+        mock_auth['get_registry_row_id'].return_value = ''
 
         event = _make_event({
             'event_id': 'event-abc',

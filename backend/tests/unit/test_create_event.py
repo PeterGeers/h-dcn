@@ -73,6 +73,7 @@ def _valid_event_body(**overrides):
     body = {
         'name': 'Presidents Meeting 2027',
         'event_type': 'presmeet',
+        'linked_regio': 'Regio Noord',
         'location': 'Hotel Amersfoort',
         'start_date': '2027-06-20',
         'end_date': '2027-06-22',
@@ -219,8 +220,7 @@ class TestRequiredFields:
     """Tests for required field validation."""
 
     @pytest.mark.parametrize('field', [
-        'name', 'event_type', 'start_date', 'end_date',
-        'registration_open', 'registration_close',
+        'name', 'event_type', 'start_date', 'end_date', 'linked_regio',
     ])
     def test_missing_required_field_rejected(self, events_table, field):
         """Each required field must be present."""

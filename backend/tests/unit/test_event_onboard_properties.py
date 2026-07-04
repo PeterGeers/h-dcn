@@ -462,7 +462,7 @@ class TestProperty7MemberRecordCreation:
     **Validates: Requirements 4.2**
 
     For any valid onboard request for a new user, the created Member record
-    SHALL have: member_type equal to the event_id, club_id equal to the row_id,
+    SHALL have: member_type equal to the event_id, registry_row_id equal to the row_id,
     allowed_events containing exactly the event_id, email matching the input
     email, and name matching the input name.
     """
@@ -481,7 +481,7 @@ class TestProperty7MemberRecordCreation:
         """
         **Validates: Requirements 4.2**
 
-        The created Member record has member_type=event_id, club_id=row_id,
+        The created Member record has member_type=event_id, registry_row_id=row_id,
         allowed_events=[event_id], email=input email (lowercased),
         and name=input name.
         """
@@ -505,8 +505,8 @@ class TestProperty7MemberRecordCreation:
             assert item['member_type'] == event_id, (
                 f"member_type should be '{event_id}', got '{item['member_type']}'"
             )
-            assert item['club_id'] == row_id, (
-                f"club_id should be '{row_id}', got '{item['club_id']}'"
+            assert item['registry_row_id'] == row_id, (
+                f"registry_row_id should be '{row_id}', got '{item['registry_row_id']}'"
             )
             assert item['allowed_events'] == [event_id], (
                 f"allowed_events should be ['{event_id}'], got {item['allowed_events']}"
@@ -577,21 +577,22 @@ class TestProperty8ExistingMemberEventAccessAppend:
         email=email_strategy,
         name=name_strategy,
         original_member_type=st.from_regex(r'[a-z_]{3,10}', fullmatch=True),
-        original_club_id=row_id_strategy,
+        original_registry_row_id=row_id_strategy,
         existing_events=st.lists(event_id_strategy, min_size=0, max_size=3, unique=True),
         new_event_id=event_id_strategy,
     )
     @settings(max_examples=25, deadline=None)
     def test_append_event_preserves_other_fields(
         self, member_id: str, email: str, name: str,
-        original_member_type: str, original_club_id: str,
+        original_member_type: str, original_registry_row_id: str,
         existing_events: list, new_event_id: str,
     ):
         """
         **Validates: Requirements 4.4**
 
         (a) event_id is appended to allowed_events, (b) all other fields
-        (member_type, club_id, name, email) remain completely unchanged.
+        (member_type, name, email) remain completely unchanged. registry_row_id
+        is updated to the new row (per Req 2.2).
         """
         # Ensure the new event isn't already in the list
         assume(new_event_id not in existing_events)
@@ -612,15 +613,16 @@ class TestProperty8ExistingMemberEventAccessAppend:
                 'email': email.lower(),
                 'name': name,
                 'member_type': original_member_type,
-                'club_id': original_club_id,
+                'registry_row_id': original_registry_row_id,
                 'allowed_events': existing_events,
                 'created_at': '2024-06-01T10:00:00+00:00',
                 'updated_at': '2024-06-01T10:00:00+00:00',
             }
             table.put_item(Item=original_item)
 
-            # Call update
-            success, error = update_member_event_access(member_id, new_event_id)
+            # Call update (now requires row_id argument)
+            new_row_id = f"row_{new_event_id.replace('evt_', '')}"
+            success, error = update_member_event_access(member_id, new_event_id, new_row_id)
             assert success is True, f"Update failed: {error}"
 
             # Verify the record
@@ -637,12 +639,9 @@ class TestProperty8ExistingMemberEventAccessAppend:
                     f"Original event '{evt}' missing from allowed_events"
                 )
 
-            # (b) Other fields unchanged
+            # (b) Other fields unchanged (except registry_row_id which is updated)
             assert item['member_type'] == original_member_type, (
                 f"member_type changed from '{original_member_type}' to '{item['member_type']}'"
-            )
-            assert item['club_id'] == original_club_id, (
-                f"club_id changed from '{original_club_id}' to '{item['club_id']}'"
             )
             assert item['name'] == name, (
                 f"name changed from '{name}' to '{item['name']}'"
@@ -686,14 +685,14 @@ class TestProperty8ExistingMemberEventAccessAppend:
                 'email': email.lower(),
                 'name': name,
                 'member_type': 'existing_type',
-                'club_id': 'existing_club',
+                'registry_row_id': 'existing_row',
                 'allowed_events': [event_id],
                 'created_at': '2024-06-01T10:00:00+00:00',
                 'updated_at': '2024-06-01T10:00:00+00:00',
             })
 
-            # Call update with event_id already present
-            success, error = update_member_event_access(member_id, event_id)
+            # Call update with event_id already present (requires row_id argument)
+            success, error = update_member_event_access(member_id, event_id, 'row_existing')
             assert success is True, f"Update failed: {error}"
 
             # Verify no duplication

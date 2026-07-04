@@ -167,7 +167,7 @@ def _auth_patch_create_order():
         extract_user_credentials=lambda event: ('user@test.nl', ['hdcnLeden'], None),
         validate_permissions_with_regions=lambda roles, perms, email, region: (False, None, None),
         log_successful_access=lambda *a, **kw: None,
-        get_club_id=lambda email: 'club-test-123',
+        get_registry_row_id=lambda email: 'club-test-123',
     )
 
 
@@ -677,7 +677,7 @@ class TestProperty12OneOrderPerClubPerEvent:
                 extract_user_credentials=lambda event: ('user@test.nl', ['hdcnLeden'], None),
                 validate_permissions_with_regions=lambda roles, perms, email, region: (False, None, None),
                 log_successful_access=lambda *a, **kw: None,
-                get_club_id=lambda email: club_id,
+                get_registry_row_id=lambda email: club_id,
             )
 
             with auth_patch:

@@ -497,7 +497,7 @@ class TestAdminUnlockOrder:
 
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
-        assert body['order']['status'] == 'submitted'
+        assert body['order']['status'] == 'draft'
         assert body['message'] == 'Order unlocked successfully'
 
     def test_unlock_records_status_history(self):
@@ -513,7 +513,7 @@ class TestAdminUnlockOrder:
         body = json.loads(response['body'])
         transition = body['transition']
         assert transition['from'] == 'locked'
-        assert transition['to'] == 'submitted'
+        assert transition['to'] == 'draft'
         assert transition['by'] == 'admin@h-dcn.nl'
         assert transition['source'] == 'manual'
         assert 'at' in transition
@@ -529,10 +529,10 @@ class TestAdminUnlockOrder:
             handler(self._make_event(order_id='order-001'), None)
 
         db_order = self.orders_table.get_item(Key={'order_id': 'order-001'})['Item']
-        assert db_order['status'] == 'submitted'
+        assert db_order['status'] == 'draft'
         # Should have 2 entries: the original lock + the unlock
         assert len(db_order['status_history']) == 2
-        assert db_order['status_history'][1]['to'] == 'submitted'
+        assert db_order['status_history'][1]['to'] == 'draft'
 
     # --- Event closed rejection tests ---
 
@@ -586,8 +586,8 @@ class TestAdminUnlockOrder:
     # --- Status validation tests ---
 
     def test_unlock_non_locked_order_returns_400(self):
-        """Cannot unlock an order that is not locked."""
-        self._create_order(order_id='order-001', status='submitted')
+        """Cannot unlock an order that is not locked or submitted."""
+        self._create_order(order_id='order-001', status='paid')
         self._create_event(event_id='event-pm2027', status='open')
         handler = self._get_handler()
 
@@ -597,7 +597,7 @@ class TestAdminUnlockOrder:
 
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
-        assert 'submitted' in body['error'].lower()
+        assert 'paid' in body['error'].lower()
 
     def test_unlock_draft_order_returns_400(self):
         """Cannot unlock an order in draft status."""
@@ -632,10 +632,10 @@ class TestAdminUnlockOrder:
         original_update = self.orders_table.update_item
 
         def mock_update(*args, **kwargs):
-            # Simulate concurrent modification: status changed to submitted
+            # Simulate concurrent modification: status changed to paid (not submitted/locked)
             self.orders_table.put_item(Item={
                 'order_id': 'order-001',
-                'status': 'submitted',
+                'status': 'paid',
                 'club_id': 'club-amsterdam',
                 'event_id': 'event-pm2027',
             })

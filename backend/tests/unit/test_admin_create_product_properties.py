@@ -33,9 +33,21 @@ _handler_file = os.path.abspath(
 
 
 def _load_handler():
-    """Load handler module by file path, bypassing sys.path."""
+    """Load handler module by file path, bypassing sys.path.
+
+    Cleans stale shared modules from sys.modules to prevent cross-contamination
+    when other tests (e.g. test_admin_bulk_create_variants) leave partial
+    shared.variant_helpers in the module cache.
+    """
     if 'app' in sys.modules:
         del sys.modules['app']
+
+    # Remove stale shared.* modules that may have been left by other tests
+    # with incomplete exports (e.g. missing create_default_variant)
+    stale_keys = [k for k in sys.modules if k.startswith('shared.')]
+    for key in stale_keys:
+        del sys.modules[key]
+
     spec = importlib.util.spec_from_file_location('app', _handler_file)
     module = importlib.util.module_from_spec(spec)
     sys.modules['app'] = module

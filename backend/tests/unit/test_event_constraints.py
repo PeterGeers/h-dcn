@@ -30,6 +30,7 @@ def _make_order(club_id, status, items):
     """Helper to build a minimal order dict."""
     return {
         "club_id": club_id,
+        "registry_row_id": club_id,
         "status": status,
         "items": items,
     }

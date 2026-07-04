@@ -397,7 +397,7 @@ class TestMaxPerClubValidation:
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
         errors = body.get('errors', [])
-        assert any(e['field'] == 'max_per_club' for e in errors)
+        assert any(e['field'] == 'max_per_order' for e in errors)
 
 
 # ---------------------------------------------------------------------------

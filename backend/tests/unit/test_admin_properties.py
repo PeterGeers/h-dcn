@@ -24,6 +24,7 @@ if _handler_dir not in sys.path:
 from shared.order_state_machine import (
     ORDERED_STATES,
     SPECIAL_TRANSITIONS,
+    VALID_TRANSITIONS,
     is_valid_transition,
 )
 from shared.product_validation import validate_product
@@ -71,21 +72,24 @@ class TestProperty8StateTransitionValidity:
         # Compute expected result from first principles
         expected = False
 
-        # Rule 1: locked → submitted (unlock) is always valid
-        if current == 'locked' and target == 'submitted':
+        # Rule 1: VALID_TRANSITIONS map (new fulfilment state machine)
+        if current in VALID_TRANSITIONS and target in VALID_TRANSITIONS[current]:
             expected = True
-        # Rule 2: payment_failed is terminal - no transitions out
+        # Rule 2: payment_failed → submitted (retry) is valid (legacy fallback)
+        elif current == 'payment_failed' and target == 'submitted':
+            expected = True
+        # Rule 3: payment_failed is otherwise terminal - no other transitions out
         elif current == 'payment_failed':
             expected = False
         else:
-            # Rule 3: Forward skip within ORDERED_STATES
+            # Rule 4: Forward skip within ORDERED_STATES
             if current in ORDERED_STATES and target in ORDERED_STATES:
                 current_idx = ORDERED_STATES.index(current)
                 target_idx = ORDERED_STATES.index(target)
                 if target_idx > current_idx:
                     expected = True
 
-            # Rule 4: Special transitions
+            # Rule 5: Special transitions (legacy)
             if not expected and current in SPECIAL_TRANSITIONS:
                 if target in SPECIAL_TRANSITIONS[current]:
                     expected = True
@@ -102,9 +106,13 @@ class TestProperty8StateTransitionValidity:
         """
         **Validates: Requirements 4.2, 4.14**
 
-        payment_failed is a terminal state — no transitions out are allowed.
+        payment_failed is a near-terminal state — only payment_failed → submitted
+        (retry) is allowed, all other transitions out are blocked.
         """
-        assert is_valid_transition('payment_failed', target) is False
+        if target == 'submitted':
+            assert is_valid_transition('payment_failed', target) is True
+        else:
+            assert is_valid_transition('payment_failed', target) is False
 
     @given(
         current=st.sampled_from(ORDERED_STATES),

@@ -109,7 +109,7 @@ def _auth_patches(user_email: str, club_id: str):
         extract_user_credentials=lambda event: (user_email, ['event_participant', 'hdcnLeden'], None),
         validate_permissions_with_regions=lambda roles, perms, email, region=None: (False, None, None),
         log_successful_access=lambda *a, **kw: None,
-        get_club_id=lambda email: club_id,
+        get_registry_row_id=lambda email: club_id,
     )
 
 

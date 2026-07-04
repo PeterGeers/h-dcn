@@ -771,11 +771,11 @@ class TestItemFieldsValidationEndToEnd:
 
 
 class TestEventBasedProductFiltering:
-    """Integration test: event_id-based product visibility."""
+    """Integration test: batch-get product retrieval by explicit IDs."""
 
     def test_webshop_request_shows_generic_products_only(self, dynamodb_tables, mock_auth):
         """
-        Requesting products with event_id=null shows webshop products only.
+        Requesting specific webshop product_ids returns those products.
         Requirements: 12.11
         """
         import handler.get_products.app as get_products_mod
@@ -786,7 +786,7 @@ class TestEventBasedProductFiltering:
             method='GET',
             user_email='buyer@h-dcn.nl',
             user_roles=['hdcnLeden'],
-            query_params={'event_id': 'null'},
+            query_params={'product_ids': 'prod_shirt,prod_sticker'},
         )
 
         response = get_products_mod.lambda_handler(event, None)
@@ -794,16 +794,16 @@ class TestEventBasedProductFiltering:
         body = json.loads(response['body'])
         products = body['products']
 
-        # Should contain webshop products (event_id: None)
+        # Should contain the requested webshop products
         product_ids = [p['product_id'] for p in products]
         assert 'prod_shirt' in product_ids
         assert 'prod_sticker' in product_ids
-        # Should NOT contain event-linked products
+        # Should NOT contain products not requested
         assert 'prod_presmeet_event' not in product_ids
 
     def test_event_request_shows_event_products(self, dynamodb_tables, mock_auth):
         """
-        Requesting products with specific event_id shows event-linked products.
+        Requesting event-linked product_ids returns those products.
         Requirements: 12.2
         """
         import handler.get_products.app as get_products_mod
@@ -814,7 +814,7 @@ class TestEventBasedProductFiltering:
             method='GET',
             user_email='presmeet@h-dcn.nl',
             user_roles=['Regio_Pressmeet'],
-            query_params={'event_id': 'evt-presmeet-2025'},
+            query_params={'product_ids': 'prod_presmeet_event'},
         )
 
         response = get_products_mod.lambda_handler(event, None)

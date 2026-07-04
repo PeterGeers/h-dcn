@@ -7,7 +7,6 @@ import os
 # Import from extracted helper modules (same handler directory)
 from status_validation import (
     validate_status_change,
-    log_status_change_success,
     trigger_role_assignment_if_needed,
 )
 from field_validation import (

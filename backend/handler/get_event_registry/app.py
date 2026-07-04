@@ -13,11 +13,9 @@ with masked claimant emails, sorted alphabetically case-insensitive by label.
 
 import json
 import os
-import hmac
-import hashlib
-import base64
 import time
 import boto3
+import jwt
 from decimal import Decimal
 from typing import TypedDict, NotRequired
 
@@ -87,44 +85,21 @@ def _get_event_signing_secret(event_id: str) -> str:
 
 def validate_session_token(token: str, event_id: str) -> tuple[bool, str | None]:
     """
-    Validate a session token (HMAC-signed JWT-like token from verify-password).
+    Validate a session token (JWT from verify-password step).
+
+    Uses PyJWT to decode and verify the token signature and expiration,
+    matching the jwt.encode() call in verify_event_password handler.
 
     Args:
-        token: The session token string (base64url-encoded header.payload.signature)
+        token: The JWT session token string
         event_id: The event_id that should match the token's event_id claim
 
     Returns:
         (True, None) if valid, (False, error_message) if invalid
     """
     try:
-        parts = token.split('.')
-        if len(parts) != 3:
-            return False, 'Invalid token format'
-
-        # Decode payload
-        payload_encoded = parts[1]
-        # Add padding
-        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        payload_bytes = base64.urlsafe_b64decode(payload_encoded)
-        payload = json.loads(payload_bytes)
-
-        # Verify signature using per-event secret (matches verify_event_password)
-        signing_input = f"{parts[0]}.{parts[1]}".encode('utf-8')
         secret = _get_event_signing_secret(event_id)
-        expected_sig = hmac.new(
-            secret.encode('utf-8'),
-            signing_input,
-            hashlib.sha256
-        ).digest()
-        expected_sig_encoded = base64.urlsafe_b64encode(expected_sig).rstrip(b'=').decode('utf-8')
-
-        if not hmac.compare_digest(parts[2], expected_sig_encoded):
-            return False, 'Invalid token signature'
-
-        # Check expiration
-        exp = payload.get('exp')
-        if not exp or time.time() > exp:
-            return False, 'Token expired'
+        payload = jwt.decode(token, secret, algorithms=['HS256'])
 
         # Check event_id match
         token_event_id = payload.get('event_id')
@@ -133,6 +108,11 @@ def validate_session_token(token: str, event_id: str) -> tuple[bool, str | None]
 
         return True, None
 
+    except jwt.ExpiredSignatureError:
+        return False, 'Token expired'
+    except jwt.InvalidTokenError as e:
+        print(f"Session token validation error: {e}")
+        return False, 'Invalid token signature'
     except Exception as e:
         print(f"Session token validation error: {e}")
         return False, 'Token validation failed'

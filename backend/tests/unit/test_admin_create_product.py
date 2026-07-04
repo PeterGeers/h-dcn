@@ -10,30 +10,45 @@ Tests the modified handler that supports:
 import json
 import os
 import sys
+import importlib.util
 import pytest
 import boto3
 from unittest.mock import patch
 from moto import mock_aws
-
-# Ensure auth layer is importable
-_layers_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python')
-)
-if _layers_path not in sys.path:
-    sys.path.insert(0, _layers_path)
-
-# Ensure handler is importable
-_handler_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'admin_create_product')
-)
-if _handler_path not in sys.path:
-    sys.path.insert(0, _handler_path)
 
 # Set environment before importing handler
 os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten'
 os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
 os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+
+# Handler path for importlib loading
+_handler_file = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'admin_create_product', 'app.py')
+)
+
+
+def _load_handler():
+    """Load handler module by file path, bypassing sys.path.
+
+    Cleans stale shared modules from sys.modules to prevent cross-contamination
+    when other tests (e.g. test_admin_bulk_create_variants) leave partial
+    shared.variant_helpers in the module cache.
+    """
+    if 'app' in sys.modules:
+        del sys.modules['app']
+
+    # Remove stale shared.* modules that may have been left by other tests
+    # with incomplete exports (e.g. missing create_default_variant)
+    stale_keys = [k for k in sys.modules if k.startswith('shared.')]
+    for key in stale_keys:
+        del sys.modules[key]
+
+    spec = importlib.util.spec_from_file_location('app', _handler_file)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules['app'] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _make_event(body):
@@ -65,7 +80,7 @@ def _auth_patches():
 
 @pytest.fixture
 def producten_table():
-    """Create a mocked Producten DynamoDB table."""
+    """Create a mocked Producten DynamoDB table and load handler."""
     with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         table = dynamodb.create_table(
@@ -87,18 +102,7 @@ def producten_table():
             BillingMode='PAY_PER_REQUEST'
         )
 
-        # Ensure our handler path is first in sys.path so `import app` resolves correctly
-        if sys.path[0] != _handler_path:
-            if _handler_path in sys.path:
-                sys.path.remove(_handler_path)
-            sys.path.insert(0, _handler_path)
-
-        # Clear any stale app module cache
-        if 'app' in sys.modules:
-            del sys.modules['app']
-
-        # Patch the handler's table reference to use the mocked table
-        import app as handler_module
+        handler_module = _load_handler()
         handler_module.table = table
 
         yield table

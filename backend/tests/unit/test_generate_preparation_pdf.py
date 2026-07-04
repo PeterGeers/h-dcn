@@ -166,7 +166,7 @@ def setup_aws():
         orders_table.put_item(Item={
             'order_id': 'ord-1',
             'event_id': 'evt-001',
-            'club_id': 'row-1',
+            'registry_row_id': 'row-1',
             'status': 'submitted',
             'payment_status': 'paid',
             'total_amount': Decimal('150.00'),
@@ -201,7 +201,7 @@ def setup_aws():
         orders_table.put_item(Item={
             'order_id': 'ord-2',
             'event_id': 'evt-001',
-            'club_id': 'row-2',
+            'registry_row_id': 'row-2',
             'status': 'locked',
             'payment_status': 'unpaid',
             'total_amount': Decimal('50.00'),
@@ -222,7 +222,7 @@ def setup_aws():
         orders_table.put_item(Item={
             'order_id': 'ord-3',
             'event_id': 'evt-001',
-            'club_id': 'row-3',
+            'registry_row_id': 'row-3',
             'status': 'draft',
             'payment_status': 'unpaid',
             'total_amount': Decimal('0'),
@@ -372,8 +372,8 @@ class TestByOrderMode:
             html_content = call_args[1]['string'] if 'string' in call_args[1] else call_args[0][0]
 
         # Should contain Club Zebra and Club Alpha (submitted/locked)
-        assert 'Club Zebra' in html_content
-        assert 'Club Alpha' in html_content
+        assert 'club: Club Zebra' in html_content
+        assert 'club: Club Alpha' in html_content
         # Should NOT contain Club Beta (draft order)
         assert 'Club Beta' not in html_content
 
@@ -393,8 +393,8 @@ class TestByOrderMode:
             html_content = call_args[1]['string'] if 'string' in call_args[1] else call_args[0][0]
 
         # Club Alpha should come before Club Zebra in the HTML
-        alpha_pos = html_content.index('Club Alpha')
-        zebra_pos = html_content.index('Club Zebra')
+        alpha_pos = html_content.index('club: Club Alpha')
+        zebra_pos = html_content.index('club: Club Zebra')
         assert alpha_pos < zebra_pos, "Club Alpha should appear before Club Zebra"
 
 
@@ -480,7 +480,7 @@ class TestProductFilter:
             html_content = call_args[1]['string'] if 'string' in call_args[1] else call_args[0][0]
 
         # Club Zebra has T-Shirt, Club Alpha does not
-        assert 'Club Zebra' in html_content
+        assert 'club: Club Zebra' in html_content
         assert 'Club Alpha' not in html_content
 
     def test_filter_by_guest_mode(self, setup_aws):
@@ -552,12 +552,12 @@ class TestFooter:
 class TestHelpers:
     """Tests for internal helper functions."""
 
-    def test_sort_key_club_name_case_insensitive(self, setup_aws):
+    def test_sort_key_row_label_case_insensitive(self, setup_aws):
         """Sort key should be case-insensitive."""
         handler = setup_aws
-        assert handler._sort_key_club_name('Zebra') == 'zebra'
-        assert handler._sort_key_club_name('ALPHA') == 'alpha'
-        assert handler._sort_key_club_name('') == ''
+        assert handler._sort_key_row_label('Zebra') == 'zebra'
+        assert handler._sort_key_row_label('ALPHA') == 'alpha'
+        assert handler._sort_key_row_label('') == ''
 
     def test_sort_key_guest_name_last_word(self, setup_aws):
         """Sort key should use last word as primary, rest as secondary."""

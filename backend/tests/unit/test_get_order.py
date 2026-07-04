@@ -404,7 +404,7 @@ class TestEventSource:
 
         assert response['statusCode'] == 403
         body = json.loads(response['body'])
-        assert 'access' in body.get('error', '').lower()
+        assert body.get('error_code') == 'EVENT_ACCESS_DENIED'
 
 
 # ---------------------------------------------------------------------------

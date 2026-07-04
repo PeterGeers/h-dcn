@@ -197,6 +197,7 @@ def setup_tables():
             'member_id': TEST_TARGET_MEMBER_ID,
             'email': 'target@h-dcn.nl',
             'club_id': TEST_CLUB_ID,
+            'registry_row_id': TEST_CLUB_ID,
             'member_type': 'hdcn_member',
             'allowed_events': [],
         })
@@ -204,6 +205,7 @@ def setup_tables():
             'member_id': TEST_OTHER_CLUB_MEMBER_ID,
             'email': 'otherclub@h-dcn.nl',
             'club_id': 'club-different-999',
+            'registry_row_id': 'club-different-999',
             'member_type': 'hdcn_member',
             'allowed_events': [],
         })
@@ -253,6 +255,7 @@ def _seed_club_order(orders_table, order_id=TEST_ORDER_ID, primary_member_id=TES
         'event_id': TEST_EVENT_ID,
         'member_id': primary_member_id,
         'club_id': club_id,
+        'registry_row_id': club_id,
         'status': status,
         'items': [],
         'delegates': delegates,
@@ -298,7 +301,7 @@ class TestNotClubScoped:
 
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
-        assert 'club' in body.get('error', '').lower()
+        assert 'row-scoped' in body.get('error', '').lower()
 
 
 # ---------------------------------------------------------------------------
@@ -387,9 +390,9 @@ class TestAddDelegate:
             event = _make_event(body={'action': 'add', 'member_id': TEST_OTHER_CLUB_MEMBER_ID})
             response = handler.lambda_handler(event, None)
 
-        assert response['statusCode'] == 400
+        assert response['statusCode'] == 403
         body = json.loads(response['body'])
-        assert 'club' in body.get('error', '').lower()
+        assert 'registry row' in body.get('error', '').lower()
 
     def test_returns_400_when_adding_primary_as_secondary(self, setup_tables):
         """Cannot add the primary delegate as secondary."""

@@ -404,6 +404,18 @@ class TestProperty17DraftSaveAcceptsInvalidData:
                 AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
                 BillingMode='PAY_PER_REQUEST',
             )
+            # Members table needed for event access check
+            members_table = dynamodb.create_table(
+                TableName='Members',
+                KeySchema=[{'AttributeName': 'member_id', 'KeyType': 'HASH'}],
+                AttributeDefinitions=[{'AttributeName': 'member_id', 'AttributeType': 'S'}],
+                BillingMode='PAY_PER_REQUEST',
+            )
+            members_table.put_item(Item={
+                'member_id': 'member-001',
+                'email': 'test@h-dcn.nl',
+                'allowed_events': ['evt_test123'],
+            })
 
             # Seed a draft order
             order_id = 'draft-order-001'
@@ -432,6 +444,7 @@ class TestProperty17DraftSaveAcceptsInvalidData:
             handler = _load_update_handler()
             handler.orders_table = orders_table
             handler.producten_table = producten_table
+            handler.members_table = members_table
 
             # Build persons array with possibly invalid data
             person = {'name': person_name if person_name is not None else '', 'items': []}
@@ -453,7 +466,8 @@ class TestProperty17DraftSaveAcceptsInvalidData:
             )
 
             with _update_auth_patches('test@h-dcn.nl'):
-                response = handler.lambda_handler(api_event, None)
+                with patch.object(handler, 'verify_order_event_access', return_value=True):
+                    response = handler.lambda_handler(api_event, None)
 
             # Draft save should succeed (200) — no validation errors
             assert response['statusCode'] == 200, (
@@ -712,7 +726,7 @@ class TestProperty19SubmitValidationQuantityLimits:
             errors = handler._validate_event_persons(order, products, [])
 
             limit_errors = [
-                e for e in errors if e.get('field') == 'max_per_club'
+                e for e in errors if e.get('field') == 'max_per_order'
             ]
             assert len(limit_errors) >= 1, (
                 f"Total quantity {total_qty} exceeds max_per_club {max_per_club}, "
@@ -778,7 +792,7 @@ class TestProperty19SubmitValidationQuantityLimits:
 
             errors = handler._validate_event_persons(order, products, [])
 
-            limit_errors = [e for e in errors if e.get('field') == 'max_per_club']
+            limit_errors = [e for e in errors if e.get('field') == 'max_per_order']
             assert len(limit_errors) == 0, (
                 f"Total quantity {max_per_club} equals max_per_club {max_per_club}, "
                 f"should not produce error. Got: {limit_errors}"
@@ -790,7 +804,7 @@ class TestProperty19SubmitValidationQuantityLimits:
         order_qty=st.integers(min_value=1, max_value=20),
         product_id=product_id_strategy,
     )
-    @settings(max_examples=50, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @settings(max_examples=50, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.filter_too_much])
     def test_exceeding_max_per_event_rejected(
         self, max_per_event: int, sold_count: int, order_qty: int, product_id: str,
     ):
@@ -801,8 +815,8 @@ class TestProperty19SubmitValidationQuantityLimits:
         submission SHALL produce a max_per_event error with remaining capacity.
         """
         remaining = max_per_event - sold_count
-        assume(order_qty > remaining)
         assume(remaining >= 0)  # sold_count <= max_per_event
+        assume(order_qty > remaining)
 
         with mock_aws():
             dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')

@@ -8,12 +8,10 @@ import json
 import os
 import sys
 import importlib.util
-import hmac
-import hashlib
-import base64
 import time
 import pytest
 import boto3
+import jwt
 from moto import mock_aws
 from unittest.mock import patch, MagicMock
 from decimal import Decimal
@@ -46,17 +44,17 @@ def _load_handler():
 
 
 def _create_session_token(event_id: str, secret: str = 'test-secret-key', expired: bool = False) -> str:
-    """Create a valid session token for testing. Uses per-event secret like the handler."""
-    header = base64.urlsafe_b64encode(json.dumps({'alg': 'HS256', 'typ': 'JWT'}).encode()).rstrip(b'=').decode()
+    """Create a valid session token for testing. Uses jwt.encode like verify_event_password."""
     exp = int(time.time()) - 100 if expired else int(time.time()) + 900
-    payload_data = {'event_id': event_id, 'verified_at': int(time.time()), 'exp': exp}
-    payload = base64.urlsafe_b64encode(json.dumps(payload_data).encode()).rstrip(b'=').decode()
-    signing_input = f"{header}.{payload}".encode('utf-8')
+    payload = {
+        'event_id': event_id,
+        'verified_at': int(time.time()),
+        'exp': exp,
+        'iat': int(time.time()),
+    }
     # Per-event secret: base_secret:event_id (matches handler's _get_event_signing_secret)
     per_event_secret = f"{secret}:{event_id}"
-    sig = hmac.new(per_event_secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
-    sig_encoded = base64.urlsafe_b64encode(sig).rstrip(b'=').decode()
-    return f"{header}.{payload}.{sig_encoded}"
+    return jwt.encode(payload, per_event_secret, algorithm='HS256')
 
 
 def _make_event(event_id: str, headers: dict = None, path_params: dict = None):

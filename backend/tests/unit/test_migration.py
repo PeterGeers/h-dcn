@@ -203,32 +203,33 @@ class TestIdempotency:
 # --- Test: Skip Missing S3 Entries (Req 11.4) ---
 
 class TestSkipMissingS3Entries:
-    """Records with club_id not found in registry should be skipped."""
+    """Records with club_id not found in registry should be migrated with fallback label."""
 
     def test_skip_missing_s3_entries_orders(self, orders_table):
-        """club_id '999' is not in SAMPLE_REGISTRY → record is skipped."""
+        """club_id '999' is not in SAMPLE_REGISTRY → record is still migrated with fallback."""
         orders_table.put_item(Item={"order_id": "ord-unknown", "club_id": "999"})
 
         stats = migrate_orders(orders_table, SAMPLE_REGISTRY, dry_run=False)
 
         assert stats["scanned"] == 1
-        assert stats["skipped"] == 1
-        assert stats["converted"] == 0
+        assert stats["skipped"] == 0
+        assert stats["converted"] == 1
 
-        # Record should be unchanged
+        # Record should be migrated with club_id as label fallback
         item = orders_table.get_item(Key={"order_id": "ord-unknown"})["Item"]
-        assert "registry_row_id" not in item
-        assert item["club_id"] == "999"
+        assert item["registry_row_id"] == "999"
+        assert item["registry_row_label"] == "999"
+        assert "club_id" not in item
 
     def test_skip_missing_s3_entries_payments(self, payments_table):
-        """Payments with unknown club_id are also skipped."""
+        """Payments with unknown club_id are still migrated with fallback."""
         payments_table.put_item(Item={"payment_id": "pay-1", "club_id": "888"})
 
         stats = migrate_payments(payments_table, SAMPLE_REGISTRY, dry_run=False)
 
         assert stats["scanned"] == 1
-        assert stats["skipped"] == 1
-        assert stats["converted"] == 0
+        assert stats["skipped"] == 0
+        assert stats["converted"] == 1
 
 
 # --- Test: Pagination Handling (Req 11.6) ---

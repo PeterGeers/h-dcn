@@ -326,13 +326,13 @@ class TestCreateOrderPriceValidation:
     """Test price validation in create_order handler."""
 
     def _order_auth_patches(self):
-        """Auth patches for create_order (includes get_club_id)."""
+        """Auth patches for create_order (includes get_registry_row_id)."""
         return patch.multiple(
             'app',
             extract_user_credentials=lambda event: ('user@h-dcn.nl', ['hdcnLeden'], None),
             validate_permissions_with_regions=lambda roles, perms, email, region: (False, None, {}),
             log_successful_access=lambda *a, **kw: None,
-            get_club_id=lambda email: 'club_001',
+            get_registry_row_id=lambda email: 'club_001',
         )
 
     @mock_aws
