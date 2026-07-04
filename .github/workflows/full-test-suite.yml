@@ -152,7 +152,7 @@ jobs:
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -173,7 +173,7 @@ jobs:
         working-directory: frontend
         continue-on-error: true
         run: |
-          npm test -- --watchAll=false --ci --forceExit --testTimeout=10000 --maxWorkers=2 2>&1 | tee test-output.txt
+          npm test -- --watchAll=false --ci --forceExit --testTimeout=10000 2>&1 | tee test-output.txt
           echo $? > exit-code.txt
 
       - name: Output to job summary

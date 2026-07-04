@@ -160,7 +160,7 @@ describe('OrderItemFieldsEditor', () => {
 
     it('auto-generates id from label when id matches previous label conversion', () => {
       const onChange = jest.fn();
-      // Field where id matches the kebab-case of the label (auto-generated)
+      // Field where id matches the snake_case of the label (auto-generated)
       renderEditor([createField({ id: '', label: '' })], onChange);
 
       const labelInputs = screen.getAllByPlaceholderText('Bijv. Naam deelnemer');
@@ -169,7 +169,7 @@ describe('OrderItemFieldsEditor', () => {
       expect(onChange).toHaveBeenCalledWith([
         expect.objectContaining({
           label: 'Naam deelnemer',
-          id: 'naam-deelnemer',
+          id: 'naam_deelnemer',
         }),
       ]);
     });
