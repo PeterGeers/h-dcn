@@ -68,7 +68,12 @@
     "amount": "Importe",
     "close": "Cerrar",
     "summary": "Resumen",
-    "fields_incomplete": "No todos los campos se han rellenado correctamente:"
+    "fields_incomplete": "No todos los campos se han rellenado correctamente:",
+    "address_name": "Nombre del destinatario",
+    "address_street": "Calle + número",
+    "address_postcode": "Código postal",
+    "address_city": "Ciudad",
+    "address_country": "País"
   },
   "confirmation": {
     "title": "Confirmación de pedido",
@@ -106,7 +111,8 @@
     "no_data": "No se encontraron datos de pedidos.",
     "success": "Pedido realizado correctamente!",
     "order_number": "Número de pedido",
-    "back_to_webshop": "Volver a la tienda"
+    "back_to_webshop": "Volver a la tienda",
+    "loading": "Cargando pedido..."
   },
   "orders_admin": {
     "title": "Pedidos",

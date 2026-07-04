@@ -130,10 +130,10 @@
 ## Opruimtaken (kleine fixes)
 
 - [ ] 5.1 **H-dcn omgeving: alle tabel weergaven migreren naar Table Filter Framework**
-  - Inventariseer alle tabellen van de h-dcn omgeving en in welke modules die tabellen getoond worden.
-  - Alle geidentificeerde tabelweergaven in de h-dcn omgeving module consistent maken
+  - Inventariseer alle tabellen van de h-dcn app en in welke modules die tabellen getoond worden.
+  - Alle geidentificeerde tabelweergaven in de h-dcn app consistent maken
   - Geen dubbele knoppen. Verwijder losse filter-knoppen/selectors boven tabellen (regio, status, etc.)
   - Vervang door `FilterPanel` + `GenericFilter` dropdowns (enum/categorie velden)
   - Voeg `FilterableHeader` toe op alle kolommen (inline tekst filter + sort)
   - Patroon: acties in modal (klik op rij), niet in de tabelrij
-  - Resultaat: één consistent filter-patroon door de hele h-dcn omgeving
+  - Resultaat: één consistent filter-patroon door de hele h-dcn app

@@ -73,7 +73,7 @@ Exclude: test files, .venv/, node*modules/, build/, *.generated.\_ files.
 Create a new spec at `.kiro/specs/code-quality-fixes-YYYY-MM/` (use current month) with:
 
 - `requirements.md` — summarize all findings with file paths, line counts, error messages
-- `tasks.md` — structured actionable task list grouped by category (dead code → broken tests → file length → missing tests → stale docs), with priority order
+- `tasks.md` — structured actionable task list grouped by category (dead code → broken tests → file length → missing tests → stale docs), with priority order and dependency graph
 
 Use "Quick Plan" workflow. Do not prompt for intermediate decisions.
 

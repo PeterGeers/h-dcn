@@ -68,7 +68,12 @@
     "amount": "Beløb",
     "close": "Luk",
     "summary": "Oversigt",
-    "fields_incomplete": "Ikke alle felter er udfyldt korrekt:"
+    "fields_incomplete": "Ikke alle felter er udfyldt korrekt:",
+    "address_name": "Modtagers navn",
+    "address_street": "Gade + husnummer",
+    "address_postcode": "Postnummer",
+    "address_city": "By",
+    "address_country": "Land"
   },
   "confirmation": {
     "title": "Ordrebekræftelse",
@@ -106,7 +111,8 @@
     "no_data": "Ingen bestillingsdata fundet.",
     "success": "Bestilling gennemført!",
     "order_number": "Ordrenummer",
-    "back_to_webshop": "Tilbage til webshop"
+    "back_to_webshop": "Tilbage til webshop",
+    "loading": "Indlæser bestilling..."
   },
   "orders_admin": {
     "title": "Bestillinger",

@@ -56,7 +56,12 @@
     "test_cvc": "CVC: Beliebige 3 Ziffern (z.B. 123)",
     "test_name": "Name: Beliebiger Name (z.B. Test Benutzer)",
     "test_postal": "Postleitzahl: Beliebiges Format (z.B. 1234AB)",
-    "order_number_label": "Bestellnummer"
+    "order_number_label": "Bestellnummer",
+    "address_name": "Empfängername",
+    "address_street": "Straße + Hausnummer",
+    "address_postcode": "Postleitzahl",
+    "address_city": "Stadt",
+    "address_country": "Land"
   },
   "confirmation": {
     "title": "Bestellbestätigung",
@@ -94,7 +99,8 @@
     "no_data": "Keine Bestelldaten gefunden.",
     "success": "Bestellung erfolgreich aufgegeben!",
     "order_number": "Bestellnummer",
-    "back_to_webshop": "Zurück zum Webshop"
+    "back_to_webshop": "Zurück zum Webshop",
+    "loading": "Bestellung laden..."
   },
   "orders_admin": {
     "title": "Bestellungen",

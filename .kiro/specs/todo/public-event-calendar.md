@@ -18,13 +18,14 @@ H-DCN wil een event calendar die:
 - Open Graph meta tags voor social media sharing
 - Responsive: 1 card per rij (mobile), 4 per rij (desktop)
 - Gesorteerd op startdatum, alleen toekomstige events
+- Filter events op type: Nationaal, Internationaal en Diversen
+- Filter op regio's
+- Filter op Datum 
 
 ### Out of scope
 
 - Booking flow (vereist login, apart systeem)
 - Event admin (bestaand)
-- Zoeken/filteren op categorie (toekomstige iteratie)
-
 ---
 
 ## Routes
@@ -47,6 +48,7 @@ De `/events` en `/events/:slug` routes zijn publiek — geen Cognito token verei
 - Retourneert: events met `status === 'published'` en `end_date >= vandaag`
 - Excludeert: `event_type === 'webshop'`
 - Velden: `event_id`, `name`, `slug`, `event_type`, `location`, `start_date`, `end_date`, `poster_url`, `description`
+- Wel de landing page als die bestaat
 - Geen admin-velden (cost, revenue, allowed_events, etc.)
 
 Handler: `backend/handler/get_event_public/app.py` (bestaat al — uitbreiden of valideren)
@@ -68,7 +70,7 @@ Handler: `backend/handler/get_event_public/app.py` (bestaat al — uitbreiden of
 
 - Route: `/events/:slug`
 - Toont: poster (groot), naam, start/end datum, locatie, beschrijving
-- CTA button: "Aanmelden" → navigeert naar `/events/:eventId/booking` (vereist login)
+- Optie CTA button: "Aanmelden" → navigeert naar `/events/:eventId/booking` (vereist login)
 - Als `participation === 'open'`: toon "Open voor iedereen"
 - Als `participation === 'members'`: toon "Alleen voor H-DCN leden"
 - Als `participation === 'closed'`: toon "Op uitnodiging"

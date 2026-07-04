@@ -74,7 +74,8 @@
   "leveropties": [
     { "name": "Verzenden per koerier", "cost": "5.0" },
     { "name": "Ophalen op afspraak", "cost": "1.0" },
-    { "name": "Ophalen bij ALV", "cost": "0" }
+    { "name": "Ophalen bij ALV", "cost": "0" },
+    { "name": "Afhalen op locatie", "cost": "0" }
   ],
   "geslacht": [
     "Man",

@@ -91,11 +91,7 @@ const MyOrders: React.FC = () => {
       const data = response?.data || response;
       setOrders(data?.orders || []);
     } catch (err) {
-      setError(
-        t('my_orders.load_error', {
-          defaultValue: 'Fout bij het ophalen van je bestellingen.',
-        })
-      );
+      setError(t('my_orders.load_error'));
     } finally {
       setLoading(false);
     }

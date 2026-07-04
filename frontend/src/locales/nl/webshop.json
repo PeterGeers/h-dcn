@@ -70,7 +70,12 @@
     "amount": "Bedrag",
     "close": "Sluiten",
     "summary": "Overzicht",
-    "fields_incomplete": "Niet alle velden zijn correct ingevuld:"
+    "fields_incomplete": "Niet alle velden zijn correct ingevuld:",
+    "address_name": "Naam ontvanger",
+    "address_street": "Straat + huisnummer",
+    "address_postcode": "Postcode",
+    "address_city": "Woonplaats",
+    "address_country": "Land"
   },
   "confirmation": {
     "title": "Orderbevestiging",
@@ -108,7 +113,8 @@
     "no_data": "Geen ordergegevens gevonden.",
     "success": "Bestelling succesvol geplaatst!",
     "order_number": "Ordernummer",
-    "back_to_webshop": "Terug naar webshop"
+    "back_to_webshop": "Terug naar webshop",
+    "loading": "Bestelling laden..."
   },
   "orders_admin": {
     "title": "Bestellingen",

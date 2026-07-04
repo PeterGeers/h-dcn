@@ -68,7 +68,12 @@
     "amount": "Amount",
     "close": "Close",
     "summary": "Summary",
-    "fields_incomplete": "Not all fields have been filled in correctly:"
+    "fields_incomplete": "Not all fields have been filled in correctly:",
+    "address_name": "Recipient name",
+    "address_street": "Street + house number",
+    "address_postcode": "Postcode",
+    "address_city": "City",
+    "address_country": "Country"
   },
   "confirmation": {
     "title": "Order Confirmation",
@@ -106,7 +111,8 @@
     "no_data": "No order data found.",
     "success": "Order placed successfully!",
     "order_number": "Order number",
-    "back_to_webshop": "Back to webshop"
+    "back_to_webshop": "Back to webshop",
+    "loading": "Loading order..."
   },
   "orders_admin": {
     "title": "Orders",
