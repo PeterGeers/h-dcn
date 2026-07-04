@@ -5,3 +5,5 @@ moto
 requests
 hypothesis
 Pillow
+PyJWT==2.9.0
+bcrypt==4.2.1
