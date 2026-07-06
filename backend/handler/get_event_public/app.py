@@ -45,9 +45,26 @@ def convert_decimals(obj):
 
 def _resolve_event_by_slug(slug):
     """
-    Scan the Events table for an event whose landing_page.slug matches.
+    Find a published event by slug.
+
+    Checks two patterns:
+    1. Top-level 'slug' field (standard events from import or manual creation)
+    2. Nested 'landing_page.slug' with landing_page.enabled = True (legacy pattern)
+
     Returns the event item or None.
     """
+    # Pattern 1: top-level slug field (most common for imported events)
+    response = events_table.scan(
+        FilterExpression='slug = :slug',
+        ExpressionAttributeValues={
+            ':slug': slug,
+        },
+    )
+    items = response.get('Items', [])
+    if items:
+        return items[0]
+
+    # Pattern 2: landing_page.slug with enabled flag (legacy landing page pattern)
     response = events_table.scan(
         FilterExpression='landing_page.slug = :slug AND landing_page.enabled = :enabled',
         ExpressionAttributeValues={
@@ -110,6 +127,9 @@ def _build_public_response(event_item):
         'start_date': event_item.get('start_date', ''),
         'end_date': event_item.get('end_date', ''),
         'location': event_item.get('location', ''),
+        'description': event_item.get('description', ''),
+        'poster_url': event_item.get('poster_url', ''),
+        'slug': event_item.get('slug', ''),
         'registration_status': _determine_registration_status(event_item),
         'has_event_password': has_event_password,
         'landing_page_enabled': landing_page_enabled,

@@ -62,6 +62,18 @@ IMAGE_URL_PATTERN: re.Pattern[str] = re.compile(
     re.IGNORECASE,
 )
 
+# Regex to find Google Drive file links in descriptions
+GOOGLE_DRIVE_URL_PATTERN: re.Pattern[str] = re.compile(
+    r"https?://drive\.google\.com/(?:file/d/|open\?id=)[a-zA-Z0-9_-]+",
+    re.IGNORECASE,
+)
+
+# Regex to unwrap Google redirect URLs (https://www.google.com/url?q=REAL_URL&...)
+GOOGLE_REDIRECT_PATTERN: re.Pattern[str] = re.compile(
+    r"https?://(?:www\.)?google\.com/url\?q=(https?://[^&]+)",
+    re.IGNORECASE,
+)
+
 # S3 bucket and URL prefix for event posters
 S3_POSTER_BUCKET: str = "h-dcn-data-506221081911"
 S3_POSTER_PREFIX: str = "event-posters"
@@ -127,11 +139,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def generate_slug(name: str) -> str:
+def generate_slug(name: str, start_date: str = "") -> str:
     """
-    Generate a URL-friendly slug from an event name.
+    Generate a URL-friendly slug from an event name, prefixed with the year.
+
+    Format: yyyy-event-name-slug
+
+    Args:
+        name: The event name.
+        start_date: The start date in YYYY-MM-DD format (used for year prefix).
 
     Rules:
+    - Prefix with year from start_date
     - Convert to lowercase
     - Replace spaces with hyphens
     - Strip special characters (keep only alphanumeric + hyphens)
@@ -143,6 +162,12 @@ def generate_slug(name: str) -> str:
     slug = SLUG_STRIP_PATTERN.sub("", slug)
     slug = SLUG_MULTI_HYPHEN.sub("-", slug)
     slug = slug.strip("-")
+
+    # Suffix with year from start_date
+    if start_date and len(start_date) >= 4:
+        year = start_date[:4]
+        slug = f"{slug}-{year}"
+
     return slug
 
 
@@ -170,13 +195,45 @@ def normalize_date(date_field: dict[str, str]) -> str:
     return ""
 
 
+def _unwrap_google_redirect(url: str) -> str:
+    """Unwrap a Google redirect URL to get the actual destination URL."""
+    from urllib.parse import unquote
+    match = GOOGLE_REDIRECT_PATTERN.match(url)
+    if match:
+        return unquote(match.group(1))
+    return url
+
+
+def _extract_google_drive_file_id(url: str) -> str | None:
+    """
+    Extract Google Drive file ID from various URL formats.
+
+    Supported formats:
+    - https://drive.google.com/open?id=FILE_ID
+    - https://drive.google.com/file/d/FILE_ID/view?usp=drivesdk
+    - https://drive.google.com/uc?id=FILE_ID
+    """
+    # Pattern: /file/d/FILE_ID/
+    match = re.search(r"/file/d/([a-zA-Z0-9_-]+)", url)
+    if match:
+        return match.group(1)
+    # Pattern: ?id=FILE_ID or &id=FILE_ID
+    match = re.search(r"[?&]id=([a-zA-Z0-9_-]+)", url)
+    if match:
+        return match.group(1)
+    return None
+
+
 def extract_poster_url(google_event: dict[str, Any]) -> str | None:
     """
     Extract a poster image URL from a Google Calendar event.
 
-    Checks two sources in order of priority:
+    Checks three sources in order of priority:
     1. Event attachments (prefer image/* mimeType)
-    2. Image URL embedded in the description field (regex for common extensions)
+    2. Google Drive link in the description
+    3. Direct image URL in the description (regex for common extensions)
+
+    All URLs are unwrapped from Google redirects if needed.
 
     Returns the poster URL or None if no poster is found.
     """
@@ -186,14 +243,27 @@ def extract_poster_url(google_event: dict[str, Any]) -> str | None:
         mime_type: str = attachment.get("mimeType", "")
         file_url: str = attachment.get("fileUrl", "")
         if mime_type.startswith("image/") and file_url:
-            return file_url
+            return _unwrap_google_redirect(file_url)
 
-    # Priority 2: Regex in description for image URLs
+    # Priority 2: Google Drive link in description
     description: str | None = google_event.get("description")
     if description:
-        match: re.Match[str] | None = IMAGE_URL_PATTERN.search(description)
-        if match:
-            return match.group(0)
+        # Check for Google redirect wrapping a Drive URL
+        redirect_match = GOOGLE_REDIRECT_PATTERN.search(description)
+        if redirect_match:
+            inner_url = _unwrap_google_redirect(redirect_match.group(0))
+            if _extract_google_drive_file_id(inner_url):
+                return inner_url
+
+        # Check for direct Drive link
+        drive_match = GOOGLE_DRIVE_URL_PATTERN.search(description)
+        if drive_match:
+            return drive_match.group(0)
+
+        # Priority 3: Direct image URL
+        img_match: re.Match[str] | None = IMAGE_URL_PATTERN.search(description)
+        if img_match:
+            return _unwrap_google_redirect(img_match.group(0))
 
     return None
 
@@ -230,37 +300,90 @@ def _get_extension_from_url(url: str, content_type: str | None = None) -> str:
     return ".jpg"
 
 
+def _download_from_google_drive(
+    file_id: str,
+    credentials_path: str,
+) -> tuple[bytes | None, str]:
+    """
+    Download a file from Google Drive using the service account credentials.
+
+    Returns (image_bytes, content_type) or (None, "") on failure.
+    """
+    try:
+        creds = Credentials.from_service_account_file(
+            credentials_path,
+            scopes=["https://www.googleapis.com/auth/drive.readonly"],
+        )
+        drive_service = build("drive", "v3", credentials=creds)
+
+        # Get file metadata to determine MIME type
+        file_meta = drive_service.files().get(
+            fileId=file_id, fields="mimeType,name"
+        ).execute()
+        mime_type: str = file_meta.get("mimeType", "image/jpeg")
+
+        # Download file content
+        request = drive_service.files().get_media(fileId=file_id)
+        from io import BytesIO
+        from googleapiclient.http import MediaIoBaseDownload
+
+        buffer = BytesIO()
+        downloader = MediaIoBaseDownload(buffer, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+
+        return buffer.getvalue(), mime_type
+
+    except Exception as e:
+        print(f"      ⚠ Failed to download from Google Drive (file_id={file_id}): {e}")
+        return None, ""
+
+
 def download_and_upload_poster(
     url: str,
     slug: str,
     session: boto3.Session,
+    credentials_path: str = ".googleCredentials.json",
 ) -> str | None:
     """
     Download a poster image from a URL and upload it to S3.
+
+    Supports both direct image URLs and Google Drive links (via Drive API).
 
     Args:
         url: The poster image URL to download.
         slug: The event slug (used as the S3 object key basename).
         session: boto3 Session with appropriate credentials.
+        credentials_path: Path to Google service account credentials (for Drive downloads).
 
     Returns:
         The public S3 URL of the uploaded poster, or None on failure.
     """
-    try:
-        response: requests.Response = requests.get(url, timeout=30, stream=True)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        print(f"      ⚠ Failed to download poster from '{url}': {e}")
-        return None
+    # Check if this is a Google Drive URL
+    drive_file_id = _extract_google_drive_file_id(url)
 
-    content_type: str = response.headers.get("Content-Type", "image/jpeg")
-    ext: str = _get_extension_from_url(url, content_type)
-    image_data: bytes = response.content
+    if drive_file_id:
+        image_data, content_type = _download_from_google_drive(drive_file_id, credentials_path)
+        if not image_data:
+            return None
+    else:
+        # Regular URL download
+        try:
+            response: requests.Response = requests.get(url, timeout=30, stream=True)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"      ⚠ Failed to download poster from '{url}': {e}")
+            return None
+
+        content_type = response.headers.get("Content-Type", "image/jpeg")
+        image_data = response.content
 
     if not image_data:
         print(f"      ⚠ Empty response body from poster URL: {url}")
         return None
 
+    ext: str = _get_extension_from_url(url, content_type)
     s3_key: str = f"{S3_POSTER_PREFIX}/{slug}{ext}"
     # Use the actual content type for S3, default to jpeg if unknown
     s3_content_type: str = content_type.split(";")[0].strip()
@@ -337,8 +460,6 @@ def fetch_google_calendar_events(
                 "maxResults": min(max_results - len(all_events), 250),
                 "singleEvents": True,
                 "orderBy": "startTime",
-                # Include attachments in response (required for poster detection)
-                "supportsAttachments": True,
             }
             if page_token:
                 request_kwargs["pageToken"] = page_token
@@ -408,7 +529,7 @@ def build_event_item(
     item: dict[str, Any] = {
         "event_id": str(uuid.uuid4()),
         "name": name,
-        "slug": generate_slug(name),
+        "slug": generate_slug(name, start_date),
         "start_date": start_date,
         "status": status,
         "import_source": "google",
@@ -553,6 +674,7 @@ def main() -> None:
                         url=poster_source_url,
                         slug=item["slug"],
                         session=session,
+                        credentials_path=args.credentials,
                     )
                     if s3_poster_url:
                         item["poster_url"] = s3_poster_url
