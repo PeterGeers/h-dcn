@@ -479,7 +479,14 @@
     "verify_button": "Verifiëren",
     "verifying": "Bezig met verifiëren...",
     "rate_limited": "Te veel pogingen. Wacht even voordat je het opnieuw probeert.",
-    "wait_seconds": "Wacht {{seconds}}s"
+    "wait_seconds": "Wacht {{seconds}}s",
+    "posterView": {
+      "dates": "Data",
+      "location": "Locatie",
+      "type": "Type",
+      "participation": "Deelname",
+      "region": "Regio"
+    }
   },
   "access_denied": {
     "title": "Geen toegang",

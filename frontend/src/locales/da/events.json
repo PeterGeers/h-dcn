@@ -23,5 +23,31 @@
     "invalid_option": "Vælg en gyldig mulighed",
     "poster_invalid_type": "Ugyldig filtype. Tilladt: {{types}}",
     "poster_file_too_large": "Filen er for stor. Maksimalt {{maxSize}} tilladt"
+  },
+  "posterAnalysis": {
+    "title": "Upload & Analyser Plakat",
+    "upload": "Upload plakat",
+    "analyze": "Analyser",
+    "analyzing": "Analyserer plakat...",
+    "success": "Begivenhedsdata udtrukket med succes",
+    "error": "Analyse mislykkedes",
+    "selectFile": "Vælg et plakatbillede at analysere",
+    "noFile": "Vælg venligst en fil først"
+  },
+  "calendar": {
+    "title": "Begivenhedskalender",
+    "noEvents": "Ingen kommende begivenheder fundet",
+    "loading": "Indlæser begivenheder...",
+    "error": "Kunne ikke indlæse begivenheder. Prøv igen senere.",
+    "filter": {
+      "type": "Begivenhedstype",
+      "region": "Region",
+      "dateFrom": "Fra",
+      "dateTo": "Til",
+      "reset": "Nulstil filtre"
+    },
+    "card": {
+      "noLocation": "Sted endnu ikke fastlagt"
+    }
   }
 }

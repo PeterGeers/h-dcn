@@ -135,5 +135,31 @@
     "invalid_option": "Select a valid option",
     "poster_invalid_type": "Invalid file type. Allowed: {{types}}",
     "poster_file_too_large": "File is too large. Maximum {{maxSize}} allowed"
+  },
+  "posterAnalysis": {
+    "title": "Upload & Analyze Poster",
+    "upload": "Upload poster",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing poster...",
+    "success": "Event data extracted successfully",
+    "error": "Analysis failed",
+    "selectFile": "Select a poster image to analyze",
+    "noFile": "Please select a file first"
+  },
+  "calendar": {
+    "title": "Event Calendar",
+    "noEvents": "No upcoming events found",
+    "loading": "Loading events...",
+    "error": "Could not load events. Please try again later.",
+    "filter": {
+      "type": "Event type",
+      "region": "Region",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "reset": "Reset filters"
+    },
+    "card": {
+      "noLocation": "Location TBD"
+    }
   }
 }

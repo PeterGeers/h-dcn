@@ -135,5 +135,31 @@
     "invalid_option": "Sélectionnez une option valide",
     "poster_invalid_type": "Type de fichier invalide. Autorisé : {{types}}",
     "poster_file_too_large": "Fichier trop volumineux. Maximum {{maxSize}} autorisé"
+  },
+  "posterAnalysis": {
+    "title": "Télécharger & Analyser l'affiche",
+    "upload": "Télécharger l'affiche",
+    "analyze": "Analyser",
+    "analyzing": "Analyse de l'affiche en cours...",
+    "success": "Données de l'événement extraites avec succès",
+    "error": "L'analyse a échoué",
+    "selectFile": "Sélectionnez une image d'affiche à analyser",
+    "noFile": "Veuillez d'abord sélectionner un fichier"
+  },
+  "calendar": {
+    "title": "Calendrier des événements",
+    "noEvents": "Aucun événement à venir trouvé",
+    "loading": "Chargement des événements...",
+    "error": "Impossible de charger les événements. Veuillez réessayer plus tard.",
+    "filter": {
+      "type": "Type d'événement",
+      "region": "Région",
+      "dateFrom": "Du",
+      "dateTo": "Au",
+      "reset": "Réinitialiser les filtres"
+    },
+    "card": {
+      "noLocation": "Lieu à déterminer"
+    }
   }
 }

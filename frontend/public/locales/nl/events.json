@@ -135,5 +135,31 @@
     "invalid_option": "Selecteer een geldige optie",
     "poster_invalid_type": "Ongeldig bestandstype. Toegestaan: {{types}}",
     "poster_file_too_large": "Bestand is te groot. Maximaal {{maxSize}} toegestaan"
+  },
+  "posterAnalysis": {
+    "title": "Upload & Analyseer Poster",
+    "upload": "Upload poster",
+    "analyze": "Analyseer",
+    "analyzing": "Poster wordt geanalyseerd...",
+    "success": "Evenementgegevens succesvol geëxtraheerd",
+    "error": "Analyse mislukt",
+    "selectFile": "Selecteer een poster-afbeelding om te analyseren",
+    "noFile": "Selecteer eerst een bestand"
+  },
+  "calendar": {
+    "title": "Evenementenkalender",
+    "noEvents": "Geen aankomende evenementen gevonden",
+    "loading": "Evenementen laden...",
+    "error": "Kon evenementen niet laden. Probeer het later opnieuw.",
+    "filter": {
+      "type": "Type evenement",
+      "region": "Regio",
+      "dateFrom": "Vanaf",
+      "dateTo": "Tot",
+      "reset": "Filters wissen"
+    },
+    "card": {
+      "noLocation": "Locatie nog niet bekend"
+    }
   }
 }

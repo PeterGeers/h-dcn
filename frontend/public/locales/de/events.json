@@ -135,5 +135,31 @@
     "invalid_option": "Wählen Sie eine gültige Option",
     "poster_invalid_type": "Ungültiger Dateityp. Erlaubt: {{types}}",
     "poster_file_too_large": "Datei ist zu groß. Maximal {{maxSize}} erlaubt"
+  },
+  "posterAnalysis": {
+    "title": "Poster hochladen & analysieren",
+    "upload": "Poster hochladen",
+    "analyze": "Analysieren",
+    "analyzing": "Poster wird analysiert...",
+    "success": "Veranstaltungsdaten erfolgreich extrahiert",
+    "error": "Analyse fehlgeschlagen",
+    "selectFile": "Wählen Sie ein Poster-Bild zur Analyse",
+    "noFile": "Bitte wählen Sie zuerst eine Datei"
+  },
+  "calendar": {
+    "title": "Veranstaltungskalender",
+    "noEvents": "Keine bevorstehenden Veranstaltungen gefunden",
+    "loading": "Veranstaltungen laden...",
+    "error": "Veranstaltungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.",
+    "filter": {
+      "type": "Veranstaltungstyp",
+      "region": "Region",
+      "dateFrom": "Von",
+      "dateTo": "Bis",
+      "reset": "Filter zurücksetzen"
+    },
+    "card": {
+      "noLocation": "Ort noch offen"
+    }
   }
 }

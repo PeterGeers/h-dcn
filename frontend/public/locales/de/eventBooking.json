@@ -397,7 +397,14 @@
     "verify_button": "Überprüfen",
     "verifying": "Wird überprüft...",
     "rate_limited": "Zu viele Versuche. Bitte warten Sie, bevor Sie es erneut versuchen.",
-    "wait_seconds": "Warte {{seconds}}s"
+    "wait_seconds": "Warte {{seconds}}s",
+    "posterView": {
+      "dates": "Termine",
+      "location": "Ort",
+      "type": "Typ",
+      "participation": "Teilnahme",
+      "region": "Region"
+    }
   },
   "access_denied": {
     "title": "Kein Zugang",

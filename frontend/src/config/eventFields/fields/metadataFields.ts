@@ -73,4 +73,31 @@ export const metadataFields: Record<string, FieldDefinition> = {
     helpText: 'E-mailadres van wie de status heeft gewijzigd',
     width: 'medium',
   },
+
+  google_calendar_event_id: {
+    key: 'google_calendar_event_id',
+    label: 'Google Calendar Event ID',
+    dataType: 'string',
+    inputType: 'hidden',
+    group: 'metadata',
+    order: 6,
+    readOnly: true,
+    permissions: createPermissionConfig('system', 'none'),
+    helpText: 'Sync state — link naar Google Calendar event',
+    width: 'medium',
+  },
+
+  import_source: {
+    key: 'import_source',
+    label: 'Import bron',
+    dataType: 'enum',
+    inputType: 'hidden',
+    group: 'metadata',
+    order: 7,
+    readOnly: true,
+    enumOptions: ['manual', 'google', 'json', 'poster', 'stan'],
+    permissions: createPermissionConfig('admin', 'none'),
+    helpText: 'Hoe dit event is aangemaakt (bron van import)',
+    width: 'medium',
+  },
 };

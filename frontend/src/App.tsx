@@ -53,6 +53,7 @@ const EventBookingPage = lazy(() => import('./modules/eventBooking/pages/EventBo
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
 const EventLandingPage = lazy(() => import('./modules/events/EventLandingPage')) as any;
 const EventRegisterPage = lazy(() => import('./modules/eventBooking/pages/EventRegisterPage')) as any;
+const EventCalendarPage = lazy(() => import('./pages/EventCalendarPage')) as any;
 
 /**
  * Route guard for /webshop_management.
@@ -189,56 +190,70 @@ function AppContent({ signOut, user }: AppProps) {
   );
 }
 
+function ProtectedApp() {
+  return (
+    <CustomAuthenticator>
+      {({ signOut, user }) => (
+        <GroupAccessGuard>
+          <AppContent signOut={signOut} user={user} />
+        </GroupAccessGuard>
+      )}
+    </CustomAuthenticator>
+  );
+}
+
 function App() {
   return (
     <HelmetProvider>
     <MaintenanceProvider>
       <AuthProvider>
-        <CustomAuthenticator>
-          {({ signOut, user }) => (
-            <Router basename="/">
-              <Routes>
-                {/* Test route to verify routing works */}
-                <Route path="/test-route" element={
-                  <div style={{ padding: '20px', backgroundColor: 'white', color: 'black' }}>
-                    <h1>Test Route Works!</h1>
-                    <p>Current URL: {window.location.href}</p>
-                    <p>Hash: {window.location.hash}</p>
-                  </div>
-                } />
+        <Router basename="/">
+          <Routes>
+            {/* Public routes — NO authentication required */}
+            <Route path="/events/calendar" element={
+              <Suspense fallback={
+                <Center h="100vh" bg="black">
+                  <Spinner size="xl" color="orange.400" />
+                </Center>
+              }>
+                <EventCalendarPage />
+              </Suspense>
+            } />
 
-                {/* Public event landing page — no AuthGuard required */}
-                <Route path="/events/:slug/info" element={
-                  <Suspense fallback={
-                    <Center h="100vh">
-                      <Spinner size="xl" color="orange.400" />
-                    </Center>
-                  }>
-                    <EventLandingPage />
-                  </Suspense>
-                } />
+            <Route path="/events/:slug/info" element={
+              <Suspense fallback={
+                <Center h="100vh" bg="black">
+                  <Spinner size="xl" color="orange.400" />
+                </Center>
+              }>
+                <EventLandingPage />
+              </Suspense>
+            } />
 
-                {/* Public event registration page — sign-up/sign-in with event context */}
-                <Route path="/events/:slug/register" element={
-                  <Suspense fallback={
-                    <Center h="100vh">
-                      <Spinner size="xl" color="orange.400" />
-                    </Center>
-                  }>
-                    <EventRegisterPage />
-                  </Suspense>
-                } />
-                
-                {/* All other routes require group access guard */}
-                <Route path="/*" element={
-                  <GroupAccessGuard>
-                    <AppContent signOut={signOut} user={user} />
-                  </GroupAccessGuard>
-                } />
-              </Routes>
-            </Router>
-          )}
-        </CustomAuthenticator>
+            {/* Public event registration page — sign-up/sign-in with event context */}
+            <Route path="/events/:slug/register" element={
+              <Suspense fallback={
+                <Center h="100vh" bg="black">
+                  <Spinner size="xl" color="orange.400" />
+                </Center>
+              }>
+                <EventRegisterPage />
+              </Suspense>
+            } />
+
+            {/* Test route */}
+            <Route path="/test-route" element={
+              <div style={{ padding: '20px', backgroundColor: 'white', color: 'black' }}>
+                <h1>Test Route Works!</h1>
+                <p>Current URL: {window.location.href}</p>
+                <p>Hash: {window.location.hash}</p>
+              </div>
+            } />
+
+            {/* All other routes require authentication + group access guard */}
+            <Route path="/*" element={<ProtectedApp />} />
+          </Routes>
+        </Router>
       </AuthProvider>
     </MaintenanceProvider>
     </HelmetProvider>

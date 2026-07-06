@@ -416,7 +416,14 @@
     "verify_button": "Bekræft",
     "verifying": "Bekræfter...",
     "rate_limited": "For mange forsøg. Vent venligst før du prøver igen.",
-    "wait_seconds": "Vent {{seconds}}s"
+    "wait_seconds": "Vent {{seconds}}s",
+    "posterView": {
+      "dates": "Datoer",
+      "location": "Sted",
+      "type": "Type",
+      "participation": "Deltagelse",
+      "region": "Region"
+    }
   },
   "access_denied": {
     "title": "Ingen adgang",

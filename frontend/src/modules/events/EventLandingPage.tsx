@@ -42,6 +42,7 @@ interface LogosSection {
 type LandingSection = TextSection | LogosSection;
 
 interface LandingPageData {
+  enabled?: boolean;
   slug: string;
   hero_image_url?: string;
   tagline?: string;
@@ -57,15 +58,20 @@ interface PublicEventData {
   start_date: string;
   end_date: string;
   location: string;
+  description?: string;
+  participation?: string;
+  linked_regio?: string;
+  poster_url?: string;
+  slug?: string;
   registration_status: string;
-  landing_page: LandingPageData;
+  landing_page?: LandingPageData;
 }
 
 // --- Component ---
 
 const EventLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { t } = useTranslation('eventBooking');
+  const { t } = useTranslation(['eventBooking', 'events']);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,8 +124,9 @@ const EventLandingPage: React.FC = () => {
   }
 
   const { landing_page, registration_status } = event;
+  const hasLandingPage = landing_page && landing_page.enabled !== false;
   const isOpen = registration_status === 'open';
-  const ctaLabel = landing_page.registration_label || t('landing.registerButton');
+  const ctaLabel = (hasLandingPage && landing_page.registration_label) || t('landing.registerButton');
 
   const pageUrl = window.location.href;
 
@@ -151,6 +158,141 @@ const EventLandingPage: React.FC = () => {
       return `${start} – ${end}`;
     }
   };
+
+  // --- Poster-view mode (without landing page) ---
+  if (!hasLandingPage) {
+    return (
+      <Box minH="100vh" bg="black" color="white">
+        <Helmet>
+          <title>{event.name} | H-DCN</title>
+          <meta name="description" content={event.description || event.name} />
+          <meta property="og:title" content={event.name} />
+          <meta property="og:description" content={event.description || event.name} />
+          {event.poster_url && <meta property="og:image" content={event.poster_url} />}
+          <meta property="og:url" content={pageUrl} />
+          <meta property="og:type" content="website" />
+        </Helmet>
+
+        <Container maxW="container.md" py={{ base: 6, md: 12 }}>
+          <VStack spacing={6} align="stretch">
+            {/* Poster (large) */}
+            {event.poster_url ? (
+              <Image
+                src={event.poster_url}
+                alt={event.name}
+                w="100%"
+                maxH="500px"
+                objectFit="contain"
+                borderRadius="md"
+              />
+            ) : (
+              <Box
+                w="100%"
+                h="300px"
+                bg="gray.800"
+                borderRadius="md"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Text color="gray.500" fontSize="6xl">📅</Text>
+              </Box>
+            )}
+
+            {/* Event details */}
+            <VStack align="flex-start" spacing={4}>
+              <Heading as="h1" size="xl" color="orange.400">
+                {event.name}
+              </Heading>
+
+              {event.description && (
+                <Text color="gray.300" fontSize="md" whiteSpace="pre-wrap">
+                  {event.description}
+                </Text>
+              )}
+
+              <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3} w="100%">
+                <HStack>
+                  <Text color="gray.500" fontSize="sm" fontWeight="bold">
+                    {t('landing.posterView.dates')}:
+                  </Text>
+                  <Text color="gray.300" fontSize="sm">
+                    {formatDateRange(event.start_date, event.end_date)}
+                  </Text>
+                </HStack>
+
+                {event.location && (
+                  <HStack>
+                    <Text color="gray.500" fontSize="sm" fontWeight="bold">
+                      {t('landing.posterView.location')}:
+                    </Text>
+                    <Text color="gray.300" fontSize="sm">
+                      {event.location}
+                    </Text>
+                  </HStack>
+                )}
+
+                {event.event_type && (
+                  <HStack>
+                    <Text color="gray.500" fontSize="sm" fontWeight="bold">
+                      {t('landing.posterView.type')}:
+                    </Text>
+                    <Text color="gray.300" fontSize="sm">
+                      {t(`events:event_types.${event.event_type}`, event.event_type)}
+                    </Text>
+                  </HStack>
+                )}
+
+                {event.participation && (
+                  <HStack>
+                    <Text color="gray.500" fontSize="sm" fontWeight="bold">
+                      {t('landing.posterView.participation')}:
+                    </Text>
+                    <Text color="gray.300" fontSize="sm">
+                      {t(`events:participation_modes.${event.participation}`, event.participation)}
+                    </Text>
+                  </HStack>
+                )}
+
+                {event.linked_regio && (
+                  <HStack>
+                    <Text color="gray.500" fontSize="sm" fontWeight="bold">
+                      {t('landing.posterView.region')}:
+                    </Text>
+                    <Text color="gray.300" fontSize="sm">
+                      {event.linked_regio}
+                    </Text>
+                  </HStack>
+                )}
+              </SimpleGrid>
+
+              {/* CTA button only when booking flow is defined */}
+              {isOpen && (
+                <Box pt={4}>
+                  {ctaProps.isLoading ? (
+                    <Button size="lg" colorScheme="orange" isLoading>
+                      {ctaLabel}
+                    </Button>
+                  ) : (
+                    <Button
+                      as={RouterLink}
+                      to={ctaProps.to}
+                      size="lg"
+                      colorScheme="orange"
+                    >
+                      {ctaProps.label}
+                    </Button>
+                  )}
+                </Box>
+              )}
+            </VStack>
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
+  // --- Full landing page mode ---
 
   return (
     <Box minH="100vh" bg="black" color="white">

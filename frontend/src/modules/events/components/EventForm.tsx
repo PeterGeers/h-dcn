@@ -18,6 +18,8 @@ import {
   EventType,
 } from '../../../config/eventFields/eventTypes';
 import { uploadEventPoster, validatePosterFile } from '../services/eventPosterUpload';
+import { PosterAnalysisResult } from '../../../services/posterAnalysisService';
+import PosterAnalyzer from './PosterAnalyzer';
 import LandingPageSection, { LandingPageFormData, DEFAULT_LANDING_PAGE } from './LandingPageSection';
 import EventCoreSection from './EventCoreSection';
 import EventRegistrationSection from './EventRegistrationSection';
@@ -256,6 +258,33 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
     }
   };
 
+  const handlePosterAnalysis = async (data: PosterAnalysisResult, file: File) => {
+    setFormData(prev => ({
+      ...prev,
+      name: data.name || prev.name,
+      start_date: data.start_date ? toDatetimeLocal(data.start_date) : prev.start_date,
+      end_date: data.end_date ? toDatetimeLocal(data.end_date) : prev.end_date,
+      location: data.location || prev.location,
+    }));
+
+    // Also upload the poster image to S3 so poster_url gets set
+    const validationError = validatePosterFile(file, t);
+    if (validationError) {
+      // File not suitable for upload (e.g. too large) — metadata already prefilled, skip upload
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const result = await uploadEventPoster(file, event?.event_id);
+      setFormData(prev => ({ ...prev, poster_url: result.url }));
+    } catch {
+      // Upload failed — metadata is still prefilled; user can manually upload later
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.name || !formData.event_type || !formData.start_date || !formData.end_date || !formData.linked_regio) {
       handleError(
@@ -368,6 +397,11 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
               onChange={(field, value) => handleChange(field as keyof EventFormData, value)}
               onPosterUpload={handlePosterUpload}
             />
+
+            {/* ============ POSTER ANALYSIS (new events only) ============ */}
+            {!event && (
+              <PosterAnalyzer onAnalysisComplete={handlePosterAnalysis} />
+            )}
 
             {/* ============ COLLAPSIBLE SECTIONS ============ */}
             <Accordion allowMultiple defaultIndex={defaultOpenSections} w="full">

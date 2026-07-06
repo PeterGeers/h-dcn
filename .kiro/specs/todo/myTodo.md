@@ -1,50 +1,9 @@
-I need a Root Cause Analysis of my heavy ggshield utilisation since 2-3 weeks
-ggshield keeps popping upm during a spec session with a lot of discussions. I have no idea why. Do we need to reinstall it. Time interval often less then 1 minute
-ggshield: Error: Could not perform the requested action: no more API calls available.
+En in de "Event Creation Workflow" sectie bij "Regels":
 
-Often when a run command hook is invoked Typescript check
+Duplicaat-check moet vanuit de admin UI werken (frontend waarschuwing bij vergelijkbare naam+datum)
 
-Invoked Spec Task Execution
-Dispatching task 13.2 to add error_key + locale to update_order_items handler
+Dus bij handmatige invoer via de admin UI:
 
-Called MCP tool
-
-git / git_commit
-{
-  "message": "feat: add error_key + locale to update_order_items handler",
-  "repo_path": "c:\\Users\\peter\\aws\\h-dcn"
-}
-Changes committed successfully with hash 2f3ec66f14ba3b16ae3671360e1c299a7cc3e68a
-
-Invoking Spec Task Execution
-Dispatching task 13.3 to add error_key + locale to update_product handler
-
-Calling MCP tool
-
-git / git_commit
-
-
-
-{
-  "message": "feat: add error_key + locale to update_product handler",
-  "repo_path": "c:\\Users\\peter\\aws\\h-dcn"
-}
-
-Invoked Spec Task Execution
-Dispatching task 13.4 to add error_key + locale to update_event handler
-
-Called MCP tool
-
-git / git_commit
-{
-  "message": "feat: add error_key + locale to update_event handler",
-  "repo_path": "c:\\Users\\peter\\aws\\h-dcn"
-}
-Changes committed successfully w
-
-In the Hook Action
-
->>>  Ask Kiro <<<
-
-Run Command
-Executes a command or runs a script. Long running commands may block execution.
+Gebruiker vult naam + datum + locatie in
+Bij submit (of on-blur): backend check via ?check_duplicates=true
+Bij match: frontend toont waarschuwing "Er bestaat al een vergelijkbaar event" + laat het bestaande event zien

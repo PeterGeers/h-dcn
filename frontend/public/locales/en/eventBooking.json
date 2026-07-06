@@ -479,7 +479,14 @@
     "verify_button": "Verify",
     "verifying": "Verifying...",
     "rate_limited": "Too many attempts. Please wait before trying again.",
-    "wait_seconds": "Wait {{seconds}}s"
+    "wait_seconds": "Wait {{seconds}}s",
+    "posterView": {
+      "dates": "Dates",
+      "location": "Location",
+      "type": "Type",
+      "participation": "Participation",
+      "region": "Region"
+    }
   },
   "access_denied": {
     "title": "Access Denied",

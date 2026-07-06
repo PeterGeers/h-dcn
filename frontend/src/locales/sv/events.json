@@ -23,5 +23,31 @@
     "invalid_option": "Välj ett giltigt alternativ",
     "poster_invalid_type": "Ogiltig filtyp. Tillåtna: {{types}}",
     "poster_file_too_large": "Filen är för stor. Högst {{maxSize}} tillåtet"
+  },
+  "posterAnalysis": {
+    "title": "Ladda upp & Analysera Affisch",
+    "upload": "Ladda upp affisch",
+    "analyze": "Analysera",
+    "analyzing": "Analyserar affisch...",
+    "success": "Evenemangsdata extraherad framgångsrikt",
+    "error": "Analysen misslyckades",
+    "selectFile": "Välj en affischbild att analysera",
+    "noFile": "Välj en fil först"
+  },
+  "calendar": {
+    "title": "Evenemangskalender",
+    "noEvents": "Inga kommande evenemang hittades",
+    "loading": "Laddar evenemang...",
+    "error": "Kunde inte ladda evenemang. Försök igen senare.",
+    "filter": {
+      "type": "Evenemangstyp",
+      "region": "Region",
+      "dateFrom": "Från",
+      "dateTo": "Till",
+      "reset": "Återställ filter"
+    },
+    "card": {
+      "noLocation": "Plats ej bestämd"
+    }
   }
 }

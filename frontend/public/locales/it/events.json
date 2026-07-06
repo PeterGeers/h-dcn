@@ -23,5 +23,31 @@
     "invalid_option": "Seleziona un'opzione valida",
     "poster_invalid_type": "Tipo di file non valido. Consentiti: {{types}}",
     "poster_file_too_large": "File troppo grande. Massimo {{maxSize}} consentito"
+  },
+  "posterAnalysis": {
+    "title": "Carica e Analizza Poster",
+    "upload": "Carica poster",
+    "analyze": "Analizza",
+    "analyzing": "Analisi del poster in corso...",
+    "success": "Dati dell'evento estratti con successo",
+    "error": "Analisi fallita",
+    "selectFile": "Seleziona un'immagine del poster da analizzare",
+    "noFile": "Seleziona prima un file"
+  },
+  "calendar": {
+    "title": "Calendario eventi",
+    "noEvents": "Nessun evento in programma trovato",
+    "loading": "Caricamento eventi...",
+    "error": "Impossibile caricare gli eventi. Riprova più tardi.",
+    "filter": {
+      "type": "Tipo di evento",
+      "region": "Regione",
+      "dateFrom": "Dal",
+      "dateTo": "Al",
+      "reset": "Reimposta filtri"
+    },
+    "card": {
+      "noLocation": "Luogo da definire"
+    }
   }
 }

@@ -1474,6 +1474,27 @@ Resources:
             Path: /events/public/{slug}
             Method: get
 
+  # --- Public Events List API (NO auth required) ---
+  GetEventsPublicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/get_events_public
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt DynamoDBRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+      Events:
+        GetEventsPublic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /events-public
+            Method: get
+
   # --- Verify Event Password (NO auth required, rate-limited) ---
   VerifyEventPasswordFunction:
     Type: AWS::Serverless::Function
@@ -2823,6 +2844,121 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /booking/{id}/invite-email
             Method: post
+
+  # --- Poster Analysis (NO auth required — public event creation workflow) ---
+  AnalyzePosterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/analyze_poster
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 256
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt AnalyzePosterRole.Arn
+      Environment:
+        Variables:
+          GEMINI_API_KEY_PARAMETER: /h-dcn/gemini-api-key
+          DATA_BUCKET: !Ref DataBucket
+      Events:
+        AnalyzePoster:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /analyze-poster
+            Method: post
+
+  # IAM Role for Poster Analysis (SSM read + S3 read + CloudWatch Logs)
+  AnalyzePosterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSMReadGeminiKey
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/gemini-api-key"
+        - PolicyName: S3ReadPosters
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucket}/event-posters/*"
+
+  # --- Google Calendar Sync (admin/internal — syncs events to Google Calendar) ---
+  SyncGoogleCalendarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/sync_google_calendar
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 256
+      Layers:
+        - !Ref AuthLayer
+      Role: !GetAtt SyncGoogleCalendarRole.Arn
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+          GOOGLE_CREDENTIALS_PARAMETER: /h-dcn/google-credentials
+          GOOGLE_CALENDAR_ID: primary
+      Events:
+        SyncGoogleCalendar:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /sync-google-calendar
+            Method: post
+
+  # IAM Role for Google Calendar Sync (SSM read + DynamoDB write + CloudWatch Logs)
+  SyncGoogleCalendarRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSMReadGoogleCredentials
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/google-credentials"
+        - PolicyName: DynamoDBUpdateEvents
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
 
 Outputs:
   ApiUrl:

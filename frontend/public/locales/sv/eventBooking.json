@@ -84,7 +84,14 @@
     "verify_button": "Verifiera",
     "verifying": "Verifierar...",
     "rate_limited": "För många försök. Vänta innan du försöker igen.",
-    "wait_seconds": "Vänta {{seconds}}s"
+    "wait_seconds": "Vänta {{seconds}}s",
+    "posterView": {
+      "dates": "Datum",
+      "location": "Plats",
+      "type": "Typ",
+      "participation": "Deltagande",
+      "region": "Region"
+    }
   },
   "admin": {
     "manageAccess": "Hantera åtkomst",
