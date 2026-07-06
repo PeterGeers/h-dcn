@@ -287,7 +287,7 @@ const EventCalendarPage: React.FC = () => {
             </Text>
           </Center>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} alignItems="start">
             {filteredEvents.map(event => (
               <Box
                 key={event.event_id}
@@ -311,8 +311,8 @@ const EventCalendarPage: React.FC = () => {
                     src={event.poster_url}
                     alt={event.name}
                     w="100%"
-                    h="200px"
-                    objectFit="cover"
+                    objectFit="contain"
+                    bg="gray.800"
                   />
                 ) : (
                   <Box
