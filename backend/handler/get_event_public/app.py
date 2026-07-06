@@ -81,12 +81,20 @@ def _determine_registration_status(event_item):
     Determine if registration is open based on publication status + date fields.
 
     Rules:
+    - No registration configured (no product_ids AND no registration dates) → 'none'
     - status 'draft' or 'archived' → always closed
     - status 'published' (or 'open' for backward compat, or missing) → check dates
     - registration_open/close determine the registration window
     - If dates are not set, that boundary is not enforced
     """
     from datetime import date
+
+    # If no registration flow is configured, return 'none'
+    has_products = bool(event_item.get('product_ids'))
+    has_reg_open = bool(event_item.get('registration_open'))
+    has_reg_close = bool(event_item.get('registration_close'))
+    if not has_products and not has_reg_open and not has_reg_close:
+        return 'none'
 
     status = event_item.get('status', '')
 

@@ -64,6 +64,7 @@ interface PublicEventData {
   poster_url?: string;
   slug?: string;
   registration_status: string;
+  landing_page_enabled?: boolean;
   landing_page?: LandingPageData;
 }
 
@@ -123,10 +124,10 @@ const EventLandingPage: React.FC = () => {
     );
   }
 
-  const { landing_page, registration_status } = event;
-  const hasLandingPage = landing_page && landing_page.enabled !== false;
+  const { landing_page, registration_status, landing_page_enabled } = event;
+  const hasLandingPage = landing_page_enabled === true && landing_page != null;
   const isOpen = registration_status === 'open';
-  const ctaLabel = (hasLandingPage && landing_page.registration_label) || t('landing.registerButton');
+  const ctaLabel = (hasLandingPage && landing_page!.registration_label) || t('landing.registerButton');
 
   const pageUrl = window.location.href;
 
