@@ -549,10 +549,22 @@ def build_event_item(
     if location and location.strip():
         item["location"] = location.strip()
 
-    # description (optional)
+    # description (optional — strip HTML tags and poster link remnants)
     description: str | None = google_event.get("description")
     if description and description.strip():
-        item["description"] = description.strip()
+        # Remove full <a> tags that link to drive/poster images (link text like "Poster")
+        clean_desc = re.sub(
+            r'<a\s+[^>]*href="[^"]*(?:drive\.google\.com|\.jpg|\.jpeg|\.png|\.webp)[^"]*"[^>]*>[^<]*</a>',
+            "",
+            description,
+            flags=re.IGNORECASE,
+        )
+        # Remove remaining HTML tags
+        clean_desc = re.sub(r"<[^>]+>", "", clean_desc)
+        # Collapse multiple blank lines into one
+        clean_desc = re.sub(r"\n{3,}", "\n\n", clean_desc).strip()
+        if clean_desc:
+            item["description"] = clean_desc
 
     return item
 

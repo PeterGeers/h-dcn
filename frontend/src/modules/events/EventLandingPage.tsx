@@ -174,7 +174,7 @@ const EventLandingPage: React.FC = () => {
           <meta property="og:type" content="website" />
         </Helmet>
 
-        <Container maxW="container.md" py={{ base: 6, md: 12 }}>
+        <Container maxW="container.lg" py={{ base: 4, md: 8 }}>
           <VStack spacing={6} align="stretch">
             {/* Poster (large) */}
             {event.poster_url ? (
@@ -182,7 +182,7 @@ const EventLandingPage: React.FC = () => {
                 src={event.poster_url}
                 alt={event.name}
                 w="100%"
-                maxH="500px"
+                maxH="80vh"
                 objectFit="contain"
                 borderRadius="md"
               />
