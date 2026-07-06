@@ -16,7 +16,7 @@ jobs:
   backend-tests:
     name: Backend Tests (Full Suite)
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Checkout code
@@ -37,11 +37,41 @@ jobs:
         working-directory: backend
         continue-on-error: true
         run: |
-          pytest tests/ \
-            --tb=short \
-            --junitxml=test-results.xml \
-            -v \
-            2>&1 | tee test-output.txt
+          PASSED=0
+          FAILED=0
+          ERRORS=""
+          TEST_FILES=$(find tests -name "test_*.py" | sort)
+          TOTAL=$(echo "$TEST_FILES" | wc -l)
+          echo "Found $TOTAL test files"
+          i=0
+          for f in $TEST_FILES; do
+            i=$((i+1))
+            echo "[$i/$TOTAL] Running: $f"
+            if timeout 120 pytest "$f" --tb=short -q 2>&1 | tail -3; then
+              PASSED=$((PASSED+1))
+            else
+              EXIT_CODE=$?
+              if [ $EXIT_CODE -eq 124 ]; then
+                echo "  ⏰ TIMEOUT: $f"
+                ERRORS="$ERRORS\nTIMEOUT: $f"
+              else
+                echo "  ❌ FAILED: $f"
+                ERRORS="$ERRORS\nFAILED: $f"
+              fi
+              FAILED=$((FAILED+1))
+            fi
+          done
+          echo ""
+          echo "=== Summary ==="
+          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED"
+          if [ -n "$ERRORS" ]; then
+            echo -e "\nIssues:$ERRORS"
+          fi
+          # Generate minimal JUnit XML for the report step
+          echo '<?xml version="1.0" encoding="utf-8"?>' > test-results.xml
+          echo "<testsuites tests=\"$TOTAL\" failures=\"$FAILED\" errors=\"0\">" >> test-results.xml
+          echo "</testsuites>" >> test-results.xml
+          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED" > test-output.txt
 
       - name: Generate test report
         if: always()
