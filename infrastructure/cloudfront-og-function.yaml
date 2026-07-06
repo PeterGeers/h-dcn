@@ -1,0 +1,109 @@
+# CloudFront Function: OG Bot Routing
+#
+# This template defines the CloudFront Function resource.
+# The association with the existing distribution must be done manually
+# (distribution is managed outside CloudFormation).
+#
+# Deployment options:
+#   1. AWS Console: Create function → paste code → associate with distribution
+#   2. AWS CLI: See commands below
+#
+# ============================================================================
+# CLI Deployment Steps
+# ============================================================================
+#
+# 1. Create the function:
+#
+#    aws cloudfront create-function \
+#      --name og-bot-routing \
+#      --function-config '{"Comment":"OG bot routing for H-DCN event pages","Runtime":"cloudfront-js-2.0"}' \
+#      --function-code fileb://infrastructure/cloudfront-functions/og-bot-routing.js \
+#      --profile nonprofit-deploy
+#
+#    Save the returned ETag value for the next step.
+#
+# 2. Publish the function (makes it available for association):
+#
+#    aws cloudfront publish-function \
+#      --name og-bot-routing \
+#      --if-match <ETag-from-step-1> \
+#      --profile nonprofit-deploy
+#
+# 3. Associate with CloudFront distribution:
+#
+#    Get the current distribution config:
+#    aws cloudfront get-distribution-config \
+#      --id <DISTRIBUTION_ID> \
+#      --profile nonprofit-deploy > dist-config.json
+#
+#    Edit dist-config.json to add the function association to the default
+#    cache behavior (or a specific path pattern for /events/*):
+#
+#    "FunctionAssociations": {
+#      "Quantity": 1,
+#      "Items": [
+#        {
+#          "FunctionARN": "<function-arn-from-step-2>",
+#          "EventType": "viewer-request"
+#        }
+#      ]
+#    }
+#
+#    Then update the distribution:
+#    aws cloudfront update-distribution \
+#      --id <DISTRIBUTION_ID> \
+#      --distribution-config file://dist-config.json \
+#      --if-match <dist-ETag> \
+#      --profile nonprofit-deploy
+#
+# 4. Update the function (future changes):
+#
+#    aws cloudfront update-function \
+#      --name og-bot-routing \
+#      --function-config '{"Comment":"OG bot routing for H-DCN event pages","Runtime":"cloudfront-js-2.0"}' \
+#      --function-code fileb://infrastructure/cloudfront-functions/og-bot-routing.js \
+#      --if-match <current-ETag> \
+#      --profile nonprofit-deploy
+#
+#    Then publish again (step 2).
+#
+# ============================================================================
+# CloudFormation Resource (for reference / future IaC migration)
+# ============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFront Function for OG bot routing (H-DCN event pages)
+
+Resources:
+  OgBotRoutingFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: og-bot-routing
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Routes social media bots to static OG HTML files for event pages
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+            var request = event.request;
+            var headers = request.headers;
+            var uri = request.uri;
+            var userAgent = headers['user-agent'] ? headers['user-agent'].value : '';
+
+            var botPattern = /facebookexternalhit|Twitterbot|LinkedInBot|Slackbot|WhatsApp|Googlebot/i;
+            var eventPattern = /^\/events\/([^\/]+)\/info\/?$/;
+
+            if (botPattern.test(userAgent) && eventPattern.test(uri)) {
+                var match = uri.match(eventPattern);
+                request.uri = '/events/' + match[1] + '/og.html';
+            }
+
+            return request;
+        }
+
+Outputs:
+  FunctionARN:
+    Description: ARN of the OG bot routing CloudFront Function
+    Value: !GetAtt OgBotRoutingFunction.FunctionARN
+    Export:
+      Name: OgBotRoutingFunctionARN
