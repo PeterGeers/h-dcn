@@ -10,6 +10,8 @@ import {
   EventType,
   EventCategory,
 } from '../../../config/eventFields/eventTypes';
+import { GenericFilter } from '../../../components/filters';
+import type { FilterOptionGroup } from '../../../components/filters';
 
 // ============================================================================
 // TYPES
@@ -36,6 +38,20 @@ interface EventCoreSectionProps {
 }
 
 // ============================================================================
+// DERIVED DATA
+// ============================================================================
+
+const EVENT_TYPE_GROUPS: FilterOptionGroup[] = (
+  Object.entries(EVENT_TYPES_BY_CATEGORY) as [EventCategory, readonly string[]][]
+).map(([category, types]) => ({
+  label: EVENT_CATEGORY_LABELS[category],
+  options: types.map((type) => ({
+    value: type,
+    label: EVENT_TYPE_LABELS[type as EventType],
+  })),
+}));
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 
@@ -60,28 +76,14 @@ function EventCoreSection({
         />
       </FormControl>
 
-      <FormControl isRequired>
-        <FormLabel color="orange.300">Type</FormLabel>
-        <Select
-          value={formData.event_type}
-          onChange={(e) => onChange('event_type', e.target.value)}
-          bg="gray.700"
-          borderColor="orange.400"
-          placeholder="Selecteer type..."
-        >
-          {(Object.entries(EVENT_TYPES_BY_CATEGORY) as [EventCategory, readonly string[]][]).map(
-            ([category, types]) => (
-              <optgroup key={category} label={EVENT_CATEGORY_LABELS[category]}>
-                {types.map((type) => (
-                  <option key={type} value={type} style={{ backgroundColor: '#2D3748', color: 'white' }}>
-                    {EVENT_TYPE_LABELS[type as EventType]}
-                  </option>
-                ))}
-              </optgroup>
-            )
-          )}
-        </Select>
-      </FormControl>
+      <GenericFilter
+        label="Type"
+        value={formData.event_type}
+        groups={EVENT_TYPE_GROUPS}
+        onChange={(v) => onChange('event_type', v)}
+        placeholder="Selecteer type..."
+        width="100%"
+      />
 
       <FormControl isRequired>
         <FormLabel color="orange.300">Deelname</FormLabel>

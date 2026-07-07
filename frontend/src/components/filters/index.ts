@@ -15,7 +15,7 @@ export { FilterPanel } from './FilterPanel';
 export type { FilterPanelProps } from './FilterPanel';
 
 export { GenericFilter } from './GenericFilter';
-export type { GenericFilterProps, FilterOption } from './GenericFilter';
+export type { GenericFilterProps, FilterOption, FilterOptionGroup } from './GenericFilter';
 
 export { YearFilter } from './YearFilter';
 export type { YearFilterProps } from './YearFilter';

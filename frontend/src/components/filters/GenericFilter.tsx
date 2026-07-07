@@ -1,15 +1,26 @@
 /**
- * GenericFilter — Single dropdown or multi-select filter control
+ * GenericFilter — Single dropdown filter control with optional option groups
  *
  * Used inside FilterPanel for dropdown-style filters above the table.
- * Supports single-select (dropdown) and multi-select (checkboxes) modes.
+ * Supports flat options or grouped options (optgroup).
  *
- * Usage:
+ * Usage (flat):
  *   <GenericFilter
  *     label="Status"
  *     value={filters.status}
  *     options={[{ value: 'active', label: 'Actief' }, { value: 'archived', label: 'Gearchiveerd' }]}
  *     onChange={(v) => setFilter('status', v)}
+ *   />
+ *
+ * Usage (grouped):
+ *   <GenericFilter
+ *     label="Type"
+ *     value={filters.type}
+ *     groups={[
+ *       { label: 'Vergaderingen', options: [{ value: 'alv', label: 'ALV' }] },
+ *       { label: 'Ritten', options: [{ value: 'openingsrit', label: 'Openingsrit' }] },
+ *     ]}
+ *     onChange={(v) => setFilter('type', v)}
  *   />
  */
 
@@ -21,13 +32,22 @@ export interface FilterOption {
   label: string;
 }
 
+export interface FilterOptionGroup {
+  /** Group label (rendered as optgroup label) */
+  label: string;
+  /** Options within this group */
+  options: FilterOption[];
+}
+
 export interface GenericFilterProps {
   /** Filter label */
   label: string;
   /** Current selected value */
   value: string;
-  /** Available options */
-  options: FilterOption[];
+  /** Flat list of options (use this OR groups, not both) */
+  options?: FilterOption[];
+  /** Grouped options with optgroup labels (use this OR options, not both) */
+  groups?: FilterOptionGroup[];
   /** Callback when selection changes */
   onChange: (value: string) => void;
   /** Placeholder text for empty selection */
@@ -40,10 +60,13 @@ export interface GenericFilterProps {
   allLabel?: string;
 }
 
+const OPTION_STYLE = { backgroundColor: '#2D3748', color: 'white' };
+
 export function GenericFilter({
   label,
   value,
   options,
+  groups,
   onChange,
   placeholder,
   isDisabled = false,
@@ -64,19 +87,29 @@ export function GenericFilter({
         color="white"
         isDisabled={isDisabled}
         _focus={{ borderColor: 'orange.400' }}
+        sx={{
+          option: { background: '#2D3748', color: 'white' },
+          optgroup: { background: '#2D3748', color: '#A0AEC0', fontStyle: 'normal' },
+        }}
       >
-        <option value="" style={{ backgroundColor: '#2D3748', color: 'white' }}>
+        <option value="" style={OPTION_STYLE}>
           {placeholder || allLabel}
         </option>
-        {options.map((opt) => (
-          <option
-            key={opt.value}
-            value={opt.value}
-            style={{ backgroundColor: '#2D3748', color: 'white' }}
-          >
-            {opt.label}
-          </option>
-        ))}
+        {groups
+          ? groups.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map((opt) => (
+                  <option key={opt.value} value={opt.value} style={OPTION_STYLE}>
+                    {opt.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          : options?.map((opt) => (
+              <option key={opt.value} value={opt.value} style={OPTION_STYLE}>
+                {opt.label}
+              </option>
+            ))}
       </Select>
     </FormControl>
   );

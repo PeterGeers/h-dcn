@@ -182,9 +182,13 @@ const EventCalendarPage: React.FC = () => {
                 color="white"
                 w="200px"
                 size="sm"
+                sx={{
+                  option: { background: '#1A202C', color: 'white' },
+                  optgroup: { background: '#1A202C', color: '#A0AEC0' },
+                }}
               >
                 {availableTypes.map(type => (
-                  <option key={type} value={type} style={{ background: '#1a1a1a' }}>
+                  <option key={type} value={type}>
                     {t(`event_types.${type}`, type)}
                   </option>
                 ))}
@@ -221,9 +225,12 @@ const EventCalendarPage: React.FC = () => {
                 color="white"
                 w="200px"
                 size="sm"
+                sx={{
+                  option: { background: '#1A202C', color: 'white' },
+                }}
               >
                 {EVENT_REGIOS.map(regio => (
-                  <option key={regio} value={regio} style={{ background: '#1a1a1a' }}>
+                  <option key={regio} value={regio}>
                     {regio}
                   </option>
                 ))}
