@@ -150,3 +150,4 @@ migration_*.json
 
 # Separate projects (not part of h-dcn repo)
 h-dcn-poster-generator/
+hdcnPosterProcessor/

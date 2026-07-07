@@ -2972,6 +2972,7 @@ Resources:
                   - ssm:GetParameter
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/google-credentials"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/google-photos-oauth"
         - PolicyName: DynamoDBUpdateEvents
           PolicyDocument:
             Version: '2012-10-17'

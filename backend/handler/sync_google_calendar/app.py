@@ -88,6 +88,9 @@ logger.setLevel(logging.INFO)
 GOOGLE_CREDENTIALS_PARAMETER: str = os.environ.get(
     'GOOGLE_CREDENTIALS_PARAMETER', '/h-dcn/google-credentials'
 )
+GOOGLE_PHOTOS_OAUTH_PARAMETER: str = os.environ.get(
+    'GOOGLE_PHOTOS_OAUTH_PARAMETER', '/h-dcn/google-photos-oauth'
+)
 EVENTS_TABLE_NAME: str = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 
 # Calendar ID routing by event_type
@@ -97,6 +100,7 @@ CALENDAR_DIVERSEN: str = 'h-dcn.nl_voetgs35u59e808nhr9t35bidc@group.calendar.goo
 
 # Module-level cache for Google credentials (persists across warm starts)
 _cached_credentials_json: str | None = None
+_cached_photos_oauth: dict[str, str] | None = None
 
 ssm_client = boto3.client('ssm')
 dynamodb = boto3.resource('dynamodb')
@@ -306,6 +310,125 @@ def _update_gcal_id_on_event(event_id: str, gcal_id: str | None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Google Photos Museum Upload
+# ---------------------------------------------------------------------------
+
+def _get_photos_oauth() -> dict[str, str]:
+    """Fetch Google Photos OAuth credentials from SSM (cached)."""
+    global _cached_photos_oauth
+    if _cached_photos_oauth is not None:
+        return _cached_photos_oauth
+
+    response = ssm_client.get_parameter(
+        Name=GOOGLE_PHOTOS_OAUTH_PARAMETER,
+        WithDecryption=True,
+    )
+    _cached_photos_oauth = json.loads(response['Parameter']['Value'])
+    return _cached_photos_oauth
+
+
+def _get_photos_access_token() -> str:
+    """Get a Google Photos access token using the OAuth refresh token."""
+    import requests as http_requests
+
+    oauth = _get_photos_oauth()
+    resp = http_requests.post('https://oauth2.googleapis.com/token', data={
+        'client_id': oauth['client_id'],
+        'client_secret': oauth['client_secret'],
+        'refresh_token': oauth['refresh_token'],
+        'grant_type': 'refresh_token',
+    }, timeout=10)
+    resp.raise_for_status()
+    return resp.json()['access_token']
+
+
+def _upload_poster_to_photos(event_data: EventData) -> None:
+    """
+    Upload a poster image to Google Photos (webmaster's library).
+
+    Best-effort: logs failures but never blocks the sync response.
+    Only uploads if poster_url points to an S3 image (not PDFs).
+    """
+    import requests as http_requests
+
+    poster_url: str = event_data.get('poster_url', '')
+    if not poster_url:
+        return
+
+    # Only upload image files (skip PDFs)
+    lower_url = poster_url.lower()
+    if not any(lower_url.endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif')):
+        logger.info(f"Skipping Photos upload for non-image: {poster_url}")
+        return
+
+    event_name: str = event_data.get('name', 'Unknown Event')
+    start_date: str = event_data.get('start_date', '')[:10]
+
+    try:
+        # Download poster from S3 URL
+        img_resp = http_requests.get(poster_url, timeout=30)
+        img_resp.raise_for_status()
+        image_bytes: bytes = img_resp.content
+
+        if not image_bytes:
+            logger.warning(f"Empty image from {poster_url}")
+            return
+
+        # Get access token
+        access_token = _get_photos_access_token()
+
+        # Determine filename
+        ext = '.jpg'
+        for e in ('.png', '.webp', '.gif', '.jpeg'):
+            if lower_url.endswith(e):
+                ext = e
+                break
+        filename = f"{event_name} - {start_date}{ext}"
+
+        # Upload bytes to Google Photos
+        upload_resp = http_requests.post(
+            'https://photoslibrary.googleapis.com/v1/uploads',
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/octet-stream',
+                'X-Goog-Upload-File-Name': filename,
+                'X-Goog-Upload-Protocol': 'raw',
+            },
+            data=image_bytes,
+            timeout=60,
+        )
+        upload_resp.raise_for_status()
+        upload_token: str = upload_resp.text
+
+        # Create media item (no album — lands in library)
+        create_resp = http_requests.post(
+            'https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate',
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'newMediaItems': [{
+                    'description': f'{event_name} | {start_date}',
+                    'simpleMediaItem': {
+                        'uploadToken': upload_token,
+                        'fileName': filename,
+                    }
+                }]
+            },
+            timeout=30,
+        )
+        create_resp.raise_for_status()
+        result = create_resp.json()
+
+        status_msg = result.get('newMediaItemResults', [{}])[0].get('status', {}).get('message', '?')
+        logger.info(f"Google Photos upload for '{event_name}': {status_msg}")
+
+    except Exception as e:
+        logger.error(f"Google Photos upload failed for '{event_name}': {str(e)}", exc_info=True)
+
+
+# ---------------------------------------------------------------------------
 # Request Validation
 # ---------------------------------------------------------------------------
 
@@ -383,6 +506,10 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         if action == 'sync':
             result: SyncResult = sync_event(event_id, event_data)
+            # Upload poster to Google Photos museum (best-effort)
+            poster_url = event_data.get('poster_url', '')
+            if poster_url:
+                _upload_poster_to_photos(event_data)
         else:  # action == 'delete'
             result = delete_event(event_id, event_data)
 
