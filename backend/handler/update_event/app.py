@@ -29,12 +29,82 @@ except ImportError as e:
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
+s3_client = boto3.client('s3')
 table_name = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 table = dynamodb.Table(table_name)
 SYNC_FUNCTION_NAME = os.environ.get('SYNC_GOOGLE_CALENDAR_FUNCTION', '')
+FRONTEND_BUCKET = os.environ.get('FRONTEND_BUCKET', 'h-dcn-frontend-506221081911')
+PORTAL_URL = 'https://portal.h-dcn.nl'
 
 # Valid event statuses, transitions, and counting rules
 VALID_STATUSES = {'draft', 'open', 'closed', 'archived'}
+
+
+def _generate_og_html(event_data: dict) -> str:
+    """Generate a minimal HTML page with Open Graph meta tags for social media bots."""
+    name = event_data.get('name', '')
+    description = event_data.get('description', name)
+    poster_url = event_data.get('poster_url', '')
+    slug = event_data.get('slug', '')
+    start_date = event_data.get('start_date', '')[:10]
+    end_date = event_data.get('end_date', '')[:10]
+    location = event_data.get('location', '')
+
+    # Build a description with date and location if no explicit description
+    if not description or description == name:
+        parts = [name]
+        if start_date:
+            parts.append(f"{start_date} - {end_date}" if end_date and end_date != start_date else start_date)
+        if location:
+            parts.append(location)
+        description = ' | '.join(parts)
+
+    page_url = f"{PORTAL_URL}/events/{slug}/info"
+
+    # Escape HTML entities
+    def esc(s):
+        return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{esc(name)} | H-DCN</title>
+<meta property="og:title" content="{esc(name)}">
+<meta property="og:description" content="{esc(description[:200])}">
+<meta property="og:url" content="{esc(page_url)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="H-DCN">
+{f'<meta property="og:image" content="{esc(poster_url)}">' if poster_url else ''}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{esc(name)}">
+<meta name="twitter:description" content="{esc(description[:200])}">
+{f'<meta name="twitter:image" content="{esc(poster_url)}">' if poster_url else ''}
+<meta http-equiv="refresh" content="0;url={esc(page_url)}">
+</head>
+<body><p>Redirecting to <a href="{esc(page_url)}">{esc(name)}</a></p></body>
+</html>"""
+    return html
+
+
+def _write_og_html(event_data: dict) -> None:
+    """Write OG HTML file to the frontend S3 bucket. Best-effort, never blocks."""
+    slug = event_data.get('slug', '')
+    if not slug:
+        return
+    try:
+        html = _generate_og_html(event_data)
+        s3_key = f"events/{slug}/og.html"
+        s3_client.put_object(
+            Bucket=FRONTEND_BUCKET,
+            Key=s3_key,
+            Body=html.encode('utf-8'),
+            ContentType='text/html; charset=utf-8',
+            CacheControl='public, max-age=3600',
+        )
+        print(f"OG HTML written: s3://{FRONTEND_BUCKET}/{s3_key}")
+    except Exception as e:
+        print(f"Warning: OG HTML generation failed for slug '{slug}': {e}")
 VALID_COUNTING_RULES = {'count_items_by_product', 'count_distinct_clubs', 'sum_field'}
 ALLOWED_MANUAL_TRANSITIONS = {
     'draft': {'open'},
@@ -393,6 +463,21 @@ def lambda_handler(event, context):
                 print(f"Triggered Google Calendar delete for archived event {event_id}")
             except Exception as sync_err:
                 print(f"Warning: Google Calendar delete trigger failed: {sync_err}")
+
+        # --- OG HTML generation (best-effort) ---
+        # Write/update og.html when event is published, delete when archived
+        if merged_status == 'published' and merged.get('slug'):
+            _write_og_html(merged)
+        elif 'status' in body and body['status'] == 'archived' and current_event.get('slug'):
+            # Delete og.html on archive
+            try:
+                s3_client.delete_object(
+                    Bucket=FRONTEND_BUCKET,
+                    Key=f"events/{current_event['slug']}/og.html",
+                )
+                print(f"OG HTML deleted for archived event {event_id}")
+            except Exception as e:
+                print(f"Warning: OG HTML delete failed: {e}")
 
         return create_success_response({
             'message': 'Event updated successfully',

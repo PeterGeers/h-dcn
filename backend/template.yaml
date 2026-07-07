@@ -527,6 +527,16 @@ Resources:
                   - lambda:InvokeFunction
                 Resource:
                   - !GetAtt SyncGoogleCalendarFunction.Arn
+        - PolicyName: S3FrontendOgAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::h-dcn-frontend-506221081911/events/*"
         - PolicyName: S3ReportsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -1841,6 +1851,7 @@ Resources:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
           SYNC_GOOGLE_CALENDAR_FUNCTION: !Ref SyncGoogleCalendarFunction
+          FRONTEND_BUCKET: h-dcn-frontend-506221081911
       Events:
         UpdateEvent:
           Type: Api
