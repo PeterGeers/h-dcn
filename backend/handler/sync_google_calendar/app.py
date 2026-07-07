@@ -21,6 +21,7 @@ Input:
             "end_date": "2026-05-16",
             "location": "...",
             "description": "...",
+            "poster_url": "..." | null,
             "google_calendar_event_id": "..." | null
         }
     }
@@ -62,6 +63,7 @@ class EventData(TypedDict):
     end_date: str
     location: NotRequired[str]
     description: NotRequired[str]
+    poster_url: NotRequired[str]
     google_calendar_event_id: NotRequired[str | None]
 
 
@@ -153,12 +155,17 @@ def _build_calendar_event_body(event_data: EventData) -> dict[str, Any]:
     # But Google API also accepts same date for single-day — we pass as-is
     # since the UI shows it correctly either way.
 
+    description: str = event_data.get('description', '')
+    poster_url: str = event_data.get('poster_url', '')
+    if poster_url:
+        description = f"{description}\n\nPoster: {poster_url}".strip()
+
     return {
         'summary': event_data['name'],
         'start': {'date': start_date},
         'end': {'date': end_date},
         'location': event_data.get('location', ''),
-        'description': event_data.get('description', ''),
+        'description': description,
     }
 
 
