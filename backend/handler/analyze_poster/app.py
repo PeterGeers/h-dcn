@@ -51,7 +51,7 @@ class AnalysisResult(TypedDict):
 
 GEMINI_MODEL_URL: str = (
     "https://generativelanguage.googleapis.com/v1beta/"
-    "models/gemini-2.0-flash:generateContent"
+    "models/gemini-2.5-flash:generateContent"
 )
 
 SSM_PARAMETER_NAME: str = os.environ.get(
