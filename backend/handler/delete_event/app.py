@@ -27,9 +27,11 @@ except ImportError as e:
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
+s3_client = boto3.client('s3')
 table_name = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 table = dynamodb.Table(table_name)
 SYNC_FUNCTION_NAME = os.environ.get('SYNC_GOOGLE_CALENDAR_FUNCTION', '')
+FRONTEND_BUCKET = os.environ.get('FRONTEND_BUCKET', 'h-dcn-frontend-506221081911')
 
 def lambda_handler(event, context):
     try:
@@ -62,14 +64,13 @@ def lambda_handler(event, context):
         # Get event ID from path parameters
         event_id = event['pathParameters']['event_id']
         
-        # Fetch event first to get google_calendar_event_id for sync
+        # Fetch event first (needed for Google Calendar sync + OG cleanup)
         current_event = {}
-        if SYNC_FUNCTION_NAME:
-            try:
-                resp = table.get_item(Key={'event_id': event_id})
-                current_event = resp.get('Item', {})
-            except Exception as e:
-                print(f"Warning: could not fetch event for sync: {e}")
+        try:
+            resp = table.get_item(Key={'event_id': event_id})
+            current_event = resp.get('Item', {})
+        except Exception as e:
+            print(f"Warning: could not fetch event before delete: {e}")
 
         # Delete the event
         table.delete_item(Key={'event_id': event_id})
@@ -101,6 +102,18 @@ def lambda_handler(event, context):
                 print(f"Triggered Google Calendar delete for event {event_id}")
             except Exception as sync_err:
                 print(f"Warning: Google Calendar delete trigger failed: {sync_err}")
+
+        # Delete OG HTML file (best-effort)
+        slug = current_event.get('slug', '')
+        if slug:
+            try:
+                s3_client.delete_object(
+                    Bucket=FRONTEND_BUCKET,
+                    Key=f"events/{slug}/og.html",
+                )
+                print(f"OG HTML deleted for event {event_id} (slug: {slug})")
+            except Exception as e:
+                print(f"Warning: OG HTML delete failed: {e}")
         
         return {
             'statusCode': 204,

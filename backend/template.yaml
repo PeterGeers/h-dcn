@@ -1873,6 +1873,7 @@ Resources:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
           SYNC_GOOGLE_CALENDAR_FUNCTION: !Ref SyncGoogleCalendarFunction
+          FRONTEND_BUCKET: h-dcn-frontend-506221081911
       Events:
         DeleteEvent:
           Type: Api
