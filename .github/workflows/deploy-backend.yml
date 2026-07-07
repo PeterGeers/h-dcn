@@ -131,6 +131,7 @@ jobs:
                 CartsTable=Carts \
                 OrdersTable=Orders \
                 ParametersTable=Parameters \
+                DataBucket=h-dcn-data-506221081911 \
                 ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
                 ExistingUserPoolClientId=6jhvk853b0lfg9q1m861qs0cug
           fi
