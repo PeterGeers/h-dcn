@@ -305,8 +305,8 @@ const EventCalendarPage: React.FC = () => {
                 }}
                 onClick={() => navigate(`/events/${event.slug}/info`)}
               >
-                {/* Poster or placeholder */}
-                {event.poster_url ? (
+                {/* Poster — only shown when available */}
+                {event.poster_url && (
                   <Image
                     src={event.poster_url}
                     alt={event.name}
@@ -314,19 +314,6 @@ const EventCalendarPage: React.FC = () => {
                     objectFit="contain"
                     bg="gray.800"
                   />
-                ) : (
-                  <Box
-                    w="100%"
-                    h="200px"
-                    bg="gray.700"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Text color="gray.500" fontSize="4xl">
-                      📅
-                    </Text>
-                  </Box>
                 )}
 
                 {/* Card content */}
