@@ -179,7 +179,7 @@ def _build_calendar_event_body(event_data: EventData) -> dict[str, Any]:
     description: str = event_data.get('description', '')
     poster_url: str = event_data.get('poster_url', '')
     if poster_url:
-        description = f"{description}\n\nPoster: {poster_url}".strip()
+        description = f"{description}\n\n<a href=\"{poster_url}\">Poster</a>".strip()
 
     return {
         'summary': event_data['name'],
