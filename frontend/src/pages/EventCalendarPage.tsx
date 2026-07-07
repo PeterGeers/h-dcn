@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -42,7 +41,6 @@ interface PublicEvent {
 
 const EventCalendarPage: React.FC = () => {
   const { t } = useTranslation('events');
-  const navigate = useNavigate();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -310,7 +308,7 @@ const EventCalendarPage: React.FC = () => {
                   transform: 'translateY(-2px)',
                   shadow: 'lg',
                 }}
-                onClick={() => navigate(`/events/${event.slug}/info`)}
+                onClick={() => window.open(`/events/${event.slug}/info`, '_blank')}
               >
                 {/* Poster — only shown when available */}
                 {event.poster_url && (
