@@ -506,10 +506,25 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         if action == 'sync':
             result: SyncResult = sync_event(event_id, event_data)
-            # Upload poster to Google Photos museum (best-effort)
+            # Upload poster to Google Photos museum (best-effort, only if new/changed)
             poster_url = event_data.get('poster_url', '')
             if poster_url:
-                _upload_poster_to_photos(event_data)
+                # Check if this poster was already uploaded (stored on the event record)
+                try:
+                    event_record = events_table.get_item(Key={'event_id': event_id}).get('Item', {})
+                    already_uploaded = event_record.get('poster_uploaded_to_photos', '')
+                    if already_uploaded != poster_url:
+                        _upload_poster_to_photos(event_data)
+                        # Mark as uploaded
+                        events_table.update_item(
+                            Key={'event_id': event_id},
+                            UpdateExpression='SET poster_uploaded_to_photos = :url',
+                            ExpressionAttributeValues={':url': poster_url},
+                        )
+                    else:
+                        logger.info(f"Poster already in Google Photos for event {event_id}, skipping")
+                except Exception as e:
+                    logger.error(f"Photos dedup check failed: {e}")
         else:  # action == 'delete'
             result = delete_event(event_id, event_data)
 
