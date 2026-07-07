@@ -61,6 +61,7 @@ class EventData(TypedDict):
     name: str
     start_date: str
     end_date: str
+    event_type: NotRequired[str]
     location: NotRequired[str]
     description: NotRequired[str]
     poster_url: NotRequired[str]
@@ -87,8 +88,12 @@ logger.setLevel(logging.INFO)
 GOOGLE_CREDENTIALS_PARAMETER: str = os.environ.get(
     'GOOGLE_CREDENTIALS_PARAMETER', '/h-dcn/google-credentials'
 )
-GOOGLE_CALENDAR_ID: str = os.environ.get('GOOGLE_CALENDAR_ID', 'primary')
 EVENTS_TABLE_NAME: str = os.environ.get('EVENTS_TABLE_NAME', 'Events')
+
+# Calendar ID routing by event_type
+CALENDAR_INTERNATIONAAL: str = 'h-dcn.nl_tdqsqddtask5sa8hola0sga4a0@group.calendar.google.com'
+CALENDAR_NATIONAAL: str = 'h-dcn.nl_0pth567r0u62j086o4m3urio84@group.calendar.google.com'
+CALENDAR_DIVERSEN: str = 'h-dcn.nl_voetgs35u59e808nhr9t35bidc@group.calendar.google.com'
 
 # Module-level cache for Google credentials (persists across warm starts)
 _cached_credentials_json: str | None = None
@@ -96,6 +101,22 @@ _cached_credentials_json: str | None = None
 ssm_client = boto3.client('ssm')
 dynamodb = boto3.resource('dynamodb')
 events_table = dynamodb.Table(EVENTS_TABLE_NAME)
+
+
+def _get_calendar_id(event_type: str) -> str:
+    """
+    Determine which Google Calendar to sync to based on event_type.
+
+    - internationaal_treffen → Internationaal calendar
+    - other, presmeet → Diversen calendar
+    - everything else → Nationaal calendar
+    """
+    if event_type == 'internationaal_treffen':
+        return CALENDAR_INTERNATIONAAL
+    elif event_type in ('other', 'presmeet'):
+        return CALENDAR_DIVERSEN
+    else:
+        return CALENDAR_NATIONAAL
 
 
 # ---------------------------------------------------------------------------
@@ -181,10 +202,13 @@ def sync_event(event_id: str, event_data: EventData) -> SyncResult:
     - If google_calendar_event_id exists → update
     - If not → create
 
+    Routes to the correct calendar based on event_type.
     On failure: logs the error and returns the existing gcal_id unchanged.
     """
     gcal_id: str | None = event_data.get('google_calendar_event_id')
     calendar_body: dict[str, Any] = _build_calendar_event_body(event_data)
+    event_type: str = event_data.get('event_type', '')
+    calendar_id: str = _get_calendar_id(event_type)
 
     try:
         service = _build_calendar_service()
@@ -192,20 +216,20 @@ def sync_event(event_id: str, event_data: EventData) -> SyncResult:
         if gcal_id:
             # Update existing event
             result = service.events().update(
-                calendarId=GOOGLE_CALENDAR_ID,
+                calendarId=calendar_id,
                 eventId=gcal_id,
                 body=calendar_body,
             ).execute()
-            logger.info(f"Updated Google Calendar event {gcal_id} for event {event_id}")
+            logger.info(f"Updated Google Calendar event {gcal_id} for event {event_id} (calendar: {calendar_id})")
             return SyncResult(google_calendar_event_id=result['id'])
         else:
             # Create new event
             result = service.events().insert(
-                calendarId=GOOGLE_CALENDAR_ID,
+                calendarId=calendar_id,
                 body=calendar_body,
             ).execute()
             new_gcal_id: str = result['id']
-            logger.info(f"Created Google Calendar event {new_gcal_id} for event {event_id}")
+            logger.info(f"Created Google Calendar event {new_gcal_id} for event {event_id} (calendar: {calendar_id})")
             return SyncResult(google_calendar_event_id=new_gcal_id)
 
     except Exception as e:
@@ -222,6 +246,7 @@ def delete_event(event_id: str, event_data: EventData) -> SyncResult:
     Delete a Google Calendar event.
 
     If no google_calendar_event_id exists, this is a no-op.
+    Routes to the correct calendar based on event_type.
     On failure: logs the error and returns None (cleared).
     """
     gcal_id: str | None = event_data.get('google_calendar_event_id')
@@ -230,13 +255,16 @@ def delete_event(event_id: str, event_data: EventData) -> SyncResult:
         logger.info(f"No Google Calendar event to delete for event {event_id}")
         return SyncResult(google_calendar_event_id=None)
 
+    event_type: str = event_data.get('event_type', '')
+    calendar_id: str = _get_calendar_id(event_type)
+
     try:
         service = _build_calendar_service()
         service.events().delete(
-            calendarId=GOOGLE_CALENDAR_ID,
+            calendarId=calendar_id,
             eventId=gcal_id,
         ).execute()
-        logger.info(f"Deleted Google Calendar event {gcal_id} for event {event_id}")
+        logger.info(f"Deleted Google Calendar event {gcal_id} for event {event_id} (calendar: {calendar_id})")
     except Exception as e:
         logger.error(
             f"Google Calendar delete failed for event {event_id} (gcal_id={gcal_id}): {str(e)}",

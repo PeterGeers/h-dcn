@@ -28,8 +28,10 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
+lambda_client = boto3.client('lambda')
 table_name = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 table = dynamodb.Table(table_name)
+SYNC_FUNCTION_NAME = os.environ.get('SYNC_GOOGLE_CALENDAR_FUNCTION', '')
 
 # Valid event statuses, transitions, and counting rules
 VALID_STATUSES = {'draft', 'open', 'closed', 'archived'}
@@ -331,6 +333,66 @@ def lambda_handler(event, context):
                                          error_key='not_found', locale=locale)
 
         print(f"Event {event_id} updated by {user_email} with roles {user_roles}")
+
+        # --- Google Calendar Sync (async, best-effort) ---
+        # Trigger sync when event is published and relevant fields changed
+        sync_trigger_fields = {'name', 'start_date', 'end_date', 'location', 'description',
+                               'poster_url', 'status', 'event_type'}
+        merged_status = merged.get('status', current_event.get('status', ''))
+
+        if SYNC_FUNCTION_NAME and merged_status == 'published' and any(f in body for f in sync_trigger_fields):
+            try:
+                sync_payload = {
+                    'body': json.dumps({
+                        'event_id': event_id,
+                        'action': 'sync',
+                        'event_data': {
+                            'name': merged.get('name', ''),
+                            'start_date': merged.get('start_date', ''),
+                            'end_date': merged.get('end_date', ''),
+                            'event_type': merged.get('event_type', ''),
+                            'location': merged.get('location', ''),
+                            'description': merged.get('description', ''),
+                            'poster_url': merged.get('poster_url', ''),
+                            'google_calendar_event_id': current_event.get('google_calendar_event_id'),
+                        },
+                    })
+                }
+                lambda_client.invoke(
+                    FunctionName=SYNC_FUNCTION_NAME,
+                    InvocationType='Event',  # async — don't wait
+                    Payload=json.dumps(sync_payload),
+                )
+                print(f"Triggered Google Calendar sync for event {event_id}")
+            except Exception as sync_err:
+                print(f"Warning: Google Calendar sync trigger failed: {sync_err}")
+                # Never block the update response
+
+        # If status changed to 'archived', delete from Google Calendar
+        if (SYNC_FUNCTION_NAME and 'status' in body and body['status'] == 'archived'
+                and current_event.get('google_calendar_event_id')):
+            try:
+                sync_payload = {
+                    'body': json.dumps({
+                        'event_id': event_id,
+                        'action': 'delete',
+                        'event_data': {
+                            'name': merged.get('name', ''),
+                            'start_date': merged.get('start_date', ''),
+                            'end_date': merged.get('end_date', ''),
+                            'event_type': merged.get('event_type', ''),
+                            'google_calendar_event_id': current_event.get('google_calendar_event_id'),
+                        },
+                    })
+                }
+                lambda_client.invoke(
+                    FunctionName=SYNC_FUNCTION_NAME,
+                    InvocationType='Event',
+                    Payload=json.dumps(sync_payload),
+                )
+                print(f"Triggered Google Calendar delete for archived event {event_id}")
+            except Exception as sync_err:
+                print(f"Warning: Google Calendar delete trigger failed: {sync_err}")
 
         return create_success_response({
             'message': 'Event updated successfully',

@@ -26,8 +26,10 @@ except ImportError as e:
     sys.exit(0)
 
 dynamodb = boto3.resource('dynamodb')
+lambda_client = boto3.client('lambda')
 table_name = os.environ.get('EVENTS_TABLE_NAME', 'Events')
 table = dynamodb.Table(table_name)
+SYNC_FUNCTION_NAME = os.environ.get('SYNC_GOOGLE_CALENDAR_FUNCTION', '')
 
 def lambda_handler(event, context):
     try:
@@ -60,10 +62,45 @@ def lambda_handler(event, context):
         # Get event ID from path parameters
         event_id = event['pathParameters']['event_id']
         
+        # Fetch event first to get google_calendar_event_id for sync
+        current_event = {}
+        if SYNC_FUNCTION_NAME:
+            try:
+                resp = table.get_item(Key={'event_id': event_id})
+                current_event = resp.get('Item', {})
+            except Exception as e:
+                print(f"Warning: could not fetch event for sync: {e}")
+
         # Delete the event
         table.delete_item(Key={'event_id': event_id})
         
         print(f"Event {event_id} deleted by {user_email} with roles {user_roles}")
+
+        # Trigger Google Calendar delete (async, best-effort)
+        gcal_id = current_event.get('google_calendar_event_id')
+        if SYNC_FUNCTION_NAME and gcal_id:
+            try:
+                sync_payload = {
+                    'body': json.dumps({
+                        'event_id': event_id,
+                        'action': 'delete',
+                        'event_data': {
+                            'name': current_event.get('name', ''),
+                            'start_date': current_event.get('start_date', ''),
+                            'end_date': current_event.get('end_date', ''),
+                            'event_type': current_event.get('event_type', ''),
+                            'google_calendar_event_id': gcal_id,
+                        },
+                    })
+                }
+                lambda_client.invoke(
+                    FunctionName=SYNC_FUNCTION_NAME,
+                    InvocationType='Event',
+                    Payload=json.dumps(sync_payload),
+                )
+                print(f"Triggered Google Calendar delete for event {event_id}")
+            except Exception as sync_err:
+                print(f"Warning: Google Calendar delete trigger failed: {sync_err}")
         
         return {
             'statusCode': 204,

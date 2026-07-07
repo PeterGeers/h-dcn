@@ -518,6 +518,15 @@ Resources:
                   - cognito-idp:AdminListGroupsForUser
                 Resource:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
+        - PolicyName: InvokeSyncGoogleCalendar
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt SyncGoogleCalendarFunction.Arn
         - PolicyName: S3ReportsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -1831,6 +1840,7 @@ Resources:
       Environment:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
+          SYNC_GOOGLE_CALENDAR_FUNCTION: !Ref SyncGoogleCalendarFunction
       Events:
         UpdateEvent:
           Type: Api
@@ -1851,6 +1861,7 @@ Resources:
       Environment:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
+          SYNC_GOOGLE_CALENDAR_FUNCTION: !Ref SyncGoogleCalendarFunction
       Events:
         DeleteEvent:
           Type: Api
@@ -2918,7 +2929,6 @@ Resources:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
           GOOGLE_CREDENTIALS_PARAMETER: /h-dcn/google-credentials
-          GOOGLE_CALENDAR_ID: primary
       Events:
         SyncGoogleCalendar:
           Type: Api
