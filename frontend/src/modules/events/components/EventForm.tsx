@@ -42,6 +42,7 @@ interface EventFormData {
   location: string;
   poster_url: string;
   slug: string;
+  description: string;
   // dates (registration)
   registration_open: string;
   registration_close: string;
@@ -95,6 +96,7 @@ const EMPTY_FORM: EventFormData = {
   location: '',
   poster_url: '',
   slug: '',
+  description: '',
   registration_open: '',
   registration_close: '',
   payment_deadline: '',
@@ -200,6 +202,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
         location: event.location || '',
         poster_url: event.poster_url || '',
         slug: event.slug || '',
+        description: event.description || '',
         registration_open: toDatetimeLocal(event.registration_open),
         registration_close: toDatetimeLocal(event.registration_close),
         payment_deadline: toDatetimeLocal(event.payment_deadline),
@@ -326,6 +329,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       if (formData.location) payload.location = formData.location;
       if (formData.poster_url) payload.poster_url = formData.poster_url;
       if (formData.slug) payload.slug = formData.slug;
+      if (formData.description) payload.description = formData.description;
       if (formData.payment_deadline) payload.payment_deadline = formData.payment_deadline;
 
       if (formData.product_ids.length > 0) {

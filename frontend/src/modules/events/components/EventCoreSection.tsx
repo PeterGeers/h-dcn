@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  SimpleGrid, FormControl, FormLabel, Input, Select, HStack, Button, Text,
+  SimpleGrid, FormControl, FormLabel, Input, Select, HStack, Button, Text, Textarea,
 } from '@chakra-ui/react';
 import {
   EVENT_TYPES_BY_CATEGORY,
@@ -26,6 +26,7 @@ interface EventCoreSectionProps {
     end_date: string;
     location: string;
     poster_url: string;
+    description: string;
   };
   availableRegions: string[];
   allowedRegions: string[];
@@ -196,6 +197,18 @@ function EventCoreSection({
             {formData.poster_url}
           </Text>
         )}
+      </FormControl>
+
+      <FormControl gridColumn="1 / -1">
+        <FormLabel color="orange.300">Beschrijving</FormLabel>
+        <Textarea
+          value={formData.description}
+          onChange={(e) => onChange('description', e.target.value)}
+          placeholder="Korte beschrijving van het evenement"
+          bg="gray.700"
+          borderColor="orange.400"
+          rows={3}
+        />
       </FormControl>
     </SimpleGrid>
   );

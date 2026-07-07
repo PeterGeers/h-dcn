@@ -131,6 +131,7 @@ export interface Event {
   location?: string;
   slug?: string;
   poster_url?: string;
+  description?: string;
   registration_open?: string;
   registration_close?: string;
   payment_deadline?: string;

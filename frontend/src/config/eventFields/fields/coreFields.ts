@@ -178,13 +178,29 @@ export const coreFields: Record<string, FieldDefinition> = {
     width: 'large',
   },
 
+  description: {
+    key: 'description',
+    label: 'Beschrijving',
+    dataType: 'string',
+    inputType: 'textarea',
+    group: 'core',
+    order: 11,
+    validation: [
+      { type: 'max_length', value: 2000, message: 'Beschrijving mag maximaal 2000 karakters bevatten' },
+    ],
+    permissions: createPermissionConfig('public', 'admin'),
+    placeholder: 'Korte beschrijving van het evenement',
+    helpText: 'Publieke beschrijving die getoond wordt op de evenementenpagina.',
+    width: 'full',
+  },
+
   start_date: {
     key: 'start_date',
     label: 'Startdatum',
     dataType: 'date',
     inputType: 'date',
     group: 'core',
-    order: 11,
+    order: 12,
     required: true,
     validation: [
       { type: 'required', message: 'Startdatum is verplicht' },
@@ -201,7 +217,7 @@ export const coreFields: Record<string, FieldDefinition> = {
     dataType: 'date',
     inputType: 'date',
     group: 'core',
-    order: 12,
+    order: 13,
     required: true,
     validation: [
       { type: 'required', message: 'Einddatum is verplicht' },
