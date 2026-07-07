@@ -95,9 +95,9 @@ jobs:
         run: |
           STAGE="${{ inputs.stage || 'prod' }}"
           if [ "$STAGE" = "test" ]; then
-            aws s3 sync frontend/build/ s3://${{ vars.TEST_FRONTEND_BUCKET_NAME }}/ --delete
+            aws s3 sync frontend/build/ s3://${{ vars.TEST_FRONTEND_BUCKET_NAME }}/ --delete --exclude "events/*/og.html"
           else
-            aws s3 sync frontend/build/ s3://${{ vars.FRONTEND_BUCKET_NAME }}/ --delete
+            aws s3 sync frontend/build/ s3://${{ vars.FRONTEND_BUCKET_NAME }}/ --delete --exclude "events/*/og.html"
           fi
 
       - name: Invalidate CloudFront
