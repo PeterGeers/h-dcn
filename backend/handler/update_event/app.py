@@ -296,7 +296,7 @@ def lambda_handler(event, context):
         updatable_fields = [
             # core
             'name', 'event_type', 'event_category', 'participation', 'status',
-            'linked_regio', 'location', 'slug', 'poster_url',
+            'linked_regio', 'location', 'slug', 'poster_url', 'description',
             # dates
             'start_date', 'end_date', 'registration_open', 'registration_close', 'payment_deadline',
             # config
