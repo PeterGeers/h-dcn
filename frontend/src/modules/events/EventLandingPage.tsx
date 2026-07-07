@@ -176,8 +176,8 @@ const EventLandingPage: React.FC = () => {
 
         <Container maxW="container.lg" py={{ base: 4, md: 8 }}>
           <VStack spacing={6} align="stretch">
-            {/* Poster (large) */}
-            {event.poster_url ? (
+            {/* Poster (large) — only shown when available */}
+            {event.poster_url && (
               <Image
                 src={event.poster_url}
                 alt={event.name}
@@ -186,18 +186,6 @@ const EventLandingPage: React.FC = () => {
                 objectFit="contain"
                 borderRadius="md"
               />
-            ) : (
-              <Box
-                w="100%"
-                h="300px"
-                bg="gray.800"
-                borderRadius="md"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text color="gray.500" fontSize="6xl">📅</Text>
-              </Box>
             )}
 
             {/* Event details */}
