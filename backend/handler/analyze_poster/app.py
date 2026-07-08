@@ -116,7 +116,7 @@ Return ONLY a valid JSON object with these fields:
 - "start_date": start date in YYYY-MM-DD format (if visible)
 - "end_date": end date in YYYY-MM-DD format (if visible, same as start_date if single day event)
 - "location": the event location/venue
-- "info": any additional relevant information (description, organizer, price, etc.)
+- "info": a comprehensive summary of ALL information found on the poster (description, organizer, price, schedule, activities, dress code, contact info, sponsors, special notes — include everything visible)
 
 If a field cannot be determined from the poster, use an empty string "".
 Do NOT include any markdown formatting, code fences, or extra text — only the JSON object."""

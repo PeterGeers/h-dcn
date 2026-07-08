@@ -268,6 +268,7 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
       start_date: data.start_date ? toDatetimeLocal(data.start_date) : prev.start_date,
       end_date: data.end_date ? toDatetimeLocal(data.end_date) : prev.end_date,
       location: data.location || prev.location,
+      description: data.info || prev.description,
     }));
 
     // Also upload the poster image to S3 so poster_url gets set
