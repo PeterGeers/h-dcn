@@ -179,6 +179,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/members" element={<MemberAdminPage user={user} />} />
             <Route path="/events" element={<EventAdminPage user={user} />} />
             <Route path="/memberships" element={<MembershipManagement user={user} />} />
+            <Route path="/calendar" element={<EventCalendarPage />} />
             <Route path="/events/:eventId/booking" element={<EventBookingPage />} />
             <Route path="/webshop_management" element={<WebshopManagementGuard />} />
             <Route path="/test/passkey" element={<PasskeyTest />} />
