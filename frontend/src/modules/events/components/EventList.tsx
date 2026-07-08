@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import {
   Box, VStack, HStack, Button, Table, Thead, Tbody, Tr, Td,
-  Badge, useToast, Text, IconButton, Stack, useBreakpointValue,
-  Tooltip
+  Badge, Text, Stack, useBreakpointValue, useToast
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, CopyIcon, ExternalLinkIcon } from '@chakra-ui/icons';
-import { useNavigate } from 'react-router-dom';
+import { AddIcon } from '@chakra-ui/icons';
 import EventForm from './EventForm';
 import CSVExportButton from './CSVExportButton';
 import { Event } from '../../../types';
@@ -13,6 +11,7 @@ import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 import { useFilterableTable } from '../../../hooks/useFilterableTable';
 import { FilterableHeader } from '../../../components/filters';
+import { EVENT_TYPE_LABELS, PARTICIPATION_MODE_LABELS } from '../../../config/eventFields/eventTypes';
 
 interface EventListProps {
   events: Event[];
@@ -22,10 +21,9 @@ interface EventListProps {
   canWriteEvents?: boolean;
 }
 
-const INITIAL_FILTERS = { name: '', start_date: '', location: '', linked_regio: '', participants: '', cost: '', revenue: '' };
+const INITIAL_FILTERS = { name: '', start_date: '', location: '', event_type: '', participation: '', status: '', linked_regio: '' };
 
 function EventList({ events, onEventUpdate, user, permissionManager, canWriteEvents = false }: EventListProps) {
-  const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const toast = useToast();
@@ -34,28 +32,6 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
   const canExportEvents = permissionManager?.hasFieldAccess('events', 'read', { fieldType: 'export' }) || 
                          permissionManager?.hasAccess('communication', 'write') || false;
   
-  // Check if user can edit specific events based on regional permissions
-  const canEditEvent = (event: Event): boolean => {
-    if (!canWriteEvents) return false;
-    if (permissionManager?.hasAccess('events', 'write')) return true;
-    
-    const eventRegion = event.linked_regio;
-    if (!eventRegion || eventRegion === 'regio_all') return false;
-
-    const regionNumber = getRegionNumber(eventRegion);
-    if (regionNumber) {
-      return userRoles.some(role => 
-        role.includes(`Region${regionNumber}`) && 
-        (role.includes('Chairman') || role.includes('Secretary'))
-      );
-    }
-    return false;
-  };
-
-  const canDeleteEvent = (event: Event): boolean => {
-    return permissionManager?.hasAccess('events', 'write') || false;
-  };
-
   const getRegionNumber = (regionName: string): string | null => {
     const regionMap: { [key: string]: string } = {
       'Noord-Holland': '1',
@@ -69,6 +45,37 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
       'Duitsland': '9'
     };
     return regionMap[regionName] || null;
+  };
+
+  const handleDelete = async (event: Event) => {
+    try {
+      const headers = await getAuthHeadersForGet();
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/events/${event.event_id}`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (response.ok) {
+        onEventUpdate();
+        toast({ title: 'Evenement verwijderd', status: 'success', duration: 3000 });
+      }
+    } catch (error: any) {
+      toast({ title: 'Fout bij verwijderen', description: error.message, status: 'error', duration: 5000 });
+    }
+  };
+
+  const handleDuplicate = (event: Event) => {
+    const duplicated = {
+      ...event,
+      name: `${event.name || ''} (Kopie)`,
+      start_date: '',
+      end_date: '',
+      registration_open: '',
+      registration_close: '',
+    };
+    delete duplicated.event_id;
+    setSelectedEvent(duplicated);
+    setIsFormOpen(true);
   };
 
   // Check if user has full event access
@@ -103,10 +110,10 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
       name: event.name || '',
       start_date: event.start_date || '',
       location: event.location || '',
+      event_type: event.event_type || '',
+      participation: event.participation || '',
+      status: event.status || '',
       linked_regio: event.linked_regio || '',
-      participants: String(event.participants || 0),
-      cost: String(event.cost || 0),
-      revenue: String(event.revenue || 0),
     }));
   }, [permissionFilteredEvents]);
 
@@ -119,87 +126,13 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
 
   const filteredEvents = processedData as (Event & Record<string, unknown>)[];
 
-  const handleEdit = (event: Event) => {
-    if (!canEditEvent(event)) {
-      toast({
-        title: 'Geen toegang',
-        description: 'Je hebt geen rechten om dit evenement te bewerken.',
-        status: 'warning',
-        duration: 3000,
-      });
-      return;
-    }
+  const handleRowClick = (event: Event) => {
     setSelectedEvent(event);
     setIsFormOpen(true);
   };
 
-  const handleDuplicate = (event: Event) => {
-    if (!canWriteEvents) {
-      toast({
-        title: 'Geen toegang',
-        description: 'Je hebt geen rechten om evenementen te dupliceren.',
-        status: 'warning',
-        duration: 3000,
-      });
-      return;
-    }
-    const duplicatedEvent = {
-      ...event,
-      name: `${event.name || ''} (Kopie)`,
-      start_date: '',
-      end_date: '',
-      registration_open: '',
-      registration_close: '',
-    };
-    delete duplicatedEvent.event_id;
-    setSelectedEvent(duplicatedEvent);
-    setIsFormOpen(true);
-  };
-
-  const handleDelete = async (event: Event) => {
-    if (!canDeleteEvent(event)) {
-      toast({
-        title: 'Geen toegang',
-        description: 'Je hebt geen rechten om dit evenement te verwijderen.',
-        status: 'warning',
-        duration: 3000,
-      });
-      return;
-    }
-    
-    if (!window.confirm(`Weet je zeker dat je "${event.name || ''}" wilt verwijderen?`)) return;
-    
-    try {
-      const headers = await getAuthHeadersForGet();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://i3if973sp5.execute-api.eu-west-1.amazonaws.com/prod'}/events/${event.event_id}`, {
-        method: 'DELETE',
-        headers
-      });
-
-      if (response.ok) {
-        onEventUpdate();
-        toast({
-          title: 'Evenement verwijderd',
-          status: 'success',
-          duration: 3000,
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Fout bij verwijderen',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-      });
-    }
-  };
-
   const formatDate = (dateStr: string) => {
     return dateStr ? new Date(dateStr).toLocaleDateString('nl-NL') : '-';
-  };
-
-  const formatCurrency = (amount: string | number) => {
-    return amount ? `€${parseFloat(String(amount)).toFixed(2)}` : '€0,00';
   };
 
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -272,6 +205,36 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 display={{ base: 'none', md: 'table-cell' }}
               />
               <FilterableHeader
+                label="Type"
+                filterValue={filters.event_type}
+                onFilterChange={(v) => setFilter('event_type', v)}
+                sortable
+                sortDirection={sortField === 'event_type' ? sortDirection : null}
+                onSort={() => handleSort('event_type')}
+                minW="80px"
+                display={{ base: 'none', md: 'table-cell' }}
+              />
+              <FilterableHeader
+                label="Deelname"
+                filterValue={filters.participation}
+                onFilterChange={(v) => setFilter('participation', v)}
+                sortable
+                sortDirection={sortField === 'participation' ? sortDirection : null}
+                onSort={() => handleSort('participation')}
+                minW="80px"
+                display={{ base: 'none', lg: 'table-cell' }}
+              />
+              <FilterableHeader
+                label="Status"
+                filterValue={filters.status}
+                onFilterChange={(v) => setFilter('status', v)}
+                sortable
+                sortDirection={sortField === 'status' ? sortDirection : null}
+                onSort={() => handleSort('status')}
+                minW="80px"
+                display={{ base: 'none', lg: 'table-cell' }}
+              />
+              <FilterableHeader
                 label="Regio"
                 filterValue={filters.linked_regio}
                 onFilterChange={(v) => setFilter('linked_regio', v)}
@@ -281,164 +244,49 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 minW="80px"
                 display={{ base: 'none', lg: 'table-cell' }}
               />
-              <FilterableHeader
-                label="Deelnemers"
-                filterValue={filters.participants}
-                onFilterChange={(v) => setFilter('participants', v)}
-                sortable
-                sortDirection={sortField === 'participants' ? sortDirection : null}
-                onSort={() => handleSort('participants')}
-                minW="80px"
-                display={{ base: 'none', md: 'table-cell' }}
-              />
-              <FilterableHeader
-                label="Kosten"
-                filterValue={filters.cost}
-                onFilterChange={(v) => setFilter('cost', v)}
-                sortable
-                sortDirection={sortField === 'cost' ? sortDirection : null}
-                onSort={() => handleSort('cost')}
-                minW="80px"
-              />
-              <FilterableHeader
-                label="Inkomsten"
-                filterValue={filters.revenue}
-                onFilterChange={(v) => setFilter('revenue', v)}
-                sortable
-                sortDirection={sortField === 'revenue' ? sortDirection : null}
-                onSort={() => handleSort('revenue')}
-                minW="80px"
-              />
-              <FilterableHeader
-                label="Winst"
-                sortable
-                sortDirection={sortField === 'winst' ? sortDirection : null}
-                onSort={() => handleSort('winst')}
-                minW="80px"
-                showFilter={false}
-              />
-              <FilterableHeader
-                label="Acties"
-                minW="120px"
-                showFilter={false}
-              />
             </Tr>
           </Thead>
           <Tbody>
-            {filteredEvents.map((event) => {
-              const kosten = parseFloat(String(event.cost || 0));
-              const inkomsten = parseFloat(String(event.revenue || 0));
-              const winst = inkomsten - kosten;
-              
-              return (
-                <Tr key={event.event_id}>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>
-                    <Text isTruncated maxW="120px">{event.name || ''}</Text>
-                  </Td>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>
-                    {formatDate(event.start_date || '')}
-                    {event.end_date && event.end_date !== event.start_date && 
-                      ` - ${formatDate(event.end_date)}`
+            {filteredEvents.map((event) => (
+              <Tr
+                key={event.event_id}
+                _hover={{ bg: 'gray.600', cursor: 'pointer' }}
+                onClick={() => handleRowClick(event as Event)}
+              >
+                <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>
+                  <Text isTruncated maxW="180px">{event.name || ''}</Text>
+                </Td>
+                <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>
+                  {formatDate(event.start_date || '')}
+                  {event.end_date && event.end_date !== event.start_date && 
+                    ` - ${formatDate(event.end_date)}`
+                  }
+                </Td>
+                <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
+                  <Text isTruncated maxW="120px">{event.location || ''}</Text>
+                </Td>
+                <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
+                  {EVENT_TYPE_LABELS[event.event_type as keyof typeof EVENT_TYPE_LABELS] || event.event_type || ''}
+                </Td>
+                <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
+                  {PARTICIPATION_MODE_LABELS[event.participation as keyof typeof PARTICIPATION_MODE_LABELS] || event.participation || ''}
+                </Td>
+                <Td display={{ base: 'none', lg: 'table-cell' }}>
+                  <Badge
+                    colorScheme={
+                      event.status === 'published' ? 'green' :
+                      event.status === 'archived' ? 'gray' : 'yellow'
                     }
-                  </Td>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                    <Text isTruncated maxW="100px">{event.location || ''}</Text>
-                  </Td>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
-                    {event.linked_regio || ''}
-                  </Td>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                    {event.participants || 0}
-                  </Td>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>{formatCurrency(kosten)}</Td>
-                  <Td color="white" fontSize={{ base: 'xs', md: 'sm' }}>{formatCurrency(inkomsten)}</Td>
-                  <Td>
-                    <Badge colorScheme={winst >= 0 ? 'green' : 'red'} fontSize={{ base: 'xs', md: 'sm' }}>
-                      {formatCurrency(winst)}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <HStack spacing={1}>
-                      {canEditEvent(event as Event) ? (
-                        <IconButton
-                          icon={<EditIcon />}
-                          size="xs"
-                          colorScheme="blue"
-                          onClick={() => handleEdit(event as Event)}
-                          title="Bewerken"
-                          aria-label="Bewerken"
-                        />
-                      ) : (
-                        <Tooltip label="Geen rechten om te bewerken">
-                          <IconButton
-                            icon={<EditIcon />}
-                            size="xs"
-                            colorScheme="gray"
-                            isDisabled
-                            title="Geen rechten"
-                            aria-label="Geen rechten"
-                          />
-                        </Tooltip>
-                      )}
-                      {canWriteEvents ? (
-                        <IconButton
-                          icon={<CopyIcon />}
-                          size="xs"
-                          colorScheme="green"
-                          onClick={() => handleDuplicate(event as Event)}
-                          title="Dupliceren"
-                          aria-label="Dupliceren"
-                        />
-                      ) : (
-                        <Tooltip label="Geen rechten om te dupliceren">
-                          <IconButton
-                            icon={<CopyIcon />}
-                            size="xs"
-                            colorScheme="gray"
-                            isDisabled
-                            title="Geen rechten"
-                            aria-label="Geen rechten"
-                          />
-                        </Tooltip>
-                      )}
-                      {canDeleteEvent(event as Event) ? (
-                        <IconButton
-                          icon={<DeleteIcon />}
-                          size="xs"
-                          colorScheme="red"
-                          onClick={() => handleDelete(event as Event)}
-                          title="Verwijderen"
-                          aria-label="Verwijderen"
-                        />
-                      ) : (
-                        <Tooltip label="Geen rechten om te verwijderen">
-                          <IconButton
-                            icon={<DeleteIcon />}
-                            size="xs"
-                            colorScheme="gray"
-                            isDisabled
-                            title="Geen rechten"
-                            aria-label="Geen rechten"
-                          />
-                        </Tooltip>
-                      )}
-                      {(event as Event & { product_ids?: string[] }).product_ids?.length ? (
-                        <Tooltip label="Test booking flow">
-                          <IconButton
-                            icon={<ExternalLinkIcon />}
-                            size="xs"
-                            colorScheme="purple"
-                            onClick={() => navigate(`/events/${(event as Event).event_id}/booking`)}
-                            title="Test booking"
-                            aria-label="Test booking flow"
-                          />
-                        </Tooltip>
-                      ) : null}
-                    </HStack>
-                  </Td>
-                </Tr>
-              );
-            })}
+                    fontSize={{ base: 'xs', md: 'sm' }}
+                  >
+                    {event.status || 'draft'}
+                  </Badge>
+                </Td>
+                <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', lg: 'table-cell' }}>
+                  {event.linked_regio || ''}
+                </Td>
+              </Tr>
+            ))}
           </Tbody>
         </Table>
       </Box>
@@ -457,8 +305,11 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
         }}
         event={selectedEvent}
         onSave={onEventUpdate}
+        onDelete={handleDelete}
+        onDuplicate={handleDuplicate}
         user={user}
         permissionManager={permissionManager}
+        canWriteEvents={canWriteEvents}
       />
     </VStack>
   );

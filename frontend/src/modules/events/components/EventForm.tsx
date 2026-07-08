@@ -67,10 +67,13 @@ interface EventFormData {
 interface EventFormProps {
   isOpen: boolean;
   onClose: () => void;
-  event?: Event;
+  event?: Event | null;
   onSave: () => void;
+  onDelete?: (event: Event) => void;
+  onDuplicate?: (event: Event) => void;
   user?: any;
   permissionManager?: FunctionPermissionManager | null;
+  canWriteEvents?: boolean;
 }
 
 // ============================================================================
@@ -131,7 +134,7 @@ function sectionHasData(formData: EventFormData, section: 'registration' | 'conf
 // COMPONENT
 // ============================================================================
 
-function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: EventFormProps) {
+function EventForm({ isOpen, onClose, event, onSave, onDelete, onDuplicate, user, permissionManager, canWriteEvents = false }: EventFormProps) {
   const [formData, setFormData] = useState<EventFormData>({ ...EMPTY_FORM });
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -484,6 +487,38 @@ function EventForm({ isOpen, onClose, event, onSave, user, permissionManager }: 
           </VStack>
         </ModalBody>
         <ModalFooter>
+          {event?.event_id && canWriteEvents && (
+            <HStack spacing={2} mr="auto">
+              {onDuplicate && (
+                <Button
+                  size="sm"
+                  colorScheme="green"
+                  variant="outline"
+                  onClick={() => {
+                    onDuplicate(event as Event);
+                    onClose();
+                  }}
+                >
+                  Dupliceren
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  size="sm"
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={() => {
+                    if (window.confirm(`Weet je zeker dat je "${event.name || ''}" wilt verwijderen?`)) {
+                      onDelete(event as Event);
+                      onClose();
+                    }
+                  }}
+                >
+                  Verwijderen
+                </Button>
+              )}
+            </HStack>
+          )}
           <Button variant="ghost" mr={3} onClick={onClose} color="gray.300">
             Annuleren
           </Button>
