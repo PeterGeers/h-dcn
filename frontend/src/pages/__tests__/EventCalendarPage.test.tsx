@@ -28,11 +28,6 @@ const mockEvents = [
 // --- Mocks ---
 
 const mockNavigate = jest.fn();
-const mockUseAuth = jest.fn().mockReturnValue({ isAuthenticated: true });
-
-jest.mock('../../context/AuthProvider', () => ({
-  useAuth: () => mockUseAuth(),
-}));
 
 jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
@@ -92,7 +87,6 @@ describe('EventCalendarPage', () => {
     // Suppress expected error logs
     console.error = () => {};
     mockNavigate.mockClear();
-    mockUseAuth.mockReturnValue({ isAuthenticated: true });
     mockWindowOpen = jest.fn();
     window.open = mockWindowOpen;
 
@@ -114,8 +108,7 @@ describe('EventCalendarPage', () => {
 
   // --- Auth-based click behavior ---
 
-  it('authenticated user click calls navigate("/events/{event_id}/booking") (Req 2.3)', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: true });
+  it('clicking event card calls navigate("/events/{event_id}/booking") (Req 2.3)', async () => {
     render(<EventCalendarPage />);
 
     const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
@@ -125,31 +118,9 @@ describe('EventCalendarPage', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
-  it('unauthenticated user click calls window.open("/events/{slug}/info", "_blank") (Req 2.4)', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: false });
-    render(<EventCalendarPage />);
-
-    const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
-    fireEvent.click(card);
-
-    expect(mockWindowOpen).toHaveBeenCalledWith('/events/test-event/info', '_blank');
-    expect(mockNavigate).not.toHaveBeenCalled();
-  });
-
   // --- API endpoint ---
 
-  it('uses /events-public endpoint regardless of auth state (Req 2.2)', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: true });
-    render(<EventCalendarPage />);
-
-    await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('/events-public');
-
-    cleanup();
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(mockEvents) })
-    ) as jest.Mock;
-    mockUseAuth.mockReturnValue({ isAuthenticated: false });
+  it('uses /events-public endpoint (Req 2.2)', async () => {
     render(<EventCalendarPage />);
 
     await screen.findByTestId('clickable-card', {}, { timeout: 5000 });

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthProvider';
 import {
   Box,
   Container,
@@ -43,7 +42,6 @@ interface PublicEvent {
 
 const EventCalendarPage: React.FC = () => {
   const { t } = useTranslation('events');
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
@@ -347,11 +345,7 @@ const EventCalendarPage: React.FC = () => {
                   shadow: 'lg',
                 }}
                 onClick={() => {
-                  if (isAuthenticated) {
-                    navigate(`/events/${event.event_id}/booking`);
-                  } else {
-                    window.open(`/events/${event.slug}/info`, '_blank');
-                  }
+                  navigate(`/events/${event.event_id}/booking`);
                 }}
               >
                 {/* Poster — only shown when available */}
