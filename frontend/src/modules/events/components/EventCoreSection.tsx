@@ -83,6 +83,7 @@ function EventCoreSection({
         onChange={(v) => onChange('event_type', v)}
         placeholder="Selecteer type..."
         width="100%"
+        borderColor="orange.400"
       />
 
       <FormControl isRequired>

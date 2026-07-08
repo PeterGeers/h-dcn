@@ -58,6 +58,8 @@ export interface GenericFilterProps {
   width?: string;
   /** "All" option label (default: "Alle") */
   allLabel?: string;
+  /** Border color override (default: "gray.600") */
+  borderColor?: string;
 }
 
 const OPTION_STYLE = { backgroundColor: '#2D3748', color: 'white' };
@@ -72,6 +74,7 @@ export function GenericFilter({
   isDisabled = false,
   width = '200px',
   allLabel = 'Alle',
+  borderColor = 'gray.600',
 }: GenericFilterProps) {
   return (
     <FormControl w={width}>
@@ -83,7 +86,7 @@ export function GenericFilter({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         bg="gray.700"
-        borderColor="gray.600"
+        borderColor={borderColor}
         color="white"
         isDisabled={isDisabled}
         _focus={{ borderColor: 'orange.400' }}
