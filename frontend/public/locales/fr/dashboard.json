@@ -19,6 +19,8 @@
     "webshop_title": "Boutique",
     "webshop_desc": "Commander et consulter vos commandes",
     "presmeet_title": "Réunion des Présidents",
-    "presmeet_desc": "Formulaire de réservation pour votre délégation de club"
+    "presmeet_desc": "Formulaire de réservation pour votre délégation de club",
+    "events_calendar_title": "Événements / Calendrier",
+    "events_calendar_desc": "Voir et réserver des événements"
   }
 }

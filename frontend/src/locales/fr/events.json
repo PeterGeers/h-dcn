@@ -151,6 +151,7 @@
     "noEvents": "Aucun événement à venir trouvé",
     "loading": "Chargement des événements...",
     "error": "Impossible de charger les événements. Veuillez réessayer plus tard.",
+    "retry": "Réessayer",
     "filter": {
       "type": "Type d'événement",
       "region": "Région",

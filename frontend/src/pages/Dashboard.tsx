@@ -6,85 +6,6 @@ import AppCard from '../components/AppCard';
 import { FunctionGuard } from '../components/common/FunctionGuard';
 import { membershipService } from '../utils/membershipService';
 import { useAuth } from '../context/AuthProvider';
-import { eventBookingApi } from '../modules/eventBooking/services/eventBookingApi';
-
-/**
- * EventBookingCard — Displays a card for each event the user has access to.
- * Fetches events from the API and navigates to /events/:eventId/booking.
- */
-function EventBookingCard({ navigate }: { navigate: (path: string) => void }) {
-  const { t } = useTranslation('dashboard');
-  const [events, setEvents] = useState<Array<{ event_id: string; name: string; status: string }>>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchEvents() {
-      try {
-        const allEvents = await eventBookingApi.getEvent();
-        if (!cancelled) {
-          // Show published events, exclude webshop pseudo-event
-          const relevantEvents = allEvents.filter(
-            (e: any) => e.status === 'published' && e.event_type !== 'webshop'
-          );
-          setEvents(relevantEvents);
-        }
-      } catch (err) {
-        // If events can't be loaded, show nothing
-        console.warn('Could not fetch events for dashboard', err);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-    fetchEvents();
-    return () => { cancelled = true; };
-  }, []);
-
-  if (isLoading) {
-    return null; // Don't show a loading spinner on dashboard for this card
-  }
-
-  if (events.length === 0) {
-    return null; // No events to show
-  }
-
-  // If there's exactly one event, show a single card that navigates directly
-  if (events.length === 1) {
-    const event = events[0];
-    return (
-      <AppCard
-        key={`event-${event.event_id}`}
-        app={{
-          id: `event-${event.event_id}`,
-          title: event.name || t('cards.presmeet_title'),
-          description: t('cards.presmeet_desc'),
-          icon: '🏍️',
-          path: `/events/${event.event_id}/booking`,
-        }}
-        onClick={() => navigate(`/events/${event.event_id}/booking`)}
-      />
-    );
-  }
-
-  // If multiple events, show a card for each
-  return (
-    <>
-      {events.map((event) => (
-        <AppCard
-          key={`event-${event.event_id}`}
-          app={{
-            id: `event-${event.event_id}`,
-            title: event.name || 'Event Booking',
-            description: t('cards.presmeet_desc'),
-            icon: '🏍️',
-            path: `/events/${event.event_id}/booking`,
-          }}
-          onClick={() => navigate(`/events/${event.event_id}/booking`)}
-        />
-      ))}
-    </>
-  );
-}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -291,8 +212,19 @@ function Dashboard() {
               onClick={() => navigate('/my-account')}
             />
             
-            {/* Event Bookings - Shows events from allowed_events */}
-            <EventBookingCard navigate={navigate} />
+            {/* Events / Calendar */}
+            <AppCard 
+              key="events-calendar"
+              app={{
+                id: 'events-calendar',
+                title: t('cards.events_calendar_title'),
+                description: t('cards.events_calendar_desc'),
+                icon: '📅',
+                path: '/events/calendar'
+              }}
+              onClick={() => navigate('/events/calendar')}
+            />
+
           </SimpleGrid>
         ) : (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
@@ -346,12 +278,24 @@ function Dashboard() {
             />
           </FunctionGuard>
           
-          {/* Event Booking - For members without event admin roles */}
+          {/* Events / Calendar - For members without event admin roles */}
           <FunctionGuard 
             user={functionGuardUser} 
             requiredRoles={['hdcnLeden', 'event_participant']}
           >
-            {!hasAdminRoles && <EventBookingCard navigate={navigate} />}
+            {!hasAdminRoles && (
+              <AppCard 
+                key="events-calendar"
+                app={{
+                  id: 'events-calendar',
+                  title: t('cards.events_calendar_title'),
+                  description: t('cards.events_calendar_desc'),
+                  icon: '📅',
+                  path: '/events/calendar'
+                }}
+                onClick={() => navigate('/events/calendar')}
+              />
+            )}
           </FunctionGuard>
           
           {/* Administrative modules - Only for users with specific admin roles */}

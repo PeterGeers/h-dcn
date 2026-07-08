@@ -19,6 +19,8 @@
     "webshop_title": "Tienda online",
     "webshop_desc": "Hacer pedidos y ver tus pedidos",
     "presmeet_title": "Presidents' Meeting",
-    "presmeet_desc": "Formulario de reserva para la delegación de tu club"
+    "presmeet_desc": "Formulario de reserva para la delegación de tu club",
+    "events_calendar_title": "Eventos / Calendario",
+    "events_calendar_desc": "Ver y reservar eventos"
   }
 }

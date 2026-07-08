@@ -19,6 +19,8 @@
     "webshop_title": "Negozio online",
     "webshop_desc": "Ordina e visualizza i tuoi ordini",
     "presmeet_title": "Presidents' Meeting",
-    "presmeet_desc": "Modulo di prenotazione per la delegazione del tuo club"
+    "presmeet_desc": "Modulo di prenotazione per la delegazione del tuo club",
+    "events_calendar_title": "Eventi / Calendario",
+    "events_calendar_desc": "Visualizza e prenota eventi"
   }
 }

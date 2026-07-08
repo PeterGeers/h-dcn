@@ -151,6 +151,7 @@
     "noEvents": "No upcoming events found",
     "loading": "Loading events...",
     "error": "Could not load events. Please try again later.",
+    "retry": "Try again",
     "filter": {
       "type": "Event type",
       "region": "Region",

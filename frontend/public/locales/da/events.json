@@ -39,6 +39,7 @@
     "noEvents": "Ingen kommende begivenheder fundet",
     "loading": "Indlæser begivenheder...",
     "error": "Kunne ikke indlæse begivenheder. Prøv igen senere.",
+    "retry": "Prøv igen",
     "filter": {
       "type": "Begivenhedstype",
       "region": "Region",

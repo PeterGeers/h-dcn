@@ -151,6 +151,7 @@
     "noEvents": "Geen aankomende evenementen gevonden",
     "loading": "Evenementen laden...",
     "error": "Kon evenementen niet laden. Probeer het later opnieuw.",
+    "retry": "Opnieuw proberen",
     "filter": {
       "type": "Type evenement",
       "region": "Regio",

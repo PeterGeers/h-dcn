@@ -39,6 +39,7 @@
     "noEvents": "No se encontraron eventos próximos",
     "loading": "Cargando eventos...",
     "error": "No se pudieron cargar los eventos. Inténtelo de nuevo más tarde.",
+    "retry": "Reintentar",
     "filter": {
       "type": "Tipo de evento",
       "region": "Región",

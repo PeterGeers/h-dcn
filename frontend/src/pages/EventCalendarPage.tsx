@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthProvider';
 import {
   Box,
   Container,
@@ -41,6 +43,8 @@ interface PublicEvent {
 
 const EventCalendarPage: React.FC = () => {
   const { t } = useTranslation('events');
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,28 +56,55 @@ const EventCalendarPage: React.FC = () => {
   const [filterDateFrom, setFilterDateFrom] = useState<string>('');
   const [filterDateTo, setFilterDateTo] = useState<string>('');
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const baseUrl = API_CONFIG.BASE_URL;
-        const response = await fetch(`${baseUrl}/events-public`);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const data: PublicEvent[] = await response.json();
-        setEvents(data);
-      } catch (err) {
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const fetchEvents = useCallback(async () => {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      setLoading(true);
+      setError(null);
+      const baseUrl = API_CONFIG.BASE_URL;
+      const response = await fetch(`${baseUrl}/events-public`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data: PublicEvent[] = await response.json();
+      setEvents(data);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (controller.signal.aborted) {
+        console.error('Fetch aborted (timeout or unmount):', err);
+      } else {
         console.error('Failed to fetch public events:', err);
+      }
+      // Only set error if this controller hasn't been superseded
+      if (abortControllerRef.current === controller) {
         setError(t('calendar.error'));
-      } finally {
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
         setLoading(false);
       }
-    };
-
-    fetchEvents();
+    }
   }, [t]);
+
+  useEffect(() => {
+    fetchEvents();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchEvents]);
 
   const handleTypeFilter = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -151,6 +182,13 @@ const EventCalendarPage: React.FC = () => {
             <AlertIcon />
             {error}
           </Alert>
+          <Button
+            mt={4}
+            colorScheme="orange"
+            onClick={fetchEvents}
+          >
+            {t('calendar.retry')}
+          </Button>
         </Container>
       </Box>
     );
@@ -308,7 +346,13 @@ const EventCalendarPage: React.FC = () => {
                   transform: 'translateY(-2px)',
                   shadow: 'lg',
                 }}
-                onClick={() => window.open(`/events/${event.slug}/info`, '_blank')}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate(`/events/${event.event_id}/booking`);
+                  } else {
+                    window.open(`/events/${event.slug}/info`, '_blank');
+                  }
+                }}
               >
                 {/* Poster — only shown when available */}
                 {event.poster_url && (

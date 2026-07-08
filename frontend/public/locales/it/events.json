@@ -39,6 +39,7 @@
     "noEvents": "Nessun evento in programma trovato",
     "loading": "Caricamento eventi...",
     "error": "Impossibile caricare gli eventi. Riprova più tardi.",
+    "retry": "Riprova",
     "filter": {
       "type": "Tipo di evento",
       "region": "Regione",

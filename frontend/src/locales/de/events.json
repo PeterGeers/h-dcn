@@ -151,6 +151,7 @@
     "noEvents": "Keine bevorstehenden Veranstaltungen gefunden",
     "loading": "Veranstaltungen laden...",
     "error": "Veranstaltungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.",
+    "retry": "Erneut versuchen",
     "filter": {
       "type": "Veranstaltungstyp",
       "region": "Region",

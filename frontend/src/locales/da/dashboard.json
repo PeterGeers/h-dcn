@@ -19,6 +19,8 @@
     "webshop_title": "Webshop",
     "webshop_desc": "Bestil og se dine bestillinger",
     "presmeet_title": "Presidents' Meeting",
-    "presmeet_desc": "Bookingformular for din klubdelegation"
+    "presmeet_desc": "Bookingformular for din klubdelegation",
+    "events_calendar_title": "Events / Kalender",
+    "events_calendar_desc": "Se og book begivenheder"
   }
 }

@@ -39,6 +39,7 @@
     "noEvents": "Inga kommande evenemang hittades",
     "loading": "Laddar evenemang...",
     "error": "Kunde inte ladda evenemang. Försök igen senare.",
+    "retry": "Försök igen",
     "filter": {
       "type": "Evenemangstyp",
       "region": "Region",
