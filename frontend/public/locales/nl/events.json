@@ -161,6 +161,14 @@
     },
     "card": {
       "noLocation": "Locatie nog niet bekend"
+    },
+    "modal": {
+      "book": "Boeken",
+      "register": "Inschrijven",
+      "dates": "Datum",
+      "location": "Locatie",
+      "type": "Type",
+      "region": "Regio"
     }
   }
 }

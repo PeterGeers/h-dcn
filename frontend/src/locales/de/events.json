@@ -161,6 +161,14 @@
     },
     "card": {
       "noLocation": "Ort noch offen"
+    },
+    "modal": {
+      "book": "Buchen",
+      "register": "Anmelden",
+      "dates": "Datum",
+      "location": "Ort",
+      "type": "Typ",
+      "region": "Region"
     }
   }
 }

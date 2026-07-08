@@ -161,6 +161,14 @@
     },
     "card": {
       "noLocation": "Lieu à déterminer"
+    },
+    "modal": {
+      "book": "Réserver",
+      "register": "S'inscrire",
+      "dates": "Date",
+      "location": "Lieu",
+      "type": "Type",
+      "region": "Région"
     }
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthProvider';
 import {
   Box,
   Container,
@@ -22,6 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { API_CONFIG } from '../config/api';
 import { EVENT_TYPES, EVENT_REGIOS } from '../config/eventFields/eventTypes';
+import EventDetailModal from './EventDetailModal';
 
 // --- Types ---
 
@@ -36,17 +37,22 @@ interface PublicEvent {
   poster_url?: string;
   description?: string;
   linked_regio?: string;
+  landing_page?: Record<string, any>;
+  registration_open?: string;
+  registration_close?: string;
+  payment_deadline?: string;
 }
 
 // --- Component ---
 
 const EventCalendarPage: React.FC = () => {
   const { t } = useTranslation('events');
-  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
 
   // Filters
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
@@ -345,7 +351,11 @@ const EventCalendarPage: React.FC = () => {
                   shadow: 'lg',
                 }}
                 onClick={() => {
-                  navigate(`/events/${event.event_id}/booking`);
+                  if (!isAuthenticated && event.landing_page && Object.keys(event.landing_page).length > 0) {
+                    window.open(`/events/${event.slug}/info`, '_blank');
+                  } else {
+                    setSelectedEvent(event);
+                  }
                 }}
               >
                 {/* Poster — only shown when available */}
@@ -376,6 +386,13 @@ const EventCalendarPage: React.FC = () => {
           </SimpleGrid>
         )}
       </Container>
+
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        event={selectedEvent}
+        isOpen={selectedEvent !== null}
+        onClose={() => setSelectedEvent(null)}
+      />
     </Box>
   );
 };

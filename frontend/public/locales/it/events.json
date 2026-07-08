@@ -49,6 +49,14 @@
     },
     "card": {
       "noLocation": "Luogo da definire"
+    },
+    "modal": {
+      "book": "Prenota",
+      "register": "Iscriviti",
+      "dates": "Data",
+      "location": "Luogo",
+      "type": "Tipo",
+      "region": "Regione"
     }
   }
 }

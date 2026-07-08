@@ -220,9 +220,9 @@ function Dashboard() {
                 title: t('cards.events_calendar_title'),
                 description: t('cards.events_calendar_desc'),
                 icon: '📅',
-                path: '/events/calendar'
+                path: '/calendar'
               }}
-              onClick={() => navigate('/events/calendar')}
+              onClick={() => navigate('/calendar')}
             />
 
           </SimpleGrid>
@@ -291,9 +291,9 @@ function Dashboard() {
                   title: t('cards.events_calendar_title'),
                   description: t('cards.events_calendar_desc'),
                   icon: '📅',
-                  path: '/events/calendar'
+                  path: '/calendar'
                 }}
-                onClick={() => navigate('/events/calendar')}
+                onClick={() => navigate('/calendar')}
               />
             )}
           </FunctionGuard>

@@ -49,6 +49,14 @@
     },
     "card": {
       "noLocation": "Plats ej bestämd"
+    },
+    "modal": {
+      "book": "Boka",
+      "register": "Registrera",
+      "dates": "Datum",
+      "location": "Plats",
+      "type": "Typ",
+      "region": "Region"
     }
   }
 }

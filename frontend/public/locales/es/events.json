@@ -49,6 +49,14 @@
     },
     "card": {
       "noLocation": "Ubicación por confirmar"
+    },
+    "modal": {
+      "book": "Reservar",
+      "register": "Inscribirse",
+      "dates": "Fecha",
+      "location": "Ubicación",
+      "type": "Tipo",
+      "region": "Región"
     }
   }
 }

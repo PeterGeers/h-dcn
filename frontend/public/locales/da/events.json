@@ -49,6 +49,14 @@
     },
     "card": {
       "noLocation": "Sted endnu ikke fastlagt"
+    },
+    "modal": {
+      "book": "Book",
+      "register": "Tilmeld",
+      "dates": "Dato",
+      "location": "Sted",
+      "type": "Type",
+      "region": "Region"
     }
   }
 }

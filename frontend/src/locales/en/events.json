@@ -161,6 +161,14 @@
     },
     "card": {
       "noLocation": "Location TBD"
+    },
+    "modal": {
+      "book": "Book",
+      "register": "Register",
+      "dates": "Date",
+      "location": "Location",
+      "type": "Type",
+      "region": "Region"
     }
   }
 }

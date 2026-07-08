@@ -57,6 +57,9 @@ PUBLIC_FIELDS: list[str] = [
     'landing_page',
     'linked_regio',
     'participation',
+    'registration_open',
+    'registration_close',
+    'payment_deadline',
 ]
 
 
