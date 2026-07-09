@@ -86,9 +86,15 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
-      <ModalOverlay />
-      <ModalContent bg="gray.900" color="white" maxH="85vh" my={4} overflow="hidden">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" blockScrollOnMount={true} scrollBehavior="inside">
+      <ModalOverlay bg="blackAlpha.800" />
+      <ModalContent
+        bg="gray.900"
+        color="white"
+        maxH="85vh"
+        mt={8}
+        mb="auto"
+      >
         <ModalCloseButton color="gray.400" zIndex={1} />
         <ModalBody p={6} overflowY="auto">
           <VStack spacing={5} align="stretch">
