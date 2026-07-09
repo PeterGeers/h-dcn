@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../context/AuthProvider';
 import {
   Box,
   Container,
@@ -47,7 +46,6 @@ interface PublicEvent {
 
 const EventCalendarPage: React.FC = () => {
   const { t } = useTranslation('events');
-  const { isAuthenticated } = useAuth();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -350,13 +348,7 @@ const EventCalendarPage: React.FC = () => {
                   transform: 'translateY(-2px)',
                   shadow: 'lg',
                 }}
-                onClick={() => {
-                  if (!isAuthenticated && event.landing_page && Object.keys(event.landing_page).length > 0) {
-                    window.open(`/events/${event.slug}/info`, '_blank');
-                  } else {
-                    setSelectedEvent(event);
-                  }
-                }}
+                onClick={() => setSelectedEvent(event)}
               >
                 {/* Poster — only shown when available */}
                 {event.poster_url && (

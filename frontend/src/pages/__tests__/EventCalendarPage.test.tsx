@@ -167,7 +167,7 @@ describe('EventCalendarPage', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
-  it('unauthenticated + landing page event opens new tab to /events/{slug}/info', async () => {
+  it('unauthenticated + landing page event opens modal (no new tab)', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false });
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -181,8 +181,8 @@ describe('EventCalendarPage', () => {
     const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
     fireEvent.click(card);
 
-    expect(mockWindowOpen).toHaveBeenCalledWith('/events/landing-event/info', '_blank');
-    expect(screen.queryByTestId('event-detail-modal')).not.toBeInTheDocument();
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+    expect(screen.getByTestId('event-detail-modal')).toBeInTheDocument();
   });
 
   it('unauthenticated + no landing page opens modal', async () => {
