@@ -86,11 +86,11 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
-      <ModalContent bg="gray.900" color="white" maxH="90vh" overflow="auto">
-        <ModalCloseButton color="gray.400" />
-        <ModalBody p={6}>
+      <ModalContent bg="gray.900" color="white" maxH="85vh" my={4} overflow="hidden">
+        <ModalCloseButton color="gray.400" zIndex={1} />
+        <ModalBody p={6} overflowY="auto">
           <VStack spacing={5} align="stretch">
             {/* Poster */}
             {event.poster_url && (
