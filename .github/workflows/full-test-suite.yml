@@ -25,7 +25,7 @@ jobs:
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         working-directory: backend
@@ -234,17 +234,80 @@ jobs:
           fi
           echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED" > test-output.txt
 
+      - name: Generate test report
+        if: always()
+        working-directory: frontend
+        run: |
+          python3 -c "
+          import json, re
+          from datetime import datetime
+
+          total = passed = failed = 0
+          errors_list = []
+
+          with open('test-output.txt') as f:
+              content = f.read()
+
+          # Parse 'Total: N | Passed: N | Failed: N'
+          m = re.search(r'Total:\s*(\d+)\s*\|\s*Passed:\s*(\d+)\s*\|\s*Failed:\s*(\d+)', content)
+          if m:
+              total = int(m.group(1))
+              passed = int(m.group(2))
+              failed = int(m.group(3))
+
+          # Collect TIMEOUT/FAILED lines
+          for line in content.splitlines():
+              if 'TIMEOUT:' in line or '❌ FAILED:' in line:
+                  errors_list.append(line.strip())
+
+          report = {
+              'date': datetime.utcnow().isoformat() + 'Z',
+              'summary': {
+                  'total': total,
+                  'passed': passed,
+                  'failed': failed,
+                  'errors': 0,
+                  'skipped': 0
+              },
+              'failed_tests': errors_list
+          }
+
+          with open('test-report.json', 'w') as f:
+              json.dump(report, f, indent=2)
+
+          print(f'Total: {total}, Passed: {passed}, Failed: {failed}')
+          "
+
       - name: Output to job summary
         if: always()
         working-directory: frontend
         run: |
-          echo "## 🧪 Nightly Frontend Test Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f test-output.txt ]; then
-            SUMMARY=$(grep -E "^Tests:|^Test Suites:" test-output.txt || echo "No summary found")
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ -f test-report.json ]; then
+            echo "## 🧪 Nightly Frontend Test Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            python3 -c "
+          import json
+          with open('test-report.json') as f:
+              report = json.load(f)
+          s = report['summary']
+          print(f'**Date:** {report[\"date\"]}')
+          print()
+          print(f'| Metric | Count |')
+          print(f'|--------|-------|')
+          print(f'| Total  | {s[\"total\"]} |')
+          print(f'| ✅ Passed | {s[\"passed\"]} |')
+          print(f'| ❌ Failed | {s[\"failed\"]} |')
+          print(f'| 💥 Errors | {s[\"errors\"]} |')
+          print(f'| ⏭️ Skipped | {s[\"skipped\"]} |')
+          print()
+          if report['failed_tests']:
+              print('### Failed Tests')
+              print()
+              for t in report['failed_tests']:
+                  print(f'- \`{t}\`')
+          else:
+              print('### ✅ All tests passed!')
+          " >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload test report
@@ -254,4 +317,5 @@ jobs:
           name: frontend-test-report
           path: |
             frontend/test-output.txt
+            frontend/test-report.json
           retention-days: 30
