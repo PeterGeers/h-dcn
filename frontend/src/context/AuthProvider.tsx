@@ -7,7 +7,7 @@
  * Requirements: R4.1, R4.2, R4.4, R9.1, R9.4, R9.5, R10.1, R10.2, R10.3
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { fetchAuthSession, signOut as amplifySignOut } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 import { HDCNGroup } from '../types/user';
@@ -50,6 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const previousSubRef = useRef<string | null>(null);
 
   /**
    * Extract user info from the current Amplify session tokens.
@@ -96,6 +97,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         accessToken: accessToken.toString(),
       });
       setError(null);
+
+      // Detect user switch: if a previous user was logged in and the new user is different,
+      // redirect to dashboard to avoid landing on a page the new user can't access.
+      if (previousSubRef.current && previousSubRef.current !== sub) {
+        previousSubRef.current = sub;
+        if (window.location.pathname !== '/') {
+          window.location.replace('/');
+          return;
+        }
+      }
+      previousSubRef.current = sub;
     } catch (err) {
       console.error('AuthProvider: failed to load session', err);
       setUser(null);
@@ -142,6 +154,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Session cleared locally
           setUser(null);
           setError(null);
+          // Don't clear previousSubRef — we need it to detect user switch on next sign-in
           break;
 
         case 'tokenRefresh':
