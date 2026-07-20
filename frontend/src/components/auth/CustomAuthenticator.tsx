@@ -156,27 +156,14 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
       const { signIn, confirmSignIn } = await import('aws-amplify/auth');
 
       let signInResult;
-      try {
-        signInResult = await signIn({
-          username: signInData.email,
-          options: {
-            authFlowType: 'USER_AUTH',
-            preferredChallenge: 'WEB_AUTHN',
-            clientMetadata: { locale: i18n.language },
-          },
-        });
-      } catch (webAuthnErr: any) {
-        console.log('WebAuthn sign-in failed, falling back to email OTP:', webAuthnErr.message);
-        // WebAuthn failed (no credential, cancelled, not supported) — automatic fallback to email OTP
-        signInResult = await signIn({
-          username: signInData.email,
-          options: {
-            authFlowType: 'USER_AUTH',
-            preferredChallenge: 'EMAIL_OTP',
-            clientMetadata: { locale: i18n.language },
-          },
-        });
-      }
+      signInResult = await signIn({
+        username: signInData.email,
+        options: {
+          authFlowType: 'USER_AUTH',
+          preferredChallenge: 'EMAIL_OTP',
+          clientMetadata: { locale: i18n.language },
+        },
+      });
 
       if (signInResult.isSignedIn) {
         // Authentication successful — AuthProvider picks up via Hub 'signedIn' event

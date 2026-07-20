@@ -115,8 +115,7 @@ describe('CustomAuthenticator Preservation Properties', () => {
         fc.asyncProperty(validOtpCodeArb, async (code) => {
           jest.clearAllMocks();
 
-          // Mock signIn to trigger OTP challenge
-          mockSignIn.mockRejectedValueOnce(new Error('WebAuthn not available'));
+          // Mock signIn to trigger OTP challenge (direct EMAIL_OTP, no WebAuthn attempt)
           mockSignIn.mockResolvedValueOnce({
             isSignedIn: false,
             nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
@@ -163,7 +162,6 @@ describe('CustomAuthenticator Preservation Properties', () => {
       for (const invalidValue of invalidValues) {
         jest.clearAllMocks();
 
-        mockSignIn.mockRejectedValueOnce(new Error('WebAuthn not available'));
         mockSignIn.mockResolvedValueOnce({
           isSignedIn: false,
           nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
@@ -203,7 +201,6 @@ describe('CustomAuthenticator Preservation Properties', () => {
         fc.asyncProperty(validOtpCodeArb, async (code) => {
           jest.clearAllMocks();
 
-          mockSignIn.mockRejectedValueOnce(new Error('WebAuthn not available'));
           mockSignIn.mockResolvedValueOnce({
             isSignedIn: false,
             nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
@@ -249,7 +246,6 @@ describe('CustomAuthenticator Preservation Properties', () => {
         fc.asyncProperty(validOtpCodeArb, async (code) => {
           jest.clearAllMocks();
 
-          mockSignIn.mockRejectedValueOnce(new Error('WebAuthn not available'));
           mockSignIn.mockResolvedValueOnce({
             isSignedIn: false,
             nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
@@ -317,8 +313,7 @@ describe('CustomAuthenticator Preservation Properties', () => {
       for (const step of nonOtpSteps) {
         jest.clearAllMocks();
 
-        // First signIn call (WebAuthn) fails, second (EMAIL_OTP fallback) returns non-OTP step
-        mockSignIn.mockRejectedValueOnce(new Error('WebAuthn not available'));
+        // signIn returns non-OTP step directly (no WebAuthn attempt)
         mockSignIn.mockResolvedValueOnce({
           isSignedIn: false,
           nextStep: { signInStep: step },
@@ -328,7 +323,7 @@ describe('CustomAuthenticator Preservation Properties', () => {
         await submitSignInForm(container, 'user@example.com');
 
         await waitFor(() => {
-          expect(mockSignIn).toHaveBeenCalledTimes(2);
+          expect(mockSignIn).toHaveBeenCalledTimes(1);
         });
 
         // No OTP form for non-OTP steps
