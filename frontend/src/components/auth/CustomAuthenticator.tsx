@@ -35,13 +35,16 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const { user: authUser, isLoading, isAuthenticated, error: authError, signOut } = useAuth();
   const { t, i18n } = useTranslation('auth');
 
-  const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'passkeySetup' | 'debug'>('signIn');
+  const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'passkeySetup' | 'debug' | 'otpEntry'>('signIn');
   const [signInData, setSignInData] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showResendCode, setShowResendCode] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
 
   const isNetworkError = (err: any): boolean => {
     return (
@@ -66,6 +69,8 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   const handleResendCode = async () => {
     setLoading(true);
     setError('');
+    setOtpCode('');
+    setOtpError('');
     setShowResendCode(false);
 
     try {
@@ -103,27 +108,40 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   };
 
   const handleOtpCodeEntry = async () => {
-    const { confirmSignIn } = await import('aws-amplify/auth');
-    const code = prompt(t('verification.enter_code'));
-    if (code) {
-      try {
-        const confirmResult = await confirmSignIn({ challengeResponse: code });
-        if (confirmResult.isSignedIn) {
-          // Authentication successful — AuthProvider picks up via Hub 'signedIn' event
-          return;
-        }
-      } catch (confirmErr: any) {
-        if (isCodeExpiredError(confirmErr)) {
-          setError(t('errors.code_expired'));
-          setShowResendCode(true);
-        } else if (isNetworkError(confirmErr)) {
-          setError(t('errors.network'));
-        } else {
-          setError(t('errors.verification_failed'));
-        }
+    setOtpCode('');
+    setOtpError('');
+    setError('');
+    setAuthState('otpEntry');
+  };
+
+  const handleOtpSubmit = async () => {
+    // Validate: exactly 6 numeric digits
+    if (!/^[0-9]{6}$/.test(otpCode)) {
+      setOtpError(t('errors.invalid_code_format'));
+      return;
+    }
+
+    setOtpSubmitting(true);
+    setOtpError('');
+
+    try {
+      const { confirmSignIn } = await import('aws-amplify/auth');
+      const confirmResult = await confirmSignIn({ challengeResponse: otpCode });
+      if (confirmResult.isSignedIn) {
+        // Authentication successful — AuthProvider picks up via Hub 'signedIn' event
+        return;
       }
-    } else {
-      setError(t('errors.code_required'));
+    } catch (confirmErr: any) {
+      if (isCodeExpiredError(confirmErr)) {
+        setOtpError(t('errors.code_expired'));
+        setShowResendCode(true);
+      } else if (isNetworkError(confirmErr)) {
+        setOtpError(t('errors.network_error'));
+      } else {
+        setOtpError(t('errors.verification_failed'));
+      }
+    } finally {
+      setOtpSubmitting(false);
     }
   };
 
@@ -302,6 +320,108 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
             setAuthState('signIn');
           }}
         />
+      </Box>
+    );
+  }
+
+  if (authState === 'otpEntry') {
+    return (
+      <Box minH="100vh" bg="black" display="flex" alignItems="center" justifyContent="center">
+        <Box maxW="md" w="full" p={6}>
+          <Box textAlign="center" mb={8}>
+            <Image
+              src="https://h-dcn-data-506221081911.s3.eu-west-1.amazonaws.com/imagesWebsite/hdcnFavico.png"
+              alt="H-DCN Logo"
+              mx="auto"
+              mb={4}
+              maxW="100px"
+              maxH="100px"
+              objectFit="contain"
+              borderRadius="lg"
+              shadow="md"
+            />
+          </Box>
+
+          <VStack spacing={6}>
+            <Heading color="orange.400" size="lg">{t('verification.title')}</Heading>
+
+            <Text color="gray.300" textAlign="center">
+              {t('verification.instructions')}
+            </Text>
+
+            {(otpError || error) && (
+              <Alert status="error" bg="red.900" borderColor="red.500" border="1px solid">
+                <AlertIcon color="red.300" />
+                <Box flex="1">
+                  <Text color="red.100">{otpError || error}</Text>
+                  {showResendCode && (
+                    <Button
+                      size="sm"
+                      colorScheme="orange"
+                      variant="link"
+                      mt={2}
+                      onClick={handleResendCode}
+                      isLoading={loading}
+                      loadingText={t('verification.sending')}
+                    >
+                      {t('verification.resend_code')}
+                    </Button>
+                  )}
+                </Box>
+              </Alert>
+            )}
+
+            <FormControl>
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                pattern="[0-9]*"
+                autoFocus
+                value={otpCode}
+                onChange={(e) => {
+                  setOtpCode(e.target.value);
+                  setOtpError('');
+                }}
+                placeholder="000000"
+                bg="gray.700"
+                border="1px solid"
+                borderColor="gray.600"
+                color="white"
+                textAlign="center"
+                fontSize="2xl"
+                letterSpacing="0.5em"
+                _placeholder={{ color: 'gray.500' }}
+                _focus={{ borderColor: 'orange.400' }}
+                isDisabled={otpSubmitting}
+                data-testid="otp-input"
+              />
+            </FormControl>
+
+            <Button
+              colorScheme="orange"
+              size="lg"
+              width="full"
+              onClick={handleOtpSubmit}
+              isLoading={otpSubmitting}
+              loadingText={t('verification.submitting')}
+              isDisabled={otpSubmitting}
+              data-testid="otp-submit"
+            >
+              {t('verification.submit')}
+            </Button>
+
+            <Button
+              variant="ghost"
+              colorScheme="gray"
+              size="sm"
+              onClick={handleResendCode}
+              isDisabled={loading || otpSubmitting}
+            >
+              {t('verification.resend')}
+            </Button>
+          </VStack>
+        </Box>
       </Box>
     );
   }
