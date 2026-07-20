@@ -1,88 +1,141 @@
 /**
- * useColumnFilters — Filter state + debounced substring matching
+ * useColumnFilters Hook
  *
- * Provides filter state management with case-insensitive substring matching.
- * Debounced for performance (150ms default).
+ * Manages column filter state with debounce and case-insensitive substring matching.
+ * Replaces the ~25-line boilerplate pattern (useState + useEffect debounce + useMemo filter)
+ * found in 6+ table components.
  *
- * Usage:
- *   const { filters, setFilter, resetFilters, filterData } = useColumnFilters(INITIAL_FILTERS);
- *   const filtered = filterData(data);
+ * @module hooks/useColumnFilters
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { UseColumnFiltersOptions, ColumnFilterState } from '../components/filters/types';
 
-export interface UseColumnFiltersOptions<T extends Record<string, string>> {
-  /** Initial filter values (all empty strings) */
-  initialFilters: T;
-  /** Debounce delay in ms (default: 150) */
-  debounceMs?: number;
-}
+const DEFAULT_DEBOUNCE_MS = 150;
 
-export interface UseColumnFiltersReturn<T extends Record<string, string>> {
-  /** Current filter values */
-  filters: T;
+interface UseColumnFiltersReturn<T> {
+  /** Current filter values keyed by column name */
+  filters: ColumnFilterState;
   /** Set a single filter value */
-  setFilter: (key: keyof T, value: string) => void;
-  /** Reset all filters to initial values */
+  setFilter: (key: string, value: string) => void;
+  /** Reset all filters to empty strings */
   resetFilters: () => void;
-  /** Filter data array using current filters */
-  filterData: <R extends Record<string, unknown>>(data: R[]) => R[];
-  /** Whether any filter is active */
+  /** Data array after applying all active filters */
+  filteredData: T[];
+  /** True if any filter has a non-empty value */
   hasActiveFilters: boolean;
 }
 
-export function useColumnFilters<T extends Record<string, string>>(
-  options: UseColumnFiltersOptions<T>
+/**
+ * Apply column filters to a data array.
+ *
+ * For each row, every non-empty filter is checked:
+ * - If the filter key does not exist on the row, the filter passes (row not excluded).
+ * - If the filter key exists, the row's field value (converted to string, lowercased)
+ *   must contain the filter value (lowercased) for the row to pass.
+ *
+ * All active filters must pass for a row to be included (AND logic).
+ */
+function applyFilters<T extends Record<string, any>>(
+  data: T[],
+  filters: ColumnFilterState,
+): T[] {
+  const activeFilters = Object.entries(filters).filter(([, v]) => v !== '');
+
+  if (activeFilters.length === 0) {
+    return data;
+  }
+
+  return data.filter((row) =>
+    activeFilters.every(([key, filterValue]) => {
+      if (!(key in row)) {
+        return true; // missing field key → filter passes
+      }
+      const cellValue = row[key];
+      return String(cellValue ?? '').toLowerCase().includes(filterValue.toLowerCase());
+    }),
+  );
+}
+
+/**
+ * Hook for column-based text filtering with debounce.
+ *
+ * @param data - The data array to filter
+ * @param initialFilters - Object whose keys define the filterable columns (values ignored; all start as '')
+ * @param options - Optional configuration (debounceMs)
+ * @returns Filter state, setFilter, resetFilters, filteredData, hasActiveFilters
+ */
+export function useColumnFilters<T extends Record<string, any>>(
+  data: T[],
+  initialFilters: Record<string, string>,
+  options?: UseColumnFiltersOptions,
 ): UseColumnFiltersReturn<T> {
-  const { initialFilters, debounceMs = 150 } = options;
-  const [filters, setFilters] = useState<T>({ ...initialFilters });
-  const [debouncedFilters, setDebouncedFilters] = useState<T>({ ...initialFilters });
+  const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
+
+  // Immediate filter state (for input binding)
+  const [filters, setFilters] = useState<ColumnFilterState>(() =>
+    Object.fromEntries(Object.keys(initialFilters).map((key) => [key, ''])),
+  );
+
+  // Debounced filter state (for actual data filtering)
+  const [debouncedFilters, setDebouncedFilters] = useState<ColumnFilterState>(filters);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounce filter updates
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      setDebouncedFilters({ ...filters });
-    }, debounceMs);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [filters, debounceMs]);
+  // Set a single filter value: update immediately, debounce the data filtering
+  const setFilter = useCallback(
+    (key: string, value: string) => {
+      setFilters((prev) => {
+        const next = { ...prev, [key]: value };
 
-  const setFilter = useCallback((key: keyof T, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  }, []);
+        // Clear any pending debounce timer
+        if (timerRef.current !== null) {
+          clearTimeout(timerRef.current);
+        }
 
-  const resetFilters = useCallback(() => {
-    setFilters({ ...initialFilters });
-  }, [initialFilters]);
+        // Schedule debounced update
+        timerRef.current = setTimeout(() => {
+          setDebouncedFilters(next);
+          timerRef.current = null;
+        }, debounceMs);
 
-  const hasActiveFilters = useMemo(
-    () => Object.values(debouncedFilters).some(v => v !== ''),
-    [debouncedFilters]
-  );
-
-  const filterData = useCallback(
-    <R extends Record<string, unknown>>(data: R[]): R[] => {
-      if (!hasActiveFilters) return data;
-
-      return data.filter(row => {
-        return Object.entries(debouncedFilters).every(([key, filterValue]) => {
-          if (!filterValue) return true; // Empty filter = pass
-
-          const cellValue = row[key];
-          // If field doesn't exist on row, pass (not excluded)
-          if (cellValue === undefined || cellValue === null) return true;
-
-          const cellStr = String(cellValue).toLowerCase();
-          const filterStr = (filterValue as string).toLowerCase();
-          return cellStr.includes(filterStr);
-        });
+        return next;
       });
     },
-    [debouncedFilters, hasActiveFilters]
+    [debounceMs],
   );
 
-  return { filters, setFilter, resetFilters, filterData, hasActiveFilters };
+  // Reset all filters to empty strings
+  const resetFilters = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const empty = Object.fromEntries(Object.keys(filters).map((key) => [key, '']));
+    setFilters(empty);
+    setDebouncedFilters(empty);
+  }, [filters]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Compute filtered data from debounced filters
+  const filteredData = useMemo(
+    () => applyFilters(data, debouncedFilters),
+    [data, debouncedFilters],
+  );
+
+  // hasActiveFilters checks the immediate filter state (not debounced)
+  const hasActiveFilters = useMemo(
+    () => Object.values(filters).some((v) => v !== ''),
+    [filters],
+  );
+
+  return { filters, setFilter, resetFilters, filteredData, hasActiveFilters };
 }

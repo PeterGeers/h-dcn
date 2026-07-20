@@ -289,7 +289,9 @@
     "colMemberId": "Member ID",
     "colEmail": "Email",
     "colMemberType": "Type",
+    "colName": "Name",
     "colActions": "Actions",
+    "accessDetailTitle": "Access Details",
     "payment_recording": {
       "title": "Manual Payment",
       "description": "Record a manual payment for an order (e.g. bank transfer).",
@@ -401,7 +403,9 @@
       "col_delegate": "Delegate",
       "col_status": "Status",
       "col_payment": "Payment",
-      "col_actions": "Actions"
+      "col_total": "Total",
+      "col_updated": "Last updated",
+      "order_detail_title": "Order details"
     }
   },
   "reports": {

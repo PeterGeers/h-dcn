@@ -88,7 +88,11 @@
     "toast_updated": "Variant updated",
     "toast_invalid_price": "Invalid price",
     "toast_save_error": "Error saving",
-    "toast_unknown_error": "Unknown error"
+    "toast_unknown_error": "Unknown error",
+    "btn_delete": "Delete",
+    "btn_delete_loading": "Deleting...",
+    "delete_confirm_title": "Delete variant",
+    "delete_confirm_body": "Are you sure you want to permanently delete the variant \"{{attributes}}\"? This cannot be undone."
   },
   "toast": {
     "refresh_error": "Error refreshing",

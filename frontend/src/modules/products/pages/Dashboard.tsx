@@ -6,7 +6,8 @@ import Header from '../components/Header';
 import { cleanupUnusedImages } from '../services/s3Upload';
 import { Button, Box, HStack } from '@chakra-ui/react';
 import { Product } from '../../../types';
-import { FilterPanel, GenericFilter } from '../../../components/filters';
+import { FilterPanel } from '../../../components/filters';
+import type { FilterConfig } from '../../../components/filters';
 
 export default function Dashboard(): React.ReactElement {
   const [products, setProducts] = useState<Product[]>([]);
@@ -111,26 +112,28 @@ export default function Dashboard(): React.ReactElement {
       <HStack align="start" spacing={6}>
         <Box w="300px">
           <FilterPanel
-            hasActiveFilters={!!selectedGroep || !!selectedSubgroep}
-            onReset={() => { setSelectedGroep(''); setSelectedSubgroep(''); }}
-          >
-            <GenericFilter
-              label="Groep"
-              value={selectedGroep}
-              options={groepOptions}
-              onChange={(v) => { setSelectedGroep(v); setSelectedSubgroep(''); }}
-              placeholder="Alle groepen"
-            />
-            {subgroepOptions.length > 0 && (
-              <GenericFilter
-                label="Subgroep"
-                value={selectedSubgroep}
-                options={subgroepOptions}
-                onChange={setSelectedSubgroep}
-                placeholder="Alle subgroepen"
-              />
-            )}
-          </FilterPanel>
+            layout="vertical"
+            filters={[
+              {
+                type: 'single' as const,
+                label: 'Groep',
+                options: groepOptions,
+                value: selectedGroep,
+                onChange: (v: string | string[]) => { setSelectedGroep(v as string); setSelectedSubgroep(''); },
+                placeholder: 'Alle groepen',
+              },
+              ...(subgroepOptions.length > 0
+                ? [{
+                    type: 'single' as const,
+                    label: 'Subgroep',
+                    options: subgroepOptions,
+                    value: selectedSubgroep,
+                    onChange: (v: string | string[]) => setSelectedSubgroep(v as string),
+                    placeholder: 'Alle subgroepen',
+                  }]
+                : []),
+            ] as FilterConfig<any>[]}
+          />
         </Box>
         <Box flex={1}>
           <ProductTable

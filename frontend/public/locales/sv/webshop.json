@@ -234,6 +234,16 @@
     "download_pdf": "Ladda ner orderbekräftelse",
     "col_tracking": "Spårning",
     "col_order": "Beställning",
-    "col_status": "Status"
+    "col_status": "Status",
+    "detail_title": "Orderdetaljer",
+    "payment_status_label": "Betalningsstatus",
+    "items_title": "Artiklar",
+    "col_product": "Produkt",
+    "col_quantity": "Antal",
+    "col_unit_price": "Pris",
+    "col_line_total": "Totalt",
+    "delivery_cost_label": "Fraktkostnader",
+    "item_singular": "artikel",
+    "item_plural": "artiklar"
   }
 }

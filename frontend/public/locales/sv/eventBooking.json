@@ -116,7 +116,9 @@
     "colMemberId": "Medlems-ID",
     "colEmail": "E-post",
     "colMemberType": "Typ",
+    "colName": "Namn",
     "colActions": "Åtgärder",
+    "accessDetailTitle": "Åtkomstdetaljer",
     "payment_recording": {
       "title": "Manuell betalning",
       "description": "Registrera en manuell betalning för en beställning (t.ex. banköverföring).",
@@ -178,7 +180,9 @@
       "col_delegate": "Delegate",
       "col_status": "Status",
       "col_payment": "Betalning",
-      "col_actions": "Åtgärder"
+      "col_total": "Totalt",
+      "col_updated": "Senast uppdaterad",
+      "order_detail_title": "Beställningsdetaljer"
     }
   },
   "selfService": {

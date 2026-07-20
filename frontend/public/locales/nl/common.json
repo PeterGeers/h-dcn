@@ -99,5 +99,7 @@
   "language": {
     "preference_saved": "Taalvoorkeur opgeslagen",
     "preference_save_failed": "Taalvoorkeur kon niet worden opgeslagen"
-  }
+  },
+  "nSelected": "{{count}} geselecteerd",
+  "alle": "Alle"
 }

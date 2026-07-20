@@ -240,6 +240,16 @@
     "download_pdf": "Download ordrebekræftelse",
     "col_tracking": "Sporing",
     "col_order": "Bestilling",
-    "col_status": "Status"
+    "col_status": "Status",
+    "detail_title": "Ordredetaljer",
+    "payment_status_label": "Betalingsstatus",
+    "items_title": "Varer",
+    "col_product": "Produkt",
+    "col_quantity": "Antal",
+    "col_unit_price": "Pris",
+    "col_line_total": "Total",
+    "delivery_cost_label": "Fragtomkostninger",
+    "item_singular": "vare",
+    "item_plural": "varer"
   }
 }

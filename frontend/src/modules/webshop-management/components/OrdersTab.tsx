@@ -45,7 +45,7 @@ import { StatusBadge, formatStatus } from './StatusBadge';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 import { EventPickList } from './EventPickList';
 import { AdminOrder, OrderStatus } from '../types/admin.types';
-import { FilterPanel, FilterableHeader } from '../../../components/filters';
+import { FilterableHeader } from '../../../components/filters';
 import { useFilterableTable } from '../../../hooks/useFilterableTable';
 import { batchUpdateOrderStatus, batchDownloadPdf } from '../services/adminApi';
 
@@ -142,7 +142,6 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
     sortDirection,
     handleSort,
     processedData,
-    filteredCount,
   } = useFilterableTable(ordersWithSource as unknown as Record<string, unknown>[], {
     initialFilters: INITIAL_COLUMN_FILTERS,
     defaultSort: { field: 'created_at', direction: 'desc' },
@@ -294,13 +293,18 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
 
   return (
     <Box>
-      {/* Filter panel with reset + pick-list button */}
-      <FilterPanel
-        hasActiveFilters={hasActiveFilters}
-        onReset={handleResetAll}
-        filteredCount={filteredCount}
-        totalCount={orders.length}
-      >
+      {/* Filter toolbar with reset + pick-list button */}
+      <HStack spacing={3} mb={3} wrap="wrap" align="center">
+        {hasActiveFilters && (
+          <Button size="sm" variant="ghost" colorScheme="orange" onClick={handleResetAll}>
+            {t('orders_tab.reset_filters', { defaultValue: 'Filters wissen' })}
+          </Button>
+        )}
+        {hasActiveFilters && (
+          <Text fontSize="xs" color="gray.400">
+            {processedData.length} / {orders.length}
+          </Text>
+        )}
         <Button
           size="sm"
           colorScheme={includeCancelled ? 'red' : 'gray'}
@@ -317,12 +321,11 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
             colorScheme={showPickList ? 'orange' : 'gray'}
             variant={showPickList ? 'solid' : 'outline'}
             onClick={() => setShowPickList(!showPickList)}
-            alignSelf="flex-end"
           >
             Pick-list
           </Button>
         )}
-      </FilterPanel>
+      </HStack>
 
       {/* Bulk action toolbar — shown when orders are selected */}
       {selectedIds.size > 0 && (
@@ -390,7 +393,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'order_id' ? sortDirection : null}
                 onSort={() => handleSort('order_id')}
-                minW="120px"
+                w="120px"
               />
               <FilterableHeader
                 label="Klant / Club"
@@ -399,7 +402,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'customer_name' ? sortDirection : null}
                 onSort={() => handleSort('customer_name')}
-                minW="150px"
+                w="150px"
               />
               <FilterableHeader
                 label="Status"
@@ -408,7 +411,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'status' ? sortDirection : null}
                 onSort={() => handleSort('status')}
-                minW="120px"
+                w="120px"
               />
               <FilterableHeader
                 label="Betaling"
@@ -417,7 +420,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'payment_status' ? sortDirection : null}
                 onSort={() => handleSort('payment_status')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Bron"
@@ -426,7 +429,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'source' ? sortDirection : null}
                 onSort={() => handleSort('source')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Totaal"
@@ -435,7 +438,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'total_amount' ? sortDirection : null}
                 onSort={() => handleSort('total_amount')}
-                minW="90px"
+                w="90px"
               />
               <FilterableHeader
                 label="Aangemaakt"
@@ -444,7 +447,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({ eventFilter = '' }) => {
                 sortable
                 sortDirection={sortField === 'created_at' ? sortDirection : null}
                 onSort={() => handleSort('created_at')}
-                minW="100px"
+                w="100px"
               />
             </Tr>
           </Thead>

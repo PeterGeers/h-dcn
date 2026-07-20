@@ -222,6 +222,16 @@
     "download_pdf": "Bestellbestätigung herunterladen",
     "col_tracking": "Sendungsverfolgung",
     "col_order": "Bestellung",
-    "col_status": "Status"
+    "col_status": "Status",
+    "detail_title": "Bestelldetails",
+    "payment_status_label": "Zahlungsstatus",
+    "items_title": "Artikel",
+    "col_product": "Produkt",
+    "col_quantity": "Menge",
+    "col_unit_price": "Preis",
+    "col_line_total": "Gesamt",
+    "delivery_cost_label": "Versandkosten",
+    "item_singular": "Artikel",
+    "item_plural": "Artikel"
   }
 }

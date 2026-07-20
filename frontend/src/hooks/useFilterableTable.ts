@@ -1,86 +1,98 @@
 /**
- * useFilterableTable — Composed hook: filter → sort pipeline
+ * useFilterableTable Hook
  *
- * Combines useColumnFilters and useTableSort into a single hook
- * for the most common table use case.
+ * Composes `useColumnFilters` and `useTableSort` into a single interface for
+ * components that need both column-based text filtering and sortable columns.
+ * Filtering is applied before sorting so that sort operates only on the
+ * filtered subset.
  *
- * Pipeline order: filter first → then sort (fixed order).
- *
- * Usage:
- *   const { filters, setFilter, handleSort, sortField, sortDirection, processedData } =
- *     useFilterableTable(data, { initialFilters: { name: '', status: '' }, defaultSort: { field: 'name', direction: 'asc' } });
+ * @module hooks/useFilterableTable
  */
 
-import { useMemo } from 'react';
-import { useColumnFilters, UseColumnFiltersOptions } from './useColumnFilters';
-import { useTableSort, SortDirection, SortConfig } from './useTableSort';
+import { useColumnFilters } from './useColumnFilters';
+import { useTableSort } from './useTableSort';
+import { SortDirection } from '../components/filters/types';
 
-export interface UseFilterableTableOptions<T extends Record<string, string>> {
-  /** Initial filter values */
-  initialFilters: T;
-  /** Default sort configuration */
-  defaultSort?: SortConfig;
-  /** Debounce delay for filters in ms (default: 150) */
+export interface UseFilterableTableConfig {
+  /** Initial filter keys and empty values */
+  initialFilters: Record<string, string>;
+  /** Optional default sort configuration */
+  defaultSort?: { field: string; direction: SortDirection };
+  /** Optional debounce delay in milliseconds */
   debounceMs?: number;
 }
 
-export interface UseFilterableTableReturn<T extends Record<string, string>, R extends Record<string, unknown>> {
-  // Filter state
-  filters: T;
-  setFilter: (key: keyof T, value: string) => void;
+export interface UseFilterableTableReturn<T> {
+  // From useColumnFilters
+  /** Current filter values keyed by column name */
+  filters: Record<string, string>;
+  /** Set a single filter value */
+  setFilter: (key: string, value: string) => void;
+  /** Reset all filters to empty strings */
   resetFilters: () => void;
+  /** True if any filter has a non-empty value */
   hasActiveFilters: boolean;
-
-  // Sort state
+  // From useTableSort
+  /** Currently active sort field, or null if no sort */
   sortField: string | null;
+  /** Current sort direction */
   sortDirection: SortDirection;
+  /** Toggle sort on a field (same field = flip direction, new field = asc) */
   handleSort: (field: string) => void;
-  sortConfig: SortConfig | null;
-
-  // Processed data (filtered + sorted)
-  processedData: R[];
-
-  // Counts
-  totalCount: number;
-  filteredCount: number;
+  /** Returns '↑', '↓', or '' for a given field */
+  getSortIndicator: (field: string) => string;
+  // Combined result
+  /** Data after filtering then sorting */
+  processedData: T[];
 }
 
-export function useFilterableTable<
-  T extends Record<string, string>,
-  R extends Record<string, unknown>
->(
-  data: R[],
-  options: UseFilterableTableOptions<T>
-): UseFilterableTableReturn<T, R> {
-  const { initialFilters, defaultSort, debounceMs } = options;
+/**
+ * Hook that composes column filtering and sorting for table components.
+ *
+ * Internally calls `useColumnFilters` on the raw data, then passes the
+ * filtered output to `useTableSort`. The returned `processedData` is the
+ * sorted-filtered result.
+ *
+ * @param data - The data array to filter and sort
+ * @param config - Configuration with initialFilters, optional defaultSort, optional debounceMs
+ * @returns Combined filter + sort state and processedData
+ */
+export function useFilterableTable<T extends Record<string, any>>(
+  data: T[],
+  config: UseFilterableTableConfig,
+): UseFilterableTableReturn<T> {
+  // Step 1: Filter the data
+  const {
+    filters,
+    setFilter,
+    resetFilters,
+    filteredData,
+    hasActiveFilters,
+  } = useColumnFilters(data, config.initialFilters, {
+    debounceMs: config.debounceMs,
+  });
 
-  // Filter layer
-  const filterOptions: UseColumnFiltersOptions<T> = { initialFilters, debounceMs };
-  const { filters, setFilter, resetFilters, filterData, hasActiveFilters } = useColumnFilters(filterOptions);
-
-  // Sort layer
-  const { sortField, sortDirection, handleSort, sortData, sortConfig } = useTableSort({ defaultSort });
-
-  // Pipeline: filter → sort
-  const processedData = useMemo(() => {
-    const filtered = filterData(data);
-    return sortData(filtered);
-  }, [data, filterData, sortData]);
+  // Step 2: Sort the filtered output (not the original data)
+  const {
+    sortField,
+    sortDirection,
+    handleSort,
+    sortedData,
+    getSortIndicator,
+  } = useTableSort(filteredData, config.defaultSort?.field, config.defaultSort?.direction);
 
   return {
+    // From useColumnFilters
     filters,
     setFilter,
     resetFilters,
     hasActiveFilters,
+    // From useTableSort
     sortField,
     sortDirection,
     handleSort,
-    sortConfig,
-    processedData,
-    totalCount: data.length,
-    filteredCount: processedData.length,
+    getSortIndicator,
+    // Combined result: sorted output of filtered data
+    processedData: sortedData,
   };
 }
-
-// Re-export types for convenience
-export type { SortDirection, SortConfig } from './useTableSort';

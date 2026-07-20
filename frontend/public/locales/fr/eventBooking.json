@@ -273,7 +273,9 @@
     "colMemberId": "ID membre",
     "colEmail": "E-mail",
     "colMemberType": "Type",
+    "colName": "Nom",
     "colActions": "Actions",
+    "accessDetailTitle": "Détails d'accès",
     "payment_recording": {
       "title": "Paiement manuel",
       "description": "Enregistrer un paiement manuel pour une commande (par ex. virement bancaire).",
@@ -335,7 +337,9 @@
       "col_delegate": "Delegate",
       "col_status": "Statut",
       "col_payment": "Paiement",
-      "col_actions": "Actions"
+      "col_total": "Total",
+      "col_updated": "Dernière mise à jour",
+      "order_detail_title": "Détails de la commande"
     }
   },
   "errors": {

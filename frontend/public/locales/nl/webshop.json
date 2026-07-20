@@ -246,6 +246,16 @@
     "col_tracking": "Tracking",
     "col_total": "Totaal",
     "col_actions": "Acties",
-    "download_pdf": "Download orderbevestiging"
+    "download_pdf": "Download orderbevestiging",
+    "detail_title": "Bestelling details",
+    "payment_status_label": "Betaalstatus",
+    "items_title": "Artikelen",
+    "col_product": "Product",
+    "col_quantity": "Aantal",
+    "col_unit_price": "Prijs",
+    "col_line_total": "Totaal",
+    "delivery_cost_label": "Verzendkosten",
+    "item_singular": "artikel",
+    "item_plural": "artikelen"
   }
 }

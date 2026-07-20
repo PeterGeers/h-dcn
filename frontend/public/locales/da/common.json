@@ -99,5 +99,7 @@
   "language": {
     "preference_saved": "Sprogindstilling gemt",
     "preference_save_failed": "Sprogindstilling kunne ikke gemmes"
-  }
+  },
+  "nSelected": "{{count}} valgt",
+  "alle": "Alle"
 }

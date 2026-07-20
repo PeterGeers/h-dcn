@@ -240,6 +240,16 @@
     "download_pdf": "Scarica conferma ordine",
     "col_tracking": "Tracciamento",
     "col_order": "Ordine",
-    "col_status": "Stato"
+    "col_status": "Stato",
+    "detail_title": "Dettagli ordine",
+    "payment_status_label": "Stato pagamento",
+    "items_title": "Articoli",
+    "col_product": "Prodotto",
+    "col_quantity": "Quantità",
+    "col_unit_price": "Prezzo",
+    "col_line_total": "Totale",
+    "delivery_cost_label": "Costi di spedizione",
+    "item_singular": "articolo",
+    "item_plural": "articoli"
   }
 }

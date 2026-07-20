@@ -15,6 +15,7 @@ interface CognitoAttribute {
 
 interface CognitoUser {
   Username: string;
+  Enabled?: boolean;
   Attributes?: CognitoAttribute[];
 }
 
@@ -37,9 +38,11 @@ interface UserModalProps {
   user: CognitoUser | null;
   groups: CognitoGroup[];
   onSave: () => void;
+  onDelete?: (username: string) => void;
+  onToggleEnabled?: (username: string, enabled: boolean) => void;
 }
 
-function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
+function UserModal({ isOpen, onClose, user, groups, onSave, onDelete, onToggleEnabled }: UserModalProps) {
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
     email: '',
@@ -250,6 +253,34 @@ function UserModal({ isOpen, onClose, user, groups, onSave }: UserModalProps) {
           </VStack>
         </ModalBody>
         <ModalFooter>
+          {user && onToggleEnabled && (
+            <Button
+              colorScheme={user.Enabled !== false ? 'yellow' : 'green'}
+              size="sm"
+              mr={2}
+              onClick={() => {
+                onToggleEnabled(user.Username, user.Enabled !== false);
+                onClose();
+              }}
+            >
+              {user.Enabled !== false ? t('modal.disable_user', 'Uitschakelen') : t('modal.enable_user', 'Inschakelen')}
+            </Button>
+          )}
+          {user && onDelete && (
+            <Button
+              colorScheme="red"
+              size="sm"
+              mr="auto"
+              onClick={() => {
+                if (window.confirm(t('modal.confirm_delete', `Weet je zeker dat je gebruiker "${user.Username}" wilt verwijderen?`))) {
+                  onDelete(user.Username);
+                  onClose();
+                }
+              }}
+            >
+              {t('modal.delete_user', 'Verwijderen')}
+            </Button>
+          )}
           <Button variant="ghost" mr={3} onClick={onClose}>
             Annuleren
           </Button>

@@ -1,118 +1,165 @@
 /**
- * useTableSort — Sort state + toggle + comparison logic
+ * useTableSort Hook
  *
- * Provides sort state management with string/number/date comparison.
- * Null/undefined values sort to end regardless of direction.
+ * Manages sort field, direction toggle, and applies sorting to a data array.
+ * Replaces the ~15-line sort boilerplate pattern (useState for sort field/direction
+ * + toggle handler) found in 7+ table components.
  *
- * Usage:
- *   const { sortField, sortDirection, handleSort, sortData } = useTableSort({ field: 'name', direction: 'asc' });
- *   const sorted = sortData(data);
+ * @module hooks/useTableSort
+ * @see .kiro/specs/table-filter-framework-v2/design.md §2
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { SortDirection } from '../components/filters/types';
 
-export type SortDirection = 'asc' | 'desc';
-
-export interface SortConfig {
-  field: string;
-  direction: SortDirection;
-}
-
-export interface UseTableSortOptions {
-  /** Default sort configuration */
-  defaultSort?: SortConfig;
-}
-
-export interface UseTableSortReturn {
-  /** Currently sorted field */
+interface UseTableSortReturn<T> {
+  /** Currently active sort field, or null if no sort */
   sortField: string | null;
   /** Current sort direction */
   sortDirection: SortDirection;
-  /** Toggle sort on a field (cycles: asc → desc → none) */
+  /** Toggle sort on a field (same field = flip direction, new field = asc) */
   handleSort: (field: string) => void;
-  /** Sort data array using current sort config */
-  sortData: <R extends Record<string, unknown>>(data: R[]) => R[];
-  /** Current sort config (null if no sort active) */
-  sortConfig: SortConfig | null;
+  /** Data array after applying sort */
+  sortedData: T[];
+  /** Returns '↑', '↓', or '' for a given field */
+  getSortIndicator: (field: string) => string;
 }
 
-function compareValues(a: unknown, b: unknown, direction: SortDirection): number {
-  // Null/undefined sort to end
-  if (a === null || a === undefined) return 1;
-  if (b === null || b === undefined) return -1;
-
-  const multiplier = direction === 'asc' ? 1 : -1;
-
-  // Number comparison
-  if (typeof a === 'number' && typeof b === 'number') {
-    return (a - b) * multiplier;
-  }
-
-  // String comparison (case-insensitive)
-  const strA = String(a).toLowerCase();
-  const strB = String(b).toLowerCase();
-
-  // Try date comparison
-  if (isDateString(strA) && isDateString(strB)) {
-    const dateA = new Date(strA).getTime();
-    const dateB = new Date(strB).getTime();
-    if (!isNaN(dateA) && !isNaN(dateB)) {
-      return (dateA - dateB) * multiplier;
-    }
-  }
-
-  // Try numeric comparison for string numbers
-  const numA = parseFloat(strA);
-  const numB = parseFloat(strB);
-  if (!isNaN(numA) && !isNaN(numB)) {
-    return (numA - numB) * multiplier;
-  }
-
-  return strA.localeCompare(strB, 'nl') * multiplier;
+/**
+ * Check whether a value is a finite number (including numeric strings is NOT
+ * considered — both values in a comparison must be actual numbers).
+ */
+function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
-function isDateString(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}/.test(value);
+/**
+ * Check whether a value is null or undefined.
+ */
+function isNullish(value: unknown): value is null | undefined {
+  return value === null || value === undefined;
 }
 
-export function useTableSort(options: UseTableSortOptions = {}): UseTableSortReturn {
-  const { defaultSort } = options;
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(defaultSort || null);
+/**
+ * Check whether a value is a valid ISO-8601 date string.
+ *
+ * Accepts YYYY-MM-DD with optional time component (e.g. "2024-01-15",
+ * "2024-01-15T10:30:00Z"). Uses a regex pre-check to avoid expensive
+ * Date.parse calls on non-date strings.
+ */
+export function isISODateString(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  if (!/^\d{4}-\d{2}-\d{2}(T[\d:.Z+-]*)?$/.test(value)) return false;
+  return Number.isFinite(Date.parse(value));
+}
 
-  const sortField = sortConfig?.field || null;
-  const sortDirection = sortConfig?.direction || 'asc';
+/**
+ * Compare two values for sorting.
+ *
+ * Rules (from design §2):
+ * - null/undefined sort to end regardless of direction
+ * - Both numbers → numeric comparison
+ * - Both ISO date strings → chronological comparison
+ * - Otherwise → case-insensitive string comparison via localeCompare
+ *
+ * Returns a raw comparator value (caller applies direction multiplier).
+ */
+export function compareValues(a: unknown, b: unknown): number {
+  const aNullish = isNullish(a);
+  const bNullish = isNullish(b);
 
-  const handleSort = useCallback((field: string) => {
-    setSortConfig(current => {
-      if (!current || current.field !== field) {
-        return { field, direction: 'asc' };
-      }
-      if (current.direction === 'asc') {
-        return { field, direction: 'desc' };
-      }
-      // Third click: remove sort
-      return null;
-    });
-  }, []);
+  // Both nullish → equal
+  if (aNullish && bNullish) return 0;
 
-  const sortData = useCallback(
-    <R extends Record<string, unknown>>(data: R[]): R[] => {
-      if (!sortConfig) return data;
+  // Nullish values sort to end (regardless of direction — caller must handle)
+  if (aNullish) return 1;
+  if (bNullish) return -1;
 
-      return [...data].sort((a, b) => {
-        const aVal = a[sortConfig.field];
-        const bVal = b[sortConfig.field];
-        return compareValues(aVal, bVal, sortConfig.direction);
+  // Both numbers → numeric comparison
+  if (isNumber(a) && isNumber(b)) {
+    return a - b;
+  }
+
+  // Both ISO date strings → chronological comparison
+  if (isISODateString(a) && isISODateString(b)) {
+    return Date.parse(a as string) - Date.parse(b as string);
+  }
+
+  // Fallback → case-insensitive string comparison
+  return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+}
+
+/**
+ * Hook for table column sorting with toggle behavior.
+ *
+ * @param data - The data array to sort
+ * @param defaultField - Optional initial sort field
+ * @param defaultDirection - Optional initial sort direction (default: 'asc')
+ * @returns Sort state, handleSort, sortedData, getSortIndicator
+ */
+export function useTableSort<T extends Record<string, any>>(
+  data: T[],
+  defaultField?: string,
+  defaultDirection?: SortDirection,
+): UseTableSortReturn<T> {
+  const [sortField, setSortField] = useState<string | null>(defaultField ?? null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultDirection ?? 'asc');
+
+  const handleSort = useCallback(
+    (field: string) => {
+      setSortField((prevField) => {
+        if (prevField === field) {
+          // Same field → toggle direction (handled below)
+          return prevField;
+        }
+        // Different field → set new field, reset to asc
+        return field;
+      });
+
+      setSortDirection((prevDirection) => {
+        // We need to check current sortField to decide behavior.
+        // Because setSortField above runs first in the same batch,
+        // we read sortField from the ref-stable closure. However,
+        // React may not have committed the setSortField yet.
+        // Instead, compare against the *current* sortField state.
+        if (sortField === field) {
+          // Same field → toggle
+          return prevDirection === 'asc' ? 'desc' : 'asc';
+        }
+        // Different field → reset to asc
+        return 'asc';
       });
     },
-    [sortConfig]
+    [sortField],
   );
 
-  return {
-    sortField,
-    sortDirection,
-    handleSort,
-    sortData,
-    sortConfig,
-  };
+  const getSortIndicator = useCallback(
+    (field: string): string => {
+      if (field !== sortField) return '';
+      return sortDirection === 'asc' ? '↑' : '↓';
+    },
+    [sortField, sortDirection],
+  );
+
+  const sortedData = useMemo(() => {
+    if (sortField === null) return data;
+
+    const directionMultiplier = sortDirection === 'asc' ? 1 : -1;
+
+    return [...data].sort((a, b) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+
+      // Nullish values always sort to end, regardless of direction
+      const aNullish = isNullish(aVal);
+      const bNullish = isNullish(bVal);
+      if (aNullish && bNullish) return 0;
+      if (aNullish) return 1;
+      if (bNullish) return -1;
+
+      return compareValues(aVal, bVal) * directionMultiplier;
+    });
+  }, [data, sortField, sortDirection]);
+
+  return { sortField, sortDirection, handleSort, sortedData, getSortIndicator };
 }

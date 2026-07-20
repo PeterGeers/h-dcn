@@ -33,8 +33,7 @@ import { canViewField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { computeCalculatedFieldsForArray, getMemberFullName } from '../utils/calculatedFields';
 import { useFilterableTable } from '../hooks/useFilterableTable';
-import { FilterableHeader } from '../components/filters';
-import { FilterPanel, GenericFilter } from '../components/filters';
+import { FilterableHeader, FilterPanel, GenericFilter } from '../components/filters';
 
 
 interface MemberAdminTableProps {
@@ -139,7 +138,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   }, [regionalFiltered, selectFilters]);
 
   // Framework: text filters + sort
-  const { filters, setFilter, handleSort, sortField, sortDirection, processedData, resetFilters, hasActiveFilters } =
+  const { filters, setFilter, handleSort, sortField, sortDirection, processedData, resetFilters } =
     useFilterableTable(preFilteredMembers as unknown as Record<string, unknown>[], {
       initialFilters,
       defaultSort: { field: 'lidnummer', direction: 'desc' },
@@ -434,27 +433,21 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
         {/* Select Filters (dropdown pre-filters) */}
         {selectFilterColumns.length > 0 && (
           <FilterPanel
-            hasActiveFilters={Object.values(selectFilters).some(v => v !== '') || hasActiveFilters}
-            onReset={() => { setSelectFilters({}); resetFilters(); }}
-            filteredCount={filteredMembers.length}
-            totalCount={members.length}
-          >
-            {selectFilterColumns.map(fieldKey => {
-              const field = MEMBER_FIELDS[fieldKey];
-              if (!field) return null;
-              return (
-                <GenericFilter
-                  key={fieldKey}
-                  label={field.label}
-                  value={selectFilters[fieldKey] || ''}
-                  options={getFilterOptions(fieldKey).map(opt => ({ value: opt, label: opt }))}
-                  onChange={(v) => handleSelectFilter(fieldKey, v)}
-                  placeholder="Alle"
-                  width="150px"
-                />
-              );
-            })}
-          </FilterPanel>
+            layout="horizontal"
+            filters={selectFilterColumns
+              .filter(fieldKey => MEMBER_FIELDS[fieldKey])
+              .map(fieldKey => {
+                const field = MEMBER_FIELDS[fieldKey];
+                return {
+                  type: 'single' as const,
+                  label: field.label,
+                  value: selectFilters[fieldKey] || '',
+                  options: getFilterOptions(fieldKey).map(opt => ({ value: opt, label: opt })),
+                  onChange: (v: string | string[]) => handleSelectFilter(fieldKey, v as string),
+                  placeholder: 'Alle',
+                };
+              })}
+          />
         )}
 
         {/* Table */}
@@ -468,7 +461,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     py={2}
                     color="orange.300"
                     display={{ base: 'table-cell', md: 'none' }}
-                    minW="60px"
+                    w="60px"
                   >
                     <FilterableHeader
                       label="Lidnr"
@@ -477,7 +470,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                       sortable
                       sortDirection={sortField === 'lidnummer' ? sortDirection : null}
                       onSort={() => handleSort('lidnummer')}
-                      minW="60px"
+                      w="60px"
                       placeholder="Nr..."
                     />
                   </Th>
@@ -493,7 +486,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                       sortable
                       sortDirection={sortField === 'fullName' ? sortDirection : null}
                       onSort={() => handleSort('fullName')}
-                      minW="120px"
+                      w="120px"
                       placeholder="Naam..."
                     />
                   </Th>
@@ -501,7 +494,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     py={2}
                     color="orange.300"
                     display={{ base: 'table-cell', md: 'none' }}
-                    minW="80px"
+                    w="80px"
                   >
                     <GenericFilter
                       label="Status"
@@ -523,7 +516,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                       return (
                         <Th
                           key={column.fieldKey}
-                          minW={column.width ? `${column.width}px` : '120px'}
+                          w={column.width ? `${column.width}px` : '120px'}
                           cursor={column.sortable ? 'pointer' : 'default'}
                           onClick={column.sortable ? () => handleSort(column.fieldKey) : undefined}
                           _hover={column.sortable ? { bg: 'gray.600' } : {}}
@@ -553,9 +546,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                         sortable={column.sortable}
                         sortDirection={sortField === column.fieldKey ? sortDirection : null}
                         onSort={() => handleSort(column.fieldKey)}
-                        minW={column.width ? `${column.width}px` : '120px'}
-                        showFilter={column.filterable}
-                        display={{ base: 'none', md: 'table-cell' }}
+                        w={column.width ? `${column.width}px` : '120px'}
                       />
                     );
                   })}

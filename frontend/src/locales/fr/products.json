@@ -88,7 +88,11 @@
     "toast_updated": "Variante mise à jour",
     "toast_invalid_price": "Prix invalide",
     "toast_save_error": "Erreur lors de l'enregistrement",
-    "toast_unknown_error": "Erreur inconnue"
+    "toast_unknown_error": "Erreur inconnue",
+    "btn_delete": "Supprimer",
+    "btn_delete_loading": "Suppression...",
+    "delete_confirm_title": "Supprimer la variante",
+    "delete_confirm_body": "Voulez-vous vraiment supprimer définitivement la variante \"{{attributes}}\" ? Cette action est irréversible."
   },
   "toast": {
     "refresh_error": "Erreur lors de l'actualisation",

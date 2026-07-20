@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, VStack, HStack, Heading, Text, Table, Thead, Tbody, Tr, Th, Td,
-  Button, IconButton, Input, Checkbox, useToast, Spinner, Alert, AlertIcon,
-  Badge, Flex, Spacer, InputGroup, InputRightElement
+  Button, Input, Checkbox, useToast, Spinner, Alert, AlertIcon,
+  Badge, Flex, Spacer, InputGroup, InputRightElement,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
-import { DeleteIcon, AddIcon } from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { API_URLS } from '../../../config/api';
@@ -27,7 +29,7 @@ interface EventAccessManagerProps {
  * Features:
  * - Lists members with access to the selected event
  * - Grant access to new members by email
- * - Revoke access from individual members
+ * - Row click opens access detail modal with Revoke action
  * - Bulk grant/revoke access (select multiple + action)
  */
 const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventName }) => {
@@ -41,6 +43,10 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
   const [granting, setGranting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<MemberAccess | null>(null);
+  const [revoking, setRevoking] = useState(false);
+
+  const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -100,6 +106,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
   };
 
   const handleRevoke = async (memberId: string) => {
+    setRevoking(true);
     try {
       const headers = await getAuthHeadersForGet();
       const response = await fetch(API_URLS.eventAccess(eventId), {
@@ -115,6 +122,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         status: 'info',
         duration: 3000,
       });
+      onDetailClose();
       fetchMembers();
     } catch (err: any) {
       toast({
@@ -123,6 +131,8 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         status: 'error',
         duration: 5000,
       });
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -192,7 +202,8 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
     }
   };
 
-  const toggleSelect = (memberId: string) => {
+  const toggleSelect = (memberId: string, e: React.MouseEvent | React.ChangeEvent) => {
+    e.stopPropagation();
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(memberId)) {
@@ -210,6 +221,11 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
     } else {
       setSelectedIds(new Set(members.map((m) => m.member_id)));
     }
+  };
+
+  const openMemberModal = (member: MemberAccess) => {
+    setSelectedMember(member);
+    onDetailOpen();
   };
 
   if (loading) {
@@ -328,16 +344,24 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
                 <Th color="gray.400">{t('admin.colMemberId')}</Th>
                 <Th color="gray.400">{t('admin.colEmail')}</Th>
                 <Th color="gray.400">{t('admin.colMemberType')}</Th>
-                <Th color="gray.400">{t('admin.colActions')}</Th>
               </Tr>
             </Thead>
             <Tbody>
               {members.map((member) => (
-                <Tr key={member.member_id}>
-                  <Td px={2}>
+                <Tr
+                  key={member.member_id}
+                  onClick={() => openMemberModal(member)}
+                  _hover={{ bg: 'gray.700', cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') openMemberModal(member);
+                  }}
+                >
+                  <Td px={2} onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       isChecked={selectedIds.has(member.member_id)}
-                      onChange={() => toggleSelect(member.member_id)}
+                      onChange={(e) => toggleSelect(member.member_id, e)}
                       colorScheme="orange"
                     />
                   </Td>
@@ -351,22 +375,64 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
                       {member.member_type || 'hdcn_member'}
                     </Badge>
                   </Td>
-                  <Td>
-                    <IconButton
-                      aria-label={t('admin.revokeAccess')}
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => handleRevoke(member.member_id)}
-                    />
-                  </Td>
                 </Tr>
               ))}
             </Tbody>
           </Table>
         </Box>
       )}
+
+      {/* Access Detail Modal */}
+      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{t('admin.accessDetailTitle')}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {selectedMember && (
+              <VStack spacing={3} align="stretch">
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.colMemberId')}</Text>
+                  <Text>{selectedMember.member_id}</Text>
+                </HStack>
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.colEmail')}</Text>
+                  <Text>{selectedMember.email || '—'}</Text>
+                </HStack>
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.colMemberType')}</Text>
+                  <Badge
+                    colorScheme={selectedMember.member_type === 'event_participant' ? 'purple' : 'green'}
+                    fontSize="xs"
+                  >
+                    {selectedMember.member_type || 'hdcn_member'}
+                  </Badge>
+                </HStack>
+                {selectedMember.name && (
+                  <HStack justify="space-between">
+                    <Text fontWeight="medium">{t('admin.colName')}</Text>
+                    <Text>{selectedMember.name}</Text>
+                  </HStack>
+                )}
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onDetailClose}>
+              {t('admin.claims.cancel')}
+            </Button>
+            <Button
+              leftIcon={<DeleteIcon />}
+              colorScheme="red"
+              onClick={() => selectedMember && handleRevoke(selectedMember.member_id)}
+              isLoading={revoking}
+              isDisabled={revoking}
+            >
+              {t('admin.revokeAccess')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </VStack>
   );
 };

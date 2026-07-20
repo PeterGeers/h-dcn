@@ -30,14 +30,11 @@ import {
   AlertDialogFooter,
   useDisclosure,
   useToast,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
   FormControl,
   FormLabel,
   Alert,
   AlertIcon,
+  Divider,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
@@ -143,11 +140,11 @@ interface AdminClaimsManagementProps {
 /**
  * Admin Claims Management UI.
  *
- * Displays a paginated table of all registry rows with claim status,
- * and provides actions: release, assign, reassign primary, remove secondary,
- * cancel pending invitation.
+ * Displays a paginated table of all registry rows with claim status.
+ * Row click opens a claim detail/action modal containing assignment
+ * and status actions.
  *
- * Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6
+ * Requirements: 9.1, 9.4, 14.1, 14.3, 14.4
  */
 const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }) => {
   const { t } = useTranslation('eventBooking');
@@ -160,6 +157,14 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Claim detail modal
+  const {
+    isOpen: isDetailOpen,
+    onOpen: onDetailOpen,
+    onClose: onDetailClose,
+  } = useDisclosure();
+  const [selectedClaim, setSelectedClaim] = useState<ClaimEntry | null>(null);
 
   // Release confirmation dialog
   const {
@@ -214,9 +219,16 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     loadClaims();
   }, [loadClaims]);
 
+  // --- Row click → detail modal ---
+  const handleRowClick = (claim: ClaimEntry) => {
+    setSelectedClaim(claim);
+    onDetailOpen();
+  };
+
   // --- Release ---
   const handleReleaseClick = (claim: ClaimEntry) => {
     setReleaseTarget(claim);
+    onDetailClose();
     onReleaseOpen();
   };
 
@@ -248,6 +260,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     setAssignTarget(claim);
     setAssignEmail('');
     setAssignError(null);
+    onDetailClose();
     onAssignOpen();
   };
 
@@ -284,6 +297,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     setReassignTarget(claim);
     setReassignEmail('');
     setReassignError(null);
+    onDetailClose();
     onReassignOpen();
   };
 
@@ -314,6 +328,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
 
   // --- Remove secondary ---
   const handleRemoveSecondary = async (claim: ClaimEntry) => {
+    onDetailClose();
     try {
       await removeSecondary(eventId, claim.row_id);
       toast({
@@ -333,6 +348,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
 
   // --- Cancel invitation ---
   const handleCancelInvitation = async (claim: ClaimEntry) => {
+    onDetailClose();
     try {
       await cancelInvitation(eventId, claim.row_id);
       toast({
@@ -413,58 +429,30 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
               <Th>{t('admin.claims.col_delegate')}</Th>
               <Th>{t('admin.claims.col_email')}</Th>
               <Th>{t('admin.claims.col_claimed_at')}</Th>
-              <Th>{t('admin.claims.col_actions')}</Th>
             </Tr>
           </Thead>
           <Tbody>
             {claims.map((claim) => (
-              <Tr key={claim.row_id}>
+              <Tr
+                key={claim.row_id}
+                onClick={() => handleRowClick(claim)}
+                _hover={{ bg: 'gray.700', cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRowClick(claim);
+                }}
+              >
                 <Td fontWeight="medium">{claim.label}</Td>
                 <Td>{getStatusBadge(claim.status)}</Td>
                 <Td>{claim.delegate_name || '-'}</Td>
                 <Td>{claim.delegate_email || '-'}</Td>
                 <Td>{formatDate(claim.claimed_at)}</Td>
-                <Td>
-                  {claim.status === 'claimed' ? (
-                    <Menu>
-                      <MenuButton
-                        as={Button}
-                        size="xs"
-                        variant="outline"
-                        aria-label={t('admin.claims.actions')}
-                      >
-                        ⋮
-                      </MenuButton>
-                      <MenuList>
-                        <MenuItem onClick={() => handleReleaseClick(claim)}>
-                          {t('admin.claims.action_release')}
-                        </MenuItem>
-                        <MenuItem onClick={() => handleReassignClick(claim)}>
-                          {t('admin.claims.action_reassign')}
-                        </MenuItem>
-                        <MenuItem onClick={() => handleRemoveSecondary(claim)}>
-                          {t('admin.claims.action_remove_secondary')}
-                        </MenuItem>
-                        <MenuItem onClick={() => handleCancelInvitation(claim)}>
-                          {t('admin.claims.action_cancel_invitation')}
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  ) : (
-                    <Button
-                      size="xs"
-                      colorScheme="blue"
-                      onClick={() => handleAssignClick(claim)}
-                    >
-                      {t('admin.claims.action_assign')}
-                    </Button>
-                  )}
-                </Td>
               </Tr>
             ))}
             {claims.length === 0 && !loading && (
               <Tr>
-                <Td colSpan={6} textAlign="center" py={8}>
+                <Td colSpan={5} textAlign="center" py={8}>
                   <Text color="gray.500">{t('admin.claims.no_rows')}</Text>
                 </Td>
               </Tr>
@@ -498,6 +486,85 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
           </Button>
         </HStack>
       )}
+
+      {/* Claim Detail Modal */}
+      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{selectedClaim?.label}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack align="stretch" spacing={3}>
+              <HStack justify="space-between">
+                <Text fontWeight="medium">{t('admin.claims.col_status')}</Text>
+                {selectedClaim && getStatusBadge(selectedClaim.status)}
+              </HStack>
+              <HStack justify="space-between">
+                <Text fontWeight="medium">{t('admin.claims.col_delegate')}</Text>
+                <Text>{selectedClaim?.delegate_name || '-'}</Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text fontWeight="medium">{t('admin.claims.col_email')}</Text>
+                <Text>{selectedClaim?.delegate_email || '-'}</Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text fontWeight="medium">{t('admin.claims.col_claimed_at')}</Text>
+                <Text>{formatDate(selectedClaim?.claimed_at)}</Text>
+              </HStack>
+              <Divider />
+              {/* Actions based on claim status */}
+              {selectedClaim?.status === 'claimed' && (
+                <VStack align="stretch" spacing={2}>
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => handleReleaseClick(selectedClaim)}
+                  >
+                    {t('admin.claims.action_release')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={() => handleReassignClick(selectedClaim)}
+                  >
+                    {t('admin.claims.action_reassign')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleRemoveSecondary(selectedClaim)}
+                  >
+                    {t('admin.claims.action_remove_secondary')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleCancelInvitation(selectedClaim)}
+                  >
+                    {t('admin.claims.action_cancel_invitation')}
+                  </Button>
+                </VStack>
+              )}
+              {(selectedClaim?.status === 'available' || selectedClaim?.status === 'pending') && (
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() => selectedClaim && handleAssignClick(selectedClaim)}
+                >
+                  {t('admin.claims.action_assign')}
+                </Button>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" onClick={onDetailClose}>
+              {t('admin.claims.cancel')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Release Confirmation Dialog */}
       <AlertDialog

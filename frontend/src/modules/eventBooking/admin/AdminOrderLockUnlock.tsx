@@ -20,19 +20,25 @@ import {
   AlertDialogHeader,
   AlertDialogBody,
   AlertDialogFooter,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
   useDisclosure,
   useToast,
   Alert,
   AlertIcon,
-  IconButton,
-  Tooltip,
 } from '@chakra-ui/react';
 import { LockIcon, UnlockIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 import { OrderStatus } from '../types/eventBooking.types';
-import { FilterPanel, GenericFilter } from '../../../components/filters';
+import { FilterPanel } from '../../../components/filters';
+import type { FilterConfig } from '../../../components/filters';
 
 const BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -153,10 +159,12 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
 
   // Confirmation dialog state
   const { isOpen: isLockOpen, onOpen: onLockOpen, onClose: onLockClose } = useDisclosure();
   const { isOpen: isUnlockOpen, onOpen: onUnlockOpen, onClose: onUnlockClose } = useDisclosure();
+  const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   // Load orders
@@ -186,6 +194,12 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
   // Counts for UI
   const submittedCount = orders.filter((o) => o.status === 'submitted').length;
   const unlockableCount = orders.filter((o) => o.status === 'submitted' || o.status === 'locked').length;
+
+  // --- Row click → modal ---
+  const openOrderModal = (order: OrderSummary) => {
+    setSelectedOrder(order);
+    onDetailOpen();
+  };
 
   // --- Batch Lock ---
   const handleBatchLock = async () => {
@@ -247,7 +261,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
     }
   };
 
-  // --- Single Order Unlock ---
+  // --- Single Order Unlock (from modal) ---
   const handleSingleUnlock = async (orderId: string) => {
     setActionLoading(true);
     try {
@@ -259,6 +273,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
         duration: 3000,
         isClosable: true,
       });
+      onDetailClose();
       await loadOrders();
     } catch (err: any) {
       const status = err?.response?.status;
@@ -295,6 +310,9 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       </Box>
     );
   }
+
+  const canUnlockSelected = selectedOrder &&
+    (selectedOrder.status === 'submitted' || selectedOrder.status === 'locked');
 
   return (
     <VStack spacing={5} align="stretch">
@@ -335,22 +353,22 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
 
           <HStack spacing={3}>
             <FilterPanel
-              hasActiveFilters={statusFilter !== 'all'}
-              onReset={() => setStatusFilter('all')}
-            >
-              <GenericFilter
-                label={t('reports.order_status')}
-                value={statusFilter === 'all' ? '' : statusFilter}
-                options={[
-                  { value: 'draft', label: t('reports.filter_draft') },
-                  { value: 'submitted', label: t('reports.filter_submitted') },
-                  { value: 'locked', label: t('reports.filter_locked') },
-                ]}
-                onChange={(v) => setStatusFilter(v || 'all')}
-                placeholder={t('reports.filter_all_statuses')}
-                width="160px"
-              />
-            </FilterPanel>
+              layout="horizontal"
+              filters={[
+                {
+                  type: 'single' as const,
+                  label: t('reports.order_status'),
+                  options: [
+                    { value: 'draft', label: t('reports.filter_draft') },
+                    { value: 'submitted', label: t('reports.filter_submitted') },
+                    { value: 'locked', label: t('reports.filter_locked') },
+                  ],
+                  value: statusFilter === 'all' ? '' : statusFilter,
+                  onChange: (v: string | string[]) => setStatusFilter((v as string) || 'all'),
+                  placeholder: t('reports.filter_all_statuses'),
+                },
+              ] as FilterConfig<any>[]}
+            />
             <Button size="sm" variant="ghost" onClick={loadOrders}>
               {t('admin.claims.refresh')}
             </Button>
@@ -372,12 +390,20 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
                 <Th>{t('admin.lock_unlock.col_delegate')}</Th>
                 <Th>{t('admin.lock_unlock.col_status')}</Th>
                 <Th>{t('admin.lock_unlock.col_payment')}</Th>
-                <Th>{t('admin.lock_unlock.col_actions')}</Th>
               </Tr>
             </Thead>
             <Tbody>
               {filteredOrders.map((order) => (
-                <Tr key={order.order_id}>
+                <Tr
+                  key={order.order_id}
+                  onClick={() => openOrderModal(order)}
+                  _hover={{ bg: 'gray.700', cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') openOrderModal(order);
+                  }}
+                >
                   <Td>
                     <Text fontSize="sm" fontWeight="medium">
                       {order.registry_row_label || order.registry_row_id}
@@ -402,33 +428,6 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
                       {order.payment_status || 'unpaid'}
                     </Badge>
                   </Td>
-                  <Td>
-                    {(order.status === 'submitted' || order.status === 'locked') && (
-                      <Tooltip label={t('admin.lock_unlock.unlock_order')}>
-                        <IconButton
-                          aria-label={t('admin.lock_unlock.unlock_order')}
-                          icon={<UnlockIcon />}
-                          size="xs"
-                          colorScheme="blue"
-                          variant="ghost"
-                          onClick={() => handleSingleUnlock(order.order_id)}
-                          isDisabled={actionLoading}
-                        />
-                      </Tooltip>
-                    )}
-                    {order.status === 'draft' && (
-                      <Tooltip label={t('admin.lock_unlock.cannot_lock_draft')}>
-                        <IconButton
-                          aria-label={t('admin.lock_unlock.cannot_lock_draft')}
-                          icon={<LockIcon />}
-                          size="xs"
-                          variant="ghost"
-                          isDisabled
-                          opacity={0.4}
-                        />
-                      </Tooltip>
-                    )}
-                  </Td>
                 </Tr>
               ))}
             </Tbody>
@@ -441,6 +440,75 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
           </Text>
         )}
       </Box>
+
+      {/* Order Detail Modal */}
+      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{t('admin.lock_unlock.order_detail_title')}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {selectedOrder && (
+              <VStack spacing={3} align="stretch">
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.lock_unlock.col_club')}</Text>
+                  <Text>{selectedOrder.registry_row_label || selectedOrder.registry_row_id}</Text>
+                </HStack>
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.lock_unlock.col_delegate')}</Text>
+                  <Text>{selectedOrder.delegate_email || '—'}</Text>
+                </HStack>
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.lock_unlock.col_status')}</Text>
+                  <OrderStatusBadge status={selectedOrder.status} />
+                </HStack>
+                <HStack justify="space-between">
+                  <Text fontWeight="medium">{t('admin.lock_unlock.col_payment')}</Text>
+                  <Badge
+                    colorScheme={
+                      selectedOrder.payment_status === 'paid'
+                        ? 'green'
+                        : selectedOrder.payment_status === 'partial'
+                        ? 'yellow'
+                        : 'gray'
+                    }
+                  >
+                    {selectedOrder.payment_status || 'unpaid'}
+                  </Badge>
+                </HStack>
+                {selectedOrder.total_amount !== undefined && (
+                  <HStack justify="space-between">
+                    <Text fontWeight="medium">{t('admin.lock_unlock.col_total')}</Text>
+                    <Text>€{Number(selectedOrder.total_amount || 0).toFixed(2)}</Text>
+                  </HStack>
+                )}
+                {selectedOrder.updated_at && (
+                  <HStack justify="space-between">
+                    <Text fontWeight="medium">{t('admin.lock_unlock.col_updated')}</Text>
+                    <Text fontSize="sm">{selectedOrder.updated_at}</Text>
+                  </HStack>
+                )}
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onDetailClose}>
+              {t('admin.claims.cancel')}
+            </Button>
+            {canUnlockSelected && (
+              <Button
+                leftIcon={<UnlockIcon />}
+                colorScheme="blue"
+                onClick={() => handleSingleUnlock(selectedOrder!.order_id)}
+                isLoading={actionLoading}
+                isDisabled={actionLoading}
+              >
+                {t('admin.lock_unlock.unlock_order')}
+              </Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Lock All Confirmation Dialog */}
       <AlertDialog

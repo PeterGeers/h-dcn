@@ -463,6 +463,7 @@ export default function ProductCard({ product, products, onSave, onDelete, onNew
         existingVariants={variants}
         onSuccess={fetchVariants}
         parentPrice={parseFloat((product as any).prijs) || 0}
+        canMutate={!readOnly}
       />
     </Box>
   );

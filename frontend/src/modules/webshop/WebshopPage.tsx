@@ -11,7 +11,8 @@ import WebshopHeader from './components/WebshopHeader';
 import WebshopOrderSuccessOverlay from './components/WebshopOrderSuccessOverlay';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService } from './services/api';
-import { FilterPanel, GenericFilter } from '../../components/filters';
+import { FilterPanel } from '../../components/filters';
+import type { FilterConfig } from '../../components/filters';
 import { useWebshopCart } from './hooks/useWebshopCart';
 import { useWebshopUser } from './hooks/useWebshopUser';
 import { usePaymentSuccess } from './hooks/usePaymentSuccess';
@@ -288,26 +289,28 @@ function WebshopPage({ user }: WebshopPageProps) {
             <Stack direction={{ base: 'column', lg: 'row' }} spacing={6}>
               <Box w={{ base: 'full', lg: '300px' }}>
                 <FilterPanel
-                  hasActiveFilters={!!selectedGroep || !!selectedSubgroep}
-                  onReset={() => { setSelectedGroep(''); setSelectedSubgroep(''); }}
-                >
-                  <GenericFilter
-                    label={t('filter.group', 'Groep')}
-                    value={selectedGroep}
-                    options={groepOptions}
-                    onChange={(v) => { setSelectedGroep(v); setSelectedSubgroep(''); }}
-                    placeholder={t('filter.all_groups', 'Alle groepen')}
-                  />
-                  {subgroepOptions.length > 0 && (
-                    <GenericFilter
-                      label={t('filter.subgroup', 'Subgroep')}
-                      value={selectedSubgroep}
-                      options={subgroepOptions}
-                      onChange={setSelectedSubgroep}
-                      placeholder={t('filter.all_subgroups', 'Alle subgroepen')}
-                    />
-                  )}
-                </FilterPanel>
+                  layout="vertical"
+                  filters={[
+                    {
+                      type: 'single' as const,
+                      label: t('filter.group', 'Groep'),
+                      options: groepOptions,
+                      value: selectedGroep,
+                      onChange: (v: string | string[]) => { setSelectedGroep(v as string); setSelectedSubgroep(''); },
+                      placeholder: t('filter.all_groups', 'Alle groepen'),
+                    },
+                    ...(subgroepOptions.length > 0
+                      ? [{
+                          type: 'single' as const,
+                          label: t('filter.subgroup', 'Subgroep'),
+                          options: subgroepOptions,
+                          value: selectedSubgroep,
+                          onChange: (v: string | string[]) => setSelectedSubgroep(v as string),
+                          placeholder: t('filter.all_subgroups', 'Alle subgroepen'),
+                        }]
+                      : []),
+                  ] as FilterConfig<any>[]}
+                />
               </Box>
 
               <Box flex={1}>

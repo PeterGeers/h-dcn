@@ -4,7 +4,7 @@ import { Product } from '../../../types';
 import { useTranslation } from 'react-i18next';
 import { isDeactivated } from '../../../utils/productHelpers';
 import { FilterableHeader } from '../../../components/filters';
-import type { SortDirection } from '../../../hooks/useTableSort';
+import type { SortDirection } from '../../../components/filters/types';
 
 export interface ProductColumnFilters {
   artikelcode: string;
@@ -114,15 +114,15 @@ export default function ProductTable({
               </>
             ) : (
               <>
-                <FilterableHeader label="Artikelcode" showFilter={false} minW="60px" />
-                <FilterableHeader label="Categorie" showFilter={false} minW="120px" display={{ base: 'none', md: 'table-cell' }} />
-                <FilterableHeader label="Naam" showFilter={false} minW="150px" />
-                <FilterableHeader label="Prijs" showFilter={false} minW="80px" />
-                {showStatusColumn && <FilterableHeader label="Status" showFilter={false} minW="80px" />}
-                <FilterableHeader label="Bron" showFilter={false} minW="100px" />
+                <FilterableHeader label="Artikelcode" minW="60px" />
+                <FilterableHeader label="Categorie" minW="120px" display={{ base: 'none', md: 'table-cell' }} />
+                <FilterableHeader label="Naam" minW="150px" />
+                <FilterableHeader label="Prijs" minW="80px" />
+                {showStatusColumn && <FilterableHeader label="Status" minW="80px" />}
+                <FilterableHeader label="Bron" minW="100px" />
               </>
             )}
-            {renderActions && <FilterableHeader label={t('table.actions')} showFilter={false} minW="120px" />}
+            {renderActions && <FilterableHeader label={t('table.actions')} minW="120px" />}
           </Tr>
         </Thead>
         <Tbody>

@@ -1,72 +1,182 @@
 /**
- * FilterPanel — Container for dropdown/multi-select filters above a table
+ * FilterPanel Component
  *
- * Provides consistent layout and styling for filter controls.
- * Includes a reset button when filters are active.
+ * A config-driven container component for organizing multiple filters with
+ * flexible layout options. Accepts a `filters` prop array and renders one
+ * filter control per entry.
  *
- * Usage:
- *   <FilterPanel hasActiveFilters={hasActiveFilters} onReset={resetFilters}>
- *     <GenericFilter label="Status" value={filters.status} options={statusOptions} onChange={(v) => setFilter('status', v)} />
- *     <GenericFilter label="Regio" value={filters.regio} options={regioOptions} onChange={(v) => setFilter('regio', v)} />
- *   </FilterPanel>
+ * Supports horizontal, vertical, and grid layouts with responsive design.
+ *
+ * @module filters/FilterPanel
  */
 
 import React from 'react';
-import { HStack, Button, Text } from '@chakra-ui/react';
+import {
+  Box,
+  SimpleGrid,
+  HStack,
+  VStack,
+  FormControl,
+  FormLabel,
+  Input,
+} from '@chakra-ui/react';
+import { GenericFilter } from './GenericFilter';
+import { GenericMultiFilter } from './GenericMultiFilter';
+import type { FilterConfig, FilterPanelLayout, SearchFilterConfig, FilterOption } from './types';
 
+/**
+ * FilterPanel props interface
+ */
 export interface FilterPanelProps {
-  /** Child filter components */
-  children: React.ReactNode;
-  /** Whether any filter is currently active */
-  hasActiveFilters?: boolean;
-  /** Callback to reset all filters */
-  onReset?: () => void;
-  /** Count of filtered results (optional, shown as "X resultaten") */
-  filteredCount?: number;
-  /** Total count (optional) */
-  totalCount?: number;
+  /** Array of filter configurations */
+  filters: (FilterConfig<any> | SearchFilterConfig)[];
+
+  /** Layout mode for organizing filters (default: 'horizontal') */
+  layout?: FilterPanelLayout;
+
+  /** Spacing between filters (default: 4) */
+  spacing?: number;
+
+  /** Number of columns for grid layout (default: 2) */
+  gridColumns?: number;
+
+  /** Minimum width for each filter in grid layout */
+  gridMinWidth?: string;
 }
 
+/**
+ * FilterPanel - Config-driven container for organizing multiple filters
+ *
+ * Provides flexible layout options for displaying multiple filter components
+ * in a cohesive, responsive interface.
+ *
+ * **Layout Modes:**
+ * - `horizontal`: Filters arranged in a row (HStack, wraps on overflow)
+ * - `vertical`: Filters stacked vertically (VStack)
+ * - `grid`: Filters arranged in a responsive SimpleGrid
+ *
+ * @example
+ * <FilterPanel
+ *   layout="horizontal"
+ *   filters={[
+ *     { type: 'single', label: 'Status', options: statusOpts, value: v, onChange: fn },
+ *     { type: 'search', label: 'Zoeken', value: q, onChange: setQ },
+ *   ]}
+ * />
+ */
 export function FilterPanel({
-  children,
-  hasActiveFilters = false,
-  onReset,
-  filteredCount,
-  totalCount,
-}: FilterPanelProps) {
-  return (
-    <HStack
-      spacing={4}
-      mb={4}
-      p={3}
-      bg="gray.800"
-      borderRadius="md"
-      border="1px"
-      borderColor="gray.600"
-      flexWrap="wrap"
-      align="flex-end"
-    >
-      {children}
+  filters,
+  layout = 'horizontal',
+  spacing = 4,
+  gridColumns = 2,
+  gridMinWidth = '200px',
+}: FilterPanelProps): React.ReactElement {
+  const renderFilter = (
+    filter: FilterConfig<any> | SearchFilterConfig,
+    index: number
+  ) => {
+    const key = `filter-${index}-${filter.label}`;
 
-      {hasActiveFilters && onReset && (
-        <Button
-          size="sm"
-          variant="ghost"
-          colorScheme="orange"
-          onClick={onReset}
-          alignSelf="flex-end"
+    // Search filter → labelled Input
+    if (filter.type === 'search') {
+      const searchFilter = filter as SearchFilterConfig;
+      return (
+        <Box key={key} minW={layout === 'horizontal' ? '200px' : undefined}>
+          <FormControl>
+            <FormLabel fontSize="xs" color="orange.300" mb={1}>
+              {searchFilter.label}
+            </FormLabel>
+            <Input
+              size="sm"
+              value={searchFilter.value}
+              onChange={(e) => searchFilter.onChange(e.target.value)}
+              placeholder={searchFilter.placeholder || ''}
+              bg="gray.700"
+              borderColor="gray.600"
+              color="white"
+              _focus={{ borderColor: 'orange.400' }}
+            />
+          </FormControl>
+        </Box>
+      );
+    }
+
+    // Multi-select filter → GenericMultiFilter
+    if (filter.type === 'multi') {
+      const multiFilter = filter as FilterConfig<any>;
+      const options: FilterOption[] = (multiFilter.options || []).map(
+        (opt: any) =>
+          typeof opt === 'string' ? { value: opt, label: opt } : opt
+      );
+      const value: string[] = Array.isArray(multiFilter.value)
+        ? multiFilter.value
+        : [];
+
+      return (
+        <Box key={key} minW={layout === 'horizontal' ? '150px' : undefined}>
+          <GenericMultiFilter
+            label={multiFilter.label}
+            value={value}
+            options={options}
+            onChange={(values: string[]) => multiFilter.onChange(values)}
+            placeholder={multiFilter.placeholder}
+            isDisabled={multiFilter.disabled}
+          />
+        </Box>
+      );
+    }
+
+    // Single-select filter → GenericFilter
+    const singleFilter = filter as FilterConfig<any>;
+    const options: FilterOption[] = (singleFilter.options || []).map(
+      (opt: any) =>
+        typeof opt === 'string' ? { value: opt, label: opt } : opt
+    );
+    const value: string =
+      typeof singleFilter.value === 'string' ? singleFilter.value : '';
+
+    return (
+      <Box key={key} minW={layout === 'horizontal' ? '150px' : undefined}>
+        <GenericFilter
+          label={singleFilter.label}
+          value={value}
+          options={options}
+          onChange={(v: string) => singleFilter.onChange(v)}
+          placeholder={singleFilter.placeholder}
+          isDisabled={singleFilter.disabled}
+        />
+      </Box>
+    );
+  };
+
+  switch (layout) {
+    case 'vertical':
+      return (
+        <VStack spacing={spacing} align="stretch" width="100%">
+          {filters.map((filter, index) => renderFilter(filter, index))}
+        </VStack>
+      );
+
+    case 'grid':
+      return (
+        <SimpleGrid
+          columns={{ base: 1, md: gridColumns }}
+          spacing={spacing}
+          width="100%"
+          minChildWidth={gridMinWidth}
         >
-          Reset
-        </Button>
-      )}
+          {filters.map((filter, index) => renderFilter(filter, index))}
+        </SimpleGrid>
+      );
 
-      {filteredCount !== undefined && totalCount !== undefined && (
-        <Text fontSize="xs" color="gray.400" alignSelf="flex-end" ml="auto">
-          {filteredCount} / {totalCount} resultaten
-        </Text>
-      )}
-    </HStack>
-  );
+    case 'horizontal':
+    default:
+      return (
+        <HStack spacing={spacing} wrap="wrap" align="end" width="100%">
+          {filters.map((filter, index) => renderFilter(filter, index))}
+        </HStack>
+      );
+  }
 }
 
 export default FilterPanel;

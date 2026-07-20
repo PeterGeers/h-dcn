@@ -1,105 +1,115 @@
 /**
- * FilterableHeader — Table header with inline text filter + sort indicator
+ * FilterableHeader Component
  *
- * Replaces standard <Th> with a filterable, sortable column header.
- * Shows a text input for filtering and sort direction indicator.
+ * Renders a Chakra UI `<Th>` element with a column label, optional sort
+ * indicator, and optional text filter `<Input>`. Used in the hybrid approach
+ * where text search filters live inside column headers while dropdown and
+ * multi-select filters remain above the table in `FilterPanel`.
  *
- * Usage:
- *   <FilterableHeader
- *     label="Naam"
- *     filterValue={filters.name}
- *     onFilterChange={(v) => setFilter('name', v)}
- *     sortable
- *     sortDirection={sortField === 'name' ? sortDirection : null}
- *     onSort={() => handleSort('name')}
- *   />
+ * @module filters/FilterableHeader
+ * @see .kiro/specs/table-filter-framework-v2/design.md §4
  */
 
 import React from 'react';
-import { Th, VStack, Text, Input, HStack } from '@chakra-ui/react';
-import { TriangleUpIcon, TriangleDownIcon } from '@chakra-ui/icons';
-import type { SortDirection } from '../../hooks/useTableSort';
+import { Th, VStack, HStack, Text, Input, InputGroup, InputLeftElement } from '@chakra-ui/react';
+import { SearchIcon } from '@chakra-ui/icons';
+import { FilterableHeaderProps } from './types';
 
-export interface FilterableHeaderProps {
-  /** Column label */
-  label: string;
-  /** Current filter value */
-  filterValue?: string;
-  /** Callback when filter changes */
-  onFilterChange?: (value: string) => void;
-  /** Whether this column is sortable */
-  sortable?: boolean;
-  /** Current sort direction (null = not sorted on this column) */
-  sortDirection?: SortDirection | null;
-  /** Callback when sort is toggled */
-  onSort?: () => void;
-  /** Minimum width for the column */
-  minW?: string;
-  /** Whether to show the filter input (default: true) */
-  showFilter?: boolean;
-  /** Placeholder for filter input */
-  placeholder?: string;
-  /** Additional Th props */
-  display?: Record<string, string> | string;
-}
-
-export function FilterableHeader({
+/**
+ * Table header cell with optional inline text filter and sort indicator.
+ *
+ * @example
+ * ```tsx
+ * <FilterableHeader
+ *   label="Account Name"
+ *   filterValue={filters.AccountName}
+ *   onFilterChange={(v) => setFilter('AccountName', v)}
+ *   sortable
+ *   sortDirection={sortField === 'AccountName' ? sortDirection : null}
+ *   onSort={() => handleSort('AccountName')}
+ * />
+ * ```
+ */
+export const FilterableHeader: React.FC<FilterableHeaderProps> = ({
   label,
-  filterValue = '',
+  filterValue,
   onFilterChange,
   sortable = false,
-  sortDirection = null,
+  sortDirection,
   onSort,
-  minW = '100px',
-  showFilter = true,
   placeholder,
+  isNumeric = false,
+  w,
+  minW,
+  maxW,
   display,
-}: FilterableHeaderProps) {
+}) => {
+  const ariaSortValue = sortable
+    ? sortDirection === 'asc'
+      ? 'ascending'
+      : sortDirection === 'desc'
+        ? 'descending'
+        : 'none'
+    : undefined;
+
   return (
     <Th
+      bg="gray.700"
+      aria-sort={ariaSortValue}
+      isNumeric={isNumeric}
+      w={w}
       minW={minW}
-      color="orange.300"
-      verticalAlign="top"
-      p={2}
+      maxW={maxW}
       display={display as any}
     >
-      <VStack spacing={1} align="stretch">
-        {/* Label + sort indicator */}
+      <VStack spacing={1} align={isNumeric ? 'flex-end' : 'flex-start'}>
+        {/* Label row with optional sort indicator */}
         <HStack
           spacing={1}
           cursor={sortable ? 'pointer' : 'default'}
           onClick={sortable ? onSort : undefined}
-          _hover={sortable ? { color: 'orange.200' } : undefined}
-          userSelect="none"
+          role={sortable ? 'button' : undefined}
+          aria-label={sortable ? `Sort by ${label}` : undefined}
         >
-          <Text fontSize="xs" fontWeight="bold" textTransform="uppercase">
+          <Text
+            fontSize="xs"
+            color="gray.300"
+            fontWeight="bold"
+            textTransform="uppercase"
+          >
             {label}
           </Text>
-          {sortable && sortDirection === 'asc' && (
-            <TriangleUpIcon boxSize={3} color="orange.400" />
-          )}
-          {sortable && sortDirection === 'desc' && (
-            <TriangleDownIcon boxSize={3} color="orange.400" />
+          {sortable && sortDirection && (
+            <Text fontSize="xs" color="orange.300">
+              {sortDirection === 'asc' ? '↑' : '↓'}
+            </Text>
           )}
         </HStack>
 
-        {/* Filter input */}
-        {showFilter && onFilterChange && (
-          <Input
-            size="xs"
-            value={filterValue}
-            onChange={(e) => onFilterChange(e.target.value)}
-            placeholder={placeholder || `Filter...`}
-            bg="gray.700"
-            borderColor="gray.600"
-            color="white"
-            _placeholder={{ color: 'gray.500' }}
-            _focus={{ borderColor: 'orange.400' }}
-          />
+        {/* Optional filter input */}
+        {filterValue !== undefined && (
+          <InputGroup size="xs">
+            <InputLeftElement pointerEvents="none" h="24px">
+              <SearchIcon color="gray.300" boxSize="10px" />
+            </InputLeftElement>
+            <Input
+              value={filterValue}
+              onChange={(e) => onFilterChange?.(e.target.value)}
+              placeholder={placeholder || 'Filter...'}
+              bg="gray.600"
+              color="white"
+              pl="24px"
+              aria-label={`Filter by ${label}`}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+          </InputGroup>
         )}
       </VStack>
     </Th>
   );
-}
+};
 
 export default FilterableHeader;

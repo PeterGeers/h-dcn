@@ -88,7 +88,11 @@
     "toast_updated": "Variante aggiornata",
     "toast_invalid_price": "Prezzo non valido",
     "toast_save_error": "Errore nel salvataggio",
-    "toast_unknown_error": "Errore sconosciuto"
+    "toast_unknown_error": "Errore sconosciuto",
+    "btn_delete": "Elimina",
+    "btn_delete_loading": "Eliminazione...",
+    "delete_confirm_title": "Elimina variante",
+    "delete_confirm_body": "Sei sicuro di voler eliminare permanentemente la variante \"{{attributes}}\"? Questa azione non può essere annullata."
   },
   "toast": {
     "refresh_error": "Errore durante l'aggiornamento",

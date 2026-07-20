@@ -289,7 +289,9 @@
     "colMemberId": "ID miembro",
     "colEmail": "E-mail",
     "colMemberType": "Tipo",
+    "colName": "Nombre",
     "colActions": "Acciones",
+    "accessDetailTitle": "Detalles de acceso",
     "claims": {
       "title": "Gestión de claims",
       "loading": "Cargando claims...",
@@ -401,7 +403,9 @@
       "col_delegate": "Delegate",
       "col_status": "Estado",
       "col_payment": "Pago",
-      "col_actions": "Acciones"
+      "col_total": "Total",
+      "col_updated": "Última actualización",
+      "order_detail_title": "Detalles del pedido"
     }
   },
   "reports": {

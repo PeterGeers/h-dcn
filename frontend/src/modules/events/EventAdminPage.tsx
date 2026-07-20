@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, VStack, HStack, Heading, Tabs, TabList, TabPanels, Tab, TabPanel,
-  Spinner, Text, Alert, AlertIcon, Button, Select
+  Spinner, Text, Alert, AlertIcon, Button
 } from '@chakra-ui/react';
+import { GenericFilter, FilterOption } from '../../components/filters';
 import EventList from './components/EventList';
 import FinanceModule from './components/FinanceModule';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
@@ -165,6 +166,14 @@ function EventAdminPage({ user }: EventAdminPageProps) {
   const finalCanViewFinancials = canViewFinancials || hasFinancialAccess;
   const finalCanExportEvents = hasEventsExportAccess;
   const finalCanViewAnalytics = hasEventsAnalyticsAccess;
+
+  const eventOptions: FilterOption[] = useMemo(
+    () => events.map((evt) => ({
+      value: evt.event_id || '',
+      label: evt.name || evt.event_id || '',
+    })),
+    [events]
+  );
 
   if (loading || permissionsLoading) {
     return (
@@ -342,20 +351,14 @@ function EventAdminPage({ user }: EventAdminPageProps) {
             {hasEventsFullAccess && (
               <TabPanel p={0} pt={6}>
                 <VStack spacing={4} align="stretch">
-                  <Select
-                    placeholder="Selecteer een evenement..."
+                  <GenericFilter
+                    label="Evenement"
                     value={selectedAccessEventId}
-                    onChange={(e) => setSelectedAccessEventId(e.target.value)}
-                    bg="gray.700"
-                    color="white"
-                    borderColor="gray.600"
-                  >
-                    {events.map((evt) => (
-                      <option key={evt.event_id} value={evt.event_id}>
-                        {evt.name || evt.event_id}
-                      </option>
-                    ))}
-                  </Select>
+                    options={eventOptions}
+                    onChange={(value) => setSelectedAccessEventId(value)}
+                    placeholder="Selecteer een evenement..."
+                    width="100%"
+                  />
                   {selectedAccessEventId ? (
                     <EventAccessManager
                       eventId={selectedAccessEventId}

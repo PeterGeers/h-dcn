@@ -88,7 +88,11 @@
     "toast_updated": "Variant uppdaterad",
     "toast_invalid_price": "Ogiltigt pris",
     "toast_save_error": "Fel vid sparande",
-    "toast_unknown_error": "Okänt fel"
+    "toast_unknown_error": "Okänt fel",
+    "btn_delete": "Ta bort",
+    "btn_delete_loading": "Tar bort...",
+    "delete_confirm_title": "Ta bort variant",
+    "delete_confirm_body": "Är du säker på att du permanent vill ta bort varianten \"{{attributes}}\"? Detta kan inte ångras."
   },
   "toast": {
     "refresh_error": "Fel vid uppdatering",

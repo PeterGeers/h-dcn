@@ -191,32 +191,32 @@ function MembershipManagement({ user }: MembershipManagementProps) {
       return;
     }
 
-    if (window.confirm(`Weet je zeker dat je "${membership.name}" wilt verwijderen?`)) {
-      try {
-        const headers = await getAuthHeadersForGet();
-        const response = await fetch(
-          `${API_BASE_URL}/memberships/${membership.membership_id || membership.id}`,
-          { method: 'DELETE', headers }
-        );
+    try {
+      const headers = await getAuthHeadersForGet();
+      const response = await fetch(
+        `${API_BASE_URL}/memberships/${membership.membership_id || membership.id}`,
+        { method: 'DELETE', headers }
+      );
 
-        if (response.ok) {
-          await loadMemberships();
-          toast({
-            title: 'Lidmaatschap verwijderd',
-            status: 'success',
-            duration: 3000,
-          });
-        } else {
-          throw new Error(`HTTP ${response.status}`);
-        }
-      } catch (error: any) {
+      if (response.ok) {
+        await loadMemberships();
+        onClose();
+        setEditingMembership(null);
         toast({
-          title: 'Fout bij verwijderen',
-          description: error.message,
-          status: 'error',
-          duration: 5000,
+          title: 'Lidmaatschap verwijderd',
+          status: 'success',
+          duration: 3000,
         });
+      } else {
+        throw new Error(`HTTP ${response.status}`);
       }
+    } catch (error: any) {
+      toast({
+        title: 'Fout bij verwijderen',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      });
     }
   };
 
@@ -283,10 +283,8 @@ function MembershipManagement({ user }: MembershipManagementProps) {
           </HStack>
 
           <MembershipTable
-            user={user}
             memberships={memberships}
-            onEdit={openModal}
-            onDelete={handleDelete}
+            onRowClick={openModal}
           />
         </VStack>
 
@@ -295,6 +293,7 @@ function MembershipManagement({ user }: MembershipManagementProps) {
           onClose={onClose}
           editingMembership={editingMembership}
           onSave={handleSave}
+          onDelete={handleDelete}
         />
       </Box>
     </FunctionGuard>

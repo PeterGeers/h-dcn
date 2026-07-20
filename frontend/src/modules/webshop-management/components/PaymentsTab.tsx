@@ -39,7 +39,7 @@ import {
 import { useAdminPayments, OrderPaymentSummary } from '../hooks/useAdminPayments';
 import { PaymentRecordForm } from './PaymentRecordForm';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
-import { FilterPanel, FilterableHeader } from '../../../components/filters';
+import { FilterableHeader } from '../../../components/filters';
 import { useFilterableTable } from '../../../hooks/useFilterableTable';
 
 interface PaymentsTabProps {
@@ -91,13 +91,10 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
   const {
     filters,
     setFilter,
-    resetFilters,
-    hasActiveFilters,
     sortField,
     sortDirection,
     handleSort,
     processedData,
-    filteredCount,
   } = useFilterableTable(orderPayments as unknown as Record<string, unknown>[], {
     initialFilters: INITIAL_FILTERS,
     defaultSort: { field: 'customer', direction: 'asc' },
@@ -156,16 +153,6 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
         </Stat>
       </SimpleGrid>
 
-      {/* Filter panel */}
-      <FilterPanel
-        hasActiveFilters={hasActiveFilters}
-        onReset={resetFilters}
-        filteredCount={filteredCount}
-        totalCount={orderPayments.length}
-      >
-        <></>
-      </FilterPanel>
-
       {/* Filterable Payment List */}
       <Box bg="gray.800" borderRadius="md" overflowX="auto">
         <Table variant="simple" size="sm">
@@ -178,7 +165,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
                 sortable
                 sortDirection={sortField === 'customer' ? sortDirection : null}
                 onSort={() => handleSort('customer')}
-                minW="150px"
+                w="150px"
               />
               <FilterableHeader
                 label="Totaal"
@@ -187,7 +174,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
                 sortable
                 sortDirection={sortField === 'total' ? sortDirection : null}
                 onSort={() => handleSort('total')}
-                minW="90px"
+                w="90px"
               />
               <FilterableHeader
                 label="Betaald"
@@ -196,7 +183,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
                 sortable
                 sortDirection={sortField === 'paid' ? sortDirection : null}
                 onSort={() => handleSort('paid')}
-                minW="90px"
+                w="90px"
               />
               <FilterableHeader
                 label="Openstaand"
@@ -205,7 +192,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
                 sortable
                 sortDirection={sortField === 'outstanding' ? sortDirection : null}
                 onSort={() => handleSort('outstanding')}
-                minW="90px"
+                w="90px"
               />
               <FilterableHeader
                 label="Status"
@@ -214,7 +201,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({ eventFilter = '' }) =>
                 sortable
                 sortDirection={sortField === 'payment_status' ? sortDirection : null}
                 onSort={() => handleSort('payment_status')}
-                minW="100px"
+                w="100px"
               />
             </Tr>
           </Thead>

@@ -88,7 +88,11 @@
     "toast_updated": "Variante aktualisiert",
     "toast_invalid_price": "Ungültiger Preis",
     "toast_save_error": "Fehler beim Speichern",
-    "toast_unknown_error": "Unbekannter Fehler"
+    "toast_unknown_error": "Unbekannter Fehler",
+    "btn_delete": "Löschen",
+    "btn_delete_loading": "Löschen...",
+    "delete_confirm_title": "Variante löschen",
+    "delete_confirm_body": "Möchten Sie die Variante \"{{attributes}}\" wirklich dauerhaft löschen? Dies kann nicht rückgängig gemacht werden."
   },
   "toast": {
     "refresh_error": "Fehler beim Aktualisieren",

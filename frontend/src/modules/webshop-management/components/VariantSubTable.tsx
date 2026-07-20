@@ -7,14 +7,14 @@
  * - Sold count
  * - Allow oversell toggle (inline edit)
  * - Price (inline edit, null = inherit parent)
- * - Deactivate / Delete action buttons (requires Products_CRUD)
  *
- * Supports inline editing of allow_oversell and price via updateVariant API.
+ * Row-click opens variant detail/edit modal (managed by parent).
+ * Stock addition, deactivation, and deletion actions live inside the modal.
  *
- * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.13
+ * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.13, 8.1, 8.4
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   Thead,
@@ -31,22 +31,13 @@ import {
   IconButton,
   Tooltip,
   Box,
-  Button,
   Spinner,
   useToast,
-  useDisclosure,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { CheckIcon, CloseIcon, DeleteIcon, NotAllowedIcon } from '@chakra-ui/icons';
+import { CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { AdminProduct, AdminVariant } from '../types/admin.types';
-import { updateVariant, deleteVariant } from '../services/adminApi';
-import { AddStockForm } from './AddStockForm';
+import { updateVariant } from '../services/adminApi';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import { formatPriceEuro } from '../../../utils/formatPrice';
 
@@ -58,7 +49,7 @@ export interface VariantSubTableProps {
   /** When true, shows a non-blocking loading indicator over the table. */
   isRefetching?: boolean;
   /** Callback when a variant row is clicked (opens edit modal in parent). */
-  onRowClick?: (variant: AdminVariant) => void;
+  onRowClick: (variant: AdminVariant) => void;
 }
 
 export const VariantSubTable: React.FC<VariantSubTableProps> = ({
@@ -101,11 +92,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
     }
   };
 
-  // Delete confirmation dialog state
-  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
-  const [variantToDelete, setVariantToDelete] = useState<AdminVariant | null>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
-
   const handleOversellToggle = async (variant: AdminVariant, newValue: boolean) => {
     setTogglingOversellId(variant.product_id);
     try {
@@ -130,70 +116,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
       triggerRefetch();
     } finally {
       setTogglingOversellId(null);
-    }
-  };
-
-  const handleDeactivate = async (variant: AdminVariant) => {
-    try {
-      await updateVariant(variant.parent_id, variant.product_id, {
-        active: false,
-      });
-      toast({
-        title: t('toast.variant_deactivated'),
-        description: t('toast.variant_deactivated_desc'),
-        status: 'success',
-        duration: 3000,
-      });
-      triggerRefetch();
-    } catch (err: any) {
-      toast({
-        title: t('toast.error'),
-        description: err?.response?.data?.message || err?.message || t('toast.variant_deactivate_error'),
-        status: 'error',
-        duration: 3000,
-      });
-    }
-  };
-
-  const openDeleteConfirmation = (variant: AdminVariant) => {
-    setVariantToDelete(variant);
-    onDeleteOpen();
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!variantToDelete) return;
-
-    try {
-      await deleteVariant(variantToDelete.parent_id, variantToDelete.product_id);
-      toast({
-        title: t('toast.variant_deleted'),
-        status: 'success',
-        duration: 3000,
-      });
-      onDeleteClose();
-      setVariantToDelete(null);
-      triggerRefetch();
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 409) {
-        toast({
-          title: t('toast.variant_delete_conflict'),
-          description:
-            err?.response?.data?.message ||
-            t('toast.variant_delete_conflict_desc'),
-          status: 'warning',
-          duration: 5000,
-        });
-      } else {
-        toast({
-          title: t('toast.error'),
-          description: err?.response?.data?.message || err?.message || t('toast.variant_delete_error'),
-          status: 'error',
-          duration: 3000,
-        });
-      }
-      onDeleteClose();
-      setVariantToDelete(null);
     }
   };
 
@@ -267,12 +189,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
     }
   };
 
-  const formatAttributes = (attrs: Record<string, string>): string => {
-    const entries = Object.entries(attrs);
-    if (entries.length === 0) return 'Default';
-    return entries.map(([k, v]) => `${k}: ${v}`).join(', ');
-  };
-
   return (
     <Box position="relative">
       {/* Non-blocking loading indicator during re-fetch (Req 7.2) */}
@@ -301,7 +217,6 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
           <Th color="orange.300" fontSize="xs" borderColor="gray.600" isNumeric>Verkocht</Th>
           <Th color="orange.300" fontSize="xs" borderColor="gray.600">Oversell</Th>
           <Th color="orange.300" fontSize="xs" borderColor="gray.600" isNumeric>Prijs</Th>
-          <Th color="orange.300" fontSize="xs" borderColor="gray.600">Acties</Th>
         </Tr>
       </Thead>
       <Tbody>
@@ -309,9 +224,11 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
           <Tr
             key={variant.product_id}
             opacity={variant.active === false ? 0.5 : 1}
-            cursor={onRowClick ? 'pointer' : undefined}
-            _hover={onRowClick ? { bg: 'gray.700' } : undefined}
-            onClick={onRowClick ? () => onRowClick(variant) : undefined}
+            onClick={() => onRowClick(variant)}
+            _hover={{ bg: 'gray.700', cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter') onRowClick(variant); }}
           >
             {/* Attribute values */}
             <Td>
@@ -402,77 +319,11 @@ export const VariantSubTable: React.FC<VariantSubTableProps> = ({
                 </Text>
               )}
             </Td>
-
-            {/* Actions */}
-            <Td onClick={(e) => e.stopPropagation()}>
-              <HStack spacing={1}>
-                <AddStockForm
-                  productId={product.product_id}
-                  variantId={variant.product_id}
-                  variantLabel={`${product.name} - ${formatAttributes(variant.variant_attributes)}`}
-                  onSuccess={triggerRefetch}
-                  isDisabled={!canMutate}
-                />
-                {canMutate && variant.active !== false && (
-                  <Tooltip label="Deactiveren" hasArrow>
-                    <IconButton
-                      aria-label="Deactiveren"
-                      icon={<NotAllowedIcon />}
-                      size="xs"
-                      variant="ghost"
-                      colorScheme="yellow"
-                      onClick={() => handleDeactivate(variant)}
-                    />
-                  </Tooltip>
-                )}
-                {canMutate && (
-                  <Tooltip label="Verwijderen" hasArrow>
-                    <IconButton
-                      aria-label="Verwijderen"
-                      icon={<DeleteIcon color="red.400" />}
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => openDeleteConfirmation(variant)}
-                    />
-                  </Tooltip>
-                )}
-              </HStack>
-            </Td>
           </Tr>
         ))}
       </Tbody>
     </Table>
     </Box>
-    <AlertDialog
-      isOpen={isDeleteOpen}
-      leastDestructiveRef={cancelRef}
-      onClose={onDeleteClose}
-    >
-      <AlertDialogOverlay>
-        <AlertDialogContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
-          <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
-            Variant verwijderen
-          </AlertDialogHeader>
-
-          <AlertDialogBody>
-            Weet je zeker dat je de variant &quot;
-            {variantToDelete
-              ? formatAttributes(variantToDelete.variant_attributes)
-              : ''}
-            &quot; permanent wilt verwijderen? Dit kan niet ongedaan worden.
-          </AlertDialogBody>
-
-          <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onDeleteClose}>
-              Annuleren
-            </Button>
-            <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
-              Verwijderen
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
     </Box>
   );
 };

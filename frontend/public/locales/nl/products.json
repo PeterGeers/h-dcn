@@ -88,7 +88,11 @@
     "toast_updated": "Variant bijgewerkt",
     "toast_invalid_price": "Ongeldige prijs",
     "toast_save_error": "Fout bij opslaan",
-    "toast_unknown_error": "Onbekende fout"
+    "toast_unknown_error": "Onbekende fout",
+    "btn_delete": "Verwijderen",
+    "btn_delete_loading": "Verwijderen...",
+    "delete_confirm_title": "Variant verwijderen",
+    "delete_confirm_body": "Weet je zeker dat je de variant \"{{attributes}}\" permanent wilt verwijderen? Dit kan niet ongedaan worden."
   },
   "toast": {
     "refresh_error": "Fout bij verversen",

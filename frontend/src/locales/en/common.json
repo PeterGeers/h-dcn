@@ -99,5 +99,7 @@
   "language": {
     "preference_saved": "Language preference saved",
     "preference_save_failed": "Language preference could not be saved"
-  }
+  },
+  "nSelected": "{{count}} selected",
+  "alle": "All"
 }

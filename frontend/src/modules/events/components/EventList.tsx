@@ -183,7 +183,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'name' ? sortDirection : null}
                 onSort={() => handleSort('name')}
-                minW="120px"
+                w="120px"
               />
               <FilterableHeader
                 label="Datum"
@@ -192,7 +192,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'start_date' ? sortDirection : null}
                 onSort={() => handleSort('start_date')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Locatie"
@@ -201,8 +201,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'location' ? sortDirection : null}
                 onSort={() => handleSort('location')}
-                minW="100px"
-                display={{ base: 'none', md: 'table-cell' }}
+                w="100px"
               />
               <FilterableHeader
                 label="Type"
@@ -211,8 +210,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'event_type' ? sortDirection : null}
                 onSort={() => handleSort('event_type')}
-                minW="80px"
-                display={{ base: 'none', md: 'table-cell' }}
+                w="80px"
               />
               <FilterableHeader
                 label="Deelname"
@@ -221,8 +219,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'participation' ? sortDirection : null}
                 onSort={() => handleSort('participation')}
-                minW="80px"
-                display={{ base: 'none', lg: 'table-cell' }}
+                w="80px"
               />
               <FilterableHeader
                 label="Status"
@@ -231,8 +228,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'status' ? sortDirection : null}
                 onSort={() => handleSort('status')}
-                minW="80px"
-                display={{ base: 'none', lg: 'table-cell' }}
+                w="80px"
               />
               <FilterableHeader
                 label="Regio"
@@ -241,8 +237,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                 sortable
                 sortDirection={sortField === 'linked_regio' ? sortDirection : null}
                 onSort={() => handleSort('linked_regio')}
-                minW="80px"
-                display={{ base: 'none', lg: 'table-cell' }}
+                w="80px"
               />
             </Tr>
           </Thead>

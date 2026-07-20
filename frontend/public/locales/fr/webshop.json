@@ -234,6 +234,16 @@
     "download_pdf": "Télécharger la confirmation de commande",
     "col_tracking": "Suivi",
     "col_order": "Commande",
-    "col_status": "Statut"
+    "col_status": "Statut",
+    "detail_title": "Détails de la commande",
+    "payment_status_label": "Statut de paiement",
+    "items_title": "Articles",
+    "col_product": "Produit",
+    "col_quantity": "Quantité",
+    "col_unit_price": "Prix",
+    "col_line_total": "Total",
+    "delivery_cost_label": "Frais de livraison",
+    "item_singular": "article",
+    "item_plural": "articles"
   }
 }

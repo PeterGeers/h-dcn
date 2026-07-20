@@ -8,8 +8,8 @@ import { Event } from '../../../types';
 import { getAuthHeaders } from '../../../utils/authHeaders';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
 import { useFilterableTable } from '../../../hooks/useFilterableTable';
-import { FilterableHeader } from '../../../components/filters';
-import { FilterPanel, GenericFilter } from '../../../components/filters';
+import { FilterableHeader, FilterPanel } from '../../../components/filters';
+import type { FilterConfig } from '../../../components/filters';
 
 interface ProcessedEvent extends Event {
   naam: string;
@@ -90,7 +90,7 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
   const INITIAL_FILTERS = { naam: '', datum_van: '', kosten: '', inkomsten: '', winst: '' };
 
   // Framework: filter + sort on pre-filtered data
-  const { filters, setFilter, handleSort, sortField, sortDirection, processedData, hasActiveFilters, resetFilters } =
+  const { filters, setFilter, handleSort, sortField, sortDirection, processedData } =
     useFilterableTable(preFilteredEvents as unknown as Record<string, unknown>[], {
       initialFilters: INITIAL_FILTERS,
       defaultSort: { field: 'datum_van', direction: 'desc' },
@@ -156,23 +156,22 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
 
       {/* Filter Panel */}
       <FilterPanel
-        hasActiveFilters={statusFilter !== 'all' || hasActiveFilters}
-        onReset={() => { setStatusFilter('all'); resetFilters(); }}
-        filteredCount={filteredEvents.length}
-        totalCount={eventsWithFinance.length}
-      >
-        <GenericFilter
-          label="Betaalstatus"
-          value={statusFilter === 'all' ? '' : statusFilter}
-          options={[
-            { value: 'open', label: 'Open' },
-            { value: 'betaald', label: 'Betaald' },
-            { value: 'achterstallig', label: 'Achterstallig' },
-          ]}
-          onChange={(v) => setStatusFilter(v || 'all')}
-          placeholder="Alle statussen"
-        />
-      </FilterPanel>
+        layout="horizontal"
+        filters={[
+          {
+            type: 'single' as const,
+            label: 'Betaalstatus',
+            options: [
+              { value: 'open', label: 'Open' },
+              { value: 'betaald', label: 'Betaald' },
+              { value: 'achterstallig', label: 'Achterstallig' },
+            ],
+            value: statusFilter === 'all' ? '' : statusFilter,
+            onChange: (v: string) => setStatusFilter(v || 'all'),
+            placeholder: 'Alle statussen',
+          } as FilterConfig<any>,
+        ]}
+      />
 
       {/* Financial Summary */}
       <SimpleGrid columns={3} spacing={6}>
@@ -210,7 +209,7 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
                 sortable
                 sortDirection={sortField === 'naam' ? sortDirection : null}
                 onSort={() => handleSort('naam')}
-                minW="150px"
+                w="150px"
               />
               <FilterableHeader
                 label="Datum"
@@ -219,7 +218,7 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
                 sortable
                 sortDirection={sortField === 'datum_van' ? sortDirection : null}
                 onSort={() => handleSort('datum_van')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Kosten"
@@ -228,7 +227,7 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
                 sortable
                 sortDirection={sortField === 'kosten' ? sortDirection : null}
                 onSort={() => handleSort('kosten')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Inkomsten"
@@ -237,7 +236,7 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
                 sortable
                 sortDirection={sortField === 'inkomsten' ? sortDirection : null}
                 onSort={() => handleSort('inkomsten')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Winst"
@@ -246,25 +245,22 @@ function FinanceModule({ events, onEventUpdate, permissionManager, user }: Finan
                 sortable
                 sortDirection={sortField === 'winst' ? sortDirection : null}
                 onSort={() => handleSort('winst')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Status"
-                showFilter={false}
                 sortable
                 sortDirection={sortField === 'betaalstatus' ? sortDirection : null}
                 onSort={() => handleSort('betaalstatus')}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Factuurnr"
-                showFilter={false}
-                minW="100px"
+                w="100px"
               />
               <FilterableHeader
                 label="Acties"
-                showFilter={false}
-                minW="120px"
+                w="120px"
               />
             </Tr>
           </Thead>

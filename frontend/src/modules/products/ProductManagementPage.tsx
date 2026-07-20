@@ -8,7 +8,8 @@ import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { useTranslation } from 'react-i18next';
 import { isDeactivated } from '../../utils/productHelpers';
-import { FilterPanel, GenericFilter } from '../../components/filters';
+import { FilterPanel } from '../../components/filters';
+import type { FilterConfig } from '../../components/filters';
 import { useFilterableTable } from '../../hooks/useFilterableTable';
 import { ApiService } from '../../services/apiService';
 
@@ -342,13 +343,10 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
   const {
     filters,
     setFilter,
-    resetFilters,
-    hasActiveFilters,
     sortField,
     sortDirection,
     handleSort,
     processedData,
-    filteredCount,
   } = useFilterableTable(tableData as unknown as Record<string, unknown>[], {
     initialFilters: INITIAL_FILTERS,
     defaultSort: { field: 'naam', direction: 'asc' },
@@ -490,19 +488,19 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
 
         <Stack direction={{ base: 'column', lg: 'row' }} align="start" spacing={6}>
           <Box flex={1}>
-            <FilterPanel
-              hasActiveFilters={hasActiveFilters || !!sourceFilter}
-              onReset={() => { resetFilters(); setSourceFilter(''); }}
-              filteredCount={filteredCount}
-              totalCount={tableData.length}
-            >
-              <GenericFilter
-                label="Bron / Event"
-                value={sourceFilter}
-                options={sourceOptions}
-                onChange={(v) => setSourceFilter(v)}
-                placeholder="Alle bronnen"
-                width="180px"
+            <HStack spacing={4} mb={4} wrap="wrap" align="end">
+              <FilterPanel
+                layout="horizontal"
+                filters={[
+                  {
+                    type: 'single' as const,
+                    label: 'Bron / Event',
+                    options: sourceOptions,
+                    value: sourceFilter,
+                    onChange: (v: string) => setSourceFilter(v),
+                    placeholder: 'Alle bronnen',
+                  } as FilterConfig<any>,
+                ]}
               />
               {hasProductsFullAccess && (
                 <Button
@@ -514,7 +512,10 @@ export default function ProductManagementPage({ user, eventFilter }: ProductMana
                   {t('management.add_product', 'Nieuw product')}
                 </Button>
               )}
-            </FilterPanel>
+            </HStack>
+            <Text fontSize="xs" color="gray.400" mb={2}>
+              {processedData.length} / {tableData.length}
+            </Text>
             <ProductTable
               products={filteredProducts as Product[]}
               onSelect={setSelected}

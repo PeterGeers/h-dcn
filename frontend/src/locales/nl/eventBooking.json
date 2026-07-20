@@ -289,7 +289,9 @@
     "colMemberId": "Lid-ID",
     "colEmail": "E-mail",
     "colMemberType": "Type",
+    "colName": "Naam",
     "colActions": "Acties",
+    "accessDetailTitle": "Toegangsgegevens",
     "payment_recording": {
       "title": "Handmatige betaling",
       "description": "Registreer een handmatige betaling voor een bestelling (bijv. bankoverschrijving).",
@@ -401,7 +403,9 @@
       "col_delegate": "Delegate",
       "col_status": "Status",
       "col_payment": "Betaling",
-      "col_actions": "Acties"
+      "col_total": "Totaal",
+      "col_updated": "Laatst bijgewerkt",
+      "order_detail_title": "Bestelgegevens"
     }
   },
   "reports": {

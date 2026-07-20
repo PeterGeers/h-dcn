@@ -99,5 +99,7 @@
   "language": {
     "preference_saved": "Préférence linguistique enregistrée",
     "preference_save_failed": "La préférence linguistique n'a pas pu être enregistrée"
-  }
+  },
+  "nSelected": "{{count}} sélectionné(s)",
+  "alle": "Tous"
 }

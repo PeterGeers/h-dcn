@@ -88,7 +88,11 @@
     "toast_updated": "Variant opdateret",
     "toast_invalid_price": "Ugyldig pris",
     "toast_save_error": "Fejl ved lagring",
-    "toast_unknown_error": "Ukendt fejl"
+    "toast_unknown_error": "Ukendt fejl",
+    "btn_delete": "Slet",
+    "btn_delete_loading": "Sletter...",
+    "delete_confirm_title": "Slet variant",
+    "delete_confirm_body": "Er du sikker på, at du vil slette varianten \"{{attributes}}\" permanent? Dette kan ikke fortrydes."
   },
   "toast": {
     "refresh_error": "Fejl ved opdatering",

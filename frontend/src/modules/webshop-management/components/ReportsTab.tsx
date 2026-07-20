@@ -23,8 +23,9 @@ import {
   RadioGroup,
   Stack,
   Tooltip,
-  Select,
 } from '@chakra-ui/react';
+import { FilterPanel } from '../../../components/filters';
+import type { FilterConfig } from '../../../components/filters/types';
 import { useAdminReports } from '../hooks/useAdminReports';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import {
@@ -81,7 +82,11 @@ const REPORT_TYPE_LABELS: Record<ReportType, string> = {
   stock_movements: 'Voorraadmutaties',
 };
 
-const ORDER_STATUS_OPTIONS: { value: OrderStatusFilter; label: string }[] = [
+const REPORT_TYPE_OPTIONS = Object.entries(REPORT_TYPE_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+const ORDER_STATUS_OPTIONS = [
   { value: 'all', label: 'Alle' },
   { value: 'draft', label: 'Draft' },
   { value: 'submitted', label: 'Ingediend' },
@@ -89,7 +94,7 @@ const ORDER_STATUS_OPTIONS: { value: OrderStatusFilter; label: string }[] = [
   { value: 'paid', label: 'Betaald' },
 ];
 
-const PAYMENT_STATUS_OPTIONS: { value: PaymentStatusFilter; label: string }[] = [
+const PAYMENT_STATUS_OPTIONS = [
   { value: 'all', label: 'Alle' },
   { value: 'unpaid', label: 'Onbetaald' },
   { value: 'partial', label: 'Deels betaald' },
@@ -108,60 +113,35 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({ eventFilter = '' }) => {
 
   return (
     <Box>
-      {/* Report Type Selector */}
-      <HStack spacing={4} mb={4} flexWrap="wrap">
-        <Box>
-          <Text fontSize="xs" color="gray.400" mb={1}>Rapporttype</Text>
-          <Select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value as ReportType)}
-            size="sm"
-            maxW="200px"
-            bg="gray.700"
-            borderColor="gray.600"
-            color="white"
-            _focus={{ borderColor: 'orange.400' }}
-          >
-            {Object.entries(REPORT_TYPE_LABELS).map(([key, label]) => (
-              <option key={key} value={key} style={{ backgroundColor: '#2D3748', color: 'white' }}>{label}</option>
-            ))}
-          </Select>
-        </Box>
-        <Box>
-          <Text fontSize="xs" color="gray.400" mb={1}>Order status</Text>
-          <Select
-            value={orderStatus}
-            onChange={(e) => setOrderStatus(e.target.value as OrderStatusFilter)}
-            size="sm"
-            maxW="160px"
-            bg="gray.700"
-            borderColor="gray.600"
-            color="white"
-            _focus={{ borderColor: 'orange.400' }}
-          >
-            {ORDER_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} style={{ backgroundColor: '#2D3748', color: 'white' }}>{opt.label}</option>
-            ))}
-          </Select>
-        </Box>
-        <Box>
-          <Text fontSize="xs" color="gray.400" mb={1}>Betaalstatus</Text>
-          <Select
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value as PaymentStatusFilter)}
-            size="sm"
-            maxW="160px"
-            bg="gray.700"
-            borderColor="gray.600"
-            color="white"
-            _focus={{ borderColor: 'orange.400' }}
-          >
-            {PAYMENT_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} style={{ backgroundColor: '#2D3748', color: 'white' }}>{opt.label}</option>
-            ))}
-          </Select>
-        </Box>
-      </HStack>
+      {/* Report Filters */}
+      <Box mb={4}>
+        <FilterPanel
+          layout="horizontal"
+          filters={[
+            {
+              type: 'single' as const,
+              label: 'Rapporttype',
+              options: REPORT_TYPE_OPTIONS,
+              value: reportType,
+              onChange: (v: string | string[]) => setReportType(v as ReportType),
+            },
+            {
+              type: 'single' as const,
+              label: 'Order status',
+              options: ORDER_STATUS_OPTIONS,
+              value: orderStatus,
+              onChange: (v: string | string[]) => setOrderStatus(v as OrderStatusFilter),
+            },
+            {
+              type: 'single' as const,
+              label: 'Betaalstatus',
+              options: PAYMENT_STATUS_OPTIONS,
+              value: paymentStatus,
+              onChange: (v: string | string[]) => setPaymentStatus(v as PaymentStatusFilter),
+            },
+          ] as FilterConfig<any>[]}
+        />
+      </Box>
 
       {/* Actions bar: Refresh + Export */}
       <HStack justify="space-between" mb={4} flexWrap="wrap" spacing={4}>

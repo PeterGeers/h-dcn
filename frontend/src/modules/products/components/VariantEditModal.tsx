@@ -11,7 +11,7 @@
  * - At MAX_AXES: dropdown of existing axes only (no free text option) + free text value
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -34,10 +34,16 @@ import {
   Input,
   Select,
   useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { AdminVariant, UpdateVariantRequest } from '../../webshop-management/types/admin.types';
-import { updateVariant, createVariant } from '../../webshop-management/services/adminApi';
+import { updateVariant, createVariant, deleteVariant } from '../../webshop-management/services/adminApi';
 import { AddStockForm } from '../../webshop-management/components/AddStockForm';
 import { determineFormMode, validateAxisInput, FormMode } from '../utils/variantFormHelpers';
 import { formatPrice } from '../../../utils/formatPrice';
@@ -50,12 +56,14 @@ export interface VariantEditModalProps {
   variant: AdminVariant | null;
   /** All current variant records for this product (used to derive axes in create mode) */
   existingVariants: AdminVariant[];
-  /** Callback after successful create/edit */
+  /** Callback after successful create/edit/delete */
   onSuccess: () => void;
   /** Parent product price (for display when variant has no override) */
   parentPrice?: number;
   /** Whether the modal interactions should be disabled */
   isDisabled?: boolean;
+  /** Whether the user has mutation permissions (Products_CRUD) */
+  canMutate?: boolean;
 }
 
 /** Sentinel value for the "Nieuw..." dropdown option */
@@ -70,6 +78,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
   onSuccess,
   parentPrice = 0,
   isDisabled = false,
+  canMutate = true,
 }) => {
   const toast = useToast();
   const { t } = useTranslation('products');
@@ -80,6 +89,11 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
   const [priceValue, setPriceValue] = useState<string>('');
   const [allowOversell, setAllowOversell] = useState(false);
   const [isActive, setIsActive] = useState(true);
+
+  // --- Delete confirmation state ---
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
 
   // --- Create mode state ---
   const [axisName, setAxisName] = useState('');
@@ -245,6 +259,47 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // --- Delete handler ---
+
+  const handleDeleteConfirm = async () => {
+    if (!variant) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteVariant(variant.parent_id, variant.product_id);
+      toast({
+        title: t('toast.variant_deleted'),
+        status: 'success',
+        duration: 3000,
+      });
+      setIsDeleteConfirmOpen(false);
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 409) {
+        toast({
+          title: t('toast.variant_delete_conflict'),
+          description:
+            err?.response?.data?.message ||
+            t('toast.variant_delete_conflict_desc'),
+          status: 'warning',
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: t('toast.error'),
+          description: err?.response?.data?.message || err?.message || t('toast.variant_delete_error'),
+          status: 'error',
+          duration: 3000,
+        });
+      }
+      setIsDeleteConfirmOpen(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -464,6 +519,7 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
     : `${t('variant_modal.edit_title')} — ${Object.entries(variant!.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')}`;
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
@@ -473,11 +529,22 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
           {isCreateMode ? renderCreateMode() : renderEditMode()}
         </ModalBody>
         <ModalFooter>
+          {!isCreateMode && canMutate && (
+            <Button
+              colorScheme="red"
+              variant="ghost"
+              mr="auto"
+              onClick={() => setIsDeleteConfirmOpen(true)}
+              isDisabled={isSaving || isDeleting}
+            >
+              {t('variant_modal.btn_delete')}
+            </Button>
+          )}
           <Button
             variant="ghost"
             mr={3}
             onClick={onClose}
-            isDisabled={isSaving || isSubmitting}
+            isDisabled={isSaving || isSubmitting || isDeleting}
             color="white"
             _hover={{ bg: 'gray.700' }}
           >
@@ -507,6 +574,43 @@ export const VariantEditModal: React.FC<VariantEditModalProps> = ({
         </ModalFooter>
       </ModalContent>
     </Modal>
+
+    {/* Delete confirmation dialog */}
+    <AlertDialog
+      isOpen={isDeleteConfirmOpen}
+      leastDestructiveRef={cancelDeleteRef}
+      onClose={() => setIsDeleteConfirmOpen(false)}
+    >
+      <AlertDialogOverlay>
+        <AlertDialogContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
+          <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
+            {t('variant_modal.delete_confirm_title')}
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            {t('variant_modal.delete_confirm_body', {
+              attributes: variant
+                ? Object.entries(variant.variant_attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+                : '',
+            })}
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <Button ref={cancelDeleteRef} onClick={() => setIsDeleteConfirmOpen(false)}>
+              {t('variant_modal.btn_cancel')}
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleDeleteConfirm}
+              isLoading={isDeleting}
+              loadingText={t('variant_modal.btn_delete_loading')}
+              ml={3}
+            >
+              {t('variant_modal.btn_delete')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
+    </>
   );
 };
 

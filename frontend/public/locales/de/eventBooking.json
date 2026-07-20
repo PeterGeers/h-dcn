@@ -288,7 +288,9 @@
     "colMemberId": "Mitglieds-ID",
     "colEmail": "E-Mail",
     "colMemberType": "Typ",
+    "colName": "Name",
     "colActions": "Aktionen",
+    "accessDetailTitle": "Zugangsdetails",
     "payment_recording": {
       "title": "Manuelle Zahlung",
       "description": "Erfassen Sie eine manuelle Zahlung für eine Bestellung (z.B. Banküberweisung).",
@@ -350,7 +352,9 @@
       "col_delegate": "Delegate",
       "col_status": "Status",
       "col_payment": "Zahlung",
-      "col_actions": "Aktionen"
+      "col_total": "Gesamt",
+      "col_updated": "Zuletzt aktualisiert",
+      "order_detail_title": "Bestelldetails"
     }
   },
   "reports": {

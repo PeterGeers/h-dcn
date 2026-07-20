@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  VStack, HStack, Heading, Button,
+  VStack, HStack, Heading, Button, Box,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Text, NumberInput, NumberInputField, Select
 } from '@chakra-ui/react';
@@ -88,9 +88,10 @@ interface MembershipFormModalProps {
   onClose: () => void;
   editingMembership: Membership | null;
   onSave: (values: MembershipFormValues, helpers: { setSubmitting: (isSubmitting: boolean) => void }) => void;
+  onDelete?: (membership: Membership) => void;
 }
 
-export function MembershipFormModal({ isOpen, onClose, editingMembership, onSave }: MembershipFormModalProps) {
+export function MembershipFormModal({ isOpen, onClose, editingMembership, onSave, onDelete }: MembershipFormModalProps) {
   const validationSchema = useValidationSchema();
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
@@ -428,17 +429,28 @@ export function MembershipFormModal({ isOpen, onClose, editingMembership, onSave
                   </HStack>
                 </VStack>
               </ModalBody>
-              <ModalFooter>
-                <Button variant="ghost" mr={3} onClick={onClose}>
-                  Annuleren
-                </Button>
-                <Button 
-                  type="submit" 
-                  colorScheme="orange" 
-                  isLoading={isSubmitting}
-                >
-                  Opslaan
-                </Button>
+              <ModalFooter justifyContent="space-between">
+                {editingMembership && onDelete ? (
+                  <Button
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => onDelete(editingMembership)}
+                  >
+                    Verwijderen
+                  </Button>
+                ) : <Box />}
+                <HStack spacing={3}>
+                  <Button variant="ghost" onClick={onClose}>
+                    Annuleren
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    colorScheme="orange" 
+                    isLoading={isSubmitting}
+                  >
+                    Opslaan
+                  </Button>
+                </HStack>
               </ModalFooter>
             </Form>
           )}

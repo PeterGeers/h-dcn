@@ -9,9 +9,8 @@ import {
   SimpleGrid,
   VStack,
   HStack,
-  Wrap,
-  WrapItem,
-  Select,
+  FormControl,
+  FormLabel,
   Input,
   Button,
   Spinner,
@@ -21,6 +20,8 @@ import {
 } from '@chakra-ui/react';
 import { API_CONFIG } from '../config/api';
 import { EVENT_TYPES, EVENT_REGIOS } from '../config/eventFields/eventTypes';
+import { FilterPanel } from '../components/filters/FilterPanel';
+import type { FilterConfig, FilterOption } from '../components/filters/types';
 import EventDetailModal from './EventDetailModal';
 
 // --- Types ---
@@ -108,15 +109,8 @@ const EventCalendarPage: React.FC = () => {
     };
   }, [fetchEvents]);
 
-  const handleTypeFilter = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (!value) {
-      setFilterTypes([]);
-      return;
-    }
-    setFilterTypes(prev =>
-      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
-    );
+  const handleTypeFilter = useCallback((values: string[]) => {
+    setFilterTypes(values);
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -163,7 +157,19 @@ const EventCalendarPage: React.FC = () => {
   };
 
   // Event types for the filter dropdown (exclude 'webshop')
-  const availableTypes = EVENT_TYPES.filter(t => t !== 'webshop');
+  const typeOptions: FilterOption[] = useMemo(
+    () =>
+      EVENT_TYPES
+        .filter(type => type !== 'webshop')
+        .map(type => ({ value: type, label: t(`event_types.${type}`, type) })),
+    [t]
+  );
+
+  // Region options for the filter dropdown
+  const regioOptions: FilterOption[] = useMemo(
+    () => EVENT_REGIOS.map(regio => ({ value: regio, label: regio })),
+    []
+  );
 
   if (loading) {
     return (
@@ -205,124 +211,67 @@ const EventCalendarPage: React.FC = () => {
         </Heading>
 
         {/* Filters */}
-        <Wrap spacing={4} mb={8} align="flex-end">
-          <WrapItem>
-            <VStack align="flex-start" spacing={1}>
-              <Text fontSize="sm" color="gray.400">
-                {t('calendar.filter.type')}
-              </Text>
-              <Select
-                placeholder={t('calendar.filter.type')}
-                value=""
-                onChange={handleTypeFilter}
-                bg="gray.800"
-                borderColor="gray.600"
-                color="white"
-                w="200px"
-                size="sm"
-                sx={{
-                  option: { background: '#1A202C', color: 'white' },
-                  optgroup: { background: '#1A202C', color: '#A0AEC0' },
-                }}
-              >
-                {availableTypes.map(type => (
-                  <option key={type} value={type}>
-                    {t(`event_types.${type}`, type)}
-                  </option>
-                ))}
-              </Select>
-              {filterTypes.length > 0 && (
-                <HStack spacing={1} flexWrap="wrap">
-                  {filterTypes.map(ft => (
-                    <Button
-                      key={ft}
-                      size="xs"
-                      variant="solid"
-                      colorScheme="orange"
-                      onClick={() => setFilterTypes(prev => prev.filter(v => v !== ft))}
-                    >
-                      {t(`event_types.${ft}`, ft)} ×
-                    </Button>
-                  ))}
-                </HStack>
-              )}
-            </VStack>
-          </WrapItem>
+        <HStack spacing={4} mb={8} wrap="wrap" align="end">
+          <FilterPanel
+            layout="horizontal"
+            filters={[
+              {
+                type: 'multi' as const,
+                label: t('calendar.filter.type'),
+                options: typeOptions,
+                value: filterTypes,
+                onChange: (values: string[] | string) => handleTypeFilter(values as string[]),
+              } as FilterConfig<any>,
+              {
+                type: 'single' as const,
+                label: t('calendar.filter.region'),
+                options: regioOptions,
+                value: filterRegio,
+                onChange: (v: string | string[]) => setFilterRegio(v as string),
+                placeholder: t('calendar.filter.region'),
+              } as FilterConfig<any>,
+            ]}
+          />
 
-          <WrapItem>
-            <VStack align="flex-start" spacing={1}>
-              <Text fontSize="sm" color="gray.400">
-                {t('calendar.filter.region')}
-              </Text>
-              <Select
-                placeholder={t('calendar.filter.region')}
-                value={filterRegio}
-                onChange={e => setFilterRegio(e.target.value)}
-                bg="gray.800"
-                borderColor="gray.600"
-                color="white"
-                w="200px"
-                size="sm"
-                sx={{
-                  option: { background: '#1A202C', color: 'white' },
-                }}
-              >
-                {EVENT_REGIOS.map(regio => (
-                  <option key={regio} value={regio}>
-                    {regio}
-                  </option>
-                ))}
-              </Select>
-            </VStack>
-          </WrapItem>
-
-          <WrapItem>
-            <VStack align="flex-start" spacing={1}>
-              <Text fontSize="sm" color="gray.400">
-                {t('calendar.filter.dateFrom')}
-              </Text>
-              <Input
-                type="date"
-                value={filterDateFrom}
-                onChange={e => setFilterDateFrom(e.target.value)}
-                bg="gray.800"
-                borderColor="gray.600"
-                color="white"
-                w="170px"
-                size="sm"
-              />
-            </VStack>
-          </WrapItem>
-
-          <WrapItem>
-            <VStack align="flex-start" spacing={1}>
-              <Text fontSize="sm" color="gray.400">
-                {t('calendar.filter.dateTo')}
-              </Text>
-              <Input
-                type="date"
-                value={filterDateTo}
-                onChange={e => setFilterDateTo(e.target.value)}
-                bg="gray.800"
-                borderColor="gray.600"
-                color="white"
-                w="170px"
-                size="sm"
-              />
-            </VStack>
-          </WrapItem>
-
-          <WrapItem>
-            <Button
+          <FormControl w="170px">
+            <FormLabel fontSize="xs" color="orange.300" mb={1}>
+              {t('calendar.filter.dateFrom')}
+            </FormLabel>
+            <Input
+              type="date"
+              value={filterDateFrom}
+              onChange={e => setFilterDateFrom(e.target.value)}
+              bg="gray.700"
+              borderColor="gray.600"
+              color="white"
               size="sm"
-              variant="ghost"
-              colorScheme="orange"
-              onClick={resetFilters}
-            >
-              {t('calendar.filter.reset')}
-            </Button>
-          </WrapItem>
-        </Wrap>
+            />
+          </FormControl>
+
+          <FormControl w="170px">
+            <FormLabel fontSize="xs" color="orange.300" mb={1}>
+              {t('calendar.filter.dateTo')}
+            </FormLabel>
+            <Input
+              type="date"
+              value={filterDateTo}
+              onChange={e => setFilterDateTo(e.target.value)}
+              bg="gray.700"
+              borderColor="gray.600"
+              color="white"
+              size="sm"
+            />
+          </FormControl>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            colorScheme="orange"
+            onClick={resetFilters}
+          >
+            {t('calendar.filter.reset')}
+          </Button>
+        </HStack>
 
         {/* Event Grid */}
         {filteredEvents.length === 0 ? (

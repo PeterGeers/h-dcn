@@ -18,7 +18,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAdminOrders } from '../../webshop-management/hooks/useAdminOrders';
 import { AdminOrder } from '../../webshop-management/types/admin.types';
-import { FilterPanel, GenericFilter } from '../../../components/filters';
+import { FilterPanel } from '../../../components/filters';
+import type { FilterConfig } from '../../../components/filters';
 
 const PAYMENT_STATUS_COLOR: Record<string, string> = {
   paid: 'green',
@@ -83,23 +84,23 @@ const OrdersAdmin: React.FC = () => {
         </HStack>
 
         <FilterPanel
-          hasActiveFilters={!!paymentStatusFilter}
-          onReset={() => setPaymentStatusFilter('')}
-        >
-          <GenericFilter
-            label={t('orders_admin.col_payment_status')}
-            value={paymentStatusFilter}
-            options={[
-              { value: 'unpaid', label: t('orders_admin.status_unpaid') },
-              { value: 'pending', label: t('orders_admin.status_pending') },
-              { value: 'awaiting_payment', label: t('orders_admin.status_awaiting_payment') },
-              { value: 'paid', label: t('orders_admin.status_paid') },
-            ]}
-            onChange={setPaymentStatusFilter}
-            placeholder={t('orders_admin.filter_all')}
-            width="220px"
-          />
-        </FilterPanel>
+          layout="horizontal"
+          filters={[
+            {
+              type: 'single' as const,
+              label: t('orders_admin.col_payment_status'),
+              options: [
+                { value: 'unpaid', label: t('orders_admin.status_unpaid') },
+                { value: 'pending', label: t('orders_admin.status_pending') },
+                { value: 'awaiting_payment', label: t('orders_admin.status_awaiting_payment') },
+                { value: 'paid', label: t('orders_admin.status_paid') },
+              ],
+              value: paymentStatusFilter,
+              onChange: (v: string | string[]) => setPaymentStatusFilter(v as string),
+              placeholder: t('orders_admin.filter_all'),
+            },
+          ] as FilterConfig<any>[]}
+        />
 
         {orders.length === 0 ? (
           <Text color="gray.500">{t('orders_admin.no_orders')}</Text>

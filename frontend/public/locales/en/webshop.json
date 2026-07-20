@@ -235,6 +235,16 @@
     "download_pdf": "Download order confirmation",
     "col_tracking": "Tracking",
     "col_order": "Order",
-    "col_status": "Status"
+    "col_status": "Status",
+    "detail_title": "Order details",
+    "payment_status_label": "Payment status",
+    "items_title": "Items",
+    "col_product": "Product",
+    "col_quantity": "Quantity",
+    "col_unit_price": "Price",
+    "col_line_total": "Total",
+    "delivery_cost_label": "Shipping costs",
+    "item_singular": "item",
+    "item_plural": "items"
   }
 }

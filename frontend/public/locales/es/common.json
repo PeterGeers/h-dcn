@@ -99,5 +99,7 @@
   "language": {
     "preference_saved": "Preferencia de idioma guardada",
     "preference_save_failed": "No se pudo guardar la preferencia de idioma"
-  }
+  },
+  "nSelected": "{{count}} seleccionado(s)",
+  "alle": "Todos"
 }
