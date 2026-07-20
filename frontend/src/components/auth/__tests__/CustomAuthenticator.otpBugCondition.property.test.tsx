@@ -76,8 +76,8 @@ describe('Bug Condition: OTP Prompt Dismissed on Focus Loss', () => {
   it('should render an inline OTP input form when prompt returns null (focus loss)', async () => {
     await fc.assert(
       fc.asyncProperty(
-        // Generate arbitrary 6-digit OTP codes (representing what user would enter)
-        fc.stringMatching(/^[0-9]{6}$/),
+        // Generate arbitrary 8-digit OTP codes (Cognito sends 8-digit codes)
+        fc.stringMatching(/^[0-9]{8}$/),
         // Generate focus-loss scenarios (true = prompt returns null)
         fc.constant(true),
         async (otpCode, focusLost) => {

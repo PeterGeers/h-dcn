@@ -90,10 +90,10 @@ async function submitOtpCode(code: string) {
 
 // --- Arbitraries ---
 
-/** Generates valid 6-digit OTP codes (strings matching /^[0-9]{6}$/) */
+/** Generates valid 8-digit OTP codes (Cognito sends 8-digit codes) */
 const validOtpCodeArb = fc.stringOf(
   fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
-  { minLength: 6, maxLength: 6 }
+  { minLength: 8, maxLength: 8 }
 );
 
 // --- Property Tests ---
@@ -107,7 +107,7 @@ describe('CustomAuthenticator Preservation Properties', () => {
     /**
      * **Validates: Requirements 3.1**
      *
-     * For all strings matching /^[0-9]{6}$/, when the user submits the code
+     * For all strings matching /^[0-9]{6,8}$/, when the user submits the code
      * via the inline OTP form, confirmSignIn is called with that code as challengeResponse.
      */
     it('for all valid 6-digit codes, confirmSignIn is called with that code', async () => {

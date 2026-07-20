@@ -115,8 +115,8 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
   };
 
   const handleOtpSubmit = async () => {
-    // Validate: exactly 6 numeric digits
-    if (!/^[0-9]{6}$/.test(otpCode)) {
+    // Validate: 6-8 numeric digits (Cognito sends 8-digit codes)
+    if (!/^[0-9]{6,8}$/.test(otpCode)) {
       setOtpError(t('errors.invalid_code_format'));
       return;
     }
@@ -375,7 +375,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
               <Input
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
+                maxLength={8}
                 pattern="[0-9]*"
                 autoFocus
                 value={otpCode}
@@ -383,7 +383,7 @@ export function CustomAuthenticator({ children }: CustomAuthenticatorProps) {
                   setOtpCode(e.target.value);
                   setOtpError('');
                 }}
-                placeholder="000000"
+                placeholder="00000000"
                 bg="gray.700"
                 border="1px solid"
                 borderColor="gray.600"
