@@ -269,51 +269,81 @@ All field states communicate through visual cues only — never use text badges 
         <Th color="orange.300" display={{ base: "none", md: "table-cell" }}>
           Details
         </Th>
-        <Th color="orange.300" position="sticky" right={0} bg="gray.700">
-          Acties
-        </Th>
       </Tr>
     </Thead>
     <Tbody>
-      <Tr color="white" _hover={{ bg: "gray.700" }}>
+      <Tr
+        color="white"
+        _hover={{ bg: "gray.700" }}
+        cursor="pointer"
+        onClick={() => onSelect(item)}
+      >
         <Td fontSize={{ base: "xs", md: "sm" }}>Data</Td>
         <Td>
           <Badge colorScheme="green">Actief</Badge>
         </Td>
         <Td display={{ base: "none", md: "table-cell" }}>Extra info</Td>
-        <Td position="sticky" right={0} bg="gray.800">
-          <HStack spacing={1}>
-            <IconButton
-              icon={<ViewIcon />}
-              colorScheme="blue"
-              size="xs"
-              aria-label="Bekijken"
-            />
-            <IconButton
-              icon={<EditIcon />}
-              colorScheme="orange"
-              size="xs"
-              aria-label="Bewerken"
-            />
-            <IconButton
-              icon={<DeleteIcon />}
-              colorScheme="red"
-              size="xs"
-              aria-label="Verwijderen"
-            />
-          </HStack>
-        </Td>
       </Tr>
     </Tbody>
   </Table>
 </Box>
 ```
 
+### Table Interaction Pattern — Row Click → Modal
+
+**Standard pattern**: Clicking a table row opens a detail/edit modal. Tables do NOT have inline action buttons (View, Edit, Delete) on each row.
+
+**Rationale:**
+
+- Keeps the table compact and uncluttered
+- Mobile-friendly (no tiny icon buttons to tap)
+- Destructive actions (delete, archive) are safer behind a modal confirmation
+- Consistent UX across all admin tables (Members, Products, Events, Orders)
+
+**Implementation:**
+
+```tsx
+// Row is clickable — opens detail modal
+<Tr
+  cursor="pointer"
+  _hover={{ bg: "gray.700" }}
+  onClick={() => setSelected(item)}
+>
+  <Td>...</Td>
+</Tr>;
+
+// Modal handles all actions (view, edit, delete, status change)
+{
+  selected && (
+    <DetailModal
+      item={selected}
+      onClose={() => setSelected(null)}
+      onDelete={handleDelete}
+      onSave={handleSave}
+    />
+  );
+}
+```
+
+**Exception — Bulk operations**: Inline row elements (checkboxes, toggle switches) are permitted ONLY when bulk-action handling is explicitly required (e.g. select multiple rows for batch export, batch status change). In this case, use a checkbox column with a toolbar above the table for the bulk action.
+
+```tsx
+// Bulk selection pattern (exception to the rule)
+<Tr>
+  <Td>
+    <Checkbox isChecked={isSelected} onChange={() => toggleSelect(item.id)} />
+  </Td>
+  <Td>...</Td>
+</Tr>
+```
+
 ### Table Design Rules
 
+- **Row click → modal**: Primary interaction pattern for all data tables
+- **No inline action buttons**: Do not add View/Edit/Delete icon buttons on rows
+- **Hover state**: `_hover={{ bg: "gray.700" }}` with `cursor="pointer"` on clickable rows
 - **Responsive column hiding**: `display={{ base: 'none', md: 'table-cell' }}`
 - **Text truncation**: `<Text isTruncated maxW="200px">`
-- **Sticky action columns**: `position="sticky" right={0}` with matching background
 - **Financial data**: Use `<Badge>` with conditional colors (green for profit, red for loss)
 - **Minimum column widths**: `minW="80px"` to `minW="200px"` based on content type
 
@@ -518,7 +548,7 @@ import {
 
 | Context       | Size | Usage                      |
 | ------------- | ---- | -------------------------- |
-| Table actions | `xs` | Compact row-level buttons  |
+| Modal actions | `xs` | Compact in-modal buttons   |
 | Card actions  | `sm` | Card header/footer buttons |
 | Main actions  | `md` | Page-level primary actions |
 

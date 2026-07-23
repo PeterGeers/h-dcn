@@ -18,11 +18,46 @@ Design system rules for the H-DCN portal. Ensures visual consistency across all 
 - **2xl** (24px): page titles — **lg** (18px): section headers — **md** (16px): card headers
 - **sm** (14px): main content — **xs** (12px): help text, captions
 
+## Action Buttons
+
+- **No action buttons in table rows** — keep rows clean and compact
+- Click a row to open a modal for edit/delete/detail actions
+- Place primary actions (Add, Export, Import) in the page header row, right-aligned
+- Use `colorScheme="orange"` for primary actions, `variant="ghost"` for secondary
+- Exception: checkboxes for bulk operations (select rows → toolbar action above table)
+
+## Table Layout
+
+- Chakra UI `Table` with `variant="simple"` on dark background (`bg="gray.800"`)
+- Sortable column headers where applicable
+- Hover-highlighted rows: `_hover={{ bg: 'gray.700', cursor: 'pointer' }}`
+- **Row click opens detail/edit Modal — no per-row buttons**
+- Status shown as `Badge` components, read-only data only in cells
+- Responsive `overflowX="auto"` wrapper for mobile
+- Hide non-essential columns on mobile: `display={{ base: 'none', md: 'table-cell' }}`
+
+## Modal Layout
+
+- Chakra UI `<Modal>` with `isCentered` for all CRUD operations
+- Dark theme: `<ModalContent bg="gray.800" borderColor="orange.400" borderWidth="1px">`
+- Form inside modal uses Formik + Yup validation
+- Standard button layout: **Cancel (left, ghost) + Save/Submit (right, orange solid)**
+- Loading state on submit button (`isLoading` prop)
+- `closeOnOverlayClick={false}` for edit modals (prevent accidental loss)
+- `closeOnOverlayClick={true}` for read-only detail modals
+
+## Filters
+
+Use the Table Filter Framework — hybrid approach:
+
+- Text search filters in column headers (`FilterableHeader`)
+- Dropdowns/multi-select above the table (`FilterPanel` + `GenericFilter`)
+- Clear all / reset button to return to default view
+- Components in `frontend/src/components/filters/`
+
 ## Component Patterns
 
 - **Cards**: `bg="gray.800"` + `borderColor="orange.400"` + orange headings
-- **Tables**: `bg="gray.700"` headers with `color="orange.300"`, white row text
-- **Modals**: Fixed center positioning with `transform="translate(-50%, -50%)"`, `maxHeight="80vh"`
 - **Forms**: `InputLeftAddon` with `bg="orange.300"` for currency, `VStack spacing={4}`
 - **Save button**: Fixed bottom-center, only visible when `hasChanges`, orange circular icon button
 
@@ -37,7 +72,7 @@ Design system rules for the H-DCN portal. Ensures visual consistency across all 
 - **CRUD**: ViewIcon=blue, EditIcon=orange, DeleteIcon=red, AddIcon=green, CopyIcon=teal
 - **Navigation**: ChevronLeft/Right=orange, ChevronDown/Up=gray
 - **Status**: CheckCircle=green, Warning=yellow, Info=blue, Close=gray
-- **Sizes**: `xs` table actions, `sm` cards, `md` main actions
+- **Sizes**: `xs` modal actions, `sm` cards, `md` page-level primary actions
 - **Required**: Always include `aria-label` and wrap in `<Tooltip>`
 
 ## Responsive Rules
@@ -47,6 +82,7 @@ Design system rules for the H-DCN portal. Ensures visual consistency across all 
 - Input font: 16px minimum on mobile (prevents iOS zoom)
 - Tables: horizontal scroll with responsive column hiding
 - Text: `fontSize={{ base: 'xs', md: 'sm' }}`
+- Headers: `Flex wrap="wrap"` instead of rigid `HStack` for mobile wrapping
 
 ## Status Badge Colors
 
@@ -59,7 +95,12 @@ Design system rules for the H-DCN portal. Ensures visual consistency across all 
 2. WCAG AA compliance (4.5:1 contrast ratio)
 3. Consistent icon colors per action type across the entire app
 4. Dark theme is the default for admin/member views
+5. No action buttons on table rows — all CRUD actions live in modals
 
-## Reference
+## Reference Implementation
+
+`frontend/src/components/MemberAdminTable.tsx` + `frontend/src/modules/products/ProductManagementPage.tsx` correctly demonstrate the table patterns (dark theme, FilterableHeader, FilterPanel with GenericFilter, row-click → modal, orange primary actions, i18n, responsive).
+
+## Full Reference
 
 Full design system with all patterns and examples: [`docs/development/look-and-feel.md`](../../docs/development/look-and-feel.md)
