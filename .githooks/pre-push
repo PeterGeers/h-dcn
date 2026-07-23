@@ -24,7 +24,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 
     if command -v ggshield >/dev/null 2>&1; then
         # Scan only changed files (not commit-range)
-        output=$(ggshield secret scan path $changed_files 2>&1)
+        # Use printf + xargs to handle paths with spaces correctly
+        output=$(echo "$changed_files" | tr '\n' '\0' | xargs -0 ggshield secret scan path 2>&1)
         code=$?
 
         # Detect quota exhaustion
