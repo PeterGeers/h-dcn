@@ -16,7 +16,7 @@ export const membershipFields: Record<string, FieldDefinition> = {
     group: 'membership',
     order: 1,
     required: true,
-    enumOptions: ['Actief', 'Opgezegd', 'wachtRegio', 'Aangemeld', 'Geschorst', 'HdcnAccount', 'Club', 'Sponsor', 'Overig'],
+    enumOptions: ['Actief', 'Opgezegd', 'wachtRegio', 'wachtBetaling', 'Aangemeld', 'Geschorst', 'HdcnAccount', 'Club', 'Sponsor', 'Overig'],
     validation: [
       { type: 'required', message: 'Status is verplicht' }
     ],

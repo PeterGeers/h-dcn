@@ -35,7 +35,7 @@ import { canViewField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { computeCalculatedFieldsForArray, getMemberFullName } from '../utils/calculatedFields';
 import { useFilterableTable } from '../hooks/useFilterableTable';
-import { FilterableHeader, FilterPanel, GenericFilter } from '../components/filters';
+import { FilterableHeader, GenericFilter } from '../components/filters';
 import BulkActionBar from '../modules/members/components/BulkActionBar';
 import BulkResultSummary from '../modules/members/components/BulkResultSummary';
 import { useBulkTransition } from '../modules/members/hooks/useBulkTransition';
@@ -157,19 +157,11 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
     return permissionFilteredCols.sort((a, b) => a.order - b.order);
   }, [tableContext, userRole, members]);
 
-  // Determine which columns are text-filterable (for framework) vs select-filterable (pre-filter)
-  const { textFilterColumns, selectFilterColumns } = useMemo(() => {
-    const textCols: string[] = [];
-    const selectCols: string[] = [];
-    visibleColumns.forEach(col => {
-      if (!col.filterable) return;
-      if (col.filterType === 'select') {
-        selectCols.push(col.fieldKey);
-      } else {
-        textCols.push(col.fieldKey);
-      }
-    });
-    return { textFilterColumns: textCols, selectFilterColumns: selectCols };
+  // Determine which columns are text-filterable (for framework) vs select-filterable (in-header)
+  const textFilterColumns = useMemo(() => {
+    return visibleColumns
+      .filter(col => col.filterable && col.filterType !== 'select')
+      .map(col => col.fieldKey);
   }, [visibleColumns]);
 
   // Build initial filters for the framework (text columns only)
@@ -277,6 +269,7 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
       case 'Opgezegd': return 'red';
       case 'Geschorst': return 'red';
       case 'wachtRegio': return 'orange';
+      case 'wachtBetaling': return 'blue';
       case 'HdcnAccount': return 'purple';
       case 'Club': return 'blue';
       case 'Sponsor': return 'teal';
@@ -533,26 +526,6 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           </CardBody>
         </Card>
 
-        {/* Select Filters (dropdown pre-filters) */}
-        {selectFilterColumns.length > 0 && (
-          <FilterPanel
-            layout="horizontal"
-            filters={selectFilterColumns
-              .filter(fieldKey => MEMBER_FIELDS[fieldKey])
-              .map(fieldKey => {
-                const field = MEMBER_FIELDS[fieldKey];
-                return {
-                  type: 'single' as const,
-                  label: field.label,
-                  value: selectFilters[fieldKey] || '',
-                  options: getFilterOptions(fieldKey).map(opt => ({ value: opt, label: opt })),
-                  onChange: (v: string | string[]) => handleSelectFilter(fieldKey, v as string),
-                  placeholder: 'Alle',
-                };
-              })}
-          />
-        )}
-
         {/* Bulk Action Bar — shown when members are selected */}
         {showCheckboxes && selectedMemberIds.size > 0 && (
           <BulkActionBar
@@ -660,27 +633,42 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     const field = MEMBER_FIELDS[column.fieldKey];
                     if (!field) return null;
 
-                    // Select columns get a plain Th (their filter is in FilterPanel above)
+                    // Select columns get an inline dropdown filter in the header
                     if (column.filterType === 'select') {
                       return (
                         <Th
                           key={column.fieldKey}
                           w={column.width ? `${column.width}px` : '120px'}
-                          cursor={column.sortable ? 'pointer' : 'default'}
-                          onClick={column.sortable ? () => handleSort(column.fieldKey) : undefined}
-                          _hover={column.sortable ? { bg: 'gray.600' } : {}}
                           py={2}
                           color="orange.300"
                           display={{ base: 'none', md: 'table-cell' }}
                         >
-                          <HStack spacing={1}>
-                            <Text fontSize="xs">{field.label}</Text>
-                            {column.sortable && sortField === column.fieldKey && (
-                              <Text fontSize="xs" color="orange.400">
-                                {sortDirection === 'asc' ? '↑' : '↓'}
-                              </Text>
-                            )}
-                          </HStack>
+                          <VStack spacing={0} align="start">
+                            <HStack spacing={1} cursor={column.sortable ? 'pointer' : 'default'} onClick={column.sortable ? () => handleSort(column.fieldKey) : undefined}>
+                              <Text fontSize="xs">{field.label}</Text>
+                              {column.sortable && sortField === column.fieldKey && (
+                                <Text fontSize="xs" color="orange.400">
+                                  {sortDirection === 'asc' ? '↑' : '↓'}
+                                </Text>
+                              )}
+                            </HStack>
+                            <Select
+                              size="xs"
+                              value={selectFilters[column.fieldKey] || ''}
+                              onChange={(e) => handleSelectFilter(column.fieldKey, e.target.value)}
+                              bg="gray.700"
+                              borderColor="gray.600"
+                              color="white"
+                              _focus={{ borderColor: 'orange.400' }}
+                              sx={{ option: { background: '#2D3748', color: 'white' } }}
+                              mt={1}
+                            >
+                              <option value="" style={{ backgroundColor: '#2D3748', color: 'white' }}>Alle</option>
+                              {getFilterOptions(column.fieldKey).map(opt => (
+                                <option key={opt} value={opt} style={{ backgroundColor: '#2D3748', color: 'white' }}>{opt}</option>
+                              ))}
+                            </Select>
+                          </VStack>
                         </Th>
                       );
                     }
