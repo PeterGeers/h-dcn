@@ -495,8 +495,8 @@ function EventForm({ isOpen, onClose, event, onSave, onDelete, onDuplicate, user
                   colorScheme="green"
                   variant="outline"
                   onClick={() => {
-                    onDuplicate(event as Event);
                     onClose();
+                    onDuplicate(event as Event);
                   }}
                 >
                   Dupliceren
