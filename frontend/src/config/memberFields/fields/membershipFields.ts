@@ -217,7 +217,7 @@ export const membershipFields: Record<string, FieldDefinition> = {
   },
 
   ingangsdatum: {
-    key: 'tijdstempel',
+    key: 'ingangsdatum',
     label: 'Lid sinds',
     dataType: 'date',
     inputType: 'date',
@@ -240,7 +240,7 @@ export const membershipFields: Record<string, FieldDefinition> = {
     order: 8,
     permissions: createPermissionConfig('member', 'none', false),
     computed: true,
-    computeFrom: 'tijdstempel',
+    computeFrom: 'ingangsdatum',
     computeFunction: 'yearsDifference',
     helpText: 'Automatisch berekend uit Lid sinds datum',
     suffix: 'jaar'

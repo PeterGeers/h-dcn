@@ -5,19 +5,19 @@ on:
   push:
     branches: [main]
     paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
   workflow_dispatch:
     inputs:
       stack_name:
-        description: 'CloudFormation stack name (h-dcn for prod, h-dcn-test for test)'
+        description: "CloudFormation stack name (h-dcn for prod, h-dcn-test for test)"
         required: false
-        default: ''
+        default: ""
         type: string
       stage:
-        description: 'Deployment stage (prod or test)'
+        description: "Deployment stage (prod or test)"
         required: false
-        default: 'prod'
+        default: "prod"
         type: choice
         options:
           - prod
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v2
@@ -130,6 +130,7 @@ jobs:
                 MembershipsTable=Memberships \
                 CartsTable=Carts \
                 OrdersTable=Orders \
+                CountersTable=Counters \
                 ParametersTable=Parameters \
                 DataBucket=h-dcn-data-506221081911 \
                 ExistingUserPoolId=eu-west-1_fcUkvwjH5 \
