@@ -168,3 +168,31 @@ def generate_invoice_number(counters_table, year: Optional[int] = None) -> str:
 
     logger.info("Generated invoice number: %s", invoice_number)
     return invoice_number
+
+
+def generate_member_number(counters_table) -> int:
+    """
+    Generate the next member number (lidnummer) using an atomic counter.
+
+    Uses a single global counter 'member_number' that increments by 1
+    each time a new member is activated. The counter auto-creates on
+    first use (initializes to 0 + 1 = 1).
+
+    To seed the counter to the current highest lidnummer, set the
+    'current_value' attribute of the 'member_number' item in the
+    Counters table to the highest existing lidnummer.
+
+    Args:
+        counters_table: boto3 DynamoDB Table resource for the counters table.
+
+    Returns:
+        The new member number as an integer.
+
+    Raises:
+        CounterWriteError: If DynamoDB update fails after retries.
+    """
+    counter_id = 'member_number'
+    sequence = _increment_counter(counters_table, counter_id)
+
+    logger.info("Generated member number: %d", sequence)
+    return sequence

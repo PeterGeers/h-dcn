@@ -21,6 +21,7 @@ from typing import Any
 import boto3
 
 from shared.workflows import ActionDispatcher, write_workflow_audit
+from shared.number_generator import generate_member_number
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
 table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
+counters_table = dynamodb.Table(os.environ.get('COUNTERS_TABLE_NAME', 'Counters'))
 cognito_client = boto3.client('cognito-idp', region_name='eu-west-1')
 
 COGNITO_USER_POOL_ID: str = os.environ.get('COGNITO_USER_POOL_ID', '')
@@ -88,7 +90,7 @@ def _remove_from_cognito_group(email: str, group_name: str) -> None:
 
 
 def activate_member(ctx: dict[str, Any]) -> None:
-    """Activate a member: set status=Actief, set ingangsdatum, add hdcnLeden group.
+    """Activate a member: set status=Actief, assign lidnummer, set ingangsdatum, add hdcnLeden group.
 
     Expected context keys:
         - member_id: str
@@ -103,21 +105,25 @@ def activate_member(ctx: dict[str, Any]) -> None:
 
     today_iso: str = date.today().isoformat()
 
-    # Update DynamoDB: status + ingangsdatum
+    # Generate next lidnummer via atomic counter
+    lidnummer: int = generate_member_number(counters_table)
+
+    # Update DynamoDB: status + ingangsdatum + lidnummer
     table.update_item(
         Key={'member_id': member_id},
-        UpdateExpression='SET #status = :status, ingangsdatum = :datum',
+        UpdateExpression='SET #status = :status, ingangsdatum = :datum, lidnummer = :lidnr',
         ExpressionAttributeNames={'#status': 'status'},
         ExpressionAttributeValues={
             ':status': 'Actief',
             ':datum': today_iso,
+            ':lidnr': lidnummer,
         },
     )
 
     # Add to hdcnLeden Cognito group
     _add_to_cognito_group(email, 'hdcnLeden')
 
-    logger.info(f"Activated member {member_id}, ingangsdatum={today_iso}")
+    logger.info(f"Activated member {member_id}, lidnummer={lidnummer}, ingangsdatum={today_iso}")
 
 
 def deactivate_member(ctx: dict[str, Any]) -> None:

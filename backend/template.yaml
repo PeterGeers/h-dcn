@@ -979,9 +979,16 @@ Resources:
               Action:
                 - s3:GetObject
               Resource: !Sub "${EmailTemplatesBucket.Arn}/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:UpdateItem
+                - dynamodb:GetItem
+              Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
       Environment:
         Variables:
           MEMBERS_TABLE_NAME: !Ref MembersTable
+          COUNTERS_TABLE_NAME: !Ref CountersTable
           EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
           SENDER_EMAIL: noreply@h-dcn.nl
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
@@ -1023,9 +1030,16 @@ Resources:
               Action:
                 - s3:GetObject
               Resource: !Sub "${EmailTemplatesBucket.Arn}/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:UpdateItem
+                - dynamodb:GetItem
+              Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
       Environment:
         Variables:
           MEMBERS_TABLE_NAME: !Ref MembersTable
+          COUNTERS_TABLE_NAME: !Ref CountersTable
           EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
           SENDER_EMAIL: noreply@h-dcn.nl
           COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
