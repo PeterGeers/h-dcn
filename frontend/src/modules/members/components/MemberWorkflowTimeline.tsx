@@ -44,6 +44,7 @@ interface MemberWorkflowTimelineProps {
 
 /** Color scheme for each workflow state badge */
 const STATE_COLOR_SCHEME: Record<MemberWorkflowState, string> = {
+  draft: 'gray',
   applied: 'blue',
   pending: 'orange',
   wait_payment: 'yellow',

@@ -48,6 +48,7 @@ interface MemberWorkflowPanelProps {
 // ============================================================================
 
 const STATE_COLOR_SCHEME: Record<MemberWorkflowState, string> = {
+  draft: 'gray',
   applied: 'blue',
   pending: 'orange',
   wait_payment: 'yellow',
