@@ -1,14 +1,12 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   H-DCN Backend - Serverless API
 # Deploy trigger: order handlers (CreateOrder, UpdateOrderItems, PayOrder)
-
 # IMPORTANT: DynamoDB tables, Cognito User Pool, and S3 data buckets are managed
 # OUTSIDE this template (created manually/via scripts). They are referenced via
 # parameters only. DO NOT add them as CloudFormation resources without
 # DeletionPolicy: Retain — a previous deploy deleted production data this way.
-
 
 Parameters:
   Stage:
@@ -24,7 +22,7 @@ Parameters:
     Type: String
     Default: "eu-west-1_fcUkvwjH5"
     Description: "Existing Cognito User Pool ID (contains all users)"
-  
+
   ExistingUserPoolClientId:
     Type: String
     Default: "6jhvk853b0lfg9q1m861qs0cug"
@@ -70,7 +68,7 @@ Parameters:
   ForceUpdate:
     Type: String
     Default: "2025-12-28"
-  
+
   JwtSecretBase:
     Type: String
     NoEcho: true
@@ -82,33 +80,33 @@ Parameters:
     Type: String
     Default: "Harley-Davidson Club Nederland"
     Description: "Organization name used in email templates"
-  
+
   OrganizationWebsite:
     Type: String
     Default: "https://portal.h-dcn.nl"
     Description: "Organization website URL used in email templates"
-  
+
   OrganizationEmail:
     Type: String
     Default: "webhulpje@h-dcn.nl"
     Description: "Organization contact email used in email templates"
-  
+
   OrganizationShortName:
     Type: String
     Default: "H-DCN"
     Description: "Organization short name used in email templates"
-  
+
   # Account recovery specific parameters
   SupportPhoneNumber:
     Type: String
     Default: "+31 (0)20 123 4567"
     Description: "Support phone number for account recovery assistance"
-  
+
   RecoveryPageUrl:
     Type: String
     Default: "/recovery"
     Description: "Relative URL path for the account recovery page"
-  
+
   HelpPageUrl:
     Type: String
     Default: "/help/passwordless-recovery"
@@ -120,7 +118,7 @@ Parameters:
     NoEcho: true
     Description: "Google OAuth 2.0 Client ID for Workspace SSO"
     Default: ""
-  
+
   GoogleClientSecret:
     Type: String
     NoEcho: true
@@ -194,7 +192,6 @@ Globals:
       AllowCredentials: false
 
 Resources:
-  
   # Lambda Layer for Shared Authentication
   AuthLayer:
     Type: AWS::Serverless::LayerVersion
@@ -306,7 +303,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -318,7 +315,7 @@ Resources:
       Policies:
         - PolicyName: CognitoLambdaAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -327,25 +324,25 @@ Resources:
                   - cognito-idp:AdminLinkProviderForUser
                   - cognito-idp:ListUsers
                   - cognito-idp:AdminListGroupsForUser
-                Resource: 
+                Resource:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
         - PolicyName: S3EmailTemplatesAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - s3:GetObject
-                Resource: 
+                Resource:
                   - !Sub "${EmailTemplatesBucket.Arn}/*"
               - Effect: Allow
                 Action:
                   - s3:ListBucket
-                Resource: 
+                Resource:
                   - !GetAtt EmailTemplatesBucket.Arn
         - PolicyName: SESEmailAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -354,7 +351,7 @@ Resources:
                 Resource: "*"
         - PolicyName: DynamoDBMembersAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -403,7 +400,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Environment
-      OpenApiVersion: '3.0'
+      OpenApiVersion: "3.0"
       BinaryMediaTypes:
         - application/pdf
       MethodSettings:
@@ -424,7 +421,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -436,7 +433,7 @@ Resources:
       Policies:
         - PolicyName: DynamoDBAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -463,7 +460,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembershipsTable}/index/*"
         - PolicyName: CountersTableAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -473,7 +470,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
         - PolicyName: S3AnalyticsAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -493,7 +490,7 @@ Resources:
                     "s3:prefix": "analytics/*"
         - PolicyName: S3RegistryReadAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -510,7 +507,7 @@ Resources:
                     "s3:prefix": "events/*"
         - PolicyName: CognitoReadAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -520,7 +517,7 @@ Resources:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
         - PolicyName: InvokeSyncGoogleCalendar
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -529,7 +526,7 @@ Resources:
                   - !GetAtt SyncGoogleCalendarFunction.Arn
         - PolicyName: S3FrontendOgAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -539,7 +536,7 @@ Resources:
                   - !Sub "arn:aws:s3:::h-dcn-frontend-506221081911/events/*"
         - PolicyName: S3ReportsAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -555,7 +552,7 @@ Resources:
                   - !Sub "arn:aws:s3:::${S3ReportsBucket}"
         - PolicyName: S3LogoUploadAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -564,7 +561,7 @@ Resources:
                   - "arn:aws:s3:::h-dcn-frontend-506221081911/assets/presmeet/logos/*"
         - PolicyName: SESEmailSendAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -573,7 +570,7 @@ Resources:
                 Resource: "*"
         - PolicyName: S3EmailTemplatesReadAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -591,7 +588,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -603,7 +600,7 @@ Resources:
       Policies:
         - PolicyName: CognitoAdminAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -627,7 +624,7 @@ Resources:
                   - cognito-idp:SignUp
                   - cognito-idp:GetGroup
                   - cognito-idp:UpdateGroup
-                Resource: 
+                Resource:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}/*"
 
@@ -636,7 +633,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -648,7 +645,7 @@ Resources:
       Policies:
         - PolicyName: DynamoDBAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -667,7 +664,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
         - PolicyName: CognitoAdminAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -682,7 +679,7 @@ Resources:
                   - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}"
         - PolicyName: S3RegistryReadAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -706,7 +703,7 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /insert-product/
             Method: post
-            
+
   DeleteProductFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -800,8 +797,6 @@ Resources:
             Path: /products
             Method: get
 
-
-
   # Member Management Functions
   CreateMemberFunction:
     Type: AWS::Serverless::Function
@@ -846,8 +841,8 @@ Resources:
       CodeUri: handler/get_members_filtered
       Handler: app.lambda_handler
       Runtime: python3.11
-      Timeout: 30  # Increased timeout for DynamoDB scan and filtering
-      MemorySize: 512  # Increased memory for processing large member datasets
+      Timeout: 30 # Increased timeout for DynamoDB scan and filtering
+      MemorySize: 512 # Increased memory for processing large member datasets
       Layers:
         - !Ref AuthLayer
       Role: !GetAtt DynamoDBRole.Arn
@@ -954,6 +949,91 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /members/{id}
             Method: delete
+
+  # Member Workflow Transition
+  TransitionMemberFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/transition_member
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref AuthLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MembersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminAddUserToGroup
+                - cognito-idp:AdminRemoveUserFromGroup
+              Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub "${EmailTemplatesBucket.Arn}/*"
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
+          SENDER_EMAIL: noreply@h-dcn.nl
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        TransitionMember:
+          Type: Api
+          Properties:
+            Path: /members/{member_id}/transition
+            Method: post
+            RestApiId: !Ref MyApi
+
+  # Bulk Member Workflow Transition (up to 25 members)
+  BulkTransitionMembersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handler/bulk_transition_members
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 60
+      Layers:
+        - !Ref AuthLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MembersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminAddUserToGroup
+                - cognito-idp:AdminRemoveUserFromGroup
+              Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub "${EmailTemplatesBucket.Arn}/*"
+      Environment:
+        Variables:
+          MEMBERS_TABLE_NAME: !Ref MembersTable
+          EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
+          SENDER_EMAIL: noreply@h-dcn.nl
+          COGNITO_USER_POOL_ID: !Ref ExistingUserPoolId
+      Events:
+        BulkTransition:
+          Type: Api
+          Properties:
+            Path: /members/bulk-transition
+            Method: post
+            RestApiId: !Ref MyApi
 
   # Payment Functions
   AdminCreatePaymentFunction:
@@ -1257,8 +1337,6 @@ Resources:
             Path: /memberships/{id}
             Method: delete
 
-
-
   # Order Functions
 
   # --- Unified Order: Get/Create Order (event booking + webshop) ---
@@ -1324,7 +1402,7 @@ Resources:
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
           PRODUCTEN_TABLE_NAME: !Ref Table
-          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_API_KEY: !Sub "{{resolve:ssm:/h-dcn/mollie-api-key}}"
           MOLLIE_WEBHOOK_URL: "https://44sw408alh.execute-api.eu-west-1.amazonaws.com/prod/mollie-webhook"
           PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl/booking"
       Events:
@@ -1552,7 +1630,7 @@ Resources:
           MEMBERSHIPS_TABLE_NAME: !Ref MembershipsTable
           MEMBERS_TABLE_NAME: !Ref MembersTable
           CARTS_TABLE_NAME: !Ref CartsTable
-          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_API_KEY: !Sub "{{resolve:ssm:/h-dcn/mollie-api-key}}"
           MOLLIE_WEBHOOK_URL: "https://44sw408alh.execute-api.eu-west-1.amazonaws.com/prod/mollie-webhook"
           MOLLIE_REDIRECT_URL: "https://portal.h-dcn.nl/webshop/payment/return"
       Events:
@@ -1703,7 +1781,7 @@ Resources:
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
           PRODUCTEN_TABLE_NAME: !Ref Table
           MEMBERS_TABLE_NAME: !Ref MembersTable
-          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_API_KEY: !Sub "{{resolve:ssm:/h-dcn/mollie-api-key}}"
           MOLLIE_WEBHOOK_URL: "https://44sw408alh.execute-api.eu-west-1.amazonaws.com/prod/mollie-webhook"
           PAYMENT_REDIRECT_URL: "https://portal.h-dcn.nl"
       Events:
@@ -1757,7 +1835,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -1769,7 +1847,7 @@ Resources:
       Policies:
         - PolicyName: DynamoDBOrdersRead
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1781,7 +1859,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/index/*"
         - PolicyName: DynamoDBMembersRead
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1790,7 +1868,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${MembersTable}"
         - PolicyName: DynamoDBEventsRead
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1799,7 +1877,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EventsTable}"
         - PolicyName: DynamoDBProductenRead
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1809,7 +1887,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}/index/*"
         - PolicyName: S3DataRead
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -1905,8 +1983,6 @@ Resources:
             Description: "Hourly check for event status transitions (auto-open, auto-close, auto-lock)"
             Enabled: true
 
-
-
   # Generic S3 File Manager Function
   S3FileManagerFunction:
     Type: AWS::Serverless::Function
@@ -1926,11 +2002,11 @@ Resources:
         - S3WritePolicy:
             BucketName: !Ref DataBucket
         - Statement:
-          - Effect: Allow
-            Action:
-              - s3:DeleteObject
-            Resource: 
-              - !Sub "arn:aws:s3:::${DataBucket}/*"
+            - Effect: Allow
+              Action:
+                - s3:DeleteObject
+              Resource:
+                - !Sub "arn:aws:s3:::${DataBucket}/*"
       Events:
         UploadFile:
           Type: Api
@@ -1978,10 +2054,6 @@ Resources:
   # Event Booking Support Functions (Mollie webhook, club onboarding)
   # ============================================================
 
-
-
-
-
   # --- Mollie Webhook (PUBLIC - no Cognito auth) ---
   # NOTE: This endpoint has no Cognito authorizer. Authentication is handled
   # within the handler via Mollie signature verification.
@@ -2000,7 +2072,7 @@ Resources:
           PRODUCTEN_TABLE_NAME: !Ref Table
           PAYMENTS_TABLE_NAME: !Ref PaymentsTable
           COUNTERS_TABLE_NAME: !Ref CountersTable
-          MOLLIE_API_KEY: !Sub '{{resolve:ssm:/h-dcn/mollie-api-key}}'
+          MOLLIE_API_KEY: !Sub "{{resolve:ssm:/h-dcn/mollie-api-key}}"
       Events:
         MollieWebhook:
           Type: Api
@@ -2259,7 +2331,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -2271,7 +2343,7 @@ Resources:
       Policies:
         - PolicyName: AdminWebshopDynamoDBAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2293,7 +2365,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CountersTable}"
         - PolicyName: AdminWebshopS3ReportsAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2309,7 +2381,7 @@ Resources:
                   - !Sub "arn:aws:s3:::${ReportsBucketName}"
         - PolicyName: AdminWebshopCognitoReadAccess
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2855,9 +2927,11 @@ Resources:
           MEMBERS_TABLE_NAME: !Ref MembersTable
           EMAIL_TEMPLATES_BUCKET: !Ref EmailTemplatesBucket
           SENDER_EMAIL: !Ref OrganizationEmail
-          PORTAL_BASE_URL: !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
+          PORTAL_BASE_URL:
+            !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
           ORGANIZATION_NAME: !Ref OrganizationName
-          ORGANIZATION_WEBSITE: !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
+          ORGANIZATION_WEBSITE:
+            !FindInMap [StageConfig, !Ref Stage, OrganizationWebsite]
           ORGANIZATION_EMAIL: !Ref OrganizationEmail
           ORGANIZATION_SHORT_NAME: !Ref OrganizationShortName
       Events:
@@ -2897,7 +2971,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -2908,7 +2982,7 @@ Resources:
       Policies:
         - PolicyName: SSMReadGeminiKey
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2917,7 +2991,7 @@ Resources:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/gemini-api-key"
         - PolicyName: S3ReadPosters
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2954,7 +3028,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -2965,7 +3039,7 @@ Resources:
       Policies:
         - PolicyName: SSMReadGoogleCredentials
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2975,7 +3049,7 @@ Resources:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/google-photos-oauth"
         - PolicyName: DynamoDBUpdateEvents
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -2994,19 +3068,19 @@ Outputs:
   ApiBaseUrl:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
-  
+
   CognitoUserPoolId:
     Description: "Cognito User Pool ID for H-DCN Authentication"
     Value: !Ref ExistingUserPoolId
     Export:
       Name: !Sub "${AWS::StackName}-CognitoUserPoolId"
-  
+
   CognitoUserPoolClientId:
     Description: "Cognito User Pool Client ID for H-DCN Web Application"
     Value: !Ref ExistingUserPoolClientId
     Export:
       Name: !Sub "${AWS::StackName}-CognitoUserPoolClientId"
-  
+
   CognitoUserPoolDomain:
     Description: "Cognito User Pool Domain for hosted UI"
     Value: "https://h-dcn-auth-new-344561557829.auth.eu-west-1.amazoncognito.com"

@@ -2,34 +2,32 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>H-DCN Aanmelding Bevestiging</title>
+    <title>H-DCN Opzegging Bevestiging</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #d2691e;">Bedankt voor je aanmelding, {{MEMBER_NAME}}!</h2>
+        <h2 style="color: #d2691e;">Bevestiging opzegging lidmaatschap</h2>
 
-        <p>Bedankt voor je aanmelding bij H-DCN, we nemen zo snel mogelijk contact met je op.</p>
+        <p>Beste {{MEMBER_NAME}},</p>
+
+        <p>Hierbij bevestigen we dat je lidmaatschap bij H-DCN is opgezegd.</p>
 
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Aanmeldgegevens:</h3>
+            <h3 style="margin-top: 0;">Opzeggingsgegevens:</h3>
             <ul style="list-style: none; padding: 0;">
-                <li><strong>Naam:</strong> {{MEMBER_NAME}}</li>
-                <li><strong>Lidmaatschapstype:</strong> {{MEMBERSHIP_TYPE}}</li>
-                <li><strong>Aanmelddatum:</strong> {{APPLICATION_DATE}}</li>
+                <li><strong>Opzegdatum:</strong> {{CANCELLATION_DATE}}</li>
+                <li><strong>Laatste dag lidmaatschap:</strong> {{MEMBERSHIP_END_DATE}}</li>
+                <li><strong>Lid sinds:</strong> {{MEMBER_SINCE}}</li>
             </ul>
         </div>
 
-        <h3>Wat gebeurt er nu?</h3>
-        <ol>
-            <li>Je aanmelding wordt beoordeeld door de ledenadministratie</li>
-            <li>Je ontvangt bericht zodra je aanmelding is goedgekeurd</li>
-            <li>Na goedkeuring ontvang je een betaalverzoek voor de contributie</li>
-        </ol>
+        <p>Je lidmaatschap blijft actief tot en met <strong>{{MEMBERSHIP_END_DATE}}</strong>. Tot die datum kun je gebruik blijven maken van alle ledenfaciliteiten.</p>
 
-        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h4 style="margin-top: 0; color: #155724;">&#10003; Je aanmelding is ontvangen</h4>
-            <p style="margin-bottom: 0;">Je hoeft geen verdere actie te ondernemen. We nemen contact met je op.</p>
+        <div style="background-color: #e8f4fd; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0;">We hopen je in de toekomst weer terug te zien bij H-DCN. Mocht je van gedachten veranderen, neem dan gerust contact met ons op.</p>
         </div>
+
+        <p>Bedankt voor je lidmaatschap en we hopen je terug te zien!</p>
 
         <p>Heb je vragen? Neem contact op via <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></p>
 

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>H-DCN Welkom</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Welkom bij H-DCN, {{MEMBER_NAME}}!</h2>
+
+        <p>Je betaling is ontvangen en je lidmaatschap is nu actief. Welkom bij de Harley-Davidson Club Nederland!</p>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Je lidmaatschapsgegevens:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Lidnummer:</strong> {{MEMBER_NUMBER}}</li>
+                <li><strong>Regio:</strong> {{REGIO}}</li>
+                <li><strong>Contactpersoon regio:</strong> {{REGIO_CONTACT_NAME}}</li>
+                <li><strong>E-mail contactpersoon:</strong> <a href="mailto:{{REGIO_CONTACT_EMAIL}}">{{REGIO_CONTACT_EMAIL}}</a></li>
+            </ul>
+        </div>
+
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #155724;">&#127881; Welkomstpakket</h3>
+            <p style="margin-bottom: 0;">{{WELCOME_PACK_NOTE}}</p>
+        </div>
+
+        <h3>Wat kun je nu doen?</h3>
+        <ul>
+            <li>Bezoek het ledenportaal: <a href="{{PORTAL_URL}}">{{PORTAL_URL}}</a></li>
+            <li>Bekijk de evenementen en ritten in jouw regio</li>
+            <li>Neem contact op met je regionale contactpersoon</li>
+            <li>Bezoek de H-DCN webshop</li>
+        </ul>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{PORTAL_URL}}"
+               style="background-color: #d2691e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Ga naar het Ledenportaal
+            </a>
+        </div>
+
+        <p>We kijken ernaar uit je te ontmoeten op een van onze evenementen!</p>
+
+        <p>Met vriendelijke groet,<br>
+        Het H-DCN Ledenadministratie Team</p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>Harley-Davidson Club Nederland</strong><br>
+            Website: <a href="https://portal.h-dcn.nl">https://portal.h-dcn.nl</a><br>
+            E-mail: <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a><br>
+            <br>
+            <em>Deze e-mail is automatisch verzonden vanuit het H-DCN ledenportaal.</em>
+        </footer>
+    </div>
+</body>
+</html>

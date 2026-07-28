@@ -150,7 +150,7 @@ export const MEMBER_MODAL_CONTEXTS: Record<string, ModalContextConfig> = {
         defaultExpanded: true,
         fields: [
           { fieldKey: 'lidnummer', visible: true, readOnly: true, order: 1, span: 1 },
-          { fieldKey: 'status', visible: true, order: 2, span: 1 },
+          { fieldKey: 'status', visible: true, readOnly: true, order: 2, span: 1 },
           { fieldKey: 'lidmaatschap', visible: true, order: 3, span: 1 },
           { fieldKey: 'regio', visible: true, order: 4, span: 1 },
           { fieldKey: 'ingangsdatum', visible: true, order: 5, span: 1 },

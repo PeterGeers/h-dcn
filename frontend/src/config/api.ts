@@ -37,5 +37,7 @@ export const API_URLS = {
   parameters: () => buildApiUrl(API_CONFIG.ENDPOINTS.PARAMETERS),
   payments: () => buildApiUrl(API_CONFIG.ENDPOINTS.PAYMENTS),
   carts: () => buildApiUrl(API_CONFIG.ENDPOINTS.CARTS),
-  orders: () => buildApiUrl(API_CONFIG.ENDPOINTS.ORDERS)
+  orders: () => buildApiUrl(API_CONFIG.ENDPOINTS.ORDERS),
+  memberTransition: (memberId: string) => `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MEMBERS}/${memberId}/transition`,
+  memberBulkTransition: () => `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MEMBERS}/bulk-transition`
 };

@@ -73,6 +73,25 @@ export interface Member {
   aanmeldingsDatum?: string;
   
   // ============================================================================
+  // WORKFLOW FIELDS
+  // ============================================================================
+
+  /** Audit trail of status transitions (appended by transition_member handler) */
+  status_history?: Array<{
+    from: string;
+    to: string;
+    event: string;
+    at: string;
+    by: string;
+  }>;
+
+  /** Welcome pack tracking */
+  welcome_pack_status?: 'pending' | 'sent' | 'not_applicable';
+  welcome_pack_sent_date?: string;
+  welcome_pack_sent_by?: string;
+  welcome_pack_notes?: string;
+
+  // ============================================================================
   // CALCULATED/COMPUTED FIELDS
   // ============================================================================
   // These fields are automatically calculated by computeCalculatedFields()

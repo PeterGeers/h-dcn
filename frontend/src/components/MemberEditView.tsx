@@ -49,6 +49,8 @@ import { canViewField, canEditField } from '../utils/fieldResolver';
 import { renderFieldValue } from '../utils/fieldRenderers';
 import { getMemberFullName } from '../utils/calculatedFields';
 import { getValidationMessage } from '../utils/validationMessages';
+import MemberWorkflowPanel from '../modules/members/components/MemberWorkflowPanel';
+import MemberWorkflowTimeline from '../modules/members/components/MemberWorkflowTimeline';
 
 interface MemberEditViewProps {
   isOpen: boolean;
@@ -56,7 +58,11 @@ interface MemberEditViewProps {
   member: any;
   userRole: HDCNGroup;
   userRegion?: string;
+  /** Full array of Cognito role strings (for workflow panel) */
+  userRoles?: string[];
   onSave: (data: any) => Promise<void>;
+  /** Called after a successful workflow transition to refresh member data */
+  onTransitionComplete?: () => void;
 }
 
 const MemberEditView: React.FC<MemberEditViewProps> = ({
@@ -65,11 +71,14 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
   member,
   userRole,
   userRegion,
-  onSave
+  userRoles,
+  onSave,
+  onTransitionComplete
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
   const { t } = useTranslation('members');
+  const { t: tWorkflows } = useTranslation('workflows');
 
   // Get member view context
   const memberContext = MEMBER_MODAL_CONTEXTS.memberView;
@@ -229,7 +238,8 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
     if (!field) return null;
 
     const canView = canViewField(field, userRole, member);
-    const canEdit = canEditField(field, userRole, member);
+    // Status field is ALWAYS read-only — transitions go through workflow panel
+    const canEdit = field.key === 'status' ? false : canEditField(field, userRole, member);
     
     if (!canView) return null;
 
@@ -500,12 +510,32 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
 
     if (visibleFields.length === 0) return null;
 
+    // Determine effective roles for the workflow panel
+    const effectiveRoles = userRoles && userRoles.length > 0 ? userRoles : [userRole];
+
+    // Check if user can see workflow panel (Members_CRUD or Members_Status_Approve)
+    const canSeeWorkflow = effectiveRoles.some(
+      (r) => r === 'Members_CRUD' || r === 'Members_Status_Approve'
+    );
+
     const content = (
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
-        {visibleFields.map((fieldConfig: any) => 
-          renderField(fieldConfig.fieldKey, values, errors, touched, setFieldValue)
+      <>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
+          {visibleFields.map((fieldConfig: any) => 
+            renderField(fieldConfig.fieldKey, values, errors, touched, setFieldValue)
+          )}
+        </SimpleGrid>
+        {/* Embed workflow panel in the Lidmaatschap section */}
+        {section.name === 'membership' && canSeeWorkflow && (
+          <Box mt={4} pt={3} borderTopWidth="1px" borderColor="gray.400">
+            <MemberWorkflowPanel
+              member={member}
+              userRoles={effectiveRoles}
+              onTransitionComplete={onTransitionComplete || (() => {})}
+            />
+          </Box>
         )}
-      </SimpleGrid>
+      </>
     );
 
     if (section.collapsible) {
@@ -676,6 +706,49 @@ const MemberEditView: React.FC<MemberEditViewProps> = ({
                       .sort((a, b) => a.order - b.order)
                       .map(section => renderSection(section, values, errors, touched, setFieldValue))}
                   </Accordion>
+
+                  {/* Status History Timeline — collapsed by default, visible for Members_CRUD / Members_Status_Approve */}
+                  {(userRoles || [userRole]).some(
+                    (r) => r === 'Members_CRUD' || r === 'Members_Status_Approve'
+                  ) && (
+                    <Accordion allowToggle bg="transparent">
+                      <AccordionItem
+                        border="1px"
+                        borderColor="orange.400"
+                        borderRadius="lg"
+                        bg="gray.800"
+                      >
+                        <AccordionButton
+                          bg="gray.700 !important"
+                          borderRadius="lg"
+                          py={3}
+                          px={4}
+                          _hover={{ bg: "gray.600 !important" }}
+                          _expanded={{ bg: "gray.700 !important", borderRadius: "lg lg 0 0" }}
+                          _focus={{ boxShadow: "none" }}
+                        >
+                          <Box flex="1" textAlign="left">
+                            <Text fontWeight="semibold" color="orange.300" fontSize="sm">
+                              {tWorkflows('history.title')}
+                            </Text>
+                          </Box>
+                          <AccordionIcon color="orange.300" />
+                        </AccordionButton>
+                        <AccordionPanel
+                          pb={4}
+                          pt={4}
+                          px={4}
+                          bg="orange.300 !important"
+                          borderRadius="0 0 lg lg"
+                          color="gray.700"
+                        >
+                          <MemberWorkflowTimeline
+                            statusHistory={member.status_history || []}
+                          />
+                        </AccordionPanel>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
 
                   {/* Debug Information (only in development) */}
                   {process.env.NODE_ENV === 'development' && (

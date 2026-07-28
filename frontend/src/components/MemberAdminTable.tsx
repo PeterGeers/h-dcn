@@ -23,7 +23,9 @@ import {
   Spacer,
   Card,
   CardBody,
-  useColorModeValue
+  Checkbox,
+  useColorModeValue,
+  useDisclosure
 } from '@chakra-ui/react';
 import { 
   AddIcon
@@ -34,32 +36,101 @@ import { renderFieldValue } from '../utils/fieldRenderers';
 import { computeCalculatedFieldsForArray, getMemberFullName } from '../utils/calculatedFields';
 import { useFilterableTable } from '../hooks/useFilterableTable';
 import { FilterableHeader, FilterPanel, GenericFilter } from '../components/filters';
+import BulkActionBar from '../modules/members/components/BulkActionBar';
+import BulkResultSummary from '../modules/members/components/BulkResultSummary';
+import { useBulkTransition } from '../modules/members/hooks/useBulkTransition';
 
 
 interface MemberAdminTableProps {
   members: any[];
   userRole: HDCNGroup;
+  userRoles?: string[];
   userRegion?: string;
   onMemberView: (member: any) => void;
   onMemberEdit: (member: any) => void;
   onMemberDelete?: (member: any) => void;
   onExport?: (context: string) => void;
-  onAddMember?: () => void; // Add this prop
+  onAddMember?: () => void;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (selectedIds: Set<string>) => void;
+  /** Called after a bulk action completes to refresh member list */
+  onBulkActionComplete?: () => void;
 }
 
 const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
   members,
   userRole,
+  userRoles = [],
   userRegion,
   onMemberView,
   onMemberEdit,
   onMemberDelete,
   onExport,
-  onAddMember
+  onAddMember,
+  selectedIds: externalSelectedIds,
+  onSelectionChange,
+  onBulkActionComplete
 }) => {
   const [selectedContext, setSelectedContext] = useState('memberCompact');
   // Select-type filters (dropdown pre-filters, outside framework)
   const [selectFilters, setSelectFilters] = useState<Record<string, string>>({});
+  // Internal selection state (used when no external control is provided)
+  const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
+
+  // Use external selection if provided, otherwise internal
+  const selectedMemberIds = externalSelectedIds ?? internalSelectedIds;
+  const setSelectedMemberIds = useCallback((ids: Set<string>) => {
+    if (onSelectionChange) {
+      onSelectionChange(ids);
+    } else {
+      setInternalSelectedIds(ids);
+    }
+  }, [onSelectionChange]);
+
+  // Determine if checkboxes should be shown (only for workflow-capable roles)
+  const showCheckboxes = useMemo(() => {
+    return ['Members_CRUD', 'Members_Status_Approve'].includes(userRole);
+  }, [userRole]);
+
+  // --- Bulk transition state ---
+  const {
+    isOpen: isBulkResultOpen,
+    onOpen: onBulkResultOpen,
+    onClose: onBulkResultClose,
+  } = useDisclosure();
+
+  const bulkTransition = useBulkTransition();
+
+  // Build member name map for BulkResultSummary
+  const memberNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    members.forEach((m: any) => {
+      if (m.member_id) {
+        map[m.member_id] = getMemberFullName(m) || m.email || m.member_id;
+      }
+    });
+    return map;
+  }, [members]);
+
+  const handleBulkExecute = useCallback(async (event: string, memberIds: string[]) => {
+    const result = await bulkTransition.mutate(event, memberIds);
+    if (result) {
+      onBulkResultOpen();
+      if (result.failed === 0) {
+        setSelectedMemberIds(new Set());
+      }
+      onBulkActionComplete?.();
+    }
+  }, [bulkTransition, onBulkResultOpen, setSelectedMemberIds, onBulkActionComplete]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedMemberIds(new Set());
+  }, [setSelectedMemberIds]);
+
+  const handleBulkResultClose = useCallback(() => {
+    onBulkResultClose();
+    bulkTransition.reset();
+  }, [onBulkResultClose, bulkTransition]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _filterBg = useColorModeValue('gray.50', 'gray.700');
@@ -151,12 +222,44 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
     setSelectedContext(newContext);
     setSelectFilters({});
     resetFilters();
-  }, [resetFilters]);
+    setSelectedMemberIds(new Set());
+  }, [resetFilters, setSelectedMemberIds]);
 
   // Select filter handler
   const handleSelectFilter = useCallback((fieldKey: string, value: string) => {
     setSelectFilters(prev => ({ ...prev, [fieldKey]: value }));
   }, []);
+
+  // --- Checkbox selection helpers ---
+  const allFilteredIds = useMemo(() => filteredMembers.map((m: any) => m.member_id), [filteredMembers]);
+  const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every((id: string) => selectedMemberIds.has(id));
+  const isSomeSelected = allFilteredIds.some((id: string) => selectedMemberIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedMemberIds(new Set());
+    } else {
+      setSelectedMemberIds(new Set(allFilteredIds));
+    }
+  }, [isAllSelected, allFilteredIds, setSelectedMemberIds]);
+
+  const handleSelectOne = useCallback((memberId: string) => {
+    setSelectedMemberIds((() => {
+      const next = new Set(selectedMemberIds);
+      if (next.has(memberId)) {
+        next.delete(memberId);
+      } else {
+        next.add(memberId);
+      }
+      return next;
+    })());
+  }, [selectedMemberIds, setSelectedMemberIds]);
+
+  // Compute selected member objects for BulkActionBar (needs full objects with status)
+  const selectedMemberObjects = useMemo(() => {
+    if (selectedMemberIds.size === 0) return [];
+    return filteredMembers.filter((m: any) => selectedMemberIds.has(m.member_id));
+  }, [filteredMembers, selectedMemberIds]);
 
   const getFilterOptions = (fieldKey: string) => {
     const field = MEMBER_FIELDS[fieldKey];
@@ -450,12 +553,40 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
           />
         )}
 
+        {/* Bulk Action Bar — shown when members are selected */}
+        {showCheckboxes && selectedMemberIds.size > 0 && (
+          <BulkActionBar
+            selectedMembers={selectedMemberObjects}
+            userRoles={userRoles}
+            onExecute={handleBulkExecute}
+            onClearSelection={handleClearSelection}
+            isLoading={bulkTransition.isLoading}
+          />
+        )}
+
         {/* Table */}
         <Card bg="gray.800" borderColor="orange.400" border="1px">
           <Box overflowX="auto">
             <Table variant="simple" size="xs">
               <Thead bg="gray.700">
                 <Tr>
+                  {/* Checkbox column header (mobile) */}
+                  {showCheckboxes && (
+                    <Th
+                      py={2}
+                      px={2}
+                      w="40px"
+                      display={{ base: 'table-cell', md: 'none' }}
+                    >
+                      <Checkbox
+                        isChecked={isAllSelected}
+                        isIndeterminate={isSomeSelected && !isAllSelected}
+                        onChange={handleSelectAll}
+                        colorScheme="orange"
+                        aria-label="Selecteer alle leden"
+                      />
+                    </Th>
+                  )}
                   {/* Mobile Portrait: Lidnummer, Name, Status */}
                   <Th 
                     py={2}
@@ -506,6 +637,24 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     />
                   </Th>
                   
+                  {/* Desktop: Checkbox column header */}
+                  {showCheckboxes && (
+                    <Th
+                      py={2}
+                      px={2}
+                      w="40px"
+                      display={{ base: 'none', md: 'table-cell' }}
+                    >
+                      <Checkbox
+                        isChecked={isAllSelected}
+                        isIndeterminate={isSomeSelected && !isAllSelected}
+                        onChange={handleSelectAll}
+                        colorScheme="orange"
+                        aria-label="Selecteer alle leden"
+                      />
+                    </Th>
+                  )}
+
                   {/* Desktop: Dynamic columns from context with FilterableHeader */}
                   {visibleColumns.map(column => {
                     const field = MEMBER_FIELDS[column.fieldKey];
@@ -558,8 +707,21 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                     key={member.member_id} 
                     _hover={{ bg: 'gray.600', cursor: 'pointer' }}
                     onClick={() => onMemberEdit(member)}
+                    bg={selectedMemberIds.has(member.member_id) ? 'gray.600' : undefined}
                   >
                     
+                    {/* Mobile: Row checkbox */}
+                    {showCheckboxes && (
+                      <Td py={1} px={2} display={{ base: 'table-cell', md: 'none' }} onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          isChecked={selectedMemberIds.has(member.member_id)}
+                          onChange={() => handleSelectOne(member.member_id)}
+                          colorScheme="orange"
+                          aria-label={`Selecteer ${getMemberFullName(member)}`}
+                        />
+                      </Td>
+                    )}
+
                     {/* Mobile Portrait: Lidnummer, Full Name, Status */}
                     <Td py={1} color="white" display={{ base: 'table-cell', md: 'none' }} fontSize="xs">
                       <Text fontWeight="semibold">{member.lidnummer || '-'}</Text>
@@ -575,6 +737,18 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
                       </Badge>
                     </Td>
                     
+                    {/* Desktop: Row checkbox */}
+                    {showCheckboxes && (
+                      <Td py={1} px={2} display={{ base: 'none', md: 'table-cell' }} onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          isChecked={selectedMemberIds.has(member.member_id)}
+                          onChange={() => handleSelectOne(member.member_id)}
+                          colorScheme="orange"
+                          aria-label={`Selecteer ${getMemberFullName(member)}`}
+                        />
+                      </Td>
+                    )}
+
                     {/* Desktop: Regular columns */}
                     {visibleColumns.map(column => {
                       const field = MEMBER_FIELDS[column.fieldKey];
@@ -612,6 +786,16 @@ const MemberAdminTable: React.FC<MemberAdminTableProps> = ({
               </Text>
             </CardBody>
           </Card>
+        )}
+
+        {/* Bulk Result Summary Modal */}
+        {bulkTransition.results && (
+          <BulkResultSummary
+            isOpen={isBulkResultOpen}
+            onClose={handleBulkResultClose}
+            result={bulkTransition.results}
+            memberNames={memberNameMap}
+          />
         )}
       </VStack>
     </Box>

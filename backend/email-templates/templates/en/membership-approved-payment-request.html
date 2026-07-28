@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>H-DCN Membership Approved — Payment Request</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Congratulations, {{MEMBER_NAME}}!</h2>
+
+        <p>Your membership application for H-DCN has been approved. Welcome to the club!</p>
+
+        <p>To complete your registration, please transfer the membership contribution using the details below.</p>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Membership Details:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Membership type:</strong> {{MEMBERSHIP_TYPE}}</li>
+                <li><strong>Annual contribution:</strong> {{CONTRIBUTION_AMOUNT}}</li>
+            </ul>
+        </div>
+
+        <div style="background-color: #e8f4fd; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #0c5460;">💳 Payment Instructions</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>IBAN:</strong> {{IBAN}}</li>
+                <li><strong>Account holder:</strong> Harley-Davidson Club Nederland</li>
+                <li><strong>Amount:</strong> {{CONTRIBUTION_AMOUNT}}</li>
+                <li><strong>Reference:</strong> {{REFERENCE}}</li>
+                <li><strong>Payment deadline:</strong> {{PAYMENT_DEADLINE}}</li>
+            </ul>
+            <p style="margin-bottom: 0;">{{PAYMENT_INSTRUCTIONS}}</p>
+        </div>
+
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Important:</strong> Please pay within 30 days. Always include the reference number <strong>{{REFERENCE}}</strong> in your transfer so we can process your payment correctly.
+        </div>
+
+        <h3>What happens after payment?</h3>
+        <ol>
+            <li>Your payment will be processed (this may take a few working days)</li>
+            <li>You will receive your member number and welcome email</li>
+            <li>A welcome pack will be sent to you by post</li>
+            <li>You will gain full access to the member portal</li>
+        </ol>
+
+        <h3>Contact</h3>
+        <p>Questions about your payment or membership? Contact:</p>
+        <ul>
+            <li><strong>Member administration:</strong> <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a></li>
+        </ul>
+
+        <p>Kind regards,<br>
+        H-DCN Member Administration</p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>Harley-Davidson Club Nederland</strong><br>
+            Website: <a href="https://www.h-dcn.nl">www.h-dcn.nl</a><br>
+            Email: <a href="mailto:ledenadministratie@h-dcn.nl">ledenadministratie@h-dcn.nl</a><br>
+            <br>
+            <em>This email was automatically generated. Your data is treated confidentially in accordance with our privacy policy.</em>
+        </footer>
+    </div>
+</body>
+</html>

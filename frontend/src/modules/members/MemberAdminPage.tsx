@@ -28,6 +28,7 @@ import MemberReportingDashboard from '../../components/reporting/MemberReporting
 import UserManagement from './components/UserManagement';
 import GroupManagement from './components/GroupManagement';
 import PoolSettings from './components/PoolSettings';
+import WelcomePackList from './components/WelcomePackList';
 import { HDCNGroup } from '../../config/memberFields';
 import { Member } from '../../types';
 import { getAuthHeaders } from '../../utils/authHeaders';
@@ -35,6 +36,7 @@ import { API_URLS } from '../../config/api';
 import { useErrorHandler, apiCall } from '../../utils/errorHandler';
 import { getUserRoles } from '../../utils/functionPermissions';
 import { MemberDataService } from '../../services/MemberDataService';
+import { useTranslation } from 'react-i18next';
 
 interface MemberAdminPageProps {
   user: any;
@@ -46,9 +48,11 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [userRegion, setUserRegion] = useState<string>('');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   
   const toast = useToast();
   const { handleError } = useErrorHandler();
+  const { t } = useTranslation('workflows');
   
   // Modal controls - only need one modal now
   const { 
@@ -60,6 +64,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   // Get user role for field registry system (prioritize member-specific roles)
   const getUserRole = (): HDCNGroup => {
     if (userRoles.includes('Members_CRUD')) return 'Members_CRUD';
+    if (userRoles.includes('Members_Status_Approve')) return 'Members_Status_Approve';
     if (userRoles.includes('Members_Read')) return 'Members_Read';
     if (userRoles.includes('System_User_Management')) return 'System_User_Management';
     if (userRoles.includes('hdcnLeden')) return 'hdcnLeden';
@@ -212,7 +217,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
 
   // Check if user has any member access
   const hasAnyMemberAccess = userRoles.some(role => 
-    ['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export'].includes(role)
+    ['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export', 'Members_Status_Approve'].includes(role)
   );
 
   if (!hasAnyMemberAccess) {
@@ -259,6 +264,9 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
             {['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export'].includes(getUserRole()) && (
               <Tab>📈 Rapportages</Tab>
             )}
+            {getUserRole() === 'Members_CRUD' && (
+              <Tab>📦 {t('welcomePack.tabTitle')}</Tab>
+            )}
             {['System_User_Management', 'Members_CRUD'].includes(getUserRole()) && (
               <Tab>🔐 Cognito Beheer</Tab>
             )}
@@ -270,11 +278,18 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
               <MemberAdminTable
                 members={members || []}
                 userRole={getUserRole()}
+                userRoles={userRoles}
                 userRegion={userRegion}
                 onMemberView={handleMemberView}
                 onMemberEdit={handleMemberEdit}
                 onExport={handleExport}
                 onAddMember={handleAddMember}
+                selectedIds={selectedMemberIds}
+                onSelectionChange={setSelectedMemberIds}
+                onBulkActionComplete={async () => {
+                  const data = await MemberDataService.refreshMembers();
+                  setMembers(data);
+                }}
               />
             </TabPanel>
 
@@ -285,6 +300,13 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
                   userRole={getUserRole()}
                   userRegion={userRegion}
                 />
+              </TabPanel>
+            )}
+
+            {/* Welcome Packs Tab (Members_CRUD only) */}
+            {getUserRole() === 'Members_CRUD' && (
+              <TabPanel p={0}>
+                <WelcomePackList />
               </TabPanel>
             )}
 
@@ -322,8 +344,16 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
             onClose={handleModalClose}
             member={selectedMember}
             userRole={getUserRole()}
+            userRoles={userRoles}
             userRegion={userRegion}
             onSave={handleMemberSave}
+            onTransitionComplete={async () => {
+              const data = await MemberDataService.refreshMembers();
+              setMembers(data);
+              // Update the selected member with fresh data
+              const updated = data.find((m: Member) => m.member_id === selectedMember.member_id);
+              if (updated) setSelectedMember(updated);
+            }}
           />
         )}
       </VStack>

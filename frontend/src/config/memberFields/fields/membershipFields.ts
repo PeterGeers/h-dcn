@@ -245,4 +245,47 @@ export const membershipFields: Record<string, FieldDefinition> = {
     helpText: 'Automatisch berekend uit Lid sinds datum',
     suffix: 'jaar'
   },
+
+  // Welcome pack tracking fields (set by workflow system on activation)
+  welcome_pack_status: {
+    key: 'welcome_pack_status',
+    label: 'Welkomstpakket',
+    dataType: 'enum',
+    inputType: 'select',
+    group: 'administrative',
+    order: 10,
+    enumOptions: ['pending', 'sent', 'not_applicable'],
+    permissions: createPermissionConfig('admin', 'none', false),
+    helpText: 'Status van het welkomstpakket (ingesteld door workflow)',
+    width: 'medium'
+  },
+
+  welcome_pack_sent_date: {
+    key: 'welcome_pack_sent_date',
+    label: 'Welkomstpakket verzonden op',
+    dataType: 'date',
+    inputType: 'date',
+    group: 'administrative',
+    order: 11,
+    permissions: createPermissionConfig('admin', 'none', false),
+    displayFormat: 'dd-MM-yyyy',
+    helpText: 'Datum waarop het welkomstpakket is verzonden',
+    showWhen: [
+      { field: 'welcome_pack_status', operator: 'equals', value: 'sent' }
+    ]
+  },
+
+  welcome_pack_sent_by: {
+    key: 'welcome_pack_sent_by',
+    label: 'Welkomstpakket verzonden door',
+    dataType: 'string',
+    inputType: 'text',
+    group: 'administrative',
+    order: 12,
+    permissions: createPermissionConfig('admin', 'none', false),
+    helpText: 'Admin die het welkomstpakket als verzonden heeft gemarkeerd',
+    showWhen: [
+      { field: 'welcome_pack_status', operator: 'equals', value: 'sent' }
+    ]
+  },
 };

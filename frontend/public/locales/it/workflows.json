@@ -1,0 +1,89 @@
+{
+  "membership": {
+    "approve": "Approve",
+    "paymentReceived": "Payment received",
+    "cancel": "Cancel membership",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate",
+    "confirm": {
+      "approve": "Are you sure you want to approve this member? A payment request will be sent by email.",
+      "approvePayment": "Are you sure you want to approve this member for payment? The region has been assigned.",
+      "paymentReceived": "Confirm that payment has been received. The membership will be activated.",
+      "cancel": "Are you sure you want to cancel this membership?",
+      "suspend": "Are you sure you want to suspend this member? They will temporarily lose access.",
+      "reactivate": "Are you sure you want to reactivate this member?"
+    },
+    "description": {
+      "approve": "Approve the application and send a payment request",
+      "approvePayment": "Approve the member and send a payment request",
+      "paymentReceived": "Mark the payment as received and activate the membership",
+      "cancel": "Cancel the membership",
+      "suspend": "Temporarily suspend the member",
+      "reactivate": "Reactivate a suspended member"
+    },
+    "status": {
+      "applied": "Applied",
+      "pending": "Pending region",
+      "wait_payment": "Awaiting payment",
+      "active": "Active",
+      "cancelled": "Cancelled",
+      "suspended": "Suspended"
+    },
+    "errors": {
+      "transitionFailed": "Status change failed: {{error}}",
+      "regionRequired": "The member must first be assigned a region",
+      "reasonRequired": "A reason is required (minimum 10 characters)",
+      "notInWorkflow": "This status is not part of the workflow"
+    },
+    "bulk": {
+      "title": "Bulk action",
+      "selected": "{{count}} member selected",
+      "selected_plural": "{{count}} members selected",
+      "selectSameStatus": "Select members with the same status",
+      "execute": "Execute",
+      "result": "{{succeeded}} of {{total}} members successfully processed",
+      "failed": "{{failed}} failed"
+    },
+    "fields": {
+      "reason": "Reason",
+      "reasonPlaceholder": "Enter a reason (minimum 10 characters)"
+    },
+    "timeline": {
+      "title": "Status history",
+      "empty": "No status changes recorded.",
+      "from": "From",
+      "to": "To",
+      "event": "Action",
+      "date": "Date",
+      "triggeredBy": "By"
+    }
+  },
+  "welcomePack": {
+    "title": "Welcome Packs",
+    "tabTitle": "Welcome Packs",
+    "pending": "pending",
+    "empty": "No pending welcome packs",
+    "selected": "selected",
+    "selectAll": "Select all",
+    "columns": {
+      "name": "Name",
+      "address": "Address",
+      "memberNumber": "Member number",
+      "activationDate": "Activation date",
+      "action": "Action"
+    },
+    "markSent": "Sent",
+    "bulkMarkSent": "Mark all as sent",
+    "sentSuccess": "Welcome pack marked as sent",
+    "sentError": "Failed to update status",
+    "bulkSuccess": "{{count}} welcome packs marked as sent",
+    "bulkPartialError": "{{count}} failed to update",
+    "sending": "Updating...",
+    "noAddress": "No address",
+    "addressIncomplete": "Address incomplete — verify before sending"
+  },
+  "history": {
+    "title": "Status History",
+    "empty": "No history available"
+  }
+}
