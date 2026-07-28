@@ -988,7 +988,7 @@ Resources:
         TransitionMember:
           Type: Api
           Properties:
-            Path: /members/{member_id}/transition
+            Path: /members/{id}/transition
             Method: post
             RestApiId: !Ref MyApi
 

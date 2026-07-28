@@ -90,7 +90,7 @@ def lambda_handler(event: dict, context: object) -> dict:
             return perm_error
 
         # Parse request
-        member_id = event.get('pathParameters', {}).get('member_id')
+        member_id = event.get('pathParameters', {}).get('id') or event.get('pathParameters', {}).get('member_id')
         if not member_id:
             return create_error_response(400, 'Missing member_id path parameter')
 
