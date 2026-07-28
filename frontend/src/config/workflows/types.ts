@@ -27,6 +27,7 @@ export type MemberWorkflowState =
  * All possible events that can trigger a state transition.
  */
 export type MemberWorkflowEvent =
+  | 'SUBMIT'
   | 'APPROVE'
   | 'PAYMENT_RECEIVED'
   | 'CANCEL'
