@@ -13,7 +13,7 @@ MEMBERSHIP_TRANSITIONS: list[Transition] = [
     {
         'from_state': MemberState.APPLIED,
         'to_state': MemberState.PENDING,
-        'event': MemberEvent.SUBMIT,
+        'event': MemberEvent.APPROVE,
         'actions': [],
         'side_effects': ['send_application_received', 'audit_log'],
     },

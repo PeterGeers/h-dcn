@@ -18,8 +18,8 @@ from shared.workflows.states import MemberState, MemberEvent
 class TestValidTransitions:
     """Valid transitions return success=True with correct new_state."""
 
-    def test_applied_submit_goes_to_pending(self) -> None:
-        result = membership_engine.execute('applied', 'SUBMIT')
+    def test_applied_approve_goes_to_pending(self) -> None:
+        result = membership_engine.execute('applied', 'APPROVE')
         assert result.success is True
         assert result.new_state == 'pending'
 
@@ -39,9 +39,9 @@ class TestValidTransitions:
         assert result.new_state == 'cancelled'
 
     def test_result_contains_old_state_and_event(self) -> None:
-        result = membership_engine.execute('applied', 'SUBMIT')
+        result = membership_engine.execute('applied', 'APPROVE')
         assert result.old_state == 'applied'
-        assert result.event == 'SUBMIT'
+        assert result.event == 'APPROVE'
 
 
 class TestInvalidTransitions:
@@ -105,9 +105,9 @@ class TestGetAllowedEvents:
         assert 'CANCEL' in events
         assert 'SUSPEND' in events
 
-    def test_applied_state_has_submit(self) -> None:
+    def test_applied_state_has_approve(self) -> None:
         events = membership_engine.get_allowed_events('applied')
-        assert 'SUBMIT' in events
+        assert 'APPROVE' in events
 
     def test_cancelled_state_has_no_events(self) -> None:
         events = membership_engine.get_allowed_events('cancelled')
