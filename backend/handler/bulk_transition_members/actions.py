@@ -123,6 +123,10 @@ def activate_member(ctx: dict[str, Any]) -> None:
     # Add to hdcnLeden Cognito group
     _add_to_cognito_group(email, 'hdcnLeden')
 
+    # Store lidnummer in context so side effects (send_welcome_email) can read it
+    ctx['lidnummer'] = lidnummer
+    member['lidnummer'] = lidnummer
+
     logger.info(f"Activated member {member_id}, lidnummer={lidnummer}, ingangsdatum={today_iso}")
 
 

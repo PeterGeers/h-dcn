@@ -314,17 +314,24 @@ function MyAccount({ user }: MyAccountProps) {
 
   // Submitted state: show read-only with status badge
   if (isVerzoekLid && isSubmitted && member) {
+    const statusColor = member.status === 'Actief' ? 'green' : member.status === 'Aangemeld' ? 'blue' : 'orange';
+    const statusMessage = member.status === 'Actief'
+      ? t('application.status_active')
+      : member.status === 'Aangemeld'
+        ? t('application.submitted_info')
+        : t('application.status_in_progress');
+
     return (
       <Box maxW="800px" mx="auto" p={6}>
         <VStack spacing={6} align="stretch">
-          <Box p={4} bg="green.900" borderRadius="md" border="1px" borderColor="green.400">
+          <Box p={4} bg={`${statusColor}.900`} borderRadius="md" border="1px" borderColor={`${statusColor}.400`}>
             <VStack align="start" spacing={2}>
               <HStack>
-                <Heading size="sm" color="green.300">{t('application.status_title')}</Heading>
-                <Badge colorScheme="green" fontSize="sm">{member.status}</Badge>
+                <Heading size="sm" color={`${statusColor}.300`}>{t('application.status_title')}</Heading>
+                <Badge colorScheme={statusColor} fontSize="sm">{member.status}</Badge>
               </HStack>
-              <Text fontSize="sm" color="green.200">
-                {t('application.submitted_info')}
+              <Text fontSize="sm" color={`${statusColor}.200`}>
+                {statusMessage}
               </Text>
             </VStack>
           </Box>

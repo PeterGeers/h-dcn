@@ -24,6 +24,8 @@
     "draft_badge": "Draft",
     "draft_info": "Your details have been saved but not yet submitted. Click 'Submit Application' to officially submit your application.",
     "submitted_info": "Your application has been submitted and is being reviewed by the membership administration.",
+    "status_active": "Welcome! You are an active member of H-DCN.",
+    "status_in_progress": "Your application is being processed.",
     "saved_title": "Saved",
     "saved_message": "Your details have been saved.",
     "submitted_success_title": "Application Submitted",

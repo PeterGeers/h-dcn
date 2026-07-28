@@ -141,7 +141,10 @@ def send_payment_request(ctx: dict[str, Any]) -> None:
             return
 
         membership_type: str = member.get('lidmaatschap', 'Regulier')
-        lidnummer: str = member.get('lidnummer', ctx.get('member_id', ''))
+        # Use short reference: achternaam + first 8 chars of member_id
+        member_id_short: str = ctx.get('member_id', '')[:8]
+        achternaam: str = member.get('achternaam', '')
+        reference: str = f"HDCN-{achternaam}-{member_id_short}" if achternaam else f"HDCN-{member_id_short}"
 
         variables: dict[str, str] = {
             'MEMBER_NAME': _get_member_name(member),
@@ -150,7 +153,7 @@ def send_payment_request(ctx: dict[str, Any]) -> None:
             'PAYMENT_INSTRUCTIONS': 'Maak het bedrag over naar onderstaand rekeningnummer',
             'PAYMENT_DEADLINE': _payment_deadline(),
             'IBAN': ORGANIZATION_IBAN,
-            'REFERENCE': f'HDCN-{lidnummer}',
+            'REFERENCE': reference,
         }
 
         send_membership_email(
@@ -179,13 +182,38 @@ def send_welcome_email(ctx: dict[str, Any]) -> None:
             return
 
         regio: str = member.get('regio', '')
+        lidnummer = str(member.get('lidnummer', ctx.get('lidnummer', '')))
+
+        # Look up regio secretary (HdcnAccount member in same regio)
+        regio_contact_name: str = ''
+        regio_contact_email: str = ''
+        if regio:
+            try:
+                import boto3
+                import os
+                ddb = boto3.resource('dynamodb', region_name='eu-west-1')
+                members_tbl = ddb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
+                scan_resp = members_tbl.scan(
+                    FilterExpression='#s = :status AND regio = :regio',
+                    ExpressionAttributeNames={'#s': 'status'},
+                    ExpressionAttributeValues={':status': 'HdcnAccount', ':regio': regio},
+                    ProjectionExpression='voornaam, tussenvoegsel, achternaam, email',
+                    Limit=1,
+                )
+                if scan_resp.get('Items'):
+                    secretary = scan_resp['Items'][0]
+                    parts = [secretary.get('voornaam', ''), secretary.get('tussenvoegsel', ''), secretary.get('achternaam', '')]
+                    regio_contact_name = ' '.join(p for p in parts if p)
+                    regio_contact_email = secretary.get('email', '')
+            except Exception as e:
+                logger.warning(f"Failed to look up regio secretary for {regio}: {e}")
 
         variables: dict[str, str] = {
             'MEMBER_NAME': _get_member_name(member),
-            'MEMBER_NUMBER': member.get('lidnummer', ''),
+            'MEMBER_NUMBER': lidnummer,
             'REGIO': regio,
-            'REGIO_CONTACT_NAME': member.get('regio_contact_name', ''),
-            'REGIO_CONTACT_EMAIL': member.get('regio_contact_email', ''),
+            'REGIO_CONTACT_NAME': regio_contact_name,
+            'REGIO_CONTACT_EMAIL': regio_contact_email,
             'PORTAL_URL': PORTAL_URL,
             'WELCOME_PACK_NOTE': 'Je welkomstpakket wordt per post verstuurd.',
         }

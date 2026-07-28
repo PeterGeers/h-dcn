@@ -24,6 +24,8 @@
     "draft_badge": "Concept",
     "draft_info": "Uw gegevens zijn opgeslagen maar nog niet ingediend. Klik op 'Aanvraag Indienen' om uw aanvraag officieel in te dienen.",
     "submitted_info": "Uw aanvraag is ingediend en wordt beoordeeld door de ledenadministratie.",
+    "status_active": "Welkom! U bent actief lid van H-DCN.",
+    "status_in_progress": "Uw aanvraag wordt verwerkt.",
     "saved_title": "Opgeslagen",
     "saved_message": "Uw gegevens zijn opgeslagen.",
     "submitted_success_title": "Aanvraag Ingediend",
