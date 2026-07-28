@@ -105,17 +105,20 @@ def handle_user_authentication(user_pool_id, username, email, given_name, family
             if member_status:
                 logger.info(f"User {email} found in Members table with status: {member_status}")
                 
-                # If user is approved, assign default role
-                approved_statuses = ['active', 'approved']
-                if member_status in approved_statuses:
+                # If user is active member, assign hdcnLeden role
+                if member_status == 'Actief':
                     default_group = os.environ.get('DEFAULT_MEMBER_GROUP', 'hdcnLeden')
-                    logger.info(f"User {email} is approved member, adding to group: {default_group}")
+                    logger.info(f"User {email} is active member, adding to group: {default_group}")
                     add_user_to_group(user_pool_id, username, default_group)
-                    logger.info(f"Successfully added existing approved member {email} to group {default_group}")
+                    logger.info(f"Successfully added active member {email} to group {default_group}")
                 else:
-                    logger.info(f"User {email} is not approved (status: {member_status}), no additional role assigned")
+                    # Member exists but not yet active — assign verzoek_lid
+                    logger.info(f"User {email} has member record (status: {member_status}), assigning verzoek_lid")
+                    add_user_to_group(user_pool_id, username, 'verzoek_lid')
             else:
-                logger.info(f"User {email} not found in Members table - no additional role assigned")
+                # No member record — new user, assign verzoek_lid so they can apply
+                logger.info(f"User {email} not found in Members table — assigning verzoek_lid for application")
+                add_user_to_group(user_pool_id, username, 'verzoek_lid')
             
             # Log the role assignment decision for audit
             log_role_assignment_decision(email, member_status, given_name, family_name, current_groups)
