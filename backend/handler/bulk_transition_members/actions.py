@@ -220,6 +220,19 @@ def flag_welcome_pack(ctx: dict[str, Any]) -> None:
     )
 
 
+def mark_invoice_paid(ctx: dict[str, Any]) -> None:
+    """Mark the membership invoice as paid.
+
+    Currently a no-op placeholder. Will integrate with Payments table
+    when automated payment tracking is implemented.
+
+    Expected context keys:
+        - member_id: str
+    """
+    member_id: str = ctx.get('member_id', '')
+    logger.info(f"mark_invoice_paid called for member {member_id} (no-op: manual payment tracking)")
+
+
 # --- Side effects ---
 
 
@@ -257,6 +270,7 @@ def register_actions(dispatcher: ActionDispatcher) -> None:
         'activate_member': activate_member,
         'deactivate_member': deactivate_member,
         'suspend_member': suspend_member,
+        'mark_invoice_paid': mark_invoice_paid,
         'flag_welcome_pack': flag_welcome_pack,
         'audit_log': audit_log,
     })
