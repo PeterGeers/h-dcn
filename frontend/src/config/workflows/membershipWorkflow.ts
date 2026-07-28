@@ -32,6 +32,7 @@ export const STATUS_TO_STATE: Record<string, MemberWorkflowState> = {
  * Used when displaying the status in DynamoDB terminology.
  */
 export const STATE_TO_STATUS: Record<MemberWorkflowState, string> = {
+  draft: '',
   applied: 'Aangemeld',
   pending: 'wachtRegio',
   wait_payment: 'wachtBetaling',
