@@ -972,6 +972,7 @@ Resources:
               Action:
                 - cognito-idp:AdminAddUserToGroup
                 - cognito-idp:AdminRemoveUserFromGroup
+                - cognito-idp:ListUsers
               Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
         - Statement:
             - Effect: Allow
@@ -1015,6 +1016,7 @@ Resources:
               Action:
                 - cognito-idp:AdminAddUserToGroup
                 - cognito-idp:AdminRemoveUserFromGroup
+                - cognito-idp:ListUsers
               Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
         - Statement:
             - Effect: Allow
