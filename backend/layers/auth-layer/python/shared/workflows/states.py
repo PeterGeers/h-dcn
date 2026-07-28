@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class MemberState(StrEnum):
+    DRAFT = 'draft'
     APPLIED = 'applied'
     PENDING = 'pending'
     WAIT_PAYMENT = 'wait_payment'

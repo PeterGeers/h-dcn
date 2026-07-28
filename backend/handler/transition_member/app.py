@@ -80,16 +80,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         if auth_error:
             return auth_error
 
-        is_authorized, perm_error, regional_info = validate_permissions_with_regions(
-            user_roles,
-            ['Members_CRUD', 'Members_Status_Approve'],
-            user_email,
-            {'operation': 'transition_member'},
-        )
-        if not is_authorized:
-            return perm_error
-
-        # Parse request
+        # Parse request early to check if this is a self-service SUBMIT
         member_id = event.get('pathParameters', {}).get('id') or event.get('pathParameters', {}).get('member_id')
         if not member_id:
             return create_error_response(400, 'Missing member_id path parameter')
@@ -101,6 +92,26 @@ def lambda_handler(event: dict, context: object) -> dict:
         if not transition_event:
             return create_error_response(400, 'Missing required field: event')
 
+        # Allow verzoek_lid users to SUBMIT their own application
+        if transition_event == 'SUBMIT' and 'verzoek_lid' in user_roles:
+            # Verify ownership: scan Members table for this member_id and check email matches
+            response = table.get_item(Key={'member_id': member_id})
+            member_check = response.get('Item')
+            if not member_check:
+                return create_error_response(404, 'Member not found')
+            if member_check.get('email', '').lower() != user_email.lower():
+                return create_error_response(403, 'You can only submit your own application')
+        else:
+            # Standard admin auth check
+            is_authorized, perm_error, regional_info = validate_permissions_with_regions(
+                user_roles,
+                ['Members_CRUD', 'Members_Status_Approve'],
+                user_email,
+                {'operation': 'transition_member'},
+            )
+            if not is_authorized:
+                return perm_error
+
         # 2. Load member from DynamoDB
         response = table.get_item(Key={'member_id': member_id})
         member = response.get('Item')
@@ -109,13 +120,16 @@ def lambda_handler(event: dict, context: object) -> dict:
 
         current_status: str = member.get('status', '')
 
-        # 3. Map status → state
-        current_state = STATUS_TO_STATE.get(current_status)
-        if current_state is None:
-            return create_error_response(
-                400,
-                f"Status '{current_status}' is not part of the membership workflow",
-            )
+        # 3. Map status → state. Empty/missing status = draft state
+        if not current_status:
+            current_state = MemberState.DRAFT
+        else:
+            current_state = STATUS_TO_STATE.get(current_status)
+            if current_state is None:
+                return create_error_response(
+                    400,
+                    f"Status '{current_status}' is not part of the membership workflow",
+                )
 
         # Build context for engine and dispatcher
         exec_context: dict = {

@@ -15,6 +15,7 @@
  * Maps to DynamoDB status values via STATUS_TO_STATE / STATE_TO_STATUS.
  */
 export type MemberWorkflowState =
+  | 'draft'
   | 'applied'
   | 'pending'
   | 'wait_payment'

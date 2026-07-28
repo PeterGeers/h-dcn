@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >
   IAM roles for the h-dcn nonprofit account.
   Defines NonprofitDevRole, NonprofitDeployRole, and NonprofitAdminRole
@@ -7,17 +7,17 @@ Description: >
 Parameters:
   PersonalAccountId:
     Type: String
-    Default: '344561557829'
+    Default: "344561557829"
     Description: AWS Account ID of the personal account (identity source)
 
   GitHubOrg:
     Type: String
-    Default: 'PeterGeers'
+    Default: "PeterGeers"
     Description: GitHub organization or user name
 
   GitHubRepo:
     Type: String
-    Default: 'h-dcn'
+    Default: "h-dcn"
     Description: GitHub repository name
 
 Resources:
@@ -47,82 +47,82 @@ Resources:
     Properties:
       RoleName: NonprofitDevRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${PersonalAccountId}:root'
-            Action: 'sts:AssumeRole'
+              AWS: !Sub "arn:aws:iam::${PersonalAccountId}:root"
+            Action: "sts:AssumeRole"
             Condition:
               Bool:
-                'aws:MultiFactorAuthPresent': 'true'
+                "aws:MultiFactorAuthPresent": "true"
       Policies:
         - PolicyName: NonprofitDevPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               # DynamoDB - full read/write
               - Effect: Allow
                 Action:
-                  - 'dynamodb:GetItem'
-                  - 'dynamodb:PutItem'
-                  - 'dynamodb:UpdateItem'
-                  - 'dynamodb:DeleteItem'
-                  - 'dynamodb:Query'
-                  - 'dynamodb:Scan'
-                  - 'dynamodb:BatchGetItem'
-                  - 'dynamodb:BatchWriteItem'
-                  - 'dynamodb:DescribeTable'
-                  - 'dynamodb:ListTables'
-                Resource: '*'
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:UpdateItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:BatchGetItem"
+                  - "dynamodb:BatchWriteItem"
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:ListTables"
+                Resource: "*"
               # S3 - full read/write
               - Effect: Allow
                 Action:
-                  - 's3:GetObject'
-                  - 's3:PutObject'
-                  - 's3:DeleteObject'
-                  - 's3:ListBucket'
-                  - 's3:GetBucketLocation'
-                Resource: '*'
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:DeleteObject"
+                  - "s3:ListBucket"
+                  - "s3:GetBucketLocation"
+                Resource: "*"
               # Lambda - full access for development
               - Effect: Allow
                 Action:
-                  - 'lambda:GetFunction'
-                  - 'lambda:ListFunctions'
-                  - 'lambda:InvokeFunction'
-                  - 'lambda:UpdateFunctionCode'
-                  - 'lambda:UpdateFunctionConfiguration'
-                  - 'lambda:GetFunctionConfiguration'
-                  - 'lambda:ListVersionsByFunction'
-                  - 'lambda:ListAliases'
-                Resource: '*'
+                  - "lambda:GetFunction"
+                  - "lambda:ListFunctions"
+                  - "lambda:InvokeFunction"
+                  - "lambda:UpdateFunctionCode"
+                  - "lambda:UpdateFunctionConfiguration"
+                  - "lambda:GetFunctionConfiguration"
+                  - "lambda:ListVersionsByFunction"
+                  - "lambda:ListAliases"
+                Resource: "*"
               # CloudWatch Logs - full access
               - Effect: Allow
                 Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                  - 'logs:GetLogEvents'
-                  - 'logs:FilterLogEvents'
-                  - 'logs:DescribeLogGroups'
-                  - 'logs:DescribeLogStreams'
-                Resource: '*'
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:GetLogEvents"
+                  - "logs:FilterLogEvents"
+                  - "logs:DescribeLogGroups"
+                  - "logs:DescribeLogStreams"
+                Resource: "*"
               # API Gateway - read only
               - Effect: Allow
                 Action:
-                  - 'apigateway:GET'
-                Resource: '*'
+                  - "apigateway:GET"
+                Resource: "*"
               # Cognito - read only
               - Effect: Allow
                 Action:
-                  - 'cognito-idp:DescribeUserPool'
-                  - 'cognito-idp:DescribeUserPoolClient'
-                  - 'cognito-idp:ListUsers'
-                  - 'cognito-idp:ListGroups'
-                  - 'cognito-idp:ListUsersInGroup'
-                  - 'cognito-idp:AdminGetUser'
-                  - 'cognito-idp:GetGroup'
-                Resource: '*'
+                  - "cognito-idp:DescribeUserPool"
+                  - "cognito-idp:DescribeUserPoolClient"
+                  - "cognito-idp:ListUsers"
+                  - "cognito-idp:ListGroups"
+                  - "cognito-idp:ListUsersInGroup"
+                  - "cognito-idp:AdminGetUser"
+                  - "cognito-idp:GetGroup"
+                Resource: "*"
       Tags:
         - Key: Project
           Value: h-dcn
@@ -138,114 +138,119 @@ Resources:
     Properties:
       RoleName: NonprofitDeployRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           # Allow assumption from Personal Account (no MFA required for deploy)
           - Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${PersonalAccountId}:root'
-            Action: 'sts:AssumeRole'
+              AWS: !Sub "arn:aws:iam::${PersonalAccountId}:root"
+            Action: "sts:AssumeRole"
           # Allow assumption from GitHub Actions via OIDC
           - Effect: Allow
             Principal:
-              Federated: !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com'
-            Action: 'sts:AssumeRoleWithWebIdentity'
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: "sts:AssumeRoleWithWebIdentity"
             Condition:
               StringEquals:
-                'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com'
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
               StringLike:
-                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
       Policies:
         - PolicyName: NonprofitDeployPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               # CloudFormation - full access for SAM deployments
               - Effect: Allow
                 Action:
-                  - 'cloudformation:*'
-                Resource: '*'
+                  - "cloudformation:*"
+                Resource: "*"
               # Lambda - full access
               - Effect: Allow
                 Action:
-                  - 'lambda:*'
-                Resource: '*'
+                  - "lambda:*"
+                Resource: "*"
               # API Gateway - full access
               - Effect: Allow
                 Action:
-                  - 'apigateway:*'
-                Resource: '*'
+                  - "apigateway:*"
+                Resource: "*"
               # DynamoDB - create/update/manage tables
               - Effect: Allow
                 Action:
-                  - 'dynamodb:*'
-                Resource: '*'
+                  - "dynamodb:*"
+                Resource: "*"
               # S3 - full access for deployments and frontend hosting
               - Effect: Allow
                 Action:
-                  - 's3:*'
-                Resource: '*'
+                  - "s3:*"
+                Resource: "*"
               # IAM - role management for SAM-created roles
               - Effect: Allow
                 Action:
-                  - 'iam:CreateRole'
-                  - 'iam:DeleteRole'
-                  - 'iam:GetRole'
-                  - 'iam:PassRole'
-                  - 'iam:AttachRolePolicy'
-                  - 'iam:DetachRolePolicy'
-                  - 'iam:PutRolePolicy'
-                  - 'iam:DeleteRolePolicy'
-                  - 'iam:GetRolePolicy'
-                  - 'iam:ListRolePolicies'
-                  - 'iam:ListAttachedRolePolicies'
-                  - 'iam:TagRole'
-                  - 'iam:UntagRole'
-                  - 'iam:UpdateRole'
-                  - 'iam:CreatePolicy'
-                  - 'iam:DeletePolicy'
-                  - 'iam:GetPolicy'
-                  - 'iam:GetPolicyVersion'
-                  - 'iam:ListPolicyVersions'
-                  - 'iam:CreatePolicyVersion'
-                  - 'iam:DeletePolicyVersion'
-                Resource: '*'
+                  - "iam:CreateRole"
+                  - "iam:DeleteRole"
+                  - "iam:GetRole"
+                  - "iam:PassRole"
+                  - "iam:AttachRolePolicy"
+                  - "iam:DetachRolePolicy"
+                  - "iam:PutRolePolicy"
+                  - "iam:DeleteRolePolicy"
+                  - "iam:GetRolePolicy"
+                  - "iam:ListRolePolicies"
+                  - "iam:ListAttachedRolePolicies"
+                  - "iam:TagRole"
+                  - "iam:UntagRole"
+                  - "iam:UpdateRole"
+                  - "iam:CreatePolicy"
+                  - "iam:DeletePolicy"
+                  - "iam:GetPolicy"
+                  - "iam:GetPolicyVersion"
+                  - "iam:ListPolicyVersions"
+                  - "iam:CreatePolicyVersion"
+                  - "iam:DeletePolicyVersion"
+                Resource: "*"
               # Cognito - full access for user pool management
               - Effect: Allow
                 Action:
-                  - 'cognito-idp:*'
-                Resource: '*'
+                  - "cognito-idp:*"
+                Resource: "*"
               # CloudFront - full access for distribution management
               - Effect: Allow
                 Action:
-                  - 'cloudfront:*'
-                Resource: '*'
+                  - "cloudfront:*"
+                Resource: "*"
               # SSM Parameter Store - full access for secrets management
               - Effect: Allow
                 Action:
-                  - 'ssm:GetParameter'
-                  - 'ssm:GetParameters'
-                  - 'ssm:GetParametersByPath'
-                  - 'ssm:PutParameter'
-                  - 'ssm:DeleteParameter'
-                  - 'ssm:DescribeParameters'
-                  - 'ssm:AddTagsToResource'
-                  - 'ssm:RemoveTagsFromResource'
-                  - 'ssm:ListTagsForResource'
-                Resource: '*'
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                  - "ssm:GetParametersByPath"
+                  - "ssm:PutParameter"
+                  - "ssm:DeleteParameter"
+                  - "ssm:DescribeParameters"
+                  - "ssm:AddTagsToResource"
+                  - "ssm:RemoveTagsFromResource"
+                  - "ssm:ListTagsForResource"
+                Resource: "*"
               # CloudWatch Logs - needed for Lambda deployment
               - Effect: Allow
                 Action:
-                  - 'logs:*'
-                Resource: '*'
+                  - "logs:*"
+                Resource: "*"
+              # SES - email identity management and send quota checks
+              - Effect: Allow
+                Action:
+                  - "ses:*"
+                Resource: "*"
               # X-Ray - needed for tracing configuration
               - Effect: Allow
                 Action:
-                  - 'xray:PutTraceSegments'
-                  - 'xray:PutTelemetryRecords'
-                  - 'xray:GetSamplingRules'
-                  - 'xray:GetSamplingTargets'
-                Resource: '*'
+                  - "xray:PutTraceSegments"
+                  - "xray:PutTelemetryRecords"
+                  - "xray:GetSamplingRules"
+                  - "xray:GetSamplingTargets"
+                Resource: "*"
       Tags:
         - Key: Project
           Value: h-dcn
@@ -260,17 +265,17 @@ Resources:
     Properties:
       RoleName: NonprofitAdminRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${PersonalAccountId}:root'
-            Action: 'sts:AssumeRole'
+              AWS: !Sub "arn:aws:iam::${PersonalAccountId}:root"
+            Action: "sts:AssumeRole"
             Condition:
               Bool:
-                'aws:MultiFactorAuthPresent': 'true'
+                "aws:MultiFactorAuthPresent": "true"
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
       Tags:
         - Key: Project
           Value: h-dcn

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # --- Configuration ---
 
-ADMIN_EMAIL: str = 'ledenadministratie@h-dcn.nl'
+ADMIN_EMAIL: str = 'webmaster@h-dcn.nl'
 ORGANIZATION_IBAN: str = os.environ.get('ORGANIZATION_IBAN', 'NL00INGB0000000000')
 PORTAL_URL: str = os.environ.get('PORTAL_BASE_URL', 'https://portal.h-dcn.nl')
 

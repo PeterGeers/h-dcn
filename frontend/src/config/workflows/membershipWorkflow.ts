@@ -48,6 +48,7 @@ export const STATE_TO_STATUS: Record<MemberWorkflowState, string> = {
  * Ordered list of all workflow states in lifecycle order.
  */
 export const MEMBER_STATES: readonly MemberWorkflowState[] = [
+  'draft',
   'applied',
   'pending',
   'wait_payment',
@@ -59,6 +60,22 @@ export const MEMBER_STATES: readonly MemberWorkflowState[] = [
 // ============================================================================
 // TRANSITION DEFINITIONS
 // ============================================================================
+
+/**
+ * Transitions available from the 'draft' state.
+ * SUBMIT moves to 'applied' (application formally submitted).
+ * Only verzoek_lid users can execute this on their own record.
+ */
+const draftTransitions: TransitionConfig[] = [
+  {
+    event: 'SUBMIT',
+    target: 'applied',
+    label: 'workflows.membership.submit',
+    actors: ['verzoek_lid'],
+    confirmMessage: 'workflows.membership.confirm.submit',
+    description: 'workflows.membership.description.submit',
+  },
+];
 
 /**
  * Transitions available from the 'applied' state.
@@ -156,6 +173,7 @@ const suspendedTransitions: TransitionConfig[] = [
  */
 export const membershipWorkflow: WorkflowDefinition = {
   states: {
+    draft: { transitions: draftTransitions },
     applied: { transitions: appliedTransitions },
     pending: { transitions: pendingTransitions },
     wait_payment: { transitions: waitPaymentTransitions },

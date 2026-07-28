@@ -11,6 +11,13 @@ from .engine import WorkflowEngine
 
 MEMBERSHIP_TRANSITIONS: list[Transition] = [
     {
+        'from_state': MemberState.DRAFT,
+        'to_state': MemberState.APPLIED,
+        'event': MemberEvent.SUBMIT,
+        'actions': [],
+        'side_effects': ['send_application_received', 'notify_admin', 'audit_log'],
+    },
+    {
         'from_state': MemberState.APPLIED,
         'to_state': MemberState.PENDING,
         'event': MemberEvent.APPROVE,

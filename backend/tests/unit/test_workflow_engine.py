@@ -18,6 +18,11 @@ from shared.workflows.states import MemberState, MemberEvent
 class TestValidTransitions:
     """Valid transitions return success=True with correct new_state."""
 
+    def test_draft_submit_goes_to_applied(self) -> None:
+        result = membership_engine.execute('draft', 'SUBMIT')
+        assert result.success is True
+        assert result.new_state == 'applied'
+
     def test_applied_approve_goes_to_pending(self) -> None:
         result = membership_engine.execute('applied', 'APPROVE')
         assert result.success is True
@@ -99,6 +104,14 @@ class TestGuardAllows:
 
 class TestGetAllowedEvents:
     """get_allowed_events returns correct events for a given state."""
+
+    def test_draft_state_only_allows_submit(self) -> None:
+        events = membership_engine.get_allowed_events('draft')
+        assert events == ['SUBMIT']
+
+    def test_draft_state_rejects_approve(self) -> None:
+        result = membership_engine.execute('draft', 'APPROVE')
+        assert result.success is False
 
     def test_active_state_has_cancel_and_suspend(self) -> None:
         events = membership_engine.get_allowed_events('active')

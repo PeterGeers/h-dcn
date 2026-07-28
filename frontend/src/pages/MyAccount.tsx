@@ -5,7 +5,7 @@
  * Enhanced to support member application flow for verzoek_lid users
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -14,7 +14,17 @@ import {
   Alert,
   AlertIcon,
   Button,
-  Heading
+  Heading,
+  Badge,
+  HStack,
+  useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import MemberSelfServiceView from '../components/MemberSelfServiceView';
@@ -52,6 +62,10 @@ function MyAccount({ user }: MyAccountProps) {
   const { t } = useTranslation('members');
   
   const { handleError } = useErrorHandler();
+  const toast = useToast();
+  const { isOpen: isSubmitDialogOpen, onOpen: onSubmitDialogOpen, onClose: onSubmitDialogClose } = useDisclosure();
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check if user is verzoek_lid (applicant)
   useEffect(() => {
@@ -187,7 +201,12 @@ function MyAccount({ user }: MyAccountProps) {
         setShowApplicationForm(false);
         console.log('Member application processed successfully:', response.data);
         
-        // Don't reload the page - stay in application form for verzoek_lid users
+        toast({
+          title: t('application.saved_title'),
+          description: t('application.saved_message'),
+          status: 'success',
+          duration: 3000,
+        });
       } else {
         throw new Error(response.error || 'Failed to process member application');
       }
@@ -196,6 +215,60 @@ function MyAccount({ user }: MyAccountProps) {
       throw error; // Let the form handle the error display
     }
   };
+
+  // Handle formal submission via workflow engine (SUBMIT transition)
+  const handleSubmitApplication = useCallback(async () => {
+    if (!member?.member_id) return;
+    
+    setIsSubmitting(true);
+    onSubmitDialogClose();
+    
+    try {
+      // First save the latest data
+      // Then call the transition endpoint
+      const transitionResponse = await ApiService.post(
+        `/members/${member.member_id}/transition`,
+        { event: 'SUBMIT', context: {} }
+      );
+      
+      if (transitionResponse.success && transitionResponse.data?.success) {
+        // Refresh member data to get updated status
+        const refreshResponse = await ApiService.get('/members/me');
+        if (refreshResponse.success && refreshResponse.data) {
+          const memberData = 'member' in refreshResponse.data 
+            ? refreshResponse.data.member 
+            : refreshResponse.data;
+          if (memberData?.member_id) {
+            setMember(computeCalculatedFields(memberData));
+          }
+        }
+        
+        toast({
+          title: t('application.submitted_success_title'),
+          description: t('application.submitted_success_message'),
+          status: 'success',
+          duration: 5000,
+        });
+      } else {
+        const errorMsg = transitionResponse.data?.error || transitionResponse.error || 'Submission failed';
+        toast({
+          title: t('application.submit_error_title'),
+          description: errorMsg,
+          status: 'error',
+          duration: 5000,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: t('application.submit_error_title'),
+        description: error.message || 'Network error',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [member, toast, t, onSubmitDialogClose]);
 
   if (loading) {
     return (
@@ -226,8 +299,10 @@ function MyAccount({ user }: MyAccountProps) {
   // OR for verzoek_lid users with existing applications that are still pending (status: 'Aangemeld')
   // Check if member has actual application data (not just member_id and email)
   const hasApplicationData = member && (member.voornaam || member.achternaam || member.straat);
+  const isDraft = member && !member.status;
+  const isSubmitted = member && !!member.status;
   
-  if (showApplicationForm || (isVerzoekLid && (!hasApplicationData || member?.status === 'Aangemeld'))) {
+  if (showApplicationForm || (isVerzoekLid && !hasApplicationData && !isSubmitted)) {
     return (
       <NewMemberApplicationForm
         userEmail={user?.attributes?.email || ''}
@@ -237,38 +312,110 @@ function MyAccount({ user }: MyAccountProps) {
     );
   }
 
-  // Show member data if it exists AND has actual application data
-  if (member && hasApplicationData) {
+  // Submitted state: show read-only with status badge
+  if (isVerzoekLid && isSubmitted && member) {
     return (
-      <VStack spacing={6} align="stretch">
-        {/* Show status for verzoek_lid users */}
-        {isVerzoekLid && (
-          <Box p={4} bg="orange.50" borderRadius="md" border="1px" borderColor="orange.200">
+      <Box maxW="800px" mx="auto" p={6}>
+        <VStack spacing={6} align="stretch">
+          <Box p={4} bg="green.900" borderRadius="md" border="1px" borderColor="green.400">
             <VStack align="start" spacing={2}>
-              <Heading size="sm" color="orange.700">{t('application.status_title')}</Heading>
-              <Text fontSize="sm" color="orange.600">
-                {t('application.status_label')} <strong>{member.status || 'Aangemeld'}</strong>
+              <HStack>
+                <Heading size="sm" color="green.300">{t('application.status_title')}</Heading>
+                <Badge colorScheme="green" fontSize="sm">{member.status}</Badge>
+              </HStack>
+              <Text fontSize="sm" color="green.200">
+                {t('application.submitted_info')}
               </Text>
-              <Text fontSize="sm" color="orange.600">
-                {t('application.submitted_label')} {member.created_at ? new Date(member.created_at).toLocaleDateString('nl-NL') : t('labels.unknown', { ns: 'common' })}
-              </Text>
-              <Button
-                size="sm"
-                colorScheme="orange"
-                variant="outline"
-                onClick={() => setShowApplicationForm(true)}
-              >
-                {t('application.edit_data')}
-              </Button>
             </VStack>
           </Box>
-        )}
-        
-        <MemberSelfServiceView 
-          member={member}
-          onUpdate={handleMemberUpdate}
-        />
-      </VStack>
+          
+          <MemberSelfServiceView 
+            member={member}
+            onUpdate={handleMemberUpdate}
+            readOnly={true}
+          />
+        </VStack>
+      </Box>
+    );
+  }
+
+  // Draft state: show form with save + submit buttons
+  if (isVerzoekLid && isDraft && hasApplicationData && member) {
+    return (
+      <Box maxW="800px" mx="auto" p={6}>
+        <VStack spacing={6} align="stretch">
+          <Box p={4} bg="yellow.900" borderRadius="md" border="1px" borderColor="yellow.400">
+            <VStack align="start" spacing={2}>
+              <HStack>
+                <Heading size="sm" color="yellow.300">{t('application.draft_title')}</Heading>
+                <Badge colorScheme="yellow" fontSize="sm">{t('application.draft_badge')}</Badge>
+              </HStack>
+              <Text fontSize="sm" color="yellow.200">
+                {t('application.draft_info')}
+              </Text>
+              <HStack spacing={3} pt={2}>
+                <Button
+                  size="sm"
+                  colorScheme="orange"
+                  variant="outline"
+                  onClick={() => setShowApplicationForm(true)}
+                >
+                  {t('application.edit_data')}
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme="green"
+                  onClick={onSubmitDialogOpen}
+                  isLoading={isSubmitting}
+                >
+                  {t('application.submit_button')}
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+          
+          <MemberSelfServiceView 
+            member={member}
+            onUpdate={handleMemberUpdate}
+          />
+
+          {/* Submit confirmation dialog */}
+          <AlertDialog
+            isOpen={isSubmitDialogOpen}
+            leastDestructiveRef={cancelRef}
+            onClose={onSubmitDialogClose}
+          >
+            <AlertDialogOverlay>
+              <AlertDialogContent bg="gray.800" color="white">
+                <AlertDialogHeader fontSize="lg" fontWeight="bold" color="orange.300">
+                  {t('application.confirm_submit_title')}
+                </AlertDialogHeader>
+                <AlertDialogBody>
+                  {t('application.confirm_submit_message')}
+                </AlertDialogBody>
+                <AlertDialogFooter>
+                  <Button ref={cancelRef} onClick={onSubmitDialogClose} variant="ghost">
+                    {t('application.confirm_cancel')}
+                  </Button>
+                  <Button colorScheme="green" onClick={handleSubmitApplication} ml={3}>
+                    {t('application.confirm_submit')}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialogOverlay>
+          </AlertDialog>
+        </VStack>
+      </Box>
+    );
+  }
+
+  // Show member data for regular members (hdcnLeden)
+  if (member && hasApplicationData) {
+    return (
+      <MemberSelfServiceView 
+        member={member}
+        onUpdate={handleMemberUpdate}
+      />
     );
   }
 

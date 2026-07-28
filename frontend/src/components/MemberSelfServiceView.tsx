@@ -40,11 +40,13 @@ import { getCalculatedFieldValue } from '../utils/calculatedFields';
 interface MemberSelfServiceViewProps {
   member: any;
   onUpdate: (data: any) => Promise<void>;
+  readOnly?: boolean;
 }
 
 const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({ 
   member, 
-  onUpdate
+  onUpdate,
+  readOnly = false
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -342,8 +344,8 @@ const MemberSelfServiceView: React.FC<MemberSelfServiceViewProps> = ({
                   })
                   .map(section => renderSection(section, values, errors, touched, setFieldValue))}
 
-                {/* Save Button - Only show if there are changes */}
-                {hasChanges && (
+                {/* Save Button - Only show if there are changes and not readOnly */}
+                {hasChanges && !readOnly && (
                   <Box 
                     position="fixed" 
                     bottom={6} 

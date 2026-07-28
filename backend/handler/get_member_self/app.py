@@ -212,6 +212,14 @@ def update_own_member_data(event, member_id, user_email, user_roles):
         
         if 'Item' not in response:
             return create_error_response(404, 'Member record not found')
+
+        # Guard: reject updates if application has already been submitted
+        existing_status = response['Item'].get('status')
+        if existing_status:
+            return create_error_response(
+                403,
+                'Aanvraag is ingediend en kan niet meer worden gewijzigd. Neem contact op met webmaster@h-dcn.nl voor wijzigingen.'
+            )
         
         # Build update expression for allowed fields
         # These fields match the selfService: true permissions in frontend/src/config/memberFields.ts
@@ -323,7 +331,6 @@ def create_own_member_data(event, member_id, user_email, user_roles, cognito_use
         member_data = {
             'member_id': member_id,
             'email': user_email,
-            'status': 'Aangemeld',  # Initial status for new applications
             'created': timestamp,
             'lastModified': timestamp,
             **body  # Include all fields from the application form

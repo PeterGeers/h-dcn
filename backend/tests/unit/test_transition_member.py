@@ -546,3 +546,94 @@ class TestRequestValidation:
         body = json.loads(response['body'])
         assert 'error' in body
         assert 'not part of the membership workflow' in body['error'].lower()
+
+
+class TestSelfServiceSubmit:
+    """Test self-service SUBMIT by verzoek_lid users."""
+
+    def test_submit_from_draft_by_verzoek_lid(self, setup_handler):
+        """SUBMIT: verzoek_lid user submits their own draft record → Aangemeld."""
+        table, handler = setup_handler
+
+        # Create draft member record (no status field)
+        table.put_item(Item={
+            'member_id': 'member-060',
+            'voornaam': 'Nieuw',
+            'achternaam': 'Lid',
+            'email': 'nieuw@example.nl',
+            'regio': 'Utrecht',
+            'lidmaatschap': 'Gewoon lid',
+        })
+
+        event = _make_event('member-060', {'event': 'SUBMIT', 'context': {}})
+
+        # Patch auth to simulate verzoek_lid user who owns this record
+        with patch.multiple(
+            'app',
+            extract_user_credentials=lambda ev: ('nieuw@example.nl', ['verzoek_lid'], None),
+            log_successful_access=lambda *a, **kw: None,
+        ):
+            response = handler.lambda_handler(event, None)
+
+        body = json.loads(response['body'])
+        assert response['statusCode'] == 200
+        assert body['success'] is True
+        assert body['new_status'] == 'Aangemeld'
+
+        # Verify status was persisted
+        item = table.get_item(Key={'member_id': 'member-060'})['Item']
+        assert item['status'] == 'Aangemeld'
+        assert 'status_history' in item
+        assert item['status_history'][0]['event'] == 'SUBMIT'
+
+    def test_submit_blocked_for_wrong_member_id(self, setup_handler):
+        """SUBMIT: verzoek_lid user tries to submit someone else's record → 403."""
+        table, handler = setup_handler
+
+        table.put_item(Item={
+            'member_id': 'member-061',
+            'voornaam': 'Ander',
+            'achternaam': 'Persoon',
+            'email': 'ander@example.nl',
+        })
+
+        event = _make_event('member-061', {'event': 'SUBMIT', 'context': {}})
+
+        # verzoek_lid user with DIFFERENT email than record owner
+        with patch.multiple(
+            'app',
+            extract_user_credentials=lambda ev: ('hacker@example.nl', ['verzoek_lid'], None),
+            log_successful_access=lambda *a, **kw: None,
+        ):
+            response = handler.lambda_handler(event, None)
+
+        assert response['statusCode'] == 403
+        body = json.loads(response['body'])
+        assert 'own application' in body['error'].lower()
+
+    def test_submit_blocked_if_already_submitted(self, setup_handler):
+        """SUBMIT: record already has status → engine rejects (not a draft)."""
+        table, handler = setup_handler
+
+        # Record already has status 'Aangemeld' (already submitted)
+        table.put_item(Item={
+            'member_id': 'member-062',
+            'status': 'Aangemeld',
+            'voornaam': 'Al',
+            'achternaam': 'Ingediend',
+            'email': 'al@example.nl',
+        })
+
+        event = _make_event('member-062', {'event': 'SUBMIT', 'context': {}})
+
+        with patch.multiple(
+            'app',
+            extract_user_credentials=lambda ev: ('al@example.nl', ['verzoek_lid'], None),
+            log_successful_access=lambda *a, **kw: None,
+        ):
+            response = handler.lambda_handler(event, None)
+
+        # Engine returns 400 because SUBMIT is only valid from 'draft' state
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert 'not allowed' in body['error'].lower()
