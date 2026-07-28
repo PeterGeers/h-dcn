@@ -28,6 +28,9 @@ from shared.workflows.states import MemberState
 from shared.workflows.dispatcher import ActionDispatcher
 from shared.workflows.types import TransitionResult
 
+from actions import register_actions
+from email_side_effects import register_email_side_effects
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -59,10 +62,12 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ.get('MEMBERS_TABLE_NAME', 'Members'))
 
 # ---------------------------------------------------------------------------
-# Dispatcher instance (actions registered by task 1.2)
+# Dispatcher instance (actions + side effects registered at module load)
 # ---------------------------------------------------------------------------
 
 dispatcher = ActionDispatcher()
+register_actions(dispatcher)
+register_email_side_effects(dispatcher)
 
 
 # ---------------------------------------------------------------------------
