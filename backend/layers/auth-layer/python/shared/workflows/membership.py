@@ -35,7 +35,7 @@ MEMBERSHIP_TRANSITIONS: list[Transition] = [
         'from_state': MemberState.WAIT_PAYMENT,
         'to_state': MemberState.ACTIVE,
         'event': MemberEvent.PAYMENT_RECEIVED,
-        'actions': ['activate_member', 'mark_invoice_paid'],
+        'actions': ['activate_member', 'mark_invoice_paid', 'flag_welcome_pack'],
         'side_effects': ['send_welcome_email', 'audit_log'],
     },
     {
