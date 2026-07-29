@@ -213,9 +213,11 @@ def update_own_member_data(event, member_id, user_email, user_roles):
         if 'Item' not in response:
             return create_error_response(404, 'Member record not found')
 
-        # Guard: reject updates if application has already been submitted
+        # Guard: reject updates if application is pending approval
+        # Active/approved members CAN update their own profile (language, address, etc.)
         existing_status = response['Item'].get('status')
-        if existing_status:
+        application_pending_statuses = ['new_applicant', 'pending']
+        if existing_status in application_pending_statuses:
             return create_error_response(
                 403,
                 'Aanvraag is ingediend en kan niet meer worden gewijzigd. Neem contact op met webmaster@h-dcn.nl voor wijzigingen.'
