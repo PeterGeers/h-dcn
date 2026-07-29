@@ -34,8 +34,7 @@ function ApplicantGuard({ user, children }: ApplicantGuardProps) {
 
   // Routes that applicants can access without completing their application
   const applicantAllowedRoutes = [
-    '/new-member-application',
-    '/application-submitted'
+    '/my-account'
   ];
 
   useEffect(() => {
@@ -101,7 +100,7 @@ function ApplicantGuard({ user, children }: ApplicantGuardProps) {
 
   useEffect(() => {
     if (shouldRedirect && !isChecking) {
-      navigate('/new-member-application', { replace: true });
+      navigate('/my-account', { replace: true });
     }
   }, [shouldRedirect, isChecking, navigate]);
 

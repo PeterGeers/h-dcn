@@ -72,42 +72,30 @@ function Dashboard() {
       }
 
       // Check if user has either verzoek_lid or hdcnLeden role for member lookup
-      if (hasHdcnLedenRole || hasVerzoekLidRole) {
+      if (hasVerzoekLidRole) {
+        // verzoek_lid users always go to MyAccount (single application flow)
+        navigate('/my-account');
+        return;
+      }
+      
+      if (hasHdcnLedenRole) {
         try {
           const existingMember = await membershipService.getMemberByEmail(user.email);
           
-          if (hasHdcnLedenRole && !existingMember) {
+          if (!existingMember) {
             // hdcnLeden users should always have data in the members table
             console.error('Dashboard - hdcnLeden user not found in database, this is unexpected');
-            // Still allow access but log the issue
-            setMemberExists(true);
-          } else if (hasVerzoekLidRole && !existingMember) {
-            // verzoek_lid users may not have data yet, redirect to application
-            navigate('/new-member-application');
-            return;
-          } else if (hasVerzoekLidRole && existingMember) {
-            // verzoek_lid users WITH data should go directly to their application
-            navigate('/my-account');
-            return;
-          } else {
-            // User found in database
-            setMemberExists(true);
           }
+          // Allow access regardless
+          setMemberExists(true);
         } catch (error) {
           console.error('Error checking membership status:', error);
-          
-          if (hasHdcnLedenRole) {
-            // For hdcnLeden, assume they exist and show dashboard on error
-            setMemberExists(true);
-          } else if (hasVerzoekLidRole) {
-            // For verzoek_lid, redirect to application on error
-            navigate('/new-member-application');
-            return;
-          }
+          // For hdcnLeden, assume they exist and show dashboard on error
+          setMemberExists(true);
         }
       } else if (hasNoGroups) {
-        // User has no groups at all, redirect to application
-        navigate('/new-member-application');
+        // User has no groups at all, redirect to MyAccount
+        navigate('/my-account');
         return;
       } else {
         // User has some other roles but not verzoek_lid or hdcnLeden

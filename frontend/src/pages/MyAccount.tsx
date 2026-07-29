@@ -71,7 +71,7 @@ function MyAccount({ user }: MyAccountProps) {
   useEffect(() => {
     let userRoles: string[] = [];
     
-    // Try to get roles from JWT token directly (same method as NewMemberApplication)
+    // Try to get roles from JWT token directly
     try {
       const accessToken = (user?.signInUserSession?.accessToken as any)?.jwtToken;
       if (accessToken) {
@@ -458,9 +458,6 @@ function MyAccount({ user }: MyAccountProps) {
           <Text fontWeight="semibold">{t('no_member.title')}</Text>
           <Text fontSize="sm">
             {t('no_member.message')}
-            <Text as="a" href="/new-member-application" color="orange.500" textDecoration="underline" ml={1}>
-              {t('no_member.apply_link')}
-            </Text>
           </Text>
         </VStack>
       </Alert>

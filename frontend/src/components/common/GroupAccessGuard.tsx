@@ -35,16 +35,13 @@ function GroupAccessGuard({ children }: GroupAccessGuardProps) {
   // Routes that applicants (verzoek_lid) can access
   const applicantAllowedRoutes = [
     '/',                        // Dashboard (for redirect logic)
-    '/new-member-application',
-    '/application-submitted',
-    '/my-account'  // Allow verzoek_lid users to access MyAccount for self-service application
+    '/my-account'              // Self-service application flow
   ];
 
   // Routes that users without any groups can access
   const newUserAllowedRoutes = [
     '/',                        // Dashboard (for redirect logic)
-    '/new-member-application',
-    '/application-submitted'
+    '/my-account'              // Self-service application flow
   ];
 
   // Check user status
@@ -89,7 +86,7 @@ function GroupAccessGuard({ children }: GroupAccessGuardProps) {
 
             <VStack spacing={3}>
               <Button
-                onClick={() => window.location.href = '/new-member-application'}
+                onClick={() => window.location.href = '/my-account'}
                 colorScheme="orange"
                 size="lg"
               >

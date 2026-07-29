@@ -47,8 +47,7 @@ const EventAdminPage = lazy(() => import('./modules/events/EventAdminPage')) as 
 const MembershipManagement = lazy(() => import('./pages/MembershipManagement')) as any;
 const PasskeyTest = lazy(() => import('./components/auth/PasskeyTest')) as any;
 const BrowserCompatibilityTest = lazy(() => import('./components/auth/BrowserCompatibilityTest')) as any;
-const NewMemberApplication = lazy(() => import('./pages/NewMemberApplication')) as any;
-const ApplicationSubmitted = lazy(() => import('./pages/ApplicationSubmitted')) as any;
+
 const EventBookingPage = lazy(() => import('./modules/eventBooking/pages/EventBookingPage')) as any;
 const WebshopManagementPage = lazy(() => import('./modules/webshop-management/WebshopManagementPage')) as any;
 const EventLandingPage = lazy(() => import('./modules/events/EventLandingPage')) as any;
@@ -171,8 +170,7 @@ function AppContent({ signOut, user }: AppProps) {
             <Route path="/" element={<Dashboard />} />
             <Route path="/membership" element={<MembershipForm user={user} />} />
             <Route path="/my-account" element={<MyAccount user={user} />} />
-            <Route path="/new-member-application" element={<NewMemberApplication user={user} />} />
-            <Route path="/application-submitted" element={<ApplicationSubmitted />} />
+
             <Route path="/webshop" element={<WebshopPage user={user} />} />
             <Route path="/products" element={<ProductManagementPage user={user} />} />
             <Route path="/advanced-exports" element={<AdvancedExportsPage user={user} />} />
