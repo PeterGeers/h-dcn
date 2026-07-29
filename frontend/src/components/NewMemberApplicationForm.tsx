@@ -396,17 +396,6 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
 
       await onSubmit(submissionData);
       
-      const isUpdate = existingApplication !== null;
-      
-      toast({
-        title: isUpdate ? t('application_form.updated_title') : t('application_form.submitted_title'),
-        description: isUpdate 
-          ? t('application_form.updated_desc')
-          : t('application_form.submitted_desc'),
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
     } catch (error) {
       toast({
         title: t('application_form.submit_error_title'),
