@@ -362,11 +362,11 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         'nieuwsbrief', 'betaalwijze', 'bankrekeningnummer'
       ];
       
-      // For updates (PUT), don't include email and status as they shouldn't change
-      // For new applications (POST), include email and status
+      // For updates (PUT), don't include email as it shouldn't change
+      // For new applications (POST), include email (backend needs it for the record)
       const allowedFields = existingApplication 
-        ? baseAllowedFields  // PUT: exclude email and status
-        : [...baseAllowedFields, 'email', 'status']; // POST: include email and status
+        ? baseAllowedFields  // PUT: exclude email
+        : [...baseAllowedFields, 'email']; // POST: include email
       
       console.log('Is update (existingApplication):', !!existingApplication);
       console.log('Allowed fields for submission:', allowedFields);
@@ -384,11 +384,10 @@ const NewMemberApplicationForm: React.FC<NewMemberApplicationFormProps> = ({
         }
       });
       
-      // For new applications (POST), always include email and status
-      // For updates (PUT), don't include these as they shouldn't change
+      // For new applications (POST), always include email
+      // Status is NOT set here — it's set by the workflow transition (SUBMIT)
       if (!existingApplication) {
         submissionData.email = userEmail;
-        submissionData.status = 'Aangemeld';
       }
       
       console.log('Filtered submission data:', submissionData);
