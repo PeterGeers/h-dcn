@@ -6,6 +6,7 @@ It provides localized email templates with H-DCN branding for various message ty
 The locale is resolved from clientMetadata.locale passed by the frontend, with Dutch as fallback.
 
 Supported message types:
+- CustomMessage_SignUp: Email verification for new sign-ups
 - CustomMessage_AdminCreateUser: Welcome message for admin-created users
 - CustomMessage_ResendCode: Resend verification code
 - CustomMessage_ForgotPassword: Password recovery (for fallback scenarios)
@@ -91,6 +92,8 @@ def lambda_handler(event, context):
             event = handle_verify_user_attribute(event, display_name, email, locale)
         elif trigger_source == 'CustomMessage_Authentication':
             event = handle_authentication(event, display_name, email, locale)
+        elif trigger_source == 'CustomMessage_SignUp':
+            event = handle_sign_up(event, display_name, email, locale)
         # Handle passwordless account recovery scenarios
         elif 'Recovery' in trigger_source or 'recovery' in trigger_source.lower():
             event = handle_passwordless_recovery(event, display_name, email, locale)
@@ -357,6 +360,54 @@ Het {ORGANIZATION_SHORT_NAME} Team
     event['response']['emailSubject'] = subject
     
     return event
+
+
+def handle_sign_up(event, display_name, email, locale):
+    """Handle sign-up email verification code (6-digit).
+    
+    This is sent when a new user signs up with email (non-Google).
+    Cognito requires them to verify their email before the account is confirmed.
+    """
+    code_parameter = event.get('request', {}).get('codeParameter', '{####}')
+    
+    # Try locale-specific template via template service
+    try:
+        context = {
+            'DISPLAY_NAME': display_name,
+            'EMAIL': email,
+            'CODE': code_parameter
+        }
+        subject, message = template_service.render_template('sign-up-verification', context, locale=locale)
+        if message:
+            event['response']['emailMessage'] = message
+            event['response']['emailSubject'] = subject
+            return event
+    except Exception as e:
+        logger.warning(f"Template rendering failed for sign-up-verification/{locale}, using inline fallback: {e}")
+    
+    # Inline Dutch fallback
+    subject = f"{ORGANIZATION_SHORT_NAME} — Bevestig uw e-mailadres"
+    
+    message = f"""Hallo {display_name},
+
+Welkom bij {ORGANIZATION_SHORT_NAME}! Om uw account te activeren moet u eerst uw e-mailadres bevestigen.
+
+Uw verificatiecode is: {code_parameter}
+
+Voer deze code in op het scherm om uw e-mailadres te bevestigen.
+
+Na verificatie kunt u inloggen en uw lidmaatschapsaanvraag indienen.
+
+Met vriendelijke groet,
+Het {ORGANIZATION_SHORT_NAME} Team
+
+{get_email_footer()}"""
+
+    event['response']['emailMessage'] = message
+    event['response']['emailSubject'] = subject
+    
+    return event
+
 
 def handle_passwordless_recovery(event, display_name, email, locale):
     """Handle passwordless account recovery scenarios"""
