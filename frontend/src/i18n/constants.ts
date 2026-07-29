@@ -33,6 +33,7 @@ export const NAMESPACES = [
   'auth',
   'presmeet',
   'eventBooking',
+  'workflows',
 ] as const;
 
 export type Namespace = (typeof NAMESPACES)[number];
