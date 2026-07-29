@@ -41,7 +41,7 @@ function Dashboard() {
   useEffect(() => {
     const checkMembershipStatus = async () => {
       if (!user?.email) {
-        setIsCheckingMembership(false);
+        // Don't clear checking state yet — wait for auth to resolve
         return;
       }
 
