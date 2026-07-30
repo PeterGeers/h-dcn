@@ -74,7 +74,11 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const stableT = (key: string, fallback?: string) => fallback || key;
+const stableT = (key: string, fallback?: any) => {
+  if (typeof fallback === 'string') return fallback;
+  if (typeof fallback === 'object' && fallback?.location) return `Open ${fallback.location} in Maps`;
+  return key;
+};
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -100,12 +104,22 @@ jest.mock('@chakra-ui/react', () => {
     Wrap: ({ children }: any) => R.createElement('div', null, children),
     WrapItem: ({ children }: any) => R.createElement('div', null, children),
     Select: ({ children, onChange, value }: any) => R.createElement('select', { onChange, value }, children),
+    FormControl: ({ children }: any) => R.createElement('div', null, children),
+    FormLabel: ({ children }: any) => R.createElement('label', null, children),
     Input: ({ type, value, onChange }: any) => R.createElement('input', { type, value, onChange }),
     Button: ({ children, onClick }: any) => R.createElement('button', { onClick }, children),
     Spinner: () => R.createElement('div', { 'data-testid': 'loading-spinner' }),
     Center: ({ children }: any) => R.createElement('div', null, children),
     Alert: ({ children }: any) => R.createElement('div', { 'data-testid': 'error-alert', role: 'alert' }, children),
     AlertIcon: () => R.createElement('span', null),
+    Link: ({ children, href, isExternal, onClick }: any) =>
+      R.createElement('a', {
+        href,
+        onClick,
+        target: isExternal ? '_blank' : undefined,
+        rel: isExternal ? 'noopener noreferrer' : undefined,
+      }, children),
+    Icon: ({ children, viewBox }: any) => R.createElement('svg', { viewBox }, children),
     Modal: ({ children, isOpen, onClose }: any) =>
       isOpen ? R.createElement('div', { 'data-testid': 'event-detail-modal', role: 'dialog' }, children) : null,
     ModalOverlay: () => R.createElement('div', null),
@@ -118,6 +132,14 @@ jest.mock('@chakra-ui/react', () => {
 jest.mock('../../config/eventFields/eventTypes', () => ({
   EVENT_TYPES: ['ride', 'meeting', 'social'],
   EVENT_REGIOS: ['Noord', 'Zuid', 'Oost', 'West'],
+}));
+
+jest.mock('../../components/filters/FilterPanel', () => ({
+  FilterPanel: () => null,
+}));
+
+jest.mock('../../config/api', () => ({
+  API_CONFIG: { BASE_URL: 'http://localhost' },
 }));
 
 // eslint-disable-next-line import/first

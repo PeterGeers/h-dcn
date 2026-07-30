@@ -16,6 +16,7 @@ import {
   Button,
   Box,
 } from '@chakra-ui/react';
+import LocationMapLink from '../modules/events/components/LocationMapLink';
 
 // --- Types ---
 
@@ -138,9 +139,11 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
                 <Text fontSize="xs" color="gray.500" textTransform="uppercase">
                   {t('calendar.modal.location')}
                 </Text>
-                <Text fontSize="sm" color="gray.200">
-                  {event.location || '—'}
-                </Text>
+                {event.location?.trim() ? (
+                  <LocationMapLink location={event.location} fontSize="sm" color="gray.200" />
+                ) : (
+                  <Text fontSize="sm" color="gray.200">—</Text>
+                )}
               </Box>
 
               <Box>

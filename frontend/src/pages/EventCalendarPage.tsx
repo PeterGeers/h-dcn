@@ -18,6 +18,7 @@ import {
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
+import LocationMapLink from '../modules/events/components/LocationMapLink';
 import { API_CONFIG } from '../config/api';
 import { EVENT_TYPES, EVENT_REGIOS } from '../config/eventFields/eventTypes';
 import { FilterPanel } from '../components/filters/FilterPanel';
@@ -318,9 +319,11 @@ const EventCalendarPage: React.FC = () => {
                   <Text fontSize="sm" color="gray.400">
                     {formatDate(event.start_date)}
                   </Text>
-                  <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                    {event.location || t('calendar.card.noLocation')}
-                  </Text>
+                  {event.location?.trim() ? (
+                    <LocationMapLink location={event.location} fontSize="xs" color="gray.500" isTruncated maxW="100%" />
+                  ) : (
+                    <Text fontSize="xs" color="gray.500" noOfLines={1}>{t('calendar.card.noLocation')}</Text>
+                  )}
                 </VStack>
               </Box>
             ))}
