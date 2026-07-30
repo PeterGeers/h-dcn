@@ -3030,7 +3030,8 @@ Resources:
       Environment:
         Variables:
           EVENTS_TABLE_NAME: !Ref EventsTable
-          GOOGLE_CREDENTIALS_PARAMETER: /h-dcn/google-credentials
+          WIF_AUDIENCE: "//iam.googleapis.com/projects/1081576340476/locations/global/workloadIdentityPools/h-dcn-aws-pool/providers/aws-lambda-provider"
+          WIF_SERVICE_ACCOUNT_EMAIL: "hdcn-portal@hdcn-portal.iam.gserviceaccount.com"
       Events:
         SyncGoogleCalendar:
           Type: Api
@@ -3053,7 +3054,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: SSMReadGoogleCredentials
+        - PolicyName: SSMReadGooglePhotosOAuth
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -3061,7 +3062,6 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource:
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/google-credentials"
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/h-dcn/google-photos-oauth"
         - PolicyName: DynamoDBUpdateEvents
           PolicyDocument:
