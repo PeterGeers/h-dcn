@@ -146,9 +146,9 @@ def _build_wif_credentials() -> Any:
 
     Raises Exception on failure — caller must handle (no fallback to SSM).
     """
-    from google.auth import identity_pool
+    from google.auth import aws as google_auth_aws
 
-    credentials = identity_pool.Credentials(
+    credentials = google_auth_aws.Credentials(
         audience=WIF_AUDIENCE,
         subject_token_type="urn:ietf:params:aws:token-type:aws4_request",
         token_url="https://sts.googleapis.com/v1/token",

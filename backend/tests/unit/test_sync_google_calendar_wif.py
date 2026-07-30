@@ -49,27 +49,27 @@ class TestBuildWifCredentials:
     """Test _build_wif_credentials() configuration."""
 
     def _call_build_wif_credentials(self):
-        """Helper: load handler and call _build_wif_credentials with mocked identity_pool."""
+        """Helper: load handler and call _build_wif_credentials with mocked aws module."""
         with patch('boto3.client'), patch('boto3.resource'):
             app = _load_handler()
 
-        mock_identity_pool = MagicMock()
+        mock_google_auth_aws = MagicMock()
         mock_credentials_instance = MagicMock()
-        mock_identity_pool.Credentials.return_value = mock_credentials_instance
+        mock_google_auth_aws.Credentials.return_value = mock_credentials_instance
 
-        # Patch at the google.auth.identity_pool level so the handler's
-        # `from google.auth import identity_pool` resolves to our mock
+        # Patch at the google.auth.aws level so the handler's
+        # `from google.auth import aws as google_auth_aws` resolves to our mock
         mock_google_auth = MagicMock()
-        mock_google_auth.identity_pool = mock_identity_pool
+        mock_google_auth.aws = mock_google_auth_aws
 
         with patch.dict('sys.modules', {
             'google': MagicMock(),
             'google.auth': mock_google_auth,
-            'google.auth.identity_pool': mock_identity_pool,
+            'google.auth.aws': mock_google_auth_aws,
         }):
             result = app._build_wif_credentials()
 
-        return mock_identity_pool, result
+        return mock_google_auth_aws, result
 
     def test_returns_correct_audience(self):
         """WIF credentials should have the correct audience for h-dcn-aws-pool."""
@@ -105,8 +105,8 @@ class TestWifFailureHandling:
             app = _load_handler()
 
         # Mock WIF to raise an exception
-        mock_identity_pool = MagicMock()
-        mock_identity_pool.Credentials.side_effect = Exception("WIF token exchange failed: invalid audience")
+        mock_google_auth_aws = MagicMock()
+        mock_google_auth_aws.Credentials.side_effect = Exception("WIF token exchange failed: invalid audience")
 
         request_body = json.dumps({
             'event_id': 'test-123',
@@ -124,7 +124,7 @@ class TestWifFailureHandling:
             'headers': {'Authorization': 'Bearer test'},
         }
 
-        with patch.dict('sys.modules', {'google.auth.identity_pool': mock_identity_pool, 'google.auth': MagicMock()}):
+        with patch.dict('sys.modules', {'google.auth.aws': mock_google_auth_aws, 'google.auth': MagicMock()}):
             with patch.object(app, 'handle_options_request'), \
                  patch.object(app, 'cors_headers', return_value={}):
                 response = app.lambda_handler(event, None)
@@ -139,8 +139,8 @@ class TestWifFailureHandling:
         with patch('boto3.client', return_value=mock_ssm), patch('boto3.resource'):
             app = _load_handler()
 
-        mock_identity_pool = MagicMock()
-        mock_identity_pool.Credentials.side_effect = Exception("WIF failed")
+        mock_google_auth_aws = MagicMock()
+        mock_google_auth_aws.Credentials.side_effect = Exception("WIF failed")
 
         request_body = json.dumps({
             'event_id': 'test-456',
@@ -158,7 +158,7 @@ class TestWifFailureHandling:
             'headers': {'Authorization': 'Bearer test'},
         }
 
-        with patch.dict('sys.modules', {'google.auth.identity_pool': mock_identity_pool, 'google.auth': MagicMock()}):
+        with patch.dict('sys.modules', {'google.auth.aws': mock_google_auth_aws, 'google.auth': MagicMock()}):
             app.lambda_handler(event, None)
 
         # SSM get_parameter should never be called (no fallback)
