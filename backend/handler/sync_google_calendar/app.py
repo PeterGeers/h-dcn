@@ -6,7 +6,8 @@ Syncs events to Google Calendar based on status changes:
 - Status → 'archived' / delete: remove from Google Calendar
 - Field change (name, date, location) while published: update Google Calendar event
 
-Uses a service account (credentials from SSM Parameter Store).
+Uses Workload Identity Federation (WIF) for Google authentication:
+Lambda's AWS IAM execution role → Google token exchange → Calendar API access.
 Error handling: log failures but NEVER block the DynamoDB update.
 
 POST /sync-google-calendar (admin-only / internal invocation)
@@ -85,21 +86,27 @@ class SyncResult(TypedDict):
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-GOOGLE_CREDENTIALS_PARAMETER: str = os.environ.get(
-    'GOOGLE_CREDENTIALS_PARAMETER', '/h-dcn/google-credentials'
-)
 GOOGLE_PHOTOS_OAUTH_PARAMETER: str = os.environ.get(
     'GOOGLE_PHOTOS_OAUTH_PARAMETER', '/h-dcn/google-photos-oauth'
 )
 EVENTS_TABLE_NAME: str = os.environ.get('EVENTS_TABLE_NAME', 'Events')
+
+# WIF configuration
+WIF_AUDIENCE: str = os.environ.get(
+    'WIF_AUDIENCE',
+    '//iam.googleapis.com/projects/1081576340476/locations/global/workloadIdentityPools/h-dcn-aws-pool/providers/aws-lambda-provider'
+)
+WIF_SERVICE_ACCOUNT_EMAIL: str = os.environ.get(
+    'WIF_SERVICE_ACCOUNT_EMAIL',
+    'hdcn-portal@hdcn-portal.iam.gserviceaccount.com'
+)
 
 # Calendar ID routing by event_type
 CALENDAR_INTERNATIONAAL: str = 'h-dcn.nl_tdqsqddtask5sa8hola0sga4a0@group.calendar.google.com'
 CALENDAR_NATIONAAL: str = 'h-dcn.nl_0pth567r0u62j086o4m3urio84@group.calendar.google.com'
 CALENDAR_DIVERSEN: str = 'h-dcn.nl_voetgs35u59e808nhr9t35bidc@group.calendar.google.com'
 
-# Module-level cache for Google credentials (persists across warm starts)
-_cached_credentials_json: str | None = None
+# Module-level cache for Google Photos OAuth (persists across warm starts)
 _cached_photos_oauth: dict[str, str] | None = None
 
 ssm_client = boto3.client('ssm')
@@ -124,40 +131,51 @@ def _get_calendar_id(event_type: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Google Calendar Service
+# Google Calendar Service (Workload Identity Federation)
 # ---------------------------------------------------------------------------
 
-def _get_google_credentials_json() -> str:
-    """Fetch Google service account credentials JSON from SSM Parameter Store."""
-    global _cached_credentials_json
-    if _cached_credentials_json is not None:
-        return _cached_credentials_json
+def _build_wif_credentials() -> Any:
+    """
+    Build Google credentials via Workload Identity Federation.
 
-    response = ssm_client.get_parameter(
-        Name=GOOGLE_CREDENTIALS_PARAMETER,
-        WithDecryption=True,
+    Uses the Lambda's AWS IAM execution role to obtain a short-lived
+    Google OAuth 2.0 access token via WIF (AWS → Google token exchange).
+
+    No static service account key required — authentication is based on
+    the Lambda's IAM role identity.
+
+    Raises Exception on failure — caller must handle (no fallback to SSM).
+    """
+    from google.auth import identity_pool
+
+    credentials = identity_pool.Credentials(
+        audience=WIF_AUDIENCE,
+        subject_token_type="urn:ietf:params:aws:token-type:aws4_request",
+        token_url="https://sts.googleapis.com/v1/token",
+        credential_source={
+            "environment_id": "aws1",
+            "region_url": "http://169.254.169.254/latest/meta-data/placement/availability-zone",
+            "url": "http://169.254.169.254/latest/meta-data/iam/security-credentials",
+            "regional_cred_verification_url": "https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+        },
+        scopes=["https://www.googleapis.com/auth/calendar"],
+        service_account_impersonation_url=(
+            f"https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/{WIF_SERVICE_ACCOUNT_EMAIL}:generateAccessToken"
+        ),
     )
-    _cached_credentials_json = response['Parameter']['Value']
-    return _cached_credentials_json
+    return credentials
 
 
 def _build_calendar_service() -> Any:
     """
-    Build a Google Calendar API service using service account credentials.
+    Build a Google Calendar API service using WIF credentials.
 
     Returns a googleapiclient.discovery.Resource for the Calendar API v3.
+    Raises on WIF failure — no fallback to SSM parameter.
     """
-    from google.oauth2.service_account import Credentials
     from googleapiclient.discovery import build
 
-    creds_json: str = _get_google_credentials_json()
-    creds_dict: dict[str, Any] = json.loads(creds_json)
-
-    credentials = Credentials.from_service_account_info(
-        creds_dict,
-        scopes=['https://www.googleapis.com/auth/calendar'],
-    )
-
+    credentials = _build_wif_credentials()
     service = build('calendar', 'v3', credentials=credentials, cache_discovery=False)
     return service
 
@@ -216,7 +234,13 @@ def sync_event(event_id: str, event_data: EventData) -> SyncResult:
 
     try:
         service = _build_calendar_service()
+    except Exception as e:
+        # WIF authentication failure — no fallback, raise to caller
+        error_msg = f"Google authentication failed (WIF): {str(e)}"
+        logger.error(f"{error_msg} for event {event_id}", exc_info=True)
+        raise RuntimeError(error_msg) from e
 
+    try:
         if gcal_id:
             # Update existing event
             result = service.events().update(
@@ -243,6 +267,8 @@ def sync_event(event_id: str, event_data: EventData) -> SyncResult:
         )
         # Return existing ID unchanged — don't block the caller
         return SyncResult(google_calendar_event_id=gcal_id)
+        # Return existing ID unchanged — don't block the caller
+        return SyncResult(google_calendar_event_id=gcal_id)
 
 
 def delete_event(event_id: str, event_data: EventData) -> SyncResult:
@@ -264,6 +290,13 @@ def delete_event(event_id: str, event_data: EventData) -> SyncResult:
 
     try:
         service = _build_calendar_service()
+    except Exception as e:
+        # WIF authentication failure — no fallback, raise to caller
+        error_msg = f"Google authentication failed (WIF): {str(e)}"
+        logger.error(f"{error_msg} for event {event_id}", exc_info=True)
+        raise RuntimeError(error_msg) from e
+
+    try:
         service.events().delete(
             calendarId=calendar_id,
             eventId=gcal_id,
