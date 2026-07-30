@@ -25,6 +25,14 @@ MEMBERSHIP_TRANSITIONS: list[Transition] = [
         'side_effects': ['audit_log'],
     },
     {
+        'from_state': MemberState.APPLIED,
+        'to_state': MemberState.REJECTED,
+        'event': MemberEvent.REJECT,
+        'guard': requires_reason,
+        'actions': [],
+        'side_effects': ['send_rejection_email', 'audit_log'],
+    },
+    {
         'from_state': MemberState.PENDING,
         'to_state': MemberState.WAIT_PAYMENT,
         'event': MemberEvent.APPROVE,
@@ -32,11 +40,27 @@ MEMBERSHIP_TRANSITIONS: list[Transition] = [
         'side_effects': ['send_payment_request', 'audit_log'],
     },
     {
+        'from_state': MemberState.PENDING,
+        'to_state': MemberState.REJECTED,
+        'event': MemberEvent.REJECT,
+        'guard': requires_reason,
+        'actions': [],
+        'side_effects': ['send_rejection_email', 'audit_log'],
+    },
+    {
         'from_state': MemberState.WAIT_PAYMENT,
         'to_state': MemberState.ACTIVE,
         'event': MemberEvent.PAYMENT_RECEIVED,
         'actions': ['activate_member', 'mark_invoice_paid', 'flag_welcome_pack'],
         'side_effects': ['send_welcome_email', 'audit_log'],
+    },
+    {
+        'from_state': MemberState.WAIT_PAYMENT,
+        'to_state': MemberState.REJECTED,
+        'event': MemberEvent.REJECT,
+        'guard': requires_reason,
+        'actions': [],
+        'side_effects': ['send_rejection_email', 'audit_log'],
     },
     {
         'from_state': MemberState.ACTIVE,

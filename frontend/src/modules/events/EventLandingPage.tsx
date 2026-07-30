@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { API_CONFIG } from '../../config/api';
 import { useAuth } from '../../context/AuthProvider';
+import LocationMapLink from './components/LocationMapLink';
 
 // --- Types ---
 
@@ -215,9 +216,7 @@ const EventLandingPage: React.FC = () => {
                     <Text color="gray.500" fontSize="sm" fontWeight="bold">
                       {t('landing.posterView.location')}:
                     </Text>
-                    <Text color="gray.300" fontSize="sm">
-                      {event.location}
-                    </Text>
+                    <LocationMapLink location={event.location} color="gray.300" fontSize="sm" />
                   </HStack>
                 )}
 
@@ -353,7 +352,7 @@ const EventLandingPage: React.FC = () => {
             <HStack spacing={4} flexWrap="wrap" color="gray.300" fontSize="sm">
               <Text>{formatDateRange(event.start_date, event.end_date)}</Text>
               <Text>•</Text>
-              <Text>{event.location}</Text>
+              <LocationMapLink location={event.location} color="inherit" fontSize="inherit" />
             </HStack>
             {/* CTA in hero */}
             <Box pt={4}>

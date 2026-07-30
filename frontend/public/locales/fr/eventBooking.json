@@ -469,5 +469,8 @@
     "pattern": "Saisie invalide",
     "invalid_number": "Veuillez entrer un nombre valide",
     "invalid_option": "Veuillez sélectionner une option valide"
+  },
+  "location": {
+    "openInMaps": "Ouvrir {{location}} dans Google Maps (ouvre dans un nouvel onglet)"
   }
 }

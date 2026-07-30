@@ -503,5 +503,8 @@
     "pattern": "Ungültige Eingabe",
     "invalid_number": "Bitte geben Sie eine gültige Nummer ein",
     "invalid_option": "Bitte wählen Sie eine gültige Option"
+  },
+  "location": {
+    "openInMaps": "{{location}} in Google Maps öffnen (öffnet in neuem Tab)"
   }
 }

@@ -585,5 +585,8 @@
     "pattern": "Invalid input",
     "invalid_number": "Please enter a valid number",
     "invalid_option": "Please select a valid option"
+  },
+  "location": {
+    "openInMaps": "Open {{location}} in Google Maps (opens in new tab)"
   }
 }

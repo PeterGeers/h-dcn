@@ -25,6 +25,7 @@ export const STATUS_TO_STATE: Record<string, MemberWorkflowState> = {
   Actief: 'active',
   Opgezegd: 'cancelled',
   Geschorst: 'suspended',
+  Afgewezen: 'rejected',
 };
 
 /**
@@ -39,6 +40,7 @@ export const STATE_TO_STATUS: Record<MemberWorkflowState, string> = {
   active: 'Actief',
   cancelled: 'Opgezegd',
   suspended: 'Geschorst',
+  rejected: 'Afgewezen',
 };
 
 // ============================================================================
@@ -56,6 +58,7 @@ export const MEMBER_STATES: readonly MemberWorkflowState[] = [
   'active',
   'cancelled',
   'suspended',
+  'rejected',
 ];
 
 // ============================================================================
@@ -91,6 +94,15 @@ const appliedTransitions: TransitionConfig[] = [
     confirmMessage: 'workflows.membership.confirm.approve',
     description: 'workflows.membership.description.approve',
   },
+  {
+    event: 'REJECT',
+    target: 'rejected',
+    label: 'workflows.membership.reject',
+    actors: ['Members_CRUD', 'Members_Status_Approve'],
+    requiredFields: ['reason'],
+    confirmMessage: 'workflows.membership.confirm.reject',
+    description: 'workflows.membership.description.reject',
+  },
 ];
 
 /**
@@ -107,6 +119,15 @@ const pendingTransitions: TransitionConfig[] = [
     confirmMessage: 'workflows.membership.confirm.approvePayment',
     description: 'workflows.membership.description.approvePayment',
   },
+  {
+    event: 'REJECT',
+    target: 'rejected',
+    label: 'workflows.membership.reject',
+    actors: ['Members_CRUD', 'Members_Status_Approve'],
+    requiredFields: ['reason'],
+    confirmMessage: 'workflows.membership.confirm.reject',
+    description: 'workflows.membership.description.reject',
+  },
 ];
 
 /**
@@ -121,6 +142,15 @@ const waitPaymentTransitions: TransitionConfig[] = [
     actors: ['Members_CRUD', 'Members_Status_Approve'],
     confirmMessage: 'workflows.membership.confirm.paymentReceived',
     description: 'workflows.membership.description.paymentReceived',
+  },
+  {
+    event: 'REJECT',
+    target: 'rejected',
+    label: 'workflows.membership.reject',
+    actors: ['Members_CRUD', 'Members_Status_Approve'],
+    requiredFields: ['reason'],
+    confirmMessage: 'workflows.membership.confirm.reject',
+    description: 'workflows.membership.description.reject',
   },
 ];
 
@@ -181,5 +211,6 @@ export const membershipWorkflow: WorkflowDefinition = {
     active: { transitions: activeTransitions },
     cancelled: { transitions: [] },
     suspended: { transitions: suspendedTransitions },
+    rejected: { transitions: [] },
   },
 };

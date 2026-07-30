@@ -6,6 +6,7 @@ import {
 import { AddIcon } from '@chakra-ui/icons';
 import EventForm from './EventForm';
 import CSVExportButton from './CSVExportButton';
+import LocationMapLink from './LocationMapLink';
 import { Event } from '../../../types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
 import { FunctionPermissionManager, getUserRoles } from '../../../utils/functionPermissions';
@@ -258,7 +259,7 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
                   }
                 </Td>
                 <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
-                  <Text isTruncated maxW="120px">{event.location || ''}</Text>
+                  <LocationMapLink location={event.location} isTruncated maxW="120px" fontSize="inherit" color="inherit" />
                 </Td>
                 <Td color="white" fontSize={{ base: 'xs', md: 'sm' }} display={{ base: 'none', md: 'table-cell' }}>
                   {EVENT_TYPE_LABELS[event.event_type as keyof typeof EVENT_TYPE_LABELS] || event.event_type || ''}

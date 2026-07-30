@@ -9,11 +9,13 @@ class MemberState(StrEnum):
     ACTIVE = 'active'
     CANCELLED = 'cancelled'
     SUSPENDED = 'suspended'
+    REJECTED = 'rejected'
 
 
 class MemberEvent(StrEnum):
     SUBMIT = 'SUBMIT'
     APPROVE = 'APPROVE'
+    REJECT = 'REJECT'
     PAYMENT_RECEIVED = 'PAYMENT_RECEIVED'
     CANCEL = 'CANCEL'
     SUSPEND = 'SUSPEND'

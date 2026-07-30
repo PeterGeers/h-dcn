@@ -552,5 +552,8 @@
     "pattern": "Ugyldig indtastning",
     "invalid_number": "Indtast venligst et gyldigt nummer",
     "invalid_option": "Vælg venligst en gyldig mulighed"
+  },
+  "location": {
+    "openInMaps": "Åbn {{location}} i Google Maps (åbner i ny fane)"
   }
 }

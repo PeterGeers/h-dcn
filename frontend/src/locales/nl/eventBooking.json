@@ -585,5 +585,8 @@
     "pattern": "Ongeldige invoer",
     "invalid_number": "Voer een geldig nummer in",
     "invalid_option": "Selecteer een geldige optie"
+  },
+  "location": {
+    "openInMaps": "Open {{location}} in Google Maps (opent in nieuw tabblad)"
   }
 }

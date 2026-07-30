@@ -341,5 +341,8 @@
     "pattern": "Ogiltig inmatning",
     "invalid_number": "Ange ett giltigt nummer",
     "invalid_option": "Välj ett giltigt alternativ"
+  },
+  "location": {
+    "openInMaps": "Öppna {{location}} i Google Maps (öppnas i ny flik)"
   }
 }

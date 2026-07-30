@@ -1,6 +1,7 @@
 {
   "membership": {
     "approve": "Goedkeuren",
+    "reject": "Afwijzen",
     "paymentReceived": "Betaling ontvangen",
     "cancel": "Opzeggen",
     "suspend": "Schorsen",
@@ -8,6 +9,7 @@
     "confirm": {
       "approve": "Weet je zeker dat je dit lid wilt goedkeuren? Er wordt een betaalverzoek per e-mail verstuurd.",
       "approvePayment": "Weet je zeker dat je dit lid wilt goedkeuren voor betaling? De regio is toegewezen.",
+      "reject": "Weet je zeker dat je deze aanvraag wilt afwijzen? De aanvrager ontvangt een e-mail met de reden.",
       "paymentReceived": "Bevestig dat de betaling is ontvangen. Het lidmaatschap wordt geactiveerd.",
       "cancel": "Weet je zeker dat je dit lidmaatschap wilt opzeggen?",
       "suspend": "Weet je zeker dat je dit lid wilt schorsen? Het lid verliest tijdelijk toegang.",
@@ -16,6 +18,7 @@
     "description": {
       "approve": "Keur de aanmelding goed en verstuur een betaalverzoek",
       "approvePayment": "Keur het lid goed en verstuur een betaalverzoek",
+      "reject": "Wijs de aanvraag af en stuur een afwijzingsmail",
       "paymentReceived": "Markeer de betaling als ontvangen en activeer het lidmaatschap",
       "cancel": "Zeg het lidmaatschap op",
       "suspend": "Schors het lid tijdelijk",
@@ -27,7 +30,8 @@
       "wait_payment": "Wacht op betaling",
       "active": "Actief",
       "cancelled": "Opgezegd",
-      "suspended": "Geschorst"
+      "suspended": "Geschorst",
+      "rejected": "Afgewezen"
     },
     "errors": {
       "transitionFailed": "Statuswijziging mislukt: {{error}}",

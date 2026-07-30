@@ -47,6 +47,7 @@ STATUS_TO_STATE: dict[str, str] = {
     'Actief': MemberState.ACTIVE,
     'Opgezegd': MemberState.CANCELLED,
     'Geschorst': MemberState.SUSPENDED,
+    'Afgewezen': MemberState.REJECTED,
 }
 
 STATE_TO_STATUS: dict[str, str] = {v: k for k, v in STATUS_TO_STATE.items()}

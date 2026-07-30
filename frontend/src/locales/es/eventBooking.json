@@ -585,5 +585,8 @@
     "pattern": "Entrada no válida",
     "invalid_number": "Introduzca un número válido",
     "invalid_option": "Seleccione una opción válida"
+  },
+  "location": {
+    "openInMaps": "Abrir {{location}} en Google Maps (se abre en una pestaña nueva)"
   }
 }

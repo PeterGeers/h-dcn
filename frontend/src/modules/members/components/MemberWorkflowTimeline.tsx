@@ -51,6 +51,7 @@ const STATE_COLOR_SCHEME: Record<MemberWorkflowState, string> = {
   active: 'green',
   cancelled: 'red',
   suspended: 'purple',
+  rejected: 'red',
 };
 
 /**

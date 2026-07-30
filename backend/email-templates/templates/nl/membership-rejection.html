@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>H-DCN Aanmelding Afgewezen</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #d2691e;">Beste {{MEMBER_NAME}},</h2>
+
+        <p>Helaas moeten wij je mededelen dat je aanmelding bij H-DCN niet is goedgekeurd.</p>
+
+        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #721c24;">Reden:</h3>
+            <p style="margin-bottom: 0;">{{REASON}}</p>
+        </div>
+
+        <p>Heb je vragen over deze beslissing? Neem dan contact op via
+            <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a>.
+        </p>
+
+        <p>Met vriendelijke groet,<br>
+        Het H-DCN Ledenadministratie Team</p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <footer style="font-size: 12px; color: #666;">
+            <strong>Harley-Davidson Club Nederland</strong><br>
+            Website: <a href="https://portal.h-dcn.nl">https://portal.h-dcn.nl</a><br>
+            E-mail: <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a><br>
+            <br>
+            <em>Deze e-mail is automatisch verzonden vanuit het H-DCN ledenportaal.</em>
+        </footer>
+    </div>
+</body>
+</html>

@@ -21,7 +21,8 @@ export type MemberWorkflowState =
   | 'wait_payment'
   | 'active'
   | 'cancelled'
-  | 'suspended';
+  | 'suspended'
+  | 'rejected';
 
 /**
  * All possible events that can trigger a state transition.
@@ -29,6 +30,7 @@ export type MemberWorkflowState =
 export type MemberWorkflowEvent =
   | 'SUBMIT'
   | 'APPROVE'
+  | 'REJECT'
   | 'PAYMENT_RECEIVED'
   | 'CANCEL'
   | 'SUSPEND'

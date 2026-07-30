@@ -324,6 +324,35 @@ def notify_admin(ctx: dict[str, Any]) -> None:
         logger.error(f"notify_admin failed for {ctx.get('member_id')}: {e}")
 
 
+def send_rejection_email(ctx: dict[str, Any]) -> None:
+    """Send rejection notification to the applicant.
+
+    Template: membership-rejection
+    Variables: MEMBER_NAME, REASON, CONTACT_EMAIL
+    """
+    try:
+        member: dict[str, Any] = ctx.get('member', {})
+        recipient: str = member.get('email', '')
+        if not recipient:
+            logger.warning(f"No email for member {ctx.get('member_id')} — skipping rejection email")
+            return
+
+        variables: dict[str, str] = {
+            'MEMBER_NAME': _get_member_name(member),
+            'REASON': ctx.get('reason', 'Geen reden opgegeven'),
+            'CONTACT_EMAIL': ADMIN_EMAIL,
+        }
+
+        send_membership_email(
+            template_name='membership-rejection',
+            recipient=recipient,
+            variables=variables,
+            locale=_get_locale(member),
+        )
+    except Exception as e:
+        logger.error(f"send_rejection_email failed for {ctx.get('member_id')}: {e}")
+
+
 # --- Registration ---
 
 
@@ -340,5 +369,6 @@ def register_email_side_effects(dispatcher: ActionDispatcher) -> None:
         'send_welcome_email': send_welcome_email,
         'send_cancellation_email': send_cancellation_email,
         'send_suspension_notice': send_suspension_notice,
+        'send_rejection_email': send_rejection_email,
         'notify_admin': notify_admin,
     })
