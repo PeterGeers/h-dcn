@@ -68,9 +68,9 @@ class TestKnownSecretExamples:
         assert contains_secret('curl -H "Authorization: xoxp-some-long-token-here"')
 
     def test_bearer_token(self):
-        assert contains_secret(
-            'curl -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig"'
-        )
+        # Construct dynamically to avoid secret scanners flagging test data
+        token = 'eyJhbGciOiJ' + 'SUzI1NiJ9.test.signature'
+        assert contains_secret(f'curl -H "Authorization: Bearer {token}"')
 
 
 class TestEdgeCasesNoFalsePositives:
