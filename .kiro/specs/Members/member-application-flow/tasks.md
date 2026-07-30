@@ -46,5 +46,5 @@
 - [x] 6.1 Copy updated `email_side_effects.py` (with webmaster@h-dcn.nl) to `backend/handler/bulk_transition_members/` if not already done
 - [x] 6.2 Run `pytest tests/unit/test_workflow_engine.py tests/unit/test_transition_member.py` — all pass
 - [x] 6.3 Run `npx tsc --noEmit` from frontend/ — no type errors
-- [ ] 6.4 Commit all changes with message: `feat: member application submit flow via workflow engine`
-- [ ] 6.5 Push and verify deploy succeeds
+- [x] 6.4 Commit all changes with message: `feat: member application submit flow via workflow engine`
+- [x] 6.5 Push and verify deploy succeeds

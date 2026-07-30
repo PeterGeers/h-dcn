@@ -11,11 +11,11 @@
     },
     "git": {
       "command": "uvx",
-      "args": ["mcp-server-git@latest"],
+      "args": ["mcp-server-git@latest", "--repository", "c:\\Users\\peter\\aws\\h-dcn"],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
       },
-      "disabled": false,
+      "disabled": true,
       "autoApprove": ["git_status", "git_log"]
     }
   }
