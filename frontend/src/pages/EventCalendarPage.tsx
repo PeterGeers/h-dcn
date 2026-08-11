@@ -6,7 +6,6 @@ import {
   Heading,
   Text,
   Image,
-  SimpleGrid,
   VStack,
   HStack,
   FormControl,
@@ -274,7 +273,7 @@ const EventCalendarPage: React.FC = () => {
           </Button>
         </HStack>
 
-        {/* Event Grid */}
+        {/* Event Grid — Masonry layout via CSS columns */}
         {filteredEvents.length === 0 ? (
           <Center py={16}>
             <Text color="gray.500" fontSize="lg">
@@ -282,10 +281,17 @@ const EventCalendarPage: React.FC = () => {
             </Text>
           </Center>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} alignItems="start">
+          <Box
+            sx={{
+              columnCount: { base: 1, md: 2, lg: 3, xl: 4 },
+              columnGap: '1.5rem',
+            }}
+          >
             {filteredEvents.map(event => (
               <Box
                 key={event.event_id}
+                mb={6}
+                sx={{ breakInside: 'avoid' }}
                 bg="gray.900"
                 borderRadius="lg"
                 overflow="hidden"
@@ -327,7 +333,7 @@ const EventCalendarPage: React.FC = () => {
                 </VStack>
               </Box>
             ))}
-          </SimpleGrid>
+          </Box>
         )}
       </Container>
 
