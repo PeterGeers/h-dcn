@@ -15,8 +15,23 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     # Determine changed files only (quota-safe)
     changed_files=$(git diff --name-only --diff-filter=ACM "$remote_sha" "$local_sha")
 
+    # Drop paths that .gitguardian.yaml marks as ignored. ggshield errors out
+    # ("An ignored file or directory cannot be scanned") when an ignored path is
+    # passed to it explicitly, which would fail the whole push. Filtering here
+    # mirrors the ignored_paths in .gitguardian.yaml (lock files, locales,
+    # virtualenvs, node_modules, utility scripts) so ggshield never receives one.
+    changed_files=$(printf '%s\n' "$changed_files" | grep -Ev \
+        -e '(^|/)package-lock\.json$' \
+        -e '(^|/)yarn\.lock$' \
+        -e '(^|/)pnpm-lock\.yaml$' \
+        -e '(^|/)locales/' \
+        -e '(^|/)\.venv/' \
+        -e '(^|/)node_modules/' \
+        -e '(^|/)decode_[^/]*\.py$' \
+        -e '(^|/)trigger_[^/]*\.py$')
+
     if [ -z "$changed_files" ]; then
-        echo "No changed files to scan."
+        echo "No changed files to scan (all ignored per .gitguardian.yaml)."
         exit 0
     fi
 
