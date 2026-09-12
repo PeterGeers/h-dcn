@@ -1,4 +1,4 @@
-# Code Quality Fixes — 2026-09 — Tasks
+p.19 now# Code Quality Fixes — 2026-09 — Tasks
 
 Execution sequence (revised after the Full Test Suite scan revealed hidden
 collection errors). Each task references findings in `requirements.md`.
@@ -89,16 +89,31 @@ other change.
     (retry). Rewrote as `test_payment_failed_allows_retry_to_submitted`: asserts
     the retry IS allowed, cannot skip to `paid`, and `get_next_valid_states` ==
     `['submitted']`. Verified locally (TestOrderLifecycle: 4 passed).
-  - [ ] **P1.8** Frontend failure at `src/__tests__/i18n/localeSync.property.test.ts`
-    (file 14/145) — the run aborted there under `set -e`, so files 15-145 never
-    ran. After P1.6, re-run to surface the full frontend failure set, then triage.
-  - [ ] **P1.4-redo** After P1.6 + P1.7 (+ P1.8 triage), re-run and confirm a
-    trustworthy result across ALL files.
+  - [x] **P1.8 / P1.4-redo** Re-ran with all fixes (run **34709680003**). Suite
+    now runs to completion and reports honestly. FIRST trustworthy numbers:
+    backend 121 passed / 9 failed / 9 errors; frontend 133 passed / 12 failed.
+    Full failure inventory captured in requirements §5. These are pre-existing
+    failures the old reporting hid — not regressions from this work.
 
-> The re-run did its job: it exposed a real stale test (P1.7), a frontend failure
-> (P1.8), and a bug in my own workflow edit (P1.6). Backend is NOT green — at
-> least one stale test fails, and the suite hadn't run all files. Do P1.6 first
-> (so the suite runs completely), then P1.7/P1.8.
+### Newly surfaced work (pre-existing failures, now visible)
+
+- [x] **P1.9** Fixed the 8 remaining backend collection errors — same
+  `NoRegionError` fix as P1.1 (set `AWS_DEFAULT_REGION` + dummy creds before the
+  handler import): `test_admin_get_orders`, `test_admin_record_payment`,
+  `test_cognito_role_assignment`, `test_create_member`, `test_export_members`,
+  `test_hdcn_cognito_admin`, `test_update_member`,
+  `test_member_reporting_integration`. Verified under CI-like env (region unset):
+  0 collection errors, all collect; and all 31 tests pass when run.
+- [ ] **P1.10** Triage the 10 backend failures/timeout + 12 frontend failures
+  (requirements §5). Classify each: real bug / test bug / stale. Fix or rewrite
+  accordingly. Larger, needs per-file investigation — recommend its own spec/PR.
+- [ ] **P1.4-final** After P1.9 + P1.10, re-run once more to confirm a genuine
+  green baseline.
+
+> Phase-1 core objective ACHIEVED: the test suite now reports honestly (proven by
+> the run correctly failing and exposing ~30 hidden problem files). Remaining
+> Phase-1 work (P1.9 mechanical fixes, P1.10 triage) is cleanup of pre-existing
+> failures the broken reporting had concealed.
 
 ## Phase 2 — Dead code (low risk, shrinks files)
 

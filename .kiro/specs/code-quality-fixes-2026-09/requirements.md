@@ -273,3 +273,63 @@ test_stub_validity.py             test_update_member.py
 > collection errors the summary concealed. Frontend (145/145) appears genuinely
 > clean, but the backend result cannot be trusted until the CI reporting is fixed
 > and the suite re-run.
+
+### Trustworthy re-run results (run 34709680003, after CI-reporting fix)
+
+Once the reporting bug (P1.2) and the `set -e` early-abort bug (P1.6) were fixed
+and the stale test (P1.7) rewritten, a full re-run gave the FIRST honest numbers:
+
+| Suite    | Total | Passed | Failed | Errors |
+| -------- | ----- | ------ | ------ | ------ |
+| Backend  | 139   | 121    | 9      | 9      |
+| Frontend | 145   | 133    | 12     | 0      |
+
+So ~30 problem files were being completely hidden by the old reporting.
+
+**Backend collection errors (7) — same `NoRegionError` root cause as P1.1**
+(handler builds boto3 resource at import; test imports it without setting a
+region). 234 `NoRegionError` occurrences in the output. Files:
+```
+tests/unit/test_admin_get_orders.py
+tests/unit/test_admin_record_payment.py
+tests/unit/test_cognito_role_assignment.py
+tests/unit/test_create_member.py
+tests/unit/test_export_members.py
+tests/unit/test_hdcn_cognito_admin.py
+tests/unit/test_update_member.py
+tests/integration/test_member_reporting_integration.py   (also collection error)
+```
+
+**Backend test failures / timeout (need triage — real bug vs test bug vs stale):**
+```
+tests/test_runner_utils.py (exit 5 — no tests collected?)
+tests/unit/test_bulk_transition_members.py
+tests/unit/test_cognito_post_authentication.py
+tests/unit/test_create_order.py
+tests/unit/test_get_customer_orders.py
+tests/unit/test_hdcn_cognito_admin_split.py
+tests/unit/test_stub_validity.py
+tests/unit/test_sync_google_calendar.py
+tests/unit/test_update_order_items.py
+tests/unit/test_product_soft_delete.py (TIMEOUT >120s)
+```
+
+**Frontend failures (12) — need triage:**
+```
+src/__tests__/i18n/localeSync.property.test.ts
+src/__tests__/i18n/translationFileConventions.test.ts
+src/components/__tests__/MemberAdminTable.test.tsx
+src/components/__tests__/MemberEditView.test.tsx
+src/components/auth/__tests__/AuthenticationIntegration.test.tsx
+src/components/auth/__tests__/PasswordlessAuthenticationFlow.test.tsx
+src/config/memberFields/__tests__/memberFields.integrity.test.ts
+src/modules/eventBooking/__tests__/BookingWizard.test.tsx
+src/modules/products/__tests__/ProductCard.test.tsx
+src/modules/webshop/__tests__/VariantSelector.test.tsx
+src/modules/webshop/__tests__/WebshopPage.test.tsx (TIMEOUT >60s)
+src/pages/__tests__/Dashboard.events-calendar.test.tsx
+```
+
+> These were pre-existing failures masked by the broken reporting, NOT regressions
+> introduced by this work. The CI-reporting + collection fixes simply made them
+> visible. Triage tracked as tasks P1.9 / P1.10.
