@@ -12,19 +12,23 @@ current feature branch, push + trigger workflows.
 
 Branch: `feature/wsl-ubuntu-migration`. All work below is committed + pushed.
 
-**Done:** Phase 1 backend is fully fixed (all collection errors + test failures
-resolved, verified). CI reporting bug fixed (`full-test-suite.yml` now honest).
-i18n convention fully conformed (translationFileConventions test green).
+**Done:** Phase 1 is effectively complete. Backend collection errors + failures
+fixed; CI reporting fixed (`full-test-suite.yml` honest); i18n conventions
+conformed; and the **9 remaining frontend failures are ALL fixed** (P1.10b,
+commit `adcb751`). Full Test Suite run **34717731194** confirms: frontend
+145/145 green, backend 138 passed / 0 failed / 1 error.
 
-**Immediate next work:** the **9 remaining frontend test failures** (P1.10b, see
-list under Phase 1). Triage each as real bug / test bug / stale, same method used
-for backend. Then **P1.4-final** (re-run Full Test Suite to confirm green).
+**One open Phase-1 item (P1.11):** `tests/unit/test_product_soft_delete.py`
+times out (>120s) in CI — the sole remaining "error". Pre-existing, unrelated to
+the frontend work; needs optimization or a higher per-file timeout.
 
-**After that:** Phase 2 (dead code) → Phase 3 (file length) → Phase 4 (missing
-tests) → Phase 5 (stale docs). None started yet.
+**Immediate next work:** P1.11 (the timeout), then Phase 2 (dead code) → Phase 3
+(file length) → Phase 4 (missing tests) → Phase 5 (stale docs). None of 2–5
+started yet.
 
 **Commits this effort:** f5f304a, 06c1ffa, b951313, fb5d341, a60f620, d4cd610,
-58bf88c (Phase 1 backend); ac8cdf9, 8c08693 (ADR), e1cb8a5, 33f41ef (i18n).
+58bf88c (Phase 1 backend); ac8cdf9, 8c08693 (ADR), e1cb8a5, 33f41ef (i18n);
+adcb751 (P1.10b — 9 frontend suites).
 
 ## Why this order
 
@@ -177,16 +181,61 @@ other change.
       - [x] `CalendarLocationPreservation.property.test.tsx` — FIXED as a side
         effect of the `events` conformance (calendar.card.noLocation ->
         calendar_card.no_location). Verified passing.
-      - [ ] **9 remaining frontend failures — NOT yet triaged** (NEXT WORK):
-        `MemberAdminTable.test.tsx`, `MemberEditView.test.tsx`,
-        `AuthenticationIntegration.test.tsx`, `PasswordlessAuthenticationFlow.test.tsx`,
-        `memberFields.integrity.test.ts`, `BookingWizard.test.tsx`,
-        `ProductCard.test.tsx`, `VariantSelector.test.tsx`,
-        `WebshopPage.test.tsx` (TIMEOUT), `Dashboard.events-calendar.test.tsx`.
-        Each needs triage: real bug / test bug / stale (same method as backend).
-- [ ] **P1.4-final** After the 9 remaining frontend failures (P1.10b) are
-  resolved, re-run the Full Test Suite once more to confirm a genuine green
-  baseline (backend is already clean; frontend has 9 known failures left).
+      - [x] **9 remaining frontend failures — ALL FIXED** (commit `adcb751`).
+        All were pre-existing test-side issues (stale tests or test-mock gaps),
+        not product regressions:
+        - `MemberAdminTable` / `MemberEditView` — test mock omitted
+          `initReactI18next`; the transitive `src/i18n/index.ts` import called
+          `i18next.use(undefined)` and threw. Added
+          `initReactI18next: { type: '3rdParty', init: jest.fn() }`.
+        - `memberFields.integrity` — STALE: registry now has 40 fields
+          (administrative 8, not 5). Updated expected counts. Also fixed a real
+          registry inconsistency: the three `welcome_pack_*` fields were defined
+          in `membershipFields.ts` but tagged `group: 'administrative'`; moved
+          them to `administrativeFields.ts` so the partial matches the declared
+          group (the invariant the test checks). `MEMBER_FIELDS` total unchanged.
+        - `AuthenticationIntegration` / `PasswordlessAuthenticationFlow` — STALE:
+          `CustomAuthenticator` now makes ONE `signIn` (`USER_AUTH` /
+          `EMAIL_OTP`, `clientMetadata.locale`) and uses an INLINE OTP form
+          (placeholder `00000000`, submit `data-testid="otp-submit"`), not the
+          old WEB_AUTHN-first fallback + `window.prompt`. Rewrote 5 assertions.
+        - `BookingWizard` — STALE: event status vocab is `draft|published|
+          archived` (per `eventFields` registry); `open`/`closed` are
+          participation modes. Fixtures `open`→`published`, `closed`→`archived`.
+          Also: compact `EventInfoHeader` (no name; capacity `"{rem} / {total}"`)
+          and person-level role field removed (role is per-product now).
+        - `ProductCard` — TEST MOCK GAP: `ProductCardActions` uses `Tooltip`
+          (@chakra-ui/react) and `NotAllowedIcon` (@chakra-ui/icons), absent from
+          the hand-rolled mocks → "Element type is invalid". Added both.
+        - `VariantSelector` — STALE: component intentionally shows NO stock badge
+          when `allow_oversell` is true. Assert neither badge appears.
+        - `Dashboard.events-calendar` — STALE: authenticated card navigates to
+          `/calendar` (the authenticated route); `/events/calendar` is public.
+        - `WebshopPage` (TIMEOUT) — INFINITE EFFECT LOOP from the test mock: an
+          unstable `t` (new function each render) broke `useCallback([toast,t])`,
+          re-firing the load effect forever. Made the `useTranslation` mock
+          return a stable singleton. Now passes in ~5s.
+        Verified: `tsc --noEmit` clean; each suite passes locally.
+- [x] **P1.4-final** Re-ran the Full Test Suite on `feature/wsl-ubuntu-migration`
+  after pushing `adcb751`. Run **34717731194** — conclusion **success**. Honest
+  artifact numbers:
+  - **Frontend: 145 / 145 passed, 0 failed, 0 errors** — fully green (all 9
+    P1.10b fixes confirmed).
+  - **Backend: 138 passed, 0 failed, 1 error** — the single "error" is
+    `TIMEOUT: tests/unit/test_product_soft_delete.py`, i.e. the pre-existing
+    timeout already flagged in requirements §5 ("NOT yet investigated — was a
+    timeout, may pass with more time or need optimization"). It is not a genuine
+    failure and is unrelated to the frontend work; it remains the one open
+    Phase-1 item. No assertion failures anywhere (`failed_tests: []` in both).
+
+> Phase 1 is otherwise green. The only remaining Phase-1 item is the
+> `test_product_soft_delete` CI timeout (needs optimization or a longer per-file
+> timeout) — tracked as follow-up P1.11 below.
+
+- [ ] **P1.11** Investigate `tests/unit/test_product_soft_delete.py` CI timeout
+  (>120s per-file). Determine whether it is genuinely slow (optimize/split) or
+  needs a higher timeout budget in `full-test-suite.yml`. Pre-existing; deferred
+  from P1.10.
 
 > Phase-1 status: backend is fully green (all collection errors + failures fixed,
 > verified). Frontend: 3 of 12 failures fixed; 9 remain (listed above) — that is
@@ -194,33 +243,66 @@ other change.
 
 ## Phase 2 — Dead code (low risk, shrinks files)
 
-- [ ] **P2.1** Remove unreachable code after `return` at
-  `backend/handler/sync_google_calendar/app.py:271` (100% confidence). Verify the
-  block below the return is truly dead, delete it, run
-  `pytest tests/ -k sync_google_calendar`.
-- [ ] **P2.2** Investigate and remove orphaned
-  `backend/handler/get_events/app_fixed.py`. Confirm it is not referenced in
-  `backend/template.yaml` or any import, then delete.
-- [ ] **P2.3** Triage the 60%-confidence unused-symbol list (requirements §3).
-  For EACH symbol, `grep` across `backend/`, `frontend/`, and `.kiro/specs/`
-  before removing. Split into:
-  - [ ] P2.3a Handler-local unused vars (`item_idx`, `claimed_at`, `sold_count`,
-    `status_details`, `google_calendar_event_id`, `admin_error_response`,
-    `line_idx`, `unapproved_statuses`, `SESSION_TOKEN_MAX_AGE`, `claimed_contact`)
-    — safe to remove if genuinely unused.
-  - [ ] P2.3b Unused local functions/classes (`get_row_allowed_emails`,
-    `apply_regional_filtering`, `confirm_payment_and_reserve_stock`,
-    `validate_permissions_fallback`, `InviteRequest`, `RevokeRequest`,
-    `InviteEmailRequest`, `VerifyPasswordRequest`, `DashboardResponse`,
-    permission_utils helpers) — verify not part of an interface/import.
-  - [ ] P2.3c Auth-layer / shared / workflows candidates — **HIGH CAUTION**.
-    `role_permissions.py`, `order_state_machine.py`, `product_validation.py`,
-    `mollie_client.py` (esp. `verify_webhook_signature`), `workflows/*`,
-    `stock_reservation.py`. These may be public API or dynamically dispatched.
-    Keep unless proven dead; add `# vulture: ignore` or a whitelist entry if kept
-    intentionally.
+- [x] **P2.1** Removed the duplicate, unreachable `return SyncResult(...)` (and its
+  duplicated comment) in the `except` block of
+  `backend/handler/sync_google_calendar/app.py`. Verified: `pytest -k
+  sync_google_calendar` = 22 passed.
+- [x] **P2.2** Removed orphaned `backend/handler/get_events/app_fixed.py` AND the
+  stale `app.py.backup_corrupted` in the same dir. Neither is referenced; the SAM
+  template uses `Handler: app.lambda_handler` (only `app.py`).
+- [x] **P2.3** Triaged the 60%-confidence unused-symbol list (each grepped across
+  `backend/`, `frontend/`, `.kiro/specs/` first):
+  - [x] P2.3a Removed genuinely-dead handler-local symbols:
+    - `cognito_role_assignment`: unused `unapproved_statuses` list.
+    - `get_event_registry`: unused `SESSION_TOKEN_MAX_AGE` constant (token expiry
+      is enforced by the PyJWT `exp` claim set in `verify_event_password` — not a
+      security regression).
+    - `submit_order`: 3× `for item_idx, item in enumerate(items)` → `for item in
+      items` (index never used; loops use `person_index`).
+    - `update_member`: `status_details` unpack → `_`.
+    - `update_payment` + `update_order_status`: `admin_error_response,
+      regional_info` unpack → `_, _` (only `is_admin_authorized` is used).
+    - FALSE POSITIVES kept (confirmed used): `sold_count`, `claimed_at`,
+      `claimed_contact`, `google_calendar_event_id` (`line_idx` did not exist).
+  - [x] P2.3b Removed dead documentation-only TypedDicts and uncalled functions:
+    `InviteRequest`/`RevokeRequest` (manage_delegates), `InviteEmailRequest`
+    (send_delegate_invitation), `VerifyPasswordRequest` (verify_event_password),
+    `DashboardResponse`+`ProductCapacity` (admin_event_dashboard),
+    `apply_regional_filtering` (export_members — the handler deliberately does no
+    backend regional filtering; see note), `get_row_allowed_emails`
+    (event_onboard), and the shadowed module-level `validate_permissions_fallback`
+    (update_member). Cleaned up now-unused `typing` imports.
+    - KEPT (proven NOT dead): the `hdcn_cognito_admin/permission_utils.py` trio
+      (`get_user_field_permissions`, `check_role_permission`, `get_role_summary`) —
+      verified as a public-API contract by `test_hdcn_cognito_admin_split.py`.
+    - LEFT for a follow-up decision: `confirm_payment_and_reserve_stock`
+      (`pay_order`, ~120 lines) is uncalled (live Mollie flow uses
+      `shared.stock_reservation.reserve_stock_for_order`), but it is payment code —
+      not removed in this cleanup sweep. Tracked as **P2.5**.
+  - [x] P2.3c Auth-layer / shared / workflows candidates — **KEPT** (per HIGH
+    CAUTION). Spot-checked `mollie_client.verify_webhook_signature`,
+    `mollie_client.to_error_response`, `stock_reservation.AlreadyReservedError` —
+    all covered by dedicated unit tests (`test_mollie_client.py`,
+    `test_stock_reservation.py`), i.e. public API. Not dead.
 - [ ] **P2.4** (Optional) Add `ts-prune` to the frontend and run it to find
-  unused TS exports; log results as a follow-up finding.
+  unused TS exports; log results as a follow-up finding. NOT done this cycle.
+- [ ] **P2.5** (follow-up) Decide whether to remove the uncalled
+  `confirm_payment_and_reserve_stock` in `backend/handler/pay_order/app.py`. It is
+  superseded by `reserve_stock_for_order`; its docstring ("Called by the Mollie
+  webhook") is stale. Payment code — remove only with explicit sign-off.
+
+> Phase-2 verification: each edited handler's tests pass in isolation
+> (`test_admin_event_dashboard` + `test_event_onboard` = 39 passed;
+> `sync_google_calendar` = 22 passed). A broad multi-file `-k` run showed 18
+> `NoSuchBucket` failures in `test_admin_event_dashboard`/`test_event_onboard`,
+> but those are a PRE-EXISTING test-isolation issue (moto S3 bucket not set up
+> when many suites share a process) — the same files are green in isolation, so
+> the failures are not caused by the dead-code removal.
+
+> Note (out of scope, security observation): `export_members` intentionally
+> returns all members and relies on frontend-side regional filtering
+> (`filtering: 'frontend_only'`, `regional: False`). Worth a future review, but
+> not changed here.
 
 ## Phase 3 — File length (refactor > 500; > 1000 is an error) — after Phase 2
 

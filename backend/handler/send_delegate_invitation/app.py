@@ -13,7 +13,7 @@ import json
 import os
 import re
 import logging
-from typing import TypedDict, NotRequired
+
 
 import boto3
 from botocore.exceptions import ClientError
@@ -58,12 +58,6 @@ ORGANIZATION_SHORT_NAME = os.environ.get('ORGANIZATION_SHORT_NAME', 'H-DCN')
 # Default locale
 DEFAULT_LOCALE = 'nl'
 SUPPORTED_LOCALES = ('nl', 'en', 'de', 'fr', 'es', 'it', 'da', 'sv')
-
-
-# --- Types ---
-
-class InviteEmailRequest(TypedDict):
-    locale: NotRequired[str]
 
 
 # --- Template Loading ---

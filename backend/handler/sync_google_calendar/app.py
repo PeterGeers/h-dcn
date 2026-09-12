@@ -267,8 +267,6 @@ def sync_event(event_id: str, event_data: EventData) -> SyncResult:
         )
         # Return existing ID unchanged — don't block the caller
         return SyncResult(google_calendar_event_id=gcal_id)
-        # Return existing ID unchanged — don't block the caller
-        return SyncResult(google_calendar_event_id=gcal_id)
 
 
 def delete_event(event_id: str, event_data: EventData) -> SyncResult:

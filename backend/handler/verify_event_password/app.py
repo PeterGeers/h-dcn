@@ -51,10 +51,6 @@ def _convert_decimals(obj):
     return obj
 
 
-class VerifyPasswordRequest(TypedDict):
-    password: str
-
-
 class VerifyPasswordResponse(TypedDict):
     valid: bool
     event_name: NotRequired[str]

@@ -45,7 +45,6 @@ s3 = boto3.client('s3', region_name='eu-west-1')
 
 REGISTRY_BUCKET = os.environ.get('REGISTRY_BUCKET_NAME', 'h-dcn-data-506221081911')
 JWT_SECRET_BASE = os.environ.get('JWT_SECRET_BASE', 'h-dcn-event-session-secret')
-SESSION_TOKEN_MAX_AGE = 900  # 15 minutes
 
 
 # --- Types ---
