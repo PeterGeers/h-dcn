@@ -5,6 +5,7 @@ Direct import to DynamoDB bypassing API issues
 """
 
 import csv
+import os
 import boto3
 import uuid
 from datetime import datetime
@@ -95,8 +96,8 @@ def process_csv_row(row, headers):
     
     return member_data
 
-def import_csv(csv_file_path):
-    """Import CSV file to DynamoDB"""
+def import_csv(csv_file_path: str) -> bool:
+    """Import CSV file to DynamoDB. Returns True on success, False on file error."""
     imported_count = 0
     error_count = 0
     skipped_count = 0
@@ -157,12 +158,21 @@ def import_csv(csv_file_path):
     
     return True
 
+# Documented default: the original 2025 member export. Override by passing a
+# path argument, e.g. `python import_members.py ~/data/ledenbestand.csv`.
+DEFAULT_CSV_PATH = "HDCN Ledenbestand 2025 - Ledenbestand.csv"
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python import_members.py <csv_file_path>")
+    if len(sys.argv) > 2:
+        print("Usage: python import_members.py [csv_file_path]")
         print("Example: python import_members.py 'HDCN Ledenbestand 2025.csv'")
         sys.exit(1)
-    
-    csv_file = "C:\\Users\\peter\\Downloads\\HDCN Ledenbestand 2025 - Ledenbestand.csv"
-    ##sys.argv[1]
+
+    csv_file = sys.argv[1] if len(sys.argv) == 2 else DEFAULT_CSV_PATH
+
+    if not os.path.isfile(csv_file):
+        print(f"Error: CSV file not found: {csv_file}")
+        print("Usage: python import_members.py [csv_file_path]")
+        sys.exit(1)
+
     import_csv(csv_file)
