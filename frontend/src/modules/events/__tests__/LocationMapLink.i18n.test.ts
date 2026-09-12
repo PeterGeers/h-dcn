@@ -22,17 +22,17 @@ describe('LocationMapLink i18n - translation key presence', () => {
           expect(typeof data.location).toBe('object');
         });
 
-        it('has an openInMaps key', () => {
-          expect(data.location.openInMaps).toBeDefined();
+        it('has an open_in_maps key', () => {
+          expect(data.location.open_in_maps).toBeDefined();
         });
 
         it('value is a non-empty string', () => {
-          expect(typeof data.location.openInMaps).toBe('string');
-          expect(data.location.openInMaps.trim().length).toBeGreaterThan(0);
+          expect(typeof data.location.open_in_maps).toBe('string');
+          expect(data.location.open_in_maps.trim().length).toBeGreaterThan(0);
         });
 
         it('value contains {{location}} interpolation variable', () => {
-          expect(data.location.openInMaps).toContain('{{location}}');
+          expect(data.location.open_in_maps).toContain('{{location}}');
         });
       });
     });
@@ -54,17 +54,17 @@ describe('LocationMapLink i18n - translation key presence', () => {
           expect(typeof data.location).toBe('object');
         });
 
-        it('has an openInMaps key', () => {
-          expect(data.location.openInMaps).toBeDefined();
+        it('has an open_in_maps key', () => {
+          expect(data.location.open_in_maps).toBeDefined();
         });
 
         it('value is a non-empty string', () => {
-          expect(typeof data.location.openInMaps).toBe('string');
-          expect(data.location.openInMaps.trim().length).toBeGreaterThan(0);
+          expect(typeof data.location.open_in_maps).toBe('string');
+          expect(data.location.open_in_maps.trim().length).toBeGreaterThan(0);
         });
 
         it('value contains {{location}} interpolation variable', () => {
-          expect(data.location.openInMaps).toContain('{{location}}');
+          expect(data.location.open_in_maps).toContain('{{location}}');
         });
       });
     });

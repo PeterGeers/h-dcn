@@ -128,7 +128,7 @@ const EventLandingPage: React.FC = () => {
   const { landing_page, registration_status, landing_page_enabled } = event;
   const hasLandingPage = landing_page_enabled === true && landing_page != null;
   const isOpen = registration_status === 'open';
-  const ctaLabel = (hasLandingPage && landing_page!.registration_label) || t('landing.registerButton');
+  const ctaLabel = (hasLandingPage && landing_page!.registration_label) || t('landing.register_button');
 
   const pageUrl = window.location.href;
 
@@ -143,7 +143,7 @@ const EventLandingPage: React.FC = () => {
       return { to: '#', label: '', isLoading: true };
     }
     if (isAuthenticated) {
-      return { to: `/events/${slug}/register`, label: t('landing.goToBooking'), isLoading: false };
+      return { to: `/events/${slug}/register`, label: t('landing.go_to_booking'), isLoading: false };
     }
     return { to: `/events/${slug}/register`, label: ctaLabel, isLoading: false };
   };
@@ -204,7 +204,7 @@ const EventLandingPage: React.FC = () => {
               <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3} w="100%">
                 <HStack>
                   <Text color="gray.500" fontSize="sm" fontWeight="bold">
-                    {t('landing.posterView.dates')}:
+                    {t('landing_poster_view.dates')}:
                   </Text>
                   <Text color="gray.300" fontSize="sm">
                     {formatDateRange(event.start_date, event.end_date)}
@@ -214,7 +214,7 @@ const EventLandingPage: React.FC = () => {
                 {event.location && (
                   <HStack>
                     <Text color="gray.500" fontSize="sm" fontWeight="bold">
-                      {t('landing.posterView.location')}:
+                      {t('landing_poster_view.location')}:
                     </Text>
                     <LocationMapLink location={event.location} color="gray.300" fontSize="sm" />
                   </HStack>
@@ -223,7 +223,7 @@ const EventLandingPage: React.FC = () => {
                 {event.event_type && (
                   <HStack>
                     <Text color="gray.500" fontSize="sm" fontWeight="bold">
-                      {t('landing.posterView.type')}:
+                      {t('landing_poster_view.type')}:
                     </Text>
                     <Text color="gray.300" fontSize="sm">
                       {t(`events:event_types.${event.event_type}`, event.event_type)}
@@ -234,7 +234,7 @@ const EventLandingPage: React.FC = () => {
                 {event.participation && (
                   <HStack>
                     <Text color="gray.500" fontSize="sm" fontWeight="bold">
-                      {t('landing.posterView.participation')}:
+                      {t('landing_poster_view.participation')}:
                     </Text>
                     <Text color="gray.300" fontSize="sm">
                       {t(`events:participation_modes.${event.participation}`, event.participation)}
@@ -245,7 +245,7 @@ const EventLandingPage: React.FC = () => {
                 {event.linked_regio && (
                   <HStack>
                     <Text color="gray.500" fontSize="sm" fontWeight="bold">
-                      {t('landing.posterView.region')}:
+                      {t('landing_poster_view.region')}:
                     </Text>
                     <Text color="gray.300" fontSize="sm">
                       {event.linked_regio}
@@ -376,7 +376,7 @@ const EventLandingPage: React.FC = () => {
                 )
               ) : (
                 <Button size="lg" colorScheme="gray" isDisabled>
-                  {t('landing.registrationClosed')}
+                  {t('landing.registration_closed')}
                 </Button>
               )}
             </Box>
@@ -508,7 +508,7 @@ const EventLandingPage: React.FC = () => {
               )
             ) : (
               <Button size="lg" colorScheme="gray" isDisabled>
-                {t('landing.registrationClosed')}
+                {t('landing.registration_closed')}
               </Button>
             )}
           </VStack>

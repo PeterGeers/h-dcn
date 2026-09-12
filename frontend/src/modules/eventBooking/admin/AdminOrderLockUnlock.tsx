@@ -135,10 +135,10 @@ function OrderStatusBadge({ status }: { status: string }) {
     status === 'locked'
       ? 'green'
       : status === 'submitted'
-      ? 'blue'
-      : status === 'draft'
-      ? 'orange'
-      : 'gray';
+        ? 'blue'
+        : status === 'draft'
+          ? 'orange'
+          : 'gray';
   return <Badge colorScheme={colorScheme}>{status}</Badge>;
 }
 
@@ -176,7 +176,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       const result = await fetchOrdersForEvent(eventId);
       setOrders(result);
     } catch (err) {
-      setError(t('admin.lock_unlock.load_failed'));
+      setError(t('admin_lock_unlock.load_failed'));
     } finally {
       setLoading(false);
     }
@@ -208,8 +208,8 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
     try {
       const result = await batchLockOrders(eventId);
       toast({
-        title: t('admin.lock_unlock.lock_success'),
-        description: t('admin.lock_unlock.lock_success_desc', {
+        title: t('admin_lock_unlock.lock_success'),
+        description: t('admin_lock_unlock.lock_success_desc', {
           count: result.locked_count ?? 0,
         }),
         status: 'success',
@@ -218,9 +218,9 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       });
       await loadOrders();
     } catch (err: any) {
-      const message = err?.response?.data?.error || err?.response?.data?.message || t('admin.lock_unlock.lock_failed');
+      const message = err?.response?.data?.error || err?.response?.data?.message || t('admin_lock_unlock.lock_failed');
       toast({
-        title: t('admin.lock_unlock.lock_failed'),
+        title: t('admin_lock_unlock.lock_failed'),
         description: message,
         status: 'error',
         duration: 5000,
@@ -238,8 +238,8 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
     try {
       const result = await batchUnlockOrders(eventId);
       toast({
-        title: t('admin.lock_unlock.unlock_success'),
-        description: t('admin.lock_unlock.unlock_success_desc', {
+        title: t('admin_lock_unlock.unlock_success'),
+        description: t('admin_lock_unlock.unlock_success_desc', {
           count: result.unlocked_count ?? 0,
         }),
         status: 'success',
@@ -248,9 +248,9 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       });
       await loadOrders();
     } catch (err: any) {
-      const message = err?.response?.data?.error || err?.response?.data?.message || t('admin.lock_unlock.unlock_failed');
+      const message = err?.response?.data?.error || err?.response?.data?.message || t('admin_lock_unlock.unlock_failed');
       toast({
-        title: t('admin.lock_unlock.unlock_failed'),
+        title: t('admin_lock_unlock.unlock_failed'),
         description: message,
         status: 'error',
         duration: 5000,
@@ -267,8 +267,8 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
     try {
       await unlockSingleOrder(orderId);
       toast({
-        title: t('admin.lock_unlock.unlock_success'),
-        description: t('admin.lock_unlock.single_unlock_desc'),
+        title: t('admin_lock_unlock.unlock_success'),
+        description: t('admin_lock_unlock.single_unlock_desc'),
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -282,15 +282,15 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       if (status === 400) {
         // Req 10.4: reject lock/unlock on non-qualifying status
         toast({
-          title: t('admin.lock_unlock.cannot_unlock'),
-          description: message || t('admin.lock_unlock.invalid_status'),
+          title: t('admin_lock_unlock.cannot_unlock'),
+          description: message || t('admin_lock_unlock.invalid_status'),
           status: 'warning',
           duration: 5000,
           isClosable: true,
         });
       } else {
         toast({
-          title: t('admin.lock_unlock.unlock_failed'),
+          title: t('admin_lock_unlock.unlock_failed'),
           description: message,
           status: 'error',
           duration: 5000,
@@ -306,7 +306,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
     return (
       <Box textAlign="center" py={8}>
         <Spinner size="lg" />
-        <Text mt={2}>{t('admin.lock_unlock.loading')}</Text>
+        <Text mt={2}>{t('admin_lock_unlock.loading')}</Text>
       </Box>
     );
   }
@@ -316,7 +316,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
 
   return (
     <VStack spacing={5} align="stretch">
-      <Heading size="md">{t('admin.lock_unlock.title')}</Heading>
+      <Heading size="md">{t('admin_lock_unlock.title')}</Heading>
 
       {error && (
         <Alert status="error" borderRadius="md">
@@ -337,7 +337,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
               isDisabled={submittedCount === 0 || actionLoading}
               isLoading={actionLoading}
             >
-              {t('admin.lock_unlock.lock_all')} ({submittedCount})
+              {t('admin_lock_unlock.lock_all')} ({submittedCount})
             </Button>
             <Button
               leftIcon={<UnlockIcon />}
@@ -347,7 +347,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
               isDisabled={unlockableCount === 0 || actionLoading}
               isLoading={actionLoading}
             >
-              {t('admin.lock_unlock.unlock_all')} ({unlockableCount})
+              {t('admin_lock_unlock.unlock_all')} ({unlockableCount})
             </Button>
           </HStack>
 
@@ -370,7 +370,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
               ] as FilterConfig<any>[]}
             />
             <Button size="sm" variant="ghost" onClick={loadOrders}>
-              {t('admin.claims.refresh')}
+              {t('admin_claims.refresh')}
             </Button>
           </HStack>
         </HStack>
@@ -380,16 +380,16 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       <Box bg="white" p={4} borderRadius="md" borderWidth={1} overflowX="auto">
         {filteredOrders.length === 0 ? (
           <Text color="gray.500" textAlign="center" py={6}>
-            {t('admin.lock_unlock.no_orders')}
+            {t('admin_lock_unlock.no_orders')}
           </Text>
         ) : (
           <Table variant="simple" size="sm">
             <Thead>
               <Tr>
-                <Th>{t('admin.lock_unlock.col_club')}</Th>
-                <Th>{t('admin.lock_unlock.col_delegate')}</Th>
-                <Th>{t('admin.lock_unlock.col_status')}</Th>
-                <Th>{t('admin.lock_unlock.col_payment')}</Th>
+                <Th>{t('admin_lock_unlock.col_club')}</Th>
+                <Th>{t('admin_lock_unlock.col_delegate')}</Th>
+                <Th>{t('admin_lock_unlock.col_status')}</Th>
+                <Th>{t('admin_lock_unlock.col_payment')}</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -421,8 +421,8 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
                         order.payment_status === 'paid'
                           ? 'green'
                           : order.payment_status === 'partial'
-                          ? 'yellow'
-                          : 'gray'
+                            ? 'yellow'
+                            : 'gray'
                       }
                     >
                       {order.payment_status || 'unpaid'}
@@ -445,32 +445,32 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="md">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{t('admin.lock_unlock.order_detail_title')}</ModalHeader>
+          <ModalHeader>{t('admin_lock_unlock.order_detail_title')}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             {selectedOrder && (
               <VStack spacing={3} align="stretch">
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.lock_unlock.col_club')}</Text>
+                  <Text fontWeight="medium">{t('admin_lock_unlock.col_club')}</Text>
                   <Text>{selectedOrder.registry_row_label || selectedOrder.registry_row_id}</Text>
                 </HStack>
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.lock_unlock.col_delegate')}</Text>
+                  <Text fontWeight="medium">{t('admin_lock_unlock.col_delegate')}</Text>
                   <Text>{selectedOrder.delegate_email || '—'}</Text>
                 </HStack>
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.lock_unlock.col_status')}</Text>
+                  <Text fontWeight="medium">{t('admin_lock_unlock.col_status')}</Text>
                   <OrderStatusBadge status={selectedOrder.status} />
                 </HStack>
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.lock_unlock.col_payment')}</Text>
+                  <Text fontWeight="medium">{t('admin_lock_unlock.col_payment')}</Text>
                   <Badge
                     colorScheme={
                       selectedOrder.payment_status === 'paid'
                         ? 'green'
                         : selectedOrder.payment_status === 'partial'
-                        ? 'yellow'
-                        : 'gray'
+                          ? 'yellow'
+                          : 'gray'
                     }
                   >
                     {selectedOrder.payment_status || 'unpaid'}
@@ -478,13 +478,13 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
                 </HStack>
                 {selectedOrder.total_amount !== undefined && (
                   <HStack justify="space-between">
-                    <Text fontWeight="medium">{t('admin.lock_unlock.col_total')}</Text>
+                    <Text fontWeight="medium">{t('admin_lock_unlock.col_total')}</Text>
                     <Text>€{Number(selectedOrder.total_amount || 0).toFixed(2)}</Text>
                   </HStack>
                 )}
                 {selectedOrder.updated_at && (
                   <HStack justify="space-between">
-                    <Text fontWeight="medium">{t('admin.lock_unlock.col_updated')}</Text>
+                    <Text fontWeight="medium">{t('admin_lock_unlock.col_updated')}</Text>
                     <Text fontSize="sm">{selectedOrder.updated_at}</Text>
                   </HStack>
                 )}
@@ -493,7 +493,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onDetailClose}>
-              {t('admin.claims.cancel')}
+              {t('admin_claims.cancel')}
             </Button>
             {canUnlockSelected && (
               <Button
@@ -503,7 +503,7 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
                 isLoading={actionLoading}
                 isDisabled={actionLoading}
               >
-                {t('admin.lock_unlock.unlock_order')}
+                {t('admin_lock_unlock.unlock_order')}
               </Button>
             )}
           </ModalFooter>
@@ -519,17 +519,17 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              {t('admin.lock_unlock.lock_confirm_title')}
+              {t('admin_lock_unlock.lock_confirm_title')}
             </AlertDialogHeader>
             <AlertDialogBody>
-              {t('admin.lock_unlock.lock_confirm_body', { count: submittedCount })}
+              {t('admin_lock_unlock.lock_confirm_body', { count: submittedCount })}
             </AlertDialogBody>
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onLockClose}>
-                {t('admin.claims.cancel')}
+                {t('admin_claims.cancel')}
               </Button>
               <Button colorScheme="red" onClick={handleBatchLock} ml={3}>
-                {t('admin.lock_unlock.lock_confirm')}
+                {t('admin_lock_unlock.lock_confirm')}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -545,17 +545,17 @@ const AdminOrderLockUnlock: React.FC<AdminOrderLockUnlockProps> = ({ eventId }) 
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              {t('admin.lock_unlock.unlock_confirm_title')}
+              {t('admin_lock_unlock.unlock_confirm_title')}
             </AlertDialogHeader>
             <AlertDialogBody>
-              {t('admin.lock_unlock.unlock_confirm_body', { count: unlockableCount })}
+              {t('admin_lock_unlock.unlock_confirm_body', { count: unlockableCount })}
             </AlertDialogBody>
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onUnlockClose}>
-                {t('admin.claims.cancel')}
+                {t('admin_claims.cancel')}
               </Button>
               <Button colorScheme="blue" onClick={handleBatchUnlock} ml={3}>
-                {t('admin.lock_unlock.unlock_confirm')}
+                {t('admin_lock_unlock.unlock_confirm')}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
