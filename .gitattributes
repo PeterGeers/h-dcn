@@ -1,0 +1,26 @@
+# Normalize all text files to LF in the repository.
+# Working-tree line endings are decided by the platform / editor, but the
+# stored blobs are always LF so shell scripts and git hooks work on Linux.
+* text=auto eol=lf
+
+# Shell scripts and git hooks MUST be LF (they break on Linux with CRLF).
+*.sh text eol=lf
+.githooks/* text eol=lf
+
+# Binary assets — never normalize or diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.xlsx binary
+*.xls binary
