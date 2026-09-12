@@ -31,6 +31,7 @@ jest.mock('@chakra-ui/react', () => ({
   Text: ({ children }: any) => <span>{children}</span>,
   Image: ({ src }: any) => <img src={src} alt="" />,
   Badge: ({ children }: any) => <span>{children}</span>,
+  Tooltip: ({ children }: any) => <>{children}</>,
   Tag: ({ children }: any) => <span>{children}</span>,
   TagLabel: ({ children }: any) => <span>{children}</span>,
   Wrap: ({ children }: any) => <div>{children}</div>,
@@ -58,6 +59,7 @@ jest.mock('@chakra-ui/icons', () => ({
   CheckIcon: () => <span data-testid="check-icon" />,
   AddIcon: () => <span data-testid="add-icon" />,
   CopyIcon: () => <span data-testid="copy-icon" />,
+  NotAllowedIcon: () => <span data-testid="not-allowed-icon" />,
 }));
 
 // Mock Formik — render children with mock form context

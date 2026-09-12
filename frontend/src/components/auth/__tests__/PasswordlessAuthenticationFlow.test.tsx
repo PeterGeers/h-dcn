@@ -59,9 +59,9 @@ jest.mock('react-i18next', () => ({
 jest.mock('@chakra-ui/react', () => ({
   Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   Button: ({ children, onClick, isDisabled, isLoading, loadingText, type, ...props }: any) => (
-    <button 
-      onClick={onClick} 
-      disabled={isDisabled || isLoading} 
+    <button
+      onClick={onClick}
+      disabled={isDisabled || isLoading}
       type={type}
       data-testid={`button-${children?.toString().replace(/\s+/g, '-').toLowerCase()}`}
       {...props}
@@ -74,15 +74,15 @@ jest.mock('@chakra-ui/react', () => ({
   ),
   FormLabel: ({ children }: any) => <label>{children}</label>,
   Input: ({ onChange, value, placeholder, type, name, required, ...props }: any) => (
-    <input 
-      onChange={onChange} 
-      value={value} 
-      placeholder={placeholder} 
+    <input
+      onChange={onChange}
+      value={value}
+      placeholder={placeholder}
       type={type}
       name={name}
       required={required}
       data-testid={`input-${name}`}
-      {...props} 
+      {...props}
     />
   ),
   VStack: ({ children }: any) => <div>{children}</div>,
@@ -249,7 +249,7 @@ describe('Passwordless Authentication Flow', () => {
     expect(screen.getByText('Setting up passkey for: test@example.com')).toBeInTheDocument();
   });
 
-  test('should handle successful passkey sign-in via Amplify', async () => {
+  test('should sign in via Amplify USER_AUTH with EMAIL_OTP challenge', async () => {
     // Mock signIn resolving to isSignedIn: true
     mockSignIn.mockResolvedValue({ isSignedIn: true });
 
@@ -267,31 +267,27 @@ describe('Passwordless Authentication Flow', () => {
     const signInButton = screen.getByText('Inloggen met Passkey');
     fireEvent.click(signInButton);
 
-    // Should have called signIn with WEB_AUTHN
+    // Cognito USER_AUTH handles WebAuthn natively; the client requests EMAIL_OTP
+    // as the preferred challenge and lets Cognito offer factor selection.
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith(
         expect.objectContaining({
           username: 'test@example.com',
           options: expect.objectContaining({
             authFlowType: 'USER_AUTH',
-            preferredChallenge: 'WEB_AUTHN',
+            preferredChallenge: 'EMAIL_OTP',
           }),
         })
       );
     });
   });
 
-  test('should fallback to EMAIL_OTP when WebAuthn fails', async () => {
-    // First signIn (WEB_AUTHN) fails, second (EMAIL_OTP) succeeds with OTP step
-    mockSignIn
-      .mockRejectedValueOnce(new Error('WebAuthn not available'))
-      .mockResolvedValueOnce({
-        isSignedIn: false,
-        nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
-      });
-
-    // Mock prompt returning a code
-    (window.prompt as jest.Mock).mockReturnValue('123456');
+  test('should show the OTP verification form and confirm the entered code', async () => {
+    // signIn returns the CONFIRM_SIGN_IN_WITH_EMAIL_CODE step
+    mockSignIn.mockResolvedValue({
+      isSignedIn: false,
+      nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
+    });
     mockConfirmSignIn.mockResolvedValue({ isSignedIn: true });
 
     render(
@@ -306,9 +302,9 @@ describe('Passwordless Authentication Flow', () => {
     const signInButton = screen.getByText('Inloggen met Passkey');
     fireEvent.click(signInButton);
 
-    // Should have called signIn twice — first WEB_AUTHN, then EMAIL_OTP
+    // Single signIn call with EMAIL_OTP (Cognito USER_AUTH handles WebAuthn natively)
     await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledTimes(2);
+      expect(mockSignIn).toHaveBeenCalledTimes(1);
       expect(mockSignIn).toHaveBeenLastCalledWith(
         expect.objectContaining({
           username: 'test@example.com',
@@ -317,6 +313,18 @@ describe('Passwordless Authentication Flow', () => {
           }),
         })
       );
+    });
+
+    // The inline OTP verification form should appear (no window.prompt anymore)
+    const otpSubmit = await screen.findByTestId('otp-submit');
+
+    // Enter a valid 6-digit code and submit
+    const codeInput = screen.getByPlaceholderText('00000000');
+    fireEvent.change(codeInput, { target: { value: '123456' } });
+    fireEvent.click(otpSubmit);
+
+    await waitFor(() => {
+      expect(mockConfirmSignIn).toHaveBeenCalledWith({ challengeResponse: '123456' });
     });
   });
 

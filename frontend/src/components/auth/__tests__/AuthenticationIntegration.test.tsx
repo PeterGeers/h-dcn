@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
@@ -311,7 +311,7 @@ describe('Authentication Integration Tests', () => {
   });
 
   describe('Passkey Authentication Flow', () => {
-    test('successful passkey authentication with existing user', async () => {
+    test('successful authentication with existing user via USER_AUTH', async () => {
       // Mock successful sign-in (Amplify resolves to isSignedIn: true)
       mockSignIn.mockResolvedValue({ isSignedIn: true });
 
@@ -323,14 +323,14 @@ describe('Authentication Integration Tests', () => {
       const signInButton = screen.getByText('Inloggen met Passkey');
       fireEvent.click(signInButton);
 
-      // Should have called signIn with USER_AUTH / WEB_AUTHN
+      // Cognito USER_AUTH handles WebAuthn natively; the client requests EMAIL_OTP
       await waitFor(() => {
         expect(mockSignIn).toHaveBeenCalledWith(
           expect.objectContaining({
             username: 'test@example.com',
             options: expect.objectContaining({
               authFlowType: 'USER_AUTH',
-              preferredChallenge: 'WEB_AUTHN',
+              preferredChallenge: 'EMAIL_OTP',
             }),
           })
         );
@@ -357,17 +357,12 @@ describe('Authentication Integration Tests', () => {
       });
     });
 
-    test('falls back to EMAIL_OTP when no passkey is registered', async () => {
-      // First attempt (WEB_AUTHN) fails, second (EMAIL_OTP) prompts for code
-      mockSignIn
-        .mockRejectedValueOnce(new Error('No passkey available'))
-        .mockResolvedValueOnce({
-          isSignedIn: false,
-          nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
-        });
-
-      // Mock prompt returning a code
-      (window.prompt as jest.Mock).mockReturnValue('123456');
+    test('shows the EMAIL_OTP verification form and confirms the entered code', async () => {
+      // signIn returns the CONFIRM_SIGN_IN_WITH_EMAIL_CODE step
+      mockSignIn.mockResolvedValue({
+        isSignedIn: false,
+        nextStep: { signInStep: 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE' },
+      });
       mockConfirmSignIn.mockResolvedValue({ isSignedIn: true });
 
       render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
@@ -378,9 +373,9 @@ describe('Authentication Integration Tests', () => {
       const signInButton = screen.getByText('Inloggen met Passkey');
       fireEvent.click(signInButton);
 
-      // Should have called signIn twice (WEB_AUTHN then EMAIL_OTP)
+      // Single signIn call with EMAIL_OTP (Cognito USER_AUTH handles WebAuthn natively)
       await waitFor(() => {
-        expect(mockSignIn).toHaveBeenCalledTimes(2);
+        expect(mockSignIn).toHaveBeenCalledTimes(1);
         expect(mockSignIn).toHaveBeenLastCalledWith(
           expect.objectContaining({
             username: 'newuser@example.com',
@@ -391,12 +386,15 @@ describe('Authentication Integration Tests', () => {
         );
       });
 
-      // Should have prompted for OTP code
-      await waitFor(() => {
-        expect(window.prompt).toHaveBeenCalled();
-      });
+      // The inline OTP verification form should appear (no window.prompt anymore)
+      const otpSubmit = await screen.findByTestId('otp-submit');
 
-      // Should have confirmed with the code
+      // Enter a valid 6-digit code and submit
+      const codeInput = screen.getByPlaceholderText('00000000');
+      fireEvent.change(codeInput, { target: { value: '123456' } });
+      fireEvent.click(otpSubmit);
+
+      // Should have confirmed with the entered code
       await waitFor(() => {
         expect(mockConfirmSignIn).toHaveBeenCalledWith({ challengeResponse: '123456' });
       });
@@ -448,11 +446,9 @@ describe('Authentication Integration Tests', () => {
       });
     });
 
-    test('verifies multiple authentication methods call signIn correctly', async () => {
-      // First WEB_AUTHN fails, falls back to EMAIL_OTP which also completes
-      mockSignIn
-        .mockRejectedValueOnce(new Error('WebAuthn unavailable'))
-        .mockResolvedValueOnce({ isSignedIn: true });
+    test('verifies signIn is called once with USER_AUTH and the current locale', async () => {
+      // A single USER_AUTH signIn completes; Cognito handles factor selection natively
+      mockSignIn.mockResolvedValue({ isSignedIn: true });
 
       render(<CustomAuthenticator>{mockChildren}</CustomAuthenticator>);
 
@@ -462,29 +458,18 @@ describe('Authentication Integration Tests', () => {
       const signInButton = screen.getByText('Inloggen met Passkey');
       fireEvent.click(signInButton);
 
-      // Should have attempted both auth methods
+      // Single signIn call with USER_AUTH / EMAIL_OTP and locale in clientMetadata
       await waitFor(() => {
-        expect(mockSignIn).toHaveBeenCalledTimes(2);
+        expect(mockSignIn).toHaveBeenCalledTimes(1);
       });
 
-      // First call: WEB_AUTHN
-      expect(mockSignIn).toHaveBeenNthCalledWith(
-        1,
+      expect(mockSignIn).toHaveBeenCalledWith(
         expect.objectContaining({
           username: 'regional@example.com',
           options: expect.objectContaining({
-            preferredChallenge: 'WEB_AUTHN',
-          }),
-        })
-      );
-
-      // Second call: EMAIL_OTP fallback
-      expect(mockSignIn).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining({
-          username: 'regional@example.com',
-          options: expect.objectContaining({
+            authFlowType: 'USER_AUTH',
             preferredChallenge: 'EMAIL_OTP',
+            clientMetadata: expect.objectContaining({ locale: 'nl' }),
           }),
         })
       );
