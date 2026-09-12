@@ -68,7 +68,12 @@
     "amount": "Montant",
     "close": "Fermer",
     "summary": "Récapitulatif",
-    "fields_incomplete": "Tous les champs ne sont pas correctement remplis :"
+    "fields_incomplete": "Tous les champs ne sont pas correctement remplis :",
+    "address_name": "Nom du destinataire",
+    "address_street": "Rue + numéro",
+    "address_postcode": "Code postal",
+    "address_city": "Ville",
+    "address_country": "Pays"
   },
   "confirmation": {
     "title": "Confirmation de commande",
@@ -106,7 +111,8 @@
     "no_data": "Aucune donnée de commande trouvée.",
     "success": "Commande passée avec succès !",
     "order_number": "Numéro de commande",
-    "back_to_webshop": "Retour à la boutique"
+    "back_to_webshop": "Retour à la boutique",
+    "loading": "Chargement de la commande..."
   },
   "orders_admin": {
     "title": "Commandes",

@@ -2,89 +2,89 @@
   "membership": {
     "approve": "Goedkeuren",
     "reject": "Afwijzen",
-    "paymentReceived": "Betaling ontvangen",
+    "payment_received": "Betaling ontvangen",
     "cancel": "Opzeggen",
     "suspend": "Schorsen",
-    "reactivate": "Heractiveren",
-    "confirm": {
-      "approve": "Weet je zeker dat je dit lid wilt goedkeuren? Er wordt een betaalverzoek per e-mail verstuurd.",
-      "approvePayment": "Weet je zeker dat je dit lid wilt goedkeuren voor betaling? De regio is toegewezen.",
-      "reject": "Weet je zeker dat je deze aanvraag wilt afwijzen? De aanvrager ontvangt een e-mail met de reden.",
-      "paymentReceived": "Bevestig dat de betaling is ontvangen. Het lidmaatschap wordt geactiveerd.",
-      "cancel": "Weet je zeker dat je dit lidmaatschap wilt opzeggen?",
-      "suspend": "Weet je zeker dat je dit lid wilt schorsen? Het lid verliest tijdelijk toegang.",
-      "reactivate": "Weet je zeker dat je dit lid wilt heractiveren?"
-    },
-    "description": {
-      "approve": "Keur de aanmelding goed en verstuur een betaalverzoek",
-      "approvePayment": "Keur het lid goed en verstuur een betaalverzoek",
-      "reject": "Wijs de aanvraag af en stuur een afwijzingsmail",
-      "paymentReceived": "Markeer de betaling als ontvangen en activeer het lidmaatschap",
-      "cancel": "Zeg het lidmaatschap op",
-      "suspend": "Schors het lid tijdelijk",
-      "reactivate": "Heractiveer een geschorst lid"
-    },
-    "status": {
-      "applied": "Aangemeld",
-      "pending": "Wacht op regio",
-      "wait_payment": "Wacht op betaling",
-      "active": "Actief",
-      "cancelled": "Opgezegd",
-      "suspended": "Geschorst",
-      "rejected": "Afgewezen"
-    },
-    "errors": {
-      "transitionFailed": "Statuswijziging mislukt: {{error}}",
-      "regionRequired": "Het lid moet eerst een regio toegewezen krijgen",
-      "reasonRequired": "Een reden is verplicht (minimaal 10 tekens)",
-      "notInWorkflow": "Deze status valt buiten de workflow"
-    },
-    "bulk": {
-      "title": "Bulkactie",
-      "selected": "{{count}} lid geselecteerd",
-      "selected_plural": "{{count}} leden geselecteerd",
-      "selectSameStatus": "Selecteer leden met dezelfde status",
-      "execute": "Uitvoeren",
-      "result": "{{succeeded}} van {{total}} leden succesvol verwerkt",
-      "failed": "{{failed}} mislukt"
-    },
-    "fields": {
-      "reason": "Reden",
-      "reasonPlaceholder": "Vul een reden in (minimaal 10 tekens)"
-    },
-    "timeline": {
-      "title": "Statusgeschiedenis",
-      "empty": "Geen statuswijzigingen geregistreerd.",
-      "from": "Van",
-      "to": "Naar",
-      "event": "Actie",
-      "date": "Datum",
-      "triggeredBy": "Door"
-    }
+    "reactivate": "Heractiveren"
   },
-  "welcomePack": {
+  "membership_confirm": {
+    "approve": "Weet je zeker dat je dit lid wilt goedkeuren? Er wordt een betaalverzoek per e-mail verstuurd.",
+    "approve_payment": "Weet je zeker dat je dit lid wilt goedkeuren voor betaling? De regio is toegewezen.",
+    "reject": "Weet je zeker dat je deze aanvraag wilt afwijzen? De aanvrager ontvangt een e-mail met de reden.",
+    "payment_received": "Bevestig dat de betaling is ontvangen. Het lidmaatschap wordt geactiveerd.",
+    "cancel": "Weet je zeker dat je dit lidmaatschap wilt opzeggen?",
+    "suspend": "Weet je zeker dat je dit lid wilt schorsen? Het lid verliest tijdelijk toegang.",
+    "reactivate": "Weet je zeker dat je dit lid wilt heractiveren?"
+  },
+  "membership_description": {
+    "approve": "Keur de aanmelding goed en verstuur een betaalverzoek",
+    "approve_payment": "Keur het lid goed en verstuur een betaalverzoek",
+    "reject": "Wijs de aanvraag af en stuur een afwijzingsmail",
+    "payment_received": "Markeer de betaling als ontvangen en activeer het lidmaatschap",
+    "cancel": "Zeg het lidmaatschap op",
+    "suspend": "Schors het lid tijdelijk",
+    "reactivate": "Heractiveer een geschorst lid"
+  },
+  "membership_status": {
+    "applied": "Aangemeld",
+    "pending": "Wacht op regio",
+    "wait_payment": "Wacht op betaling",
+    "active": "Actief",
+    "cancelled": "Opgezegd",
+    "suspended": "Geschorst",
+    "rejected": "Afgewezen"
+  },
+  "membership_errors": {
+    "transition_failed": "Statuswijziging mislukt: {{error}}",
+    "region_required": "Het lid moet eerst een regio toegewezen krijgen",
+    "reason_required": "Een reden is verplicht (minimaal 10 tekens)",
+    "not_in_workflow": "Deze status valt buiten de workflow"
+  },
+  "membership_bulk": {
+    "title": "Bulkactie",
+    "selected": "{{count}} lid geselecteerd",
+    "selected_plural": "{{count}} leden geselecteerd",
+    "select_same_status": "Selecteer leden met dezelfde status",
+    "execute": "Uitvoeren",
+    "result": "{{succeeded}} van {{total}} leden succesvol verwerkt",
+    "failed": "{{failed}} mislukt"
+  },
+  "membership_fields": {
+    "reason": "Reden",
+    "reason_placeholder": "Vul een reden in (minimaal 10 tekens)"
+  },
+  "membership_timeline": {
+    "title": "Statusgeschiedenis",
+    "empty": "Geen statuswijzigingen geregistreerd.",
+    "from": "Van",
+    "to": "Naar",
+    "event": "Actie",
+    "date": "Datum",
+    "triggered_by": "Door"
+  },
+  "welcome_pack": {
     "title": "Welkomstpakketten",
-    "tabTitle": "Welkomstpakketten",
+    "tab_title": "Welkomstpakketten",
     "pending": "in afwachting",
     "empty": "Geen welkomstpakketten in afwachting",
     "selected": "geselecteerd",
-    "selectAll": "Alles selecteren",
-    "columns": {
-      "name": "Naam",
-      "address": "Adres",
-      "memberNumber": "Lidnummer",
-      "activationDate": "Ingangsdatum",
-      "action": "Actie"
-    },
-    "markSent": "Verzonden",
-    "bulkMarkSent": "Markeer als verzonden",
-    "sentSuccess": "Welkomstpakket gemarkeerd als verzonden",
-    "sentError": "Fout bij bijwerken status",
-    "bulkSuccess": "{{count}} welkomstpakketten gemarkeerd als verzonden",
-    "bulkPartialError": "{{count}} konden niet worden bijgewerkt",
+    "select_all": "Alles selecteren",
+    "mark_sent": "Verzonden",
+    "bulk_mark_sent": "Markeer als verzonden",
+    "sent_success": "Welkomstpakket gemarkeerd als verzonden",
+    "sent_error": "Fout bij bijwerken status",
+    "bulk_success": "{{count}} welkomstpakketten gemarkeerd als verzonden",
+    "bulk_partial_error": "{{count}} konden niet worden bijgewerkt",
     "sending": "Bijwerken...",
-    "noAddress": "Geen adres",
-    "addressIncomplete": "Adres onvolledig — controleer voor verzending"
+    "no_address": "Geen adres",
+    "address_incomplete": "Adres onvolledig — controleer voor verzending"
+  },
+  "welcome_pack_columns": {
+    "name": "Naam",
+    "address": "Adres",
+    "member_number": "Lidnummer",
+    "activation_date": "Ingangsdatum",
+    "action": "Actie"
   },
   "history": {
     "title": "Statusgeschiedenis",

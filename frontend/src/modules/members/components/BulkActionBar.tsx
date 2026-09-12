@@ -30,7 +30,7 @@ import type { MemberWorkflowState, TransitionConfig } from '../../../config/work
 
 export interface BulkActionBarProps {
   /** Full member objects for selected members (need status for computing transitions) */
-  selectedMembers: Array<{ member_id: string; status?: string; [key: string]: any }>;
+  selectedMembers: Array<{ member_id: string; status?: string;[key: string]: any }>;
   /** Current user's roles */
   userRoles: string[];
   /** Callback when Execute is clicked with the event and selected member IDs */
@@ -125,7 +125,7 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
             onClick={onClearSelection}
           />
           <Text color="white" fontWeight="semibold" fontSize="sm">
-            {t('membership.bulk.selected', { count: selectedMembers.length })}
+            {t('membership_bulk.selected', { count: selectedMembers.length })}
           </Text>
         </HStack>
 
@@ -135,7 +135,7 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
         <HStack spacing={2}>
           {hasMixedStatuses ? (
             <Text color="yellow.200" fontSize="sm">
-              {t('membership.bulk.selectSameStatus', {
+              {t('membership_bulk.select_same_status', {
                 defaultValue: 'Select members with the same status',
               })}
             </Text>
@@ -148,7 +148,7 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
                 maxW="200px"
                 value={selectedEvent}
                 onChange={(e) => setSelectedEvent(e.target.value)}
-                placeholder={t('membership.bulk.title', { defaultValue: 'Select action' })}
+                placeholder={t('membership_bulk.title', { defaultValue: 'Select action' })}
                 isDisabled={availableTransitions.length === 0 || isLoading}
               >
                 {availableTransitions.map((tr) => (
@@ -166,7 +166,7 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
                 isDisabled={!selectedEvent || isLoading}
                 isLoading={isLoading}
               >
-                {t('membership.bulk.execute', { defaultValue: 'Execute' })}
+                {t('membership_bulk.execute', { defaultValue: 'Execute' })}
               </Button>
             </>
           )}

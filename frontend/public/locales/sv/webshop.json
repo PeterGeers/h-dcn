@@ -68,7 +68,12 @@
     "amount": "Belopp",
     "close": "Stäng",
     "summary": "Sammanfattning",
-    "fields_incomplete": "Alla fält är inte korrekt ifyllda:"
+    "fields_incomplete": "Alla fält är inte korrekt ifyllda:",
+    "address_name": "Mottagarens namn",
+    "address_street": "Gata + husnummer",
+    "address_postcode": "Postnummer",
+    "address_city": "Stad",
+    "address_country": "Land"
   },
   "confirmation": {
     "title": "Orderbekräftelse",
@@ -106,7 +111,8 @@
     "no_data": "Inga beställningsdata hittades.",
     "success": "Beställning genomförd!",
     "order_number": "Ordernummer",
-    "back_to_webshop": "Tillbaka till webbshopen"
+    "back_to_webshop": "Tillbaka till webbshopen",
+    "loading": "Laddar beställning..."
   },
   "orders_admin": {
     "title": "Beställningar",

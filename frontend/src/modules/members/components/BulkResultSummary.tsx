@@ -65,7 +65,7 @@ export const BulkResultSummary: React.FC<BulkResultSummaryProps> = ({
       <ModalOverlay />
       <ModalContent bg="gray.800" borderColor="orange.400" borderWidth="1px">
         <ModalHeader color="orange.300">
-          {t('workflows:membership.bulk.title')}
+          {t('workflows:membership_bulk.title')}
         </ModalHeader>
         <ModalCloseButton color="gray.400" />
 
@@ -73,12 +73,12 @@ export const BulkResultSummary: React.FC<BulkResultSummaryProps> = ({
           <VStack align="stretch" spacing={4}>
             {/* Summary text */}
             <Text color="white" fontWeight="bold" fontSize="md">
-              {t('workflows:membership.bulk.result', { succeeded, total })}
+              {t('workflows:membership_bulk.result', { succeeded, total })}
             </Text>
 
             {failed > 0 && (
               <Text color="red.300" fontSize="sm">
-                {t('workflows:membership.bulk.failed', { failed })}
+                {t('workflows:membership_bulk.failed', { failed })}
               </Text>
             )}
 
@@ -112,7 +112,7 @@ export const BulkResultSummary: React.FC<BulkResultSummaryProps> = ({
                           variant="subtle"
                         >
                           {STATUS_TO_STATE[item.new_status]
-                            ? t(`workflows:membership.status.${STATUS_TO_STATE[item.new_status]}`)
+                            ? t(`workflows:membership_status.${STATUS_TO_STATE[item.new_status]}`)
                             : item.new_status}
                         </Badge>
                       )}

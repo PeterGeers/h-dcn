@@ -50,7 +50,7 @@ export interface TransitionConfig {
   /** The target state after the transition completes */
   target: MemberWorkflowState;
 
-  /** i18n key for the action button label (e.g. 'workflows.membership.approve') */
+  /** i18n key for the action button label (e.g. 'workflows:membership.approve') */
   label: string;
 
   /** Cognito roles that are allowed to execute this transition */

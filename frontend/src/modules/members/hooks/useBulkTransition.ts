@@ -89,8 +89,8 @@ export function useBulkTransition(): UseBulkTransitionResult {
           if (data.failed === 0) {
             // All succeeded
             toast({
-              title: t('membership.bulk.title', { defaultValue: 'Bulk action' }),
-              description: t('membership.bulk.result', {
+              title: t('membership_bulk.title', { defaultValue: 'Bulk action' }),
+              description: t('membership_bulk.result', {
                 succeeded: data.succeeded,
                 total: data.total,
                 defaultValue: `${data.succeeded} of ${data.total} members successfully processed`,
@@ -102,8 +102,8 @@ export function useBulkTransition(): UseBulkTransitionResult {
           } else if (data.succeeded === 0) {
             // All failed
             toast({
-              title: t('membership.bulk.title', { defaultValue: 'Bulk action' }),
-              description: t('membership.bulk.failed', {
+              title: t('membership_bulk.title', { defaultValue: 'Bulk action' }),
+              description: t('membership_bulk.failed', {
                 failed: data.failed,
                 defaultValue: `${data.failed} failed`,
               }),
@@ -114,8 +114,8 @@ export function useBulkTransition(): UseBulkTransitionResult {
           } else {
             // Partial success
             toast({
-              title: t('membership.bulk.title', { defaultValue: 'Bulk action' }),
-              description: t('membership.bulk.result', {
+              title: t('membership_bulk.title', { defaultValue: 'Bulk action' }),
+              description: t('membership_bulk.result', {
                 succeeded: data.succeeded,
                 total: data.total,
                 defaultValue: `${data.succeeded} of ${data.total} members successfully processed`,
@@ -132,13 +132,13 @@ export function useBulkTransition(): UseBulkTransitionResult {
         // API call failed at HTTP level
         const errorMessage =
           response.error ||
-          t('membership.errors.transitionFailed', {
+          t('membership_errors.transition_failed', {
             error: 'Unknown error',
             defaultValue: 'Status change failed',
           });
 
         toast({
-          title: t('membership.bulk.title', { defaultValue: 'Bulk action' }),
+          title: t('membership_bulk.title', { defaultValue: 'Bulk action' }),
           description: errorMessage,
           status: 'error',
           duration: 5000,
@@ -150,13 +150,13 @@ export function useBulkTransition(): UseBulkTransitionResult {
         const errorMessage =
           err instanceof Error
             ? err.message
-            : t('membership.errors.transitionFailed', {
-                error: 'Network error',
-                defaultValue: 'Connection failed, try again',
-              });
+            : t('membership_errors.transition_failed', {
+              error: 'Network error',
+              defaultValue: 'Connection failed, try again',
+            });
 
         toast({
-          title: t('membership.bulk.title', { defaultValue: 'Bulk action' }),
+          title: t('membership_bulk.title', { defaultValue: 'Bulk action' }),
           description: errorMessage,
           status: 'error',
           duration: 5000,

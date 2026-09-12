@@ -49,16 +49,16 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [userRegion, setUserRegion] = useState<string>('');
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
-  
+
   const toast = useToast();
   const { handleError } = useErrorHandler();
   const { t } = useTranslation('workflows');
-  
+
   // Modal controls - only need one modal now
-  const { 
-    isOpen: isModalOpen, 
-    onOpen: onModalOpen, 
-    onClose: onModalClose 
+  const {
+    isOpen: isModalOpen,
+    onOpen: onModalOpen,
+    onClose: onModalClose
   } = useDisclosure();
 
   // Get user role for field registry system (prioritize member-specific roles)
@@ -82,7 +82,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       try {
         const roles = getUserRoles(user);
         setUserRoles(roles);
-        
+
         // Extract region from user's Regio_* roles
         const regionRole = roles.find(role => role.startsWith('Regio_') && role !== 'Regio_All');
         if (regionRole) {
@@ -112,18 +112,18 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     const loadMembers = async () => {
       try {
         setLoading(true);
-        
+
         // FORCE REFRESH to bypass cache - this ensures we always get fresh data
         console.log('[MemberAdminPage] Forcing fresh data fetch (bypassing cache)');
         const data = await MemberDataService.fetchMembers(true); // Force refresh = true
-        
+
         console.log('[MemberAdminPage] Raw data from MemberDataService:', data);
         console.log('[MemberAdminPage] Data type:', typeof data);
         console.log('[MemberAdminPage] Is array:', Array.isArray(data));
         console.log('[MemberAdminPage] Data length:', data?.length);
-        
+
         setMembers(data);
-        
+
         console.log(`[MemberAdminPage] Loaded ${data.length} members with regional filtering`);
       } catch (error) {
         console.error('[MemberAdminPage] Error loading members:', error);
@@ -167,7 +167,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
       // Refresh member data using NEW MemberDataService with regional filtering
       const data = await MemberDataService.refreshMembers();
       setMembers(data);
-      
+
       toast({
         title: 'Lid bijgewerkt',
         description: 'De lidgegevens zijn succesvol bijgewerkt.',
@@ -216,7 +216,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
   }
 
   // Check if user has any member access
-  const hasAnyMemberAccess = userRoles.some(role => 
+  const hasAnyMemberAccess = userRoles.some(role =>
     ['System_User_Management', 'Members_CRUD', 'Members_Read', 'Members_Export', 'Members_Status_Approve'].includes(role)
   );
 
@@ -241,7 +241,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
     const ownMember = members.find(m => isOwnRecord(m));
     if (ownMember) {
       return (
-        <MemberSelfServiceView 
+        <MemberSelfServiceView
           member={ownMember}
           onUpdate={handleMemberSave}
         />
@@ -265,7 +265,7 @@ function MemberAdminPage({ user }: MemberAdminPageProps) {
               <Tab>📈 Rapportages</Tab>
             )}
             {getUserRole() === 'Members_CRUD' && (
-              <Tab>📦 {t('welcomePack.tabTitle')}</Tab>
+              <Tab>📦 {t('welcome_pack.tab_title')}</Tab>
             )}
             {['System_User_Management', 'Members_CRUD'].includes(getUserRole()) && (
               <Tab>🔐 Cognito Beheer</Tab>

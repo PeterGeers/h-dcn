@@ -78,7 +78,7 @@ function WelcomePackList() {
     } catch (error) {
       console.error('[WelcomePackList] Error loading members:', error);
       toast({
-        title: t('welcomePack.sentError'),
+        title: t('welcome_pack.sent_error'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -115,7 +115,7 @@ function WelcomePackList() {
         return next;
       });
       toast({
-        title: t('welcomePack.sentSuccess'),
+        title: t('welcome_pack.sent_success'),
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -123,7 +123,7 @@ function WelcomePackList() {
     } catch (error) {
       console.error('[WelcomePackList] Error marking as sent:', error);
       toast({
-        title: t('welcomePack.sentError'),
+        title: t('welcome_pack.sent_error'),
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -185,7 +185,7 @@ function WelcomePackList() {
       <Box display="flex" justifyContent="center" alignItems="center" minH="200px">
         <VStack spacing={4}>
           <Spinner size="lg" color="orange.500" />
-          <Text>{t('welcomePack.sending')}</Text>
+          <Text>{t('welcome_pack.sending')}</Text>
         </VStack>
       </Box>
     );
@@ -196,7 +196,7 @@ function WelcomePackList() {
       <Box p={6}>
         <Alert status="info">
           <AlertIcon />
-          <Text>{t('welcomePack.empty')}</Text>
+          <Text>{t('welcome_pack.empty')}</Text>
         </Alert>
       </Box>
     );
@@ -209,7 +209,7 @@ function WelcomePackList() {
         {selectedIds.size > 0 && (
           <HStack spacing={4} p={3} bg="orange.50" borderRadius="md">
             <Text fontWeight="medium">
-              {t('welcomePack.selected', { count: selectedIds.size })}
+              {t('welcome_pack.selected', { count: selectedIds.size })}
             </Text>
             <Button
               size="sm"
@@ -217,7 +217,7 @@ function WelcomePackList() {
               onClick={markBulkAsSent}
               isLoading={markingIds.size > 0}
             >
-              {t('welcomePack.bulkMarkSent')}
+              {t('welcome_pack.bulk_mark_sent')}
             </Button>
           </HStack>
         )}
@@ -234,11 +234,11 @@ function WelcomePackList() {
                     onChange={toggleSelectAll}
                   />
                 </Th>
-                <Th>{t('welcomePack.columns.name')}</Th>
-                <Th>{t('welcomePack.columns.memberNumber')}</Th>
-                <Th>{t('welcomePack.columns.address')}</Th>
-                <Th>{t('welcomePack.columns.activationDate')}</Th>
-                <Th>{t('welcomePack.columns.action')}</Th>
+                <Th>{t('welcome_pack_columns.name')}</Th>
+                <Th>{t('welcome_pack_columns.member_number')}</Th>
+                <Th>{t('welcome_pack_columns.address')}</Th>
+                <Th>{t('welcome_pack_columns.activation_date')}</Th>
+                <Th>{t('welcome_pack_columns.action')}</Th>
                 <Th></Th>
               </Tr>
             </Thead>
@@ -272,7 +272,7 @@ function WelcomePackList() {
                       onClick={() => markAsSent(member.member_id)}
                       isLoading={markingIds.has(member.member_id)}
                     >
-                      {t('welcomePack.markSent')}
+                      {t('welcome_pack.mark_sent')}
                     </Button>
                   </Td>
                 </Tr>

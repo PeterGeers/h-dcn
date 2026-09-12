@@ -78,10 +78,10 @@ export const TransitionConfirmDialog: React.FC<TransitionConfirmDialogProps> = (
   const reasonError = (() => {
     if (!requiresReason && !isReasonOptional) return '';
     if (requiresReason && reason.trim().length < REASON_MIN_LENGTH) {
-      return t('workflows:membership.errors.reasonRequired');
+      return t('workflows:membership_errors.reason_required');
     }
     if (isReasonOptional && reason.trim().length > 0 && reason.trim().length < REASON_MIN_LENGTH) {
-      return t('workflows:membership.errors.reasonRequired');
+      return t('workflows:membership_errors.reason_required');
     }
     return '';
   })();
@@ -135,7 +135,7 @@ export const TransitionConfirmDialog: React.FC<TransitionConfirmDialogProps> = (
             {showReasonField && (
               <FormControl isInvalid={reasonTouched && !!reasonError}>
                 <FormLabel color="gray.200">
-                  {t('workflows:membership.fields.reason')}
+                  {t('workflows:membership_fields.reason')}
                   {!requiresReason && (
                     <Text as="span" color="gray.400" fontSize="sm" ml={1}>
                       ({t('common:optional', 'optional')})
@@ -146,7 +146,7 @@ export const TransitionConfirmDialog: React.FC<TransitionConfirmDialogProps> = (
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   onBlur={() => setReasonTouched(true)}
-                  placeholder={t('workflows:membership.fields.reasonPlaceholder')}
+                  placeholder={t('workflows:membership_fields.reason_placeholder')}
                   bg="gray.700"
                   color="white"
                   borderColor="gray.600"
