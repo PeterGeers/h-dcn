@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Local Secret Scan (pre-commit)",
+      "trigger": "PreToolUse",
+      "description": "Syncs auth layer, then runs local regex secret scanner on staged files. Blocks commit if secrets found.",
+      "matcher": "execute_pwsh",
+      "action": {
+        "type": "command",
+        "command": "powershell -NoProfile -Command \"$input = [Console]::In.ReadToEnd(); $json = $input | ConvertFrom-Json; if ($json.toolInput.command -notmatch 'git commit') { exit 0 }; $src='backend/shared/auth_utils.py'; $dst='backend/layers/auth-layer/python/shared/auth_utils.py'; if((Test-Path $src) -and (Test-Path $dst)){if((Get-FileHash $src).Hash -ne (Get-FileHash $dst).Hash){Copy-Item $src $dst; git add $dst; Write-Host 'Auth layer synced'}}; & ./scripts/scan-secrets-local.ps1; exit $LASTEXITCODE\"",
+        "timeout": 15
+      }
+    }
+  ]
+}
