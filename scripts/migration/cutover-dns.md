@@ -6,6 +6,11 @@ This runbook documents the DNS cutover procedure for migrating h-dcn from the Pe
 
 **Requirements:** 18.1, 18.2, 18.3, 18.4, 18.5
 
+> **Historical note:** The account migration described here is complete. The
+> PowerShell helper scripts this runbook references (e.g. `verify-cutover.ps1`,
+> `migrate-dynamodb.ps1`) were removed during the WSL/Ubuntu migration. This
+> document is retained as a historical record.
+
 ---
 
 ## Prerequisites
