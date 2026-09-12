@@ -125,15 +125,26 @@ other change.
       handler no longer reads (it now selects per event_type via
       `_get_calendar_id`, defaulting to the Nationaal calendar). Updated the 4
       assertions to the real Nationaal calendar ID. Verified: 16 passed.
-    - [ ] **`test_cognito_post_authentication` — NEEDS YOUR DECISION (possible
-      real bug).** Tests seed members with `status='active'` / `'approved'` and
-      expect group `hdcnLeden`, but the handler only treats `status=='Actief'`
-      (canonical Dutch) as active → routes others to `verzoek_lid`. Two options:
-      (A) tests are wrong → use `'Actief'` (matches field registry; schema
-      steering says statuses are Dutch); (B) handler is too strict → if the
-      Members table actually contains `'active'`/`'approved'` records, real
-      approved members would be wrongly left in `verzoek_lid` (a real onboarding
-      bug). Decision depends on actual DynamoDB status values — needs owner input.
+    - [ ] **`test_cognito_post_authentication` — CONFIRMED STALE (handler is
+      correct).** Investigated both sources of truth:
+      - Field registry `status` enum: `['Actief','Opgezegd','wachtRegio',...]` —
+        no `'active'`/`'approved'`/`'pending'`.
+      - Production Members table (1229 records): `Actief` 1097, `HdcnAccount` 62,
+        `Sponsor` 52, `Club` 18 — ZERO `'active'`/`'approved'`.
+      So the handler (`member_status == 'Actief'` → `hdcnLeden`; else/unknown →
+      `verzoek_lid`) is correct and matches the auth steering. The 10 failures
+      are all stale-test issues, in two groups:
+      1. Seed non-existent statuses (`'active'`, `'approved'`) but assert
+         `hdcnLeden` → change seed to `'Actief'`.
+      2. `test_pending_member_gets_no_group` / `test_unknown_user_gets_no_group`
+         assert `add_user_to_group` is NOT called, but the handler now
+         intentionally assigns `verzoek_lid` to pending/unknown users → update to
+         assert the `verzoek_lid` assignment.
+      **FIXED**: seeds now use canonical statuses (`Actief` for approved cases;
+      `Aangemeld`/`Geschorst` for non-active), and the "no group" tests were
+      rewritten to assert the `verzoek_lid` assignment (renamed accordingly).
+      Verified: 24 passed. Confirmed against field registry + 1229 prod records —
+      handler was correct, tests were stale.
     - [ ] 12 frontend failures (requirements §5) — triage each (not yet started).
 - [ ] **P1.4-final** After P1.9 + P1.10, re-run once more to confirm a genuine
   green baseline.

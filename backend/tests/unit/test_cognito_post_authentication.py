@@ -6,7 +6,8 @@ role assignment for Google SSO users who bypass post-confirmation.
 
 Tests cover:
 1. Normal login: user with existing roles — no changes made
-2. First-time login (no groups): assigns hdcnLeden if member is approved
+2. First-time login (no groups): assigns hdcnLeden if member status is 'Actief',
+   otherwise verzoek_lid (member exists but not active, or no member record)
 3. Google SSO login: federated-only groups trigger role assignment
 4. Error handling: handler never blocks authentication
 5. Event format: correct Cognito trigger event structure handled
@@ -197,7 +198,7 @@ class TestFirstTimeLogin:
         members_table.put_item(Item={
             'member_id': 'mem-001',
             'email': TEST_EMAIL,
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event()
@@ -216,13 +217,13 @@ class TestFirstTimeLogin:
         )
 
     def test_active_status_triggers_role_assignment(self, setup_cognito_and_members):
-        """Member with 'active' status gets assigned hdcnLeden."""
+        """Member with 'Actief' status gets assigned hdcnLeden."""
         members_table, handler = setup_cognito_and_members
 
         members_table.put_item(Item={
             'member_id': 'mem-002',
             'email': TEST_EMAIL,
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event()
@@ -234,13 +235,13 @@ class TestFirstTimeLogin:
         mock_add.assert_called_once()
 
     def test_approved_status_triggers_role_assignment(self, setup_cognito_and_members):
-        """Member with 'approved' status gets assigned hdcnLeden."""
+        """Member with 'Actief' status gets assigned hdcnLeden."""
         members_table, handler = setup_cognito_and_members
 
         members_table.put_item(Item={
             'member_id': 'mem-003',
             'email': TEST_EMAIL,
-            'status': 'approved',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event()
@@ -255,37 +256,45 @@ class TestFirstTimeLogin:
             GroupName='hdcnLeden',
         )
 
-    def test_pending_member_gets_no_group(self, setup_cognito_and_members):
-        """User with pending member status — no role assigned."""
+    def test_non_active_member_gets_verzoek_lid(self, setup_cognito_and_members):
+        """Member that exists but is not 'Actief' → assigned verzoek_lid (retry/apply)."""
         members_table, handler = setup_cognito_and_members
 
         members_table.put_item(Item={
             'member_id': 'mem-004',
             'email': TEST_EMAIL,
-            'status': 'pending',
+            'status': 'Aangemeld',  # registered but not yet active
         })
 
         event = _make_post_auth_event()
 
         with patch.object(handler.cognito_client, 'admin_list_groups_for_user', return_value={'Groups': []}):
-            with patch.object(handler.cognito_client, 'admin_add_user_to_group') as mock_add:
+            with patch.object(handler.cognito_client, 'admin_add_user_to_group', return_value={}) as mock_add:
                 result = handler.lambda_handler(event, None)
 
         assert result == event
-        mock_add.assert_not_called()
+        mock_add.assert_called_once_with(
+            UserPoolId=TEST_USER_POOL_ID,
+            Username=TEST_EMAIL,
+            GroupName='verzoek_lid',
+        )
 
-    def test_unknown_user_gets_no_group(self, setup_cognito_and_members):
-        """User not in Members table — no role assigned."""
+    def test_unknown_user_gets_verzoek_lid(self, setup_cognito_and_members):
+        """User not in Members table → assigned verzoek_lid so they can apply."""
         _, handler = setup_cognito_and_members
 
         event = _make_post_auth_event()
 
         with patch.object(handler.cognito_client, 'admin_list_groups_for_user', return_value={'Groups': []}):
-            with patch.object(handler.cognito_client, 'admin_add_user_to_group') as mock_add:
+            with patch.object(handler.cognito_client, 'admin_add_user_to_group', return_value={}) as mock_add:
                 result = handler.lambda_handler(event, None)
 
         assert result == event
-        mock_add.assert_not_called()
+        mock_add.assert_called_once_with(
+            UserPoolId=TEST_USER_POOL_ID,
+            Username=TEST_EMAIL,
+            GroupName='verzoek_lid',
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -302,7 +311,7 @@ class TestGoogleSSOLogin:
         members_table.put_item(Item={
             'member_id': 'mem-google-001',
             'email': TEST_EMAIL,
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event()
@@ -345,7 +354,7 @@ class TestGoogleSSOLogin:
         members_table.put_item(Item={
             'member_id': 'mem-fb-001',
             'email': TEST_EMAIL,
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event()
@@ -358,8 +367,8 @@ class TestGoogleSSOLogin:
 
         mock_add.assert_called_once()
 
-    def test_google_user_not_in_members_gets_no_group(self, setup_cognito_and_members):
-        """Google SSO user not in Members table — no role assigned."""
+    def test_google_user_not_in_members_gets_verzoek_lid(self, setup_cognito_and_members):
+        """Google SSO user not in Members table → assigned verzoek_lid to apply."""
         _, handler = setup_cognito_and_members
 
         event = _make_post_auth_event()
@@ -367,20 +376,24 @@ class TestGoogleSSOLogin:
         with patch.object(handler.cognito_client, 'admin_list_groups_for_user', return_value={
             'Groups': [{'GroupName': 'eu-west-1_fcUkvwjH5_Google'}]
         }):
-            with patch.object(handler.cognito_client, 'admin_add_user_to_group') as mock_add:
+            with patch.object(handler.cognito_client, 'admin_add_user_to_group', return_value={}) as mock_add:
                 result = handler.lambda_handler(event, None)
 
         assert result == event
-        mock_add.assert_not_called()
+        mock_add.assert_called_once_with(
+            UserPoolId=TEST_USER_POOL_ID,
+            Username=TEST_EMAIL,
+            GroupName='verzoek_lid',
+        )
 
-    def test_google_user_with_unapproved_status_gets_no_group(self, setup_cognito_and_members):
-        """Google SSO user with 'rejected' member status — no role assigned."""
+    def test_google_user_with_non_active_status_gets_verzoek_lid(self, setup_cognito_and_members):
+        """Google SSO user whose member record is not 'Actief' → verzoek_lid."""
         members_table, handler = setup_cognito_and_members
 
         members_table.put_item(Item={
             'member_id': 'mem-google-rej',
             'email': TEST_EMAIL,
-            'status': 'rejected',
+            'status': 'Geschorst',  # suspended — not active
         })
 
         event = _make_post_auth_event()
@@ -388,11 +401,15 @@ class TestGoogleSSOLogin:
         with patch.object(handler.cognito_client, 'admin_list_groups_for_user', return_value={
             'Groups': [{'GroupName': 'eu-west-1_fcUkvwjH5_Google'}]
         }):
-            with patch.object(handler.cognito_client, 'admin_add_user_to_group') as mock_add:
+            with patch.object(handler.cognito_client, 'admin_add_user_to_group', return_value={}) as mock_add:
                 result = handler.lambda_handler(event, None)
 
         assert result == event
-        mock_add.assert_not_called()
+        mock_add.assert_called_once_with(
+            UserPoolId=TEST_USER_POOL_ID,
+            Username=TEST_EMAIL,
+            GroupName='verzoek_lid',
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -434,7 +451,7 @@ class TestErrorHandling:
         members_table.put_item(Item={
             'member_id': 'mem-err-001',
             'email': TEST_EMAIL,
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event()
@@ -518,7 +535,7 @@ class TestEventFormat:
         members_table.put_item(Item={
             'member_id': 'mem-attr-001',
             'email': 'attr-user@h-dcn.nl',
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = _make_post_auth_event(email='attr-user@h-dcn.nl')
@@ -540,7 +557,7 @@ class TestEventFormat:
         members_table.put_item(Item={
             'member_id': 'mem-nomail-001',
             'email': 'fallback@h-dcn.nl',
-            'status': 'active',
+            'status': 'Actief',
         })
 
         event = {
@@ -577,7 +594,7 @@ class TestEventFormat:
         members_table.put_item(Item={
             'member_id': 'mem-google-fmt',
             'email': 'google-user@gmail.com',
-            'status': 'active',
+            'status': 'Actief',
         })
 
         # Google SSO users often have a different username format
