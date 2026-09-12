@@ -72,7 +72,7 @@
   - Create `docs/decisions/wsl-ubuntu-migration.md`: the "no PowerShell on Linux — bash hooks + CI deploys" decision, the 55-script inventory outcome (1 LIVE / 22 keep / 32 deleted), and the flagged discrepancies.
   - _Requirements: 3.1, 3.3, 3.5_
 
-- [ ] 14. Commit and push the changes on a feature branch
+- [x] 14. Commit and push the changes on a feature branch
   - Stage specific files per change (not `git add .`), conventional commit messages (`chore:`, `fix:`, `docs:`); keep cleanup and `.gitattributes` renormalization as their own commits.
   - Let the (now bash) pre-commit hook run; do not use `--no-verify`. Never push to `main`.
   - Push the feature branch to `origin` so the fresh Ubuntu clone will contain the bash hooks and `.gitattributes`.
