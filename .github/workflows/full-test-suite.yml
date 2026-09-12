@@ -36,42 +36,68 @@ jobs:
       - name: Run full test suite
         working-directory: backend
         continue-on-error: true
+        shell: bash
         run: |
           PASSED=0
           FAILED=0
+          ERRORED=0
           ERRORS=""
           TEST_FILES=$(find tests -name "test_*.py" | sort)
           TOTAL=$(echo "$TEST_FILES" | wc -l)
           echo "Found $TOTAL test files"
+          # Full per-file output is captured to test-output.txt (not just a summary),
+          # so downstream analysis can see collection errors and failures.
+          : > test-output.txt
           i=0
           for f in $TEST_FILES; do
             i=$((i+1))
             echo "[$i/$TOTAL] Running: $f"
-            if timeout 120 pytest "$f" --tb=short -q 2>&1 | tail -3; then
+            echo "===== [$i/$TOTAL] $f =====" >> test-output.txt
+            # Capture pytest's REAL exit code. Piping to tail would mask it
+            # (the pipeline would report tail's exit status, always 0), which is
+            # the bug that hid collection errors (exit 2) and failures as "passed".
+            timeout 120 pytest "$f" --tb=short -q >> test-output.txt 2>&1
+            EXIT_CODE=$?
+            tail -3 test-output.txt
+            if [ $EXIT_CODE -eq 0 ]; then
               PASSED=$((PASSED+1))
+            elif [ $EXIT_CODE -eq 124 ]; then
+              echo "  ⏰ TIMEOUT: $f"
+              ERRORS="$ERRORS\nTIMEOUT: $f"
+              ERRORED=$((ERRORED+1))
+            elif [ $EXIT_CODE -eq 2 ]; then
+              # pytest exit 2 = collection/usage error (e.g. import/NoRegionError)
+              echo "  💥 COLLECTION ERROR: $f"
+              ERRORS="$ERRORS\nERROR (collection): $f"
+              ERRORED=$((ERRORED+1))
             else
-              EXIT_CODE=$?
-              if [ $EXIT_CODE -eq 124 ]; then
-                echo "  ⏰ TIMEOUT: $f"
-                ERRORS="$ERRORS\nTIMEOUT: $f"
-              else
-                echo "  ❌ FAILED: $f"
-                ERRORS="$ERRORS\nFAILED: $f"
-              fi
+              echo "  ❌ FAILED: $f (exit $EXIT_CODE)"
+              ERRORS="$ERRORS\nFAILED: $f (exit $EXIT_CODE)"
               FAILED=$((FAILED+1))
             fi
           done
           echo ""
           echo "=== Summary ==="
-          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED"
+          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED | Errors: $ERRORED"
           if [ -n "$ERRORS" ]; then
             echo -e "\nIssues:$ERRORS"
           fi
-          # Generate minimal JUnit XML for the report step
+          {
+            echo ""
+            echo "=== Summary ==="
+            echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED | Errors: $ERRORED"
+            [ -n "$ERRORS" ] && echo -e "Issues:$ERRORS"
+          } >> test-output.txt
+          # Generate minimal JUnit XML for the report step (errors counted properly).
           echo '<?xml version="1.0" encoding="utf-8"?>' > test-results.xml
-          echo "<testsuites tests=\"$TOTAL\" failures=\"$FAILED\" errors=\"0\">" >> test-results.xml
+          echo "<testsuites tests=\"$TOTAL\" failures=\"$FAILED\" errors=\"$ERRORED\">" >> test-results.xml
           echo "</testsuites>" >> test-results.xml
-          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED" > test-output.txt
+          # Fail the step (not just the run summary) when anything went wrong, so
+          # the run status is meaningful. continue-on-error keeps later steps running.
+          if [ $FAILED -gt 0 ] || [ $ERRORED -gt 0 ]; then
+            echo "Backend suite has $FAILED failed and $ERRORED errored files."
+            exit 1
+          fi
 
       - name: Generate test report
         if: always()
@@ -202,6 +228,7 @@ jobs:
       - name: Run tests
         working-directory: frontend
         continue-on-error: true
+        shell: bash
         run: |
           PASSED=0
           FAILED=0
@@ -209,20 +236,26 @@ jobs:
           TEST_FILES=$(find src -name "*.test.ts" -o -name "*.test.tsx" | sort)
           TOTAL=$(echo "$TEST_FILES" | wc -l)
           echo "Found $TOTAL test files"
+          : > test-output.txt
           i=0
           for f in $TEST_FILES; do
             i=$((i+1))
             echo "[$i/$TOTAL] Running: $f"
-            if timeout 60 npx react-scripts test --watchAll=false --ci --forceExit --testTimeout=10000 --testPathPattern="$(basename $f .test.tsx | sed 's/.test.ts$//')" 2>&1 | tail -5; then
+            echo "===== [$i/$TOTAL] $f =====" >> test-output.txt
+            # Capture the REAL jest exit code (piping to tail would mask it and
+            # report every file as passed — the same bug as the backend runner).
+            timeout 60 npx react-scripts test --watchAll=false --ci --forceExit --testTimeout=10000 --testPathPattern="$(basename $f .test.tsx | sed 's/.test.ts$//')" >> test-output.txt 2>&1
+            EXIT_CODE=$?
+            tail -5 test-output.txt
+            if [ $EXIT_CODE -eq 0 ]; then
               PASSED=$((PASSED+1))
+            elif [ $EXIT_CODE -eq 124 ]; then
+              echo "  ⏰ TIMEOUT: $f (killed after 60s)"
+              ERRORS="$ERRORS\nTIMEOUT: $f"
+              FAILED=$((FAILED+1))
             else
-              EXIT_CODE=$?
-              if [ $EXIT_CODE -eq 124 ]; then
-                echo "  ⏰ TIMEOUT: $f (killed after 60s)"
-                ERRORS="$ERRORS\nTIMEOUT: $f"
-              else
-                echo "  ❌ FAILED: $f"
-              fi
+              echo "  ❌ FAILED: $f (exit $EXIT_CODE)"
+              ERRORS="$ERRORS\nFAILED: $f (exit $EXIT_CODE)"
               FAILED=$((FAILED+1))
             fi
           done
@@ -230,9 +263,18 @@ jobs:
           echo "=== Summary ==="
           echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED"
           if [ -n "$ERRORS" ]; then
-            echo -e "\nTimeouts:$ERRORS"
+            echo -e "\nIssues:$ERRORS"
           fi
-          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED" > test-output.txt
+          {
+            echo ""
+            echo "=== Summary ==="
+            echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED"
+            [ -n "$ERRORS" ] && echo -e "Issues:$ERRORS"
+          } >> test-output.txt
+          if [ $FAILED -gt 0 ]; then
+            echo "Frontend suite has $FAILED failed files."
+            exit 1
+          fi
 
       - name: Generate test report
         if: always()
