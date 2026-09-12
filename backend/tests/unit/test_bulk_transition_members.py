@@ -42,6 +42,13 @@ def _load_handler():
     for key in stale_keys:
         del sys.modules[key]
 
+    # The handler does `from actions import register_actions` (sibling module),
+    # so its own directory must be on sys.path before we exec it. Loading purely
+    # by file path does not add it, which caused ModuleNotFoundError: 'actions'.
+    _handler_dir = os.path.dirname(_handler_file)
+    if _handler_dir not in sys.path:
+        sys.path.insert(0, _handler_dir)
+
     spec = importlib.util.spec_from_file_location('app', _handler_file)
     module = importlib.util.module_from_spec(spec)
     sys.modules['app'] = module

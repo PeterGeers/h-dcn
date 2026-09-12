@@ -113,17 +113,18 @@ other change.
     `test_create_order`, `test_get_customer_orders`, `test_update_order_items`,
     `test_hdcn_cognito_admin_split`, `test_stub_validity`.
   - [ ] **P1.10b** (genuine failures — need per-case triage):
-    - `test_bulk_transition_members` — `ModuleNotFoundError: No module named
-      'actions'`. Handler does `from actions import register_actions`; the
-      importlib `_load_handler` doesn't put the handler dir on `sys.path`, so the
-      relative import fails. Fix the test loader (add handler dir to sys.path).
-    - `test_cognito_post_authentication` — 10 assertion failures
+    - [x] `test_bulk_transition_members` — was `ModuleNotFoundError: No module
+      named 'actions'`. Handler does `from actions import register_actions`; the
+      importlib `_load_handler` didn't put the handler dir on `sys.path`. Fixed
+      the loader to add the handler dir. Verified: 8 passed.
+    - [x] `test_runner_utils.py` — was exit 5 (no tests collected): a util module
+      named `test_*` with no tests. Added parametrized tests for
+      `compute_combined_exit_code`. Verified: 6 passed.
+    - [ ] `test_cognito_post_authentication` — 10 assertion failures
       (`expected call not found`). Real test-vs-code mismatch; triage.
-    - `test_sync_google_calendar` — 4 assertion failures
+    - [ ] `test_sync_google_calendar` — 4 assertion failures
       (`expected call not found`). Triage.
-    - `test_runner_utils.py` — exit 5 (no tests collected). Likely a helper
-      module misnamed `test_*`; rename or add `__test__ = False`.
-    - 12 frontend failures (requirements §5) — triage each.
+    - [ ] 12 frontend failures (requirements §5) — triage each.
 - [ ] **P1.4-final** After P1.9 + P1.10, re-run once more to confirm a genuine
   green baseline.
 
