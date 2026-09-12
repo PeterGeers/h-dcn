@@ -49,7 +49,7 @@ patterns=(
 )
 
 # --- Ignored paths: default plus ignored_paths from .gitguardian.yaml ---
-ignored_patterns=("scripts/scan-secrets-local.sh" "scripts/scan-secrets-local.ps1")
+ignored_patterns=("scripts/scan-secrets-local.sh")
 
 repo_root=$(git rev-parse --show-toplevel 2>/dev/null || true)
 if [ -n "$repo_root" ] && [ -f "$repo_root/.gitguardian.yaml" ]; then
