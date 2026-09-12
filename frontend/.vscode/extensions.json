@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "amazonwebservices.amazon-q-vscode",
-        "amazonwebservices.aws-toolkit-vscode"
+        "amazonwebservices.aws-toolkit-vscode",
+        "dbaeumer.vscode-eslint"
     ]
 }
