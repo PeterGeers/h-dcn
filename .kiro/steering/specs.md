@@ -24,8 +24,11 @@ A spec task is only complete when ALL of the following are satisfied:
 ## Branch Convention
 
 - Work on the current feature branch (check `git branch` first)
-- Never push directly to `main`
-- Always use `mcp_git_git_commit` (MCP tool) for commits — never `execute_pwsh` with `git commit`. This ensures the pre-commit hook fires for local secret scanning + auth layer sync.
+- Never push directly to `main` (open a PR via `gh` instead) unless explicitly asked
+- Use plain terminal git in the WSL shell for commits (`git add <files>` +
+  `git commit -m "..."`). No MCP git server is required. Secret scanning is
+  enforced at push time by the native pre-push hook (`.githooks/pre-push`), so it
+  runs regardless of how the commit was made. Never bypass hooks with `--no-verify`.
 
 ## Dead Code
 

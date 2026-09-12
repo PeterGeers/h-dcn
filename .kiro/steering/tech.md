@@ -53,21 +53,28 @@
 
 ### Git
 
+Use plain terminal git in the WSL shell (same as the other projects in this
+setup). Run git from the native Linux path (`/home/peter/projects/h-dcn`), not
+the `\\wsl.localhost\...` UNC path — the UNC path triggers "dubious ownership"
+errors. No MCP git server is required; if one is configured it is optional.
+
 ```bash
-# IMPORTANT: Always use the MCP git tool (mcp_git_git_commit) for commits — NOT execute_pwsh with "git commit".
-# This ensures the pre-commit hook fires for local secret scanning + auth layer sync.
-# The MCP tool automatically uses --no-verify.
+# Stage specific files (avoid `git add .` / `git add -A` — stage by name):
+git add path/to/file.py
 
-# For staging files, use the MCP git_add tool:
-# mcp_git_git_add(repo_path, files)
+# Commit with a conventional-commit message:
+git commit -m "type: subject"
 
-# For committing, use the MCP git_commit tool:
-# mcp_git_git_commit(repo_path, message)
-
-# Only use shell for git push (no MCP tool available for push):
-# Secret scanning is enforced by the native git pre-push hook (.githooks/pre-push)
+# Push (secret scanning is enforced here by the native pre-push hook,
+# .githooks/pre-push — it runs regardless of how you committed):
 git push
 ```
+
+Notes:
+- Secret scanning is enforced at **pre-push** (`.githooks/pre-push`), so it fires
+  on every push no matter how the commit was made.
+- Never bypass hooks with `--no-verify` (per guardrails).
+- Never push directly to `main` unless explicitly asked; prefer a PR via `gh`.
 
 ### Backend
 
