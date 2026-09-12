@@ -23,6 +23,12 @@ from unittest.mock import patch, MagicMock
 from decimal import Decimal
 from botocore.exceptions import ClientError
 
+# AWS env must be set before the handler is imported (handler builds a boto3
+# resource at module load -> NoRegionError in CI). See testing-backend.md.
+os.environ.setdefault('AWS_DEFAULT_REGION', 'eu-west-1')
+os.environ.setdefault('AWS_ACCESS_KEY_ID', 'testing')
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', 'testing')
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'update_order_items'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python'))
 

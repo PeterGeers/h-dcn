@@ -104,9 +104,26 @@ other change.
   `test_hdcn_cognito_admin`, `test_update_member`,
   `test_member_reporting_integration`. Verified under CI-like env (region unset):
   0 collection errors, all collect; and all 31 tests pass when run.
-- [ ] **P1.10** Triage the 10 backend failures/timeout + 12 frontend failures
-  (requirements §5). Classify each: real bug / test bug / stale. Fix or rewrite
-  accordingly. Larger, needs per-file investigation — recommend its own spec/PR.
+- [~] **P1.10** Triage the backend failures + 12 frontend failures. NOTE: CI runs
+  each file as an INDEPENDENT pytest process (no cross-file ordering effects), so
+  every failure is intrinsic to its file + the CI environment (fresh deps, no AWS
+  region). Split into:
+  - [x] **P1.10a** (region-only test bugs — mechanical fix, same as P1.1/P1.9)
+    Fixed + verified under region-unset env (73 passed):
+    `test_create_order`, `test_get_customer_orders`, `test_update_order_items`,
+    `test_hdcn_cognito_admin_split`, `test_stub_validity`.
+  - [ ] **P1.10b** (genuine failures — need per-case triage):
+    - `test_bulk_transition_members` — `ModuleNotFoundError: No module named
+      'actions'`. Handler does `from actions import register_actions`; the
+      importlib `_load_handler` doesn't put the handler dir on `sys.path`, so the
+      relative import fails. Fix the test loader (add handler dir to sys.path).
+    - `test_cognito_post_authentication` — 10 assertion failures
+      (`expected call not found`). Real test-vs-code mismatch; triage.
+    - `test_sync_google_calendar` — 4 assertion failures
+      (`expected call not found`). Triage.
+    - `test_runner_utils.py` — exit 5 (no tests collected). Likely a helper
+      module misnamed `test_*`; rename or add `__test__ = False`.
+    - 12 frontend failures (requirements §5) — triage each.
 - [ ] **P1.4-final** After P1.9 + P1.10, re-run once more to confirm a genuine
   green baseline.
 
