@@ -73,12 +73,32 @@ other change.
   - `exit 1` from the run step when any file failed/errored so the run status is
     meaningful (later steps still run via `continue-on-error`).
   - Verified YAML parses; verified the exit-code logic fix locally.
-- [ ] **P1.4** Re-trigger the Full Test Suite on `feature/wsl-ubuntu-migration`
-  and confirm a trustworthy green (backend + frontend) using the fixed reporting.
+- [~] **P1.4** Re-ran the Full Test Suite (run **34709004161**) after pushing the
+  Phase-1 fixes. The run correctly **failed** (proving P1.2's reporting fix works —
+  the old run would have falsely reported success). Analysis of the artifacts
+  revealed:
+  - [x] **P1.2 validated** — errors now surface instead of being hidden.
+  - [x] **P1.6** (workflow follow-up bug, MINE) The rewritten run steps aborted at
+    the first failing file because GitHub runs `run:` bash with `set -e`; a
+    failing `pytest`/`jest` tripped errexit before the loop could continue.
+    **Fixed** by adding `set +e` to both run steps (backend + frontend). YAML
+    re-validated.
+  - [x] **P1.7** (STALE test — rewritten) `test_admin_endpoints.py::TestOrderLifecycle::
+    test_payment_failed_is_terminal` asserted `payment_failed` is terminal, but
+    `order_state_machine.py` **intentionally** allows `payment_failed → submitted`
+    (retry). Rewrote as `test_payment_failed_allows_retry_to_submitted`: asserts
+    the retry IS allowed, cannot skip to `paid`, and `get_next_valid_states` ==
+    `['submitted']`. Verified locally (TestOrderLifecycle: 4 passed).
+  - [ ] **P1.8** Frontend failure at `src/__tests__/i18n/localeSync.property.test.ts`
+    (file 14/145) — the run aborted there under `set -e`, so files 15-145 never
+    ran. After P1.6, re-run to surface the full frontend failure set, then triage.
+  - [ ] **P1.4-redo** After P1.6 + P1.7 (+ P1.8 triage), re-run and confirm a
+    trustworthy result across ALL files.
 
-> Frontend (145/145) appears genuinely clean. Backend cannot be trusted as green
-> until P1.2 lands and the suite is re-run. Remaining Phase-1 work: P1.5 (delete
-> stale test), P1.2 (CI reporting), P1.4 (re-run).
+> The re-run did its job: it exposed a real stale test (P1.7), a frontend failure
+> (P1.8), and a bug in my own workflow edit (P1.6). Backend is NOT green — at
+> least one stale test fails, and the suite hadn't run all files. Do P1.6 first
+> (so the suite runs completely), then P1.7/P1.8.
 
 ## Phase 2 — Dead code (low risk, shrinks files)
 
