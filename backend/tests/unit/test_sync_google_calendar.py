@@ -50,7 +50,11 @@ os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
 os.environ['EVENTS_TABLE_NAME'] = 'Events'
 os.environ['GOOGLE_CREDENTIALS_PARAMETER'] = '/h-dcn/google-credentials'
-os.environ['GOOGLE_CALENDAR_ID'] = 'test-calendar-id'
+
+# The handler no longer reads a GOOGLE_CALENDAR_ID env var; it selects the
+# calendar per event_type via _get_calendar_id(). Test events have no event_type,
+# so they route to the Nationaal calendar. Assert against that real ID.
+EXPECTED_CALENDAR_ID = 'h-dcn.nl_0pth567r0u62j086o4m3urio84@group.calendar.google.com'
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +181,7 @@ class TestSyncCreate:
 
         # Verify insert was called with correct body
         mock_events.insert.assert_called_once_with(
-            calendarId='test-calendar-id',
+            calendarId=EXPECTED_CALENDAR_ID,
             body={
                 'summary': 'Toerweekend 2026',
                 'start': {'date': '2026-06-15'},
@@ -211,7 +215,7 @@ class TestSyncCreate:
 
         # Verify insert was called with empty defaults for optional fields
         mock_events.insert.assert_called_once_with(
-            calendarId='test-calendar-id',
+            calendarId=EXPECTED_CALENDAR_ID,
             body={
                 'summary': 'ALV Maart 2027',
                 'start': {'date': '2027-03-10'},
@@ -256,7 +260,7 @@ class TestSyncUpdate:
 
         # Verify update was called (not insert)
         mock_events.update.assert_called_once_with(
-            calendarId='test-calendar-id',
+            calendarId=EXPECTED_CALENDAR_ID,
             eventId='gcal-existing-id-456',
             body={
                 'summary': 'Updated Toerweekend 2026',
@@ -301,7 +305,7 @@ class TestDelete:
 
         # Verify delete was called
         mock_events.delete.assert_called_once_with(
-            calendarId='test-calendar-id',
+            calendarId=EXPECTED_CALENDAR_ID,
             eventId='gcal-to-delete-789',
         )
 

@@ -120,11 +120,21 @@ other change.
     - [x] `test_runner_utils.py` — was exit 5 (no tests collected): a util module
       named `test_*` with no tests. Added parametrized tests for
       `compute_combined_exit_code`. Verified: 6 passed.
-    - [ ] `test_cognito_post_authentication` — 10 assertion failures
-      (`expected call not found`). Real test-vs-code mismatch; triage.
-    - [ ] `test_sync_google_calendar` — 4 assertion failures
-      (`expected call not found`). Triage.
-    - [ ] 12 frontend failures (requirements §5) — triage each.
+    - [x] `test_sync_google_calendar` — STALE test (4 failures). Asserted
+      `calendarId='test-calendar-id'` from a `GOOGLE_CALENDAR_ID` env var the
+      handler no longer reads (it now selects per event_type via
+      `_get_calendar_id`, defaulting to the Nationaal calendar). Updated the 4
+      assertions to the real Nationaal calendar ID. Verified: 16 passed.
+    - [ ] **`test_cognito_post_authentication` — NEEDS YOUR DECISION (possible
+      real bug).** Tests seed members with `status='active'` / `'approved'` and
+      expect group `hdcnLeden`, but the handler only treats `status=='Actief'`
+      (canonical Dutch) as active → routes others to `verzoek_lid`. Two options:
+      (A) tests are wrong → use `'Actief'` (matches field registry; schema
+      steering says statuses are Dutch); (B) handler is too strict → if the
+      Members table actually contains `'active'`/`'approved'` records, real
+      approved members would be wrongly left in `verzoek_lid` (a real onboarding
+      bug). Decision depends on actual DynamoDB status values — needs owner input.
+    - [ ] 12 frontend failures (requirements §5) — triage each (not yet started).
 - [ ] **P1.4-final** After P1.9 + P1.10, re-run once more to confirm a genuine
   green baseline.
 
