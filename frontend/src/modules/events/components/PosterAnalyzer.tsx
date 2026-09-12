@@ -26,7 +26,7 @@ function PosterAnalyzer({ onAnalysisComplete }: PosterAnalyzerProps) {
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
-      setError(t('posterAnalysis.noFile'));
+      setError(t('poster_analysis.no_file'));
       return;
     }
 
@@ -50,7 +50,7 @@ function PosterAnalyzer({ onAnalysisComplete }: PosterAnalyzerProps) {
     <Box w="full" p={3} borderWidth="1px" borderColor="gray.600" borderRadius="md">
       <VStack spacing={3} align="stretch">
         <Text fontWeight="bold" color="orange.300" fontSize="sm">
-          {t('posterAnalysis.title')}
+          {t('poster_analysis.title')}
         </Text>
 
         <HStack spacing={2}>
@@ -80,13 +80,13 @@ function PosterAnalyzer({ onAnalysisComplete }: PosterAnalyzerProps) {
             isDisabled={!selectedFile || isAnalyzing}
             minW="100px"
           >
-            {isAnalyzing ? <Spinner size="xs" /> : t('posterAnalysis.analyze')}
+            {isAnalyzing ? <Spinner size="xs" /> : t('poster_analysis.analyze')}
           </Button>
         </HStack>
 
         {!selectedFile && (
           <Text fontSize="xs" color="gray.400">
-            {t('posterAnalysis.selectFile')}
+            {t('poster_analysis.select_file')}
           </Text>
         )}
 
@@ -94,7 +94,7 @@ function PosterAnalyzer({ onAnalysisComplete }: PosterAnalyzerProps) {
           <HStack spacing={2}>
             <Spinner size="sm" color="orange.300" />
             <Text fontSize="sm" color="gray.300">
-              {t('posterAnalysis.analyzing')}
+              {t('poster_analysis.analyzing')}
             </Text>
           </HStack>
         )}
@@ -102,14 +102,14 @@ function PosterAnalyzer({ onAnalysisComplete }: PosterAnalyzerProps) {
         {error && (
           <Alert status="error" bg="red.900" borderRadius="md" py={2}>
             <AlertIcon />
-            <Text fontSize="sm">{t('posterAnalysis.error')}: {error}</Text>
+            <Text fontSize="sm">{t('poster_analysis.error')}: {error}</Text>
           </Alert>
         )}
 
         {success && (
           <Alert status="success" bg="green.900" borderRadius="md" py={2}>
             <AlertIcon />
-            <Text fontSize="sm">{t('posterAnalysis.success')}</Text>
+            <Text fontSize="sm">{t('poster_analysis.success')}</Text>
           </Alert>
         )}
       </VStack>

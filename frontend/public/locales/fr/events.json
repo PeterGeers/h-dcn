@@ -28,6 +28,18 @@
     "event_overview": "Aperçu des événements",
     "regional_summary": "Résumé régional"
   },
+  "form_validation": {
+    "required_fields": "Nom, type, dates de début et fin, et région sont obligatoires",
+    "required_registration": "Les dates d'ouverture et de fermeture des inscriptions sont obligatoires",
+    "no_region_access": "Vous n'avez pas l'autorisation de créer des événements dans cette région"
+  },
+  "form_sections": {
+    "registration": "Inscriptions & Délais",
+    "registration_required": "obligatoire",
+    "config": "Configuration",
+    "financial": "Financier",
+    "landing_page": "Page d'accueil"
+  },
   "form": {
     "title_new": "Nouvel événement",
     "title_edit": "Modifier l'événement",
@@ -36,19 +48,7 @@
     "cancel": "Annuler",
     "success_created": "Événement créé avec succès",
     "success_updated": "Événement mis à jour avec succès",
-    "error_save": "Erreur lors de la sauvegarde",
-    "validation": {
-      "required_fields": "Nom, type, dates de début et fin, et région sont obligatoires",
-      "required_registration": "Les dates d'ouverture et de fermeture des inscriptions sont obligatoires",
-      "no_region_access": "Vous n'avez pas l'autorisation de créer des événements dans cette région"
-    },
-    "sections": {
-      "registration": "Inscriptions & Délais",
-      "registration_required": "obligatoire",
-      "config": "Configuration",
-      "financial": "Financier",
-      "landing_page": "Page d'accueil"
-    }
+    "error_save": "Erreur lors de la sauvegarde"
   },
   "fields": {
     "name": "Nom de l'événement",
@@ -136,39 +136,39 @@
     "poster_invalid_type": "Type de fichier invalide. Autorisé : {{types}}",
     "poster_file_too_large": "Fichier trop volumineux. Maximum {{maxSize}} autorisé"
   },
-  "posterAnalysis": {
+  "poster_analysis": {
     "title": "Télécharger & Analyser l'affiche",
     "upload": "Télécharger l'affiche",
     "analyze": "Analyser",
     "analyzing": "Analyse de l'affiche en cours...",
     "success": "Données de l'événement extraites avec succès",
     "error": "L'analyse a échoué",
-    "selectFile": "Sélectionnez une image d'affiche à analyser",
-    "noFile": "Veuillez d'abord sélectionner un fichier"
+    "select_file": "Sélectionnez une image d'affiche à analyser",
+    "no_file": "Veuillez d'abord sélectionner un fichier"
+  },
+  "calendar_filter": {
+    "type": "Type d'événement",
+    "region": "Région",
+    "date_from": "Du",
+    "date_to": "Au",
+    "reset": "Réinitialiser les filtres"
+  },
+  "calendar_card": {
+    "no_location": "Lieu à déterminer"
+  },
+  "calendar_modal": {
+    "book": "Réserver",
+    "register": "S'inscrire",
+    "dates": "Date",
+    "location": "Lieu",
+    "type": "Type",
+    "region": "Région"
   },
   "calendar": {
     "title": "Calendrier des événements",
-    "noEvents": "Aucun événement à venir trouvé",
+    "no_events": "Aucun événement à venir trouvé",
     "loading": "Chargement des événements...",
     "error": "Impossible de charger les événements. Veuillez réessayer plus tard.",
-    "retry": "Réessayer",
-    "filter": {
-      "type": "Type d'événement",
-      "region": "Région",
-      "dateFrom": "Du",
-      "dateTo": "Au",
-      "reset": "Réinitialiser les filtres"
-    },
-    "card": {
-      "noLocation": "Lieu à déterminer"
-    },
-    "modal": {
-      "book": "Réserver",
-      "register": "S'inscrire",
-      "dates": "Date",
-      "location": "Lieu",
-      "type": "Type",
-      "region": "Région"
-    }
+    "retry": "Réessayer"
   }
 }

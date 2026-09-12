@@ -127,7 +127,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
             <SimpleGrid columns={2} spacing={3}>
               <Box>
                 <Text fontSize="xs" color="gray.500" textTransform="uppercase">
-                  {t('calendar.modal.dates')}
+                  {t('calendar_modal.dates')}
                 </Text>
                 <Text fontSize="sm" color="gray.200">
                   {formatDate(event.start_date)}
@@ -137,7 +137,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
 
               <Box>
                 <Text fontSize="xs" color="gray.500" textTransform="uppercase">
-                  {t('calendar.modal.location')}
+                  {t('calendar_modal.location')}
                 </Text>
                 {event.location?.trim() ? (
                   <LocationMapLink location={event.location} fontSize="sm" color="gray.200" />
@@ -148,7 +148,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
 
               <Box>
                 <Text fontSize="xs" color="gray.500" textTransform="uppercase">
-                  {t('calendar.modal.type')}
+                  {t('calendar_modal.type')}
                 </Text>
                 <Text fontSize="sm" color="gray.200">
                   {t(`event_types.${event.event_type}`, event.event_type)}
@@ -158,7 +158,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
               {event.linked_regio && (
                 <Box>
                   <Text fontSize="xs" color="gray.500" textTransform="uppercase">
-                    {t('calendar.modal.region')}
+                    {t('calendar_modal.region')}
                   </Text>
                   <Text fontSize="sm" color="gray.200">
                     {event.linked_regio}
@@ -174,7 +174,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
                 size="lg"
                 onClick={handleBook}
               >
-                {t('calendar.modal.book')}
+                {t('calendar_modal.book')}
               </Button>
             )}
 
@@ -184,7 +184,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, isOpen, onCl
                 size="lg"
                 onClick={handleRegister}
               >
-                {t('calendar.modal.register')}
+                {t('calendar_modal.register')}
               </Button>
             )}
           </VStack>

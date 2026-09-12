@@ -28,6 +28,18 @@
     "event_overview": "Veranstaltungsübersicht",
     "regional_summary": "Regionale Zusammenfassung"
   },
+  "form_validation": {
+    "required_fields": "Name, Typ, Start- und Enddatum und Region sind erforderlich",
+    "required_registration": "Registrierung Öffnungs- und Schlussdatum sind erforderlich",
+    "no_region_access": "Du hast keine Berechtigung, Veranstaltungen in dieser Region zu erstellen"
+  },
+  "form_sections": {
+    "registration": "Registrierung & Fristen",
+    "registration_required": "erforderlich",
+    "config": "Konfiguration",
+    "financial": "Finanziell",
+    "landing_page": "Landing Page"
+  },
   "form": {
     "title_new": "Neue Veranstaltung",
     "title_edit": "Veranstaltung bearbeiten",
@@ -36,19 +48,7 @@
     "cancel": "Abbrechen",
     "success_created": "Veranstaltung erfolgreich erstellt",
     "success_updated": "Veranstaltung erfolgreich aktualisiert",
-    "error_save": "Fehler beim Speichern der Veranstaltung",
-    "validation": {
-      "required_fields": "Name, Typ, Start- und Enddatum und Region sind erforderlich",
-      "required_registration": "Registrierung Öffnungs- und Schlussdatum sind erforderlich",
-      "no_region_access": "Du hast keine Berechtigung, Veranstaltungen in dieser Region zu erstellen"
-    },
-    "sections": {
-      "registration": "Registrierung & Fristen",
-      "registration_required": "erforderlich",
-      "config": "Konfiguration",
-      "financial": "Finanziell",
-      "landing_page": "Landing Page"
-    }
+    "error_save": "Fehler beim Speichern der Veranstaltung"
   },
   "fields": {
     "name": "Veranstaltungsname",
@@ -136,39 +136,39 @@
     "poster_invalid_type": "Ungültiger Dateityp. Erlaubt: {{types}}",
     "poster_file_too_large": "Datei ist zu groß. Maximal {{maxSize}} erlaubt"
   },
-  "posterAnalysis": {
+  "poster_analysis": {
     "title": "Poster hochladen & analysieren",
     "upload": "Poster hochladen",
     "analyze": "Analysieren",
     "analyzing": "Poster wird analysiert...",
     "success": "Veranstaltungsdaten erfolgreich extrahiert",
     "error": "Analyse fehlgeschlagen",
-    "selectFile": "Wählen Sie ein Poster-Bild zur Analyse",
-    "noFile": "Bitte wählen Sie zuerst eine Datei"
+    "select_file": "Wählen Sie ein Poster-Bild zur Analyse",
+    "no_file": "Bitte wählen Sie zuerst eine Datei"
+  },
+  "calendar_filter": {
+    "type": "Veranstaltungstyp",
+    "region": "Region",
+    "date_from": "Von",
+    "date_to": "Bis",
+    "reset": "Filter zurücksetzen"
+  },
+  "calendar_card": {
+    "no_location": "Ort noch offen"
+  },
+  "calendar_modal": {
+    "book": "Buchen",
+    "register": "Anmelden",
+    "dates": "Datum",
+    "location": "Ort",
+    "type": "Typ",
+    "region": "Region"
   },
   "calendar": {
     "title": "Veranstaltungskalender",
-    "noEvents": "Keine bevorstehenden Veranstaltungen gefunden",
+    "no_events": "Keine bevorstehenden Veranstaltungen gefunden",
     "loading": "Veranstaltungen laden...",
     "error": "Veranstaltungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.",
-    "retry": "Erneut versuchen",
-    "filter": {
-      "type": "Veranstaltungstyp",
-      "region": "Region",
-      "dateFrom": "Von",
-      "dateTo": "Bis",
-      "reset": "Filter zurücksetzen"
-    },
-    "card": {
-      "noLocation": "Ort noch offen"
-    },
-    "modal": {
-      "book": "Buchen",
-      "register": "Anmelden",
-      "dates": "Datum",
-      "location": "Ort",
-      "type": "Typ",
-      "region": "Region"
-    }
+    "retry": "Erneut versuchen"
   }
 }

@@ -100,6 +100,6 @@
     "preference_saved": "Taalvoorkeur opgeslagen",
     "preference_save_failed": "Taalvoorkeur kon niet worden opgeslagen"
   },
-  "nSelected": "{{count}} geselecteerd",
+  "n_selected": "{{count}} geselecteerd",
   "alle": "Alle"
 }

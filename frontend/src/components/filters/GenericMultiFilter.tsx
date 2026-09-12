@@ -36,7 +36,7 @@ export function GenericMultiFilter({
   const displayText =
     value.length === 0
       ? placeholder || t('alle', 'Alle')
-      : t('nSelected', { count: value.length });
+      : t('n_selected', { count: value.length });
 
   return (
     <FormControl w={width}>

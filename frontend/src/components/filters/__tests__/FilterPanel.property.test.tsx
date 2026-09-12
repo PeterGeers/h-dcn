@@ -18,7 +18,7 @@ import type { FilterConfig, SearchFilterConfig } from '../types';
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, any>) => {
-      if (key === 'nSelected' && params?.count !== undefined) {
+      if (key === 'n_selected' && params?.count !== undefined) {
         return `${params.count} selected`;
       }
       return key;

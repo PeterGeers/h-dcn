@@ -153,7 +153,7 @@ describe('EventCalendarPage', () => {
   const origConsoleError = console.error;
 
   beforeEach(() => {
-    console.error = () => {};
+    console.error = () => { };
     mockNavigate.mockClear();
     mockUseAuth.mockReturnValue({ isAuthenticated: true });
     mockWindowOpen = jest.fn();
@@ -237,8 +237,8 @@ describe('EventCalendarPage', () => {
     // Poster appears in both card and modal — verify at least one exists in modal
     const posters = screen.getAllByAltText('Test Event');
     expect(posters.length).toBeGreaterThanOrEqual(2); // one in grid, one in modal
-    expect(screen.getByText('calendar.modal.location')).toBeInTheDocument();
-    expect(screen.getByText('calendar.modal.dates')).toBeInTheDocument();
+    expect(screen.getByText('calendar_modal.location')).toBeInTheDocument();
+    expect(screen.getByText('calendar_modal.dates')).toBeInTheDocument();
   });
 
   it('modal shows "Book" CTA when authenticated + bookable', async () => {
@@ -248,7 +248,7 @@ describe('EventCalendarPage', () => {
     const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
     fireEvent.click(card);
 
-    expect(screen.getByText('calendar.modal.book')).toBeInTheDocument();
+    expect(screen.getByText('calendar_modal.book')).toBeInTheDocument();
   });
 
   it('modal shows "Register" CTA when unauthenticated + bookable + no landing page', async () => {
@@ -267,7 +267,7 @@ describe('EventCalendarPage', () => {
     const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
     fireEvent.click(card);
 
-    expect(screen.getByText('calendar.modal.register')).toBeInTheDocument();
+    expect(screen.getByText('calendar_modal.register')).toBeInTheDocument();
   });
 
   it('modal has no CTA when event not bookable', async () => {
@@ -285,8 +285,8 @@ describe('EventCalendarPage', () => {
     fireEvent.click(card);
 
     expect(screen.getByTestId('event-detail-modal')).toBeInTheDocument();
-    expect(screen.queryByText('calendar.modal.book')).not.toBeInTheDocument();
-    expect(screen.queryByText('calendar.modal.register')).not.toBeInTheDocument();
+    expect(screen.queryByText('calendar_modal.book')).not.toBeInTheDocument();
+    expect(screen.queryByText('calendar_modal.register')).not.toBeInTheDocument();
   });
 
   it('"Book" button navigates to /events/{event_id}/booking', async () => {
@@ -296,7 +296,7 @@ describe('EventCalendarPage', () => {
     const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
     fireEvent.click(card);
 
-    const bookBtn = screen.getByText('calendar.modal.book');
+    const bookBtn = screen.getByText('calendar_modal.book');
     fireEvent.click(bookBtn);
 
     expect(mockNavigate).toHaveBeenCalledWith('/events/evt-1/booking');
@@ -317,7 +317,7 @@ describe('EventCalendarPage', () => {
     const card = await screen.findByTestId('clickable-card', {}, { timeout: 5000 });
     fireEvent.click(card);
 
-    const registerBtn = screen.getByText('calendar.modal.register');
+    const registerBtn = screen.getByText('calendar_modal.register');
     fireEvent.click(registerBtn);
 
     expect(mockWindowOpen).toHaveBeenCalledWith('/events/test-event/register', '_blank');
@@ -421,7 +421,7 @@ describe('EventCalendarPage', () => {
   // --- Loading state ---
 
   it('shows loading spinner while fetching', () => {
-    global.fetch = jest.fn(() => new Promise(() => {})) as jest.Mock;
+    global.fetch = jest.fn(() => new Promise(() => { })) as jest.Mock;
     render(<EventCalendarPage />);
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
