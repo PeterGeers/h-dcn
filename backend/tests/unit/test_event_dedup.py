@@ -7,25 +7,29 @@ near-duplicates are caught without too many false positives.
 
 import os
 import sys
+import importlib.util
 import pytest
 import boto3
 from moto import mock_aws
 
-# Ensure scripts/ is importable
-_scripts_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'scripts')
+# Load scripts/shared/event_dedup.py directly by file path.
+# NOTE: a plain `from shared.event_dedup import ...` breaks in the full test
+# suite because the auth layer also ships a `shared` package; whichever is
+# imported first wins in sys.modules and shadows the other (ModuleNotFoundError).
+# Loading by path under a unique module name avoids that collision.
+_event_dedup_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'scripts', 'shared', 'event_dedup.py')
 )
-if _scripts_path not in sys.path:
-    sys.path.insert(0, _scripts_path)
+_spec = importlib.util.spec_from_file_location('scripts_event_dedup', _event_dedup_path)
+_event_dedup = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_event_dedup)
 
-from shared.event_dedup import (
-    check_duplicate,
-    format_dry_run_result,
-    fuzzy_location_match,
-    fuzzy_name_match,
-    levenshtein_distance,
-    token_overlap,
-)
+check_duplicate = _event_dedup.check_duplicate
+format_dry_run_result = _event_dedup.format_dry_run_result
+fuzzy_location_match = _event_dedup.fuzzy_location_match
+fuzzy_name_match = _event_dedup.fuzzy_name_match
+levenshtein_distance = _event_dedup.levenshtein_distance
+token_overlap = _event_dedup.token_overlap
 
 # --- AWS credentials for moto ---
 os.environ['AWS_ACCESS_KEY_ID'] = 'testing'

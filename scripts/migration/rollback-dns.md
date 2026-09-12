@@ -6,6 +6,10 @@ Emergency rollback procedure to revert DNS records in Squarespace from the Nonpr
 
 **Requirements:** 18.5
 
+> **Historical note:** The account migration is complete. The PowerShell helper
+> scripts this runbook references (e.g. `verify-cutover.ps1`) were removed during
+> the WSL/Ubuntu migration. This document is retained as a historical record.
+
 ---
 
 ## ⚠️ CRITICAL: Time-Sensitive Procedure

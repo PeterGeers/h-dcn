@@ -91,7 +91,7 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
   const handleRecordPayment = async () => {
     if (!orderId || !amount || !paymentDate) {
       toast({
-        title: t('admin.payment_recording.fields_required'),
+        title: t('admin_payment_recording.fields_required'),
         status: 'warning',
         duration: 3000,
       });
@@ -101,7 +101,7 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       toast({
-        title: t('admin.payment_recording.invalid_amount'),
+        title: t('admin_payment_recording.invalid_amount'),
         status: 'warning',
         duration: 3000,
       });
@@ -123,7 +123,7 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
       );
 
       toast({
-        title: t('admin.payment_recording.success'),
+        title: t('admin_payment_recording.success'),
         status: 'success',
         duration: 3000,
       });
@@ -133,9 +133,9 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
       const message =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
-        t('admin.payment_recording.failed');
+        t('admin_payment_recording.failed');
       toast({
-        title: t('admin.payment_recording.failed'),
+        title: t('admin_payment_recording.failed'),
         description: message,
         status: 'error',
         duration: 5000,
@@ -148,32 +148,32 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
   return (
     <Box bg="white" p={5} borderRadius="md" borderWidth={1}>
       <HStack justify="space-between">
-        <Heading size="md">{t('admin.payment_recording.title')}</Heading>
+        <Heading size="md">{t('admin_payment_recording.title')}</Heading>
         <Button colorScheme="purple" onClick={onOpen}>
-          {t('admin.payment_recording.record_button')}
+          {t('admin_payment_recording.record_button')}
         </Button>
       </HStack>
       <Text fontSize="sm" color="gray.600" mt={2}>
-        {t('admin.payment_recording.description')}
+        {t('admin_payment_recording.description')}
       </Text>
 
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{t('admin.payment_recording.modal_title')}</ModalHeader>
+          <ModalHeader>{t('admin_payment_recording.modal_title')}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
               <FormControl isRequired>
-                <FormLabel>{t('admin.payment_recording.order_id')}</FormLabel>
+                <FormLabel>{t('admin_payment_recording.order_id')}</FormLabel>
                 <Input
                   value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
-                  placeholder={t('admin.payment_recording.order_id_placeholder')}
+                  placeholder={t('admin_payment_recording.order_id_placeholder')}
                 />
               </FormControl>
               <FormControl isRequired>
-                <FormLabel>{t('admin.payment_recording.amount')}</FormLabel>
+                <FormLabel>{t('admin_payment_recording.amount')}</FormLabel>
                 <Input
                   type="number"
                   step="0.01"
@@ -184,7 +184,7 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
                 />
               </FormControl>
               <FormControl isRequired>
-                <FormLabel>{t('admin.payment_recording.date')}</FormLabel>
+                <FormLabel>{t('admin_payment_recording.date')}</FormLabel>
                 <Input
                   type="date"
                   value={paymentDate}
@@ -192,11 +192,11 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
                 />
               </FormControl>
               <FormControl>
-                <FormLabel>{t('admin.payment_recording.description_label')}</FormLabel>
+                <FormLabel>{t('admin_payment_recording.description_label')}</FormLabel>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t('admin.payment_recording.description_placeholder')}
+                  placeholder={t('admin_payment_recording.description_placeholder')}
                   maxLength={255}
                 />
               </FormControl>
@@ -204,15 +204,15 @@ const PaymentRecorder: React.FC<PaymentRecorderProps> = ({ eventId }) => {
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>
-              {t('admin.payment_recording.cancel')}
+              {t('admin_payment_recording.cancel')}
             </Button>
             <Button
               colorScheme="purple"
               onClick={handleRecordPayment}
               isLoading={submitting}
-              loadingText={t('admin.payment_recording.recording')}
+              loadingText={t('admin_payment_recording.recording')}
             >
-              {t('admin.payment_recording.confirm')}
+              {t('admin_payment_recording.confirm')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -276,7 +276,7 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
         const text = new TextDecoder().decode(response.data);
         const json = JSON.parse(text);
         const body = json.body ? JSON.parse(json.body) : json;
-        setEmptyMessage(body.message || t('admin.preparation_pdf.no_orders'));
+        setEmptyMessage(body.message || t('admin_preparation_pdf.no_orders'));
         return;
       }
 
@@ -292,7 +292,7 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
       URL.revokeObjectURL(url);
 
       toast({
-        title: t('admin.preparation_pdf.download_success'),
+        title: t('admin_preparation_pdf.download_success'),
         status: 'success',
         duration: 3000,
       });
@@ -316,7 +316,7 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
       }
 
       toast({
-        title: t('admin.preparation_pdf.download_failed'),
+        title: t('admin_preparation_pdf.download_failed'),
         status: 'error',
         duration: 5000,
       });
@@ -328,26 +328,26 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
   return (
     <Box bg="white" p={5} borderRadius="md" borderWidth={1}>
       <Heading size="md" mb={4}>
-        {t('admin.preparation_pdf.title')}
+        {t('admin_preparation_pdf.title')}
       </Heading>
       <Text fontSize="sm" color="gray.600" mb={4}>
-        {t('admin.preparation_pdf.description')}
+        {t('admin_preparation_pdf.description')}
       </Text>
 
       <VStack spacing={4} align="stretch">
         {/* Mode selector */}
         <FormControl>
-          <FormLabel>{t('admin.preparation_pdf.mode_label')}</FormLabel>
+          <FormLabel>{t('admin_preparation_pdf.mode_label')}</FormLabel>
           <RadioGroup
             value={mode}
             onChange={(val) => setMode(val as 'by_order' | 'by_guest')}
           >
             <Stack direction="row" spacing={6}>
               <Radio value="by_order">
-                {t('admin.preparation_pdf.mode_by_order')}
+                {t('admin_preparation_pdf.mode_by_order')}
               </Radio>
               <Radio value="by_guest">
-                {t('admin.preparation_pdf.mode_by_guest')}
+                {t('admin_preparation_pdf.mode_by_guest')}
               </Radio>
             </Stack>
           </RadioGroup>
@@ -355,9 +355,9 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
 
         {/* Product filter */}
         <FormControl>
-          <FormLabel>{t('admin.preparation_pdf.product_filter_label')}</FormLabel>
+          <FormLabel>{t('admin_preparation_pdf.product_filter_label')}</FormLabel>
           <Select
-            placeholder={t('admin.preparation_pdf.all_products')}
+            placeholder={t('admin_preparation_pdf.all_products')}
             value={productFilter}
             onChange={(e) => setProductFilter(e.target.value)}
             maxW="400px"
@@ -384,11 +384,11 @@ const PreparationPdfDownload: React.FC<PreparationPdfDownloadProps> = ({
             colorScheme="blue"
             onClick={handleDownload}
             isLoading={downloading}
-            loadingText={t('admin.preparation_pdf.downloading')}
+            loadingText={t('admin_preparation_pdf.downloading')}
             isDisabled={!eventId}
             leftIcon={downloading ? <Spinner size="sm" /> : undefined}
           >
-            {t('admin.preparation_pdf.download_button')}
+            {t('admin_preparation_pdf.download_button')}
           </Button>
         </HStack>
       </VStack>

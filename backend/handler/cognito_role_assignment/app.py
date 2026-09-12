@@ -309,8 +309,7 @@ def determine_role_changes(old_status, new_status):
     
     # Define status categories (support both English and Dutch values)
     approved_statuses = ['active', 'approved', 'Actief', 'HdcnAccount', 'Club', 'Sponsor']
-    unapproved_statuses = ['new_applicant', 'pending', 'rejected', 'suspended', 'inactive']
-    
+
     # Determine if member should have default role
     old_should_have_role = old_status in approved_statuses if old_status else False
     new_should_have_role = new_status in approved_statuses if new_status else False

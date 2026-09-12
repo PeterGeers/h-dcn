@@ -135,10 +135,10 @@ function MemberWorkflowPanel({
         const value = (member as unknown as Record<string, unknown>)[field];
         if (value === undefined || value === null || value === '') {
           if (field === 'regio') {
-            return t('membership.errors.regionRequired');
+            return t('membership_errors.region_required');
           }
           // Generic fallback for other required fields
-          return t('membership.errors.regionRequired');
+          return t('membership_errors.region_required');
         }
       }
       return null;
@@ -175,11 +175,11 @@ function MemberWorkflowPanel({
             Status:
           </Text>
           <Badge colorScheme="gray" fontSize="sm" px={2} py={1} borderRadius="md">
-            {member.status || t('membership.errors.notInWorkflow')}
+            {member.status || t('membership_errors.not_in_workflow')}
           </Badge>
         </HStack>
         <Text fontSize="xs" color="gray.500" mt={1}>
-          {t('membership.errors.notInWorkflow')}
+          {t('membership_errors.not_in_workflow')}
         </Text>
       </Box>
     );
@@ -202,7 +202,7 @@ function MemberWorkflowPanel({
           py={1}
           borderRadius="md"
         >
-          {t(`membership.status.${currentState}`)}
+          {t(`membership_status.${currentState}`)}
         </Badge>
       </HStack>
 
@@ -222,7 +222,7 @@ function MemberWorkflowPanel({
                 isDisabled={isDisabled}
                 onClick={() => handleTransitionClick(transition)}
               >
-                {t(`membership.${transition.label.replace('workflows.membership.', '')}`)}
+                {t(transition.label)}
               </Button>
             );
 

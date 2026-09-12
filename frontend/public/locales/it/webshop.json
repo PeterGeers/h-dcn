@@ -68,7 +68,12 @@
     "amount": "Importo",
     "close": "Chiudi",
     "summary": "Riepilogo",
-    "fields_incomplete": "Non tutti i campi sono compilati correttamente:"
+    "fields_incomplete": "Non tutti i campi sono compilati correttamente:",
+    "address_name": "Nome destinatario",
+    "address_street": "Via + numero civico",
+    "address_postcode": "Codice postale",
+    "address_city": "Città",
+    "address_country": "Paese"
   },
   "confirmation": {
     "title": "Conferma ordine",
@@ -106,7 +111,8 @@
     "no_data": "Nessun dato sugli ordini trovato.",
     "success": "Ordine effettuato con successo!",
     "order_number": "Numero ordine",
-    "back_to_webshop": "Torna al negozio"
+    "back_to_webshop": "Torna al negozio",
+    "loading": "Caricamento ordine..."
   },
   "orders_admin": {
     "title": "Ordini",

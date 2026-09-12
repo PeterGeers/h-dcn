@@ -102,7 +102,7 @@ function MemberWorkflowTimeline({ statusHistory }: MemberWorkflowTimelineProps) 
     return (
       <Box py={3}>
         <Text fontSize="sm" color="gray.500">
-          {t('membership.timeline.empty')}
+          {t('membership_timeline.empty')}
         </Text>
       </Box>
     );

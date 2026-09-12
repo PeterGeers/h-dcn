@@ -43,7 +43,7 @@ Previously ggshield ran on every commit. During automated spec sessions (10-20 c
    ggshield auth login
    ```
 
-2. **PowerShell** available (Windows — already present)
+2. **bash** and **python3** available (Linux/WSL — already present; used by the local scanner and the pre-commit guard)
 
 3. **Kiro IDE** with hooks enabled
 
@@ -51,9 +51,9 @@ Previously ggshield ran on every commit. During automated spec sessions (10-20 c
 
 ### Component 1: Local Secret Scanner
 
-**File:** `scripts/scan-secrets-local.ps1`
+**File:** `scripts/scan-secrets-local.sh`
 
-This is a pure regex scanner that runs offline. It scans git staged files for:
+This is a pure regex scanner (bash) that runs offline. It scans git staged files for:
 
 - AWS access keys and secret keys
 - Private keys (RSA, EC, DSA, OPENSSH)
@@ -75,44 +75,43 @@ This is a pure regex scanner that runs offline. It scans git staged files for:
 
 **Manual run:**
 
-```powershell
-./scripts/scan-secrets-local.ps1          # Normal mode
-./scripts/scan-secrets-local.ps1 -Verbose # Shows matched line content
+```bash
+sh scripts/scan-secrets-local.sh            # Normal mode
+sh scripts/scan-secrets-local.sh --verbose  # Shows matched line content
 ```
 
 ---
 
 ### Component 2: Kiro Pre-commit Hook
 
-**File:** `.kiro/hooks/ggshield-pre-commit.kiro.hook`
+**File:** `.kiro/hooks/ggshield-pre-commit.json`
 
 ```json
 {
-  "enabled": true,
-  "name": "Local Secret Scan (pre-commit)",
-  "description": "Syncs auth layer, then runs local regex secret scanner on staged files. No external API calls — designed for spec burst workflows. Blocks commit if secrets found.",
-  "version": "4",
-  "when": {
-    "type": "preToolUse",
-    "toolTypes": [".*git_commit.*"]
-  },
-  "then": {
-    "type": "runCommand",
-    "command": "powershell -NoProfile -Command \"$src='backend/shared/auth_utils.py'; $dst='backend/layers/auth-layer/python/shared/auth_utils.py'; if((Test-Path $src) -and (Test-Path $dst)){if((Get-FileHash $src).Hash -ne (Get-FileHash $dst).Hash){Copy-Item $src $dst; git add $dst; Write-Host 'Auth layer synced'}}; & ./scripts/scan-secrets-local.ps1; exit $LASTEXITCODE\"",
-    "timeout": 15
-  }
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Local Secret Scan (pre-commit)",
+      "trigger": "PreToolUse",
+      "description": "Syncs auth layer, then runs local regex secret scanner on staged files. Blocks commit if secrets found.",
+      "matcher": "execute_pwsh",
+      "action": {
+        "type": "command",
+        "command": "sh scripts/precommit-guard.sh",
+        "timeout": 15
+      }
+    }
+  ]
 }
 ```
 
-**Trigger:** Fires before every `git_commit` MCP tool call (the MCP tool is used instead of shell `git commit` so this hook fires).
+**Trigger:** `PreToolUse` matching the `execute_pwsh` tool. The bash guard (`scripts/precommit-guard.sh`) reads the tool-call JSON on stdin and only acts when the command contains `git commit`.
 
-**What it does:**
+**What it does (in `scripts/precommit-guard.sh`):**
 
-1. Syncs the auth layer (copies `backend/shared/auth_utils.py` → `backend/layers/auth-layer/python/shared/auth_utils.py` if changed)
-2. Runs the local secret scanner on staged files
-3. Blocks the commit if secrets are found (exit code 1)
-
-**Important:** Commits must use the MCP `git_commit` tool (not `execute_pwsh` with `git commit`) for this hook to fire. This is enforced via steering rules.
+1. Exits 0 immediately if the intercepted command is not a `git commit`.
+2. Syncs the auth layer (copies `backend/shared/auth_utils.py` → `backend/layers/auth-layer/python/shared/auth_utils.py` if they differ, via `cmp`/`cp`) and stages the layer copy.
+3. Runs the local bash secret scanner on staged files and propagates its exit code — a finding blocks the commit.
 
 ---
 
@@ -120,26 +119,11 @@ This is a pure regex scanner that runs offline. It scans git staged files for:
 
 **File:** `.githooks/pre-push`
 
-```sh
-#!/bin/sh
-# Pre-push hook: runs ggshield secret scan before pushing.
-# Falls back to local regex scanner if ggshield API quota is exhausted.
-# Blocks push if secrets are found.
-
-echo "Running secret scan before push..."
-
-output=$(ggshield secret scan pre-commit 2>&1)
-code=$?
-
-if echo "$output" | grep -qiE "no more API calls|quota|rate.limit"; then
-    echo "ggshield quota exhausted - falling back to local scanner"
-    powershell -NoProfile -File ./scripts/scan-secrets-local.ps1
-    exit $?
-else
-    echo "$output"
-    exit $code
-fi
-```
+The hook scans only the changed files in the push (quota-safe) with ggshield, and
+falls back to the local bash scanner (`sh "$REPO_ROOT/scripts/scan-secrets-local.sh"`)
+when the ggshield API quota is exhausted or ggshield is not installed. It uses
+`#!/bin/sh` and contains no PowerShell. See `.githooks/pre-push` for the current
+implementation.
 
 **Trigger:** Fires on every `git push` — regardless of whether it comes from Kiro, terminal, VS Code, or any other tool.
 
@@ -232,5 +216,5 @@ Previous usage before this setup: ~8,400 calls/month (every commit + full-histor
 
 ### Kiro pre-commit hook doesn't fire
 
-- Ensure commits use the MCP `git_commit` tool, not shell `git commit`
-- Check `.kiro/hooks/ggshield-pre-commit.kiro.hook` has `"enabled": true`
+- Check `.kiro/hooks/ggshield-pre-commit.json` exists with `matcher: "execute_pwsh"` and `trigger: "PreToolUse"`
+- The guard only acts when the intercepted command contains `git commit`; other `execute_pwsh` calls are a no-op

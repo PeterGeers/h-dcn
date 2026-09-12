@@ -346,7 +346,7 @@ describe('VariantSelector', () => {
       expect(screen.getByText('variant.out_of_stock')).toBeInTheDocument();
     });
 
-    it('shows stock count (0) when allow_oversell is true', () => {
+    it('shows neither in-stock nor out-of-stock badge when allow_oversell is true', () => {
       renderComponent({
         variants: [createVariant({ Maat: 'L' }, 0, true)],
       });
@@ -357,9 +357,10 @@ describe('VariantSelector', () => {
         });
       });
 
-      // When allow_oversell is true, stock=0 should NOT show out of stock
+      // When allow_oversell is true, stock is effectively unlimited: the component
+      // intentionally suppresses BOTH the out-of-stock and the in-stock badge.
       expect(screen.queryByText('variant.out_of_stock')).not.toBeInTheDocument();
-      expect(screen.getByText('variant.in_stock')).toBeInTheDocument();
+      expect(screen.queryByText('variant.in_stock')).not.toBeInTheDocument();
     });
   });
 

@@ -90,7 +90,7 @@ describe('Dashboard - Events Calendar Card', () => {
     expect(calendarIcons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('navigates to /events/calendar when the card is clicked', async () => {
+  it('navigates to /calendar when the card is clicked', async () => {
     render(<Dashboard />);
 
     await waitFor(() => {
@@ -101,7 +101,9 @@ describe('Dashboard - Events Calendar Card', () => {
     // AppCard renders as a clickable Box, so clicking the title or any content triggers onClick
     fireEvent.click(screen.getByText('cards.events_calendar_title'));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/events/calendar');
+    // The authenticated Dashboard uses the authenticated route '/calendar'
+    // ('/events/calendar' is the public unauthenticated route).
+    expect(mockNavigate).toHaveBeenCalledWith('/calendar');
   });
 
   it('renders events-calendar card without any API dependency (visible even with no published events)', async () => {
@@ -133,7 +135,7 @@ describe('Dashboard - Events Calendar Card', () => {
     // Now there should only be a single static events-calendar card
     // Verify no dynamic event-related content is rendered (no event booking API data)
     expect(screen.queryByText('EventBookingCard')).not.toBeInTheDocument();
-    
+
     // The only events-related card should be the static calendar card
     const calendarIcons = screen.getAllByText('📅');
     // There may be multiple 📅 icons (events-calendar card + events admin card for admin users)

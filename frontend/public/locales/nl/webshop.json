@@ -70,7 +70,12 @@
     "amount": "Bedrag",
     "close": "Sluiten",
     "summary": "Overzicht",
-    "fields_incomplete": "Niet alle velden zijn correct ingevuld:"
+    "fields_incomplete": "Niet alle velden zijn correct ingevuld:",
+    "address_name": "Naam ontvanger",
+    "address_street": "Straat + huisnummer",
+    "address_postcode": "Postcode",
+    "address_city": "Woonplaats",
+    "address_country": "Land"
   },
   "confirmation": {
     "title": "Orderbevestiging",
@@ -108,7 +113,8 @@
     "no_data": "Geen ordergegevens gevonden.",
     "success": "Bestelling succesvol geplaatst!",
     "order_number": "Ordernummer",
-    "back_to_webshop": "Terug naar webshop"
+    "back_to_webshop": "Terug naar webshop",
+    "loading": "Bestelling laden..."
   },
   "orders_admin": {
     "title": "Bestellingen",
@@ -218,12 +224,6 @@
     "bulk_lock_error": "Bulk vergrendelen mislukt",
     "error_title": "Fout"
   },
-  "payment_record": {
-    "order_id_label": "Bestelling ID",
-    "amount_label": "Bedrag",
-    "date_label": "Datum",
-    "date_format_error": "Gebruik ISO datumformaat (YYYY-MM-DD)"
-  },
   "orders_tab": {
     "selected": "geselecteerd",
     "batch_status": "Markeer als...",
@@ -257,5 +257,11 @@
     "delivery_cost_label": "Verzendkosten",
     "item_singular": "artikel",
     "item_plural": "artikelen"
+  },
+  "payment_record": {
+    "order_id_label": "Bestelling ID",
+    "amount_label": "Bedrag",
+    "date_label": "Datum",
+    "date_format_error": "Gebruik ISO datumformaat (YYYY-MM-DD)"
   }
 }

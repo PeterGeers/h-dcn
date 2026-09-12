@@ -17,6 +17,14 @@ from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
 
+# AWS env vars MUST be set before importing the handler: the handler creates
+# `boto3.resource('dynamodb')` at module load, which raises NoRegionError during
+# test collection when no region is configured (e.g. in CI). See
+# .kiro/steering/testing-backend.md.
+os.environ.setdefault('AWS_DEFAULT_REGION', 'eu-west-1')
+os.environ.setdefault('AWS_ACCESS_KEY_ID', 'testing')
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', 'testing')
+
 # Add the handler directory to the path for package-style imports
 _backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 if _backend_path not in sys.path:

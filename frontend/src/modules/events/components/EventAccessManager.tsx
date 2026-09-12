@@ -60,7 +60,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       const data = await response.json();
       setMembers(data.members || data || []);
     } catch (err: any) {
-      setError(err.message || t('errors.loadFailed'));
+      setError(err.message || t('errors.load_failed'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         throw new Error(errData.message || `HTTP ${response.status}`);
       }
       toast({
-        title: t('admin.accessGranted'),
+        title: t('admin.access_granted'),
         status: 'success',
         duration: 3000,
       });
@@ -95,7 +95,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       fetchMembers();
     } catch (err: any) {
       toast({
-        title: t('admin.grantFailed'),
+        title: t('admin.grant_failed'),
         description: err.message,
         status: 'error',
         duration: 5000,
@@ -118,7 +118,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         throw new Error(`HTTP ${response.status}`);
       }
       toast({
-        title: t('admin.accessRevoked'),
+        title: t('admin.access_revoked'),
         status: 'info',
         duration: 3000,
       });
@@ -126,7 +126,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       fetchMembers();
     } catch (err: any) {
       toast({
-        title: t('admin.revokeFailed'),
+        title: t('admin.revoke_failed'),
         description: err.message,
         status: 'error',
         duration: 5000,
@@ -150,8 +150,8 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         throw new Error(`HTTP ${response.status}`);
       }
       toast({
-        title: t('admin.bulkGrantSuccess'),
-        description: `${selectedIds.size} ${t('admin.membersUpdated')}`,
+        title: t('admin.bulk_grant_success'),
+        description: `${selectedIds.size} ${t('admin.members_updated')}`,
         status: 'success',
         duration: 3000,
       });
@@ -159,7 +159,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       fetchMembers();
     } catch (err: any) {
       toast({
-        title: t('admin.bulkGrantFailed'),
+        title: t('admin.bulk_grant_failed'),
         description: err.message,
         status: 'error',
         duration: 5000,
@@ -183,8 +183,8 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         throw new Error(`HTTP ${response.status}`);
       }
       toast({
-        title: t('admin.bulkRevokeSuccess'),
-        description: `${selectedIds.size} ${t('admin.membersUpdated')}`,
+        title: t('admin.bulk_revoke_success'),
+        description: `${selectedIds.size} ${t('admin.members_updated')}`,
         status: 'info',
         duration: 3000,
       });
@@ -192,7 +192,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       fetchMembers();
     } catch (err: any) {
       toast({
-        title: t('admin.bulkRevokeFailed'),
+        title: t('admin.bulk_revoke_failed'),
         description: err.message,
         status: 'error',
         duration: 5000,
@@ -232,7 +232,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
     return (
       <Box p={4} textAlign="center">
         <Spinner size="lg" color="orange.400" />
-        <Text mt={2} color="gray.400">{t('admin.loadingAccess')}</Text>
+        <Text mt={2} color="gray.400">{t('admin.loading_access')}</Text>
       </Box>
     );
   }
@@ -250,7 +250,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
     <VStack spacing={5} align="stretch">
       <Flex align="center">
         <Heading size="md" color="orange.400">
-          {t('admin.manageAccess')}
+          {t('admin.manage_access')}
         </Heading>
         {eventName && (
           <Badge ml={3} colorScheme="orange" fontSize="sm">
@@ -259,19 +259,19 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
         )}
         <Spacer />
         <Text color="gray.400" fontSize="sm">
-          {members.length} {t('admin.membersWithAccess')}
+          {members.length} {t('admin.members_with_access')}
         </Text>
       </Flex>
 
       {/* Grant access form */}
       <Box bg="gray.800" p={4} borderRadius="md">
         <Text color="gray.300" mb={2} fontWeight="bold">
-          {t('admin.grantAccess')}
+          {t('admin.grant_access')}
         </Text>
         <HStack>
           <InputGroup>
             <Input
-              placeholder={t('admin.emailOrMemberId')}
+              placeholder={t('admin.email_or_member_id')}
               value={grantEmail}
               onChange={(e) => setGrantEmail(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleGrant()}
@@ -310,7 +310,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
             onClick={handleBulkRevoke}
             isLoading={bulkProcessing}
           >
-            {t('admin.revokeAccess')}
+            {t('admin.revoke_access')}
           </Button>
           <Button
             size="sm"
@@ -318,7 +318,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
             onClick={handleBulkGrant}
             isLoading={bulkProcessing}
           >
-            {t('admin.bulkGrant')}
+            {t('admin.bulk_grant')}
           </Button>
         </HStack>
       )}
@@ -326,7 +326,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       {/* Members table */}
       {members.length === 0 ? (
         <Box p={4} bg="gray.800" borderRadius="md" textAlign="center">
-          <Text color="gray.400">{t('admin.noMembersWithAccess')}</Text>
+          <Text color="gray.400">{t('admin.no_members_with_access')}</Text>
         </Box>
       ) : (
         <Box overflowX="auto">
@@ -341,9 +341,9 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
                     colorScheme="orange"
                   />
                 </Th>
-                <Th color="gray.400">{t('admin.colMemberId')}</Th>
-                <Th color="gray.400">{t('admin.colEmail')}</Th>
-                <Th color="gray.400">{t('admin.colMemberType')}</Th>
+                <Th color="gray.400">{t('admin.col_member_id')}</Th>
+                <Th color="gray.400">{t('admin.col_email')}</Th>
+                <Th color="gray.400">{t('admin.col_member_type')}</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -386,21 +386,21 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="md">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{t('admin.accessDetailTitle')}</ModalHeader>
+          <ModalHeader>{t('admin.access_detail_title')}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             {selectedMember && (
               <VStack spacing={3} align="stretch">
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.colMemberId')}</Text>
+                  <Text fontWeight="medium">{t('admin.col_member_id')}</Text>
                   <Text>{selectedMember.member_id}</Text>
                 </HStack>
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.colEmail')}</Text>
+                  <Text fontWeight="medium">{t('admin.col_email')}</Text>
                   <Text>{selectedMember.email || '—'}</Text>
                 </HStack>
                 <HStack justify="space-between">
-                  <Text fontWeight="medium">{t('admin.colMemberType')}</Text>
+                  <Text fontWeight="medium">{t('admin.col_member_type')}</Text>
                   <Badge
                     colorScheme={selectedMember.member_type === 'event_participant' ? 'purple' : 'green'}
                     fontSize="xs"
@@ -410,7 +410,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
                 </HStack>
                 {selectedMember.name && (
                   <HStack justify="space-between">
-                    <Text fontWeight="medium">{t('admin.colName')}</Text>
+                    <Text fontWeight="medium">{t('admin.col_name')}</Text>
                     <Text>{selectedMember.name}</Text>
                   </HStack>
                 )}
@@ -419,7 +419,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onDetailClose}>
-              {t('admin.claims.cancel')}
+              {t('admin_claims.cancel')}
             </Button>
             <Button
               leftIcon={<DeleteIcon />}
@@ -428,7 +428,7 @@ const EventAccessManager: React.FC<EventAccessManagerProps> = ({ eventId, eventN
               isLoading={revoking}
               isDisabled={revoking}
             >
-              {t('admin.revokeAccess')}
+              {t('admin.revoke_access')}
             </Button>
           </ModalFooter>
         </ModalContent>

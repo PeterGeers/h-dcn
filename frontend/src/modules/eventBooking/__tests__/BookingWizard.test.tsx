@@ -73,6 +73,7 @@ jest.mock('react-i18next', () => ({
         'booking.saving': 'Saving...',
         'booking.retry': 'Retry',
         'read_only.event_closed': 'Registration is closed. Your booking is shown below in read-only mode.',
+        'read_only.event_archived': 'This event has been archived. Your booking is shown below in read-only mode.',
         'read_only.event_draft': 'Registration is not yet open. Check back after the registration open date.',
         'read_only.order_submitted': 'Your booking has been submitted and is being processed.',
         'read_only.order_locked': 'This booking is locked. Contact the organizers for changes.',
@@ -116,7 +117,10 @@ const mockEvent: Event = {
   event_type: 'presmeet',
   name: 'Presidents Meeting 2027',
   location: 'Hotel Amersfoort',
-  status: 'open',
+  // 'published' is the canonical live status per the event field registry
+  // (status enum: draft | published | archived). Legacy 'open'/'closed' are
+  // participation modes, not statuses.
+  status: 'published',
   start_date: '2027-06-20',
   end_date: '2027-06-22',
   registration_open: '2027-01-01',
@@ -189,7 +193,7 @@ describe('BookingWizard', () => {
   });
 
   it('shows loading spinner while data is being fetched', () => {
-    mockedGetEvent.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockedGetEvent.mockReturnValue(new Promise(() => { })); // Never resolves
     render(<BookingWizard eventId="evt-1" />);
     expect(screen.getByText('Loading booking data...')).toBeInTheDocument();
   });
@@ -210,21 +214,23 @@ describe('BookingWizard', () => {
     });
   });
 
-  it('displays event info header with name, location, and dates', async () => {
+  it('displays event info header with location and dates', async () => {
     mockedGetEvent.mockResolvedValue([mockEvent]);
     mockedGetProducts.mockResolvedValue(mockProducts);
     mockedGetOrder.mockResolvedValue(mockOrder);
 
     render(<BookingWizard eventId="evt-1" />);
 
+    // The compact EventInfoHeader shows location and a formatted date range
+    // (the event name is shown on the page, not inside this sub-header).
     await waitFor(() => {
-      expect(screen.getByText('Presidents Meeting 2027')).toBeInTheDocument();
+      expect(screen.getByText(/Hotel Amersfoort/)).toBeInTheDocument();
     });
-    expect(screen.getByText(/Hotel Amersfoort/)).toBeInTheDocument();
+    expect(screen.getByText(/20 – 22 juni 2027/)).toBeInTheDocument();
   });
 
-  it('shows ReadOnlyView when event is closed', async () => {
-    const closedEvent = { ...mockEvent, status: 'closed' as const };
+  it('shows ReadOnlyView when event is archived (not published)', async () => {
+    const closedEvent = { ...mockEvent, status: 'archived' as const };
     mockedGetEvent.mockResolvedValue([closedEvent]);
     mockedGetProducts.mockResolvedValue(mockProducts);
     mockedGetOrder.mockResolvedValue(mockOrder);
@@ -233,7 +239,7 @@ describe('BookingWizard', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Registration is closed. Your booking is shown below in read-only mode.')
+        screen.getByText('This event has been archived. Your booking is shown below in read-only mode.')
       ).toBeInTheDocument();
     });
   });
@@ -279,9 +285,10 @@ describe('BookingWizard', () => {
 
     fireEvent.click(screen.getByText('Add first person'));
 
-    // After adding, we should see a person card with name/role fields
+    // After adding, we should see a person card with the name field.
+    // (The person-level role field was removed; role is now captured per
+    // product via order_item_fields.)
     expect(screen.getByPlaceholderText('Full name')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('e.g. President')).toBeInTheDocument();
   });
 
   it('shows effective limits per product', async () => {
@@ -291,14 +298,14 @@ describe('BookingWizard', () => {
 
     render(<BookingWizard eventId="evt-1" />);
 
+    // The compact EventInfoHeader lists each product name with a "remaining / total" badge.
     await waitFor(() => {
-      expect(screen.getByText('Available capacity')).toBeInTheDocument();
+      expect(screen.getByText('Meeting Ticket:')).toBeInTheDocument();
     });
-    expect(screen.getByText('Meeting Ticket')).toBeInTheDocument();
-    expect(screen.getByText('Party Ticket')).toBeInTheDocument();
-    // Limits rendered as "X of Y remaining" via t('limits.remaining', { remaining, total })
-    expect(screen.getByText('3 of 150 remaining')).toBeInTheDocument();
-    expect(screen.getByText('13 of 200 remaining')).toBeInTheDocument();
+    expect(screen.getByText('Party Ticket:')).toBeInTheDocument();
+    // Capacity rendered as "{remaining} / {totalCapacity}" per product.
+    expect(screen.getByText('3 / 150')).toBeInTheDocument();
+    expect(screen.getByText('13 / 200')).toBeInTheDocument();
   });
 
   it('displays the total amount (starts at €0.00 with no items)', async () => {
@@ -333,10 +340,13 @@ describe('BookingWizard', () => {
 
     render(<BookingWizard eventId="evt-1" />);
 
+    // The person's name from existing order items is restored into the visible
+    // name input. (Role is retained in form state at the person level for
+    // backward compatibility but is no longer rendered as its own input; the
+    // per-product "Functie" field is a separate order_item_field.)
     await waitFor(() => {
       expect(screen.getByDisplayValue('Jan de Vries')).toBeInTheDocument();
     });
-    expect(screen.getByDisplayValue('President')).toBeInTheDocument();
   });
 
   it('shows locked warning when order is locked', async () => {

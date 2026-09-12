@@ -1,6 +1,7 @@
 # Decision: Dutch Field Names in DynamoDB
 
 **Date:** 2026-06-16  
+**Amended:** 2026-09-12 (clarified that the `status` attribute *name* is English but its *values* are Dutch)  
 **Status:** Accepted  
 **Supersedes:** Previous informal preference for English field names
 
@@ -27,8 +28,30 @@ DynamoDB tables evolved organically with Dutch field names (Members: `voornaam`,
 - UI labels are handled by i18n (react-i18next), not by field name choice
 - Code variables and function names remain in English (standard practice)
 
-## Exceptions
+## Exceptions (attribute *names* that stay English)
+
+These are about the DynamoDB **key names**, not the values they hold:
 
 - `product_id`, `member_id`, `event_id`, `order_id` — primary keys stay English (AWS convention for IDs)
 - `created_at`, `updated_at` — timestamps stay English (universal convention)
-- `active`, `status` — state fields stay English (already established)
+- `active` — boolean state field; the attribute name is English and its values are `true`/`false`
+- `status` — the attribute **name** is English, but its **values are Dutch** (see below)
+
+## Clarification: `status` values are Dutch (amended 2026-09-12)
+
+The earlier wording ("`active`, `status` — state fields stay English") was
+misleading for `status`. The `status` **attribute name** is English, but the
+**values stored in it are Dutch** and come from the member field registry enum:
+
+`Actief`, `Opgezegd`, `wachtRegio`, `wachtBetaling`, `Aangemeld`, `Geschorst`,
+`HdcnAccount`, `Club`, `Sponsor`, `Overig`.
+
+Verified against production (Members table, 1229 records): `Actief` (1097),
+`HdcnAccount` (62), `Sponsor` (52), `Club` (18) — and **zero** `active`/`approved`
+records. Handlers and tests MUST compare against the Dutch values (e.g.
+`status == 'Actief'`), never English strings like `'active'` or `'approved'`.
+This applies to the `cognito_post_authentication` role-assignment logic and any
+membership status checks.
+
+The field registry (`frontend/src/config/memberFields/`) is the source of truth
+for the allowed status values.

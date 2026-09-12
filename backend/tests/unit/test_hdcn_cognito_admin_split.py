@@ -17,6 +17,12 @@ from hypothesis import given, settings, note
 from hypothesis import strategies as st
 
 
+# AWS env must be set before importing the handler submodules (they build a
+# boto3 resource at module load -> NoRegionError in CI). See testing-backend.md.
+os.environ.setdefault('AWS_DEFAULT_REGION', 'eu-west-1')
+os.environ.setdefault('AWS_ACCESS_KEY_ID', 'testing')
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', 'testing')
+
 # --- Setup: add handler directory to sys.path for imports ---
 _backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _handler_dir = os.path.join(_backend_dir, "handler", "hdcn_cognito_admin")

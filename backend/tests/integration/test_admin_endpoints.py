@@ -274,11 +274,16 @@ class TestOrderLifecycle:
         assert is_valid_transition('shipped', 'locked') is False
         assert is_valid_transition('completed', 'draft') is False
 
-    def test_payment_failed_is_terminal(self, aws_env):
-        """Test that payment_failed is a terminal state with no exits."""
+    def test_payment_failed_allows_retry_to_submitted(self, aws_env):
+        """payment_failed is NOT terminal: it allows a customer retry back to
+        'submitted' (see order_state_machine VALID_TRANSITIONS['payment_failed']
+        and the module docstring). It must not jump straight to 'paid'."""
+        # Retry is allowed
+        assert is_valid_transition('payment_failed', 'submitted') is True
+        # But it cannot skip to a paid/fulfilment state
         assert is_valid_transition('payment_failed', 'paid') is False
-        assert is_valid_transition('payment_failed', 'submitted') is False
-        assert get_next_valid_states('payment_failed') == []
+        # The only valid next state is the retry back to 'submitted'
+        assert get_next_valid_states('payment_failed') == ['submitted']
 
 
 # ===========================================================================

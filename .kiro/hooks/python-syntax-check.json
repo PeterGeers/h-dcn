@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Python Syntax Check",
+      "trigger": "PostFileSave",
+      "description": "Runs Python syntax check when backend handler files are saved",
+      "matcher": "backend/handler/.*\\\\.py",
+      "action": {
+        "type": "command",
+        "command": "python -m py_compile ${file}",
+        "timeout": 10
+      }
+    }
+  ]
+}

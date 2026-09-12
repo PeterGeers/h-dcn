@@ -74,10 +74,10 @@ const draftTransitions: TransitionConfig[] = [
   {
     event: 'SUBMIT',
     target: 'applied',
-    label: 'workflows.membership.submit',
+    label: 'workflows:membership.submit',
     actors: ['verzoek_lid'],
-    confirmMessage: 'workflows.membership.confirm.submit',
-    description: 'workflows.membership.description.submit',
+    confirmMessage: 'workflows:membership_confirm.submit',
+    description: 'workflows:membership_description.submit',
   },
 ];
 
@@ -89,19 +89,19 @@ const appliedTransitions: TransitionConfig[] = [
   {
     event: 'APPROVE',
     target: 'pending',
-    label: 'workflows.membership.approve',
+    label: 'workflows:membership.approve',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
-    confirmMessage: 'workflows.membership.confirm.approve',
-    description: 'workflows.membership.description.approve',
+    confirmMessage: 'workflows:membership_confirm.approve',
+    description: 'workflows:membership_description.approve',
   },
   {
     event: 'REJECT',
     target: 'rejected',
-    label: 'workflows.membership.reject',
+    label: 'workflows:membership.reject',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
     requiredFields: ['reason'],
-    confirmMessage: 'workflows.membership.confirm.reject',
-    description: 'workflows.membership.description.reject',
+    confirmMessage: 'workflows:membership_confirm.reject',
+    description: 'workflows:membership_description.reject',
   },
 ];
 
@@ -113,20 +113,20 @@ const pendingTransitions: TransitionConfig[] = [
   {
     event: 'APPROVE',
     target: 'wait_payment',
-    label: 'workflows.membership.approve',
+    label: 'workflows:membership.approve',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
     requiredFields: ['regio'],
-    confirmMessage: 'workflows.membership.confirm.approvePayment',
-    description: 'workflows.membership.description.approvePayment',
+    confirmMessage: 'workflows:membership_confirm.approve_payment',
+    description: 'workflows:membership_description.approve_payment',
   },
   {
     event: 'REJECT',
     target: 'rejected',
-    label: 'workflows.membership.reject',
+    label: 'workflows:membership.reject',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
     requiredFields: ['reason'],
-    confirmMessage: 'workflows.membership.confirm.reject',
-    description: 'workflows.membership.description.reject',
+    confirmMessage: 'workflows:membership_confirm.reject',
+    description: 'workflows:membership_description.reject',
   },
 ];
 
@@ -138,19 +138,19 @@ const waitPaymentTransitions: TransitionConfig[] = [
   {
     event: 'PAYMENT_RECEIVED',
     target: 'active',
-    label: 'workflows.membership.paymentReceived',
+    label: 'workflows:membership.payment_received',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
-    confirmMessage: 'workflows.membership.confirm.paymentReceived',
-    description: 'workflows.membership.description.paymentReceived',
+    confirmMessage: 'workflows:membership_confirm.payment_received',
+    description: 'workflows:membership_description.payment_received',
   },
   {
     event: 'REJECT',
     target: 'rejected',
-    label: 'workflows.membership.reject',
+    label: 'workflows:membership.reject',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
     requiredFields: ['reason'],
-    confirmMessage: 'workflows.membership.confirm.reject',
-    description: 'workflows.membership.description.reject',
+    confirmMessage: 'workflows:membership_confirm.reject',
+    description: 'workflows:membership_description.reject',
   },
 ];
 
@@ -162,19 +162,19 @@ const activeTransitions: TransitionConfig[] = [
   {
     event: 'CANCEL',
     target: 'cancelled',
-    label: 'workflows.membership.cancel',
+    label: 'workflows:membership.cancel',
     actors: ['Members_CRUD', 'Members_Status_Approve'],
-    confirmMessage: 'workflows.membership.confirm.cancel',
-    description: 'workflows.membership.description.cancel',
+    confirmMessage: 'workflows:membership_confirm.cancel',
+    description: 'workflows:membership_description.cancel',
   },
   {
     event: 'SUSPEND',
     target: 'suspended',
-    label: 'workflows.membership.suspend',
+    label: 'workflows:membership.suspend',
     actors: ['Members_CRUD'],
     requiredFields: ['reason'],
-    confirmMessage: 'workflows.membership.confirm.suspend',
-    description: 'workflows.membership.description.suspend',
+    confirmMessage: 'workflows:membership_confirm.suspend',
+    description: 'workflows:membership_description.suspend',
   },
 ];
 
@@ -186,10 +186,10 @@ const suspendedTransitions: TransitionConfig[] = [
   {
     event: 'REACTIVATE',
     target: 'active',
-    label: 'workflows.membership.reactivate',
+    label: 'workflows:membership.reactivate',
     actors: ['Members_CRUD'],
-    confirmMessage: 'workflows.membership.confirm.reactivate',
-    description: 'workflows.membership.description.reactivate',
+    confirmMessage: 'workflows:membership_confirm.reactivate',
+    description: 'workflows:membership_description.reactivate',
   },
 ];
 

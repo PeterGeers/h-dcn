@@ -209,7 +209,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
       setPagination(data.pagination);
       setRowLabel(data.row_label);
     } catch (err) {
-      setError(t('admin.claims.load_failed'));
+      setError(t('admin_claims.load_failed'));
     } finally {
       setLoading(false);
     }
@@ -238,7 +238,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     try {
       await releaseClaim(eventId, releaseTarget.row_id);
       toast({
-        title: t('admin.claims.release_success'),
+        title: t('admin_claims.release_success'),
         status: 'success',
         duration: 3000,
       });
@@ -246,7 +246,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
       loadClaims();
     } catch (err) {
       toast({
-        title: t('admin.claims.release_failed'),
+        title: t('admin_claims.release_failed'),
         status: 'error',
         duration: 5000,
       });
@@ -271,7 +271,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     try {
       await assignClaim(eventId, assignTarget.row_id, assignEmail.trim());
       toast({
-        title: t('admin.claims.assign_success'),
+        title: t('admin_claims.assign_success'),
         status: 'success',
         duration: 3000,
       });
@@ -281,11 +281,11 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
       const status = err?.response?.status;
       const message = err?.response?.data?.message || err?.response?.data?.error;
       if (status === 409) {
-        setAssignError(t('admin.claims.already_claimed'));
+        setAssignError(t('admin_claims.already_claimed'));
       } else if (status === 404) {
-        setAssignError(t('admin.claims.member_not_found'));
+        setAssignError(t('admin_claims.member_not_found'));
       } else {
-        setAssignError(message || t('admin.claims.assign_failed'));
+        setAssignError(message || t('admin_claims.assign_failed'));
       }
     } finally {
       setAssignLoading(false);
@@ -308,7 +308,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     try {
       await reassignPrimary(eventId, reassignTarget.row_id, reassignEmail.trim());
       toast({
-        title: t('admin.claims.reassign_success'),
+        title: t('admin_claims.reassign_success'),
         status: 'success',
         duration: 3000,
       });
@@ -317,9 +317,9 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 404) {
-        setReassignError(t('admin.claims.member_not_found'));
+        setReassignError(t('admin_claims.member_not_found'));
       } else {
-        setReassignError(t('admin.claims.reassign_failed'));
+        setReassignError(t('admin_claims.reassign_failed'));
       }
     } finally {
       setReassignLoading(false);
@@ -332,14 +332,14 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     try {
       await removeSecondary(eventId, claim.row_id);
       toast({
-        title: t('admin.claims.remove_secondary_success'),
+        title: t('admin_claims.remove_secondary_success'),
         status: 'success',
         duration: 3000,
       });
       loadClaims();
     } catch (err) {
       toast({
-        title: t('admin.claims.remove_secondary_failed'),
+        title: t('admin_claims.remove_secondary_failed'),
         status: 'error',
         duration: 5000,
       });
@@ -352,14 +352,14 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     try {
       await cancelInvitation(eventId, claim.row_id);
       toast({
-        title: t('admin.claims.cancel_invitation_success'),
+        title: t('admin_claims.cancel_invitation_success'),
         status: 'success',
         duration: 3000,
       });
       loadClaims();
     } catch (err) {
       toast({
-        title: t('admin.claims.cancel_invitation_failed'),
+        title: t('admin_claims.cancel_invitation_failed'),
         status: 'error',
         duration: 5000,
       });
@@ -375,11 +375,11 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'claimed':
-        return <Badge colorScheme="green">{t('admin.claims.status_claimed')}</Badge>;
+        return <Badge colorScheme="green">{t('admin_claims.status_claimed')}</Badge>;
       case 'pending':
-        return <Badge colorScheme="yellow">{t('admin.claims.status_pending')}</Badge>;
+        return <Badge colorScheme="yellow">{t('admin_claims.status_pending')}</Badge>;
       default:
-        return <Badge colorScheme="gray">{t('admin.claims.status_available')}</Badge>;
+        return <Badge colorScheme="gray">{t('admin_claims.status_available')}</Badge>;
     }
   };
 
@@ -398,7 +398,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
     return (
       <Box textAlign="center" py={10}>
         <Spinner size="lg" />
-        <Text mt={2}>{t('admin.claims.loading')}</Text>
+        <Text mt={2}>{t('admin_claims.loading')}</Text>
       </Box>
     );
   }
@@ -406,9 +406,9 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
   return (
     <VStack spacing={4} align="stretch">
       <HStack justify="space-between">
-        <Heading size="md">{t('admin.claims.title')}</Heading>
+        <Heading size="md">{t('admin_claims.title')}</Heading>
         <Button size="sm" onClick={loadClaims} isLoading={loading}>
-          {t('admin.claims.refresh')}
+          {t('admin_claims.refresh')}
         </Button>
       </HStack>
 
@@ -424,11 +424,11 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
         <Table size="sm">
           <Thead>
             <Tr>
-              <Th>{t('admin.claims.col_label')}</Th>
-              <Th>{t('admin.claims.col_status')}</Th>
-              <Th>{t('admin.claims.col_delegate')}</Th>
-              <Th>{t('admin.claims.col_email')}</Th>
-              <Th>{t('admin.claims.col_claimed_at')}</Th>
+              <Th>{t('admin_claims.col_label')}</Th>
+              <Th>{t('admin_claims.col_status')}</Th>
+              <Th>{t('admin_claims.col_delegate')}</Th>
+              <Th>{t('admin_claims.col_email')}</Th>
+              <Th>{t('admin_claims.col_claimed_at')}</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -453,7 +453,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
             {claims.length === 0 && !loading && (
               <Tr>
                 <Td colSpan={5} textAlign="center" py={8}>
-                  <Text color="gray.500">{t('admin.claims.no_rows')}</Text>
+                  <Text color="gray.500">{t('admin_claims.no_rows')}</Text>
                 </Td>
               </Tr>
             )}
@@ -469,10 +469,10 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
             isDisabled={currentPage <= 1}
             onClick={() => handlePageChange(currentPage - 1)}
           >
-            {t('admin.claims.prev_page')}
+            {t('admin_claims.prev_page')}
           </Button>
           <Text fontSize="sm">
-            {t('admin.claims.page_info', {
+            {t('admin_claims.page_info', {
               page: currentPage,
               total: pagination.total_pages,
             })}
@@ -482,7 +482,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
             isDisabled={currentPage >= pagination.total_pages}
             onClick={() => handlePageChange(currentPage + 1)}
           >
-            {t('admin.claims.next_page')}
+            {t('admin_claims.next_page')}
           </Button>
         </HStack>
       )}
@@ -496,19 +496,19 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
           <ModalBody>
             <VStack align="stretch" spacing={3}>
               <HStack justify="space-between">
-                <Text fontWeight="medium">{t('admin.claims.col_status')}</Text>
+                <Text fontWeight="medium">{t('admin_claims.col_status')}</Text>
                 {selectedClaim && getStatusBadge(selectedClaim.status)}
               </HStack>
               <HStack justify="space-between">
-                <Text fontWeight="medium">{t('admin.claims.col_delegate')}</Text>
+                <Text fontWeight="medium">{t('admin_claims.col_delegate')}</Text>
                 <Text>{selectedClaim?.delegate_name || '-'}</Text>
               </HStack>
               <HStack justify="space-between">
-                <Text fontWeight="medium">{t('admin.claims.col_email')}</Text>
+                <Text fontWeight="medium">{t('admin_claims.col_email')}</Text>
                 <Text>{selectedClaim?.delegate_email || '-'}</Text>
               </HStack>
               <HStack justify="space-between">
-                <Text fontWeight="medium">{t('admin.claims.col_claimed_at')}</Text>
+                <Text fontWeight="medium">{t('admin_claims.col_claimed_at')}</Text>
                 <Text>{formatDate(selectedClaim?.claimed_at)}</Text>
               </HStack>
               <Divider />
@@ -521,7 +521,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
                     variant="outline"
                     onClick={() => handleReleaseClick(selectedClaim)}
                   >
-                    {t('admin.claims.action_release')}
+                    {t('admin_claims.action_release')}
                   </Button>
                   <Button
                     size="sm"
@@ -529,21 +529,21 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
                     variant="outline"
                     onClick={() => handleReassignClick(selectedClaim)}
                   >
-                    {t('admin.claims.action_reassign')}
+                    {t('admin_claims.action_reassign')}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleRemoveSecondary(selectedClaim)}
                   >
-                    {t('admin.claims.action_remove_secondary')}
+                    {t('admin_claims.action_remove_secondary')}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleCancelInvitation(selectedClaim)}
                   >
-                    {t('admin.claims.action_cancel_invitation')}
+                    {t('admin_claims.action_cancel_invitation')}
                   </Button>
                 </VStack>
               )}
@@ -553,14 +553,14 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
                   colorScheme="blue"
                   onClick={() => selectedClaim && handleAssignClick(selectedClaim)}
                 >
-                  {t('admin.claims.action_assign')}
+                  {t('admin_claims.action_assign')}
                 </Button>
               )}
             </VStack>
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onDetailClose}>
-              {t('admin.claims.cancel')}
+              {t('admin_claims.cancel')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -575,17 +575,17 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader>
-              {t('admin.claims.release_confirm_title')}
+              {t('admin_claims.release_confirm_title')}
             </AlertDialogHeader>
             <AlertDialogBody>
-              {t('admin.claims.release_confirm_body', {
+              {t('admin_claims.release_confirm_body', {
                 label: releaseTarget?.label || '',
                 email: releaseTarget?.delegate_email || '',
               })}
             </AlertDialogBody>
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onReleaseClose}>
-                {t('admin.claims.cancel')}
+                {t('admin_claims.cancel')}
               </Button>
               <Button
                 colorScheme="red"
@@ -593,7 +593,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
                 ml={3}
                 isLoading={releaseLoading}
               >
-                {t('admin.claims.release_confirm')}
+                {t('admin_claims.release_confirm')}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -605,15 +605,15 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {t('admin.claims.assign_title', { label: assignTarget?.label || '' })}
+            {t('admin_claims.assign_title', { label: assignTarget?.label || '' })}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <FormControl>
-              <FormLabel>{t('admin.claims.assign_email_label')}</FormLabel>
+              <FormLabel>{t('admin_claims.assign_email_label')}</FormLabel>
               <Input
                 type="email"
-                placeholder={t('admin.claims.assign_email_placeholder')}
+                placeholder={t('admin_claims.assign_email_placeholder')}
                 value={assignEmail}
                 onChange={(e) => setAssignEmail(e.target.value)}
                 onKeyDown={(e) => {
@@ -630,7 +630,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onAssignClose}>
-              {t('admin.claims.cancel')}
+              {t('admin_claims.cancel')}
             </Button>
             <Button
               colorScheme="blue"
@@ -638,7 +638,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
               isLoading={assignLoading}
               isDisabled={!assignEmail.trim()}
             >
-              {t('admin.claims.assign_confirm')}
+              {t('admin_claims.assign_confirm')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -649,20 +649,20 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {t('admin.claims.reassign_title', { label: reassignTarget?.label || '' })}
+            {t('admin_claims.reassign_title', { label: reassignTarget?.label || '' })}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Text mb={3}>
-              {t('admin.claims.reassign_description', {
+              {t('admin_claims.reassign_description', {
                 current: reassignTarget?.delegate_email || '',
               })}
             </Text>
             <FormControl>
-              <FormLabel>{t('admin.claims.reassign_email_label')}</FormLabel>
+              <FormLabel>{t('admin_claims.reassign_email_label')}</FormLabel>
               <Input
                 type="email"
-                placeholder={t('admin.claims.reassign_email_placeholder')}
+                placeholder={t('admin_claims.reassign_email_placeholder')}
                 value={reassignEmail}
                 onChange={(e) => setReassignEmail(e.target.value)}
                 onKeyDown={(e) => {
@@ -679,7 +679,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onReassignClose}>
-              {t('admin.claims.cancel')}
+              {t('admin_claims.cancel')}
             </Button>
             <Button
               colorScheme="blue"
@@ -687,7 +687,7 @@ const AdminClaimsManagement: React.FC<AdminClaimsManagementProps> = ({ eventId }
               isLoading={reassignLoading}
               isDisabled={!reassignEmail.trim()}
             >
-              {t('admin.claims.reassign_confirm')}
+              {t('admin_claims.reassign_confirm')}
             </Button>
           </ModalFooter>
         </ModalContent>

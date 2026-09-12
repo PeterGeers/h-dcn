@@ -16,8 +16,8 @@ import * as fc from 'fast-check';
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, any>) => {
-      // For 'nSelected' key, return "N selected" format so we can assert on the count
-      if (key === 'nSelected' && params && params.count !== undefined) {
+      // For 'n_selected' key, return "N selected" format so we can assert on the count
+      if (key === 'n_selected' && params && params.count !== undefined) {
         return `${params.count} selected`;
       }
       return key;
@@ -87,7 +87,7 @@ describe('Property 4: GenericMultiFilter selection display and accessibility', (
 
           const countStr = String(selectedValues.length);
 
-          // The mock returns "N selected" for nSelected key — trigger text must contain count
+          // The mock returns "N selected" for n_selected key — trigger text must contain count
           expect(button.textContent).toContain(countStr);
 
           // The aria-label should reflect the selection state and contain the count

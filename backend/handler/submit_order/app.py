@@ -233,7 +233,7 @@ def _validate_event_persons(order, products, all_source_orders):
             })
 
     # 2. Validate item_fields_data.name on every line (Req 9.2)
-    for item_idx, item in enumerate(items):
+    for item in items:
         person_index = item.get('person_index')
         product_id = item.get('product_id')
         fields_data = item.get('item_fields_data') or {}
@@ -251,7 +251,7 @@ def _validate_event_persons(order, products, all_source_orders):
             })
 
     # 3. Validate required order_item_fields (Req 9.3)
-    for item_idx, item in enumerate(items):
+    for item in items:
         person_index = item.get('person_index')
         product_id = item.get('product_id')
         if not product_id:
@@ -354,7 +354,7 @@ def _validate_event_persons(order, products, all_source_orders):
                 })
 
     # 6. Validate variant_id references exist in product's variant list (Req 9.6)
-    for item_idx, item in enumerate(items):
+    for item in items:
         variant_id = item.get('variant_id')
         if not variant_id:
             continue

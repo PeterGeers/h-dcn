@@ -2,7 +2,7 @@
  * Property-based preservation tests for empty-location fallback behavior.
  *
  * These tests encode the CURRENT baseline behavior on UNFIXED code:
- * - EventCalendarPage with null/empty location renders t('calendar.card.noLocation') fallback
+ * - EventCalendarPage with null/empty location renders t('calendar_card.no_location') fallback
  * - EventDetailModal with null/empty location renders "—" fallback
  * - No link (LocationMapLink) is present for empty/null/whitespace locations
  * - Card click still opens the modal
@@ -39,7 +39,7 @@ jest.mock('react-i18next', () => {
     if (typeof fallback === 'object' && fallback?.location) return `Open ${fallback.location} in Maps`;
     return key;
   };
-  const stableI18n = { language: 'en', changeLanguage: () => {} };
+  const stableI18n = { language: 'en', changeLanguage: () => { } };
   const stableResult = { t: stableT, i18n: stableI18n };
   return {
     useTranslation: () => stableResult,
@@ -182,7 +182,7 @@ describe('Property 2: Preservation — Empty location fallback text unchanged', 
    * **Validates: Requirements 3.1**
    *
    * EventCalendarPage with falsy location (null, undefined, "") renders
-   * the t('calendar.card.noLocation') fallback text in the card.
+   * the t('calendar_card.no_location') fallback text in the card.
    */
   it('EventCalendarPage renders fallback text for falsy locations', async () => {
     await fc.assert(
@@ -192,7 +192,7 @@ describe('Property 2: Preservation — Empty location fallback text unchanged', 
         const { unmount } = await renderCalendarWithEvent(event);
 
         // The fallback text key should be present
-        expect(screen.getByText('calendar.card.noLocation')).toBeInTheDocument();
+        expect(screen.getByText('calendar_card.no_location')).toBeInTheDocument();
 
         // No link role should exist (no LocationMapLink rendered)
         const links = screen.queryAllByRole('link');
@@ -333,7 +333,7 @@ describe('Property 2: Preservation — Empty location fallback text unchanged', 
   it('observation: null location \u2014 card shows fallback, modal shows "\u2014"', async () => {
     const { unmount } = await renderCalendarWithEvent(makeEvent(null));
 
-    expect(screen.getByText('calendar.card.noLocation')).toBeInTheDocument();
+    expect(screen.getByText('calendar_card.no_location')).toBeInTheDocument();
     expect(screen.queryAllByRole('link').length).toBe(0);
 
     // Click card to open modal
@@ -355,7 +355,7 @@ describe('Property 2: Preservation — Empty location fallback text unchanged', 
   it('observation: empty string location \u2014 card shows fallback, modal shows "\u2014"', async () => {
     const { unmount } = await renderCalendarWithEvent(makeEvent(''));
 
-    expect(screen.getByText('calendar.card.noLocation')).toBeInTheDocument();
+    expect(screen.getByText('calendar_card.no_location')).toBeInTheDocument();
     expect(screen.queryAllByRole('link').length).toBe(0);
 
     // Click card to open modal

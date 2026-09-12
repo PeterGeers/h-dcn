@@ -28,6 +28,18 @@
     "event_overview": "Evenement Overzicht",
     "regional_summary": "Regionale Samenvatting"
   },
+  "form_validation": {
+    "required_fields": "Naam, type, start- en einddatum, en regio zijn verplicht",
+    "required_registration": "Registratie open en sluit datum zijn verplicht",
+    "no_region_access": "Je hebt geen rechten om evenementen in deze regio aan te maken"
+  },
+  "form_sections": {
+    "registration": "Registratie & Deadlines",
+    "registration_required": "verplicht",
+    "config": "Configuratie",
+    "financial": "Financieel",
+    "landing_page": "Landing Page"
+  },
   "form": {
     "title_new": "Nieuw Evenement",
     "title_edit": "Evenement Bewerken",
@@ -36,19 +48,7 @@
     "cancel": "Annuleren",
     "success_created": "Evenement succesvol aangemaakt",
     "success_updated": "Evenement succesvol bijgewerkt",
-    "error_save": "Fout bij opslaan evenement",
-    "validation": {
-      "required_fields": "Naam, type, start- en einddatum, en regio zijn verplicht",
-      "required_registration": "Registratie open en sluit datum zijn verplicht",
-      "no_region_access": "Je hebt geen rechten om evenementen in deze regio aan te maken"
-    },
-    "sections": {
-      "registration": "Registratie & Deadlines",
-      "registration_required": "verplicht",
-      "config": "Configuratie",
-      "financial": "Financieel",
-      "landing_page": "Landing Page"
-    }
+    "error_save": "Fout bij opslaan evenement"
   },
   "fields": {
     "name": "Eventnaam",
@@ -136,39 +136,39 @@
     "poster_invalid_type": "Ongeldig bestandstype. Toegestaan: {{types}}",
     "poster_file_too_large": "Bestand is te groot. Maximaal {{maxSize}} toegestaan"
   },
-  "posterAnalysis": {
+  "poster_analysis": {
     "title": "Upload & Analyseer Poster",
     "upload": "Upload poster",
     "analyze": "Analyseer",
     "analyzing": "Poster wordt geanalyseerd...",
     "success": "Evenementgegevens succesvol geëxtraheerd",
     "error": "Analyse mislukt",
-    "selectFile": "Selecteer een poster-afbeelding om te analyseren",
-    "noFile": "Selecteer eerst een bestand"
+    "select_file": "Selecteer een poster-afbeelding om te analyseren",
+    "no_file": "Selecteer eerst een bestand"
+  },
+  "calendar_filter": {
+    "type": "Type evenement",
+    "region": "Regio",
+    "date_from": "Vanaf",
+    "date_to": "Tot",
+    "reset": "Filters wissen"
+  },
+  "calendar_card": {
+    "no_location": "Locatie nog niet bekend"
+  },
+  "calendar_modal": {
+    "book": "Boeken",
+    "register": "Inschrijven",
+    "dates": "Datum",
+    "location": "Locatie",
+    "type": "Type",
+    "region": "Regio"
   },
   "calendar": {
     "title": "Evenementenkalender",
-    "noEvents": "Geen aankomende evenementen gevonden",
+    "no_events": "Geen aankomende evenementen gevonden",
     "loading": "Evenementen laden...",
     "error": "Kon evenementen niet laden. Probeer het later opnieuw.",
-    "retry": "Opnieuw proberen",
-    "filter": {
-      "type": "Type evenement",
-      "region": "Regio",
-      "dateFrom": "Vanaf",
-      "dateTo": "Tot",
-      "reset": "Filters wissen"
-    },
-    "card": {
-      "noLocation": "Locatie nog niet bekend"
-    },
-    "modal": {
-      "book": "Boeken",
-      "register": "Inschrijven",
-      "dates": "Datum",
-      "location": "Locatie",
-      "type": "Type",
-      "region": "Regio"
-    }
+    "retry": "Opnieuw proberen"
   }
 }

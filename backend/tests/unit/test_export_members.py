@@ -8,6 +8,12 @@ import sys
 import os
 import pytest
 
+# AWS env must be set before importing the handler (it builds a boto3 resource
+# at module load -> NoRegionError during collection in CI). See testing-backend.md.
+os.environ.setdefault('AWS_DEFAULT_REGION', 'eu-west-1')
+os.environ.setdefault('AWS_ACCESS_KEY_ID', 'testing')
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', 'testing')
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'export_members'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'layers', 'auth-layer', 'python'))
 

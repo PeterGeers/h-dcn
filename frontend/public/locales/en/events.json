@@ -28,6 +28,18 @@
     "event_overview": "Event Overview",
     "regional_summary": "Regional Summary"
   },
+  "form_validation": {
+    "required_fields": "Name, type, start and end date, and region are required",
+    "required_registration": "Registration open and close dates are required",
+    "no_region_access": "You don't have permission to create events in this region"
+  },
+  "form_sections": {
+    "registration": "Registration & Deadlines",
+    "registration_required": "required",
+    "config": "Configuration",
+    "financial": "Financial",
+    "landing_page": "Landing Page"
+  },
   "form": {
     "title_new": "New Event",
     "title_edit": "Edit Event",
@@ -36,19 +48,7 @@
     "cancel": "Cancel",
     "success_created": "Event created successfully",
     "success_updated": "Event updated successfully",
-    "error_save": "Error saving event",
-    "validation": {
-      "required_fields": "Name, type, start and end date, and region are required",
-      "required_registration": "Registration open and close dates are required",
-      "no_region_access": "You don't have permission to create events in this region"
-    },
-    "sections": {
-      "registration": "Registration & Deadlines",
-      "registration_required": "required",
-      "config": "Configuration",
-      "financial": "Financial",
-      "landing_page": "Landing Page"
-    }
+    "error_save": "Error saving event"
   },
   "fields": {
     "name": "Event name",
@@ -136,39 +136,39 @@
     "poster_invalid_type": "Invalid file type. Allowed: {{types}}",
     "poster_file_too_large": "File is too large. Maximum {{maxSize}} allowed"
   },
-  "posterAnalysis": {
+  "poster_analysis": {
     "title": "Upload & Analyze Poster",
     "upload": "Upload poster",
     "analyze": "Analyze",
     "analyzing": "Analyzing poster...",
     "success": "Event data extracted successfully",
     "error": "Analysis failed",
-    "selectFile": "Select a poster image to analyze",
-    "noFile": "Please select a file first"
+    "select_file": "Select a poster image to analyze",
+    "no_file": "Please select a file first"
+  },
+  "calendar_filter": {
+    "type": "Event type",
+    "region": "Region",
+    "date_from": "From",
+    "date_to": "To",
+    "reset": "Reset filters"
+  },
+  "calendar_card": {
+    "no_location": "Location TBD"
+  },
+  "calendar_modal": {
+    "book": "Book",
+    "register": "Register",
+    "dates": "Date",
+    "location": "Location",
+    "type": "Type",
+    "region": "Region"
   },
   "calendar": {
     "title": "Event Calendar",
-    "noEvents": "No upcoming events found",
+    "no_events": "No upcoming events found",
     "loading": "Loading events...",
     "error": "Could not load events. Please try again later.",
-    "retry": "Try again",
-    "filter": {
-      "type": "Event type",
-      "region": "Region",
-      "dateFrom": "From",
-      "dateTo": "To",
-      "reset": "Reset filters"
-    },
-    "card": {
-      "noLocation": "Location TBD"
-    },
-    "modal": {
-      "book": "Book",
-      "register": "Register",
-      "dates": "Date",
-      "location": "Location",
-      "type": "Type",
-      "region": "Region"
-    }
+    "retry": "Try again"
   }
 }

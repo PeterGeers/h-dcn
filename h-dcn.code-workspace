@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"name": "h-dcn",
+			"path": "."
+		}
+	],
+	"settings": {
+		"terminal.integrated.cwd": "\\\\wsl.localhost\\Ubuntu\\home\\peter\\projects\\h-dcn",
+		"files.defaultLanguage": "typescript",
+		"typescript.preferences.includePackageJsonAutoImports": "auto"
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.vscode-typescript-next",
+			"bradlc.vscode-tailwindcss",
+			"esbenp.prettier-vscode"
+		]
+	}
+}

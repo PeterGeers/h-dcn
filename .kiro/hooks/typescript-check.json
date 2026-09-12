@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "TypeScript Check",
+      "trigger": "PostFileSave",
+      "description": "Runs TypeScript type-check when frontend source files are saved",
+      "matcher": "frontend/src/.*\\\\.(ts|tsx)$",
+      "action": {
+        "type": "command",
+        "command": "npx tsc --noEmit --pretty",
+        "timeout": 30
+      }
+    }
+  ]
+}

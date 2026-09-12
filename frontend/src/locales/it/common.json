@@ -100,6 +100,6 @@
     "preference_saved": "Preferenza linguistica salvata",
     "preference_save_failed": "La preferenza linguistica non è stata salvata"
   },
-  "nSelected": "{{count}} selezionato/i",
+  "n_selected": "{{count}} selezionato/i",
   "alle": "Tutti"
 }

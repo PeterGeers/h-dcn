@@ -4,10 +4,10 @@
     {
       "label": "Check AuthLayer Sync",
       "type": "shell",
-      "command": "powershell",
+      "command": "bash",
       "args": [
-        "-Command",
-        "$mainFile = 'backend/shared/auth_utils.py'; $layerFile = 'backend/layers/auth-layer/python/shared/auth_utils.py'; Write-Host 'Checking AuthLayer file synchronization...' -ForegroundColor Yellow; if ((Test-Path $mainFile) -and (Test-Path $layerFile)) { $mainHash = Get-FileHash $mainFile; $layerHash = Get-FileHash $layerFile; if ($mainHash.Hash -eq $layerHash.Hash) { Write-Host '✅ AuthLayer files are in sync' -ForegroundColor Green } else { Write-Host '⚠️  AuthLayer files are OUT OF SYNC!' -ForegroundColor Red; Write-Host 'Main file: ' $mainFile -ForegroundColor White; Write-Host 'Layer file: ' $layerFile -ForegroundColor White; Write-Host 'Run: copy backend\\shared\\auth_utils.py backend\\layers\\auth-layer\\python\\shared\\auth_utils.py' -ForegroundColor Cyan } } else { Write-Host '❌ One or both AuthLayer files are missing' -ForegroundColor Red }"
+        "-c",
+        "main='backend/shared/auth_utils.py'; layer='backend/layers/auth-layer/python/shared/auth_utils.py'; echo 'Checking AuthLayer file synchronization...'; if [ -f \"$main\" ] && [ -f \"$layer\" ]; then if cmp -s \"$main\" \"$layer\"; then echo '✅ AuthLayer files are in sync'; else echo '⚠️  AuthLayer files are OUT OF SYNC!'; echo \"Main file:  $main\"; echo \"Layer file: $layer\"; echo \"Run: cp $main $layer\"; fi; else echo '❌ One or both AuthLayer files are missing'; fi"
       ],
       "group": "build",
       "presentation": {
@@ -23,10 +23,10 @@
     {
       "label": "Sync AuthLayer Files",
       "type": "shell",
-      "command": "powershell",
+      "command": "bash",
       "args": [
-        "-Command",
-        "Write-Host 'Syncing AuthLayer files...' -ForegroundColor Yellow; copy backend\\shared\\auth_utils.py backend\\layers\\auth-layer\\python\\shared\\auth_utils.py; Write-Host '✅ AuthLayer files synchronized' -ForegroundColor Green"
+        "-c",
+        "echo 'Syncing AuthLayer files...'; cp backend/shared/auth_utils.py backend/layers/auth-layer/python/shared/auth_utils.py && echo '✅ AuthLayer files synchronized'"
       ],
       "group": "build",
       "presentation": {

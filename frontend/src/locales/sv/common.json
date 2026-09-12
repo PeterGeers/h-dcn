@@ -100,6 +100,6 @@
     "preference_saved": "Språkinställning sparad",
     "preference_save_failed": "Språkinställning kunde inte sparas"
   },
-  "nSelected": "{{count}} vald(a)",
+  "n_selected": "{{count}} vald(a)",
   "alle": "Alla"
 }

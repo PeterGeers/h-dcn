@@ -20,6 +20,12 @@ from hypothesis import given, settings, note
 from hypothesis import strategies as st
 
 
+# AWS env must be set before importing the stub files (they import handlers that
+# build a boto3 resource at module load -> NoRegionError in CI). See testing-backend.md.
+os.environ.setdefault('AWS_DEFAULT_REGION', 'eu-west-1')
+os.environ.setdefault('AWS_ACCESS_KEY_ID', 'testing')
+os.environ.setdefault('AWS_SECRET_ACCESS_KEY', 'testing')
+
 # --- Setup: ensure paths are correct ---
 _backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _tests_unit_dir = os.path.join(_backend_dir, "tests", "unit")

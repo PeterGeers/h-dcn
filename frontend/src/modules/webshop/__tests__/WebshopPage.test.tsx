@@ -2,14 +2,21 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
 
-// Mock react-i18next BEFORE importing WebshopPage (due to i18n init import chain)
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'nl', changeLanguage: jest.fn() },
-  }),
-  initReactI18next: { type: '3rdParty', init: jest.fn() },
-}));
+// Mock react-i18next BEFORE importing WebshopPage (due to i18n init import chain).
+// IMPORTANT: `t` and the returned object must be STABLE across renders. WebshopPage
+// memoizes loadProducts with useCallback([toast, t]) and runs it in a useEffect whose
+// deps include that callback. If the mock returns a fresh `t` every render, the callback
+// identity changes each render, the effect re-fires, setState re-renders, and the test
+// hangs in an infinite loop. Returning a singleton keeps the callback stable.
+jest.mock('react-i18next', () => {
+  const stableT = (key: string) => key;
+  const stableI18n = { language: 'nl', changeLanguage: jest.fn() };
+  const stableUseTranslation = { t: stableT, i18n: stableI18n };
+  return {
+    useTranslation: () => stableUseTranslation,
+    initReactI18next: { type: '3rdParty', init: jest.fn() },
+  };
+});
 
 // Mock i18n initialization module
 jest.mock('../../../i18n', () => ({}));

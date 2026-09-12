@@ -16,7 +16,7 @@ import LocationMapLink from '../components/LocationMapLink';
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: any) => {
-      if (key === 'location.openInMaps' && opts?.location) {
+      if (key === 'location.open_in_maps' && opts?.location) {
         return `Open ${opts.location} in Google Maps (opens in new tab)`;
       }
       return key;

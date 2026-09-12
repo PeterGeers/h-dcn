@@ -56,7 +56,7 @@ const LocationMapLink: React.FC<LocationMapLinkProps> = ({
       href={mapsUrl}
       isExternal
       onClick={(e) => e.stopPropagation()}
-      aria-label={t('location.openInMaps', { location: trimmedLocation })}
+      aria-label={t('location.open_in_maps', { location: trimmedLocation })}
       fontSize={fontSize}
       color={color}
       _hover={{ textDecoration: 'underline' }}

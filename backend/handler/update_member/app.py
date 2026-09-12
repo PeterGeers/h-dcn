@@ -88,82 +88,6 @@ def extract_user_credentials_fallback(event):
         }
 
 
-def validate_permissions_fallback(user_roles, required_permissions, user_email=None):
-    """
-    UPDATED permission validation using new role structure.
-    Replaces old Members_CRUD_All references with new permission + region validation.
-    """
-    try:
-        if isinstance(required_permissions, str):
-            required_permissions = [required_permissions]
-
-        # SYSTEM ADMIN ROLES (Full access, no region required)
-        system_admin_roles = ['System_CRUD', 'System_User_Management', 'System_Logs_Read']
-        if any(role in system_admin_roles for role in user_roles):
-            return True, None
-
-        # LEGACY ADMIN ROLES (Backward compatibility)
-        legacy_admin_roles = ['National_Chairman', 'National_Secretary']
-        if any(role in legacy_admin_roles for role in user_roles):
-            return True, None
-
-        # NEW ROLE STRUCTURE: Permission-based roles
-        permission_roles = [
-            'Members_CRUD', 'Members_Read', 'Members_Export',
-            'Events_CRUD', 'Events_Read', 'Events_Export',
-            'Products_CRUD', 'Products_Read', 'Products_Export',
-            'Communication_CRUD', 'Communication_Read', 'Communication_Export',
-            'Webshop_Management', 'Members_Status_Approve'
-        ]
-
-        user_permission_roles = [role for role in user_roles if role in permission_roles]
-        if user_permission_roles:
-            region_roles = [role for role in user_roles if role.startswith('Regio_')]
-            if region_roles:
-                return True, None
-            else:
-                return False, {
-                    'statusCode': 403,
-                    'headers': cors_headers(),
-                    'body': json.dumps({
-                        'error': 'Access denied: Permission role requires region role',
-                        'required_structure': 'Permission role (e.g., Members_CRUD) + Region role (e.g., Regio_All)',
-                        'user_roles': user_roles,
-                        'missing': 'Region role (Regio_All, Regio_Noord-Holland, etc.)'
-                    })
-                }
-
-        # LEGACY COMPATIBILITY: Check for old _All roles (being phased out)
-        legacy_all_roles = [role for role in user_roles if role.endswith('_All') and not role.startswith('Regio_')]
-        if legacy_all_roles:
-            return True, None
-
-        # SPECIAL ROLES: Limited access roles
-        special_roles = ['hdcnLeden', 'Verzoek Lid']
-        if any(role in special_roles for role in user_roles):
-            return True, None
-
-        # No valid roles found
-        return False, {
-            'statusCode': 403,
-            'headers': cors_headers(),
-            'body': json.dumps({
-                'error': 'Access denied: No valid permissions found',
-                'required_permissions': required_permissions,
-                'user_roles': user_roles,
-                'help': 'Contact administrator to assign appropriate permission and region roles'
-            })
-        }
-
-    except Exception as e:
-        print(f"Error validating permissions: {str(e)}")
-        return False, {
-            'statusCode': 500,
-            'headers': cors_headers(),
-            'body': json.dumps({'error': 'Error validating permissions'})
-        }
-
-
 # Try to import from shared auth layer, fall back to local implementation
 try:
     from shared.auth_utils import (
@@ -297,7 +221,7 @@ def lambda_handler(event, context):
             current_status = member_record.get('status')
             new_status = body['status']
 
-            is_status_valid, status_error, status_details = validate_status_change(
+            is_status_valid, status_error, _ = validate_status_change(
                 user_roles, user_email, member_id, new_status, current_status, cors_headers
             )
             if not is_status_valid:

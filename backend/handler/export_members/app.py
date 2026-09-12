@@ -142,34 +142,6 @@ def get_all_members():
         logger.error(f"Error retrieving members: {str(e)}")
         raise
 
-def apply_regional_filtering(members, user_roles):
-    """Apply regional filtering based on user roles"""
-    # Check if user has full access
-    if any(role in user_roles for role in ['System_User_Management', 'Regio_All']):
-        return members
-    
-    # Get user's regional access
-    user_regions = []
-    for role in user_roles:
-        if role.startswith('Regio_') and role != 'Regio_All':
-            # Extract region name (e.g., 'Regio_Noord-Holland' -> 'Noord-Holland')
-            region = role.replace('Regio_', '')
-            user_regions.append(region)
-    
-    if not user_regions:
-        # No regional access specified
-        return []
-    
-    # Filter members by region
-    filtered_members = []
-    for member in members:
-        member_region = member.get('regio', '')
-        if member_region in user_regions:
-            filtered_members.append(member)
-    
-    logger.info(f"Regional filtering: {len(members)} -> {len(filtered_members)} members (regions: {user_regions})")
-    return filtered_members
-
 def lambda_handler(event, context):
     """
     Main Lambda handler for member data export

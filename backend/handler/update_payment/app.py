@@ -102,7 +102,7 @@ def lambda_handler(event, context):
         
         # First check if user has admin permissions for payment management
         required_permissions = ['products_update']
-        is_admin_authorized, admin_error_response, regional_info = validate_permissions_with_regions(
+        is_admin_authorized, _, _ = validate_permissions_with_regions(
             user_roles, required_permissions, user_email, None
         )
         

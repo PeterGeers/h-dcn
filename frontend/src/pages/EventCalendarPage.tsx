@@ -217,25 +217,25 @@ const EventCalendarPage: React.FC = () => {
             filters={[
               {
                 type: 'multi' as const,
-                label: t('calendar.filter.type'),
+                label: t('calendar_filter.type'),
                 options: typeOptions,
                 value: filterTypes,
                 onChange: (values: string[] | string) => handleTypeFilter(values as string[]),
               } as FilterConfig<any>,
               {
                 type: 'single' as const,
-                label: t('calendar.filter.region'),
+                label: t('calendar_filter.region'),
                 options: regioOptions,
                 value: filterRegio,
                 onChange: (v: string | string[]) => setFilterRegio(v as string),
-                placeholder: t('calendar.filter.region'),
+                placeholder: t('calendar_filter.region'),
               } as FilterConfig<any>,
             ]}
           />
 
           <FormControl w="170px">
             <FormLabel fontSize="xs" color="orange.300" mb={1}>
-              {t('calendar.filter.dateFrom')}
+              {t('calendar_filter.date_from')}
             </FormLabel>
             <Input
               type="date"
@@ -250,7 +250,7 @@ const EventCalendarPage: React.FC = () => {
 
           <FormControl w="170px">
             <FormLabel fontSize="xs" color="orange.300" mb={1}>
-              {t('calendar.filter.dateTo')}
+              {t('calendar_filter.date_to')}
             </FormLabel>
             <Input
               type="date"
@@ -269,7 +269,7 @@ const EventCalendarPage: React.FC = () => {
             colorScheme="orange"
             onClick={resetFilters}
           >
-            {t('calendar.filter.reset')}
+            {t('calendar_filter.reset')}
           </Button>
         </HStack>
 
@@ -277,7 +277,7 @@ const EventCalendarPage: React.FC = () => {
         {filteredEvents.length === 0 ? (
           <Center py={16}>
             <Text color="gray.500" fontSize="lg">
-              {t('calendar.noEvents')}
+              {t('calendar.no_events')}
             </Text>
           </Center>
         ) : (
@@ -328,7 +328,7 @@ const EventCalendarPage: React.FC = () => {
                   {event.location?.trim() ? (
                     <LocationMapLink location={event.location} fontSize="xs" color="gray.500" isTruncated maxW="100%" />
                   ) : (
-                    <Text fontSize="xs" color="gray.500" noOfLines={1}>{t('calendar.card.noLocation')}</Text>
+                    <Text fontSize="xs" color="gray.500" noOfLines={1}>{t('calendar_card.no_location')}</Text>
                   )}
                 </VStack>
               </Box>

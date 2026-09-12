@@ -20,7 +20,6 @@ import re
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import TypedDict, NotRequired
 
 import boto3
 from boto3.dynamodb.conditions import Attr
@@ -54,17 +53,6 @@ events_table = dynamodb.Table(os.environ.get('EVENTS_TABLE_NAME', 'Events'))
 
 # Simple email regex for basic format validation
 EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-
-
-# --- Types ---
-
-class InviteRequest(TypedDict):
-    action: str
-    email: str
-
-
-class RevokeRequest(TypedDict):
-    action: str
 
 
 # --- Helpers ---

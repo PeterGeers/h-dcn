@@ -39,10 +39,10 @@ const EXPECTED_COUNTS: Record<FieldGroup, number> = {
   membership: 10,
   motor: 4,
   financial: 2,
-  administrative: 5,
+  administrative: 8,
 };
 
-const TOTAL_FIELD_COUNT = Object.values(EXPECTED_COUNTS).reduce((a, b) => a + b, 0); // 37
+const TOTAL_FIELD_COUNT = Object.values(EXPECTED_COUNTS).reduce((a, b) => a + b, 0); // 40
 
 const GROUP_TO_PARTIAL: Record<FieldGroup, Record<string, FieldDefinition>> = {
   personal: personalFields,
@@ -62,7 +62,7 @@ describe('Property 2: Frontend split preserves field registry', () => {
   const allFieldKeys = Object.keys(MEMBER_FIELDS);
   const fieldKeyArbitrary = fc.constantFrom(...allFieldKeys);
 
-  it('MEMBER_FIELDS contains the expected total number of fields (37)', () => {
+  it('MEMBER_FIELDS contains the expected total number of fields (40)', () => {
     expect(Object.keys(MEMBER_FIELDS)).toHaveLength(TOTAL_FIELD_COUNT);
   });
 

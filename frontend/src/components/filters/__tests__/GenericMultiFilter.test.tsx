@@ -58,15 +58,15 @@ describe('GenericMultiFilter', () => {
   describe('count display when ≥1 selected', () => {
     it('shows count text when 1 option is selected', () => {
       renderMultiFilter({ value: ['a'] });
-      // nSelected with {{count}} → "nSelected" with count=1 interpolated
+      // n_selected with {{count}} → "n_selected" with count=1 interpolated
       const button = screen.getByRole('button', { name: /Test Filter/i });
-      expect(button).toHaveTextContent('nSelected');
+      expect(button).toHaveTextContent('n_selected');
     });
 
     it('shows count text when multiple options are selected', () => {
       renderMultiFilter({ value: ['a', 'b', 'c'] });
       const button = screen.getByRole('button', { name: /Test Filter/i });
-      expect(button).toHaveTextContent('nSelected');
+      expect(button).toHaveTextContent('n_selected');
     });
   });
 
@@ -158,8 +158,8 @@ describe('GenericMultiFilter', () => {
 
     it('aria-label reflects selection count when items selected', () => {
       renderMultiFilter({ value: ['a', 'b'], label: 'Type' });
-      // displayText = nSelected with count=2 → mock returns "nSelected" (key with interpolation)
-      const button = screen.getByRole('button', { name: /Type: nSelected/i });
+      // displayText = n_selected with count=2 → mock returns "n_selected" (key with interpolation)
+      const button = screen.getByRole('button', { name: /Type: n_selected/i });
       expect(button).toBeInTheDocument();
     });
   });

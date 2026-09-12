@@ -91,6 +91,13 @@ jest.mock('@chakra-ui/react', () => ({
       {children}
     </select>
   ),
+  AlertDialog: ({ children, isOpen }: any) =>
+    isOpen ? <div data-testid="alert-dialog">{children}</div> : null,
+  AlertDialogOverlay: ({ children }: any) => <div data-testid="alert-dialog-overlay">{children}</div>,
+  AlertDialogContent: ({ children }: any) => <div data-testid="alert-dialog-content">{children}</div>,
+  AlertDialogHeader: ({ children }: any) => <h2 data-testid="alert-dialog-header">{children}</h2>,
+  AlertDialogBody: ({ children }: any) => <div data-testid="alert-dialog-body">{children}</div>,
+  AlertDialogFooter: ({ children }: any) => <div data-testid="alert-dialog-footer">{children}</div>,
   useToast: () => mockToast,
 }));
 
