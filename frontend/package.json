@@ -47,7 +47,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:prod": "set GENERATE_SOURCEMAP=false && react-scripts build",
+    "build:prod": "cross-env GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "test:data-processing": "react-scripts test --testPathPattern=DataProcessingService --watchAll=false --verbose",
     "test:data-processing:watch": "react-scripts test --testPathPattern=DataProcessingService --watch",
@@ -91,6 +91,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "baseline-browser-mapping": "^2.9.11",
+    "cross-env": "7.0.3",
     "fast-check": "^3.23.2",
     "typescript": "^4.9.5"
   }
