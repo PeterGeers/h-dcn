@@ -1,6 +1,10 @@
 # Code Quality Maintenance — Monthly Scan Prompt
 
-> **⚡ Before pasting:** You will need to confirm ~3-4 terminal commands (gh CLI, vulture). File operations use built-in tools and run automatically.
+> **⚡ Before pasting:** You will need to confirm several terminal commands (~8-10):
+> `git rev-parse` (detect branch), 4 `gh` CLI calls (trigger/list/watch/download the
+> Full Test Suite), `vulture` (dead code), `grep` (parse frontend failures), and
+> `rm -rf .tmp-test-reports` (cleanup). Several can be batched into single blocks to
+> reduce confirmations. File operations use built-in tools and run automatically.
 
 Paste this prompt into Kiro to run a code quality scan. It will execute autonomously and produce a spec with findings and fix tasks.
 
@@ -27,12 +31,31 @@ Steps to execute:
 
    ### How to get the test reports:
 
-   ```bash
-   # 1. Find the latest "Full Test Suite" run ID
-   gh run list --workflow 293761007 --limit 1 --json databaseId
+   Always run the Full Test Suite against the **currently checked-out branch**
+   (the branch active in the local repo when the scan runs) — not `main` and not
+   "whatever ran last".
 
-   # 2. Download both backend and frontend artifacts (replace <run-id>)
-   gh run download <run-id> --dir .tmp-test-reports
+   ```bash
+   # Detect the active branch at run time (do NOT hardcode a branch name).
+   BRANCH=$(git rev-parse --abbrev-ref HEAD)
+   echo "Active branch: $BRANCH"
+
+   # 1. Trigger the "Full Test Suite" on the active branch and wait for it.
+   #    The workflow is workflow_dispatch with no inputs; --ref selects the branch
+   #    that actions/checkout checks out, so the whole suite runs against BRANCH.
+   #    NOTE: the branch must be pushed to origin first, or gh has nothing to run.
+   gh workflow run full-test-suite.yml --ref "$BRANCH"
+
+   # 2. Wait for the just-created run on this branch, then capture its ID.
+   #    (Give GitHub a moment to register the run before querying.)
+   sleep 10
+   RUN_ID=$(gh run list --workflow full-test-suite.yml --branch "$BRANCH" \
+     --limit 1 --json databaseId --jq '.[0].databaseId')
+   echo "Run ID: $RUN_ID (branch $BRANCH)"
+   gh run watch "$RUN_ID" --exit-status || true   # continue-on-error: true, so don't fail here
+
+   # 3. Download both backend and frontend artifacts for THIS run.
+   gh run download "$RUN_ID" --dir .tmp-test-reports
 
    # This creates:
    #   .tmp-test-reports/backend-test-report/test-report.json   ← structured JSON with failures
@@ -57,14 +80,18 @@ Steps to execute:
    **Frontend** — Extract FAIL lines from `test-output.txt`:
 
    ```bash
-   Select-String -Path ".tmp-test-reports/frontend-test-report/test-output.txt" -Pattern "^FAIL "
-   Select-String -Path ".tmp-test-reports/frontend-test-report/test-output.txt" -Pattern "^\s+●" | Select-Object -Unique
+   grep -E "^FAIL " .tmp-test-reports/frontend-test-report/test-output.txt
+   grep -E "^\s+●" .tmp-test-reports/frontend-test-report/test-output.txt | sort -u
    ```
 
    ### Important notes:
-   - The workflow uses `continue-on-error: true`, so CI always shows "success" even with failures
-   - If no recent run exists, trigger one with: `gh workflow run "Full Test Suite"`
-   - Clean up after: `Remove-Item -Recurse -Force .tmp-test-reports`
+   - Always target the currently checked-out branch, detected at run time via
+     `git rev-parse --abbrev-ref HEAD` (see step 1 above). Never hardcode a branch.
+   - The branch must exist on origin — push it before triggering, otherwise
+     `gh workflow run --ref "$BRANCH"` has no ref to dispatch against.
+   - The workflow uses `continue-on-error: true`, so CI always shows "success"
+     even with failures — inspect the artifacts, do not trust the run's status.
+   - Clean up after: `rm -rf .tmp-test-reports`
 
 Exclude: test files, .venv/, node*modules/, build/, *.generated.\_ files.
 
