@@ -1,4 +1,4 @@
-p.19 now# Code Quality Fixes — 2026-09 — Tasks
+# Code Quality Fixes — 2026-09 — Tasks
 
 Execution sequence (revised after the Full Test Suite scan revealed hidden
 collection errors). Each task references findings in `requirements.md`.
@@ -7,6 +7,24 @@ Definition of done per project rules: code + tests pass, `npx eslint` clean,
 `npx tsc --noEmit` clean (frontend), translations in all 8 locales for any
 user-facing strings, migration script if DynamoDB data changes, commit on the
 current feature branch, push + trigger workflows.
+
+## START HERE (session hand-off, updated 2026-09-12)
+
+Branch: `feature/wsl-ubuntu-migration`. All work below is committed + pushed.
+
+**Done:** Phase 1 backend is fully fixed (all collection errors + test failures
+resolved, verified). CI reporting bug fixed (`full-test-suite.yml` now honest).
+i18n convention fully conformed (translationFileConventions test green).
+
+**Immediate next work:** the **9 remaining frontend test failures** (P1.10b, see
+list under Phase 1). Triage each as real bug / test bug / stale, same method used
+for backend. Then **P1.4-final** (re-run Full Test Suite to confirm green).
+
+**After that:** Phase 2 (dead code) → Phase 3 (file length) → Phase 4 (missing
+tests) → Phase 5 (stale docs). None started yet.
+
+**Commits this effort:** f5f304a, 06c1ffa, b951313, fb5d341, a60f620, d4cd610,
+58bf88c (Phase 1 backend); ac8cdf9, 8c08693 (ADR), e1cb8a5, 33f41ef (i18n).
 
 ## Why this order
 
@@ -125,7 +143,7 @@ other change.
       handler no longer reads (it now selects per event_type via
       `_get_calendar_id`, defaulting to the Nationaal calendar). Updated the 4
       assertions to the real Nationaal calendar ID. Verified: 16 passed.
-    - [ ] **`test_cognito_post_authentication` — CONFIRMED STALE (handler is
+    - [x] **`test_cognito_post_authentication` — FIXED (was stale, handler
       correct).** Investigated both sources of truth:
       - Field registry `status` enum: `['Actief','Opgezegd','wachtRegio',...]` —
         no `'active'`/`'approved'`/`'pending'`.
@@ -145,14 +163,34 @@ other change.
       rewritten to assert the `verzoek_lid` assignment (renamed accordingly).
       Verified: 24 passed. Confirmed against field registry + 1229 prod records —
       handler was correct, tests were stale.
-    - [ ] 12 frontend failures (requirements §5) — triage each (not yet started).
-- [ ] **P1.4-final** After P1.9 + P1.10, re-run once more to confirm a genuine
-  green baseline.
+    - [~] 12 frontend failures (requirements §5) — 3 FIXED, 9 remaining:
+      - [x] `localeSync.property.test.ts` — REAL data issue: `webshop.json` out of
+        sync between `src/locales` and `public/locales` in all 8 languages. Synced
+        `src → public`. (commit ac8cdf9)
+      - [x] `translationFileConventions.test.ts` — FIXED. Decision was Option A
+        (conform files) per multi-language-support Requirement 10.2/10.3. All 4
+        offending namespaces conformed to depth<=2 + snake_case: `workflows`
+        (ac8cdf9), `common` + `events` (e1cb8a5), `eventBooking` (33f41ef). Used
+        migration scripts `scripts/migrate_workflows_i18n_keys.py` and
+        `scripts/migrate_eventbooking_i18n_keys.py`. Added steering
+        `.kiro/steering/i18n.md`. Verified: 93 tests / 7 suites pass, tsc clean.
+      - [x] `CalendarLocationPreservation.property.test.tsx` — FIXED as a side
+        effect of the `events` conformance (calendar.card.noLocation ->
+        calendar_card.no_location). Verified passing.
+      - [ ] **9 remaining frontend failures — NOT yet triaged** (NEXT WORK):
+        `MemberAdminTable.test.tsx`, `MemberEditView.test.tsx`,
+        `AuthenticationIntegration.test.tsx`, `PasswordlessAuthenticationFlow.test.tsx`,
+        `memberFields.integrity.test.ts`, `BookingWizard.test.tsx`,
+        `ProductCard.test.tsx`, `VariantSelector.test.tsx`,
+        `WebshopPage.test.tsx` (TIMEOUT), `Dashboard.events-calendar.test.tsx`.
+        Each needs triage: real bug / test bug / stale (same method as backend).
+- [ ] **P1.4-final** After the 9 remaining frontend failures (P1.10b) are
+  resolved, re-run the Full Test Suite once more to confirm a genuine green
+  baseline (backend is already clean; frontend has 9 known failures left).
 
-> Phase-1 core objective ACHIEVED: the test suite now reports honestly (proven by
-> the run correctly failing and exposing ~30 hidden problem files). Remaining
-> Phase-1 work (P1.9 mechanical fixes, P1.10 triage) is cleanup of pre-existing
-> failures the broken reporting had concealed.
+> Phase-1 status: backend is fully green (all collection errors + failures fixed,
+> verified). Frontend: 3 of 12 failures fixed; 9 remain (listed above) — that is
+> the immediate next work. CI reporting is fixed and trustworthy.
 
 ## Phase 2 — Dead code (low risk, shrinks files)
 

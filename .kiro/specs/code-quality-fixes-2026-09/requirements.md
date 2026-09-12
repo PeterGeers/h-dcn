@@ -333,3 +333,27 @@ src/pages/__tests__/Dashboard.events-calendar.test.tsx
 > These were pre-existing failures masked by the broken reporting, NOT regressions
 > introduced by this work. The CI-reporting + collection fixes simply made them
 > visible. Triage tracked as tasks P1.9 / P1.10.
+
+### Resolution status (updated 2026-09-12) — see tasks.md for live checkboxes
+
+**Backend — ALL FIXED & pushed:**
+- 8 collection errors (P1.1 + P1.9) — region env before import.
+- `test_bulk_transition_members` (loader sys.path), `test_runner_utils` (added
+  tests), `test_sync_google_calendar` (stale calendar-id), `test_create_order` /
+  `test_get_customer_orders` / `test_update_order_items` /
+  `test_hdcn_cognito_admin_split` / `test_stub_validity` (region), and
+  `test_cognito_post_authentication` (stale status vocab — verified vs field
+  registry + 1229 prod records). All verified passing locally.
+- `test_product_soft_delete` (TIMEOUT >120s): NOT yet investigated — was a
+  timeout, may pass with more time or need optimization. Re-check on next full run.
+
+**Frontend — 3 of 12 fixed:**
+- FIXED: `localeSync.property`, `translationFileConventions` (all i18n namespaces
+  conformed to Req 10), `CalendarLocationPreservation` (via events conformance).
+- REMAINING 9 (NOT triaged — immediate next work): `MemberAdminTable`,
+  `MemberEditView`, `AuthenticationIntegration`, `PasswordlessAuthenticationFlow`,
+  `memberFields.integrity`, `BookingWizard`, `ProductCard`, `VariantSelector`,
+  `WebshopPage` (TIMEOUT), `Dashboard.events-calendar`.
+
+A final Full Test Suite re-run (P1.4-final) is still pending to confirm a genuine
+green baseline once the 9 frontend failures are resolved.
