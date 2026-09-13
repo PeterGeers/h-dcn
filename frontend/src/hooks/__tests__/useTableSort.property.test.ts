@@ -154,13 +154,15 @@ describe('useTableSort - Property Tests', () => {
         const ascValues = ascResult.current.sortedData.map((d) => d.value);
         const descValues = descResult.current.sortedData.map((d) => d.value);
 
-        // Reversed asc should equal desc
+        // Reversed asc should equal desc *by sort key*. The sort is stable, so
+        // tied values (e.g. duplicate dates) keep original order in BOTH
+        // directions and do not swap on reverse; compare keys via compareValues.
         const reversedAsc = [...ascValues].reverse();
 
         if (reversedAsc.length !== descValues.length) return false;
 
         for (let i = 0; i < reversedAsc.length; i++) {
-          if (reversedAsc[i] !== descValues[i]) return false;
+          if (compareValues(reversedAsc[i], descValues[i]) !== 0) return false;
         }
         return true;
       }),
