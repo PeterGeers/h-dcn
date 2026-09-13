@@ -220,7 +220,7 @@ _Requirements: 2.6, 4, 9.3, 10, 12; design "Testing Strategy"_
 - [x] **T5.5** Docs reconciliation check: the new ADR exists and references the
   migration ADR; `wsl-ubuntu-setup.md`'s venv step includes isolation and its
   Docker note is corrected (Docker Desktop suggestion removed). (R17, R9.5)
-- [ ] **T5.6** **CI verification (no workflow edit):** push the branch and run the
+- [x] **T5.6** **CI verification (no workflow edit):** push the branch and run the
   Full Test Suite once against it to confirm the repinned `tests/requirements.txt`
   does not break CI. Inspect the artifacts (CI reports "success" via
   continue-on-error). Do NOT modify any workflow. (R2.6)
@@ -228,7 +228,7 @@ _Requirements: 2.6, 4, 9.3, 10, 12; design "Testing Strategy"_
   no destructive S3 ops against `h-dcn-data-506221081911`; Cognito untouched;
   `nonprofit-deploy` + eu-west-1 for any real-AWS reach; financial fields / legacy
   names / presmeet untouched; no secrets/PII in events or env files. (R10.1–R10.6)
-- [ ] **T5.8** Clean up any temporary artifacts (throwaway venvs, `.tmp-*`,
+- [x] **T5.8** Clean up any temporary artifacts (throwaway venvs, `.tmp-*`,
   DynamoDB Local data dirs). Open the PR (never merge to `main` directly);
   summarize changes, what was verified, and any deferred follow-ups (LocalStack,
   CI wiring, blocking-mode tooling, region-enforcement). (delivery)
