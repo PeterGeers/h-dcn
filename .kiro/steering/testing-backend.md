@@ -107,3 +107,7 @@ pytest tests/unit/test_<name>.py       # Single file (preferred)
 pytest tests/ -k "scan_product"        # By keyword
 pytest tests/ --tb=short -q            # Concise output
 ```
+
+## Local backend testing (venv + sam local)
+
+For the full local setup — repairing/creating the isolated `backend/.venv` (`PYTHONNOUSERSITE=1`), the pinned toolchain, and running handlers via `sam local` against DynamoDB Local — see [`docs/development/local-backend-testing.md`](../../docs/development/local-backend-testing.md).

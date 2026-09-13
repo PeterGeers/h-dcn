@@ -1,0 +1,30 @@
+{
+  "resource": "/members",
+  "path": "/members",
+  "httpMethod": "GET",
+  "isBase64Encoded": false,
+  "queryStringParameters": null,
+  "pathParameters": null,
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer FAKE-HEADER.eyJlbWFpbCI6InRlc3QtYWRtaW5AZXhhbXBsZS5pbnZhbGlkIiwiY29nbml0bzpncm91cHMiOlsiTWVtYmVyc19SZWFkIiwiUmVnaW9fVXRyZWNodCJdLCJ0b2tlbl91c2UiOiJhY2Nlc3MifQ.FAKE-SIGNATURE",
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "stage": "prod",
+    "resourcePath": "/members",
+    "httpMethod": "GET",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "sam-local"
+    },
+    "authorizer": {
+      "claims": {
+        "email": "test-admin@example.invalid",
+        "cognito:groups": "Members_Read,Regio_Utrecht",
+        "token_use": "access"
+      }
+    }
+  },
+  "body": null
+}

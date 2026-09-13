@@ -271,3 +271,7 @@ hdcnPosterProcessor/
 
 # Added by ggshield
 .cache_ggshield
+
+# Local backend testing (spec: local-backend-testing)
+backend/.local/
+backend/events/env/local.json

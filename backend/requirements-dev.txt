@@ -1,0 +1,24 @@
+# Backend dev-tooling dependencies (report-mode static analysis).
+#
+# SCOPE / RATIONALE:
+#   - These tools are DEV-TIME ONLY. They are NOT installed into any Lambda,
+#     have zero runtime / cold-start impact, and are NOT wired into any CI gate.
+#   - Kept SEPARATE from:
+#       * requirements.txt        (runtime Lambda dependencies)
+#       * tests/requirements.txt  (pytest / moto / hypothesis test toolchain)
+#     Linters are neither runtime nor strictly test deps, so they live here.
+#   - Run in REPORT / NON-BLOCKING mode. Flipping to blocking mode + CI wiring
+#     is a deliberate future follow-up (see the spec).
+#
+# USAGE / SETUP:
+#   unset VIRTUAL_ENV
+#   backend/.venv/bin/pip install -r backend/requirements-dev.txt
+#
+# See docs/development/local-backend-testing.md for the full workflow
+# (ruff = within-file lint, vulture = cross-module dead-code; complementary).
+
+# Fast Python linter + import sorter (E, F, I, B, UP rule sets). Config: backend/ruff.toml
+ruff==0.14.5
+
+# Cross-module dead-code finder. Whitelist: backend/.vulture_whitelist.py
+vulture==2.14
