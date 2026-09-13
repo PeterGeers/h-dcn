@@ -1,0 +1,32 @@
+{
+  "resource": "/products",
+  "path": "/products",
+  "httpMethod": "GET",
+  "isBase64Encoded": false,
+  "queryStringParameters": {
+    "product_ids": "TEST-PROD-0001,TEST-PROD-0002"
+  },
+  "pathParameters": null,
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer FAKE-HEADER.eyJlbWFpbCI6InRlc3QxQGV4YW1wbGUuaW52YWxpZCIsImNvZ25pdG86Z3JvdXBzIjpbImhkY25MZWRlbiJdLCJ0b2tlbl91c2UiOiJhY2Nlc3MifQ.FAKE-SIGNATURE",
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "stage": "prod",
+    "resourcePath": "/products",
+    "httpMethod": "GET",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "sam-local"
+    },
+    "authorizer": {
+      "claims": {
+        "email": "test1@example.invalid",
+        "cognito:groups": "hdcnLeden",
+        "token_use": "access"
+      }
+    }
+  },
+  "body": null
+}

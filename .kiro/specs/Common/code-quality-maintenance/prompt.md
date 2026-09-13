@@ -2,7 +2,7 @@
 
 > **⚡ Before pasting:** You will need to confirm several terminal commands (~8-10):
 > `git rev-parse` (detect branch), 4 `gh` CLI calls (trigger/list/watch/download the
-> Full Test Suite), `vulture` (dead code), `grep` (parse frontend failures), and
+> Full Test Suite), `ruff` + `vulture` (backend dead code/lint) and `ts-prune` via `npm run find:unused-exports` (frontend unused exports), `grep` (parse frontend failures), and
 > `rm -rf .tmp-test-reports` (cleanup). Several can be batched into single blocks to
 > reduce confirmations. File operations use built-in tools and run automatically.
 
@@ -20,7 +20,7 @@ Steps to execute:
 
 2. **Missing tests**: Find backend handlers (backend/handler/\_/app.py) without a corresponding test\_\_.py in backend/tests/, and frontend components/services without .test.tsx/.test.ts files.
 
-3. **Dead code**: Run vulture on the backend Python code and identify unused functions, imports, and variables. Check frontend for unused exports.
+3. **Dead code**: Backend — run `ruff` (within-file lint) and `vulture` (cross-module dead code) using the configs from the `local-backend-testing` setup (`backend/ruff.toml`, `backend/.vulture_whitelist.py`; tools pinned in `backend/requirements-dev.txt`). Frontend — run `npm run find:unused-exports` (ts-prune) to identify unused exports. All in **report mode** — triage findings, fix only genuinely-safe items, whitelist the rest with a reason (never touch presmeet). See `docs/development/local-backend-testing.md`.
 
 4. **Stale documentation**: Check if docs/ files are outdated relative to recent code changes in backend/handler/ and frontend/src/.
 
@@ -106,5 +106,5 @@ Use "Quick Plan" workflow. Do not prompt for intermediate decisions.
 
 ## Execution hints
 
-- **Minimize terminal commands**: Use built-in file/directory listing tools for file length scanning and directory exploration. Only use shell for: `gh` CLI (artifact download), `vulture` (dead code), and JSON parsing if needed.
+- **Minimize terminal commands**: Use built-in file/directory listing tools for file length scanning and directory exploration. Only use shell for: `gh` CLI (artifact download), `ruff`/`vulture` (backend dead code, from the `local-backend-testing` dev tooling), `npm run find:unused-exports` (ts-prune, frontend), and JSON parsing if needed.
 - **Batch shell work**: Combine multiple checks into single commands where possible to reduce confirmation clicks.

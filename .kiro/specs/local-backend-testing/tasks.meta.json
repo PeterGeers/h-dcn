@@ -1,0 +1,475 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "**T0.1** Create and check out a feature branch from `main` (e.g.": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312643618
+      },
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312658860
+      },
+      {
+        "executionId": "1fb441ae-da67-46fb-94e2-30a86ff64c37",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312854836
+      }
+    ],
+    "**T1.1** Diagnose the current `backend/.venv` before deleting it: capture": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312643785
+      },
+      {
+        "executionId": "1fb441ae-da67-46fb-94e2-30a86ff64c37",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312862020
+      },
+      {
+        "executionId": "a2975847-353e-41b2-8d28-0758732d2864",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789313063155
+      },
+      {
+        "executionId": "a2975847-353e-41b2-8d28-0758732d2864",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789313171713
+      }
+    ],
+    "**T1.2** Recreate the venv cleanly: remove the broken `backend/.venv` and": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312643943
+      },
+      {
+        "executionId": "a2975847-353e-41b2-8d28-0758732d2864",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789313176794
+      }
+    ],
+    "**T1.3** Determine a coherent, working set of pinned versions by installing": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644130
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315077859
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315525768
+      }
+    ],
+    "**T1.4** Update `backend/tests/requirements.txt` with the pinned set": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644276
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315531840
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315599802
+      }
+    ],
+    "**T1.5** Record the reproducible freeze: add a comment/snapshot noting the": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644429
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315604455
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315682995
+      }
+    ],
+    "**T1.6** Establish durable user-site isolation (prefer non-destructive):": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644607
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315687694
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315795878
+      }
+    ],
+    "**T1.7** **Primary acceptance gate:** from the repaired `backend/.venv`": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644748
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315800054
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315926046
+      }
+    ],
+    "**T1.8** Run one representative moto-based unit test (e.g. a": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644879
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789315930314
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789316013778
+      }
+    ],
+    "**T2.1** Confirm the Docker prerequisite: `docker version` shows the": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312644972
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789316021599
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789316095879
+      }
+    ],
+    "**T2.2** **Verify the endpoint-override enabler (do early — it gates the": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645052
+      },
+      {
+        "executionId": "d627f495-6caa-4b7d-a30c-5a2f81d8d351",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789316100220
+      },
+      {
+        "executionId": "3e9c274a-c0ca-409a-a64e-8ef3718ff32f",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789317458920
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789319208632
+      }
+    ],
+    "**T2.3** Add `scripts/local/dynamodb-local-up.sh` — start": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645127
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789319214170
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789319843654
+      }
+    ],
+    "**T2.4** Add `scripts/local/seed-dynamodb-local.py` — create the tables": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645202
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789319848383
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320139770
+      }
+    ],
+    "**T2.5** Add `backend/events/env/local.json.example` — per-function env": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645278
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320143999
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320262287
+      }
+    ],
+    "**T2.6** Add representative sample events under `backend/events/`": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645353
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320266825
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320448359
+      }
+    ],
+    "**T2.7** Validate the flow end to end: `sam build`, then": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645423
+      },
+      {
+        "executionId": "b873fbf8-e343-4e0d-af83-d3fc9c60065a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320453096
+      },
+      {
+        "executionId": "2238cef4-5c4b-461f-ae2d-00f21ce8e166",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320874584
+      },
+      {
+        "executionId": "54cff9ae-085a-4027-b301-eb52de27a465",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789321701126
+      }
+    ],
+    "**T2.8** Document the DynamoDB-only service coverage: Cognito/SES/S3 are": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645495
+      },
+      {
+        "executionId": "5cd9a1ee-ca2d-467a-8d48-df6127ca1645",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320832402
+      },
+      {
+        "executionId": "54cff9ae-085a-4027-b301-eb52de27a465",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789321706891
+      }
+    ],
+    "**T2.9** Survey `backend/tests/integration/` and classify each file:": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645571
+      },
+      {
+        "executionId": "5cd9a1ee-ca2d-467a-8d48-df6127ca1645",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320726283
+      },
+      {
+        "executionId": "5cd9a1ee-ca2d-467a-8d48-df6127ca1645",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789320825775
+      }
+    ],
+    "**T2.10** Record scope boundaries in the docs: LocalStack OUT (one-line": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645645
+      }
+    ],
+    "**T3.1** Create `backend/requirements-dev.txt` and pin `ruff` + `vulture`.": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645740
+      }
+    ],
+    "**T3.2** Add `backend/ruff.toml` (or `[tool.ruff]`): rule sets `E, F, I, B,": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645811
+      }
+    ],
+    "**T3.3** First ruff run: triage findings into \"safe to fix now\" vs": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645877
+      }
+    ],
+    "**T3.4** Configure vulture: documented invocation (e.g.": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312645955
+      }
+    ],
+    "**T3.5** First vulture run: triage the same way (fix genuinely-dead safe": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646030
+      }
+    ],
+    "**T3.6** Add `ts-prune` to `frontend/package.json` devDependencies (pinned)": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646101
+      }
+    ],
+    "**T4.1** Write `docs/development/local-backend-testing.md` — the guide:": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646203
+      }
+    ],
+    "**T4.2** Update `.gitignore` to ignore `backend/.local/` and": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646275
+      }
+    ],
+    "**T4.3** Add steering pointers (not duplication): reference the new guide": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646342
+      }
+    ],
+    "**T4.4** Reconcile `docs/development/wsl-ubuntu-setup.md`: fix the venv step": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646412
+      }
+    ],
+    "**T4.5** Write the ADR `docs/decisions/local-backend-testing.md` in the": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646486
+      }
+    ],
+    "**T4.6** Update `.kiro/specs/Common/code-quality-maintenance/prompt.md`:": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646561
+      }
+    ],
+    "**T4.7** Add supersede pointer notes to": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646629
+      }
+    ],
+    "**T5.1** Venv health check (record outputs):": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646703
+      }
+    ],
+    "**T5.2** Re-confirm the primary gate (T1.7) and the representative moto": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646774
+      }
+    ],
+    "**T5.3** Tooling smoke: `ruff check` + `vulture` from `backend/` and": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646847
+      }
+    ],
+    "**T5.4** Docs walkthrough: follow `docs/development/local-backend-testing.md`": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312646920
+      }
+    ],
+    "**T5.5** Docs reconciliation check: the new ADR exists and references the": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312647024
+      }
+    ],
+    "**T5.6** **CI verification (no workflow edit):** push the branch and run the": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312647100
+      }
+    ],
+    "**T5.7** Guardrail self-check before PR: no SAM template resource additions;": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312647173
+      }
+    ],
+    "**T5.8** Clean up any temporary artifacts (throwaway venvs, `.tmp-*`,": [
+      {
+        "executionId": "12ab997a-0085-47a1-9c2e-3cd31f6cbd2a",
+        "chatSessionId": "sess_e037ab70-19ae-4244-b0ce-ba131bc89e73",
+        "timestamp": 1789312647245
+      }
+    ]
+  }
+}

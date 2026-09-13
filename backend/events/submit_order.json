@@ -1,0 +1,33 @@
+{
+  "resource": "/orders/{id}/submit",
+  "path": "/orders/TEST-ORD-0002/submit",
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "queryStringParameters": null,
+  "pathParameters": {
+    "id": "TEST-ORD-0002"
+  },
+  "headers": {
+    "Accept": "application/json",
+    "Accept-Language": "nl",
+    "Authorization": "Bearer FAKE-HEADER.eyJlbWFpbCI6InRlc3QyQGV4YW1wbGUuaW52YWxpZCIsImNvZ25pdG86Z3JvdXBzIjpbImhkY25MZWRlbiJdLCJ0b2tlbl91c2UiOiJhY2Nlc3MifQ.FAKE-SIGNATURE",
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "stage": "prod",
+    "resourcePath": "/orders/{id}/submit",
+    "httpMethod": "POST",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "sam-local"
+    },
+    "authorizer": {
+      "claims": {
+        "email": "test2@example.invalid",
+        "cognito:groups": "hdcnLeden",
+        "token_use": "access"
+      }
+    }
+  },
+  "body": "{\"delivery_option\":\"pickup\",\"delivery_cost\":0,\"shipping_address\":{\"naam\":\"Test Member Two\",\"straat\":\"Teststraat 2\",\"postcode\":\"1000AA\",\"woonplaats\":\"Teststad\",\"land\":\"Nederland\"}}"
+}

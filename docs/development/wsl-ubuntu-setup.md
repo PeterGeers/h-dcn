@@ -23,7 +23,7 @@ Install the following on Ubuntu. `bash` and coreutils are already present.
 | Node.js | 18 | Matches CI (`actions/setup-node@v4` node 18) |
 | AWS CLI | v2 | For S3, Cognito, deploy operations |
 | AWS SAM CLI | latest | `sam build` / `sam deploy` |
-| Docker | latest | Only needed for `sam build --use-container` |
+| Docker | latest | `sam build --use-container` AND the `sam local` Tier-2 path (DynamoDB Local); native WSL engine only |
 | ggshield | latest | Secret scanning (pre-push); local scanner is the fallback |
 | git | latest | — |
 
@@ -43,7 +43,7 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
 unzip awscliv2.zip && sudo ./aws/install
 
 # AWS SAM CLI — see AWS docs for the current Linux installer
-# Docker — install Docker Engine (or enable Docker Desktop WSL integration)
+# Docker — install Docker Engine natively inside WSL (Docker Desktop is NOT a supported path)
 
 # ggshield
 pip install ggshield
@@ -97,9 +97,13 @@ the values from your password manager / AWS.
 
 ```bash
 python3.11 -m venv backend/.venv
+# Confirm isolation: pyvenv.cfg must have include-system-site-packages = false
 source backend/.venv/bin/activate
+export PYTHONNOUSERSITE=1   # prevent a broken ~/.local from leaking onto sys.path
 pip install -r backend/requirements.txt -r backend/tests/requirements.txt
 ```
+
+> For the full two-tier local backend testing workflow (isolated venv, pinned toolchain, `sam local` + DynamoDB Local), see [`local-backend-testing.md`](local-backend-testing.md).
 
 > Never reuse `backend/sam-env/` or a Windows `.venv/` from the old machine — they
 > contain Windows binaries (`Scripts/`, `Lib/`) that do not work on Linux.

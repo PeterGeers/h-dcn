@@ -1,0 +1,56 @@
+# Ruff configuration for the H-DCN backend (report-mode static analysis).
+#
+# POSTURE: report / non-blocking. Ruff is a dev-time-only linter with no
+# runtime / Lambda cold-start impact and is NOT wired into any CI gate here.
+# Complementary to vulture: ruff = within-file findings, vulture = cross-module.
+#
+# Run against a single file / path (do NOT auto-fix sweeps):
+#   unset VIRTUAL_ENV
+#   backend/.venv/bin/ruff check --config backend/ruff.toml backend/handler
+#
+# Target Python 3.11 (Lambda runtime).
+target-version = "py311"
+
+# Line length matches the current backend style. Handler line-length distribution
+# clusters under 100 (p95=81, p99=100); 100 avoids flagging the bulk of existing
+# code while still catching genuinely runaway lines.
+line-length = 100
+
+[lint]
+# Conservative, curated rule sets (start small, expand later):
+#   E  - pycodestyle errors (style)
+#   F  - pyflakes (unused imports/vars, redefinitions, undefined names)
+#   I  - isort (import ordering)
+#   B  - flake8-bugbear (likely bugs / footguns)
+#   UP - pyupgrade (modernize syntax for the target Python)
+select = ["E", "F", "I", "B", "UP"]
+
+[lint.per-file-ignores]
+# --- Handler shared-layer import fallback ----------------------------------
+# Every protected handler imports from the shared auth layer inside a
+# `try: from shared.auth_utils import ... except ImportError:` block, then does
+# further imports (e.g. `import sys`) AFTER that block. This is an intentional
+# graceful-degradation pattern (maintenance_fallback) — not a style mistake.
+#   E402 - module-level import not at top of file (imports live after the
+#          try/except fallback and after resource setup by design)
+#   F401 - "imported but unused": the fallback names are re-exported / used
+#          dynamically by the shared layer contract, so they read as unused here
+"**/handler/**/app.py" = ["E402", "F401"]
+
+# --- Tests -----------------------------------------------------------------
+# Test modules use import-time side effects, fixtures, and long descriptive
+# assertion lines. Relax the noisiest test-only rules.
+#   F401 - fixtures / conftest helpers imported for their registration effect
+#   F811 - pytest fixture redefinition / parametrize shadowing is idiomatic
+#   E501 - long lines in test data / descriptive assertions are acceptable
+"**/tests/**" = ["F401", "F811", "E501"]
+
+# --- Intentionally-retained public API -------------------------------------
+# hdcn_cognito_admin/permission_utils.py exposes a public helper API
+# (validate_field_permissions, get_user_field_permissions, check_role_permission,
+# get_role_summary) that is dispatched dynamically / consumed by callers and
+# proven by tests. Ruff's within-file view cannot see those references, so its
+# unused-import surface here would be a false positive. (Prefer inline
+# `# noqa: <code>  # reason` on any specific line ruff still flags.)
+#   F401 - shared.role_permissions symbols are part of the re-exported contract
+"**/handler/hdcn_cognito_admin/permission_utils.py" = ["F401"]

@@ -95,6 +95,8 @@ sam deploy --stack-name h-dcn --region eu-west-1 --capabilities CAPABILITY_IAM C
 pytest tests/
 ```
 
+> **Local testing setup:** see [`docs/development/local-backend-testing.md`](../../docs/development/local-backend-testing.md) for the isolated venv (`PYTHONNOUSERSITE=1`), pinned deps, and `sam local` + DynamoDB Local (native WSL Docker engine).
+
 ### Frontend
 
 ```bash

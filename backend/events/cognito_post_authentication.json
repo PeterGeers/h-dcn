@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "region": "eu-west-1",
+  "userPoolId": "eu-west-1_FAKELOCAL0",
+  "userName": "test1@example.invalid",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-unknown-unknown",
+    "clientId": "FAKELOCALCLIENTID"
+  },
+  "triggerSource": "PostAuthentication_Authentication",
+  "request": {
+    "userAttributes": {
+      "sub": "00000000-0000-0000-0000-000000000001",
+      "email": "test1@example.invalid",
+      "email_verified": "true",
+      "given_name": "Test",
+      "family_name": "Member One"
+    },
+    "newDeviceUsed": false
+  },
+  "response": {}
+}

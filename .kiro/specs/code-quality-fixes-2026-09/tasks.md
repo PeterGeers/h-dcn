@@ -285,7 +285,8 @@ other change.
     all covered by dedicated unit tests (`test_mollie_client.py`,
     `test_stock_reservation.py`), i.e. public API. Not dead.
 - [ ] **P2.4** (Optional) Add `ts-prune` to the frontend and run it to find
-  unused TS exports; log results as a follow-up finding. NOT done this cycle.
+  unused TS exports; log results as a follow-up finding. NOT done this cycle.  
+  > **Folded into `local-backend-testing`** (2026-09-13): implemented there in report mode. Pointer only — no change to this spec.
 - [ ] **P2.5** (follow-up) Decide whether to remove the uncalled
   `confirm_payment_and_reserve_stock` in `backend/handler/pay_order/app.py`. It is
   superseded by `reserve_stock_for_order`; its docstring ("Called by the Mollie
@@ -370,6 +371,8 @@ other change.
 
 ### FOLLOW-UP: Introduce Ruff for backend Python (NEW SPEC)
 
+> **Folded into `local-backend-testing`** (2026-09-13): ruff (+ vulture) were adopted there in report mode (`backend/requirements-dev.txt`, `backend/ruff.toml`, `backend/.vulture_whitelist.py`). This follow-up is superseded; see `docs/decisions/local-backend-testing.md`. Pointer only — no change to this spec.
+
 Create a dedicated spec to adopt **Ruff** (linter + optional formatter) for the
 backend. This is a separate, self-contained effort — do NOT fold it into this
 spec. Rationale: Ruff automates most of the dead-code/lint hunting done manually
@@ -403,35 +406,3 @@ Suggested scope for the new spec:
 Not started. Tracked here only as a pointer to the new spec.
 
 ---
-
-- [ ] **P6.1** (follow-up spec) Create a spec to repair the broken backend
-  virtualenv (`backend/.venv`) and stabilize the local backend test
-  environment.
-
-Context: While fixing P1.11 the local `backend/.venv` was found to be broken —
-its interpreter runs but its own `site-packages` is not on `sys.path`, so all
-imports fall through to `~/.local/lib/python3.11/site-packages`. That user-site
-stack has an incompatible OpenSSL/`cryptography` combination (`OpenSSL.crypto`
-raises `AttributeError: module 'lib' has no attribute 'GEN_EMAIL'`, and
-`cryptography.hazmat.bindings._rust` cannot import `x509`), which makes
-`boto3`/`moto` unusable and blocks running backend unit tests locally. P1.11 had
-to be verified in a throwaway `/tmp` venv as a workaround. This is pre-existing,
-environment-only (no product code involved), and out of scope for the
-code-quality spec — hence a separate spec.
-
-Suggested scope for the new spec:
-
-1. Recreate `backend/.venv` cleanly (`python3.11 -m venv`), confirm its
-   `site-packages` is on `sys.path` and `PYTHONNOUSERSITE=1` still resolves
-   deps (i.e. no reliance on `~/.local`).
-2. Pin the test toolchain via `backend/tests/requirements.txt` (boto3, moto,
-   hypothesis, pytest, a working `cryptography`) and verify a clean install.
-3. Remove/relocate the conflicting `~/.local` and system `dist-packages`
-   OpenSSL/cryptography that shadow the venv, or document isolation so they no
-   longer leak in.
-4. Add a short "local backend test setup" section to the docs / steering so the
-   next person can run `pytest tests/unit/...` without the /tmp-venv workaround.
-5. Verify by running a representative unit test (e.g.
-   `tests/unit/test_product_soft_delete.py`) from the repaired `backend/.venv`.
-
-Not started. Tracked here only as a pointer to the new spec.

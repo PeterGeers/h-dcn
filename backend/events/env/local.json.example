@@ -1,0 +1,46 @@
+{
+  "_comment": "EXAMPLE env-vars file for `sam local invoke --env-vars`. Copy to `local.json` (gitignored) before use. Keyed by function LOGICAL ID (SAM template resource name); the special `Parameters` key applies to ALL functions. Contains ONLY dummy credentials and non-secret placeholder config — NO real secrets, JWTs, or PII. Part of the local-backend-testing spec (T2.5; R5.3, R5.4, R10.6).",
+
+  "Parameters": {
+    "AWS_ENDPOINT_URL_DYNAMODB": "http://dynamodb-local:8000",
+    "AWS_DEFAULT_REGION": "eu-west-1",
+    "AWS_REGION": "eu-west-1",
+    "REGION_NAME": "eu-west-1",
+    "AWS_ACCESS_KEY_ID": "testing",
+    "AWS_SECRET_ACCESS_KEY": "testing",
+    "AWS_SESSION_TOKEN": "testing",
+    "PRODUCTEN_TABLE_NAME": "Producten",
+    "PRODUCTS_TABLE_NAME": "Producten",
+    "MEMBERS_TABLE_NAME": "Members",
+    "ORDERS_TABLE_NAME": "Orders",
+    "EVENTS_TABLE_NAME": "Events",
+    "MEMBERSHIPS_TABLE_NAME": "Memberships",
+    "PAYMENTS_TABLE_NAME": "Payments",
+    "COUNTERS_TABLE_NAME": "Counters"
+  },
+
+  "GetProductsFunction": {
+    "PRODUCTEN_TABLE_NAME": "Producten"
+  },
+
+  "SubmitOrderFunction": {
+    "ORDERS_TABLE_NAME": "Orders",
+    "EVENTS_TABLE_NAME": "Events",
+    "MEMBERS_TABLE_NAME": "Members",
+    "PRODUCTEN_TABLE_NAME": "Producten"
+  },
+
+  "GetMembersFilteredFunction": {
+    "MEMBERS_TABLE_NAME": "Members"
+  },
+
+  "CognitoPostAuthenticationFunction": {
+    "MEMBERS_TABLE_NAME": "Members",
+    "DEFAULT_MEMBER_GROUP": "hdcnLeden",
+    "ORGANIZATION_NAME": "Harley-Davidson Club Nederland",
+    "ORGANIZATION_WEBSITE": "https://portal.h-dcn.nl",
+    "ORGANIZATION_EMAIL": "webhulpje@h-dcn.nl",
+    "ORGANIZATION_SHORT_NAME": "H-DCN",
+    "COGNITO_USER_POOL_ID": "eu-west-1_fcUkvwjH5"
+  }
+}

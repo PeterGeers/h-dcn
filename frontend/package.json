@@ -56,7 +56,8 @@
     "test:data-processing:all": "npm run test:data-processing && npm run test:data-processing:performance",
     "eject": "react-scripts eject",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "npm run type-check -- --watch"
+    "type-check:watch": "npm run type-check -- --watch",
+    "find:unused-exports": "ts-prune"
   },
   "browserslist": {
     "production": [
@@ -93,6 +94,7 @@
     "baseline-browser-mapping": "^2.9.11",
     "cross-env": "7.0.3",
     "fast-check": "^3.23.2",
+    "ts-prune": "0.10.3",
     "typescript": "^4.9.5"
   }
 }
