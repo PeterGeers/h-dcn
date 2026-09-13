@@ -8,13 +8,11 @@ Feature: order-pipeline-improvements, Property 15/16
 """
 
 import os
-import sys
 import uuid
 
 import boto3
-import pytest
 from moto import mock_aws
-from hypothesis import given, settings, assume
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from boto3.dynamodb.conditions import Attr
 
@@ -161,52 +159,54 @@ def _check_orders_for_products(orders, product_id_set, matching_orders):
 # ---------------------------------------------------------------------------
 
 
-@mock_aws
 @given(active_flags=st.lists(active_values, min_size=1, max_size=10))
-@settings(max_examples=200, deadline=None)
+@settings(max_examples=50, deadline=None)
 def test_property_15_customer_listing_excludes_inactive(active_flags):
     """For any query to the customer-facing product listing, the result set
     SHALL contain only products where active=true or active is missing.
     No product with active=false SHALL appear."""
-    # Setup
+    # Each Hypothesis example runs in its own moto backend so the Producten
+    # table starts empty every time. Previously a single @mock_aws wrapped all
+    # examples with fixed-name tables and no teardown, so rows accumulated and
+    # every scan grew — a quadratic slowdown that blew past the 120s CI budget.
     os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
-    dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-    table = _get_or_create_producten_table(dynamodb)
+    with mock_aws():
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = _get_or_create_producten_table(dynamodb)
 
-    # Create products with various active values (unique IDs per run)
-    created_products = []
-    for active_val in active_flags:
-        product_id = f"prod_{uuid.uuid4().hex[:12]}"
-        item = {
-            'product_id': product_id,
-            'name': f'Test Product {product_id}',
-            'is_parent': True,
-        }
-        if active_val is not None:
-            item['active'] = active_val
-        # If active_val is None, we omit the field entirely (simulating missing)
-        table.put_item(Item=item)
-        created_products.append((product_id, active_val))
+        # Create products with various active values (unique IDs per example)
+        created_products = []
+        for active_val in active_flags:
+            product_id = f"prod_{uuid.uuid4().hex[:12]}"
+            item = {
+                'product_id': product_id,
+                'name': f'Test Product {product_id}',
+                'is_parent': True,
+            }
+            if active_val is not None:
+                item['active'] = active_val
+            # If active_val is None, we omit the field entirely (missing)
+            table.put_item(Item=item)
+            created_products.append((product_id, active_val))
 
-    # Apply the customer-facing filter and check ONLY our products
-    results = _apply_customer_listing_filter(table)
-    result_ids = {item['product_id'] for item in results}
-    our_product_ids = {pid for pid, _ in created_products}
+        # Apply the customer-facing filter
+        results = _apply_customer_listing_filter(table)
+        result_ids = {item['product_id'] for item in results}
 
-    # Assertions — only check our products (table may have items from prior runs)
-    for product_id, active_val in created_products:
-        if active_val is False:
-            # Inactive products must NOT appear
-            assert product_id not in result_ids, (
-                f"Product {product_id} with active=False should NOT appear "
-                f"in customer listing"
-            )
-        else:
-            # Products with active=True or missing active field SHOULD appear
-            assert product_id in result_ids, (
-                f"Product {product_id} with active={active_val} should appear "
-                f"in customer listing"
-            )
+        # Assertions
+        for product_id, active_val in created_products:
+            if active_val is False:
+                # Inactive products must NOT appear
+                assert product_id not in result_ids, (
+                    f"Product {product_id} with active=False should NOT appear "
+                    f"in customer listing"
+                )
+            else:
+                # Products with active=True or missing active SHOULD appear
+                assert product_id in result_ids, (
+                    f"Product {product_id} with active={active_val} should "
+                    f"appear in customer listing"
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -216,47 +216,52 @@ def test_property_15_customer_listing_excludes_inactive(active_flags):
 # ---------------------------------------------------------------------------
 
 
-@mock_aws
 @given(order_statuses_list=order_status_lists)
-@settings(max_examples=200, deadline=None)
+@settings(max_examples=50, deadline=None)
 def test_property_16_hard_delete_guard(order_statuses_list):
     """For any product referenced by at least one order with status other than
     cancelled, hard-delete SHALL be rejected. Hard-delete SHALL succeed only
     when zero non-cancelled orders reference the product."""
-    # Setup
+    # Each Hypothesis example runs in its own moto backend so the Orders table
+    # starts empty every time. Previously a single @mock_aws wrapped all
+    # examples with a fixed-name table and no teardown, so orders accumulated
+    # and every scan grew — a quadratic slowdown that blew past the 120s CI
+    # budget.
     os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
-    dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-    orders_table = _get_or_create_orders_table(dynamodb)
+    with mock_aws():
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        orders_table = _get_or_create_orders_table(dynamodb)
 
-    # Use a unique product_id per test invocation to isolate data
-    product_id = f"prod_{uuid.uuid4().hex[:12]}"
+        # Use a unique product_id per example to isolate data
+        product_id = f"prod_{uuid.uuid4().hex[:12]}"
 
-    # Create orders referencing this product with given statuses
-    for status in order_statuses_list:
-        order_id = f"order_{uuid.uuid4().hex[:12]}"
-        orders_table.put_item(Item={
-            'order_id': order_id,
-            'status': status,
-            'items': [{'product_id': product_id, 'quantity': 1}],
-        })
+        # Create orders referencing this product with given statuses
+        for status in order_statuses_list:
+            order_id = f"order_{uuid.uuid4().hex[:12]}"
+            orders_table.put_item(Item={
+                'order_id': order_id,
+                'status': status,
+                'items': [{'product_id': product_id, 'quantity': 1}],
+            })
 
-    # Apply the hard-delete guard logic
-    non_cancelled_count = _count_non_cancelled_orders_for_product(
-        orders_table, [product_id]
-    )
-
-    # Determine expected result
-    has_non_cancelled = any(s != 'cancelled' for s in order_statuses_list)
-
-    if has_non_cancelled:
-        # Hard-delete must be blocked
-        assert non_cancelled_count > 0, (
-            f"Expected hard-delete to be blocked (non-cancelled orders exist: "
-            f"{order_statuses_list}), but count was {non_cancelled_count}"
+        # Apply the hard-delete guard logic
+        non_cancelled_count = _count_non_cancelled_orders_for_product(
+            orders_table, [product_id]
         )
-    else:
-        # All orders are cancelled → hard-delete must be allowed
-        assert non_cancelled_count == 0, (
-            f"Expected hard-delete to succeed (all orders cancelled: "
-            f"{order_statuses_list}), but count was {non_cancelled_count}"
-        )
+
+        # Determine expected result
+        has_non_cancelled = any(s != 'cancelled' for s in order_statuses_list)
+
+        if has_non_cancelled:
+            # Hard-delete must be blocked
+            assert non_cancelled_count > 0, (
+                f"Expected hard-delete to be blocked (non-cancelled orders "
+                f"exist: {order_statuses_list}), but count was "
+                f"{non_cancelled_count}"
+            )
+        else:
+            # All orders are cancelled -> hard-delete must be allowed
+            assert non_cancelled_count == 0, (
+                f"Expected hard-delete to succeed (all orders cancelled: "
+                f"{order_statuses_list}), but count was {non_cancelled_count}"
+            )

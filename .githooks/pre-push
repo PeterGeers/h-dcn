@@ -46,7 +46,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
         # Detect quota exhaustion
         if echo "$output" | grep -qiE "no more API calls|quota|rate.limit"; then
             echo "ggshield quota exhausted - falling back to local scanner"
-            sh "$REPO_ROOT/scripts/scan-secrets-local.sh"
+            bash "$REPO_ROOT/scripts/scan-secrets-local.sh"
             exit $?
         fi
 
@@ -54,7 +54,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
         exit $code
     else
         echo "ggshield not found - running local scanner"
-        sh "$REPO_ROOT/scripts/scan-secrets-local.sh"
+        bash "$REPO_ROOT/scripts/scan-secrets-local.sh"
         exit $?
     fi
 done

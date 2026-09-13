@@ -95,7 +95,7 @@ other change.
   - `exit 1` from the run step when any file failed/errored so the run status is
     meaningful (later steps still run via `continue-on-error`).
   - Verified YAML parses; verified the exit-code logic fix locally.
-- [~] **P1.4** Re-ran the Full Test Suite (run **34709004161**) after pushing the
+- [ ] **P1.4** Re-ran the Full Test Suite (run **34709004161**) after pushing the
   Phase-1 fixes. The run correctly **failed** (proving P1.2's reporting fix works —
   the old run would have falsely reported success). Analysis of the artifacts
   revealed:
@@ -126,7 +126,7 @@ other change.
   `test_hdcn_cognito_admin`, `test_update_member`,
   `test_member_reporting_integration`. Verified under CI-like env (region unset):
   0 collection errors, all collect; and all 31 tests pass when run.
-- [~] **P1.10** Triage the backend failures + 12 frontend failures. NOTE: CI runs
+- [ ] **P1.10** Triage the backend failures + 12 frontend failures. NOTE: CI runs
   each file as an INDEPENDENT pytest process (no cross-file ordering effects), so
   every failure is intrinsic to its file + the CI environment (fresh deps, no AWS
   region). Split into:
@@ -167,7 +167,7 @@ other change.
       rewritten to assert the `verzoek_lid` assignment (renamed accordingly).
       Verified: 24 passed. Confirmed against field registry + 1229 prod records —
       handler was correct, tests were stale.
-    - [~] 12 frontend failures (requirements §5) — 3 FIXED, 9 remaining:
+    - [ ] 12 frontend failures (requirements §5) — 3 FIXED, 9 remaining:
       - [x] `localeSync.property.test.ts` — REAL data issue: `webshop.json` out of
         sync between `src/locales` and `public/locales` in all 8 languages. Synced
         `src → public`. (commit ac8cdf9)
@@ -232,7 +232,7 @@ other change.
 > `test_product_soft_delete` CI timeout (needs optimization or a longer per-file
 > timeout) — tracked as follow-up P1.11 below.
 
-- [ ] **P1.11** Investigate `tests/unit/test_product_soft_delete.py` CI timeout
+- [x] **P1.11** Investigate `tests/unit/test_product_soft_delete.py` CI timeout
   (>120s per-file). Determine whether it is genuinely slow (optimize/split) or
   needs a higher timeout budget in `full-test-suite.yml`. Pre-existing; deferred
   from P1.10.
@@ -363,3 +363,75 @@ other change.
 - The auth layer is high-blast-radius — refactor with full test coverage.
 - Do not touch `frontend/src/modules/presmeet/`, legacy DynamoDB field names, or
   Cognito config (per steering "out of scope").
+
+---
+
+## Follow-up specs (create separately)
+
+### FOLLOW-UP: Introduce Ruff for backend Python (NEW SPEC)
+
+Create a dedicated spec to adopt **Ruff** (linter + optional formatter) for the
+backend. This is a separate, self-contained effort — do NOT fold it into this
+spec. Rationale: Ruff automates most of the dead-code/lint hunting done manually
+in Phase 2 (unused imports/vars `F401`/`F841`, redefinition `F811`, unreachable
+code, import sorting `I`) and gives backend CI parity with the frontend ESLint
+gate. It's dev-time only (single fast binary, no runtime deps, no Lambda
+cold-start impact), which aligns with the "lean tooling / no Pydantic" stance in
+`type-safety.md`.
+
+Suggested scope for the new spec:
+
+1. Add `ruff` as a backend dev dependency and a curated `ruff.toml` /
+   `pyproject.toml` config. Start conservative: rule sets `E, F, I, B, UP`;
+   line-length matching current style.
+2. Per-file ignores for known intentional patterns:
+   - Handler `try/except ImportError` shared-layer fallback blocks (would trip
+     `F401`/`E402`).
+   - Test files (`tests/**`).
+   - Intentionally-retained public API (e.g. `hdcn_cognito_admin/permission_utils.py`
+     trio) and any kept-on-purpose symbols — use `# noqa` with a reason.
+3. First triage run: classify findings into "fix now" vs `# noqa`/ignore
+   (same method as Phase 2). Fix the safe ones.
+4. Add Ruff to backend CI in **non-blocking / report mode** first; flip to
+   blocking once the tree is clean.
+5. Keep vulture (or manual grep) for cross-module "defined but never called
+   anywhere" dead code — Ruff is strongest at within-file findings, so the two
+   are complementary, not a replacement.
+6. Optional: evaluate `ruff format` (Black-compatible) as a formatter in a later
+   phase; decide separately to avoid a large one-time diff.
+
+Not started. Tracked here only as a pointer to the new spec.
+
+---
+
+- [ ] **P6.1** (follow-up spec) Create a spec to repair the broken backend
+  virtualenv (`backend/.venv`) and stabilize the local backend test
+  environment.
+
+Context: While fixing P1.11 the local `backend/.venv` was found to be broken —
+its interpreter runs but its own `site-packages` is not on `sys.path`, so all
+imports fall through to `~/.local/lib/python3.11/site-packages`. That user-site
+stack has an incompatible OpenSSL/`cryptography` combination (`OpenSSL.crypto`
+raises `AttributeError: module 'lib' has no attribute 'GEN_EMAIL'`, and
+`cryptography.hazmat.bindings._rust` cannot import `x509`), which makes
+`boto3`/`moto` unusable and blocks running backend unit tests locally. P1.11 had
+to be verified in a throwaway `/tmp` venv as a workaround. This is pre-existing,
+environment-only (no product code involved), and out of scope for the
+code-quality spec — hence a separate spec.
+
+Suggested scope for the new spec:
+
+1. Recreate `backend/.venv` cleanly (`python3.11 -m venv`), confirm its
+   `site-packages` is on `sys.path` and `PYTHONNOUSERSITE=1` still resolves
+   deps (i.e. no reliance on `~/.local`).
+2. Pin the test toolchain via `backend/tests/requirements.txt` (boto3, moto,
+   hypothesis, pytest, a working `cryptography`) and verify a clean install.
+3. Remove/relocate the conflicting `~/.local` and system `dist-packages`
+   OpenSSL/cryptography that shadow the venv, or document isolation so they no
+   longer leak in.
+4. Add a short "local backend test setup" section to the docs / steering so the
+   next person can run `pytest tests/unit/...` without the /tmp-venv workaround.
+5. Verify by running a representative unit test (e.g.
+   `tests/unit/test_product_soft_delete.py`) from the repaired `backend/.venv`.
+
+Not started. Tracked here only as a pointer to the new spec.
