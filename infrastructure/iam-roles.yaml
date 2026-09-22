@@ -18,7 +18,18 @@ Parameters:
   GitHubRepo:
     Type: String
     Default: "h-dcn"
-    Description: GitHub repository name
+    Description: GitHub repository name (primary — the h-dcn app repo)
+
+  GitHubRepoSecondary:
+    Type: String
+    Default: "myAdmin"
+    Description: >
+      Second GitHub repository allowed to assume NonprofitDeployRole via OIDC
+      (the myAdmin repo deploys the sam-members stack to this account). Set to an
+      empty string to trust only the primary repo.
+
+Conditions:
+  HasSecondaryRepo: !Not [!Equals [!Ref GitHubRepoSecondary, ""]]
 
 Resources:
   # =============================================================================
@@ -154,7 +165,13 @@ Resources:
               StringEquals:
                 "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
               StringLike:
-                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
+                # Trust the primary repo, and (when set) the secondary repo. The
+                # myAdmin repo needs this to deploy the sam-members stack via CI.
+                "token.actions.githubusercontent.com:sub": !If
+                  - HasSecondaryRepo
+                  - - !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
+                    - !Sub "repo:${GitHubOrg}/${GitHubRepoSecondary}:*"
+                  - !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
       Policies:
         - PolicyName: NonprofitDeployPolicy
           PolicyDocument:
