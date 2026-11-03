@@ -134,7 +134,7 @@
     "axisLabel": "Aksenavn",
     "axisPlaceholder": "F.eks. Størrelse, Farve...",
     "valuesLabel": "Værdier",
-    "valuesPlaceholder": "Én værdi pr. linje",
+    "valuesPlaceholder": "Én værdi pr. linje eller adskilt med kommaer",
     "preview": "Der oprettes {{count}} varianter",
     "axisEmpty": "Indtast et aksenavn.",
     "submit": "Opret",

@@ -134,7 +134,7 @@
     "axisLabel": "Axelnamn",
     "axisPlaceholder": "T.ex. Storlek, Färg...",
     "valuesLabel": "Värden",
-    "valuesPlaceholder": "Ett värde per rad",
+    "valuesPlaceholder": "Ett värde per rad eller kommaseparerade",
     "preview": "{{count}} varianter kommer att skapas",
     "axisEmpty": "Ange ett axelnamn.",
     "submit": "Skapa",

@@ -134,7 +134,7 @@
     "axisLabel": "Axis name",
     "axisPlaceholder": "E.g. Size, Colour...",
     "valuesLabel": "Values",
-    "valuesPlaceholder": "One value per line",
+    "valuesPlaceholder": "One value per line or comma-separated",
     "preview": "{{count}} variants will be created",
     "axisEmpty": "Enter an axis name.",
     "submit": "Create",

@@ -83,7 +83,8 @@ export const BulkVariantCreator: React.FC<BulkVariantCreatorProps> = ({
   // When a locked axis exists its name is fixed; otherwise use the free-text input.
   const effectiveAxisName = lockedAxis ?? axisName;
 
-  const enteredValues = useMemo(() => rawValues.split('\n'), [rawValues]);
+  // Split on newlines and/or commas so admins can enter values either way.
+  const enteredValues = useMemo(() => rawValues.split(/[\n,]/), [rawValues]);
 
   const previewCount = useMemo(
     () => previewCreateCount(enteredValues, existingValuesForAxis),

@@ -134,7 +134,7 @@
     "axisLabel": "As-naam",
     "axisPlaceholder": "Bijv. Maat, Kleur...",
     "valuesLabel": "Waarden",
-    "valuesPlaceholder": "Eén waarde per regel",
+    "valuesPlaceholder": "Eén waarde per regel of gescheiden door komma's",
     "preview": "Er worden {{count}} varianten aangemaakt",
     "axisEmpty": "Vul een as-naam in.",
     "submit": "Aanmaken",
