@@ -127,6 +127,26 @@
     "stock_error": "Fel vid tillägg av lager",
     "stock_unknown_error": "Okänt fel"
   },
+  "bulkCreate": {
+    "triggerButton": "Massvarianter",
+    "title": "Skapa varianter i bulk",
+    "description": "Generera flera varianter för \"{{productName}}\" på en gång.",
+    "axisLabel": "Axelnamn",
+    "axisPlaceholder": "T.ex. Storlek, Färg...",
+    "valuesLabel": "Värden",
+    "valuesPlaceholder": "Ett värde per rad",
+    "preview": "{{count}} varianter kommer att skapas",
+    "axisEmpty": "Ange ett axelnamn.",
+    "submit": "Skapa",
+    "submitting": "Skapar...",
+    "cancel": "Avbryt",
+    "toast": {
+      "successTitle": "Varianter skapade",
+      "successDesc": "{{created}} skapade, {{skipped}} överhoppade.",
+      "errorTitle": "Fel vid skapande av varianter",
+      "unknownError": "Okänt fel"
+    }
+  },
   "validation": {
     "required": "{{field}} är obligatoriskt",
     "email": "Ange en giltig e-postadress",

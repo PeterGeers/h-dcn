@@ -127,6 +127,26 @@
     "stock_error": "Erreur lors de l'ajout du stock",
     "stock_unknown_error": "Erreur inconnue"
   },
+  "bulkCreate": {
+    "triggerButton": "Variantes en lot",
+    "title": "Créer des variantes en lot",
+    "description": "Générez plusieurs variantes pour \"{{productName}}\" en une seule fois.",
+    "axisLabel": "Nom de l'axe",
+    "axisPlaceholder": "Ex. Taille, Couleur...",
+    "valuesLabel": "Valeurs",
+    "valuesPlaceholder": "Une valeur par ligne",
+    "preview": "{{count}} variantes seront créées",
+    "axisEmpty": "Saisissez un nom d'axe.",
+    "submit": "Créer",
+    "submitting": "Création...",
+    "cancel": "Annuler",
+    "toast": {
+      "successTitle": "Variantes créées",
+      "successDesc": "{{created}} créées, {{skipped}} ignorées.",
+      "errorTitle": "Erreur lors de la création des variantes",
+      "unknownError": "Erreur inconnue"
+    }
+  },
   "validation": {
     "required": "{{field}} est requis",
     "email": "Entrez une adresse e-mail valide",

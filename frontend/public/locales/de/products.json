@@ -127,6 +127,26 @@
     "stock_error": "Fehler beim Hinzufügen des Bestands",
     "stock_unknown_error": "Unbekannter Fehler"
   },
+  "bulkCreate": {
+    "triggerButton": "Varianten en masse",
+    "title": "Varianten en masse erstellen",
+    "description": "Erstellen Sie mehrere Varianten für \"{{productName}}\" auf einmal.",
+    "axisLabel": "Achsenname",
+    "axisPlaceholder": "Z. B. Größe, Farbe...",
+    "valuesLabel": "Werte",
+    "valuesPlaceholder": "Ein Wert pro Zeile",
+    "preview": "Es werden {{count}} Varianten erstellt",
+    "axisEmpty": "Geben Sie einen Achsennamen ein.",
+    "submit": "Erstellen",
+    "submitting": "Wird erstellt...",
+    "cancel": "Abbrechen",
+    "toast": {
+      "successTitle": "Varianten erstellt",
+      "successDesc": "{{created}} erstellt, {{skipped}} übersprungen.",
+      "errorTitle": "Fehler beim Erstellen der Varianten",
+      "unknownError": "Unbekannter Fehler"
+    }
+  },
   "validation": {
     "required": "{{field}} ist erforderlich",
     "email": "Geben Sie eine gültige E-Mail-Adresse ein",

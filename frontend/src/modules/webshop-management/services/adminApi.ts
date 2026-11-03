@@ -118,12 +118,29 @@ export const deleteVariant = async (
   );
 };
 
+export interface BulkCreateVariantsBody {
+  axis_name: string;
+  values: string[];
+  prijs?: number | null;
+  stock?: number;
+  allow_oversell?: boolean;
+}
+
+export interface BulkCreateVariantsResult {
+  created: number;
+  skipped: string[];
+  default_variant_removed: boolean;
+}
+
 export const bulkCreateVariants = async (
-  productId: string
-): Promise<void> => {
-  await adminClient.post(
-    `/admin/products/${encodeURIComponent(productId)}/variants/bulk`
+  productId: string,
+  body: BulkCreateVariantsBody,
+): Promise<BulkCreateVariantsResult> => {
+  const res = await adminClient.post(
+    `/admin/products/${encodeURIComponent(productId)}/variants/bulk`,
+    body,
   );
+  return res.data;
 };
 
 // --- Stock Endpoints ---

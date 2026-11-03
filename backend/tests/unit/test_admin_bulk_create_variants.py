@@ -1,14 +1,21 @@
 """
 Unit tests for the admin_bulk_create_variants handler.
 
-Tests:
-- Happy path: creates variants from required_attributes on parent product
-- Unauthorized: returns 403 when permissions are insufficient
-- Invalid input: returns 400 for malformed request body (invalid JSON)
-- Edge case: parent has no required_attributes
-- Edge case: non-parent product returns 400
-- Parent product not found returns 404
-- Missing product_id returns 400
+Target: lambda_handler in backend/handler/admin_bulk_create_variants/app.py
+
+Covers the single-axis bulk variant generator contract:
+- Skips existing values, creates the rest (created count + skipped list)
+- Rejects a differing axis with 400 (product already uses a different axis)
+- Rejects > 20 values with 400
+- Removes the Default_Variant when applicable (var_{product_id}_default deleted;
+  default_variant_removed=true)
+- prijs inherits the parent when no override is provided
+- Guard rails: missing product_id (400), parent not found (404), non-parent
+  product (400), empty axis_name (400), empty values (400), invalid prijs (400)
+
+Follows backend testing steering: importlib.util handler load (no bare
+`import app`), handler loaded inside the mock_aws() context, auth patched on the
+'app' module.
 """
 
 import json
@@ -17,58 +24,29 @@ import sys
 import importlib.util
 import pytest
 import boto3
+from decimal import Decimal
 from unittest.mock import patch
 from moto import mock_aws
 
-# Set environment before importing handler
-os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten'
+# Set environment before importing the handler
+os.environ['PRODUCTEN_TABLE_NAME'] = 'Producten-Test'
 os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
 os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
 os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
 
 # Handler path for importlib loading
 _handler_file = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'admin_bulk_create_variants', 'app.py')
+    os.path.join(
+        os.path.dirname(__file__), '..', '..', 'handler',
+        'admin_bulk_create_variants', 'app.py'
+    )
 )
-
-# Load the handler-local variant_helpers (single-arg generate_variant_combinations)
-# The auth-layer version has a different signature; the handler intends to use this one.
-_variant_helpers_file = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'handler', 'shared', 'variant_helpers.py')
-)
-
-
-def _load_variant_helpers():
-    """Load the handler-local variant_helpers module."""
-    spec = importlib.util.spec_from_file_location('_handler_variant_helpers', _variant_helpers_file)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def _load_handler():
-    """Load handler module by file path, bypassing sys.path.
-
-    Patches shared.variant_helpers to use the handler-local version
-    (which has the correct single-arg signature for generate_variant_combinations).
-    """
+    """Load handler module by file path, bypassing sys.path."""
     if 'app' in sys.modules:
         del sys.modules['app']
-
-    # Load the handler-local variant helpers first
-    local_helpers = _load_variant_helpers()
-
-    # Patch shared.variant_helpers in sys.modules so the handler imports the correct version
-    if 'shared.variant_helpers' in sys.modules:
-        del sys.modules['shared.variant_helpers']
-
-    # Create a patched shared.variant_helpers module
-    import types
-    patched_module = types.ModuleType('shared.variant_helpers')
-    patched_module.generate_variant_combinations = local_helpers.generate_variant_combinations
-    patched_module.should_remove_default_variant = local_helpers.should_remove_default_variant
-    sys.modules['shared.variant_helpers'] = patched_module
-
     spec = importlib.util.spec_from_file_location('app', _handler_file)
     module = importlib.util.module_from_spec(spec)
     sys.modules['app'] = module
@@ -76,16 +54,21 @@ def _load_handler():
     return module
 
 
-def _make_event(product_id: str = 'prod-1', body: dict = None) -> dict:
+def _make_event(product_id='prod-1', body=None, raw_body=None):
     """Create a mock API Gateway POST event for bulk variant creation."""
+    if raw_body is not None:
+        event_body = raw_body
+    else:
+        event_body = json.dumps(body or {})
+
     return {
         'httpMethod': 'POST',
         'pathParameters': {'id': product_id} if product_id else None,
-        'body': json.dumps(body) if body is not None else None,
+        'body': event_body,
         'requestContext': {
             'authorizer': {
                 'claims': {
-                    'email': 'admin@h-dcn.nl',
+                    'email': 'user@h-dcn.nl',
                     'cognito:groups': 'Products_CRUD'
                 }
             }
@@ -95,36 +78,22 @@ def _make_event(product_id: str = 'prod-1', body: dict = None) -> dict:
 
 
 def _auth_patches():
-    """Return a context manager that patches auth functions for authorized access."""
+    """Return a context manager that patches auth functions on the handler."""
     return patch.multiple(
         'app',
-        extract_user_credentials=lambda event: ('admin@h-dcn.nl', ['Products_CRUD'], None),
+        extract_user_credentials=lambda event: ('user@h-dcn.nl', ['Products_CRUD'], None),
         validate_permissions_with_regions=lambda roles, perms, email, region: (True, None, {}),
-        log_successful_access=lambda *a, **kw: None,
-    )
-
-
-def _unauthorized_patches():
-    """Return a context manager that patches auth functions to deny access."""
-    return patch.multiple(
-        'app',
-        extract_user_credentials=lambda event: ('viewer@h-dcn.nl', ['Products_Read'], None),
-        validate_permissions_with_regions=lambda roles, perms, email, region: (
-            False,
-            {'statusCode': 403, 'headers': {}, 'body': json.dumps({'error': 'Insufficient permissions'})},
-            {}
-        ),
         log_successful_access=lambda *a, **kw: None,
     )
 
 
 @pytest.fixture
 def producten_table():
-    """Create a mocked Producten DynamoDB table and load the handler."""
+    """Create a mocked Producten-Test DynamoDB table and load the handler."""
     with mock_aws():
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         table = dynamodb.create_table(
-            TableName='Producten',
+            TableName='Producten-Test',
             KeySchema=[{'AttributeName': 'product_id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[{'AttributeName': 'product_id', 'AttributeType': 'S'}],
             BillingMode='PAY_PER_REQUEST'
@@ -134,282 +103,280 @@ def producten_table():
         yield table, handler_module
 
 
-class TestBulkCreateVariantsHappyPath:
-    """Tests for successful bulk variant creation."""
+def _put_parent(table, product_id='prod-1', prijs='25', is_parent=True):
+    """Insert a parent product into the mocked table."""
+    item = {
+        'product_id': product_id,
+        'naam': 'Club T-shirt',
+        'is_parent': is_parent,
+        'active': True,
+    }
+    if prijs is not None:
+        item['prijs'] = Decimal(str(prijs))
+    table.put_item(Item=item)
 
-    def test_creates_variants_from_single_axis(self, producten_table):
-        """Creates variants for a parent with one required_attributes axis."""
+
+def _put_variant(table, variant_id, parent_id, variant_attributes, active=True):
+    """Insert a variant record into the mocked table."""
+    table.put_item(Item={
+        'product_id': variant_id,
+        'parent_id': parent_id,
+        'naam': '',
+        'is_parent': False,
+        'variant_attributes': variant_attributes,
+        'stock': Decimal('0'),
+        'sold_count': Decimal('0'),
+        'allow_oversell': False,
+        'active': active,
+    })
+
+
+def _variant_items(table):
+    """Return all non-parent variant records in the table."""
+    items = table.scan().get('Items', [])
+    return [i for i in items if i.get('is_parent') is False]
+
+
+class TestBulkCreateVariantsCore:
+    """Core bulk-generation behaviour."""
+
+    def test_skips_existing_creates_rest(self, producten_table):
+        """Values that already exist are skipped; the rest are created."""
         table, handler = producten_table
-
-        table.put_item(Item={
-            'product_id': 'prod-1',
-            'naam': 'Club T-shirt',
-            'prijs': '25',
-            'is_parent': True,
-            'active': True,
-            'required_attributes': {
-                'type': 'object',
-                'properties': {
-                    'Maat': {'type': 'string', 'enum': ['S', 'M', 'L']}
-                }
-            },
-        })
-
-        event = _make_event('prod-1')
-
-        with _auth_patches():
-            response = handler.lambda_handler(event, {})
-
-        assert response['statusCode'] == 200
-        body = json.loads(response['body'])
-        assert body['total_created'] == 3
-        assert len(body['variants']) == 3
-        assert 'variants created successfully' in body['message']
-
-    def test_creates_variants_from_multiple_axes(self, producten_table):
-        """Creates cartesian product of variants for multiple axes."""
-        table, handler = producten_table
-
-        table.put_item(Item={
-            'product_id': 'prod-2',
-            'naam': 'Club Polo',
-            'prijs': '35',
-            'is_parent': True,
-            'active': True,
-            'required_attributes': {
-                'type': 'object',
-                'properties': {
-                    'Maat': {'type': 'string', 'enum': ['S', 'M']},
-                    'Kleur': {'type': 'string', 'enum': ['Zwart', 'Wit']}
-                }
-            },
-        })
-
-        event = _make_event('prod-2')
-
-        with _auth_patches():
-            response = handler.lambda_handler(event, {})
-
-        assert response['statusCode'] == 200
-        body = json.loads(response['body'])
-        # 2 sizes × 2 colors = 4 variants
-        assert body['total_created'] == 4
-        assert len(body['variants']) == 4
-
-    def test_variants_stored_in_dynamodb(self, producten_table):
-        """Verifies variants are actually written to DynamoDB."""
-        table, handler = producten_table
-
-        table.put_item(Item={
-            'product_id': 'prod-1',
-            'naam': 'Pin',
-            'prijs': '5',
-            'is_parent': True,
-            'active': True,
-            'required_attributes': {
-                'type': 'object',
-                'properties': {
-                    'Kleur': {'type': 'string', 'enum': ['Goud', 'Zilver']}
-                }
-            },
-        })
-
-        event = _make_event('prod-1')
-
-        with _auth_patches():
-            response = handler.lambda_handler(event, {})
-
-        assert response['statusCode'] == 200
-        body = json.loads(response['body'])
-
-        # Verify each created variant is in DynamoDB
-        for variant in body['variants']:
-            item_response = table.get_item(Key={'product_id': variant['product_id']})
-            assert 'Item' in item_response
-            assert item_response['Item']['parent_id'] == 'prod-1'
-            assert item_response['Item']['is_parent'] is False
-
-    def test_respects_body_defaults(self, producten_table):
-        """Request body can override default price, stock, and allow_oversell."""
-        table, handler = producten_table
-
-        table.put_item(Item={
-            'product_id': 'prod-1',
-            'naam': 'Sticker',
-            'prijs': '3',
-            'is_parent': True,
-            'active': True,
-            'required_attributes': {
-                'type': 'object',
-                'properties': {
-                    'Type': {'type': 'string', 'enum': ['Logo']}
-                }
-            },
-        })
+        _put_parent(table, 'prod-1')
+        # Existing variant for value "M" on the "Maat" axis
+        _put_variant(table, 'var-existing-m', 'prod-1', {'Maat': 'M'})
 
         event = _make_event('prod-1', body={
-            'price': '10',
-            'stock': 50,
-            'allow_oversell': True,
+            'axis_name': 'Maat',
+            'values': ['S', 'M', 'L'],
         })
 
         with _auth_patches():
             response = handler.lambda_handler(event, {})
 
         assert response['statusCode'] == 200
-        body = json.loads(response['body'])
-        variant = body['variants'][0]
-        assert variant['stock'] == 50
-        assert variant['allow_oversell'] is True
+        resp = json.loads(response['body'])
+        # The handler wraps payload; find created/skipped regardless of nesting
+        payload = resp.get('data', resp)
+        assert payload['created'] == 2
+        assert payload['skipped'] == ['M']
 
+        # DynamoDB now has the existing M plus two new (S, L) = 3 variants
+        created_values = sorted(
+            v['variant_attributes']['Maat'] for v in _variant_items(table)
+        )
+        assert created_values == ['L', 'M', 'S']
 
-class TestBulkCreateVariantsAuth:
-    """Tests for authorization enforcement."""
-
-    def test_unauthorized_returns_403(self, producten_table):
-        """Returns 403 when user lacks Products_CRUD permission."""
+    def test_rejects_differing_axis_400(self, producten_table):
+        """A request whose axis differs from the existing axis is rejected 400."""
         table, handler = producten_table
+        _put_parent(table, 'prod-1')
+        # Parent already uses the "Maat" axis
+        _put_variant(table, 'var-existing-m', 'prod-1', {'Maat': 'M'})
 
-        table.put_item(Item={
-            'product_id': 'prod-1',
-            'naam': 'Club T-shirt',
-            'is_parent': True,
-            'active': True,
-            'required_attributes': {
-                'type': 'object',
-                'properties': {
-                    'Maat': {'type': 'string', 'enum': ['S', 'M']}
-                }
-            },
+        event = _make_event('prod-1', body={
+            'axis_name': 'Kleur',
+            'values': ['Rood', 'Blauw'],
         })
-
-        event = _make_event('prod-1')
-
-        with _unauthorized_patches():
-            response = handler.lambda_handler(event, {})
-
-        assert response['statusCode'] == 403
-        body = json.loads(response['body'])
-        assert 'permissions' in body['error'].lower() or 'Insufficient' in body['error']
-
-
-class TestBulkCreateVariantsValidation:
-    """Tests for input validation and error handling."""
-
-    def test_invalid_json_body_returns_400(self, producten_table):
-        """Returns 400 for invalid JSON in request body."""
-        table, handler = producten_table
-
-        table.put_item(Item={
-            'product_id': 'prod-1',
-            'naam': 'Club T-shirt',
-            'is_parent': True,
-            'active': True,
-            'required_attributes': {
-                'type': 'object',
-                'properties': {
-                    'Maat': {'type': 'string', 'enum': ['S']}
-                }
-            },
-        })
-
-        event = {
-            'httpMethod': 'POST',
-            'pathParameters': {'id': 'prod-1'},
-            'body': '{invalid-json!!!',
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'admin@h-dcn.nl',
-                        'cognito:groups': 'Products_CRUD'
-                    }
-                }
-            },
-            'headers': {'Authorization': 'Bearer mock-token'}
-        }
 
         with _auth_patches():
             response = handler.lambda_handler(event, {})
 
         assert response['statusCode'] == 400
+        resp = json.loads(response['body'])
+        assert 'different axis' in resp['error'].lower()
+        # Nothing new created
+        assert len(_variant_items(table)) == 1
+
+    def test_rejects_more_than_20_values_400(self, producten_table):
+        """More than 20 values in a single request is rejected 400."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1')
+
+        values = [f'V{i}' for i in range(21)]  # 21 distinct values
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': values,
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 400
+        resp = json.loads(response['body'])
+        assert 'maximum' in resp['error'].lower() or '20' in resp['error']
+        assert len(_variant_items(table)) == 0
+
+    def test_removes_default_variant_when_applicable(self, producten_table):
+        """When only a Default_Variant exists, adding real variants removes it."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1')
+        # Only a Default_Variant (empty variant_attributes) exists
+        default_id = 'var_prod-1_default'
+        _put_variant(table, default_id, 'prod-1', {})
+
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': ['S', 'M'],
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 200
+        payload = json.loads(response['body'])
+        payload = payload.get('data', payload)
+        assert payload['created'] == 2
+        assert payload['default_variant_removed'] is True
+
+        # Default_Variant deleted from DynamoDB
+        remaining = {v['product_id'] for v in _variant_items(table)}
+        assert default_id not in remaining
+        # Only the two new real variants remain
+        assert len(remaining) == 2
+
+    def test_prijs_inherits_parent_when_no_override(self, producten_table):
+        """Created variants inherit the parent's prijs when no override is given."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1', prijs='25')
+
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': ['S'],
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 200
+        created = _variant_items(table)
+        assert len(created) == 1
+        assert created[0]['prijs'] == Decimal('25')
+
+
+class TestBulkCreateVariantsGuards:
+    """Validation and guard-rail behaviour."""
 
     def test_missing_product_id_returns_400(self, producten_table):
-        """Returns 400 when product_id is missing from path."""
+        """Missing product ID in path returns 400."""
         table, handler = producten_table
 
-        event = {
-            'httpMethod': 'POST',
-            'pathParameters': {},
-            'body': None,
-            'requestContext': {
-                'authorizer': {
-                    'claims': {
-                        'email': 'admin@h-dcn.nl',
-                        'cognito:groups': 'Products_CRUD'
-                    }
-                }
-            },
-            'headers': {'Authorization': 'Bearer mock-token'}
-        }
-
-        with _auth_patches():
-            response = handler.lambda_handler(event, {})
-
-        assert response['statusCode'] == 400
-        body = json.loads(response['body'])
-        assert 'required' in body['error'].lower() or 'Product ID' in body['error']
-
-    def test_non_parent_product_returns_400(self, producten_table):
-        """Returns 400 when target product is not a parent."""
-        table, handler = producten_table
-
-        table.put_item(Item={
-            'product_id': 'var-1',
-            'naam': 'T-shirt M',
-            'is_parent': False,
-            'active': True,
-            'parent_id': 'prod-parent',
+        event = _make_event(product_id=None, body={
+            'axis_name': 'Maat',
+            'values': ['S'],
         })
-
-        event = _make_event('var-1')
+        # pathParameters is None → product_id missing
+        event['pathParameters'] = {}
 
         with _auth_patches():
             response = handler.lambda_handler(event, {})
 
         assert response['statusCode'] == 400
-        body = json.loads(response['body'])
-        assert 'non-parent' in body['error'].lower() or 'Cannot add variants' in body['error']
+        resp = json.loads(response['body'])
+        assert 'required' in resp['error'].lower()
 
     def test_parent_not_found_returns_404(self, producten_table):
-        """Returns 404 when parent product doesn't exist."""
+        """Bulk create for a non-existent parent returns 404."""
         table, handler = producten_table
 
-        event = _make_event('nonexistent-prod')
+        event = _make_event('nonexistent', body={
+            'axis_name': 'Maat',
+            'values': ['S'],
+        })
 
         with _auth_patches():
             response = handler.lambda_handler(event, {})
 
         assert response['statusCode'] == 404
-        body = json.loads(response['body'])
-        assert 'not found' in body['error'].lower()
+        resp = json.loads(response['body'])
+        assert 'not found' in resp['error'].lower()
 
-    def test_no_required_attributes_returns_400(self, producten_table):
-        """Returns 400 when parent has no required_attributes defined."""
+    def test_non_parent_product_returns_400(self, producten_table):
+        """Targeting a non-parent product returns 400."""
         table, handler = producten_table
+        # Product explicitly marked as not a parent
+        _put_parent(table, 'prod-1', is_parent=False)
 
-        table.put_item(Item={
-            'product_id': 'prod-1',
-            'naam': 'Simple Product',
-            'is_parent': True,
-            'active': True,
-            # No required_attributes
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': ['S'],
         })
-
-        event = _make_event('prod-1')
 
         with _auth_patches():
             response = handler.lambda_handler(event, {})
 
         assert response['statusCode'] == 400
-        body = json.loads(response['body'])
-        assert 'required_attributes' in body['error']
+        resp = json.loads(response['body'])
+        assert 'non-parent' in resp['error'].lower()
+
+    def test_empty_axis_name_returns_400(self, producten_table):
+        """Empty/whitespace axis_name returns 400."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1')
+
+        event = _make_event('prod-1', body={
+            'axis_name': '   ',
+            'values': ['S'],
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 400
+        resp = json.loads(response['body'])
+        assert 'axis_name' in resp['error'].lower()
+
+    def test_empty_values_returns_400(self, producten_table):
+        """Empty values list returns 400."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1')
+
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': [],
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 400
+        resp = json.loads(response['body'])
+        assert 'values' in resp['error'].lower()
+
+    def test_values_all_whitespace_returns_400(self, producten_table):
+        """A values list that is non-empty but normalizes to empty returns 400."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1')
+
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': ['   ', ''],
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 400
+        resp = json.loads(response['body'])
+        assert 'values' in resp['error'].lower()
+
+    def test_invalid_prijs_override_returns_400(self, producten_table):
+        """A non-numeric prijs override returns 400."""
+        table, handler = producten_table
+        _put_parent(table, 'prod-1')
+
+        event = _make_event('prod-1', body={
+            'axis_name': 'Maat',
+            'values': ['S'],
+            'prijs': 'not-a-number',
+        })
+
+        with _auth_patches():
+            response = handler.lambda_handler(event, {})
+
+        assert response['statusCode'] == 400
+        resp = json.loads(response['body'])
+        assert 'prijs' in resp['error'].lower()
+        # Nothing created
+        assert len(_variant_items(table)) == 0

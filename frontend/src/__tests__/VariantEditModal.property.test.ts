@@ -116,23 +116,23 @@ describe('determineFormMode property tests', () => {
   });
 
   /**
-   * Property 3b: Distinct axes >= 1 and < MAX_AXES → 'under-max'
+   * Property 3b: Exactly one distinct axis → 'at-max'
    *
-   * When the number of distinct axis names across all variant_attributes
-   * is at least 1 but less than MAX_AXES, the form mode must be 'under-max'.
+   * With MAX_AXES = 1, a single distinct axis name across all variant_attributes
+   * already reaches the maximum, so the form mode must be 'at-max'. There is no
+   * 'under-max' range because [1, MAX_AXES) is empty when MAX_AXES = 1.
    */
-  describe("Property 3b: 1 to MAX_AXES-1 distinct axes returns 'under-max'", () => {
-    it("returns 'under-max' when distinct axis count is in [1, MAX_AXES)", () => {
-      // Generate exactly 1 axis name (since MAX_AXES = 2, only 1 qualifies for under-max)
+  describe("Property 3b: exactly one distinct axis returns 'at-max' (MAX_AXES=1)", () => {
+    it("returns 'at-max' when exactly one distinct axis exists", () => {
       fc.assert(
         fc.property(
-          fc.uniqueArray(axisNameArb, { minLength: 1, maxLength: MAX_AXES - 1 }).chain(
+          fc.uniqueArray(axisNameArb, { minLength: 1, maxLength: 1 }).chain(
             (axisNames) =>
               fc.array(adminVariantWithAxes(axisNames), { minLength: 1, maxLength: 8 }),
           ),
           (variants) => {
             const result = determineFormMode(variants);
-            expect(result).toBe('under-max');
+            expect(result).toBe('at-max');
           },
         ),
         { numRuns: NUM_RUNS },
