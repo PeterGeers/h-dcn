@@ -11,6 +11,10 @@
     "group": "Groep",
     "subgroup": "Subgroep",
     "price": "Prijs",
+    "filter_name": "Filter op naam",
+    "filter_group": "Filter op groep",
+    "filter_subgroup": "Filter op subgroep",
+    "thumbnail_alt": "Productafbeelding",
     "options": "Opties",
     "actions": "Acties"
   },
