@@ -69,7 +69,12 @@ export const BulkVariantCreator: React.FC<BulkVariantCreatorProps> = ({
 
   const axisNames = useMemo(() => Object.keys(derivedAxes), [derivedAxes]);
   const lockedAxis = axisNames.length === 1 ? axisNames[0] : null;
-  const existingValuesForAxis = lockedAxis ? derivedAxes[lockedAxis] : [];
+  // Wrapped in useMemo so the array reference is stable across renders;
+  // it feeds the previewCount useMemo dependency array below.
+  const existingValuesForAxis = useMemo(
+    () => (lockedAxis ? derivedAxes[lockedAxis] : []),
+    [lockedAxis, derivedAxes]
+  );
 
   const [axisName, setAxisName] = useState('');
   const [rawValues, setRawValues] = useState('');
