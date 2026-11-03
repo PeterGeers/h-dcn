@@ -22,7 +22,7 @@ const translationMap: Record<string, string> = {
   'bulkCreate.axisLabel': 'As-naam',
   'bulkCreate.axisPlaceholder': 'Bijv. Maat, Kleur...',
   'bulkCreate.valuesLabel': 'Waarden',
-  'bulkCreate.valuesPlaceholder': 'Eén waarde per regel',
+  'bulkCreate.valuesPlaceholder': "Eén waarde per regel of gescheiden door komma's",
   'bulkCreate.preview': 'Er worden {{count}} varianten aangemaakt',
   'bulkCreate.axisEmpty': 'As-naam is verplicht',
   'bulkCreate.cancel': 'Annuleren',
@@ -214,7 +214,7 @@ describe('BulkVariantCreator', () => {
       openModal({ ...defaultProps, existingVariants: [] });
 
       // Enter values but leave the axis empty.
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       fireEvent.change(valuesInput, { target: { value: 'S\nM\nL' } });
 
       expect(screen.getByText('Aanmaken')).toBeDisabled();
@@ -227,7 +227,7 @@ describe('BulkVariantCreator', () => {
       fireEvent.change(axisInput, { target: { value: 'Maat' } });
 
       // Only whitespace / empty lines -> normalizes to zero values.
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       fireEvent.change(valuesInput, { target: { value: '   \n\n  ' } });
 
       expect(screen.getByText('Aanmaken')).toBeDisabled();
@@ -239,7 +239,7 @@ describe('BulkVariantCreator', () => {
       const axisInput = screen.getByPlaceholderText('Bijv. Maat, Kleur...');
       fireEvent.change(axisInput, { target: { value: 'Maat' } });
 
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       fireEvent.change(valuesInput, { target: { value: 'S' } });
 
       expect(screen.getByText('Aanmaken')).not.toBeDisabled();
@@ -254,7 +254,7 @@ describe('BulkVariantCreator', () => {
       fireEvent.change(axisInput, { target: { value: '  Maat  ' } });
 
       // Includes whitespace, blank lines, and a duplicate.
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       fireEvent.change(valuesInput, {
         target: { value: ' S \nM\n\nS\n  L  ' },
       });
@@ -271,11 +271,36 @@ describe('BulkVariantCreator', () => {
       });
     });
 
+    it('accepts comma-separated values (split on commas and newlines)', async () => {
+      openModal({ ...defaultProps, existingVariants: [] });
+
+      fireEvent.change(screen.getByPlaceholderText('Bijv. Maat, Kleur...'), {
+        target: { value: 'Maat' },
+      });
+
+      // Mixed comma + newline input with spaces and a duplicate.
+      fireEvent.change(
+        screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's"),
+        { target: { value: 'S, M , L\nXL, S' } }
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Aanmaken'));
+      });
+
+      await waitFor(() => {
+        expect(mockBulkCreateVariants).toHaveBeenCalledWith('prod_123', {
+          axis_name: 'Maat',
+          values: ['S', 'M', 'L', 'XL'],
+        });
+      });
+    });
+
     it('posts the locked axis name when one axis already exists', async () => {
       const existingVariants = [createMockVariant({ Kleur: 'Rood' })];
       openModal({ ...defaultProps, existingVariants });
 
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       fireEvent.change(valuesInput, { target: { value: 'Blauw\nGroen' } });
 
       await act(async () => {
@@ -297,7 +322,7 @@ describe('BulkVariantCreator', () => {
       fireEvent.change(screen.getByPlaceholderText('Bijv. Maat, Kleur...'), {
         target: { value: 'Maat' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Eén waarde per regel'), {
+      fireEvent.change(screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's"), {
         target: { value: 'S\nM' },
       });
 
@@ -315,7 +340,7 @@ describe('BulkVariantCreator', () => {
     it('shows the count of distinct values that would be created', () => {
       openModal({ ...defaultProps, existingVariants: [] });
 
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       // 3 distinct values after normalization (S duplicated, blank ignored).
       fireEvent.change(valuesInput, { target: { value: 'S\nM\nS\n\nL' } });
 
@@ -331,7 +356,7 @@ describe('BulkVariantCreator', () => {
       ];
       openModal({ ...defaultProps, existingVariants });
 
-      const valuesInput = screen.getByPlaceholderText('Eén waarde per regel');
+      const valuesInput = screen.getByPlaceholderText("Eén waarde per regel of gescheiden door komma's");
       // S and M already exist; only L and XL are new -> 2.
       fireEvent.change(valuesInput, { target: { value: 'S\nM\nL\nXL' } });
 

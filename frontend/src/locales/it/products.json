@@ -134,7 +134,7 @@
     "axisLabel": "Nome dell'asse",
     "axisPlaceholder": "Es. Taglia, Colore...",
     "valuesLabel": "Valori",
-    "valuesPlaceholder": "Un valore per riga",
+    "valuesPlaceholder": "Un valore per riga o separati da virgole",
     "preview": "Verranno create {{count}} varianti",
     "axisEmpty": "Inserisci un nome dell'asse.",
     "submit": "Crea",

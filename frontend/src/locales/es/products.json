@@ -134,7 +134,7 @@
     "axisLabel": "Nombre del eje",
     "axisPlaceholder": "Ej. Talla, Color...",
     "valuesLabel": "Valores",
-    "valuesPlaceholder": "Un valor por línea",
+    "valuesPlaceholder": "Un valor por línea o separados por comas",
     "preview": "Se crearán {{count}} variantes",
     "axisEmpty": "Introduce un nombre de eje.",
     "submit": "Crear",

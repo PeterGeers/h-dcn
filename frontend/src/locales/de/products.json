@@ -134,7 +134,7 @@
     "axisLabel": "Achsenname",
     "axisPlaceholder": "Z. B. Größe, Farbe...",
     "valuesLabel": "Werte",
-    "valuesPlaceholder": "Ein Wert pro Zeile",
+    "valuesPlaceholder": "Ein Wert pro Zeile oder durch Kommas getrennt",
     "preview": "Es werden {{count}} Varianten erstellt",
     "axisEmpty": "Geben Sie einen Achsennamen ein.",
     "submit": "Erstellen",
