@@ -127,6 +127,26 @@
     "stock_error": "Error al añadir stock",
     "stock_unknown_error": "Error desconocido"
   },
+  "bulkCreate": {
+    "triggerButton": "Variantes en lote",
+    "title": "Crear variantes en lote",
+    "description": "Genera varias variantes para \"{{productName}}\" de una sola vez.",
+    "axisLabel": "Nombre del eje",
+    "axisPlaceholder": "Ej. Talla, Color...",
+    "valuesLabel": "Valores",
+    "valuesPlaceholder": "Un valor por línea",
+    "preview": "Se crearán {{count}} variantes",
+    "axisEmpty": "Introduce un nombre de eje.",
+    "submit": "Crear",
+    "submitting": "Creando...",
+    "cancel": "Cancelar",
+    "toast": {
+      "successTitle": "Variantes creadas",
+      "successDesc": "{{created}} creadas, {{skipped}} omitidas.",
+      "errorTitle": "Error al crear variantes",
+      "unknownError": "Error desconocido"
+    }
+  },
   "validation": {
     "required": "{{field}} es obligatorio",
     "email": "Introduce una dirección de correo electrónico válida",

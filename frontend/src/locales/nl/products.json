@@ -127,6 +127,26 @@
     "stock_error": "Fout bij toevoegen voorraad",
     "stock_unknown_error": "Onbekende fout"
   },
+  "bulkCreate": {
+    "triggerButton": "Bulk varianten",
+    "title": "Varianten in bulk aanmaken",
+    "description": "Genereer in één keer meerdere varianten voor \"{{productName}}\".",
+    "axisLabel": "As-naam",
+    "axisPlaceholder": "Bijv. Maat, Kleur...",
+    "valuesLabel": "Waarden",
+    "valuesPlaceholder": "Eén waarde per regel",
+    "preview": "Er worden {{count}} varianten aangemaakt",
+    "axisEmpty": "Vul een as-naam in.",
+    "submit": "Aanmaken",
+    "submitting": "Aanmaken...",
+    "cancel": "Annuleren",
+    "toast": {
+      "successTitle": "Varianten aangemaakt",
+      "successDesc": "{{created}} aangemaakt, {{skipped}} overgeslagen.",
+      "errorTitle": "Fout bij aanmaken varianten",
+      "unknownError": "Onbekende fout"
+    }
+  },
   "validation": {
     "required": "{{field}} is verplicht",
     "email": "Voer een geldig emailadres in",

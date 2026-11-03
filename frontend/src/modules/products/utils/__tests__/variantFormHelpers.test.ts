@@ -28,26 +28,19 @@ describe('determineFormMode', () => {
     expect(determineFormMode(variants)).toBe('zero-axes');
   });
 
-  it('returns "under-max" when 1 distinct axis exists (MAX_AXES=2)', () => {
+  it('returns "at-max" when 1 distinct axis exists (MAX_AXES=1)', () => {
     const variants = [
       makeVariant({ Maat: 'S' }),
       makeVariant({ Maat: 'M' }),
     ];
-    expect(determineFormMode(variants)).toBe('under-max');
-  });
-
-  it('returns "at-max" when MAX_AXES (2) distinct axes exist', () => {
-    const variants = [
-      makeVariant({ Maat: 'S', Kleur: 'Rood' }),
-      makeVariant({ Maat: 'M', Kleur: 'Blauw' }),
-    ];
     expect(determineFormMode(variants)).toBe('at-max');
   });
 
-  it('returns "at-max" when more than MAX_AXES axes exist', () => {
-    // Edge case: somehow 3 axes exist (shouldn't happen but function handles it)
+  it('returns "at-max" when more than MAX_AXES (1) axes exist', () => {
+    // Edge case: somehow 2 axes exist (shouldn't happen but function handles it)
     const variants = [
-      makeVariant({ Maat: 'S', Kleur: 'Rood', Stof: 'Katoen' }),
+      makeVariant({ Maat: 'S', Kleur: 'Rood' }),
+      makeVariant({ Maat: 'M', Kleur: 'Blauw' }),
     ];
     expect(determineFormMode(variants)).toBe('at-max');
   });

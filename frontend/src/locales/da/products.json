@@ -127,6 +127,26 @@
     "stock_error": "Fejl ved tilføjelse af lager",
     "stock_unknown_error": "Ukendt fejl"
   },
+  "bulkCreate": {
+    "triggerButton": "Masse-varianter",
+    "title": "Opret varianter i massevis",
+    "description": "Generer flere varianter til \"{{productName}}\" på én gang.",
+    "axisLabel": "Aksenavn",
+    "axisPlaceholder": "F.eks. Størrelse, Farve...",
+    "valuesLabel": "Værdier",
+    "valuesPlaceholder": "Én værdi pr. linje",
+    "preview": "Der oprettes {{count}} varianter",
+    "axisEmpty": "Indtast et aksenavn.",
+    "submit": "Opret",
+    "submitting": "Opretter...",
+    "cancel": "Annuller",
+    "toast": {
+      "successTitle": "Varianter oprettet",
+      "successDesc": "{{created}} oprettet, {{skipped}} sprunget over.",
+      "errorTitle": "Fejl ved oprettelse af varianter",
+      "unknownError": "Ukendt fejl"
+    }
+  },
   "validation": {
     "required": "{{field}} er påkrævet",
     "email": "Indtast en gyldig e-mailadresse",
