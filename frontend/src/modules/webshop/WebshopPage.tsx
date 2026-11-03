@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Box, Container, useToast, Spinner, Center, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
+import { Box, Container, useToast, Spinner, Center, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import ProductTable from './components/ProductTable';
 import ProductCard from './components/ProductCard';
@@ -11,8 +11,6 @@ import WebshopHeader from './components/WebshopHeader';
 import WebshopOrderSuccessOverlay from './components/WebshopOrderSuccessOverlay';
 import { FunctionGuard } from '../../components/common/FunctionGuard';
 import { productService } from './services/api';
-import { FilterPanel } from '../../components/filters';
-import type { FilterConfig } from '../../components/filters';
 import { useWebshopCart } from './hooks/useWebshopCart';
 import { useWebshopUser } from './hooks/useWebshopUser';
 import { usePaymentSuccess } from './hooks/usePaymentSuccess';
@@ -72,8 +70,6 @@ function WebshopPage({ user }: WebshopPageProps) {
 
   // UI state
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedGroep, setSelectedGroep] = useState<string>('');
-  const [selectedSubgroep, setSelectedSubgroep] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductCardOpen, setIsProductCardOpen] = useState<boolean>(false);
   const [isDraftOrderModalOpen, setIsDraftOrderModalOpen] = useState<boolean>(false);
@@ -151,32 +147,12 @@ function WebshopPage({ user }: WebshopPageProps) {
     }
   }, [toast, t]);
 
-  const { groepOptions, subgroepOptions } = useMemo(() => {
-    const groups = new Set<string>();
-    const subgroups = new Set<string>();
-    products.forEach(p => {
-      if (p.groep) groups.add(p.groep);
-      if (p.subgroep && (!selectedGroep || p.groep === selectedGroep)) {
-        subgroups.add(p.subgroep);
-      }
-    });
-    return {
-      groepOptions: Array.from(groups).sort().map(g => ({ value: g, label: g })),
-      subgroepOptions: Array.from(subgroups).sort().map(s => ({ value: s, label: s })),
-    };
-  }, [products, selectedGroep]);
-
-  const filteredProducts = useMemo(() => {
-    let filtered = products;
-    if (selectedGroep) {
-      filtered = filtered.filter(p => p.groep === selectedGroep);
-    }
-    if (selectedSubgroep) {
-      filtered = filtered.filter(p => p.subgroep === selectedSubgroep);
-    }
-    filtered = filtered.filter(p => p.active !== false);
-    return filtered;
-  }, [products, selectedGroep, selectedSubgroep]);
+  // Only active products reach the table. Strict comparison per DynamoDB field
+  // safety rules: a missing/undefined `active` flag is treated as active.
+  const activeProducts = useMemo(
+    () => products.filter(p => p.active !== false),
+    [products],
+  );
 
   useEffect(() => {
     loadProducts();
@@ -286,43 +262,15 @@ function WebshopPage({ user }: WebshopPageProps) {
               <OrdersAdmin />
             </FunctionGuard>
           ) : (
-            <Stack direction={{ base: 'column', lg: 'row' }} spacing={6}>
-              <Box w={{ base: 'full', lg: '300px' }}>
-                <FilterPanel
-                  layout="vertical"
-                  filters={[
-                    {
-                      type: 'single' as const,
-                      label: t('filter.group', 'Groep'),
-                      options: groepOptions,
-                      value: selectedGroep,
-                      onChange: (v: string | string[]) => { setSelectedGroep(v as string); setSelectedSubgroep(''); },
-                      placeholder: t('filter.all_groups', 'Alle groepen'),
-                    },
-                    ...(subgroepOptions.length > 0
-                      ? [{
-                          type: 'single' as const,
-                          label: t('filter.subgroup', 'Subgroep'),
-                          options: subgroepOptions,
-                          value: selectedSubgroep,
-                          onChange: (v: string | string[]) => setSelectedSubgroep(v as string),
-                          placeholder: t('filter.all_subgroups', 'Alle subgroepen'),
-                        }]
-                      : []),
-                  ] as FilterConfig<any>[]}
-                />
-              </Box>
-
-              <Box flex={1}>
-                <ProductTable
-                  products={filteredProducts}
-                  onProductSelect={(product: Product) => {
-                    setSelectedProduct(product);
-                    setIsProductCardOpen(true);
-                  }}
-                />
-              </Box>
-            </Stack>
+            <Box w="full">
+              <ProductTable
+                products={activeProducts}
+                onProductSelect={(product: Product) => {
+                  setSelectedProduct(product);
+                  setIsProductCardOpen(true);
+                }}
+              />
+            </Box>
           )}
         </Container>
 

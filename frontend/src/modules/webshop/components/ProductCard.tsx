@@ -24,6 +24,7 @@ import { formatPrice } from '../../../utils/formatPrice';
 import VariantSelector from '../../../components/VariantSelector';
 import PurchaseRulesFeedback from './PurchaseRulesFeedback';
 import { productService } from '../services/api';
+import { normalizeProductImages } from '../../../utils/productImage';
 import {
   VariantRecord,
   PurchaseRules,
@@ -136,35 +137,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const hasVariantAxes =
     variants.some((v) => Object.keys(v.variant_attributes || {}).length > 0);
 
-  // Handle both 'image' and 'images' properties from API
-  let images: string[] = [];
-  const imageData = product.images || product.image;
-
-  if (imageData) {
-    if (Array.isArray(imageData)) {
-      images = imageData;
-    } else if (typeof imageData === 'string') {
-      images = [imageData];
-    }
-  }
-
-  // Fix image URLs if they're incomplete or use them as-is if complete
-  images = images
-    .map((img) => {
-      if (typeof img === 'string') {
-        if (img.startsWith('https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com')) {
-          return img;
-        }
-        if (img.startsWith('https://my-hdcn-bucke')) {
-          return img.replace(
-            'https://my-hdcn-bucke',
-            'https://my-hdcn-bucket.s3.eu-west-1.amazonaws.com'
-          );
-        }
-      }
-      return img;
-    })
-    .filter((img) => img && typeof img === 'string');
+  // Normalize product images via the shared helper (handles 'image'/'images',
+  // string vs array, and the bucket URL fix) — identical to the previous inline logic.
+  const images: string[] = normalizeProductImages(product);
 
   // Check if selected variant is out of stock
   const isOutOfStock = selectedVariant

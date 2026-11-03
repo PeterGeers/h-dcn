@@ -11,6 +11,10 @@
     "group": "Groupe",
     "subgroup": "Sous-groupe",
     "price": "Prix",
+    "filter_name": "Filtrer par nom",
+    "filter_group": "Filtrer par groupe",
+    "filter_subgroup": "Filtrer par sous-groupe",
+    "thumbnail_alt": "Image du produit",
     "options": "Options",
     "actions": "Actions"
   },
