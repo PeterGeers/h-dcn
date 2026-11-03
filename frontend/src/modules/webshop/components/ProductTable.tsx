@@ -175,12 +175,14 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }
               >
                 {/* Thumbnail cell: render the image only when a usable URL
                     exists; otherwise an empty cell (no broken-image icon). */}
-                <Td>
+                <Td w="56px" minW="56px">
                   {imageUrl && (
                     <Image
                       src={imageUrl}
                       alt={displayName || t('table.thumbnail_alt')}
                       boxSize="48px"
+                      minW="48px"
+                      flexShrink={0}
                       objectFit="cover"
                       borderRadius="md"
                     />
