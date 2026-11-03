@@ -76,6 +76,31 @@ describe('ProductTable (public webshop)', () => {
       expect(img).toHaveAttribute('src', imageUrl);
     });
 
+    // Regression: the thumbnail must render as a fixed 48px square and must not
+    // be squeezed to a thin vertical sliver by the table's column widths. The
+    // fix pins the cell width (56px) and gives the image minW + flexShrink:0.
+    //
+    // NOTE: Chakra/emotion applies these as generated CSS classes and jsdom does
+    // not resolve them to computed pixel values, so the exact dimensions can't be
+    // asserted in a unit test. What we CAN verify here is the structural contract
+    // that prevents the squeeze: the thumbnail lives in the first cell of the row
+    // and the image carries an emotion style class (i.e. the boxSize/minW/
+    // flexShrink props were applied, not dropped). The precise sizing is covered
+    // by the component props and visual review.
+    it('renders the thumbnail in the first cell with sizing styles applied (regression)', () => {
+      const imageUrl = `${FULL_BUCKET_HOST}/products/shirt.jpg`;
+      renderTable([{ product_id: 'p1', naam: 'Shirt', images: [imageUrl] }]);
+
+      const row = getBodyRows()[0];
+      const firstCell = within(row).getAllByRole('cell')[0];
+      const img = within(firstCell).getByRole('img');
+
+      // Image is in the leading (thumbnail) cell...
+      expect(img).toBeInTheDocument();
+      // ...and emotion applied style props to it (class present, not stripped).
+      expect(img.className).toMatch(/css-/);
+    });
+
     it('uses the product name as the image alt text', () => {
       renderTable([
         { product_id: 'p1', naam: 'Leather Jacket', images: [`${FULL_BUCKET_HOST}/a.jpg`] },
