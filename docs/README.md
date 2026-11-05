@@ -11,7 +11,7 @@ The H-DCN Dashboard is a modern web application built with React frontend and AW
 - **Passwordless Authentication** - Passkey/WebAuthn and Google OAuth integration
 - **Mobile-First Responsive Design** - Optimized for all devices
 - **Role-Based Access Control** - 12 distinct user roles with granular permissions
-- **E-commerce Integration** - Webshop with Stripe payments
+- **E-commerce Integration** - Webshop with Mollie payments (iDEAL, creditcard, bank transfer)
 - **Member Management** - Complete CRUD operations with bulk import
 - **Event Management** - Club events and participation tracking
 - **PresMeet** - Meeting management for club meetings (attendance, reports, payments)
@@ -48,7 +48,7 @@ The product and variant structure was unified in March 2026 to streamline websho
 - **State Management**: React Context
 - **Routing**: React Router v6
 - **Forms**: Formik + Yup validation
-- **Payments**: Stripe integration
+- **Payments**: Mollie integration (iDEAL, creditcard, bank transfer)
 - **PDF Generation**: jsPDF + html2canvas
 
 ### Backend (AWS Serverless)
@@ -278,15 +278,25 @@ sam deploy
 - [Secrets Management](security/secrets-management.md) - Credential security best practices
 - [Security Scan Report](security/security-scan-report.md) - GitGuardian security validation
 
+### Webshop User Manuals (Dutch, for end users)
+
+- [Handleiding Webwinkel (leden)](webshop/handleiding-winkel.md) - Step-by-step shop guide for members
+- [Handleiding Webwinkel Beheer (beheerders)](webshop/handleiding-beheer.md) - Admin guide (products, orders, payments, reports, event/region shops)
+
+Generate shareable HTML / PDF versions of these manuals:
+
+```bash
+# From the repo root — no npm install needed (zero dependencies)
+node scripts/docs/render-webshop-manuals.mjs
+# Produces docs/webshop/handleiding-winkel.html and docs/webshop/handleiding-beheer.html
+# Open in a browser and choose Print -> Save as PDF for a PDF version.
+```
+
+Screenshots are referenced via placeholders; see [docs/webshop/assets/README.md](webshop/assets/README.md) for the expected file names.
+
 ### Development & Deployment
 
 - [Test Environment Setup](development/test-environment-setup.md) - Development environment configuration
-- [Git Scripts Manual](../git/Git-Scripts-Manual.html) - PowerShell automation guide
-
-### Legacy Documentation
-
-- [User Manual](../documentation/user-manual.html) - End-user guide
-- [Technical Documentation](../documentation/technical-design-manual.html) - Developer guide
 - [API Documentation](../backend/api.md) - Complete API reference
 
 ## 🐛 Troubleshooting

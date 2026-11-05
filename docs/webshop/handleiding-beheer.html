@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handleiding Webwinkel Beheer — voor beheerders</title>
+<style>
+/*
+ * H-DCN webwinkel-handleidingen — gedeelde stijl voor de gerenderde HTML.
+ *
+ * Gebruikt door scripts/docs/render-webshop-manuals.mjs. Scherm-leesbaar en
+ * geoptimaliseerd voor "Afdrukken -> Opslaan als PDF" (zie @media print onderaan).
+ */
+
+:root {
+  --hdcn-orange: #dd6b20;
+  --hdcn-orange-dark: #9c4221;
+  --hdcn-black: #1a1a1a;
+  --text: #24292f;
+  --muted: #57606a;
+  --border: #d0d7de;
+  --bg-soft: #f6f8fa;
+  --tip-bg: #f0fff4;
+  --tip-border: #38a169;
+  --warn-bg: #fffaf0;
+  --warn-border: #dd6b20;
+  --info-bg: #ebf8ff;
+  --info-border: #3182ce;
+  --shot-bg: #fafafa;
+  --shot-border: #bbb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  color: var(--hdcn-black);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-size: 2rem;
+  color: var(--hdcn-orange-dark);
+  border-bottom: 3px solid var(--hdcn-orange);
+  padding-bottom: 0.4rem;
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3rem;
+}
+
+h3 {
+  font-size: 1.2rem;
+  color: var(--hdcn-orange-dark);
+}
+
+h4 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0.75rem 0;
+}
+
+a {
+  color: var(--hdcn-orange-dark);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Lists */
+ul,
+ol {
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+li {
+  margin: 0.3rem 0;
+}
+
+/* Code */
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--bg-soft);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+pre {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th {
+  background: var(--hdcn-orange);
+  color: #fff;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--bg-soft);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* Blockquotes — default and the special callout variants injected by the renderer */
+blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--border);
+  background: var(--bg-soft);
+  border-radius: 0 6px 6px 0;
+  color: var(--muted);
+}
+
+blockquote p {
+  margin: 0.25rem 0;
+}
+
+blockquote.tip {
+  border-left-color: var(--tip-border);
+  background: var(--tip-bg);
+  color: var(--text);
+}
+
+blockquote.warn {
+  border-left-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--text);
+}
+
+blockquote.info {
+  border-left-color: var(--info-border);
+  background: var(--info-bg);
+  color: var(--text);
+}
+
+/* Screenshot placeholder blocks */
+blockquote.screenshot {
+  border: 2px dashed var(--shot-border);
+  border-left: 2px dashed var(--shot-border);
+  background: var(--shot-bg);
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+  padding: 1.25rem 1rem;
+}
+
+blockquote.screenshot code {
+  font-style: normal;
+}
+
+/* Rendered screenshot (placeholder replaced by a real image) */
+figure.screenshot-figure {
+  margin: 1.25rem 0;
+  text-align: center;
+}
+
+figure.screenshot-figure img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+figure.screenshot-figure figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Table of contents */
+.toc {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.toc-title {
+  font-weight: 600;
+  color: var(--hdcn-orange-dark);
+  margin-bottom: 0.5rem;
+}
+
+.toc ul {
+  margin: 0;
+  list-style: none;
+  padding-left: 0;
+}
+
+.toc li {
+  margin: 0.2rem 0;
+}
+
+.footer-note {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Print / PDF */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html {
+    font-size: 11.5pt;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    color: var(--text);
+  }
+
+  /* Keep headings with following content, avoid orphaned headings */
+  h1,
+  h2,
+  h3,
+  h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Don't split these blocks across pages */
+  table,
+  pre,
+  blockquote,
+  figure.screenshot-figure {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  figure.screenshot-figure img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  thead th {
+    /* Ensure header colour prints */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .toc {
+    page-break-after: always;
+    break-after: page;
+  }
+}
+</style>
+</head>
+<body>
+<main class="page">
+<nav class="toc"><div class="toc-title">Inhoud</div><ul><li><a href="#1-toegang-en-rollen">1. Toegang en rollen</a></li><li><a href="#2-navigatie">2. Navigatie</a></li><li><a href="#3-tabblad-producten">3. Tabblad Producten</a></li><li><a href="#4-tabblad-bestellingen">4. Tabblad Bestellingen</a></li><li><a href="#5-tabblad-betalingen">5. Tabblad Betalingen</a></li><li><a href="#6-tabblad-rapporten">6. Tabblad Rapporten</a></li><li><a href="#7-winkel-per-event-en-regio-winkels">7. Winkel per event (en regio-winkels)</a></li></ul></nav>
+<h1 id="handleiding-webwinkel-beheer-voor-beheerders">Handleiding Webwinkel Beheer — voor beheerders</h1>
+<p>Deze handleiding legt uit hoe je als beheerder de H-DCN webwinkel beheert: producten en voorraad, bestellingen afhandelen, betalingen bijhouden en rapporten maken. De handleiding beschrijft <strong>Webshop Beheer</strong> zoals het nu werkt.</p>
+<blockquote class="tip"><p>💡 <strong>Tip:</strong> Webshop Beheer is opgebouwd uit vier tabbladen — <strong>Producten</strong>,<br><strong>Bestellingen</strong>, <strong>Betalingen</strong> en <strong>Rapporten</strong>. Elk tabblad behandelen we<br>hieronder apart.</p></blockquote>
+<hr>
+<h2 id="1-toegang-en-rollen">1. Toegang en rollen</h2>
+<p>Webshop Beheer is beschikbaar voor beheerders met de juiste rechten. Welke acties je kunt uitvoeren, hangt af van je rol:</p>
+<table><thead><tr><th>Rol</th><th>Wat je ermee kunt</th></tr></thead><tbody><tr><td><code>Products_Read</code></td><td>Producten, bestellingen, betalingen en rapporten <strong>bekijken</strong>.</td></tr><tr><td><code>Products_CRUD</code></td><td>Producten/varianten <strong>beheren</strong>, bestelstatussen en betalingen <strong>wijzigen</strong>, rapporten <strong>genereren</strong>.</td></tr><tr><td><code>Products_Export</code></td><td>Rapporten <strong>exporteren</strong> naar CSV/JSON.</td></tr></tbody></table>
+<p>Heb je een rol niet, dan zijn de bijbehorende knoppen uitgeschakeld (vaak met een tooltip die de vereiste rol noemt, bijvoorbeeld "Products_CRUD vereist").</p>
+<figure class="screenshot-figure"><img src="assets/beheer-overzicht.png" alt="Webshop Beheer met de vier tabbladen"><figcaption>Webshop Beheer met de vier tabbladen</figcaption></figure>
+<hr>
+<h2 id="2-navigatie">2. Navigatie</h2>
+<p>Bovenaan de pagina staat de titel <strong>Webshop Beheer</strong> met daaronder de vier tabbladen. Klik op een tabblad om te wisselen:</p>
+<ul><li><strong>Producten</strong> — productcatalogus, varianten en voorraad.</li><li><strong>Bestellingen</strong> — alle bestellingen en hun afhandeling.</li><li><strong>Betalingen</strong> — betaalstatus en handmatig betalingen registreren.</li><li><strong>Rapporten</strong> — financiële en operationele rapporten, met export.</li></ul>
+<hr>
+<h2 id="3-tabblad-producten">3. Tabblad Producten</h2>
+<p>Op het tabblad <strong>Producten</strong> beheer je de volledige productcatalogus (producten én varianten) in één scherm.</p>
+<h3 id="zoeken-en-filteren">Zoeken en filteren</h3>
+<ul><li>Filter de lijst op <strong>groep</strong> en <strong>subgroep</strong> (bijvoorbeeld Kleding → T-shirts).</li><li>De kolom met de <strong>bron</strong> laat zien of een product bij de algemene webwinkel hoort (Webshop) of aan een of meer events is gekoppeld.</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-producten-lijst.png" alt="productlijst met groep/subgroep-filter"><figcaption>productlijst met groep/subgroep-filter</figcaption></figure>
+<h3 id="product-aanmaken-en-bewerken">Product aanmaken en bewerken</h3>
+<ul><li>Klik op <strong>Nieuw product</strong> om een product toe te voegen.</li><li>Klik op een bestaand product om het te <strong>bewerken</strong> (naam, prijs, groep, subgroep, omschrijving, afbeeldingen en koppeling aan de webwinkel of events).</li><li>Prijzen worden als bedrag opgeslagen; vul een geldig bedrag in.</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-product-bewerken.png" alt="product bewerken"><figcaption>product bewerken</figcaption></figure>
+<h3 id="product-deactiveren">Product deactiveren</h3>
+<p>In plaats van verwijderen kun je een product <strong>deactiveren</strong> zodat het niet meer in de webwinkel verschijnt maar wel bewaard blijft voor de historie. Een gedeactiveerd product toont geen aanbod meer aan leden.</p>
+<h3 id="varianten">Varianten</h3>
+<p>Producten kunnen <strong>varianten</strong> hebben (bijvoorbeeld maat of kleur). Per variant beheer je de eigenschappen en de <strong>voorraad</strong>.</p>
+<ul><li>Beheer bestaande varianten rechtstreeks bij het product.</li><li>Gebruik <strong>bulk-varianten aanmaken</strong> om in één keer meerdere varianten te genereren (bijvoorbeeld alle maten S t/m XXL in meerdere kleuren).</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-bulk-varianten.png" alt="bulk-varianten aanmaken"><figcaption>bulk-varianten aanmaken</figcaption></figure>
+<h3 id="voorraad-toevoegen">Voorraad toevoegen</h3>
+<p>Gebruik <strong>Voorraad toevoegen</strong> om de voorraad van een (variant van een) product bij te werken. Vul het aantal in dat je toevoegt; de voorraad wordt opgehoogd.</p>
+<figure class="screenshot-figure"><img src="assets/beheer-voorraad.png" alt="voorraad toevoegen"><figcaption>voorraad toevoegen</figcaption></figure>
+<hr>
+<h2 id="4-tabblad-bestellingen">4. Tabblad Bestellingen</h2>
+<p>Op het tabblad <strong>Bestellingen</strong> zie je alle bestellingen in een filterbare, sorteerbare tabel.</p>
+<h3 id="de-kolommen">De kolommen</h3>
+<table><thead><tr><th>Kolom</th><th>Betekenis</th></tr></thead><tbody><tr><td><strong>Order ID</strong></td><td>Uniek kenmerk van de bestelling.</td></tr><tr><td><strong>Klant / Club</strong></td><td>Naam van de besteller (en eventueel de club).</td></tr><tr><td><strong>Status</strong></td><td>De afhandelingsstatus (zie hieronder).</td></tr><tr><td><strong>Betaling</strong></td><td>Betaalstatus: betaald, deels betaald of onbetaald.</td></tr><tr><td><strong>Bron</strong></td><td><strong>Webshop</strong> (algemene webwinkel) of een specifiek <strong>event</strong>.</td></tr><tr><td><strong>Totaal</strong></td><td>Het totaalbedrag van de bestelling.</td></tr><tr><td><strong>Aangemaakt</strong></td><td>De aanmaakdatum.</td></tr></tbody></table>
+<ul><li>Klik op een <strong>kolomkop</strong> om te sorteren.</li><li>Typ in het <strong>filterveld</strong> van een kolom om op die kolom te filteren.</li><li>Met <strong>Filters wissen</strong> reset je alle kolomfilters; je ziet dan weer alle bestellingen.</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-bestellingen-tabel.png" alt="bestellingen-tabel met filters en sortering"><figcaption>bestellingen-tabel met filters en sortering</figcaption></figure>
+<h3 id="de-statussen">De statussen</h3>
+<p>Een bestelling doorloopt een afhandeling. De belangrijkste statussen:</p>
+<ul><li><strong>Ingediend (submitted)</strong> — de klant heeft de bestelling geplaatst.</li><li><strong>Vergrendeld (locked)</strong> — de bestelling is vastgezet voor verwerking.</li><li><strong>Betaald (paid)</strong> — de betaling is ontvangen.</li><li><strong>Bestelling ontvangen (order_received)</strong> — in behandeling genomen.</li><li><strong>Betaling in behandeling / mislukt (payment_pending / payment_failed)</strong> — tussenstatussen rond de betaling.</li><li><strong>Verzamelen → Ingepakt → Verzonden → Afgeleverd (picked → packed → shipped → delivered)</strong> — de verzendroute.</li><li><strong>Klaarzetten → Uitgereikt (ready_for_pickup → picked_up)</strong> — de afhaal-/uitgifteroute (zie ook de pick-list bij events).</li><li><strong>Afgerond (completed)</strong> — de bestelling is volledig afgehandeld.</li><li><strong>Geannuleerd (cancelled)</strong> en <strong>Retour aangevraagd/ontvangen (return_requested / return_received)</strong> — annulering en retouren.</li></ul>
+<h3 id="een-bestelling-openen-en-de-status-wijzigen">Een bestelling openen en de status wijzigen</h3>
+<p>Klik op een rij om de <strong>orderdetails</strong> te openen. In het detailscherm zie je de volledige bestelling en de beschikbare <strong>statusovergangen</strong> vanaf de huidige status.</p>
+<ul><li>De beschikbare overgangen verschillen voor een <strong>Webshop-order</strong> (badge blauw) en een <strong>Event-order</strong> (badge paars).</li><li>Met <strong>lock all</strong> kun je bestellingen in bulk vergrendelen (binnen het huidige filter/event).</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-orderdetail.png" alt="orderdetails met statusovergangen"><figcaption>orderdetails met statusovergangen</figcaption></figure>
+<h3 id="meerdere-bestellingen-tegelijk-batch">Meerdere bestellingen tegelijk (batch)</h3>
+<p>Selecteer meerdere bestellingen met de <strong>selectievakjes</strong> (of selecteer alles via de kop). Met de geselecteerde bestellingen kun je:</p>
+<ul><li><strong>Markeer als…</strong> — in één keer een nieuwe <strong>status</strong> instellen voor alle geselecteerde bestellingen.</li><li><strong>Download pakbonnen</strong> — genereer de pakbonnen van de selectie als één PDF.</li><li><strong>Download labels</strong> — genereer de verzendlabels van de selectie als één PDF.</li></ul>
+<p>Na afloop zie je een melding met hoeveel bestellingen zijn bijgewerkt (en eventueel mislukt).</p>
+<figure class="screenshot-figure"><img src="assets/beheer-batch-acties.png" alt="batch-acties met geselecteerde bestellingen"><figcaption>batch-acties met geselecteerde bestellingen</figcaption></figure>
+<h3 id="geannuleerde-bestellingen-tonen">Geannuleerde bestellingen tonen</h3>
+<p>Geannuleerde bestellingen zijn standaard verborgen. Gebruik de knop <strong>Toon geannuleerd</strong> / <strong>Verberg geannuleerd</strong> om ze in of uit de lijst te schakelen.</p>
+<hr>
+<h2 id="5-tabblad-betalingen">5. Tabblad Betalingen</h2>
+<p>Op het tabblad <strong>Betalingen</strong> houd je de betaalstatus van bestellingen bij.</p>
+<h3 id="totalen">Totalen</h3>
+<p>Bovenaan zie je drie overzichtskaarten:</p>
+<ul><li><strong>Totaal Gefactureerd</strong> — de som van alle bestellingen.</li><li><strong>Totaal Betaald</strong> — de ontvangen betalingen.</li><li><strong>Totaal Openstaand</strong> — wat er nog openstaat.</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-betalingen-totalen.png" alt="betalingen met totaalkaarten"><figcaption>betalingen met totaalkaarten</figcaption></figure>
+<h3 id="betaallijst-en-een-betaling-registreren">Betaallijst en een betaling registreren</h3>
+<p>Onder de totalen staat een <strong>filterbare lijst</strong> per bestelling met totaal, betaald, openstaand en de betaalstatus (Betaald / Deels betaald / Onbetaald).</p>
+<ul><li>Klik op een rij om de <strong>betaaldetails</strong> te openen.</li><li>Is de bestelling nog niet volledig betaald en heb je het recht om te wijzigen (<code>Products_CRUD</code>), dan kun je in het detailscherm een <strong>betaling registreren</strong> (bijvoorbeeld een ontvangen overschrijving). Vul het ontvangen bedrag in en bevestig.</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-betaling-registreren.png" alt="betaling registreren in het detailscherm"><figcaption>betaling registreren in het detailscherm</figcaption></figure>
+<hr>
+<h2 id="6-tabblad-rapporten">6. Tabblad Rapporten</h2>
+<p>Op het tabblad <strong>Rapporten</strong> maak je overzichten en exporteer je gegevens.</p>
+<h3 id="rapporttype-en-filters">Rapporttype en filters</h3>
+<ul><li>Kies een <strong>rapporttype</strong>: <strong>Financieel</strong>, <strong>Producten</strong>, <strong>Bestellingen</strong> of <strong>Voorraadmutaties</strong>.</li><li>Verfijn met de filters <strong>Order status</strong> en <strong>Betaalstatus</strong>.</li></ul>
+<h3 id="genereren-en-exporteren">Genereren en exporteren</h3>
+<ul><li>Klik op <strong>Rapport genereren</strong> om het rapport op te bouwen (vereist <code>Products_CRUD</code>). Je ziet het tijdstip waarop het rapport is gegenereerd.</li><li>Kies een exportformaat (<strong>CSV</strong> of <strong>JSON</strong>) en klik op <strong>Download</strong> om het rapport te exporteren (vereist <code>Products_Export</code>).</li></ul>
+<figure class="screenshot-figure"><img src="assets/beheer-rapporten.png" alt="rapporten met type-keuze en export"><figcaption>rapporten met type-keuze en export</figcaption></figure>
+<hr>
+<h2 id="7-winkel-per-event-en-regio-winkels">7. Winkel per event (en regio-winkels)</h2>
+<p>Naast de algemene webwinkel ondersteunt het systeem een <strong>winkel per event</strong>: een afgebakende set producten en bestellingen die aan een specifiek event gekoppeld is. Dit is handig voor bijvoorbeeld een toerrit, een evenement of een bijeenkomst met eigen artikelen.</p>
+<h3 id="hoe-producten-aan-een-event-hangen">Hoe producten aan een event hangen</h3>
+<ul><li>Elk product heeft een koppeling via <strong><code>event_ids</code></strong>. De waarde <strong><code>evt-webshop</code></strong> betekent dat het product bij de <strong>algemene webwinkel</strong> hoort.</li><li>Koppel je een product (ook) aan een event, dan hoort het bij de <strong>winkel van dat event</strong>. Een product kan zowel in de algemene webwinkel als bij een event staan.</li><li>De ledenwinkel toont standaard de algemene producten. Een event-winkel toont de selectie die aan dat event is gekoppeld.</li></ul>
+<h3 id="event-bestellingen-herkennen-en-afhandelen">Event-bestellingen herkennen en afhandelen</h3>
+<ul><li>Bestellingen dragen de bron <strong>Webshop</strong> of een <strong>event</strong>. In de bestellingen-tabel filter je hierop via de kolom <strong>Bron</strong>.</li><li>In de orderdetails zie je een gekleurde badge: <strong>blauw</strong> voor een Webshop-order, <strong>paars</strong> voor een Event-order. De beschikbare statusovergangen sluiten aan op het type order.</li></ul>
+<h3 id="pick-list-uitgifte-ter-plaatse">Pick-list: uitgifte ter plaatse</h3>
+<p>Filter je in het tabblad <strong>Bestellingen</strong> op een specifiek event, dan verschijnt de knop <strong>Pick-list</strong>. De pick-list is bedoeld voor uitgifte op locatie en toont de betaalde bestellingen van dat event, gegroepeerd op status:</p>
+<ol><li><strong>Betaald</strong> — bestellingen die klaargemaakt moeten worden.</li><li><strong>Klaarzetten</strong> — selecteer betaalde bestellingen en markeer ze als <strong>ready_for_pickup</strong>.</li><li><strong>Uitreiken</strong> — reik een klaargezette bestelling uit aan de klant en markeer hem als <strong>picked_up</strong>.</li></ol>
+<p>Bovenaan zie je tellers: hoeveel bestellingen <strong>betaald</strong>, <strong>klaar</strong> en <strong>uitgereikt</strong> zijn.</p>
+<figure class="screenshot-figure"><img src="assets/beheer-picklist.png" alt="pick-list van een event met betaald/klaar/uitgereikt"><figcaption>pick-list van een event met betaald/klaar/uitgereikt</figcaption></figure>
+<h3 id="vooruitblik-regio-winkels">Vooruitblik: regio-winkels</h3>
+<p>Dit event-mechanisme leent zich ook voor <strong>regio-winkels</strong>. Een regio zou langs dezelfde weg een eigen winkel kunnen krijgen:</p>
+<ul><li>Een <strong>eigen productselectie</strong> (producten gekoppeld aan de regio, vergelijkbaar met een event).</li><li>Een <strong>eigen bestellijst</strong>, af te filteren via de kolom <strong>Bron</strong>.</li><li>Dezelfde <strong>pick-list-uitgifte</strong> voor het uitreiken van bestellingen op een regio-bijeenkomst.</li></ul>
+<blockquote class="info"><p>ℹ️ <strong>Opmerking:</strong> Regio-winkels zijn een vooruitblik op basis van het bestaande<br>event-mechanisme. De exacte inrichting kan per toekomstige uitwerking<br>verschillen.</p></blockquote>
+<hr>
+<p><em>Vragen over rechten of een specifieke actie? Neem contact op met een H-DCN-beheerder.</em></p>
+<p class="footer-note">H-DCN — automatisch gegenereerd uit Markdown. Gebruik je browser (Afdrukken &rarr; Opslaan als PDF) voor een PDF-versie.</p>
+</main>
+</body>
+</html>
