@@ -30,6 +30,7 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
+import { AddIcon } from '@chakra-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { bulkCreateVariants } from '../services/adminApi';
 import { AdminVariant } from '../types/admin.types';
@@ -155,8 +156,8 @@ export const BulkVariantCreator: React.FC<BulkVariantCreatorProps> = ({
     <>
       <Button
         size="xs"
-        colorScheme="teal"
-        variant="outline"
+        colorScheme="orange"
+        leftIcon={<AddIcon />}
         onClick={handleOpen}
         isDisabled={isDisabled}
       >

@@ -49,6 +49,13 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock Chakra UI icons — @chakra-ui/icons calls createIcon() from the real
+// @chakra-ui/react at import time, which the lightweight Chakra mock below does
+// not provide. Same pattern as MemberFilters.test.tsx / ProductCard.test.tsx.
+jest.mock('@chakra-ui/icons', () => ({
+  AddIcon: () => <span data-testid="add-icon" />,
+}));
+
 // Mock toast
 const mockToast = jest.fn();
 
