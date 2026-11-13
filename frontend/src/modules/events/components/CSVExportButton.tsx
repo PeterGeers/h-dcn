@@ -8,9 +8,21 @@ interface CSVExportButtonProps {
   columns?: string[];
   disabled?: boolean;
   title?: string;
+  /** Append the current date (YYYY-MM-DD) to the filename. Defaults to true. */
+  includeDate?: boolean;
+  /** Button label. Defaults to "Export CSV". */
+  label?: string;
 }
 
-function CSVExportButton({ data, filename, columns, disabled = false, title }: CSVExportButtonProps) {
+function CSVExportButton({
+  data,
+  filename,
+  columns,
+  disabled = false,
+  title,
+  includeDate = true,
+  label = 'Export CSV',
+}: CSVExportButtonProps) {
   const exportToCSV = () => {
     if (!data || data.length === 0) return;
 
@@ -29,7 +41,10 @@ function CSVExportButton({ data, filename, columns, disabled = false, title }: C
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    const downloadName = includeDate
+      ? `${filename}_${new Date().toISOString().split('T')[0]}.csv`
+      : `${filename}.csv`;
+    link.setAttribute('download', downloadName);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -46,7 +61,7 @@ function CSVExportButton({ data, filename, columns, disabled = false, title }: C
       isDisabled={disabled}
       title={title}
     >
-      Export CSV
+      {label}
     </Button>
   );
 }
