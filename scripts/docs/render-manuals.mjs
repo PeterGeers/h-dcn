@@ -1,23 +1,28 @@
 #!/usr/bin/env node
 /*
- * render-webshop-manuals.mjs
- * ---------------------------
- * Rendert de Nederlandse webwinkel-handleidingen van Markdown naar standalone
- * HTML. Nul npm-dependencies: dit script bevat een kleine Markdown-subset-
- * renderer die precies de constructies aankan die in de handleidingen voorkomen
- * (koppen, alinea's, geordende/ongeordende lijsten, tabellen, blockquotes,
- * inline/blok-code, links, afbeeldingen, nadruk en horizontale lijnen).
+ * render-manuals.mjs
+ * ------------------
+ * Rendert de Nederlandse eindgebruiker-handleidingen van Markdown naar
+ * standalone HTML. Nul npm-dependencies: dit script bevat een kleine
+ * Markdown-subset-renderer die precies de constructies aankan die in de
+ * handleidingen voorkomen (koppen, alinea's, geordende/ongeordende lijsten,
+ * tabellen, blockquotes, inline/blok-code, links, afbeeldingen, nadruk en
+ * horizontale lijnen).
  *
- * De gegenereerde HTML gebruikt docs/webshop/style.css (inline meegebakken, zodat
- * elk HTML-bestand op zichzelf te openen, te mailen en als PDF op te slaan is via
- * "Afdrukken -> Opslaan als PDF").
+ * Elke handleidingenset heeft een eigen map met een `style.css` en een
+ * `assets/`-map. De gegenereerde HTML bakt de CSS inline mee, zodat elk
+ * HTML-bestand op zichzelf te openen, te mailen en als PDF op te slaan is via
+ * "Afdrukken -> Opslaan als PDF". Screenshot-placeholders worden automatisch
+ * vervangen door een echte afbeelding zodra het bestand in `assets/` bestaat.
  *
  * Gebruik:
- *   node scripts/docs/render-webshop-manuals.mjs
+ *   node scripts/docs/render-manuals.mjs
  *
- * Uitvoer:
+ * Uitvoer (per set):
  *   docs/webshop/handleiding-winkel.html
  *   docs/webshop/handleiding-beheer.html
+ *   docs/events/handleiding-evenementen.html
+ *   docs/events/handleiding-evenementen-beheer.html
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -26,11 +31,28 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..', '..');
-const DOCS_DIR = join(REPO_ROOT, 'docs', 'webshop');
 
-const MANUALS = [
-  { md: 'handleiding-winkel.md', html: 'handleiding-winkel.html' },
-  { md: 'handleiding-beheer.md', html: 'handleiding-beheer.html' },
+/**
+ * Doc sets to render. Each set has a `dir` (relative to repo root) containing a
+ * `style.css` + `assets/`, and a list of markdown -> html manuals.
+ */
+const DOC_SETS = [
+  {
+    label: 'Webwinkel-handleidingen',
+    dir: join('docs', 'webshop'),
+    manuals: [
+      { md: 'handleiding-winkel.md', html: 'handleiding-winkel.html' },
+      { md: 'handleiding-beheer.md', html: 'handleiding-beheer.html' },
+    ],
+  },
+  {
+    label: 'Evenementen-handleidingen',
+    dir: join('docs', 'events'),
+    manuals: [
+      { md: 'handleiding-evenementen.md', html: 'handleiding-evenementen.html' },
+      { md: 'handleiding-evenementen-beheer.md', html: 'handleiding-evenementen-beheer.html' },
+    ],
+  },
 ];
 
 /* ------------------------------------------------------------------ *
@@ -103,7 +125,12 @@ function classifyBlockquote(firstLine) {
  * Block-level renderer
  * ------------------------------------------------------------------ */
 
-function renderMarkdown(md) {
+/**
+ * @param {string} md       markdown source
+ * @param {string} baseDir  absolute directory the manual lives in (for resolving
+ *                          screenshot `assets/...` paths)
+ */
+function renderMarkdown(md, baseDir) {
   const lines = md.replace(/\r\n/g, '\n').split('\n');
   const html = [];
   const headings = [];
@@ -183,7 +210,7 @@ function renderMarkdown(md) {
         const captionMatch = /\[Screenshot:\s*([^\]]+)\]/i.exec(joined);
         const caption = captionMatch ? captionMatch[1].trim() : '';
         const src = srcMatch ? srcMatch[1].trim() : '';
-        if (src && existsSync(join(DOCS_DIR, src))) {
+        if (src && existsSync(join(baseDir, src))) {
           const captionHtml = caption
             ? `<figcaption>${renderInline(caption)}</figcaption>`
             : '';
@@ -340,28 +367,30 @@ ${body}
  * ------------------------------------------------------------------ */
 
 function main() {
-  const css = readFileSync(join(DOCS_DIR, 'style.css'), 'utf8');
-  const results = [];
+  for (const set of DOC_SETS) {
+    const baseDir = join(REPO_ROOT, set.dir);
+    const css = readFileSync(join(baseDir, 'style.css'), 'utf8');
+    const results = [];
 
-  for (const manual of MANUALS) {
-    const mdPath = join(DOCS_DIR, manual.md);
-    const htmlPath = join(DOCS_DIR, manual.html);
-    const md = readFileSync(mdPath, 'utf8');
+    for (const manual of set.manuals) {
+      const md = readFileSync(join(baseDir, manual.md), 'utf8');
 
-    // Derive the page title from the first H1, fall back to the filename.
-    const h1Match = /^#\s+(.*)$/m.exec(md);
-    const title = h1Match ? h1Match[1].trim() : manual.md;
+      // Derive the page title from the first H1, fall back to the filename.
+      const h1Match = /^#\s+(.*)$/m.exec(md);
+      const title = h1Match ? h1Match[1].trim() : manual.md;
 
-    const { body, headings } = renderMarkdown(md);
-    const page = buildPage(title, css, body, headings);
-    writeFileSync(htmlPath, page, 'utf8');
-    results.push({ html: manual.html, title, headings: headings.length });
+      const { body, headings } = renderMarkdown(md, baseDir);
+      const page = buildPage(title, css, body, headings);
+      writeFileSync(join(baseDir, manual.html), page, 'utf8');
+      results.push({ html: manual.html, title, headings: headings.length });
+    }
+
+    console.log(`${set.label} gerenderd:`);
+    for (const r of results) {
+      console.log(`  - ${set.dir.replace(/\\/g, '/')}/${r.html}  ("${r.title}", ${r.headings} secties)`);
+    }
   }
 
-  console.log('Webwinkel-handleidingen gerenderd:');
-  for (const r of results) {
-    console.log(`  - docs/webshop/${r.html}  ("${r.title}", ${r.headings} secties)`);
-  }
   console.log('\nOpen een bestand in de browser en kies Afdrukken -> Opslaan als PDF voor een PDF.');
 }
 

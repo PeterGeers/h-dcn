@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handleiding Evenementen — voor leden</title>
+<style>
+/*
+ * H-DCN evenementen-handleidingen — gedeelde stijl voor de gerenderde HTML.
+ *
+ * Gebruikt door scripts/docs/render-manuals.mjs. Scherm-leesbaar en
+ * geoptimaliseerd voor "Afdrukken -> Opslaan als PDF" (zie @media print onderaan).
+ */
+
+:root {
+  --hdcn-orange: #dd6b20;
+  --hdcn-orange-dark: #9c4221;
+  --hdcn-black: #1a1a1a;
+  --text: #24292f;
+  --muted: #57606a;
+  --border: #d0d7de;
+  --bg-soft: #f6f8fa;
+  --tip-bg: #f0fff4;
+  --tip-border: #38a169;
+  --warn-bg: #fffaf0;
+  --warn-border: #dd6b20;
+  --info-bg: #ebf8ff;
+  --info-border: #3182ce;
+  --shot-bg: #fafafa;
+  --shot-border: #bbb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  color: var(--hdcn-black);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-size: 2rem;
+  color: var(--hdcn-orange-dark);
+  border-bottom: 3px solid var(--hdcn-orange);
+  padding-bottom: 0.4rem;
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3rem;
+}
+
+h3 {
+  font-size: 1.2rem;
+  color: var(--hdcn-orange-dark);
+}
+
+h4 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0.75rem 0;
+}
+
+a {
+  color: var(--hdcn-orange-dark);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Lists */
+ul,
+ol {
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+li {
+  margin: 0.3rem 0;
+}
+
+/* Code */
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--bg-soft);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+pre {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th {
+  background: var(--hdcn-orange);
+  color: #fff;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--bg-soft);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* Blockquotes — default and the special callout variants injected by the renderer */
+blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--border);
+  background: var(--bg-soft);
+  border-radius: 0 6px 6px 0;
+  color: var(--muted);
+}
+
+blockquote p {
+  margin: 0.25rem 0;
+}
+
+blockquote.tip {
+  border-left-color: var(--tip-border);
+  background: var(--tip-bg);
+  color: var(--text);
+}
+
+blockquote.warn {
+  border-left-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--text);
+}
+
+blockquote.info {
+  border-left-color: var(--info-border);
+  background: var(--info-bg);
+  color: var(--text);
+}
+
+/* Screenshot placeholder blocks */
+blockquote.screenshot {
+  border: 2px dashed var(--shot-border);
+  border-left: 2px dashed var(--shot-border);
+  background: var(--shot-bg);
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+  padding: 1.25rem 1rem;
+}
+
+blockquote.screenshot code {
+  font-style: normal;
+}
+
+/* Rendered screenshot (placeholder replaced by a real image) */
+figure.screenshot-figure {
+  margin: 1.25rem 0;
+  text-align: center;
+}
+
+figure.screenshot-figure img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+figure.screenshot-figure figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Table of contents */
+.toc {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.toc-title {
+  font-weight: 600;
+  color: var(--hdcn-orange-dark);
+  margin-bottom: 0.5rem;
+}
+
+.toc ul {
+  margin: 0;
+  list-style: none;
+  padding-left: 0;
+}
+
+.toc li {
+  margin: 0.2rem 0;
+}
+
+.footer-note {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Print / PDF */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html {
+    font-size: 11.5pt;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    color: var(--text);
+  }
+
+  /* Keep headings with following content, avoid orphaned headings */
+  h1,
+  h2,
+  h3,
+  h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Don't split these blocks across pages */
+  table,
+  pre,
+  blockquote,
+  figure.screenshot-figure {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  figure.screenshot-figure img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  thead th {
+    /* Ensure header colour prints */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .toc {
+    page-break-after: always;
+    break-after: page;
+  }
+}
+</style>
+</head>
+<body>
+<main class="page">
+<nav class="toc"><div class="toc-title">Inhoud</div><ul><li><a href="#1-een-evenement-vinden">1. Een evenement vinden</a></li><li><a href="#2-registreren-voor-het-evenement">2. Registreren voor het evenement</a></li><li><a href="#3-je-booking-samenstellen">3. Je booking samenstellen</a></li><li><a href="#4-booking-indienen">4. Booking indienen</a></li><li><a href="#5-betalen">5. Betalen</a></li><li><a href="#6-mede-delegate-uitnodigen-optioneel">6. Mede-delegate uitnodigen (optioneel)</a></li><li><a href="#7-samenvatting-downloaden">7. Samenvatting downloaden</a></li><li><a href="#8-veelvoorkomende-vragen">8. Veelvoorkomende vragen</a></li></ul></nav>
+<h1 id="handleiding-evenementen-voor-leden">Handleiding Evenementen — voor leden</h1>
+<p>Deze handleiding legt stap voor stap uit hoe je als deelnemer aan een H-DCN evenement je registreert, je deelname (booking) samenstelt en betaalt. De handleiding beschrijft de evenementen-module zoals die nu werkt.</p>
+<blockquote class="tip"><p>💡 <strong>Tip:</strong> Een evenement-aanmelding verloopt in twee fasen. Eerst <strong>registreer</strong><br>je je voor het evenement (eenmalig toegang krijgen). Daarna stel je je<br><strong>booking</strong> samen: wie er meegaan en welke onderdelen (tickets, t-shirts,<br>transfers) je afneemt. Pas na het indienen en betalen is je deelname definitief.</p></blockquote>
+<hr>
+<h2 id="1-een-evenement-vinden">1. Een evenement vinden</h2>
+<p>Evenementen hebben een eigen <strong>evenementpagina</strong> (landingspagina). Je komt daar via een link die H-DCN deelt (e-mail, nieuwsbrief, website) of via de agenda.</p>
+<p>Op de evenementpagina zie je:</p>
+<ul><li>De <strong>naam</strong>, <strong>datum(s)</strong> en <strong>locatie</strong> van het evenement.</li><li>Een <strong>poster</strong> en/of een omschrijving.</li><li>Details zoals <strong>Type</strong>, <strong>Deelname</strong> en <strong>Regio</strong>.</li><li>Een knop om je aan te melden: <strong>Nu registreren</strong> (of <strong>Ga naar Booking</strong> als je al toegang hebt).</li></ul>
+<p>Is de registratie gesloten, dan zie je <strong>Registratie is gesloten</strong> en kun je je niet aanmelden.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: evenement-landingspagina met poster en "Nu registreren"]</strong> — bestand: <code>assets/evenement-landing.png</code></p></blockquote>
+<hr>
+<h2 id="2-registreren-voor-het-evenement">2. Registreren voor het evenement</h2>
+<p>Klik op <strong>Nu registreren</strong>. Je doorloopt dan een paar stappen. Welke stappen je precies ziet, hangt af van hoe het evenement is ingesteld.</p>
+<h3 id="stap-2a-evenement-wachtwoord-indien-van-toepassing">Stap 2a — Evenement-wachtwoord (indien van toepassing)</h3>
+<p>Sommige evenementen zijn afgeschermd met een <strong>wachtwoord</strong> dat je van de organisatie hebt gekregen.</p>
+<ul><li>Vul het wachtwoord in bij <strong>Evenement wachtwoord</strong> en klik op <strong>Verifiëren</strong>.</li><li>Klopt het wachtwoord niet, dan verschijnt <strong>Ongeldig wachtwoord</strong>. Controleer het en probeer het opnieuw.</li><li>Bij te veel pogingen moet je even wachten (<strong>Te veel pogingen. Wacht even...</strong>).</li></ul>
+<p>Heeft het evenement geen wachtwoord, dan wordt deze stap overgeslagen.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: wachtwoordscherm van een evenement]</strong> — bestand: <code>assets/evenement-wachtwoord.png</code></p></blockquote>
+<h3 id="stap-2b-inloggen-of-account-aanmaken">Stap 2b — Inloggen of account aanmaken</h3>
+<ul><li><strong>Nieuw?</strong> Maak een account aan met je naam en e-mailadres.</li><li><strong>Al een account?</strong> Log in. Je ontvangt een eenmalige code per e-mail om in te loggen.</li></ul>
+<p>Als je al bent ingelogd én al toegang hebt tot dit evenement, word je meteen naar je booking gebracht en kun je de volgende stappen overslaan.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: inloggen/aanmelden met evenementcontext]</strong> — bestand: <code>assets/evenement-inloggen.png</code></p></blockquote>
+<h3 id="stap-2c-je-clubvertegenwoordiging-kiezen">Stap 2c — Je club/vertegenwoordiging kiezen</h3>
+<p>Bij veel evenementen meld je je aan namens een <strong>club</strong> (of een andere rij uit het register, afhankelijk van het evenement). Je ziet een lijst om uit te kiezen:</p>
+<ul><li>Zoek en selecteer de club die je vertegenwoordigt.</li><li>Een club die al door iemand anders is geclaimd, is gemarkeerd als <strong>Bezet</strong>; een vrije club is <strong>Beschikbaar</strong>.</li></ul>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: clublijst met beschikbaar/bezet]</strong> — bestand: <code>assets/evenement-clubselectie.png</code></p></blockquote>
+<h3 id="stap-2d-registratie-voltooien-claim">Stap 2d — Registratie voltooien (claim)</h3>
+<p>Bevestig je keuze om je plek te claimen:</p>
+<ul><li>Vul je <strong>volledige naam</strong> in (en, bij een nieuw account, een wachtwoord).</li><li>Klik op de bevestigknop om de club aan jou te koppelen.</li></ul>
+<p>Is de club ondertussen door iemand anders geclaimd, dan krijg je een melding met (deels afgeschermde) contactgegevens van die persoon. Is je e-mailadres niet geautoriseerd voor dit evenement, dan zie je daarvan ook een melding. Na een geslaagde claim ga je automatisch door naar je <strong>booking</strong>.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: registratie voltooien / claim-scherm]</strong> — bestand: <code>assets/evenement-claim.png</code></p></blockquote>
+<hr>
+<h2 id="3-je-booking-samenstellen">3. Je booking samenstellen</h2>
+<p>Op de <strong>bookingpagina</strong> stel je je deelname samen. Bovenaan zie je de naam van het evenement en de club die je vertegenwoordigt, plus informatie over de beschikbare plaatsen en de resterende aanmeldtijd.</p>
+<p>De booking is <strong>persoonsgericht</strong>: je voegt per deelnemer een kaart toe en kiest daarbij de onderdelen die deze persoon afneemt.</p>
+<h3 id="personen-toevoegen">Personen toevoegen</h3>
+<ul><li>De eerste persoon ben jijzelf (de hoofdaanmelder); die kun je niet verwijderen.</li><li>Klik op <strong>Persoon toevoegen</strong> om extra deelnemers toe te voegen (tot het maximum dat voor dit evenement geldt).</li><li>Vul per persoon de <strong>Naam</strong> in.</li></ul>
+<h3 id="onderdelen-producten-kiezen-per-persoon">Onderdelen (producten) kiezen per persoon</h3>
+<p>Klik bij een persoon op <strong>Product toevoegen</strong> en kies een onderdeel. Afhankelijk van het evenement kan dit bijvoorbeeld zijn:</p>
+<ul><li>Een <strong>ticket</strong> of deelnamebewijs.</li><li>Een <strong>Feestticket</strong> (eventueel voor extra gasten).</li><li>Een <strong>T-shirt</strong> (met keuze voor <strong>Geslacht</strong> en <strong>Maat</strong>).</li><li>Een <strong>Luchthaventransfer</strong> (met <strong>Richting</strong>, <strong>Luchthaven</strong>, <strong>Vluchtnummer</strong>, <strong>Datum</strong> en <strong>Tijd</strong>).</li></ul>
+<p>Per onderdeel vul je de gevraagde velden in. Verplichte velden moeten ingevuld zijn voordat je kunt indienen.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: bookingpagina met personen en gekozen onderdelen]</strong> — bestand: <code>assets/evenement-booking.png</code></p></blockquote>
+<h3 id="automatisch-opslaan-en-totaal">Automatisch opslaan en totaal</h3>
+<ul><li>Onderin zie je het <strong>Geschat totaal</strong>; dit werkt live bij als je iets wijzigt.</li><li>Je booking wordt <strong>automatisch opgeslagen</strong> terwijl je werkt. Je kunt ook zelf op <strong>Nu opslaan</strong> klikken. Een indicator toont wanneer er voor het laatst is opgeslagen.</li></ul>
+<blockquote class="warn"><p>⚠️ <strong>Let op:</strong> Als iemand anders (bijvoorbeeld een mede-delegate) dezelfde<br>booking tegelijk bewerkt, kan er een melding verschijnen dat de booking elders<br>is gewijzigd. Klik dan op <strong>Herladen</strong> om de laatste versie op te halen.</p></blockquote>
+<hr>
+<h2 id="4-booking-indienen">4. Booking indienen</h2>
+<p>Klik op <strong>Booking indienen</strong> om je deelname definitief in te dienen.</p>
+<ul><li>Ontbreken er verplichte velden, dan krijg je een melding en worden de betreffende velden gemarkeerd. Vul ze aan en probeer opnieuw.</li><li>Lukt het indienen, dan zie je de bevestiging <strong>Booking ingediend</strong> en kun je doorgaan met betalen.</li></ul>
+<p>Na het indienen staat de booking op <strong>ingediend</strong> en is hij in principe niet meer vrij te bewerken. Wordt de booking door de organisatie <strong>vergrendeld</strong>, dan kun je hem helemaal niet meer wijzigen (je ziet dan een alleen-lezen weergave).</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: bevestiging na indienen van de booking]</strong> — bestand: <code>assets/evenement-ingediend.png</code></p></blockquote>
+<hr>
+<h2 id="5-betalen">5. Betalen</h2>
+<p>Na het indienen verschijnt het <strong>betaalpaneel</strong>. Hier zie je:</p>
+<ul><li>Het <strong>Totaalbedrag</strong>, het <strong>Reeds betaald</strong> bedrag en het <strong>Openstaand</strong> bedrag.</li><li>Een statusaanduiding: <strong>Niet betaald</strong>, <strong>Deels betaald</strong> of <strong>Betaald</strong>.</li></ul>
+<p>Klik op de knop <strong>Betaal €…</strong> om het openstaande bedrag te voldoen. Je wordt doorgestuurd naar de beveiligde betaalpagina (Mollie) om de betaling af te ronden. Is alles voldaan, dan toont het paneel dat de booking <strong>volledig betaald</strong> is.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: betaalpaneel met totaal, betaald en openstaand]</strong> — bestand: <code>assets/evenement-betaling.png</code></p></blockquote>
+<hr>
+<h2 id="6-mede-delegate-uitnodigen-optioneel">6. Mede-delegate uitnodigen (optioneel)</h2>
+<p>Wil je dat iemand anders samen met jou deze booking kan beheren? Als hoofdaanmelder (primary delegate) kun je een <strong>tweede delegate</strong> (secondary) uitnodigen:</p>
+<ul><li>Vul het <strong>e-mailadres</strong> in en klik op <strong>Uitnodigen</strong>.</li><li>Zolang de uitnodiging niet is aangenomen, zie je de status <strong>In afwachting</strong>; je kunt de uitnodiging <strong>Opnieuw verzenden</strong> of <strong>Intrekken</strong> (zolang de booking nog in concept staat).</li></ul>
+<p>Je kunt jezelf niet uitnodigen; daarvoor verschijnt een melding.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: mede-delegate uitnodigen]</strong> — bestand: <code>assets/evenement-delegate.png</code></p></blockquote>
+<hr>
+<h2 id="7-samenvatting-downloaden">7. Samenvatting downloaden</h2>
+<p>Je kunt een <strong>samenvatting van je booking</strong> als PDF downloaden. Deze bevat de deelnemers, de gekozen onderdelen, het totaal en de betaal-/bookingstatus. Handig om te bewaren of te delen binnen je club.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: knop om bookingsamenvatting (PDF) te downloaden]</strong> — bestand: <code>assets/evenement-pdf.png</code></p></blockquote>
+<hr>
+<h2 id="8-veelvoorkomende-vragen">8. Veelvoorkomende vragen</h2>
+<p><strong>Ik heb geen wachtwoord gekregen voor het evenement.</strong> Niet elk evenement heeft een wachtwoord. Heeft dit evenement er wel een en mis je het, neem dan contact op met de organisatie.</p>
+<p><strong>De club die ik wil kiezen is "Bezet".</strong> Dan heeft iemand anders die club al geclaimd. De melding toont (deels afgeschermde) contactgegevens. Klopt er iets niet, neem dan contact op met een beheerder om de club opnieuw toe te wijzen.</p>
+<p><strong>Ik kan mijn booking niet meer wijzigen.</strong> Na indienen staat de booking op <em>ingediend</em>; na vergrendeling door de organisatie is bewerken niet meer mogelijk. Neem bij nodige wijzigingen contact op met de organisatie; een beheerder kan de booking eventueel ontgrendelen.</p>
+<p><strong>Mijn booking is "elders gewijzigd".</strong> Dat gebeurt als twee delegates tegelijk bewerken. Klik op <strong>Herladen</strong> om de laatste versie te laden en werk daarna verder.</p>
+<p><strong>Waar betaal ik?</strong> Via de betaalknop in het betaalpaneel word je naar de beveiligde betaalpagina (Mollie) gestuurd. Je kunt ook deels betalen; het openstaande bedrag blijft dan zichtbaar.</p>
+<blockquote class="screenshot"><p>📷 <strong>[Screenshot: voorbeeld van een validatie-/foutmelding bij indienen]</strong> — bestand: <code>assets/evenement-foutmelding.png</code></p></blockquote>
+<hr>
+<p><em>Heb je een vraag die hier niet beantwoord wordt? Neem contact op met de organisatie van het evenement of met een H-DCN-beheerder.</em></p>
+<p class="footer-note">H-DCN — automatisch gegenereerd uit Markdown. Gebruik je browser (Afdrukken &rarr; Opslaan als PDF) voor een PDF-versie.</p>
+</main>
+</body>
+</html>
