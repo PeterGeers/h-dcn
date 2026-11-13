@@ -6,6 +6,7 @@ import {
 import { AddIcon } from '@chakra-ui/icons';
 import EventForm from './EventForm';
 import CSVExportButton from './CSVExportButton';
+import ClubbladExport from './ClubbladExport';
 import LocationMapLink from './LocationMapLink';
 import { Event } from '../../../types';
 import { getAuthHeadersForGet } from '../../../utils/authHeaders';
@@ -148,7 +149,10 @@ function EventList({ events, onEventUpdate, user, permissionManager, canWriteEve
       >
         <HStack spacing={2} justify={{ base: 'center', md: 'flex-end' }}>
           {canExportEvents && (
-            <CSVExportButton data={filteredEvents} filename="evenementen" />
+            <>
+              <ClubbladExport events={permissionFilteredEvents} canExport={canExportEvents} />
+              <CSVExportButton data={filteredEvents} filename="evenementen" />
+            </>
           )}
           {canWriteEvents && (
             <Button

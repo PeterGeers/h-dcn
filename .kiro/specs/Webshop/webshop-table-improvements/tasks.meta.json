@@ -1,0 +1,293 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Implement `normalizeProductImages` and `getPrimaryImageUrl`": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731855894
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731865884
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731982510
+      }
+    ],
+    "1.2 Property tests for the image helper": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731856428
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731986959
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793732373952
+      }
+    ],
+    "2.1 Replace the inline image block with `normalizeProductImages`": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731856905
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731988336
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793732373189
+      }
+    ],
+    "2.2 Test image-list parity": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731857263
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793732378423
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733702878
+      }
+    ],
+    "3. Checkpoint — helper and ProductCard refactor green": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731857595
+      },
+      {
+        "executionId": "f8c8ca79-1ef2-4edc-ac9f-ed56df350f9f",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793740407719
+      },
+      {
+        "executionId": "f8c8ca79-1ef2-4edc-ac9f-ed56df350f9f",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793740410705
+      }
+    ],
+    "4.1 Add the self-contained filter + sort composition": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731857806
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731988897
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793732372274
+      }
+    ],
+    "4.2 Build the header row with FilterableHeader": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731857993
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793732377896
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733703283
+      }
+    ],
+    "4.3 Build the body rows with the thumbnail cell": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731858130
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733710441
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733818870
+      }
+    ],
+    "4.4 Property tests for the table filter/sort logic": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731858321
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733825669
+      },
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739770983
+      },
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739775317
+      }
+    ],
+    "4.5 RTL component tests for ProductTable": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731858455
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733824851
+      },
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739778186
+      },
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739781074
+      }
+    ],
+    "5. Checkpoint — ProductTable green": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731858586
+      },
+      {
+        "executionId": "f8c8ca79-1ef2-4edc-ac9f-ed56df350f9f",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793740413559
+      },
+      {
+        "executionId": "f8c8ca79-1ef2-4edc-ac9f-ed56df350f9f",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793740416505
+      }
+    ],
+    "6.1 Remove the FilterPanel and group/subgroup state": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731858722
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733823886
+      },
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739806563
+      },
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739809425
+      }
+    ],
+    "7.1 Add new `products` keys to all 8 locales": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731858906
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731866558
+      },
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731983180
+      }
+    ],
+    "8. Final checkpoint — integration verification": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731859038
+      },
+      {
+        "executionId": "f8c8ca79-1ef2-4edc-ac9f-ed56df350f9f",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793740419422
+      },
+      {
+        "executionId": "f8c8ca79-1ef2-4edc-ac9f-ed56df350f9f",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793740422348
+      }
+    ],
+    "7. Add translation keys": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793731983290
+      }
+    ],
+    "1. Create the shared image helper": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793732374087
+      }
+    ],
+    "2. Refactor the webshop ProductCard onto the shared helper": [
+      {
+        "executionId": "98938a2d-1c0e-4e83-b731-67aa31e66dce",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793733703031
+      }
+    ],
+    "4. Rewrite the public ProductTable": [
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739781179
+      }
+    ],
+    "6. Clean up WebshopPage": [
+      {
+        "executionId": "f8f67418-ea2f-457f-b36a-18dd12e9c47e",
+        "chatSessionId": "sess_2672a961-6657-4331-8f17-14a9e0884415",
+        "timestamp": 1793739809521
+      }
+    ]
+  }
+}

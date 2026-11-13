@@ -1,0 +1,326 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Set `MAX_AXES = 1` in `frontend/src/config/constants.ts`": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663224436
+      },
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663234272
+      },
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665088867
+      }
+    ],
+    "1.2 Update existing tests that assume MAX_AXES=2": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663224843
+      },
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663235696
+      },
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665090237
+      }
+    ],
+    "2.1 Create `variantBulkHelpers.ts`": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663225333
+      },
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663236476
+      },
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665090990
+      }
+    ],
+    "2.2 Property tests for helpers": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663225569
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665164749
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665428300
+      }
+    ],
+    "3. Checkpoint — constant + helpers green": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663225972
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714226845
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714231501
+      }
+    ],
+    "4.1 Replace the body contract and logic": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226120
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665166084
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665429126
+      }
+    ],
+    "4.2 Confirm template passes PRODUCTEN_TABLE_NAME": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226251
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665303151
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714179449
+      }
+    ],
+    "4.3 Backend property tests": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226389
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665304770
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714180331
+      }
+    ],
+    "4.4 Backend unit tests": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226514
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665306049
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714183995
+      }
+    ],
+    "5. Checkpoint — backend green": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226639
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714227656
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714232328
+      }
+    ],
+    "6.1 Extend `bulkCreateVariants` with request body + typed result": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226783
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665307007
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714185121
+      }
+    ],
+    "7.1 New inputs + preview": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663226938
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714237282
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714430864
+      }
+    ],
+    "7.2 Unit tests for BulkVariantCreator": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663227066
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714474463
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714928309
+      }
+    ],
+    "8.1 Render the generator trigger near VariantSubTable / Add-variant": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663227195
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714473530
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714924107
+      }
+    ],
+    "9.1 Add `products` namespace keys in all 8 locales": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663227322
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714472141
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714923192
+      }
+    ],
+    "10. Final checkpoint — integration verification": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793663227451
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793715026031
+      },
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793715029631
+      }
+    ],
+    "1. Correct MAX_AXES to single axis": [
+      {
+        "executionId": "336c65a6-11d1-4758-88a5-48e0b2d9e039",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665090339
+      }
+    ],
+    "2. Add pure frontend helpers": [
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793665428419
+      }
+    ],
+    "4. Rewrite backend handler `admin_bulk_create_variants`": [
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714184135
+      }
+    ],
+    "6. Update frontend admin API client": [
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714185256
+      }
+    ],
+    "9. Translations": [
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714923393
+      }
+    ],
+    "8. Wire generator into the product variant area": [
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714924361
+      }
+    ],
+    "7. Update BulkVariantCreator modal": [
+      {
+        "executionId": "cf72c781-f9f1-4518-8c76-38162644d3c7",
+        "chatSessionId": "sess_c99ed30b-b90f-4c8b-9e77-e29bbdae7b56",
+        "timestamp": 1793714928457
+      }
+    ]
+  }
+}

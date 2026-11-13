@@ -278,21 +278,30 @@ sam deploy
 - [Secrets Management](security/secrets-management.md) - Credential security best practices
 - [Security Scan Report](security/security-scan-report.md) - GitGuardian security validation
 
-### Webshop User Manuals (Dutch, for end users)
+### User Manuals (Dutch, for end users)
+
+Webshop:
 
 - [Handleiding Webwinkel (leden)](webshop/handleiding-winkel.md) - Step-by-step shop guide for members
 - [Handleiding Webwinkel Beheer (beheerders)](webshop/handleiding-beheer.md) - Admin guide (products, orders, payments, reports, event/region shops)
 
-Generate shareable HTML / PDF versions of these manuals:
+Events / Evenementen:
+
+- [Handleiding Evenementen (leden)](events/handleiding-evenementen.md) - Register, book, pay and manage delegates for an event
+- [Handleiding Evenementen Beheer (beheerders)](events/handleiding-evenementen-beheer.md) - Admin guide (create events, access, claims, lock/unlock, payments, reports)
+
+Generate shareable HTML / PDF versions of all these manuals:
 
 ```bash
 # From the repo root — no npm install needed (zero dependencies)
-node scripts/docs/render-webshop-manuals.mjs
-# Produces docs/webshop/handleiding-winkel.html and docs/webshop/handleiding-beheer.html
+node scripts/docs/render-manuals.mjs
+# Produces the *.html files next to each *.md in docs/webshop/ and docs/events/.
 # Open in a browser and choose Print -> Save as PDF for a PDF version.
 ```
 
-Screenshots are referenced via placeholders; see [docs/webshop/assets/README.md](webshop/assets/README.md) for the expected file names.
+Screenshots are referenced via placeholders; see
+[docs/webshop/assets/README.md](webshop/assets/README.md) and
+[docs/events/assets/README.md](events/assets/README.md) for the expected file names.
 
 ### Development & Deployment
 

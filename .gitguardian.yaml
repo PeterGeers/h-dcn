@@ -14,6 +14,10 @@ secret:
     # Translation/locale files (contain placeholder emails like "your@email.com" — not real secrets)
     - "**/locales/**"
     - "**/public/locales/**"
+    # SAM local invoke sample events — contain FAKE-HEADER.<payload>.FAKE-SIGNATURE
+    # test JWTs (fake .invalid emails + group names, no real secrets). Required to
+    # keep the 3-part JWT shape so `sam local invoke` can decode cognito:groups.
+    - "**/backend/events/**"
     # Lock files
     - "**/package-lock.json"
     - "**/yarn.lock"

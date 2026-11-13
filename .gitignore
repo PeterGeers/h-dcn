@@ -138,6 +138,9 @@ venv.bak/
 test_lambda_role_assignment
 test_member_admin_login
 
+# Google Cloud service-account keys downloaded for local tooling
+hdcn-portal-*.json*
+
 # Local scripts (optional)
 *.local.ps1
 
